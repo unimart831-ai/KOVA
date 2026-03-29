@@ -56,7 +56,10 @@ DATABASES["default"]["CONN_HEALTH_CHECKS"] = True  # noqa: F405
 # No changes needed unless you want a separate broker URL.
 
 # ─── EMAIL ───────────────────────────────────────────────────────────────────
-EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")  # noqa: F405
+EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")  # noqa: F405
+
+# Disable email verification until a real email provider is configured
+ACCOUNT_EMAIL_VERIFICATION = "none"
 
 # ─── LOGGING ─────────────────────────────────────────────────────────────────
 LOGGING = {
