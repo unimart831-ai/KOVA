@@ -1,8 +1,10 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
+from django.views.decorators.http import require_POST
+from django.utils import timezone
 
-from apps.agents.models import AgentConfig
+from apps.agents.models import AgentAction, AgentConfig
 
 
 _PIPELINE_ORDER = (
@@ -49,9 +51,75 @@ def agent_status(request, slug):
     """Return agent status card (HTMX polling)."""
     agent = get_object_or_404(AgentConfig, user=request.user, agent_type=slug)
     # Add runtime data for the template
+    today = timezone.now().date()
     agent.actions_today = agent.user.agent_actions.filter(
-        agent_type=slug, created_at__date=__import__("django.utils.timezone", fromlist=["now"]).now().date()
+        agent_type=slug, created_at__date=today
     ).count()
     agent.current_task = None
     agent.last_active_at = agent.user.agent_actions.filter(agent_type=slug).values_list("created_at", flat=True).first()
     return render(request, "components/agent_status.html", {"agent": agent})
+
+
+@login_required
+def agent_activity_log(request):
+    """Full activity log across all agents."""
+    agent_filter = request.GET.get("agent", "")
+    status_filter = request.GET.get("status", "")
+
+    actions = AgentAction.objects.filter(user=request.user).order_by("-created_at")
+
+    if agent_filter:
+        actions = actions.filter(agent_type=agent_filter)
+    if status_filter:
+        actions = actions.filter(status=status_filter)
+
+    actions = actions[:100]
+
+    return render(request, "agents/activity_log.html", {
+        "actions": actions,
+        "agent_filter": agent_filter,
+        "status_filter": status_filter,
+        "agent_types": AgentConfig.AgentType.choices,
+        "page_title": "Agent Activity Log",
+    })
+
+
+@login_required
+def agent_detail(request, slug):
+    """Detail view for a single agent — config + recent activity."""
+    agent = get_object_or_404(AgentConfig, user=request.user, agent_type=slug)
+    today = timezone.now().date()
+
+    recent_actions = AgentAction.objects.filter(
+        user=request.user,
+        agent_type=slug,
+    ).order_by("-created_at")[:20]
+
+    stats = {
+        "total_actions": AgentAction.objects.filter(user=request.user, agent_type=slug).count(),
+        "actions_today": AgentAction.objects.filter(
+            user=request.user, agent_type=slug, created_at__date=today
+        ).count(),
+        "total_tokens": sum(
+            a.tokens_used for a in AgentAction.objects.filter(
+                user=request.user, agent_type=slug, tokens_used__gt=0
+            )
+        ),
+    }
+
+    return render(request, "agents/detail.html", {
+        "agent": agent,
+        "recent_actions": recent_actions,
+        "stats": stats,
+        "page_title": agent.name,
+    })
+
+
+@login_required
+@require_POST
+def agent_update_instructions(request, slug):
+    """Update custom instructions for an agent."""
+    agent = get_object_or_404(AgentConfig, user=request.user, agent_type=slug)
+    agent.custom_instructions = request.POST.get("custom_instructions", "").strip()
+    agent.save(update_fields=["custom_instructions", "updated_at"])
+    return redirect("agents:detail", slug=slug)

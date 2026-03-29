@@ -165,6 +165,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "briefs.generate_all_daily_briefs",
         "schedule": 15 * 60.0,  # every 15 minutes — checks which users' brief time has passed
     },
+    "run-daily-research": {
+        "task": "agents.run_daily_research",
+        "schedule": 12 * 3600.0,  # every 12 hours — trend data for daily briefs
+    },
 }
 
 # ─── AUTH ────────────────────────────────────────────────────────────────────

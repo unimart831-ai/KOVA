@@ -1,0 +1,103 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Activity Log{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">History of all agent actions and decisions</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+  {# Filters #}
+  <div class="card">
+    <div class="card-body py-3 px-5">
+      <form method="get" class="flex flex-wrap items-center gap-3">
+        <label class="text-xs font-medium text-gray-500 dark:text-gray-400">Filter:</label>
+        <select name="agent" class="input-field text-sm py-1.5 w-auto min-w-[140px]" onchange="this.form.submit()">
+          <option value="">All agents</option>
+          {% for value, label in agent_types %}
+            <option value="{{ value }}" {% if agent_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <select name="status" class="input-field text-sm py-1.5 w-auto min-w-[120px]" onchange="this.form.submit()">
+          <option value="">All statuses</option>
+          <option value="started" {% if status_filter == "started" %}selected{% endif %}>Started</option>
+          <option value="completed" {% if status_filter == "completed" %}selected{% endif %}>Completed</option>
+          <option value="failed" {% if status_filter == "failed" %}selected{% endif %}>Failed</option>
+        </select>
+        {% if agent_filter or status_filter %}
+          <a href="{% url 'agents:activity_log' %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">Clear filters</a>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  {% if actions %}
+    <div class="card overflow-hidden">
+      <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for action in actions %}
+          <li class="px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex items-start gap-3 min-w-0 flex-1">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-base shrink-0
+                  {% if action.status == 'completed' %}bg-green-50 dark:bg-green-950/50
+                  {% elif action.status == 'failed' %}bg-red-50 dark:bg-red-950/50
+                  {% elif action.status == 'started' %}bg-blue-50 dark:bg-blue-950/50
+                  {% else %}bg-gray-50 dark:bg-gray-800{% endif %}" aria-hidden="true">
+                  {% if action.agent_type == 'research' %}🔍
+                  {% elif action.agent_type == 'create' %}✍️
+                  {% elif action.agent_type == 'adapt' %}🔄
+                  {% elif action.agent_type == 'engage' %}💬
+                  {% elif action.agent_type == 'analyst' %}📊
+                  {% elif action.agent_type == 'strategist' %}🧠
+                  {% else %}🤖{% endif %}
+                </div>
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ action.get_agent_type_display }}</span>
+                    <span class="text-xs text-gray-400 dark:text-gray-500">&middot;</span>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">{{ action.action_type }}</span>
+                  </div>
+                  <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5 line-clamp-2">{{ action.description }}</p>
+                  {% if action.error_message %}
+                    <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ action.error_message|truncatewords:20 }}</p>
+                  {% endif %}
+                  <div class="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-gray-400 dark:text-gray-500">
+                    <span>{{ action.created_at|timesince }} ago</span>
+                    {% if action.tokens_used %}
+                      <span>{{ action.tokens_used }} tokens</span>
+                    {% endif %}
+                    {% if action.duration_ms %}
+                      <span>{{ action.duration_ms }}ms</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              <span class="badge shrink-0
+                {% if action.status == 'completed' %}badge-success
+                {% elif action.status == 'failed' %}badge-error
+                {% elif action.status == 'started' %}badge-info
+                {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300{% endif %}">
+                {{ action.get_status_display }}
+              </span>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% else %}
+    <div class="card border-dashed border-gray-200 dark:border-gray-700">
+      <div class="card-body text-center py-14 px-6">
+        <div class="w-14 h-14 mx-auto rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4" aria-hidden="true">
+          <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">No agent activity yet</h2>
+        <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm max-w-md mx-auto">
+          Agent actions will appear here as your AI crew works on content, research, and scheduling.
+        </p>
+        <a href="{% url 'agents:control' %}" class="btn-secondary mt-6 inline-flex">Manage agents</a>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

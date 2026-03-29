@@ -60,11 +60,28 @@
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Topics your Research Agent is watching</p>
             </div>
             <div class="card-body pt-4">
-              <div class="flex flex-wrap gap-2">
+              <ul class="space-y-3">
                 {% for topic in brief.trending_topics %}
-                  <span class="badge badge-info">{{ topic }}</span>
+                  <li class="flex items-start gap-3">
+                    {% if topic.urgency == "high" %}
+                      <span class="mt-0.5 shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">Hot</span>
+                    {% elif topic.urgency == "medium" %}
+                      <span class="mt-0.5 shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">Warm</span>
+                    {% else %}
+                      <span class="mt-0.5 shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">New</span>
+                    {% endif %}
+                    <div class="min-w-0">
+                      <p class="text-sm font-medium text-gray-900 dark:text-white">{{ topic.topic|default:topic }}</p>
+                      {% if topic.relevance %}
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ topic.relevance }}</p>
+                      {% endif %}
+                      {% if topic.suggested_angle %}
+                        <p class="text-xs text-kova-600 dark:text-kova-400 mt-1">Angle: {{ topic.suggested_angle }}</p>
+                      {% endif %}
+                    </div>
+                  </li>
                 {% endfor %}
-              </div>
+              </ul>
             </div>
           </div>
         {% endif %}
@@ -87,9 +104,17 @@
                   {% if suggestion.reasoning %}
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ suggestion.reasoning }}</p>
                   {% endif %}
-                  {% if suggestion.platform %}
-                    <span class="inline-flex items-center mt-2 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">{{ suggestion.platform }}</span>
-                  {% endif %}
+                  <div class="flex flex-wrap items-center gap-2 mt-2">
+                    {% if suggestion.platform %}
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">{{ suggestion.platform }}</span>
+                    {% endif %}
+                    {% if suggestion.content_type %}
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-kova-50 dark:bg-kova-950 text-kova-700 dark:text-kova-300">{{ suggestion.content_type }}</span>
+                    {% endif %}
+                    {% if suggestion.timing %}
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300">{{ suggestion.timing }}</span>
+                    {% endif %}
+                  </div>
                 </li>
               {% endfor %}
             </ul>

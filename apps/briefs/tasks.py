@@ -17,6 +17,7 @@ from django.utils import timezone
 from apps.agents.analyst_agent import analyze_performance, get_content_dna_summary
 from apps.agents.llm import generate
 from apps.agents.models import AgentAction, AgentConfig
+from apps.agents.research_agent import discover_trends
 from apps.briefs.models import DailyBrief
 from apps.content.models import ContentSeed, Post
 from apps.notifications.models import Notification
@@ -77,6 +78,13 @@ def _gather_brief_data(user):
         logger.warning("Content DNA summary failed: %s", e)
         dna_summary = {"winning_attributes": [], "total_analyzed": 0}
 
+    # Trend research from Research Agent
+    try:
+        trends = discover_trends(user)
+    except Exception as e:
+        logger.warning("Trend discovery failed: %s", e)
+        trends = {"trending_topics": [], "opportunity_briefs": []}
+
     # Posts created this week
     week_stats = Post.objects.filter(
         user=user,
@@ -105,6 +113,7 @@ def _gather_brief_data(user):
         "agent_activity": list(recent_actions),
         "performance": perf,
         "content_dna": dna_summary,
+        "trends": trends,
     }
 
 
@@ -187,12 +196,44 @@ def generate_daily_brief(user):
                 "agent_summary": "",
             }
 
+        # Merge LLM trending topics with Research Agent's richer trend data
+        research_trends = brief_data.get("trends", {})
+        raw_topics = llm_result.get("trending_topics", [])
+        research_topics = research_trends.get("trending_topics", [])
+
+        # Prefer Research Agent's structured topics, fall back to LLM's list
+        if research_topics:
+            trending_topics = research_topics
+        elif raw_topics:
+            # Normalize simple strings into dicts
+            trending_topics = [
+                {"topic": t} if isinstance(t, str) else t
+                for t in raw_topics
+            ]
+        else:
+            trending_topics = []
+
+        # Merge suggested posts: LLM ideas + Research Agent opportunity briefs
+        llm_suggestions = llm_result.get("suggested_posts", [])
+        opportunity_briefs = research_trends.get("opportunity_briefs", [])
+        suggested_posts = llm_suggestions + [
+            {
+                "idea": ob.get("title", ""),
+                "reasoning": ob.get("description", ""),
+                "platform": ob.get("platform", ""),
+                "timing": ob.get("timing", ""),
+                "content_type": ob.get("content_type", ""),
+            }
+            for ob in opportunity_briefs
+            if ob.get("title")
+        ]
+
         brief = DailyBrief.objects.create(
             user=user,
             date=today,
             summary=llm_result.get("summary", "Your daily brief is ready."),
-            trending_topics=llm_result.get("trending_topics", []),
-            suggested_posts=llm_result.get("suggested_posts", []),
+            trending_topics=trending_topics,
+            suggested_posts=suggested_posts,
             performance_summary={
                 "highlight": llm_result.get("performance_highlight", ""),
                 "agent_summary": llm_result.get("agent_summary", ""),

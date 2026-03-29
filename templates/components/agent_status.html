@@ -60,15 +60,18 @@ Usage: {% include "components/agent_status.html" with agent=agent %}
         <span class="text-gray-900 dark:text-white">{{ agent.actions_today }}</span>
         <span class="ml-1 text-xs font-normal text-gray-500 dark:text-gray-400 sm:text-sm">actions today</span>
       </span>
-      {% if agent.last_active_at %}
-        <span class="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-          Active {{ agent.last_active_at|timesince }} ago
-        </span>
-      {% else %}
-        <span class="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-          Idle
-        </span>
-      {% endif %}
+      <div class="flex items-center gap-2">
+        <a href="{% url 'agents:detail' agent.slug %}" class="text-xs text-kova-600 dark:text-kova-400 font-medium hover:underline">Configure</a>
+        {% if agent.last_active_at %}
+          <span class="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+            {{ agent.last_active_at|timesince }} ago
+          </span>
+        {% else %}
+          <span class="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+            Idle
+          </span>
+        {% endif %}
+      </div>
     </div>
   </div>
 </div>

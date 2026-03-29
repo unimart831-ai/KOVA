@@ -43,6 +43,17 @@ def generate_from_seed(seed_id: str):
         except Exception as e:
             logger.warning("Engagement prediction failed for post %s: %s", post.id, e)
 
+    # Auto-schedule if Adapt Agent is active and user has auto_approve on
+    from apps.agents.adapt_agent import auto_schedule_post
+
+    profile = getattr(seed.user, "profile", None)
+    if profile and profile.auto_approve_posts:
+        for post in posts:
+            try:
+                auto_schedule_post(post)
+            except Exception as e:
+                logger.warning("Auto-schedule failed for post %s: %s", post.id, e)
+
     return {
         "seed_id": str(seed_id),
         "posts_created": len(posts),
