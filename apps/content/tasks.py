@@ -130,10 +130,19 @@ def publish_post(self, post_id: str):
 
     # Publish
     try:
+        # For Facebook/Instagram, pass page_id and page_access_token from stored metadata
+        publish_kwargs = {}
+        if account.platform in ("facebook", "instagram"):
+            pages = (account.metadata or {}).get("pages", [])
+            if pages:
+                publish_kwargs["page_id"] = pages[0]["id"]
+                publish_kwargs["page_access_token"] = pages[0].get("access_token", account.access_token)
+
         result = provider.publish_post(
             access_token=account.access_token,
             content=post.content_text,
             media_urls=post.media_urls or None,
+            **publish_kwargs,
         )
     except Exception as exc:
         logger.exception("Publishing post %s raised an exception", post_id)
