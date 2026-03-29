@@ -1,14 +1,10 @@
 # Nixpacks config for Railway
-# "..." preserves auto-detected Python/pip setup, we just add Node.js for Tailwind
-
-[phases.setup]
-nixPkgs = ["...", "nodejs_20"]
-
-[phases.install]
-cmds = ["...", "npm install"]
+# Let Nixpacks auto-detect Python (from requirements.txt) and Node (from package.json)
+# We only customize the build phase and start command
 
 [phases.build]
 cmds = [
+    "npm install",
     "npx tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify",
     "python manage.py collectstatic --noinput",
     "python manage.py migrate --noinput"
