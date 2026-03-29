@@ -1,0 +1,142 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Content Studio{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Turn one idea into platform-ready posts across all your channels</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8">
+
+  {# ━━━ Composer ━━━ #}
+  <div class="card border-kova-100 dark:border-kova-900/50 shadow-kova dark:shadow-none overflow-hidden">
+    <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-br from-kova-50/80 to-white dark:from-kova-950/40 dark:to-gray-900">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Drop your idea</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mt-1 max-w-2xl">Kova's intelligence engine turns one idea into unique, platform-native posts — each with a different strategic angle. Not reformatted. Reimagined.</p>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{% url 'content:submit_seed' %}"
+            hx-post="{% url 'content:submit_seed' %}"
+            hx-target="#seed-processing-zone"
+            hx-swap="afterbegin"
+            hx-on::after-request="if(event.detail.successful) this.reset()"
+            class="space-y-4 group/form" x-data="seedForm()">
+        {% csrf_token %}
+        <div>
+          <label for="idea-input" class="label">What do you want to post about?</label>
+          <textarea id="idea-input" name="idea" rows="4" required
+                    placeholder="e.g. How small teams are using AI for marketing without losing their voice…"
+                    class="input text-base min-h-[120px] resize-y"></textarea>
+        </div>
+        <div x-show="showNotes" x-cloak class="space-y-2">
+          <label for="notes-input" class="label">Extra context <span class="text-gray-400 font-normal">(optional)</span></label>
+          <textarea id="notes-input" name="notes" rows="2"
+                    placeholder="Audience, CTA, tone, or things to avoid"
+                    class="input w-full"></textarea>
+        </div>
+        <input type="hidden" name="target_platforms" :value="JSON.stringify(selectedPlatforms)">
+
+        <div class="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-800">
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Target platforms</p>
+          <div class="flex flex-wrap items-center gap-2">
+            <template x-for="p in platforms" :key="p.platform">
+              <button type="button"
+                      @click="togglePlatform(p.platform)"
+                      :aria-pressed="selectedPlatforms.includes(p.platform)"
+                      :class="selectedPlatforms.includes(p.platform)
+                        ? 'bg-kova-600 text-white border-kova-600 shadow-sm'
+                        : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-kova-300'"
+                      class="text-xs px-3 py-1.5 rounded-full border font-medium transition-colors">
+                <span x-text="p.platform.charAt(0).toUpperCase() + p.platform.slice(1)"></span>
+              </button>
+            </template>
+            <span x-show="platforms.length === 0" class="text-xs text-amber-600 dark:text-amber-400">Connect accounts under Platforms to enable targets.</span>
+          </div>
+        </div>
+
+        <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
+          <button type="button" @click="showNotes = !showNotes"
+                  class="text-xs text-kova-600 dark:text-kova-400 hover:underline font-medium text-left sm:text-left py-1">
+            <span x-text="showNotes ? 'Hide notes' : '+ Add notes for the AI'"></span>
+          </button>
+
+          <button type="submit"
+                  class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kova-600 px-5 text-sm font-semibold text-white shadow-sm shadow-kova-600/25 transition hover:bg-kova-700 focus:outline-none focus:ring-2 focus:ring-kova-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 dark:hover:bg-kova-500 w-full sm:w-auto sm:min-w-[10rem] disabled:opacity-60 disabled:cursor-not-allowed group"
+                  :disabled="$el.closest('form')?.classList.contains('htmx-request')"
+                  >
+            {# Normal state #}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="shrink-0 opacity-95 group-[.htmx-request]/form:hidden" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            <span class="group-[.htmx-request]/form:hidden">Generate posts</span>
+            {# Loading state #}
+            <svg class="w-4 h-4 animate-spin hidden group-[.htmx-request]/form:block" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            <span class="hidden group-[.htmx-request]/form:inline">Generating…</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# ━━━ Processing seeds (HTMX target + existing active seeds) ━━━ #}
+  <div id="seed-processing-zone" class="space-y-3">
+  {% if active_seeds %}
+    {% for seed in active_seeds %}
+      <div hx-get="{% url 'content:seed_status' seed.id %}"
+           hx-trigger="every 2s"
+           hx-swap="outerHTML"
+           class="card border-l-4 border-l-kova-400 dark:border-l-kova-500">
+        <div class="card-body flex items-center gap-4">
+          <div class="animate-spin rounded-full h-6 w-6 border-2 border-kova-400 border-t-transparent shrink-0" aria-hidden="true"></div>
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-gray-900 dark:text-white">Generating posts…</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ seed.idea|truncatewords:15 }}</p>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  {% endif %}
+  </div>
+
+  {% if failed_seeds %}
+  <div class="space-y-3">
+    {% for seed in failed_seeds %}
+      <div class="card border-l-4 border-l-red-400 dark:border-l-red-500">
+        <div class="card-body">
+          <p class="text-sm font-medium text-red-700 dark:text-red-300">Generation failed</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ seed.idea|truncatewords:15 }}</p>
+          <p class="text-xs text-red-600 dark:text-red-400 mt-2">{{ seed.error_message|truncatewords:20 }}</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ━━━ Seed-Grouped Posts (auto-refreshes when generation completes) ━━━ #}
+  <div id="studio-posts-section"
+       hx-get="{% url 'content:studio_posts' %}"
+       hx-trigger="postsUpdated from:body"
+       hx-swap="innerHTML">
+    {% include "content/_studio_posts.html" %}
+  </div>
+</div>
+
+<script>
+function seedForm() {
+  const connected = JSON.parse('{{ connected_platforms|escapejs }}');
+  return {
+    showNotes: false,
+    platforms: connected,
+    selectedPlatforms: connected.map(p => p.platform),
+    togglePlatform(platform) {
+      const idx = this.selectedPlatforms.indexOf(platform);
+      if (idx > -1) {
+        this.selectedPlatforms.splice(idx, 1);
+      } else {
+        this.selectedPlatforms.push(platform);
+      }
+    }
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% comment %}
+Agent status card component.
+Usage: {% include "components/agent_status.html" with agent=agent %}
+{% endcomment %}
+
+<div id="agent-{{ agent.slug }}"
+     class="group relative h-full overflow-hidden rounded-2xl border border-gray-200/90 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-gray-700/90 dark:bg-gray-900 dark:hover:border-gray-600"
+     hx-get="{% url 'agents:status' agent.slug %}"
+     hx-trigger="every 30s"
+     hx-swap="outerHTML">
+  <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-kova-400/25 to-transparent opacity-0 transition-opacity group-hover:opacity-100 dark:via-kova-500/30"></div>
+  <div class="flex flex-col p-5 sm:p-6 h-full min-h-[9.5rem]">
+    <div class="flex items-start gap-4">
+      {% include "components/agent_icon.html" %}
+      <div class="min-w-0 flex-1 pt-0.5">
+        <h4 class="font-semibold text-gray-900 dark:text-white text-[0.9375rem] leading-snug tracking-tight">{{ agent.name }}</h4>
+        <p class="mt-1.5 text-sm leading-relaxed text-gray-600 dark:text-gray-400">{{ agent.role }}</p>
+      </div>
+
+      <div x-data="{ enabled: {{ agent.is_active|yesno:'true,false' }} }"
+           class="flex shrink-0 flex-col items-end gap-1.5">
+        <div class="flex items-center gap-2">
+          <span class="min-w-[1.75rem] text-right text-xs font-bold tabular-nums"
+                :class="enabled ? 'text-kova-600 dark:text-kova-400' : 'text-gray-400 dark:text-gray-500'"
+                x-text="enabled ? 'On' : 'Off'"></span>
+          <button type="button"
+                  role="switch"
+                  :aria-checked="enabled ? 'true' : 'false'"
+                  aria-label="Toggle {{ agent.name }}"
+                  @click="enabled = !enabled; $dispatch('toggle-agent', { slug: '{{ agent.slug }}', enabled })"
+                  hx-post="{% url 'agents:toggle' agent.slug %}"
+                  hx-swap="none"
+                  :class="enabled
+                    ? 'bg-kova-600 shadow-inner shadow-kova-900/20 justify-end'
+                    : 'bg-gray-200 dark:bg-gray-600 justify-start'"
+                  class="relative flex h-8 w-[3.25rem] cursor-pointer items-center rounded-full p-1 transition-colors duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-kova-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900">
+            <span class="pointer-events-none h-6 w-6 rounded-full bg-white shadow-md ring-1 ring-black/10 transition-transform duration-200 ease-out dark:ring-white/10"></span>
+          </button>
+        </div>
+        <span class="max-w-[5.5rem] text-right text-[10px] font-semibold uppercase leading-tight tracking-wider"
+              :class="enabled ? 'text-kova-600/90 dark:text-kova-400/90' : 'text-gray-400 dark:text-gray-500'"
+              x-text="enabled ? 'Active' : 'Paused'"></span>
+      </div>
+    </div>
+
+    {% if agent.current_task %}
+      <div class="mt-4 rounded-xl border border-kova-200/60 bg-kova-50/90 px-3 py-2.5 dark:border-kova-800/60 dark:bg-kova-950/40">
+        <div class="flex items-center gap-2">
+          <span class="relative flex h-2 w-2 shrink-0" aria-hidden="true">
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-kova-400 opacity-40"></span>
+            <span class="relative inline-flex h-2 w-2 rounded-full bg-kova-500"></span>
+          </span>
+          <span class="text-xs font-medium text-kova-900 dark:text-kova-100">{{ agent.current_task }}</span>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="mt-auto flex items-center justify-between gap-3 border-t border-gray-100 pt-4 text-sm dark:border-gray-800">
+      <span class="font-medium tabular-nums text-gray-700 dark:text-gray-300">
+        <span class="text-gray-900 dark:text-white">{{ agent.actions_today }}</span>
+        <span class="ml-1 text-xs font-normal text-gray-500 dark:text-gray-400 sm:text-sm">actions today</span>
+      </span>
+      {% if agent.last_active_at %}
+        <span class="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+          Active {{ agent.last_active_at|timesince }} ago
+        </span>
+      {% else %}
+        <span class="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+          Idle
+        </span>
+      {% endif %}
+    </div>
+  </div>
+</div>

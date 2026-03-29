@@ -1,0 +1,66 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Billing{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Plan and payment method</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+  {# Current plan hero #}
+  <div class="card overflow-hidden">
+    <div class="px-6 py-5 bg-gradient-to-br from-kova-50 via-white to-indigo-50/40 dark:from-kova-950/40 dark:via-gray-900 dark:to-indigo-950/20 border-b border-gray-100 dark:border-gray-800">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider text-kova-600 dark:text-kova-400">Current plan</p>
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ request.user.profile.get_plan_display }}</h2>
+        </div>
+        <button type="button" class="btn-primary w-full sm:w-auto shrink-0" disabled aria-disabled="true">Upgrade plan</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">What's included</h3>
+      <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          AI content generation
+        </li>
+        <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Daily AI brief
+        </li>
+        <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Multi-platform publishing
+        </li>
+        <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Performance analytics
+        </li>
+        <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          6 AI agents
+        </li>
+        <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Engagement suggestions
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  {# Payment method placeholder #}
+  <div class="card">
+    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Payment method</h3>
+    </div>
+    <div class="card-body text-center py-8">
+      <div class="w-12 h-12 mx-auto rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
+        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+      </div>
+      <p class="text-sm text-gray-500 dark:text-gray-400">Stripe billing will be enabled in a future release.</p>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">You'll manage cards, invoices, and seats here.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

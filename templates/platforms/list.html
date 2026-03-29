@@ -1,0 +1,99 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Platforms{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">OAuth connections your agents use to publish and engage</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8">
+  <p class="text-sm text-gray-600 dark:text-gray-400 max-w-2xl">Connect the accounts Kova should act on. Tokens are stored securely — we never keep your password.</p>
+
+  {% if accounts %}
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {% for account in accounts %}
+        <div class="card h-full">
+          <div class="card-body flex flex-col h-full">
+            <div class="flex items-center space-x-4">
+              {% if account.avatar_url %}
+                <img src="{{ account.avatar_url }}" alt="" class="w-11 h-11 rounded-full ring-2 ring-gray-100 dark:ring-gray-700">
+              {% else %}
+                <div class="w-11 h-11 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xl" aria-hidden="true">
+                  {% if account.platform == 'twitter' %}🐦{% elif account.platform == 'linkedin' %}💼{% elif account.platform == 'instagram' %}📷{% elif account.platform == 'facebook' %}📘{% elif account.platform == 'tiktok' %}🎵{% endif %}
+                </div>
+              {% endif %}
+              <div class="flex-1 min-w-0">
+                <p class="font-medium text-gray-900 dark:text-white truncate">{{ account.display_name|default:account.username }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">@{{ account.username }} · {{ account.get_platform_display }}</p>
+              </div>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium {% if account.is_active %}bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200{% else %}bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200{% endif %}">
+                {% if account.is_active %}Active{% else %}Error{% endif %}
+              </span>
+            </div>
+
+            {% if account.last_error %}
+              <div class="mt-3 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg text-xs text-red-800 dark:text-red-200">
+                {{ account.last_error|truncatewords:20 }}
+              </div>
+            {% endif %}
+
+            <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-end justify-between gap-2 mt-auto">
+              <span class="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
+                Connected {{ account.connected_at|timesince }} ago
+                {% if account.last_synced_at %}<br>Synced {{ account.last_synced_at|timesince }} ago{% endif %}
+              </span>
+              <form method="post" action="{% url 'platforms:disconnect' account.pk %}"
+                    onsubmit="return confirm('Disconnect @{{ account.username }}?')">
+                {% csrf_token %}
+                <button type="submit" class="text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium whitespace-nowrap">Disconnect</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card border-dashed border-gray-200 dark:border-gray-700">
+      <div class="card-body text-center py-14 px-6">
+        <div class="w-14 h-14 mx-auto rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-2xl mb-4" aria-hidden="true">🔗</div>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">No platforms connected</h2>
+        <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm max-w-md mx-auto">Connect a social account so agents can draft, schedule, and monitor on your behalf.</p>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+      <h3 class="font-semibold text-gray-900 dark:text-white">Connect a platform</h3>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Choose a network to start OAuth</p>
+    </div>
+    <div class="card-body">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+        {% for p in platforms %}
+          {% if p.provider_available and not p.connected %}
+            <a href="{% url 'platforms:connect' p.key %}"
+               class="flex flex-col items-center p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-kova-400 dark:hover:border-kova-600 hover:bg-kova-50/50 dark:hover:bg-kova-950/30 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-kova-500">
+              <span class="text-2xl mb-2" aria-hidden="true">{{ p.icon }}</span>
+              <span class="text-xs font-medium text-gray-700 dark:text-gray-200 text-center">{{ p.label }}</span>
+            </a>
+          {% elif p.connected %}
+            <div class="flex flex-col items-center p-4 rounded-xl border border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-950/30">
+              <span class="text-2xl mb-2" aria-hidden="true">{{ p.icon }}</span>
+              <span class="text-xs font-medium text-green-800 dark:text-green-200 text-center">{{ p.label }}</span>
+              <span class="text-[10px] text-green-600 dark:text-green-400 mt-1 font-medium">Connected</span>
+            </div>
+          {% else %}
+            <div class="flex flex-col items-center p-4 rounded-xl border border-gray-100 dark:border-gray-800 opacity-50" title="Not configured">
+              <span class="text-2xl mb-2 grayscale" aria-hidden="true">{{ p.icon }}</span>
+              <span class="text-xs font-medium text-gray-400 text-center">{{ p.label }}</span>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-6 text-center max-w-lg mx-auto">
+        Credentials are never stored — only encrypted tokens. You can disconnect anytime.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

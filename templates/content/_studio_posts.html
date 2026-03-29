@@ -1,0 +1,199 @@
+{# Partial: Posts to review section — used inline and via HTMX refresh #}
+<section>
+  <div class="flex items-center justify-between gap-4 mb-6">
+    <div>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Posts to review</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Approve individually or as a batch across all platforms</p>
+    </div>
+    {% if total_pending %}
+      <span class="badge bg-kova-100 text-kova-800 dark:bg-kova-950 dark:text-kova-200 tabular-nums">{{ total_pending }} pending</span>
+    {% endif %}
+  </div>
+
+  {% if seed_groups %}
+    <div class="space-y-8">
+      {% for group in seed_groups %}
+        {# ── Seed Group Container ── #}
+        <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden shadow-sm"
+             x-data="{ showBatchSchedule: false, expanded: true }">
+
+          {# Group Header — the original idea #}
+          <div class="px-5 py-4 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800/60 dark:to-gray-900 border-b border-gray-100 dark:border-gray-800">
+            <div class="flex items-start justify-between gap-4">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 mb-1.5">
+                  <span class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-kova-100 dark:bg-kova-950/60" aria-hidden="true">
+                    <svg class="w-3.5 h-3.5 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                  </span>
+                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ group.seed.idea|truncatewords:20 }}</h3>
+                </div>
+                {% if group.seed.batch_strategy %}
+                  <p class="text-xs text-gray-500 dark:text-gray-400 ml-8 line-clamp-2">
+                    <span class="font-medium text-kova-600 dark:text-kova-400">Strategy:</span> {{ group.seed.batch_strategy }}
+                  </p>
+                {% endif %}
+              </div>
+
+              <div class="flex items-center gap-2 shrink-0">
+                {# Platform count badge #}
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-xs font-medium text-gray-600 dark:text-gray-300">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  {{ group.platform_count }} platform{{ group.platform_count|pluralize }}
+                </span>
+
+                {# Batch Approve All button #}
+                {% if group.all_pending %}
+                  <button @click="showBatchSchedule = true"
+                          class="inline-flex items-center gap-1.5 h-8 px-4 text-xs font-semibold text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors shadow-sm shadow-kova-600/20">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                    Approve all
+                  </button>
+                {% endif %}
+
+                {# Collapse toggle #}
+                <button @click="expanded = !expanded"
+                        class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                  <svg :class="expanded ? '' : '-rotate-90'" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {# Batch Schedule Modal — teleported to body #}
+          {% if group.all_pending %}
+          <template x-teleport="body">
+            <div x-show="showBatchSchedule" x-cloak
+                 class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+                 @keydown.escape.window="showBatchSchedule = false">
+              <div x-show="showBatchSchedule"
+                   x-transition:enter="transition ease-out duration-200"
+                   x-transition:enter-start="opacity-0"
+                   x-transition:enter-end="opacity-100"
+                   x-transition:leave="transition ease-in duration-150"
+                   x-transition:leave-start="opacity-100"
+                   x-transition:leave-end="opacity-0"
+                   @click="showBatchSchedule = false"
+                   class="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
+
+              <div x-show="showBatchSchedule"
+                   x-transition:enter="transition ease-out duration-200"
+                   x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+                   x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                   x-transition:leave="transition ease-in duration-150"
+                   x-transition:leave-start="opacity-100 scale-100"
+                   x-transition:leave-end="opacity-0 scale-95"
+                   class="relative w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+
+                <form method="post" action="{% url 'content:batch_approve' group.seed.id %}">
+                  {% csrf_token %}
+
+                  <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+                    <div>
+                      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Approve all {{ group.platform_count }} posts</h3>
+                      <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Schedule across all platforms at once</p>
+                    </div>
+                    <button type="button" @click="showBatchSchedule = false"
+                            class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                  </div>
+
+                  <div class="p-2">
+                    <button type="submit" name="schedule_intent" value="post_now"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-left transition-colors">
+                      <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/50">
+                        <svg class="w-[18px] h-[18px] text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                      </span>
+                      <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Post All Now</p><p class="text-xs text-gray-400 dark:text-gray-500">Publish to all {{ group.platform_count }} platforms immediately</p></div>
+                    </button>
+
+                    <button type="submit" name="schedule_intent" value="next_best"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-left transition-colors">
+                      <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-kova-50 dark:bg-kova-950/50">
+                        <svg class="w-[18px] h-[18px] text-kova-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                      </span>
+                      <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Best Slot per Platform</p><p class="text-xs text-gray-400 dark:text-gray-500">Optimal peak time for each platform</p></div>
+                    </button>
+
+                    <button type="submit" name="schedule_intent" value="smart_queue"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-left transition-colors">
+                      <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-purple-50 dark:bg-purple-950/50">
+                        <svg class="w-[18px] h-[18px] text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                      </span>
+                      <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Smart Queue</p><p class="text-xs text-gray-400 dark:text-gray-500">Auto-space across your calendar</p></div>
+                    </button>
+                  </div>
+
+                  <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-800">
+                    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Quick Schedule</p>
+                    <div class="flex flex-wrap gap-1.5">
+                      <button type="submit" name="schedule_intent" value="quick:30min"
+                              class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">30 min</button>
+                      <button type="submit" name="schedule_intent" value="quick:1hr"
+                              class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">1 hour</button>
+                      <button type="submit" name="schedule_intent" value="quick:3hr"
+                              class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">3 hours</button>
+                      <button type="submit" name="schedule_intent" value="quick:tomorrow_am"
+                              class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">Tomorrow 9AM</button>
+                      <button type="submit" name="schedule_intent" value="quick:tomorrow_pm"
+                              class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">Tomorrow 6PM</button>
+                    </div>
+                  </div>
+
+                  <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/50">
+                    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Pick exact time</p>
+                    <div class="flex items-center gap-2">
+                      <input type="datetime-local" name="exact_datetime"
+                             class="flex-1 min-w-0 text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-kova-500 focus:border-kova-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+                      <button type="submit" name="schedule_intent" value="exact"
+                              class="px-4 py-2 text-sm font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors shadow-sm">Set</button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </template>
+          {% endif %}
+
+          {# Post cards grid — collapsible #}
+          <div x-show="expanded"
+               x-transition:enter="transition ease-out duration-200"
+               x-transition:enter-start="opacity-0"
+               x-transition:enter-end="opacity-100"
+               x-transition:leave="transition ease-in duration-150"
+               x-transition:leave-start="opacity-100"
+               x-transition:leave-end="opacity-0">
+            <div class="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {% for post in group.posts %}
+                {% include "components/post_card.html" with post=post show_angle=True %}
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+  {% elif not ungrouped_posts %}
+    <div class="card border-dashed border-gray-200 dark:border-gray-700">
+      <div class="card-body text-center py-14 px-6">
+        <div class="w-14 h-14 mx-auto rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4" aria-hidden="true">
+          <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">No posts to review</h3>
+        <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm max-w-md mx-auto">Add an idea above and Kova will generate unique, strategically different posts for each of your connected platforms.</p>
+      </div>
+    </div>
+  {% endif %}
+
+  {# Ungrouped posts (orphans without seeds) #}
+  {% if ungrouped_posts %}
+    <div class="mt-6">
+      <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Individual posts</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {% for post in ungrouped_posts %}
+          {% include "components/post_card.html" with post=post %}
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+</section>

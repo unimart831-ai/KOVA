@@ -1,0 +1,83 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Edit post{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Refine copy and media before publishing</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+
+  {# Post info header #}
+  <div class="flex items-center flex-wrap gap-2">
+    {% if post.social_account %}
+      <span class="badge {% if post.social_account.platform == 'twitter' %}bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200{% elif post.social_account.platform == 'linkedin' %}bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200{% elif post.social_account.platform == 'instagram' %}bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-200{% elif post.social_account.platform == 'facebook' %}bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200{% else %}bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200{% endif %}">
+        {{ post.social_account.get_platform_display }}
+      </span>
+      <span class="text-xs text-gray-500 dark:text-gray-400">@{{ post.social_account.username }}</span>
+    {% endif %}
+    {% if post.predicted_engagement_score %}
+      <span class="text-xs font-medium {% if post.predicted_engagement_score >= 70 %}text-green-600{% elif post.predicted_engagement_score >= 40 %}text-yellow-600{% else %}text-gray-500{% endif %}">
+        Score: {{ post.predicted_engagement_score|floatformat:0 }}/100
+      </span>
+    {% endif %}
+  </div>
+
+  {# Edit form #}
+  <div class="card">
+    <div class="card-body">
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        <div>
+          <label for="id_content_text" class="label">Post Content</label>
+          {{ form.content_text }}
+          {% if post.social_account %}
+            <p class="text-xs text-gray-400 mt-1" x-data="{ count: document.getElementById('id_content_text').value.length }"
+               x-init="$watch('$el.previousElementSibling.value', v => count = v.length)">
+              <span x-text="count"></span> characters
+            </p>
+          {% endif %}
+        </div>
+
+        {% if post.ai_reasoning %}
+          <div class="p-4 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-100 dark:border-gray-700">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Why the AI wrote it this way</p>
+            <p class="text-sm text-gray-700 dark:text-gray-300">{{ post.ai_reasoning }}</p>
+          </div>
+        {% endif %}
+
+        <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+          <a href="{% url 'content:studio' %}" class="btn-secondary">Cancel</a>
+          <button type="submit" class="btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# Media uploads #}
+  <div class="card">
+    <div class="px-6 py-4 border-b border-gray-100">
+      <h3 class="font-semibold text-gray-900">Media</h3>
+    </div>
+    <div class="card-body">
+      <div id="media-list" class="grid grid-cols-3 gap-3 mb-4">
+        {% for attachment in post.attachments.all %}
+          {% include "content/_media_item.html" with attachment=attachment %}
+        {% endfor %}
+      </div>
+
+      <form hx-post="{% url 'content:upload_media' post.id %}"
+            hx-target="#media-list"
+            hx-swap="beforeend"
+            hx-encoding="multipart/form-data"
+            class="flex items-center space-x-3">
+        {% csrf_token %}
+        <input type="file" name="file" accept="image/*" required
+               class="text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
+        <input type="text" name="alt_text" placeholder="Alt text (optional)" class="input text-sm flex-1">
+        <button type="submit" class="btn-secondary btn-sm">Upload</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

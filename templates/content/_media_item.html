@@ -1,0 +1,12 @@
+{% comment %}
+Single media attachment thumbnail.
+{% endcomment %}
+<div class="relative group">
+  <img src="{{ attachment.file.url }}" alt="{{ attachment.alt_text }}"
+       class="w-full aspect-square object-cover rounded-lg">
+  {% if attachment.alt_text %}
+    <div class="absolute inset-x-0 bottom-0 bg-black/50 text-white text-[10px] p-1 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity">
+      {{ attachment.alt_text|truncatewords:5 }}
+    </div>
+  {% endif %}
+</div>

@@ -1,0 +1,107 @@
+{% extends "layouts/app.html" %}
+{% load tz %}
+
+{% block page_title %}Content timeline{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Scheduled and published posts grouped by day and campaign</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <p class="text-sm text-gray-600 dark:text-gray-400 max-w-xl">A chronological view of what&#x27;s planned and what&#x27;s already gone out &mdash; grouped by the idea that generated them.</p>
+    <a href="{% url 'content:queue' %}" class="btn-secondary btn-sm self-start">List view</a>
+  </div>
+
+  {# Unscheduled posts #}
+  {% if unscheduled_batches or unscheduled_ungrouped %}
+    <section>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2 flex-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-amber-500 shrink-0" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span>Unscheduled</span>
+        <span class="badge bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200 text-[10px]">{{ unscheduled_count }}</span>
+      </h3>
+      <div class="space-y-4">
+        {% for batch in unscheduled_batches %}
+          <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
+            <div class="px-4 py-2.5 bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-kova-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+              <span class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{{ batch.seed.idea|truncatewords:12 }}</span>
+              <span class="text-[10px] text-gray-400 dark:text-gray-500 ml-auto shrink-0">{{ batch.posts|length }} platform{{ batch.posts|length|pluralize }}</span>
+            </div>
+            <div class="p-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              {% for post in batch.posts %}
+                {% include "components/post_card.html" with post=post %}
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+
+        {% if unscheduled_ungrouped %}
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {% for post in unscheduled_ungrouped %}
+              {% include "components/post_card.html" with post=post %}
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    </section>
+  {% endif %}
+
+  {# Scheduled by date #}
+  {% if posts_by_date %}
+    <div class="space-y-8">
+      {% for date, day_data in posts_by_date.items %}
+        <section>
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2 flex-wrap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-gray-400 shrink-0" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span>{{ date|date:"l, M j, Y" }}</span>
+            <span class="badge bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 text-[10px]">{{ day_data.total }}</span>
+          </h3>
+
+          <div class="space-y-4">
+            {% for batch in day_data.batches %}
+              <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
+                <div class="px-4 py-2.5 bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2">
+                  <svg class="w-3.5 h-3.5 text-kova-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                  <span class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{{ batch.seed.idea|truncatewords:12 }}</span>
+                  <span class="text-[10px] text-gray-400 dark:text-gray-500 ml-auto shrink-0">{{ batch.posts|length }} platform{{ batch.posts|length|pluralize }}</span>
+                </div>
+                <div class="p-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {% for post in batch.posts %}
+                    {% include "components/post_card.html" with post=post %}
+                  {% endfor %}
+                </div>
+              </div>
+            {% endfor %}
+
+            {% if day_data.ungrouped %}
+              <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                {% for post in day_data.ungrouped %}
+                  {% include "components/post_card.html" with post=post %}
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </section>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if not posts_by_date and not unscheduled_batches and not unscheduled_ungrouped %}
+    <div class="card border-dashed border-gray-200 dark:border-gray-700">
+      <div class="card-body text-center py-14 px-6">
+        <div class="w-14 h-14 mx-auto rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4" aria-hidden="true">
+          <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        </div>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Nothing on the timeline</h2>
+        <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm max-w-md mx-auto">Approved and scheduled posts will appear here by date, grouped by campaign.</p>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

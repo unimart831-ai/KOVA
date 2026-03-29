@@ -1,0 +1,99 @@
+{% extends "layouts/marketing.html" %}
+
+{% block title %}Sign In — Kova Agent{% endblock %}
+
+{% block content %}
+<div class="min-h-[80vh] flex items-center justify-center py-12 px-4">
+  <div class="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+    <!-- Branding panel (visible on lg+) -->
+    <div class="hidden lg:block">
+      <div class="space-y-6">
+        <div class="w-12 h-12 rounded-xl bg-kova-600 flex items-center justify-center shadow-kova">
+          <span class="text-white font-bold text-lg">K</span>
+        </div>
+        <h2 class="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
+          Your AI team is<br>
+          <span class="text-gradient">waiting for you.</span>
+        </h2>
+        <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
+          6 specialized agents research trends, create content, engage your audience, and track performance — all while you stay in control.
+        </p>
+        <div class="flex flex-wrap gap-2 pt-2">
+          <span class="rounded-full bg-kova-50 dark:bg-kova-950/50 px-3 py-1 text-xs font-medium text-kova-700 dark:text-kova-300">Research</span>
+          <span class="rounded-full bg-purple-50 dark:bg-purple-950/50 px-3 py-1 text-xs font-medium text-purple-700 dark:text-purple-300">Create</span>
+          <span class="rounded-full bg-green-50 dark:bg-green-950/50 px-3 py-1 text-xs font-medium text-green-700 dark:text-green-300">Adapt</span>
+          <span class="rounded-full bg-amber-50 dark:bg-amber-950/50 px-3 py-1 text-xs font-medium text-amber-700 dark:text-amber-300">Engage</span>
+          <span class="rounded-full bg-rose-50 dark:bg-rose-950/50 px-3 py-1 text-xs font-medium text-rose-700 dark:text-rose-300">Analyze</span>
+          <span class="rounded-full bg-blue-50 dark:bg-blue-950/50 px-3 py-1 text-xs font-medium text-blue-700 dark:text-blue-300">Strategize</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form column -->
+    <div class="w-full max-w-md mx-auto lg:mx-0">
+      <div class="text-center lg:text-left mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Welcome back</h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">Sign in to your Kova Agent account</p>
+      </div>
+
+    <div class="card shadow-kova dark:shadow-none">
+      <div class="card-body">
+        <form method="post" action="{% url 'account_login' %}" class="space-y-5">
+          {% csrf_token %}
+
+          {% if form.errors %}
+            <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+              {% for field in form %}
+                {% for error in field.errors %}
+                  <p>{{ error }}</p>
+                {% endfor %}
+              {% endfor %}
+              {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div>
+            <label for="id_login" class="label">Email</label>
+            <input type="email" name="login" id="id_login"
+                   class="input" placeholder="you@example.com"
+                   value="{{ form.login.value|default:'' }}" required autofocus>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between">
+              <label for="id_password" class="label">Password</label>
+              <a href="{% url 'account_reset_password' %}" class="text-xs text-kova-600 hover:text-kova-700">
+                Forgot password?
+              </a>
+            </div>
+            <input type="password" name="password" id="id_password"
+                   class="input" placeholder="••••••••" required>
+          </div>
+
+          <div class="flex items-center">
+            <input type="checkbox" name="remember" id="id_remember"
+                   class="rounded border-gray-300 text-kova-600 focus:ring-kova-500">
+            <label for="id_remember" class="ml-2 text-sm text-gray-600">Remember me</label>
+          </div>
+
+          {% if redirect_field_value %}
+            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+          {% endif %}
+
+          <button type="submit" class="btn-primary w-full">Sign in</button>
+        </form>
+      </div>
+    </div>
+
+    <p class="mt-6 text-center lg:text-left text-sm text-gray-600 dark:text-gray-400">
+      Don't have an account?
+      <a href="{% url 'account_signup' %}" class="text-kova-600 font-medium hover:text-kova-700 dark:text-kova-400 dark:hover:text-kova-300">
+        Start free trial
+      </a>
+    </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

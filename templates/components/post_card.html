@@ -1,0 +1,280 @@
+{% comment %}
+Post card component. Used in studio, queue, calendar, daily brief.
+Usage: {% include "components/post_card.html" with post=post %}
+{% endcomment %}
+
+<div id="post-{{ post.id }}" class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/20 transition-shadow">
+
+  {# ── Top bar: Platform color accent ── #}
+  <div class="h-1 {% if post.social_account.platform == 'twitter' %}bg-sky-400{% elif post.social_account.platform == 'linkedin' %}bg-blue-600{% elif post.social_account.platform == 'instagram' %}bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400{% elif post.social_account.platform == 'tiktok' %}bg-gray-900{% elif post.social_account.platform == 'facebook' %}bg-blue-500{% else %}bg-gray-300{% endif %}"></div>
+
+  <div class="p-4">
+    {# ── Header row ── #}
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-2">
+        {# Platform icon #}
+        {% if post.social_account %}
+        <span class="flex-shrink-0 inline-flex items-center justify-center w-5 h-5" aria-hidden="true">
+          {% include "components/platform_icon.html" %}
+        </span>
+        {% endif %}
+        <div class="flex items-center gap-1.5">
+          {% if post.social_account %}
+            <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{ post.social_account.get_platform_display }}</span>
+          {% endif %}
+          {% if post.generated_by_agent %}
+            <span class="text-[9px] bg-kova-50 text-kova-600 dark:bg-kova-950 dark:text-kova-300 px-1.5 py-0.5 rounded-md font-semibold tracking-wide">AI</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        {% if post.predicted_engagement_score %}
+          <div class="flex items-center gap-1 px-2 py-0.5 rounded-md {% if post.predicted_engagement_score >= 70 %}bg-green-50 dark:bg-green-950/50{% elif post.predicted_engagement_score >= 40 %}bg-yellow-50 dark:bg-yellow-950/50{% else %}bg-gray-50 dark:bg-gray-800{% endif %}">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="{% if post.predicted_engagement_score >= 70 %}text-green-500{% elif post.predicted_engagement_score >= 40 %}text-yellow-500{% else %}text-gray-400{% endif %}"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            <span class="text-[11px] font-bold tabular-nums {% if post.predicted_engagement_score >= 70 %}text-green-600{% elif post.predicted_engagement_score >= 40 %}text-yellow-600{% else %}text-gray-400{% endif %}">{{ post.predicted_engagement_score|floatformat:0 }}</span>
+          </div>
+        {% endif %}
+        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold {% if post.status == 'published' %}bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300{% elif post.status == 'scheduled' or post.status == 'approved' %}bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300{% elif post.status == 'pending_approval' %}bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300{% elif post.status == 'failed' %}bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300{% elif post.status == 'rejected' %}bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-300{% else %}bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-300{% endif %}">
+          {{ post.get_status_display }}
+        </span>
+      </div>
+    </div>
+
+    {# ── Content (swapped out during regeneration) ── #}
+    <a href="{% url 'content:post_detail' post.id %}" class="block text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-3 line-clamp-4 whitespace-pre-line hover:text-gray-900 dark:hover:text-gray-100 transition-colors">{{ post.content_text }}</a>
+
+    {# ── AI Strategy insight (shown in grouped view) ── #}
+    {% if show_angle and post.ai_angle %}
+      <div class="mb-3 px-2.5 py-2 bg-kova-50/60 dark:bg-kova-950/30 border border-kova-100 dark:border-kova-900/40 rounded-lg">
+        <div class="flex items-start gap-1.5">
+          <svg class="w-3 h-3 text-kova-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+          <div class="min-w-0">
+            <p class="text-[11px] font-medium text-kova-700 dark:text-kova-300 leading-snug">{{ post.ai_angle }}</p>
+            {% if post.ai_framework %}
+              <p class="text-[10px] text-kova-500 dark:text-kova-400 mt-0.5">{{ post.ai_framework }}</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    {# ── Schedule time (for approved/scheduled posts) ── #}
+    {% if post.scheduled_at %}
+      <div class="flex items-center gap-1.5 mb-3 px-2.5 py-1.5 bg-gray-50 dark:bg-gray-800/80 rounded-lg">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-gray-400 flex-shrink-0" style="width:12px;height:12px;">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">{{ post.scheduled_at|date:"M d, g:i A" }}</span>
+      </div>
+    {% endif %}
+
+    {# ── Published state: platform link + published time ── #}
+    {% if post.status == 'published' %}
+      <div class="flex items-center flex-wrap gap-x-4 gap-y-1 mb-3">
+        {% if post.platform_post_url %}
+          <a href="{{ post.platform_post_url }}" target="_blank" rel="noopener"
+             class="inline-flex items-center gap-1 text-[11px] text-kova-600 hover:text-kova-700 dark:text-kova-400 dark:hover:text-kova-300 font-medium">
+            View on platform
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:10px;height:10px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+        {% endif %}
+        {% if post.published_at %}
+          <span class="text-[11px] text-gray-400 dark:text-gray-500">Published {{ post.published_at|timesince }} ago</span>
+        {% endif %}
+      </div>
+    {% elif post.platform_post_url %}
+      <a href="{{ post.platform_post_url }}" target="_blank" rel="noopener"
+         class="inline-flex items-center gap-1 text-[11px] text-kova-600 hover:text-kova-700 dark:text-kova-400 dark:hover:text-kova-300 font-medium mb-3">
+        View post
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:10px;height:10px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+      </a>
+    {% endif %}
+
+    {# ── Publishing state: spinner ── #}
+    {% if post.status == 'publishing' %}
+      <div class="flex items-center gap-2 mb-3 px-2.5 py-1.5 bg-yellow-50 dark:bg-yellow-950/30 rounded-lg">
+        <div class="animate-spin rounded-full h-3 w-3 border-2 border-yellow-500 border-t-transparent" aria-hidden="true"></div>
+        <span class="text-[11px] text-yellow-700 dark:text-yellow-300 font-medium">Publishing to {{ post.social_account.get_platform_display }}...</span>
+      </div>
+    {% endif %}
+
+    {# ── Failed state: error message + view details ── #}
+    {% if post.status == 'failed' %}
+      <div class="mb-3 px-2.5 py-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-lg">
+        <p class="text-[11px] text-red-700 dark:text-red-300 font-medium">Publishing failed</p>
+        <a href="{% url 'content:post_detail' post.id %}" class="text-[11px] text-red-600 dark:text-red-400 hover:underline mt-0.5 inline-block">View details &rarr;</a>
+      </div>
+    {% endif %}
+
+    {# ── Actions ── #}
+    {% if post.status == 'pending_approval' or post.status == 'draft' %}
+      <div class="flex items-center gap-2 pt-3 border-t border-gray-100 dark:border-gray-700"
+           x-data="{ showSchedule: false }">
+
+        {# Approve button opens modal #}
+        <button @click="showSchedule = true" type="button"
+                class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors shadow-sm">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:12px;height:12px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+          Approve
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:10px;height:10px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+
+        <button hx-post="{% url 'content:reject' post.id %}"
+                hx-target="#post-{{ post.id }}"
+                hx-swap="outerHTML"
+                class="h-8 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors">
+          Reject
+        </button>
+        <a href="{% url 'content:edit' post.id %}"
+           class="h-8 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors inline-flex items-center">
+          Edit
+        </a>
+
+        {# Regenerate button with spinner #}
+        <button hx-post="{% url 'content:regenerate' post.id %}"
+                hx-target="#post-{{ post.id }}"
+                hx-swap="outerHTML"
+                class="ml-auto h-8 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 hover:bg-kova-50 dark:hover:bg-kova-950/30 rounded-lg transition-colors inline-flex items-center gap-1.5 group">
+          <svg class="w-3.5 h-3.5 group-[.htmx-request]:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <svg class="w-3.5 h-3.5 animate-spin hidden group-[.htmx-request]:block" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+          <span class="group-[.htmx-request]:hidden">Regenerate</span>
+          <span class="hidden group-[.htmx-request]:inline">Regenerating...</span>
+        </button>
+
+        {# ── Schedule modal overlay ── #}
+        <template x-teleport="body">
+          <div x-show="showSchedule" x-cloak
+               class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+               @keydown.escape.window="showSchedule = false">
+
+            {# Backdrop #}
+            <div x-show="showSchedule"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 @click="showSchedule = false"
+                 class="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
+
+            {# Modal panel #}
+            <div x-show="showSchedule"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="relative w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+
+              {# Modal header #}
+              <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+                <div>
+                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Approve & Schedule</h3>
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Choose when to publish this post</p>
+                </div>
+                <button @click="showSchedule = false"
+                        class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+
+              {# Smart scheduling options #}
+              <div class="p-2">
+                <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'post_now'}); showSchedule = false"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-left transition-colors">
+                  <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/50">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-amber-500" style="width:18px;height:18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                  </span>
+                  <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Post Now</p><p class="text-xs text-gray-400 dark:text-gray-500">Publish immediately</p></div>
+                </button>
+
+                <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'next_best'}); showSchedule = false"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-left transition-colors">
+                  <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-kova-50 dark:bg-kova-950/50">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-kova-500" style="width:18px;height:18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                  </span>
+                  <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Best Slot</p><p class="text-xs text-gray-400 dark:text-gray-500">Peak time for {{ post.social_account.get_platform_display }}</p></div>
+                </button>
+
+                <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'smart_queue'}); showSchedule = false"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-left transition-colors">
+                  <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-purple-50 dark:bg-purple-950/50">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-purple-500" style="width:18px;height:18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                  </span>
+                  <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Smart Queue</p><p class="text-xs text-gray-400 dark:text-gray-500">Auto-space with other posts</p></div>
+                </button>
+              </div>
+
+              {# Quick picks #}
+              <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-800">
+                <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Quick Schedule</p>
+                <div class="flex flex-wrap gap-1.5">
+                  <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:30min'}); showSchedule = false"
+                          class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">30 min</button>
+                  <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:1hr'}); showSchedule = false"
+                          class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">1 hour</button>
+                  <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:3hr'}); showSchedule = false"
+                          class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">3 hours</button>
+                  <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:tomorrow_am'}); showSchedule = false"
+                          class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">Tomorrow 9AM</button>
+                  <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:tomorrow_pm'}); showSchedule = false"
+                          class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">Tomorrow 6PM</button>
+                </div>
+              </div>
+
+              {# Exact date/time #}
+              <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/50">
+                <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Pick exact time</p>
+                <div class="flex items-center gap-2">
+                  <input type="datetime-local" x-ref="picker{{ post.id }}"
+                         class="flex-1 min-w-0 text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-kova-500 focus:border-kova-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+                  <button @click="if($refs['picker{{ post.id }}'].value) { $dispatch('schedule-{{ post.id }}', {intent: 'exact', datetime: $refs['picker{{ post.id }}'].value}); showSchedule = false }"
+                          class="px-4 py-2 text-sm font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors shadow-sm">Set</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <script>
+        document.addEventListener('schedule-{{ post.id }}', function(e) {
+          var intent = e.detail.intent;
+          var values = {schedule_intent: intent};
+          if (intent === 'exact' && e.detail.datetime) values.exact_datetime = e.detail.datetime;
+          var tok = document.querySelector('[name=csrfmiddlewaretoken]');
+          if (tok) values.csrfmiddlewaretoken = tok.value;
+          else { var h = document.body.getAttribute('hx-headers'); if(h){try{values.csrfmiddlewaretoken=JSON.parse(h)['X-CSRFToken']}catch(x){}} }
+          htmx.ajax('POST', '{% url "content:approve" post.id %}', {target:'#post-{{ post.id }}', swap:'outerHTML', values:values});
+        });
+      </script>
+    {% elif post.status == 'rejected' %}
+      <div class="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center">
+        <a href="{% url 'content:edit' post.id %}"
+           class="inline-flex items-center h-8 px-3 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+          Revise
+        </a>
+        {# Regenerate for rejected posts #}
+        <button hx-post="{% url 'content:regenerate' post.id %}"
+                hx-target="#post-{{ post.id }}"
+                hx-swap="outerHTML"
+                class="ml-auto h-8 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 hover:bg-kova-50 dark:hover:bg-kova-950/30 rounded-lg transition-colors inline-flex items-center gap-1.5 group">
+          <svg class="w-3.5 h-3.5 group-[.htmx-request]:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <svg class="w-3.5 h-3.5 animate-spin hidden group-[.htmx-request]:block" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+          <span class="group-[.htmx-request]:hidden">Regenerate</span>
+          <span class="hidden group-[.htmx-request]:inline">Regenerating...</span>
+        </button>
+      </div>
+    {% elif post.status == 'published' or post.status == 'failed' or post.status == 'scheduled' or post.status == 'approved' %}
+      <div class="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+        <a href="{% url 'content:post_detail' post.id %}"
+           class="inline-flex items-center gap-1 h-8 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:12px;height:12px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          View details
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>

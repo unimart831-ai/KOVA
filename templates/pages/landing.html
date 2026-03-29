@@ -1,0 +1,290 @@
+{% extends "layouts/marketing.html" %}
+
+{% block title %}Kova Agent — Your Social Media Runs Itself{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="relative overflow-hidden">
+  <div class="absolute inset-0 bg-gradient-to-br from-kova-50 via-white to-indigo-50 dark:from-gray-950 dark:via-gray-950 dark:to-kova-950/30"></div>
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 text-center">
+    <div class="inline-flex items-center space-x-2 bg-kova-100 dark:bg-kova-950/60 text-kova-700 dark:text-kova-300 text-sm font-medium px-4 py-1.5 rounded-full mb-6">
+      <span class="w-2 h-2 bg-kova-500 rounded-full animate-pulse"></span>
+      <span>AI agents working 24/7 on your social media</span>
+    </div>
+
+    <h1 class="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-tight">
+      Your social media<br>
+      <span class="text-transparent bg-clip-text bg-gradient-to-r from-kova-600 to-indigo-600 dark:from-kova-400 dark:to-indigo-400">runs itself.</span>
+    </h1>
+    <p class="mt-6 max-w-2xl mx-auto text-xl text-gray-600 dark:text-gray-300 leading-relaxed">
+      6 AI agents research trends, create content, optimize timing, engage your audience, and analyze performance — while you stay in control.
+    </p>
+
+    <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+      <a href="{% url 'account_signup' %}" class="btn-primary text-lg px-8 py-3 shadow-lg shadow-kova-200">
+        Start free trial
+        <svg class="inline w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+        </svg>
+      </a>
+      <a href="#how-it-works" class="btn-secondary text-lg px-8 py-3">See how it works</a>
+    </div>
+
+    <p class="mt-5 text-sm text-gray-500">No credit card required. 14-day free trial.</p>
+  </div>
+</section>
+
+<!-- Social proof -->
+<section class="py-12 border-y border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/40">
+  <div class="max-w-3xl mx-auto px-4 text-center">
+    <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Built for operators who wear every hat</p>
+    <p class="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+      Founders, marketers, and agencies use Kova to keep a consistent presence across networks — without living in ten different tabs.
+    </p>
+  </div>
+</section>
+
+<!-- The Problem -->
+<section class="py-20">
+  <div class="max-w-4xl mx-auto px-4 text-center">
+    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">Social media shouldn't be a full-time job</h2>
+    <p class="mt-4 text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+      You're spending hours every week creating content, scheduling posts, optimizing timing, responding to comments, and analyzing metrics. There's a better way.
+    </p>
+  </div>
+</section>
+
+<!-- How It Works -->
+<section id="how-it-works" class="py-20 bg-gray-50 dark:bg-gray-900/50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-16">
+      <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">Meet your AI team</h2>
+      <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">6 specialized agents that handle every aspect of your social media</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <!-- Research Agent -->
+      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md dark:hover:border-kova-900/50 transition-shadow">
+        <div class="w-12 h-12 bg-blue-100 dark:bg-blue-950/50 rounded-xl flex items-center justify-center mb-4">
+          <span class="text-2xl" aria-hidden="true">🔍</span>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Research Agent</h3>
+        <p class="mt-2 text-gray-600 dark:text-gray-400 text-sm">
+          Monitors trending topics, competitor activity, and industry news to find content opportunities before they peak.
+        </p>
+      </div>
+
+      <!-- Content Creator -->
+      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md dark:hover:border-kova-900/50 transition-shadow">
+        <div class="w-12 h-12 bg-purple-100 dark:bg-purple-950/50 rounded-xl flex items-center justify-center mb-4">
+          <span class="text-2xl" aria-hidden="true">✍️</span>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Content Creator</h3>
+        <p class="mt-2 text-gray-600 dark:text-gray-400 text-sm">
+          Generates original posts in your brand voice, complete with hooks, CTAs, and hashtags — all based on what's working.
+        </p>
+      </div>
+
+      <!-- Platform Adapter -->
+      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md dark:hover:border-kova-900/50 transition-shadow">
+        <div class="w-12 h-12 bg-green-100 dark:bg-green-950/50 rounded-xl flex items-center justify-center mb-4">
+          <span class="text-2xl" aria-hidden="true">🔄</span>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Platform Adapter</h3>
+        <p class="mt-2 text-gray-600 dark:text-gray-400 text-sm">
+          Takes one idea and tailors it for each platform — tweet threads, LinkedIn articles, Instagram captions — perfectly optimized.
+        </p>
+      </div>
+
+      <!-- Engagement Agent -->
+      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md dark:hover:border-kova-900/50 transition-shadow">
+        <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-950/50 rounded-xl flex items-center justify-center mb-4">
+          <span class="text-2xl" aria-hidden="true">💬</span>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Engagement Agent</h3>
+        <p class="mt-2 text-gray-600 dark:text-gray-400 text-sm">
+          Monitors mentions and comments, drafts replies in your brand voice, and flags important conversations.
+        </p>
+      </div>
+
+      <!-- Analytics Agent -->
+      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md dark:hover:border-kova-900/50 transition-shadow">
+        <div class="w-12 h-12 bg-red-100 dark:bg-red-950/50 rounded-xl flex items-center justify-center mb-4">
+          <span class="text-2xl" aria-hidden="true">📊</span>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Analytics Agent</h3>
+        <p class="mt-2 text-gray-600 dark:text-gray-400 text-sm">
+          Tracks performance across all platforms, identifies what's working, and feeds insights back to the other agents.
+        </p>
+      </div>
+
+      <!-- Chief Strategist -->
+      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-shadow ring-2 ring-kova-100 dark:ring-kova-900/60">
+        <div class="w-12 h-12 bg-kova-100 dark:bg-kova-950/60 rounded-xl flex items-center justify-center mb-4">
+          <span class="text-2xl" aria-hidden="true">🧠</span>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Chief Strategist</h3>
+        <p class="mt-2 text-gray-600 dark:text-gray-400 text-sm">
+          Orchestrates all agents, compiles your daily brief, ensures everything aligns with your goals, and continuously improves.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Daily Brief -->
+<section class="py-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+      <div>
+        <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">
+          Wake up to your<br>
+          <span class="text-kova-600 dark:text-kova-400">Daily Brief</span>
+        </h2>
+        <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">
+          Every morning, your Chief Strategist delivers a summary of what your agents did overnight, what's trending, content ready for approval, and yesterday's performance.
+        </p>
+        <ul class="mt-6 space-y-3">
+          <li class="flex items-start space-x-3">
+            <svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span class="text-gray-600 dark:text-gray-400">Review and approve AI-generated posts</span>
+          </li>
+          <li class="flex items-start space-x-3">
+            <svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span class="text-gray-600 dark:text-gray-400">See trending topics in your industry</span>
+          </li>
+          <li class="flex items-start space-x-3">
+            <svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span class="text-gray-600 dark:text-gray-400">Track performance improvements week over week</span>
+          </li>
+          <li class="flex items-start space-x-3">
+            <svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span class="text-gray-600 dark:text-gray-400">5 minutes to manage what used to take hours</span>
+          </li>
+        </ul>
+      </div>
+      <div class="bg-gray-100 dark:bg-gray-800/60 rounded-2xl p-8 shadow-inner border border-gray-200/50 dark:border-gray-700">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm p-6 space-y-4 border border-gray-100 dark:border-gray-800">
+          <div class="flex items-center space-x-3 pb-4 border-b border-gray-100 dark:border-gray-800">
+            <span class="text-2xl" aria-hidden="true">🧠</span>
+            <div>
+              <p class="font-semibold text-gray-900 dark:text-white">Good morning! Here's your brief.</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Today — 9:00 AM</p>
+            </div>
+          </div>
+          <div class="space-y-3 text-sm text-gray-700 dark:text-gray-300">
+            <p>📊 Yesterday: <strong>+23% engagement</strong> vs. last week</p>
+            <p>✍️ <strong>3 posts</strong> ready for your review</p>
+            <p>🔍 Trending: <strong>#AIProductivity</strong> is taking off in your niche</p>
+            <p>💬 <strong>12 comments</strong> replied to (5 flagged for you)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing Preview -->
+<section class="py-20 bg-gray-50 dark:bg-gray-900/40">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-16">
+      <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">Simple, transparent pricing</h2>
+      <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">Start free, scale as you grow</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+      <!-- Starter -->
+      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Starter</h3>
+        <div class="mt-3 flex items-baseline">
+          <span class="text-4xl font-extrabold text-gray-900 dark:text-white">$39</span>
+          <span class="text-gray-500 dark:text-gray-400 ml-1">/mo</span>
+        </div>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">For solopreneurs getting started</p>
+        <ul class="mt-6 space-y-2 text-sm text-gray-600 dark:text-gray-400 flex-1">
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 3 social accounts</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 30 AI posts/month</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Daily brief</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Basic analytics</li>
+        </ul>
+        <a href="{% url 'account_signup' %}" class="btn-secondary w-full justify-center mt-6">Get started</a>
+      </div>
+
+      <!-- Growth -->
+      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 border-2 border-kova-500 dark:border-kova-500 shadow-md relative flex flex-col">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-kova-600 text-white text-xs font-medium px-3 py-1 rounded-full">
+          Most Popular
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Growth</h3>
+        <div class="mt-3 flex items-baseline">
+          <span class="text-4xl font-extrabold text-gray-900 dark:text-white">$79</span>
+          <span class="text-gray-500 dark:text-gray-400 ml-1">/mo</span>
+        </div>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">For growing brands</p>
+        <ul class="mt-6 space-y-2 text-sm text-gray-600 dark:text-gray-400 flex-1">
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 10 social accounts</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Unlimited AI posts</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Engagement agent</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Advanced analytics</li>
+        </ul>
+        <a href="{% url 'account_signup' %}" class="btn-primary w-full justify-center mt-6">Start free trial</a>
+      </div>
+
+      <!-- Pro -->
+      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Pro</h3>
+        <div class="mt-3 flex items-baseline">
+          <span class="text-4xl font-extrabold text-gray-900 dark:text-white">$149</span>
+          <span class="text-gray-500 dark:text-gray-400 ml-1">/mo</span>
+        </div>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">For serious marketers</p>
+        <ul class="mt-6 space-y-2 text-sm text-gray-600 dark:text-gray-400 flex-1">
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 25 social accounts</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> All 6 AI agents</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Auto-engagement</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Priority support</li>
+        </ul>
+        <a href="{% url 'account_signup' %}" class="btn-secondary w-full justify-center mt-6">Get started</a>
+      </div>
+
+      <!-- Agency -->
+      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Agency</h3>
+        <div class="mt-3 flex items-baseline">
+          <span class="text-4xl font-extrabold text-gray-900 dark:text-white">$299</span>
+          <span class="text-gray-500 dark:text-gray-400 ml-1">/mo</span>
+        </div>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">For agencies & teams</p>
+        <ul class="mt-6 space-y-2 text-sm text-gray-600 dark:text-gray-400 flex-1">
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Unlimited accounts</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Multi-client dashboard</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> White-label reports</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Dedicated success manager</li>
+        </ul>
+        <a href="{% url 'account_signup' %}" class="btn-secondary w-full justify-center mt-6">Contact sales</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-20">
+  <div class="max-w-4xl mx-auto px-4 text-center">
+    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">Ready to put your social media on autopilot?</h2>
+    <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">Join the waitlist for early access. No credit card required.</p>
+    <div class="mt-8">
+      <a href="{% url 'account_signup' %}" class="btn-primary text-lg px-10 py-3.5 shadow-lg shadow-kova-200">
+        Start your free trial
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

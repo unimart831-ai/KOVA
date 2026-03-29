@@ -1,0 +1,107 @@
+{% extends "layouts/marketing.html" %}
+
+{% block title %}Start Free Trial — Kova Agent{% endblock %}
+
+{% block content %}
+<div class="min-h-[80vh] flex items-center justify-center py-12 px-4">
+  <div class="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+    <!-- Branding panel (visible on lg+) -->
+    <div class="hidden lg:block">
+      <div class="space-y-6">
+        <div class="w-12 h-12 rounded-xl bg-kova-600 flex items-center justify-center shadow-kova">
+          <span class="text-white font-bold text-lg">K</span>
+        </div>
+        <h2 class="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
+          Put your social media<br>
+          <span class="text-gradient">on autopilot.</span>
+        </h2>
+        <ul class="space-y-3 text-gray-600 dark:text-gray-400">
+          <li class="flex items-start gap-2.5">
+            <svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>AI agents create, schedule & publish for you</span>
+          </li>
+          <li class="flex items-start gap-2.5">
+            <svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>Daily brief with performance insights</span>
+          </li>
+          <li class="flex items-start gap-2.5">
+            <svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>Multi-platform support from one dashboard</span>
+          </li>
+          <li class="flex items-start gap-2.5">
+            <svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>14-day free trial, no credit card</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Form column -->
+    <div class="w-full max-w-md mx-auto lg:mx-0">
+      <div class="text-center lg:text-left mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Start your free trial</h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">Let AI agents run your social media</p>
+      </div>
+
+    <div class="card shadow-kova dark:shadow-none">
+      <div class="card-body">
+        <form method="post" action="{% url 'account_signup' %}" class="space-y-5">
+          {% csrf_token %}
+
+          {% if form.errors %}
+            <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+              {% for field in form %}
+                {% for error in field.errors %}
+                  <p>{{ error }}</p>
+                {% endfor %}
+              {% endfor %}
+              {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div>
+            <label for="id_email" class="label">Email</label>
+            <input type="email" name="email" id="id_email"
+                   class="input" placeholder="you@example.com"
+                   value="{{ form.email.value|default:'' }}" required autofocus>
+          </div>
+
+          <div>
+            <label for="id_password1" class="label">Password</label>
+            <input type="password" name="password1" id="id_password1"
+                   class="input" placeholder="At least 8 characters" required>
+          </div>
+
+          <div>
+            <label for="id_password2" class="label">Confirm password</label>
+            <input type="password" name="password2" id="id_password2"
+                   class="input" placeholder="Re-enter your password" required>
+          </div>
+
+          {% if redirect_field_value %}
+            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+          {% endif %}
+
+          <button type="submit" class="btn-primary w-full">Create account</button>
+
+          <p class="text-xs text-gray-500 text-center">
+            By signing up, you agree to our
+            <a href="#" class="underline">Terms of Service</a> and
+            <a href="#" class="underline">Privacy Policy</a>.
+          </p>
+        </form>
+      </div>
+    </div>
+
+    <p class="mt-6 text-center lg:text-left text-sm text-gray-600 dark:text-gray-400">
+      Already have an account?
+      <a href="{% url 'account_login' %}" class="text-kova-600 font-medium hover:text-kova-700 dark:text-kova-400 dark:hover:text-kova-300">
+        Sign in
+      </a>
+    </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

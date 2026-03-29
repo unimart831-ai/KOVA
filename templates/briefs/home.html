@@ -1,0 +1,134 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Daily Brief{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Your Chief Strategist’s summary and next actions</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+  {% if brief %}
+    <div class="lg:grid lg:grid-cols-3 lg:gap-8 lg:items-start">
+      <!-- Main column -->
+      <div class="lg:col-span-2 space-y-6">
+        <div class="card shadow-kova dark:shadow-none border-kova-100 dark:border-kova-900/40">
+          <div class="card-body">
+            <div class="flex flex-wrap items-start gap-4 mb-5">
+              <div class="w-12 h-12 rounded-xl bg-kova-100 dark:bg-kova-950 flex items-center justify-center text-2xl shrink-0" aria-hidden="true">🧠</div>
+              <div class="min-w-0 flex-1">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Good morning — here’s your brief</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ brief.date|date:"l, F j, Y" }}</p>
+              </div>
+            </div>
+            <div class="text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-relaxed space-y-3 max-w-none">
+              {{ brief.summary|linebreaks }}
+            </div>
+          </div>
+        </div>
+
+        {% if brief.trending_topics %}
+          <div class="card">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+              <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <span class="text-kova-600 dark:text-kova-400" aria-hidden="true">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                </span>
+                Trending in your niche
+              </h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Topics your Research Agent is watching</p>
+            </div>
+            <div class="card-body pt-4">
+              <div class="flex flex-wrap gap-2">
+                {% for topic in brief.trending_topics %}
+                  <span class="badge badge-info">{{ topic }}</span>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Side column: actions + stats + history -->
+      <div class="space-y-6 mt-6 lg:mt-0">
+        {% if brief.posts_pending > 0 %}
+          <div class="card border-kova-200 dark:border-kova-800 bg-kova-50/50 dark:bg-kova-950/30">
+            <div class="card-body">
+              <p class="text-xs font-semibold uppercase tracking-wide text-kova-700 dark:text-kova-300 mb-1">Needs you</p>
+              <p class="font-semibold text-gray-900 dark:text-white">{{ brief.posts_pending }} post{{ brief.posts_pending|pluralize }} ready for review</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Your Create Agent drafted these while you were away.</p>
+              <a href="{% url 'content:studio' %}" class="btn-primary w-full justify-center mt-4">Review in Studio</a>
+            </div>
+          </div>
+        {% else %}
+          <div class="card bg-gray-50/80 dark:bg-gray-900/50 border-dashed border-gray-200 dark:border-gray-700">
+            <div class="card-body text-center py-6">
+              <p class="text-sm font-medium text-gray-900 dark:text-white">All caught up</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">No posts waiting for approval.</p>
+              <a href="{% url 'content:studio' %}" class="text-sm text-kova-600 dark:text-kova-400 font-medium mt-3 inline-block hover:underline">Open Content Studio</a>
+            </div>
+          </div>
+        {% endif %}
+
+        {# Pipeline status card #}
+        <div class="card">
+          <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+            <h3 class="font-semibold text-gray-900 dark:text-white text-sm">Pipeline status</h3>
+          </div>
+          <div class="card-body space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Scheduled</span>
+              <span class="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">{{ scheduled_count }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Published today</span>
+              <span class="text-sm font-semibold text-green-600 dark:text-green-400 tabular-nums">{{ published_today }}</span>
+            </div>
+            {% if failed_count > 0 %}
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-red-600 dark:text-red-400">Failed</span>
+              <a href="{% url 'content:queue' %}" class="text-sm font-semibold text-red-600 dark:text-red-400 hover:underline tabular-nums">{{ failed_count }}</a>
+            </div>
+            {% endif %}
+            <div class="pt-2 border-t border-gray-100 dark:border-gray-800">
+              <a href="{% url 'content:queue' %}" class="text-sm text-kova-600 dark:text-kova-400 font-medium hover:underline">View queue &rarr;</a>
+            </div>
+          </div>
+        </div>
+
+        {% if recent_briefs %}
+          <div class="card">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+              <h3 class="font-semibold text-gray-900 dark:text-white text-sm">Previous briefs</h3>
+            </div>
+            <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+              {% for rb in recent_briefs %}
+                <li class="px-6 py-3 flex items-center justify-between gap-2 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <span class="text-sm text-gray-700 dark:text-gray-300">{{ rb.date|date:"M j, Y" }}</span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400 tabular-nums">{{ rb.posts_pending }} posts</span>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  {% else %}
+    <div class="card max-w-2xl mx-auto">
+      <div class="card-body text-center py-14 px-6">
+        <div class="w-16 h-16 mx-auto rounded-2xl bg-kova-100 dark:bg-kova-950 flex items-center justify-center text-3xl mb-5" aria-hidden="true">🧠</div>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">No brief yet today</h2>
+        <p class="text-gray-600 dark:text-gray-400 mt-3 max-w-md mx-auto text-sm leading-relaxed">
+          Your Chief Strategist compiles your daily brief at {{ request.user.daily_brief_time|time:"g:i A" }}.
+          Connect platforms and enable agents to see summaries here.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-3 justify-center mt-8">
+          <a href="{% url 'platforms:list' %}" class="btn-primary">Connect a platform</a>
+          <a href="{% url 'agents:control' %}" class="btn-secondary">Manage agents</a>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

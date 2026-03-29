@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block body_class %}bg-gray-50 dark:bg-gray-950{% endblock %}
+
+{% block body %}
+{% csrf_token %}
+<a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-kova-600 focus:text-white focus:shadow-lg">
+  Skip to main content
+</a>
+<div class="min-h-full" x-data="{ sidebarOpen: false }">
+
+  <!-- Mobile sidebar overlay -->
+  <div x-show="sidebarOpen" x-cloak
+       class="fixed inset-0 z-40 lg:hidden"
+       @click="sidebarOpen = false"
+       @keydown.escape.window="sidebarOpen = false">
+    <div class="fixed inset-0 bg-gray-600/75 dark:bg-gray-950/80" aria-hidden="true"></div>
+  </div>
+
+  <!-- Sidebar -->
+  <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+         id="app-sidebar"
+         class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-transform duration-200 ease-in-out lg:translate-x-0 flex flex-col">
+
+    <!-- Logo -->
+    <div class="flex items-center h-16 px-6 border-b border-gray-200 dark:border-gray-800">
+      <a href="{% url 'brief:home' %}" class="flex items-center space-x-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-kova-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+        <div class="w-8 h-8 rounded-lg bg-kova-600 flex items-center justify-center shadow-kova">
+          <span class="text-white font-bold text-sm">K</span>
+        </div>
+        <span class="text-lg font-bold text-gray-900 dark:text-white">Kova Agent</span>
+      </a>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-1 px-3 py-4 overflow-y-auto" aria-label="Primary">
+      <p class="nav-section">Overview</p>
+      <a href="{% url 'brief:home' %}"
+         {% if request.resolver_match.url_name == 'home' and request.resolver_match.namespace == 'brief' %}aria-current="page"{% endif %}
+         class="{% if request.resolver_match.url_name == 'home' and request.resolver_match.namespace == 'brief' %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if request.resolver_match.url_name == 'home' and request.resolver_match.namespace == 'brief' %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Daily Brief
+      </a>
+
+      <p class="nav-section">Content</p>
+      <a href="{% url 'content:studio' %}"
+         {% if '/content/studio' in request.path or '/content/' in request.path and '/edit/' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/content/studio' in request.path or '/content/' in request.path and '/edit/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/content/studio' in request.path or '/content/' in request.path and '/edit/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+        Content Studio
+      </a>
+
+      <a href="{% url 'content:queue' %}"
+         {% if '/content/queue' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/content/queue' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/content/queue' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+        </svg>
+        Queue
+      </a>
+
+      <a href="{% url 'content:calendar' %}"
+         {% if '/content/calendar' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/content/calendar' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/content/calendar' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Timeline
+      </a>
+
+      <p class="nav-section">Intelligence</p>
+      <a href="{% url 'engage:inbox' %}"
+         {% if '/engage/' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/engage/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/engage/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+        </svg>
+        Inbox
+      </a>
+
+      <a href="{% url 'agents:control' %}"
+         {% if '/agents/' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/agents/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/agents/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        Agents
+      </a>
+
+      <a href="{% url 'analytics:insights' %}"
+         {% if '/analytics/' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/analytics/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/analytics/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        Insights
+      </a>
+
+      <p class="nav-section">System</p>
+      <a href="{% url 'platforms:list' %}"
+         {% if '/platforms/' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/platforms/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/platforms/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+        </svg>
+        Platforms
+      </a>
+
+      <a href="{% url 'billing:overview' %}"
+         {% if '/billing/' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/billing/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/billing/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+        </svg>
+        Billing
+      </a>
+    </nav>
+
+    <!-- User menu at bottom -->
+    <div class="border-t border-gray-200 dark:border-gray-800 p-3">
+      <div x-data="{ open: false }" class="relative">
+        <button type="button" @click="open = !open" :aria-expanded="open" aria-haspopup="true"
+                class="flex items-center w-full px-3 py-2 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-kova-500">
+          <div class="w-8 h-8 rounded-full bg-kova-100 dark:bg-kova-900 flex items-center justify-center mr-3">
+            <span class="text-kova-700 dark:text-kova-300 font-semibold text-xs">{{ user.full_name|default:user.email|truncatechars:2|upper }}</span>
+          </div>
+          <div class="flex-1 text-left min-w-0">
+            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ user.full_name|default:"User" }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ user.email }}</p>
+          </div>
+          <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
+          </svg>
+        </button>
+        <div x-show="open" @click.away="open = false" x-cloak
+             x-transition
+             class="absolute bottom-full left-0 mb-1 w-full bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1">
+          <a href="{% url 'accounts:settings' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">Settings</a>
+          <a href="{% url 'account_logout' %}" class="block px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30">Sign out</a>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <div class="lg:pl-64 flex flex-col min-h-screen">
+    <!-- Top bar -->
+    <header class="sticky top-0 z-30 bg-white/95 dark:bg-gray-900/95 backdrop-blur border-b border-gray-200 dark:border-gray-800">
+      <div class="flex items-center justify-between min-h-16 gap-3 py-3 px-4 sm:px-6">
+        <div class="flex items-center gap-3 min-w-0 flex-1">
+          <button type="button" @click="sidebarOpen = true" class="lg:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-lg focus:outline-none focus:ring-2 focus:ring-kova-500" aria-label="Open navigation menu" aria-controls="app-sidebar" :aria-expanded="sidebarOpen">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+          </button>
+          <div class="min-w-0">
+            <h1 class="text-lg font-semibold text-gray-900 dark:text-white truncate">
+              {% block page_title %}Dashboard{% endblock %}
+            </h1>
+            {% block page_subtitle %}{% endblock %}
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <!-- Notification bell -->
+          <div x-data="{ notifOpen: false }" class="relative">
+            <button type="button" @click="notifOpen = !notifOpen"
+                    hx-get="{% url 'notifications:dropdown' %}" hx-target="#notif-dropdown" hx-trigger="click once"
+                    class="relative p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-kova-500"
+                    aria-label="Notifications">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+              </svg>
+              <span hx-get="{% url 'notifications:bell' %}" hx-trigger="load, every 30s" hx-swap="innerHTML"
+                    id="notif-badge"></span>
+            </button>
+            <div x-show="notifOpen" @click.away="notifOpen = false" x-cloak
+                 x-transition:enter="transition ease-out duration-100"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-75"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
+              <div id="notif-dropdown">
+                <div class="p-4 text-center text-sm text-gray-500 dark:text-gray-400">Loading...</div>
+              </div>
+              <a href="{% url 'notifications:list' %}"
+                 class="block text-center text-sm font-medium text-kova-600 dark:text-kova-400 hover:bg-gray-50 dark:hover:bg-gray-800 py-2.5 border-t border-gray-200 dark:border-gray-700">
+                View all notifications
+              </a>
+            </div>
+          </div>
+
+          <button type="button"
+                  x-data="{ dark: document.documentElement.classList.contains('dark') }"
+                  x-init="dark = document.documentElement.classList.contains('dark')"
+                  @click="
+                    document.documentElement.classList.toggle('dark');
+                    dark = document.documentElement.classList.contains('dark');
+                    try { localStorage.setItem('kova-theme', dark ? 'dark' : 'light'); } catch (e) {}
+                  "
+                  class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-kova-500"
+                  :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'">
+            <svg x-show="!dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+            </svg>
+            <svg x-show="dark" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+          </button>
+          {% block header_actions %}{% endblock %}
+        </div>
+      </div>
+    </header>
+
+    <!-- Page content -->
+    <main id="main-content" class="flex-1 p-4 sm:p-6" tabindex="-1">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="mb-4 px-4 py-3 rounded-lg text-sm font-medium
+                      {% if message.tags == 'success' %}bg-green-50 border border-green-200 text-green-800 dark:bg-green-950/40 dark:border-green-800 dark:text-green-200
+                      {% elif message.tags == 'error' %}bg-red-50 border border-red-200 text-red-800 dark:bg-red-950/40 dark:border-red-800 dark:text-red-200
+                      {% elif message.tags == 'warning' %}bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-950/40 dark:border-yellow-800 dark:text-yellow-200
+                      {% else %}bg-blue-50 border border-blue-200 text-blue-800 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-200{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% endblock %}

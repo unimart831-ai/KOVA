@@ -1,0 +1,13 @@
+-r base.txt
+
+# Production server
+gunicorn>=22.0
+
+# Monitoring
+sentry-sdk[django]>=2.13
+
+# Security headers
+django-csp>=4.0
+
+# WhiteNoise for static files
+whitenoise>=6.7

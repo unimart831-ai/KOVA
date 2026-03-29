@@ -1,0 +1,129 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Setup Your Brand — Step {{ step }} of {{ total_steps }}{% endblock %}
+{% block page_title %}Brand setup{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Step {{ step }} of {{ total_steps }} — tell us how your agents should sound</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-8">
+  <!-- Progress bar -->
+  <div class="mb-8">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Step {{ step }} of {{ total_steps }}</span>
+      <span class="text-sm text-gray-500 dark:text-gray-400">
+        {% if step == 1 %}Brand basics
+        {% elif step == 2 %}Voice & audience
+        {% elif step == 3 %}Goals & preferences
+        {% endif %}
+      </span>
+    </div>
+    <div class="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
+      <div class="bg-kova-600 h-2 rounded-full transition-all duration-500"
+           style="width: {% widthratio step total_steps 100 %}%"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      {% if step == 1 %}
+        <div class="mb-6">
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white">Tell us about your brand</h2>
+          <p class="text-gray-600 dark:text-gray-400 mt-1">This helps our AI agents create content that fits your brand perfectly.</p>
+        </div>
+      {% elif step == 2 %}
+        <div class="mb-6">
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white">Define your voice & audience</h2>
+          <p class="text-gray-600 dark:text-gray-400 mt-1">The more detail you provide, the better your AI agents will perform.</p>
+        </div>
+      {% elif step == 3 %}
+        <div class="mb-6">
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white">Set your goals</h2>
+          <p class="text-gray-600 dark:text-gray-400 mt-1">Choose what matters most — your agents will optimize for these.</p>
+        </div>
+      {% endif %}
+
+      <form method="post" class="space-y-5">
+        {% csrf_token %}
+
+        {% for field in form %}
+          {% if field.field.widget.input_type == 'checkbox' and not field.name == 'auto_approve_posts' %}
+            {# Checkbox group (goals) #}
+          {% elif field.name == 'goals_selection' %}
+            <div>
+              <label class="label mb-3">{{ field.label }}</label>
+              <div class="grid grid-cols-2 gap-3">
+                {% for choice in field.field.choices %}
+                  <label class="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-kova-300 dark:hover:border-kova-600 cursor-pointer transition-colors has-[:checked]:border-kova-500 has-[:checked]:bg-kova-50 dark:has-[:checked]:bg-kova-950/40">
+                    <input type="checkbox" name="{{ field.html_name }}" value="{{ choice.0 }}"
+                           {% if choice.0 in field.value %}checked{% endif %}
+                           class="rounded border-gray-300 text-kova-600 focus:ring-kova-500">
+                    <span class="text-sm text-gray-700">{{ choice.1 }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+              {% if field.help_text %}
+                <p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>
+              {% endif %}
+            </div>
+          {% elif field.name == 'auto_approve_posts' %}
+            <div class="flex items-start space-x-3 p-4 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-100 dark:border-gray-700">
+              <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
+                     {% if field.value %}checked{% endif %}
+                     class="mt-0.5 rounded border-gray-300 text-kova-600 focus:ring-kova-500">
+              <div>
+                <label for="id_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">
+                  Auto-approve AI posts
+                </label>
+                <p class="text-xs text-gray-500 mt-0.5">
+                  Let agents publish content without your approval. You can change this anytime.
+                </p>
+              </div>
+            </div>
+          {% else %}
+            <div>
+              <label for="id_{{ field.name }}" class="label">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}
+                <p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>
+              {% endif %}
+              {% for error in field.errors %}
+                <p class="text-xs text-red-600 mt-1">{{ error }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endfor %}
+
+        <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+          {% if step > 1 %}
+            <a href="?step={{ step|add:'-1' }}" class="btn-secondary">Back</a>
+          {% else %}
+            <div></div>
+          {% endif %}
+
+          <button type="submit" class="btn-primary">
+            {% if step < total_steps %}
+              Continue
+              <svg class="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            {% else %}
+              Launch My Agents
+              <svg class="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+            {% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if step == 3 %}
+    <p class="text-center text-xs text-gray-500 dark:text-gray-400 mt-4">
+      Don't worry — you can always update these settings later.
+    </p>
+  {% endif %}
+</div>
+{% endblock %}
