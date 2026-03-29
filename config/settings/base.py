@@ -157,6 +157,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "content.fetch_all_recent_metrics",
         "schedule": 6 * 3600.0,  # every 6 hours
     },
+    "refresh-expiring-tokens": {
+        "task": "platforms.refresh_expiring_tokens",
+        "schedule": 30 * 60.0,  # every 30 minutes
+    },
 }
 
 # ─── AUTH ────────────────────────────────────────────────────────────────────
