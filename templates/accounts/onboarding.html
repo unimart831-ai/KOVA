@@ -48,9 +48,7 @@
         {% csrf_token %}
 
         {% for field in form %}
-          {% if field.field.widget.input_type == 'checkbox' and not field.name == 'auto_approve_posts' %}
-            {# Checkbox group (goals) #}
-          {% elif field.name == 'goals_selection' %}
+          {% if field.name == 'goals_selection' %}
             <div>
               <label class="label mb-3">{{ field.label }}</label>
               <div class="grid grid-cols-2 gap-3">
