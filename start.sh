@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+export DJANGO_SETTINGS_MODULE="config.settings.production"
+
 echo "==> Checking if output.css exists..."
 if [ -f ./static/css/output.css ]; then
     echo "    Found ./static/css/output.css ($(wc -c < ./static/css/output.css) bytes)"
