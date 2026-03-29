@@ -1,12 +1,11 @@
 # Nixpacks config for Railway
+# "..." preserves auto-detected Python/pip setup, we just add Node.js for Tailwind
+
 [phases.setup]
-nixPkgs = ["python312", "nodejs_20", "postgresql"]
+nixPkgs = ["...", "nodejs_20"]
 
 [phases.install]
-cmds = [
-    "pip install -r requirements/production.txt",
-    "npm install"
-]
+cmds = ["...", "npm install"]
 
 [phases.build]
 cmds = [
