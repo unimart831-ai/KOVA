@@ -24,7 +24,7 @@ if os.path.isfile(env_file):
     environ.Env.read_env(env_file)
 
 # ─── CORE ────────────────────────────────────────────────────────────────────
-SECRET_KEY = env("SECRET_KEY")
+SECRET_KEY = env("SECRET_KEY", default="INSECURE-dev-key-change-me-in-production")
 DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])

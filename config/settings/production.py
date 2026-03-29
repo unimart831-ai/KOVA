@@ -5,6 +5,14 @@ Deployed on Railway.
 
 from .base import *  # noqa: F401, F403
 
+# ─── ENFORCE SECRET_KEY ──────────────────────────────────────────────────────
+if SECRET_KEY == "INSECURE-dev-key-change-me-in-production":  # noqa: F405
+    import warnings
+    warnings.warn(
+        "SECRET_KEY is using the insecure default! Set SECRET_KEY in Railway environment variables.",
+        stacklevel=1,
+    )
+
 # ─── SECURITY ────────────────────────────────────────────────────────────────
 DEBUG = False
 SECURE_BROWSER_XSS_FILTER = True
