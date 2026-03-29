@@ -24,7 +24,9 @@ AVAILABLE_PLATFORMS = [
 def platform_list(request):
     """Show connected platforms and connect buttons."""
     accounts = request.user.social_accounts.all()
-    connected_platforms = set(accounts.values_list("platform", flat=True))
+    connected_platforms = set(
+        accounts.filter(is_active=True).values_list("platform", flat=True)
+    )
 
     platforms = []
     for p in AVAILABLE_PLATFORMS:
@@ -127,7 +129,7 @@ def oauth_callback(request, platform):
 
 @login_required
 def disconnect_platform(request, pk):
-    """Disconnect (soft-delete) a social account."""
+    """Disconnect and remove a social account."""
     if request.method != "POST":
         return redirect("platforms:list")
 
@@ -135,11 +137,7 @@ def disconnect_platform(request, pk):
     platform_display = account.get_platform_display()
     username = account.username
 
-    # Revoke token if possible, then deactivate
-    account.access_token = ""
-    account.refresh_token = ""
-    account.is_active = False
-    account.save(update_fields=["access_token", "refresh_token", "is_active", "updated_at"])
+    account.delete()
 
     messages.success(request, f"Disconnected {platform_display} — @{username}")
     return redirect("platforms:list")
