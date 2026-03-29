@@ -101,4 +101,4 @@ if SENTRY_DSN:
         pass
 
 # ─── ALLAUTH ─────────────────────────────────────────────────────────────────
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+# Email verification disabled until a real email provider is configured (set on line 62)
