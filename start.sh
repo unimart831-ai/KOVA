@@ -1,0 +1,27 @@
+#!/bin/bash
+set -e
+
+echo "==> Checking if output.css exists..."
+if [ -f ./static/css/output.css ]; then
+    echo "    Found ./static/css/output.css ($(wc -c < ./static/css/output.css) bytes)"
+else
+    echo "    output.css NOT found in static/css/ - building Tailwind..."
+    npx tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify 2>&1 || echo "WARNING: tailwind build failed"
+fi
+
+echo "==> Collecting static files..."
+python manage.py collectstatic --noinput 2>&1
+
+echo "==> Verifying staticfiles directory..."
+if [ -d ./staticfiles ]; then
+    echo "    staticfiles/ exists"
+    ls staticfiles/css/ 2>/dev/null && echo "    CSS files found" || echo "    WARNING: No CSS in staticfiles/"
+else
+    echo "    ERROR: staticfiles/ does not exist after collectstatic!"
+fi
+
+echo "==> Running migrations..."
+python manage.py migrate --noinput 2>&1 || echo "WARNING: migrate failed (no DB configured?)"
+
+echo "==> Starting gunicorn on port ${PORT:-8000}..."
+exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3 --timeout 120
