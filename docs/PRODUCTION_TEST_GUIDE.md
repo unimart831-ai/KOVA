@@ -387,8 +387,9 @@ What to verify:
 # ============================================================================
 # PHASE D: AGENT CONFIGURATION
 # ============================================================================
-# Estimated time: 3 minutes
-# What you're testing: Agent enable/disable toggles, agent listing
+# Estimated time: 5 minutes
+# What you're testing: Agent listing, toggles, configure links, activity link
+# Updated: Sprint 6 added Configure links + Activity Log link
 # ============================================================================
 
 Navigate to Agents (/agents/)
@@ -405,6 +406,8 @@ You should see 6 agents:
 What to verify:
   ☐ All 6 agents display with correct names, icons, descriptions
   ☐ Each has an enable/disable toggle
+  ☐ Each agent card has a "Configure" link (→ /agents/<slug>/)
+  ☐ "Activity Log" link visible in page header (→ /agents/activity/)
 
 ## D2. Toggle Agents
 1. Disable the Content Creator Agent
@@ -414,6 +417,23 @@ What to verify:
   ☐ Toggle saves immediately (HTMX or form submit)
   ☐ State persists after page refresh
   ☐ Visual feedback confirms ON/OFF state
+
+## D3. Click Configure Link
+1. Click "Configure" on the Research Agent card
+2. Verify you land on /agents/research/
+
+What to verify:
+  ☐ Links to agent detail page (tested in depth in Phase K)
+  ☐ No 404 errors
+
+## D4. Click Activity Log Link
+1. Go back to /agents/
+2. Click "Activity Log" link
+3. Verify you land on /agents/activity/
+
+What to verify:
+  ☐ Links to activity log page (tested in depth in Phase K)
+  ☐ No 404 errors
 
 
 # ============================================================================
@@ -699,7 +719,219 @@ What to verify:
 
 
 # ============================================================================
-# PHASE J: INBOX / ENGAGEMENT
+# PHASE J: DAILY BRIEF — COMMAND CENTER
+# ============================================================================
+# Estimated time: 5 minutes
+# What you're testing: Daily Brief generation, display, performance insights
+# Added in Sprint 5: Analyst Agent + Content DNA integration
+# ============================================================================
+
+Navigate to Daily Brief (/brief/)
+
+## J1. First Visit — Empty or Auto-Generated Brief
+
+What to verify:
+  ☐ Page loads without errors
+  ☐ If brief exists: displays performance insight, trending topics, suggested posts
+  ☐ If no brief yet: shows clean empty state with "no brief generated yet" message
+  ☐ Brief card layout uses glassmorphism/gradient styling consistent with rest of UI
+
+## J2. Brief Content Sections
+
+If a brief has been generated (after creating + publishing content), verify:
+
+### Performance Insight Card
+  ☐ Shows yesterday's/recent performance summary
+  ☐ Engagement data displayed (or "not enough data" if new account)
+  ☐ Analyst Agent's analysis rendered as readable prose (not raw JSON)
+
+### Trending Topics
+  ☐ Research Agent trending topics displayed with:
+    - Topic name/description
+    - Urgency badge (🔴 high / 🟡 medium / 🟢 low)
+    - Relevance score
+    - Suggested content angle
+  ☐ Topics are relevant to the user's industry (Education / Non-Profit for DigiBridge)
+
+### Suggested Posts
+  ☐ AI-suggested content ideas shown with:
+    - Content type badge (e.g., "story", "data", "thought-leadership")
+    - Timing recommendation (e.g., "morning", "afternoon")
+    - Platform suggestions
+  ☐ Suggestions are actionable — user can understand what to create
+
+### Agent Activity Summary
+  ☐ Shows what agents have done since last visit
+  ☐ Includes agent type icons and action counts
+
+### Content Pipeline Stats
+  ☐ Shows pending/scheduled/published post counts
+  ☐ Numbers are accurate vs. what you see in Queue
+
+## J3. Content DNA Display
+
+If posts have been created with the Analyst Agent active:
+  ☐ Content DNA summary appears in brief (best-performing attributes)
+  ☐ Attributes like tone, format, topic category shown
+  ☐ "Not enough data" message if fewer than 5 published posts
+
+
+# ============================================================================
+# PHASE K: AGENT ACTIVITY LOG & CONFIGURATION
+# ============================================================================
+# Estimated time: 5 minutes
+# What you're testing: Agent activity history, per-agent config, custom instructions
+# Added in Sprint 6: Research Agent, Adapt Agent, Activity Log, Agent Detail
+# ============================================================================
+
+## K1. Agent Activity Log
+
+Navigate to Agent Activity Log (/agents/activity/)
+
+What to verify:
+  ☐ Page loads without errors
+  ☐ If agents have run: shows chronological list of agent actions
+  ☐ Each action shows:
+    - Agent type (Research, Analyst, Create, Adapt, etc.)
+    - Action name (e.g., "discover_trends", "extract_content_dna")
+    - Status (success / failed / pending)
+    - Timestamp
+    - Tokens used
+  ☐ If no activity yet: clean empty state
+  ☐ Filtering works (if filter controls are present)
+
+## K2. Agent Control Panel
+
+Navigate to Agents (/agents/)
+
+What to verify:
+  ☐ All 6 agents listed with toggles
+  ☐ Each agent card has a "Configure" link → goes to /agents/<slug>/
+  ☐ "Activity Log" link visible in the header area → goes to /agents/activity/
+  ☐ Toggle enable/disable works (HTMX, no page reload)
+
+## K3. Agent Detail Page
+
+Click "Configure" on any agent (e.g., Research Agent)
+
+Navigate to /agents/research/
+
+What to verify:
+  ☐ Agent detail page loads without errors
+  ☐ Shows agent stats:
+    - Total actions (all time)
+    - Actions today
+    - Total tokens used
+  ☐ Custom instructions textarea is present
+  ☐ Recent activity feed shows last actions for THIS agent only
+
+## K4. Custom Instructions Editor
+
+1. On the agent detail page, find the custom instructions section
+2. Enter custom instructions:
+```
+Focus on education technology trends and digital skills training 
+in East Africa. Prioritize refugee employment and social enterprise 
+stories. Avoid generic tech industry trends — keep it niche.
+```
+3. Save
+
+What to verify:
+  ☐ Instructions save without errors (HTMX POST to /agents/<slug>/instructions/)
+  ☐ Success feedback appears (toast/flash message)
+  ☐ Instructions persist after page refresh
+  ☐ Instructions appear in the textarea on reload
+
+## K5. Verify Custom Instructions Affect Output
+
+1. Set custom instructions on Research Agent (as above)
+2. Wait for next Daily Brief generation (or trigger manually if possible)
+3. Check trending topics in the Daily Brief
+
+What to verify:
+  ☐ Trending topics should skew toward education/refugee/East Africa themes
+  ☐ Custom instructions are being respected by the agent
+
+
+# ============================================================================
+# PHASE L: CONTENT DNA & ENGAGEMENT PREDICTION
+# ============================================================================
+# Estimated time: 5 minutes
+# What you're testing: Content DNA extraction and engagement scoring in pipeline
+# Added in Sprint 5: Analyst Agent hooks into content generation
+# ============================================================================
+
+## L1. Generate Content and Check DNA
+
+1. Go to Content Studio (/content/studio/)
+2. Generate a new batch with any idea
+3. After generation completes, check the post cards
+
+What to verify:
+  ☐ Each post card shows a predicted engagement score (if available)
+  ☐ Score is a number or visual indicator (not raw JSON)
+  ☐ Different platforms may get different scores (platform-native prediction)
+
+## L2. Check Content DNA on Post
+
+If you can view post details:
+  ☐ Content DNA attributes extracted (tone, format, hooks, themes)
+  ☐ DNA is stored correctly (not empty or error JSON)
+
+## L3. Content DNA Summary in Daily Brief
+
+After generating several batches:
+  ☐ Daily Brief shows "best performing content attributes" section
+  ☐ Attributes reflect actual content you've created
+  ☐ Summary is human-readable prose, not raw data
+
+
+# ============================================================================
+# PHASE M: ADAPT AGENT — SMART SCHEDULING
+# ============================================================================
+# Estimated time: 5 minutes
+# What you're testing: Optimal time suggestions and auto-scheduling
+# Added in Sprint 6: Adapt Agent integration
+# ============================================================================
+
+## M1. Auto-Schedule with Adapt Agent
+
+1. Go to Settings (/accounts/settings/)
+2. Turn ON "Auto-approve posts"
+3. Save
+4. Go to Content Studio
+5. Generate a new batch
+
+What to verify:
+  ☐ Posts are auto-approved AND auto-scheduled (Adapt Agent picks times)
+  ☐ Each post scheduled at a different time (no conflicts)
+  ☐ Scheduled times appear reasonable (not 3 AM unless data suggests it)
+  ☐ Check Queue page — posts should appear with scheduled times
+
+## M2. No Double-Booking
+
+1. Check the Queue for scheduled posts
+2. Verify no two posts for the SAME platform are at the exact same time
+
+What to verify:
+  ☐ Adapt Agent avoids scheduling conflicts
+  ☐ Different platforms CAN be at the same time (that's fine)
+  ☐ Same platform posts are spaced apart
+
+## M3. Turn Off Auto-Approve
+
+1. Go back to Settings
+2. Turn OFF "Auto-approve posts"
+3. Save
+4. Generate another batch
+
+What to verify:
+  ☐ Posts go back to "Pending Approval" status (not auto-scheduled)
+  ☐ Auto-schedule is only active when auto-approve is ON
+
+
+# ============================================================================
+# PHASE N: INBOX / ENGAGEMENT
 # ============================================================================
 # Estimated time: 2 minutes
 # What you're testing: Empty inbox state
@@ -713,7 +945,7 @@ What to verify:
 
 
 # ============================================================================
-# PHASE K: SETTINGS VERIFICATION
+# PHASE O: SETTINGS VERIFICATION
 # ============================================================================
 # Estimated time: 3 minutes
 # What you're testing: Profile/settings persistence and editing
@@ -721,7 +953,7 @@ What to verify:
 
 Navigate to Settings (/accounts/settings/)
 
-## K1. Verify Onboarding Data Persisted
+## O1. Verify Onboarding Data Persisted
   ☐ Full name: Amara Ochieng
   ☐ Company: DigiBridge Academy
   ☐ Website: https://digibridge.org
@@ -731,7 +963,7 @@ Navigate to Settings (/accounts/settings/)
   ☐ Goals: All 5 you selected
   ☐ Posting frequency: 7
 
-## K2. Modify Settings
+## O2. Modify Settings
 1. Change timezone to Africa/Nairobi (EAT, UTC+3)
 2. Change daily brief time to 07:00
 3. Upload a profile avatar (any image)
@@ -742,7 +974,7 @@ What to verify:
   ☐ Avatar displays in sidebar (bottom-left user menu)
   ☐ Timezone applies to post scheduling times
 
-## K3. Toggle Autonomy Settings
+## O3. Toggle Autonomy Settings
 1. Turn ON auto-approve posts
 2. Save
 3. Turn it back OFF
@@ -754,13 +986,13 @@ What to verify:
 
 
 # ============================================================================
-# PHASE L: EDGE CASES & STRESS TESTS
+# PHASE P: EDGE CASES & STRESS TESTS
 # ============================================================================
 # Estimated time: 10 minutes
 # What you're testing: The platform doesn't break under unusual input
 # ============================================================================
 
-## L1. Empty Idea Submission
+## P1. Empty Idea Submission
 1. Go to Content Studio
 2. Leave the idea field blank
 3. Click Generate
@@ -769,14 +1001,14 @@ What to verify:
   ☐ Validation error appears (not a 500 error)
   ☐ No empty seed is created
 
-## L2. Very Long Idea
+## P2. Very Long Idea
 Submit an idea that's 2000+ characters (paste a long paragraph).
 
 What to verify:
   ☐ Content generates successfully (AI handles long input)
   ☐ No truncation errors
 
-## L3. Special Characters
+## P3. Special Characters
 Idea: Use emoji, quotes, ampersands, angle brackets:
 ```
 Sarah's <first> "sale" was $500 & she said "I can't believe it!" 🎉🇰🇪
@@ -787,7 +1019,7 @@ What to verify:
   ☐ Special characters don't break the form or template rendering
   ☐ AI generates content incorporating the characters properly
 
-## L4. Rapid-Fire Generation
+## P4. Rapid-Fire Generation
 1. Submit an idea
 2. While it's still processing, submit ANOTHER idea
 
@@ -796,7 +1028,7 @@ What to verify:
   ☐ Both generate successfully (no race condition)
   ☐ Posts from both appear grouped separately
 
-## L5. Regenerate Multiple Times
+## P5. Regenerate Multiple Times
 1. Click Regenerate on the same post 3 times in a row
 
 What to verify:
@@ -804,7 +1036,7 @@ What to verify:
   ☐ No errors on consecutive regenerations
   ☐ Post card updates correctly each time
 
-## L6. Mobile Responsiveness
+## P6. Mobile Responsiveness
 Use Chrome DevTools (F12 → Toggle Device → iPhone 14 Pro or similar)
 
 Test on mobile viewport:
@@ -875,15 +1107,15 @@ Portfolio reviews available at digibridge.org/hire
 # TEST COMPLETION CHECKLIST
 # ============================================================================
 
-## Core Flows
+## Core Flows (Phase A-C)
   ☐ Signup → login (no email verification)
   ☐ 3-step onboarding completed
   ☐ All sidebar pages load without errors (empty states)
   ☐ Platform OAuth connection (at least 2 platforms)
   ☐ Platform disconnect + reconnect
-  ☐ Agent listing + toggle
+  ☐ Agent listing + toggle + configure links
 
-## Content Pipeline
+## Content Pipeline (Phase E-F)
   ☐ Idea submission with spinner (no page reload)
   ☐ Processing card appears inline
   ☐ Posts appear automatically when done (no refresh)
@@ -892,7 +1124,7 @@ Portfolio reviews available at digibridge.org/hire
   ☐ Multiple batches stay separate
   ☐ Partial platform selection works (2 of 5)
 
-## Post Actions
+## Post Actions (Phase F)
   ☐ Approve single post (Post Now)
   ☐ Approve single post (Quick Schedule)
   ☐ Approve single post (Exact Time)
@@ -901,20 +1133,50 @@ Portfolio reviews available at digibridge.org/hire
   ☐ Edit a post
   ☐ Batch approve all in a seed group
 
-## Pipeline Verification
+## Pipeline Verification (Phase G)
   ☐ Approved posts appear in Queue
   ☐ Scheduled posts appear on Calendar/Timeline
   ☐ Published posts move to "Published" section in Queue
   ☐ Failed posts show in "Failed" section with error info
 
-## Supporting Features
+## Daily Brief & Intelligence (Phase J — Sprint 5+6)
+  ☐ Daily Brief page loads without errors
+  ☐ Performance insight card displays (or clean empty state)
+  ☐ Trending topics show with urgency/relevance badges
+  ☐ Suggested posts show with content type + timing badges
+  ☐ Agent activity summary present
+  ☐ Content pipeline stats accurate
+  ☐ Content DNA summary visible (after enough content generated)
+
+## Agent Activity & Configuration (Phase K — Sprint 6)
+  ☐ Agent Activity Log loads (/agents/activity/)
+  ☐ Activity entries show agent type, action, status, tokens, timestamp
+  ☐ Agent Detail page loads for each agent (/agents/<slug>/)
+  ☐ Agent stats displayed (total actions, today, tokens)
+  ☐ Custom instructions editor works (save + persist)
+  ☐ Recent activity feed shows per-agent actions
+  ☐ Configure links on agent cards work
+  ☐ Activity Log link from agent control page works
+
+## Content DNA & Prediction (Phase L — Sprint 5)
+  ☐ Posts show predicted engagement scores after generation
+  ☐ Content DNA attributes extracted on generated posts
+  ☐ Content DNA summary appears in Daily Brief
+
+## Smart Scheduling (Phase M — Sprint 6)
+  ☐ Auto-approve ON → posts auto-scheduled by Adapt Agent
+  ☐ No double-booking (same platform, same time)
+  ☐ Auto-approve OFF → posts back to pending approval
+  ☐ Scheduled times are reasonable (Adapt Agent picks good times)
+
+## Supporting Features (Phase H-I, N-O)
   ☐ Notifications generate + display + mark-read
   ☐ Settings save and persist
   ☐ Avatar upload works
   ☐ Analytics page loads (even if empty)
   ☐ Inbox page loads (empty state)
 
-## Edge Cases
+## Edge Cases (Phase P)
   ☐ Empty form submission blocked
   ☐ Special characters handled
   ☐ Mobile responsive
@@ -933,6 +1195,11 @@ Portfolio reviews available at digibridge.org/hire
 - Posts not appearing after generation (refresh required)
 - Batch approve not scheduling all posts
 - Mobile layout completely broken
+- Daily Brief page crashes (500 error)
+- Agent Activity Log page crashes
+- Agent Detail page returns 404 for valid slugs
+- Custom instructions not saving (data loss)
+- Auto-schedule creating duplicate time slots (double-booking)
 
 ## Yellow Flags (Fix Soon)
 - Slow generation (>30 seconds per batch)
@@ -940,6 +1207,12 @@ Portfolio reviews available at digibridge.org/hire
 - Regenerate producing nearly identical content
 - Missing empty states on any page
 - Notification count not updating in real-time
+- Daily Brief content feels generic (Research Agent not respecting industry)
+- Content DNA always empty (Analyst Agent not extracting)
+- Engagement prediction scores all identical
+- Agent activity log shows no entries after running content pipeline
+- Custom instructions not affecting agent output
+- Adapt Agent scheduling everything at the same time
 
 ## Green Signals (Ship It)
 - All pages load cleanly in empty and populated states
@@ -948,3 +1221,11 @@ Portfolio reviews available at digibridge.org/hire
 - Approve/reject/edit/regenerate all work inline
 - Queue and Calendar reflect scheduled posts accurately
 - OAuth connect/disconnect cycles cleanly
+- Daily Brief shows meaningful insights and trending topics
+- Content DNA extracts relevant attributes from generated content
+- Engagement prediction varies by platform and content type
+- Agent Activity Log records all agent actions with tokens/timing
+- Agent Detail pages show accurate per-agent stats
+- Custom instructions visibly influence agent behavior
+- Auto-schedule picks sensible, conflict-free times
+- Research Agent trends are relevant to user's niche
