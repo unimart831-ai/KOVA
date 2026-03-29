@@ -17,7 +17,11 @@ env = environ.Env(
     DEBUG=(bool, False),
     ALLOWED_HOSTS=(list, []),
 )
-environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+
+# Read .env file if it exists (not present on Railway — env vars are injected)
+env_file = os.path.join(BASE_DIR, ".env")
+if os.path.isfile(env_file):
+    environ.Env.read_env(env_file)
 
 # ─── CORE ────────────────────────────────────────────────────────────────────
 SECRET_KEY = env("SECRET_KEY")

@@ -6,7 +6,7 @@
     "dev:css": "npx tailwindcss -i ./static/css/input.css -o ./static/css/output.css --watch",
     "build:css": "npx tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify"
   },
-  "devDependencies": {
+  "dependencies": {
     "tailwindcss": "^3.4"
   }
 }
