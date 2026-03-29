@@ -78,6 +78,12 @@ class Post(models.Model):
     ai_angle = models.CharField(max_length=255, blank=True, help_text="The strategic angle chosen for this platform.")
     ai_framework = models.CharField(max_length=100, blank=True, help_text="Content framework used (e.g. Hook→Value→CTA).")
 
+    # Content DNA — attributes for performance correlation
+    content_dna = models.JSONField(
+        default=dict, blank=True,
+        help_text='Content attributes for analysis. E.g. {"format": "question", "tone": "inspirational", "topic": "success_story", "has_cta": true, "has_stats": true, "length": "short"}',
+    )
+
     # Platform post reference
     platform_post_id = models.CharField(max_length=255, blank=True)
     platform_post_url = models.URLField(blank=True)

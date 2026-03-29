@@ -1,0 +1,358 @@
+"""
+Analyst Agent — Performance Intelligence Engine.
+
+Responsibilities:
+  1. Analyze post performance and identify what's working
+  2. Extract Content DNA from posts (attribute tagging)
+  3. Score engagement prediction for new posts
+  4. Generate performance summaries for Daily Briefs
+"""
+
+import json
+import logging
+from datetime import timedelta
+
+from django.db.models import Avg, Count, Q, Sum
+from django.utils import timezone
+
+from apps.agents.llm import generate
+from apps.agents.models import AgentAction, AgentConfig
+from apps.analytics.models import PostMetric
+from apps.content.models import Post
+
+logger = logging.getLogger(__name__)
+
+
+def _get_recent_published_posts(user, days=7):
+    """Get published posts with metrics from the last N days."""
+    cutoff = timezone.now() - timedelta(days=days)
+    return (
+        Post.objects.filter(
+            user=user,
+            status=Post.Status.PUBLISHED,
+            published_at__gte=cutoff,
+        )
+        .select_related("social_account", "metrics")
+        .order_by("-published_at")
+    )
+
+
+def _build_performance_data(posts):
+    """Build a structured performance summary from posts + metrics."""
+    platform_stats = {}
+    top_posts = []
+    total_engagement = 0
+    total_impressions = 0
+
+    for post in posts:
+        platform = post.social_account.platform if post.social_account else "unknown"
+
+        if platform not in platform_stats:
+            platform_stats[platform] = {
+                "posts": 0,
+                "total_likes": 0,
+                "total_comments": 0,
+                "total_shares": 0,
+                "total_impressions": 0,
+                "total_clicks": 0,
+            }
+
+        platform_stats[platform]["posts"] += 1
+
+        try:
+            m = post.metrics
+            platform_stats[platform]["total_likes"] += m.likes
+            platform_stats[platform]["total_comments"] += m.comments
+            platform_stats[platform]["total_shares"] += m.shares
+            platform_stats[platform]["total_impressions"] += m.impressions
+            platform_stats[platform]["total_clicks"] += m.clicks
+
+            engagement = m.likes + m.comments + m.shares
+            total_engagement += engagement
+            total_impressions += m.impressions
+
+            top_posts.append({
+                "content": post.content_text[:120],
+                "platform": platform,
+                "likes": m.likes,
+                "comments": m.comments,
+                "shares": m.shares,
+                "impressions": m.impressions,
+                "engagement_rate": m.engagement_rate or 0,
+                "angle": post.ai_angle,
+                "framework": post.ai_framework,
+                "dna": post.content_dna,
+            })
+        except PostMetric.DoesNotExist:
+            pass
+
+    # Sort top posts by engagement
+    top_posts.sort(key=lambda p: p["likes"] + p["comments"] + p["shares"], reverse=True)
+
+    return {
+        "platform_stats": platform_stats,
+        "top_posts": top_posts[:5],
+        "total_posts": len(posts),
+        "total_engagement": total_engagement,
+        "total_impressions": total_impressions,
+        "avg_engagement_rate": (
+            round(total_engagement / total_impressions * 100, 2)
+            if total_impressions > 0 else 0
+        ),
+    }
+
+
+def analyze_performance(user, days=7):
+    """
+    Analyst Agent: Analyze recent post performance and return insights.
+    Returns a dict with performance summary + LLM-generated insights.
+    """
+    action = AgentAction.objects.create(
+        user=user,
+        agent_type="analyst",
+        action_type="performance_analysis",
+        description=f"Analyzing post performance for the last {days} days",
+    )
+
+    try:
+        posts = _get_recent_published_posts(user, days)
+        perf_data = _build_performance_data(posts)
+
+        if perf_data["total_posts"] == 0:
+            action.status = AgentAction.ActionStatus.COMPLETED
+            action.output_data = {"message": "No published posts to analyze"}
+            action.save(update_fields=["status", "output_data"])
+            return {
+                "summary": "No posts published in the last week. Start creating content to get insights!",
+                "top_posts": [],
+                "platform_stats": {},
+                "content_dna_insights": [],
+            }
+
+        # Ask LLM to analyze the data
+        system_prompt = (
+            "You are the Analyst Agent for a social media management platform. "
+            "Analyze the performance data and provide actionable insights. "
+            "Be specific about what content attributes drive engagement. "
+            "Respond in JSON format with these keys:\n"
+            '- "summary": 2-3 sentence performance overview\n'
+            '- "top_insight": the single most important finding\n'
+            '- "content_dna_insights": list of 3-5 specific findings about what content attributes work best '
+            '(e.g. "Question-format posts get 2.4x more comments")\n'
+            '- "recommendations": list of 2-3 specific action items\n'
+            '- "platform_breakdown": brief analysis per platform\n'
+        )
+
+        prompt = (
+            f"Here is the post performance data for the last {days} days:\n\n"
+            f"Total posts: {perf_data['total_posts']}\n"
+            f"Total engagement (likes+comments+shares): {perf_data['total_engagement']}\n"
+            f"Total impressions: {perf_data['total_impressions']}\n"
+            f"Average engagement rate: {perf_data['avg_engagement_rate']}%\n\n"
+            f"Platform breakdown:\n{json.dumps(perf_data['platform_stats'], indent=2)}\n\n"
+            f"Top performing posts:\n{json.dumps(perf_data['top_posts'], indent=2)}\n\n"
+            "Analyze this data and provide insights in the specified JSON format."
+        )
+
+        response = generate(prompt=prompt, system=system_prompt, json_mode=True, temperature=0.3)
+
+        try:
+            insights = json.loads(response.content)
+        except json.JSONDecodeError:
+            insights = {
+                "summary": response.content,
+                "top_insight": "",
+                "content_dna_insights": [],
+                "recommendations": [],
+                "platform_breakdown": "",
+            }
+
+        result = {
+            **insights,
+            "performance_data": perf_data,
+        }
+
+        action.status = AgentAction.ActionStatus.COMPLETED
+        action.output_data = result
+        action.tokens_used = response.total_tokens
+        action.completed_at = timezone.now()
+        action.save(update_fields=["status", "output_data", "tokens_used", "completed_at"])
+
+        return result
+
+    except Exception as e:
+        logger.exception("Analyst Agent failed: %s", e)
+        action.status = AgentAction.ActionStatus.FAILED
+        action.error_message = str(e)
+        action.save(update_fields=["status", "error_message"])
+        return {
+            "summary": "Analysis temporarily unavailable.",
+            "top_posts": [],
+            "platform_stats": {},
+            "content_dna_insights": [],
+        }
+
+
+def extract_content_dna(post):
+    """
+    Extract Content DNA attributes from a post using LLM.
+    Tags the post with structured attributes for correlation analysis.
+    """
+    system_prompt = (
+        "You are a content analyst. Extract structured attributes from this social media post. "
+        "Respond in JSON with these keys:\n"
+        '- "format": one of [question, statement, story, list, thread, how_to, hot_take, announcement, behind_scenes]\n'
+        '- "tone": one of [inspirational, educational, humorous, provocative, professional, casual, urgent, empathetic]\n'
+        '- "topic": brief topic label (2-3 words)\n'
+        '- "has_cta": boolean — does it include a call to action?\n'
+        '- "has_stats": boolean — does it include numbers/statistics?\n'
+        '- "has_question": boolean — does it ask a question?\n'
+        '- "has_emoji": boolean — does it use emoji?\n'
+        '- "has_hashtags": boolean — does it include hashtags?\n'
+        '- "length": one of [short, medium, long] based on character count relative to platform\n'
+        '- "hook_type": one of [statistic, question, bold_claim, story_opener, curiosity_gap, none]\n'
+    )
+
+    prompt = (
+        f"Platform: {post.social_account.platform if post.social_account else 'unknown'}\n"
+        f"Content:\n{post.content_text}\n\n"
+        "Extract the Content DNA attributes."
+    )
+
+    try:
+        response = generate(prompt=prompt, system=system_prompt, json_mode=True, temperature=0.1, max_tokens=500)
+        dna = json.loads(response.content)
+        post.content_dna = dna
+        post.save(update_fields=["content_dna"])
+        return dna
+    except Exception as e:
+        logger.warning("Content DNA extraction failed for post %s: %s", post.id, e)
+        return {}
+
+
+def predict_engagement(post):
+    """
+    Predict engagement score for a post before publishing.
+    Uses historical performance + content attributes to estimate.
+    Returns a float 0-100.
+    """
+    user = post.user
+
+    # Get historical averages
+    recent_metrics = PostMetric.objects.filter(
+        post__user=user,
+        post__status=Post.Status.PUBLISHED,
+        post__social_account__platform=(
+            post.social_account.platform if post.social_account else ""
+        ),
+    ).aggregate(
+        avg_likes=Avg("likes"),
+        avg_comments=Avg("comments"),
+        avg_shares=Avg("shares"),
+        avg_engagement=Avg("engagement_rate"),
+        post_count=Count("id"),
+    )
+
+    if not recent_metrics["post_count"] or recent_metrics["post_count"] < 3:
+        # Not enough data — return AI's original prediction or 50
+        return post.predicted_engagement_score or 50.0
+
+    # Get top-performing content DNA patterns
+    top_posts = (
+        Post.objects.filter(
+            user=user,
+            status=Post.Status.PUBLISHED,
+            social_account__platform=(
+                post.social_account.platform if post.social_account else ""
+            ),
+        )
+        .exclude(content_dna={})
+        .select_related("metrics")
+        .order_by("-metrics__engagement_rate")[:10]
+    )
+
+    system_prompt = (
+        "You are an engagement prediction model. Based on historical performance data "
+        "and the content attributes of a new post, predict its engagement score (0-100). "
+        "Respond with ONLY a JSON object: {\"score\": <number>, \"reasoning\": \"<brief explanation>\"}"
+    )
+
+    top_dna = [{"dna": p.content_dna, "engagement_rate": p.metrics.engagement_rate}
+               for p in top_posts if hasattr(p, "metrics") and p.metrics]
+
+    prompt = (
+        f"Platform: {post.social_account.platform if post.social_account else 'unknown'}\n"
+        f"Historical averages: {json.dumps(recent_metrics, default=str)}\n"
+        f"Top performing content DNA patterns: {json.dumps(top_dna[:5], default=str)}\n\n"
+        f"New post content:\n{post.content_text[:300]}\n\n"
+        f"New post DNA: {json.dumps(post.content_dna, default=str)}\n\n"
+        "Predict the engagement score (0-100)."
+    )
+
+    try:
+        response = generate(prompt=prompt, system=system_prompt, json_mode=True, temperature=0.2, max_tokens=200)
+        result = json.loads(response.content)
+        score = float(result.get("score", 50))
+        score = max(0, min(100, score))
+        post.predicted_engagement_score = score
+        post.ai_reasoning = result.get("reasoning", post.ai_reasoning)
+        post.save(update_fields=["predicted_engagement_score", "ai_reasoning"])
+        return score
+    except Exception as e:
+        logger.warning("Engagement prediction failed for post %s: %s", post.id, e)
+        return post.predicted_engagement_score or 50.0
+
+
+def get_content_dna_summary(user, days=30):
+    """
+    Aggregate Content DNA across all published posts to find winning patterns.
+    Returns top-performing attributes for the Daily Brief.
+    """
+    cutoff = timezone.now() - timedelta(days=days)
+    posts = (
+        Post.objects.filter(
+            user=user,
+            status=Post.Status.PUBLISHED,
+            published_at__gte=cutoff,
+        )
+        .exclude(content_dna={})
+        .select_related("metrics")
+    )
+
+    if not posts.exists():
+        return {"winning_attributes": [], "total_analyzed": 0}
+
+    # Tally attributes by engagement
+    attribute_scores = {}
+
+    for post in posts:
+        try:
+            engagement = post.metrics.engagement_rate or 0
+        except PostMetric.DoesNotExist:
+            continue
+
+        dna = post.content_dna
+        for key, value in dna.items():
+            if isinstance(value, bool):
+                attr_key = f"{key}={value}"
+            else:
+                attr_key = f"{key}={value}"
+
+            if attr_key not in attribute_scores:
+                attribute_scores[attr_key] = {"total_engagement": 0, "count": 0}
+            attribute_scores[attr_key]["total_engagement"] += engagement
+            attribute_scores[attr_key]["count"] += 1
+
+    # Calculate average engagement per attribute
+    winning = []
+    for attr, data in attribute_scores.items():
+        if data["count"] >= 2:
+            avg = data["total_engagement"] / data["count"]
+            winning.append({"attribute": attr, "avg_engagement": round(avg, 2), "posts": data["count"]})
+
+    winning.sort(key=lambda x: x["avg_engagement"], reverse=True)
+
+    return {
+        "winning_attributes": winning[:10],
+        "total_analyzed": posts.count(),
+    }

@@ -161,6 +161,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "platforms.refresh_expiring_tokens",
         "schedule": 30 * 60.0,  # every 30 minutes
     },
+    "generate-daily-briefs": {
+        "task": "briefs.generate_all_daily_briefs",
+        "schedule": 15 * 60.0,  # every 15 minutes — checks which users' brief time has passed
+    },
 }
 
 # ─── AUTH ────────────────────────────────────────────────────────────────────

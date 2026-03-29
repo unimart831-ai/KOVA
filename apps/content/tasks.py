@@ -29,6 +29,20 @@ def generate_from_seed(seed_id: str):
         return {"error": "Seed not found"}
 
     posts = run_create_agent(seed)
+
+    # Tag each new post with Content DNA and engagement prediction
+    from apps.agents.analyst_agent import extract_content_dna, predict_engagement
+
+    for post in posts:
+        try:
+            extract_content_dna(post)
+        except Exception as e:
+            logger.warning("Content DNA extraction failed for post %s: %s", post.id, e)
+        try:
+            predict_engagement(post)
+        except Exception as e:
+            logger.warning("Engagement prediction failed for post %s: %s", post.id, e)
+
     return {
         "seed_id": str(seed_id),
         "posts_created": len(posts),
