@@ -5,18 +5,12 @@ providers = ["python", "node"]
 [variables]
 DJANGO_SETTINGS_MODULE = "config.settings.production"
 
-[phases.install]
-cmds = [
-    "pip install -r requirements.txt",
-    "npm install"
-]
-
 [phases.build]
 cmds = [
-    "npx tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify",
-    "python manage.py collectstatic --noinput",
-    "python manage.py migrate --noinput"
+    "...",
+    "npm install",
+    "npx tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify"
 ]
 
 [start]
-cmd = "gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120"
+cmd = "python manage.py collectstatic --noinput && python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120"

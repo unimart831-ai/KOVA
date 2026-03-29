@@ -27,13 +27,12 @@ SECURE_HSTS_PRELOAD = True
 X_FRAME_OPTIONS = "DENY"
 
 # ─── ALLOWED HOSTS & CSRF ───────────────────────────────────────────────────
-# Railway provides RAILWAY_PUBLIC_DOMAIN at runtime
-RAILWAY_DOMAIN = env("RAILWAY_PUBLIC_DOMAIN", default="")  # noqa: F405
-CUSTOM_DOMAIN = env("CUSTOM_DOMAIN", default="")  # noqa: F405
+# Allow all Railway subdomains (*.railway.app)
+ALLOWED_HOSTS += [".railway.app"]  # noqa: F405
+CSRF_TRUSTED_ORIGINS += ["https://*.railway.app"]  # noqa: F405
 
-if RAILWAY_DOMAIN:
-    ALLOWED_HOSTS.append(RAILWAY_DOMAIN)  # noqa: F405
-    CSRF_TRUSTED_ORIGINS.append(f"https://{RAILWAY_DOMAIN}")  # noqa: F405
+# Optional: custom domain (set CUSTOM_DOMAIN in Railway env vars)
+CUSTOM_DOMAIN = env("CUSTOM_DOMAIN", default="")  # noqa: F405
 if CUSTOM_DOMAIN:
     ALLOWED_HOSTS.append(CUSTOM_DOMAIN)  # noqa: F405
     CSRF_TRUSTED_ORIGINS.append(f"https://{CUSTOM_DOMAIN}")  # noqa: F405
