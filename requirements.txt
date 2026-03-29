@@ -1,1 +1,69 @@
--r requirements/production.txt
+# =============================================================
+# Production requirements (flattened for Railway/Nixpacks)
+# Nixpacks install layer only copies this file, not subdirs.
+# Keep requirements/ directory in sync for local development.
+# =============================================================
+
+# Core
+Django>=5.1,<5.2
+django-environ>=0.11.2
+psycopg[binary]>=3.1.18
+
+# Django Extensions
+django-allauth>=65.0
+django-crispy-forms>=2.3
+crispy-tailwind>=1.0.3
+django-htmx>=1.19
+django-extensions>=3.2
+
+# API (for agent communication)
+djangorestframework>=3.15
+
+# Async Tasks
+celery>=5.4
+django-celery-beat>=2.7
+redis>=5.0
+
+# WebSocket (real-time agent status)
+channels>=4.1
+channels-redis>=4.2
+daphne>=4.1
+
+# Security
+django-fernet-fields-v2>=0.9
+django-ratelimit>=4.1
+
+# Storage
+django-storages>=1.14
+boto3>=1.35
+
+# AI & Agents
+langchain>=0.3
+langgraph>=0.2
+langchain-openai>=0.2
+langchain-anthropic>=0.2
+
+# Vector support
+pgvector>=0.3
+
+# Payments
+stripe>=10.0
+
+# Email
+resend>=2.0
+
+# Utilities
+Pillow>=10.4
+python-slugify>=8.0
+
+# Production server
+gunicorn>=22.0
+
+# Monitoring
+sentry-sdk[django]>=2.13
+
+# Security headers
+django-csp>=4.0
+
+# WhiteNoise for static files
+whitenoise>=6.7
