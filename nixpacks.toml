@@ -1,6 +1,6 @@
 # Nixpacks config for Railway
-# Let Nixpacks auto-detect Python (from requirements.txt) and Node (from package.json)
-# We only customize the build phase and start command
+# Force both Python and Node providers (package.json causes Node-only detection)
+providers = ["python", "node"]
 
 [phases.build]
 cmds = [
