@@ -48,23 +48,23 @@ direct client contracts — breaking the cycle of aid dependency.
 # PHASE A: ACCOUNT SETUP & ONBOARDING
 # ============================================================================
 # Estimated time: 5 minutes
-# What you're testing: Signup → Email verification → 3-step onboarding wizard
+# What you're testing: Signup → 3-step onboarding wizard
 # ============================================================================
 
 ## A1. Sign Up
 
-Navigate to your production URL (e.g., https://app.kova.ai/accounts/signup/)
+Navigate to: https://kovaagent-production.up.railway.app/accounts/signup/
 
 Use these credentials:
-- Email: hello@digibridge.org (or your real email for verification)
+- Email: hello@digibridge.org (or your real email)
 - Password: Use a strong password (16+ chars)
 - Full Name: Amara Ochieng
 
 What to verify:
   ☐ Signup form submits without errors
-  ☐ Email verification is sent (check inbox + spam folder)
-  ☐ Clicking verification link activates account
-  ☐ You're redirected to the onboarding wizard after verification
+  ☐ No email verification required (disabled in production)
+  ☐ You are logged in immediately after signup
+  ☐ You're redirected to the onboarding wizard
 
 
 ## A2. Onboarding — Step 1: Brand Basics
@@ -162,7 +162,7 @@ Visit EVERY page from the sidebar and verify it shows a proper empty state
 
 ## B4. System Section
   ☐ Platforms (/platforms/) — No connected platforms, shows connect buttons
-  ☐ Billing (/billing/) — Shows current plan (Starter/free)
+  ☐ Billing (/billing/) — Shows current plan (Jipange / Starter)
 
 ## B5. Account
   ☐ Settings (/accounts/settings/) — Your onboarding data should be populated
@@ -178,51 +178,190 @@ What to verify overall:
 # ============================================================================
 # PHASE C: CONNECT PLATFORMS
 # ============================================================================
-# Estimated time: 10-15 minutes (depends on OAuth approvals)
+# Estimated time: 30-60 minutes (creating developer apps + OAuth testing)
 # What you're testing: OAuth flow for each platform
+#
+# PREREQUISITE: You must create developer apps on each platform FIRST,
+# then add the credentials to Railway environment variables.
+# Kova uses a custom OAuth 2.0 flow (not django-allauth social).
 # ============================================================================
 
 Navigate to Platforms (/platforms/)
 
-## C1. Connect X (Twitter)
+## C0. How Platform Connections Work
 
-1. Click "Connect" on X (Twitter)
-2. You'll be redirected to Twitter's OAuth screen
-3. Authorize DigiBridge Academy's access
+Kova Agent uses custom OAuth 2.0 for each platform. The flow is:
+1. User clicks "Connect" → redirected to platform's auth page
+2. User authorizes → platform redirects back to Kova with a code
+3. Kova exchanges the code for access tokens + fetches profile info
+4. Tokens stored in database → platform shows as "Connected"
+
+For this to work, you need:
+- A developer app on each platform (provides Client ID + Secret)
+- The correct redirect/callback URL registered in each app
+- The credentials set as environment variables in Railway
+
+
+## C1. Create Facebook App (also used for Instagram)
+
+Facebook + Instagram share the same app.
+
+### Step 1: Create the App
+1. Go to https://developers.facebook.com/ and log in
+2. Click "My Apps" → "Create App"
+3. Select app type: "Business" (not Consumer or Gaming)
+4. App name: Kova Agent
+5. Contact email: your email
+6. Business Account: skip if you don't have one
+
+### Step 2: Get Credentials
+1. Go to App Settings → Basic
+2. Copy App ID → this is your FACEBOOK_APP_ID
+3. Click "Show" on App Secret → this is your FACEBOOK_APP_SECRET
+
+### Step 3: Configure OAuth
+1. Add product: "Facebook Login for Business"
+2. Add product: "Instagram Graph API" (for Instagram support)
+3. Go to Facebook Login → Settings → Valid OAuth Redirect URIs, add:
+   - https://kovaagent-production.up.railway.app/platforms/callback/facebook/
+   - https://kovaagent-production.up.railway.app/platforms/callback/instagram/
+   - http://localhost:8000/platforms/callback/facebook/ (for local dev)
+   - http://localhost:8000/platforms/callback/instagram/ (for local dev)
+
+### Step 4: Permissions (for testing)
+- While in Development Mode, only app admins/testers can use OAuth
+- Add yourself as a tester: App Roles → Roles → Add People
+- For full public access, submit for App Review (not needed yet)
+- Required permissions: pages_show_list, pages_manage_posts,
+  pages_read_engagement, instagram_basic, instagram_content_publish
+
+### Step 5: Set Railway Env Vars
+  FACEBOOK_APP_ID=123456789012345
+  FACEBOOK_APP_SECRET=abc123def456...
+
+
+## C2. Create X (Twitter) App
+
+### Step 1: Create the App
+1. Go to https://developer.x.com/ and sign up / log in
+2. Create a Project, then create an App inside it
+3. Select Free or Basic tier (Free tier allows posting)
+
+### Step 2: Configure User Authentication
+1. Go to App Settings → User authentication settings → Set up
+2. App permissions: Read and Write
+3. Type of app: Web App
+4. Callback URI:
+   https://kovaagent-production.up.railway.app/platforms/callback/twitter/
+5. Website URL: https://kovaagent-production.up.railway.app
+
+### Step 3: Get Credentials
+1. Go to Keys and tokens → OAuth 2.0 Client ID and Client Secret
+2. Copy Client ID → TWITTER_CLIENT_ID
+3. Copy Client Secret → TWITTER_CLIENT_SECRET
+
+### Step 4: Set Railway Env Vars
+  TWITTER_CLIENT_ID=xxxxxxxxxxxxxxxx
+  TWITTER_CLIENT_SECRET=xxxxxxxxxxxxxxxx
+
+Note: Twitter uses OAuth 2.0 with PKCE (code challenge). Scopes requested:
+tweet.read, tweet.write, users.read, offline.access
+
+
+## C3. Create LinkedIn App
+
+### Step 1: Create the App
+1. Go to https://www.linkedin.com/developers/ → Create App
+2. App name: Kova Agent
+3. LinkedIn Page: associate with any Company Page you own (required)
+4. Upload any logo image
+
+### Step 2: Get Credentials
+1. Go to the Auth tab
+2. Copy Client ID → LINKEDIN_CLIENT_ID
+3. Copy Client Secret → LINKEDIN_CLIENT_SECRET
+
+### Step 3: Configure OAuth
+1. Under OAuth 2.0 settings → Redirect URLs, add:
+   https://kovaagent-production.up.railway.app/platforms/callback/linkedin/
+2. Go to Products tab and request access to:
+   - "Share on LinkedIn" (for publishing posts)
+   - "Sign in with LinkedIn using OpenID Connect"
+
+### Step 4: Set Railway Env Vars
+  LINKEDIN_CLIENT_ID=xxxxxxxxxxxxxxxx
+  LINKEDIN_CLIENT_SECRET=xxxxxxxxxxxxxxxx
+
+Note: Scopes requested: openid, profile, w_member_social
+
+
+## C4. Create TikTok App
+
+### Step 1: Create the App
+1. Go to https://developers.tiktok.com/ → Manage apps → Connect an app
+2. Select: Configure for Web
+3. App name: Kova Agent
+
+### Step 2: Configure OAuth
+1. Set Redirect URI:
+   https://kovaagent-production.up.railway.app/platforms/callback/tiktok/
+2. Add products: Login Kit + Content Posting API
+
+### Step 3: Get Credentials
+1. Copy Client Key → TIKTOK_CLIENT_KEY
+2. Copy Client Secret → TIKTOK_CLIENT_SECRET
+
+### Step 4: Set Railway Env Vars
+  TIKTOK_CLIENT_KEY=xxxxxxxxxxxxxxxx
+  TIKTOK_CLIENT_SECRET=xxxxxxxxxxxxxxxx
+
+Note: Scopes requested: user.info.basic, video.publish, video.list
+
+
+## C5. Callback URL Quick Reference
+
+  Platform   | Callback URL
+  -----------|-------------------------------------------------------------
+  Facebook   | https://kovaagent-production.up.railway.app/platforms/callback/facebook/
+  Instagram  | https://kovaagent-production.up.railway.app/platforms/callback/instagram/
+  Twitter/X  | https://kovaagent-production.up.railway.app/platforms/callback/twitter/
+  LinkedIn   | https://kovaagent-production.up.railway.app/platforms/callback/linkedin/
+  TikTok     | https://kovaagent-production.up.railway.app/platforms/callback/tiktok/
+
+For local development, replace the domain with http://localhost:8000
+
+
+## C6. Railway Env Vars Summary
+
+All of these go in Railway Dashboard → Your Service → Variables:
+
+  FACEBOOK_APP_ID=
+  FACEBOOK_APP_SECRET=
+  TWITTER_CLIENT_ID=
+  TWITTER_CLIENT_SECRET=
+  LINKEDIN_CLIENT_ID=
+  LINKEDIN_CLIENT_SECRET=
+  TIKTOK_CLIENT_KEY=
+  TIKTOK_CLIENT_SECRET=
+
+After adding env vars, Railway auto-redeploys. Wait ~2 minutes.
+Connect buttons for unconfigured platforms will be grayed out.
+
+
+## C7. Test the OAuth Flow (repeat for each platform)
+
+1. Click "Connect" on the platform
+2. You'll be redirected to the platform's authorization page
+3. Authorize Kova Agent's access
 4. You'll be redirected back to Kova
 
 What to verify:
-  ☐ OAuth redirect works (no CORS or redirect errors)
+  ☐ OAuth redirect works (no "Invalid App ID" or redirect errors)
   ☐ After callback, platform shows as "Connected" with your handle
   ☐ Username and avatar are pulled correctly
   ☐ "Disconnect" button appears
 
-## C2. Connect TikTok
-
-Same flow. Authorize on TikTok, return to Kova.
-
-What to verify:
-  ☐ TikTok OAuth completes without errors
-  ☐ Account shows connected with correct username
-
-## C3. Connect LinkedIn
-
-Same flow.
-
-What to verify:
-  ☐ LinkedIn OAuth completes
-  ☐ Profile name/avatar imported correctly
-
-## C4. Connect Instagram & Facebook
-
-Same flow for each.
-
-What to verify:
-  ☐ Each platform connects independently
-  ☐ All 5 platforms (if available) show green "Connected" status
-  ☐ Return to Content Studio — platform selection shows all connected accounts
-
-## C5. Test Disconnect & Reconnect
+## C8. Test Disconnect & Reconnect
 
 1. Pick one platform (e.g., LinkedIn)
 2. Click "Disconnect"
@@ -233,6 +372,16 @@ What to verify:
   ☐ Disconnect removes the platform cleanly
   ☐ Reconnecting re-creates it without errors
   ☐ No duplicate entries appear
+
+## C9. Common OAuth Errors
+
+  Error                        | Cause & Fix
+  -----------------------------|-------------------------------------------
+  "Invalid App ID"             | FACEBOOK_APP_ID not set or wrong value
+  "Redirect URI mismatch"      | Callback URL in dev portal doesn't match
+  "App not set up"             | Missing user auth config on Twitter
+  "Unauthorized"               | App in dev mode, add yourself as tester
+  "Invalid scope"              | Platform hasn't approved required permissions
 
 
 # ============================================================================
@@ -727,7 +876,7 @@ Portfolio reviews available at digibridge.org/hire
 # ============================================================================
 
 ## Core Flows
-  ☐ Signup → email verification → login
+  ☐ Signup → login (no email verification)
   ☐ 3-step onboarding completed
   ☐ All sidebar pages load without errors (empty states)
   ☐ Platform OAuth connection (at least 2 platforms)
@@ -778,7 +927,7 @@ Portfolio reviews available at digibridge.org/hire
 
 ## Red Flags (Must Fix Before Launch)
 - Any 500 error on any page
-- OAuth failing (tokens not saving, redirects broken)
+- OAuth failing ("Invalid App ID", tokens not saving, redirects broken)
 - Posts generating identical content across platforms
 - HTMX not working (page reloads instead of inline updates)
 - Posts not appearing after generation (refresh required)
