@@ -50,6 +50,14 @@ Usage: {% include "components/post_card.html" with post=post %}
     {# ── Content (swapped out during regeneration) ── #}
     <a href="{% url 'content:post_detail' post.id %}" class="block text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-3 line-clamp-4 whitespace-pre-line hover:text-gray-900 dark:hover:text-gray-100 transition-colors">{{ post.content_text }}</a>
 
+    {# ── AI-generated image thumbnail ── #}
+    {% if post.media_urls %}
+      <div class="mb-3 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700">
+        <img src="{{ post.media_urls.0 }}" alt="AI-generated image" loading="lazy"
+             class="w-full h-36 object-cover bg-gray-100 dark:bg-gray-800">
+      </div>
+    {% endif %}
+
     {# ── AI Strategy insight (shown in grouped view) ── #}
     {% if show_angle and post.ai_angle %}
       <div class="mb-3 px-2.5 py-2 bg-kova-50/60 dark:bg-kova-950/30 border border-kova-100 dark:border-kova-900/40 rounded-lg">

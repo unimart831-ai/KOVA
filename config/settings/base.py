@@ -271,6 +271,12 @@ AGENT_MODELS = {
     "strategist.brief": env("LLM_MODEL_STRATEGIST_BRIEF", default=LLM_MODEL_WORKHORSE),
 }
 
+# ─── AI IMAGE GENERATION ─────────────────────────────────────────────────────
+# Pollinations.ai — free tier (Flux Schnell). Set POLLINATIONS_API_KEY for higher limits.
+AI_IMAGE_GENERATION_ENABLED = env.bool("AI_IMAGE_GENERATION_ENABLED", default=True)
+POLLINATIONS_API_KEY = env("POLLINATIONS_API_KEY", default="")
+AI_IMAGE_MODEL = env("AI_IMAGE_MODEL", default="flux")  # flux | gptimage | zimage
+
 # ─── STRIPE ──────────────────────────────────────────────────────────────────
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY", default="")

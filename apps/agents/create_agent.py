@@ -22,6 +22,7 @@ from datetime import datetime, timedelta, timezone
 from django.utils import timezone as dj_timezone
 
 from apps.agents.llm import generate, get_model_for_task, LLMResponse
+from apps.agents.media import generate_post_image
 from apps.agents.models import AgentAction, AgentConfig
 from apps.content.models import ContentSeed, Post
 from apps.platforms.models import SocialAccount
@@ -344,7 +345,8 @@ Respond with a JSON object. No markdown code fences. Structure:
       "framework_used": "Hook → Value → CTA",
       "angle": "Brief description of the specific angle chosen for this platform",
       "reasoning": "Why this angle, framework, and format will perform well here. What engagement pattern it targets.",
-      "predicted_score": 72
+      "predicted_score": 72,
+      "image_prompt": "A vivid, specific description for AI image generation. Describe the visual that would best complement this post — style, mood, subject, colors. Make it platform-appropriate. Keep it under 200 words."
     }}
   ]
 }}
@@ -479,6 +481,12 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                 ai_angle=pd.get("angle", ""),
                 ai_framework=pd.get("framework_used", ""),
             )
+
+            # Generate AI image for the post
+            image_prompt = pd.get("image_prompt", "")
+            if image_prompt:
+                generate_post_image(post, image_prompt)
+
             created_posts.append(post)
 
         # Update seed status

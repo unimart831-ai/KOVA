@@ -44,6 +44,9 @@ Shows batch context when generation finishes.
             <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800/60 rounded-lg">
               <div class="flex items-center space-x-2 min-w-0">
                 <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ post.social_account.get_platform_display }}</span>
+                {% if post.media_urls %}
+                  <span class="text-[9px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 px-1.5 py-0.5 rounded font-medium">📷 Image</span>
+                {% endif %}
                 {% if post.ai_angle %}
                   <span class="text-[10px] text-kova-500 dark:text-kova-400 truncate">{{ post.ai_angle|truncatewords:8 }}</span>
                 {% else %}
