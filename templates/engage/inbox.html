@@ -10,42 +10,7 @@
   {% if interactions %}
     <ul class="card divide-y divide-gray-100 dark:divide-gray-800 list-none p-0 m-0">
       {% for interaction in interactions %}
-        <li class="px-5 py-5 sm:px-6">
-          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div class="flex items-start gap-3 min-w-0 flex-1">
-              <div class="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center text-sm font-bold text-gray-600 dark:text-gray-300 shrink-0" aria-hidden="true">
-                {{ interaction.author_name|first|upper }}
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="flex flex-wrap items-center gap-2">
-                  <span class="text-sm font-medium text-gray-900 dark:text-white">{{ interaction.author_name }}</span>
-                  <span class="badge {% if interaction.interaction_type == 'comment' %}bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200{% elif interaction.interaction_type == 'mention' %}bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-200{% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300{% endif %}">
-                    {{ interaction.get_interaction_type_display }}
-                  </span>
-                </div>
-                <p class="text-sm text-gray-700 dark:text-gray-300 mt-2 whitespace-pre-wrap">{{ interaction.content }}</p>
-                {% if interaction.ai_suggested_reply %}
-                  <div class="mt-3 rounded-xl border border-kova-200 dark:border-kova-800 bg-kova-50/80 dark:bg-kova-950/30 p-4">
-                    <p class="text-xs font-semibold text-kova-800 dark:text-kova-200 uppercase tracking-wide mb-2">Suggested reply</p>
-                    <p class="text-sm text-gray-800 dark:text-gray-200">{{ interaction.ai_suggested_reply }}</p>
-                    <div class="mt-3 flex flex-wrap gap-2">
-                      <button type="button"
-                              class="btn-secondary btn-sm"
-                              data-reply="{{ interaction.ai_suggested_reply|escape }}"
-                              onclick="(function(el){ var t=el.getAttribute('data-reply'); if(!t) return; navigator.clipboard.writeText(t).then(function(){ window.dispatchEvent(new CustomEvent('notify',{bubbles:true,detail:{message:'Reply copied to clipboard',type:'success'}})); }).catch(function(){ window.dispatchEvent(new CustomEvent('notify',{bubbles:true,detail:{message:'Could not copy',type:'error'}})); }); })(this)">
-                        Copy reply
-                      </button>
-                      <span class="text-xs text-gray-500 dark:text-gray-400 self-center">Paste into {{ interaction.get_interaction_type_display|lower }} on the platform</span>
-                    </div>
-                  </div>
-                {% endif %}
-              </div>
-            </div>
-            <span class="badge shrink-0 self-start {% if interaction.status == 'new' %}badge-warning{% elif interaction.status == 'ai_replied' %}badge-success{% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300{% endif %}">
-              {{ interaction.get_status_display }}
-            </span>
-          </div>
-        </li>
+        {% include "engage/_interaction_item.html" with interaction=interaction %}
       {% endfor %}
     </ul>
   {% else %}

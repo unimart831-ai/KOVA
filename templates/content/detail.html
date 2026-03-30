@@ -24,6 +24,9 @@
             {% if post.social_account %}
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ post.social_account.get_platform_display }} &middot; @{{ post.social_account.username }}
+              {% if post.social_account.platform == 'facebook' and post.social_account.metadata.pages %}
+                &middot; {{ post.social_account.metadata.pages.0.name }}
+              {% endif %}
             </span>
             {% endif %}
           </div>

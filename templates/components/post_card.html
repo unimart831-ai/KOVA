@@ -21,6 +21,9 @@ Usage: {% include "components/post_card.html" with post=post %}
         <div class="flex items-center gap-1.5">
           {% if post.social_account %}
             <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{ post.social_account.get_platform_display }}</span>
+            {% if post.social_account.platform == 'facebook' and post.social_account.metadata.pages %}
+              <span class="text-[9px] text-gray-400 dark:text-gray-500">· {{ post.social_account.metadata.pages.0.name }}</span>
+            {% endif %}
           {% endif %}
           {% if post.generated_by_agent %}
             <span class="text-[9px] bg-kova-50 text-kova-600 dark:bg-kova-950 dark:text-kova-300 px-1.5 py-0.5 rounded-md font-semibold tracking-wide">AI</span>
