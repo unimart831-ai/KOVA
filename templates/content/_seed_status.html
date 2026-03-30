@@ -18,6 +18,12 @@ Shows batch context when generation finishes.
   </div>
 
 {% elif seed.status == "completed" %}
+  {# Auto-refresh the posts-to-review section when generation completes #}
+  <div hx-get="{% url 'content:studio_posts' %}"
+       hx-target="#studio-posts-section"
+       hx-swap="innerHTML transition:true"
+       hx-trigger="load delay:300ms"
+       style="display:none"></div>
   <div class="card border-l-4 border-l-green-400 dark:border-l-green-500">
     <div class="card-body">
       <div class="flex items-center space-x-2 mb-2">
@@ -52,7 +58,8 @@ Shows batch context when generation finishes.
           {% endfor %}
         </div>
         <div class="mt-3 ml-7">
-          <p class="text-xs text-gray-400 dark:text-gray-500">Scroll down to review and approve — individually or all at once.</p>
+          <a href="#studio-posts-section"
+             class="text-xs text-kova-600 dark:text-kova-400 hover:underline font-medium">↓ Review &amp; approve posts below</a>
         </div>
       {% endif %}
     </div>
