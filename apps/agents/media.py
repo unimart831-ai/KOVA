@@ -130,11 +130,11 @@ def _fetch_huggingface(prompt: str, width: int, height: int) -> bytes | None:
     return response.content
 
 
-# Provider registry — tried in order
+# Provider registry — tried in order (HuggingFace first: truly free, no deposit)
 PROVIDERS = [
+    ("huggingface", _fetch_huggingface),
     ("together", _fetch_together),
     ("pollinations", _fetch_pollinations),
-    ("huggingface", _fetch_huggingface),
 ]
 
 

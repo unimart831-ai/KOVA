@@ -272,11 +272,11 @@ AGENT_MODELS = {
 }
 
 # ─── AI IMAGE GENERATION ─────────────────────────────────────────────────────
-# Multi-provider with fallback: Together.ai → Pollinations.ai → Hugging Face
+# Multi-provider with fallback: Hugging Face → Together.ai → Pollinations.ai
 AI_IMAGE_GENERATION_ENABLED = env.bool("AI_IMAGE_GENERATION_ENABLED", default=True)
-TOGETHER_API_KEY = env("TOGETHER_API_KEY", default="")        # https://api.together.xyz — FLUX.1-schnell-Free
+HF_TOKEN = env("HF_TOKEN", default="")                        # https://huggingface.co/settings/tokens — FLUX.1-schnell (free)
+TOGETHER_API_KEY = env("TOGETHER_API_KEY", default="")        # https://api.together.xyz — FLUX.1-schnell-Free (needs deposit)
 POLLINATIONS_API_KEY = env("POLLINATIONS_API_KEY", default="") # https://pollinations.ai — Flux Schnell
-HF_TOKEN = env("HF_TOKEN", default="")                        # https://huggingface.co/settings/tokens — FLUX.1-schnell
 AI_IMAGE_MODEL = env("AI_IMAGE_MODEL", default="flux")        # Pollinations model: flux | gptimage | zimage
 
 # ─── STRIPE ──────────────────────────────────────────────────────────────────
