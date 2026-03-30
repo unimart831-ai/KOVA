@@ -2,7 +2,25 @@
 X/Twitter OAuth 2.0 Provider (with PKCE).
 
 Twitter API v2 uses OAuth 2.0 with PKCE for user-context authentication.
-Scopes: tweet.read, tweet.write, users.read, offline.access
+Scopes: tweet.read, tweet.write, users.read, offline.access, like.write, like.read
+
+Full capability matrix:
+─────────────────────────────────────────────────────────────────────
+CAPABILITY                           │ API ENDPOINT
+─────────────────────────────────────────────────────────────────────
+Publish tweet                        │ POST /2/tweets
+Publish thread                       │ POST /2/tweets (chained reply_to)
+Reply to tweet                       │ POST /2/tweets (in_reply_to_tweet_id)
+Retweet                              │ POST /2/users/:id/retweets
+Undo retweet                         │ DELETE /2/users/:id/retweets/:tweet_id
+Like tweet                           │ POST /2/users/:id/likes
+Unlike tweet                         │ DELETE /2/users/:id/likes/:tweet_id
+Delete tweet                         │ DELETE /2/tweets/:id
+Get tweet metrics                    │ GET /2/tweets/:id (public_metrics)
+Get mentions                         │ GET /2/users/:id/mentions
+Get user info                        │ GET /2/users/me
+Schedule (via Kova)                  │ Internal scheduler
+─────────────────────────────────────────────────────────────────────
 Docs: https://developer.twitter.com/en/docs/authentication/oauth-2-0
 """
 
@@ -28,7 +46,7 @@ TWITTER_AUTH_URL = "https://twitter.com/i/oauth2/authorize"
 TWITTER_TOKEN_URL = "https://api.twitter.com/2/oauth2/token"
 TWITTER_API_BASE = "https://api.twitter.com/2"
 
-TWITTER_SCOPES = "tweet.read tweet.write users.read offline.access"
+TWITTER_SCOPES = "tweet.read tweet.write users.read offline.access like.write like.read"
 
 
 class TwitterProvider(BaseProvider):
@@ -242,6 +260,115 @@ class TwitterProvider(BaseProvider):
                 )
                 return resp.status_code == 200
         except Exception:
+            return False
+
+    # ─── Thread / Reply ──────────────────────────────────────────────────────
+
+    def publish_thread(self, access_token: str, tweets: list[str],
+                       **kwargs) -> list[PublishResult]:
+        """Publish a thread — list of tweets chained via in_reply_to_tweet_id."""
+        headers = {"Authorization": f"Bearer {access_token}"}
+        results = []
+        reply_to = None
+
+        for text in tweets:
+            payload = {"text": text}
+            if reply_to:
+                payload["reply"] = {"in_reply_to_tweet_id": reply_to}
+            try:
+                with httpx.Client() as client:
+                    resp = client.post(
+                        f"{TWITTER_API_BASE}/tweets",
+                        json=payload,
+                        headers=headers,
+                    )
+                    resp.raise_for_status()
+                    data = resp.json().get("data", {})
+                    tweet_id = data.get("id", "")
+                    reply_to = tweet_id
+                    results.append(PublishResult(
+                        success=True,
+                        platform_post_id=tweet_id,
+                        url=f"https://twitter.com/i/web/status/{tweet_id}",
+                    ))
+            except httpx.HTTPStatusError as e:
+                logger.error("Twitter thread publish failed: %s", e.response.text)
+                results.append(PublishResult(success=False, error=str(e)))
+                break  # Stop thread on failure
+        return results
+
+    def reply_to_comment(self, access_token: str, comment_id: str,
+                         message: str, **kwargs) -> dict:
+        """Reply to a tweet (comment_id is the tweet ID being replied to)."""
+        headers = {"Authorization": f"Bearer {access_token}"}
+        payload = {
+            "text": message,
+            "reply": {"in_reply_to_tweet_id": comment_id},
+        }
+        try:
+            with httpx.Client() as client:
+                resp = client.post(
+                    f"{TWITTER_API_BASE}/tweets",
+                    json=payload,
+                    headers=headers,
+                )
+                resp.raise_for_status()
+                data = resp.json().get("data", {})
+                return {"id": data.get("id", ""), "success": True}
+        except httpx.HTTPStatusError as e:
+            logger.error("Twitter reply failed: %s", e.response.text)
+            return {"error": str(e), "success": False}
+
+    # ─── Like / Retweet ──────────────────────────────────────────────────────
+
+    def react_to_post(self, access_token: str, post_id: str,
+                      reaction: str = "LIKE", **kwargs) -> dict:
+        """Like or retweet a tweet."""
+        headers = {"Authorization": f"Bearer {access_token}"}
+        try:
+            with httpx.Client() as client:
+                # Get current user ID
+                me_resp = client.get(
+                    f"{TWITTER_API_BASE}/users/me",
+                    headers=headers,
+                )
+                me_resp.raise_for_status()
+                user_id = me_resp.json()["data"]["id"]
+
+                if reaction.upper() == "RETWEET":
+                    resp = client.post(
+                        f"{TWITTER_API_BASE}/users/{user_id}/retweets",
+                        json={"tweet_id": post_id},
+                        headers=headers,
+                    )
+                else:  # Default: LIKE
+                    resp = client.post(
+                        f"{TWITTER_API_BASE}/users/{user_id}/likes",
+                        json={"tweet_id": post_id},
+                        headers=headers,
+                    )
+                resp.raise_for_status()
+                return {"success": True, "action": reaction.lower()}
+        except httpx.HTTPStatusError as e:
+            logger.error("Twitter %s failed: %s", reaction, e.response.text)
+            return {"error": str(e), "success": False}
+
+    # ─── Delete ──────────────────────────────────────────────────────────────
+
+    def delete_post(self, access_token: str, platform_post_id: str,
+                    **kwargs) -> bool:
+        """Delete a tweet by ID."""
+        headers = {"Authorization": f"Bearer {access_token}"}
+        try:
+            with httpx.Client() as client:
+                resp = client.delete(
+                    f"{TWITTER_API_BASE}/tweets/{platform_post_id}",
+                    headers=headers,
+                )
+                resp.raise_for_status()
+                return resp.json().get("data", {}).get("deleted", False)
+        except httpx.HTTPStatusError as e:
+            logger.error("Twitter delete failed: %s", e.response.text)
             return False
 
 
