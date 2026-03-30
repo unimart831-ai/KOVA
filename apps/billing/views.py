@@ -61,9 +61,7 @@ def checkout(request):
         messages.error(request, "Invalid plan selected.")
         return redirect("billing:pricing")
 
-    if plan_tier == "starter":
-        messages.info(request, "Starter is the free plan — no payment needed.")
-        return redirect("billing:overview")
+    # All plans go through Stripe checkout (14-day free trial included)
 
     try:
         session = create_checkout_session(request.user, plan_tier, request)

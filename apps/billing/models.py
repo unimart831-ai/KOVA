@@ -46,8 +46,9 @@ PLAN_LIMITS = {
         "email_brief": False,
         "engagement_agent": False,
         "auto_approve": False,
-        "price_kes": 250,
-        "price_usd": 5,
+        "price_kes": 99,
+        "price_usd": 1,
+        "trial_days": 14,
     },
     "growth": {
         "label": "Kazi / Growth",
@@ -59,8 +60,9 @@ PLAN_LIMITS = {
         "email_brief": True,
         "engagement_agent": True,
         "auto_approve": False,
-        "price_kes": 1000,
-        "price_usd": 19,
+        "price_kes": 500,
+        "price_usd": 5,
+        "trial_days": 14,
     },
     "pro": {
         "label": "Biashara / Pro",
@@ -72,8 +74,9 @@ PLAN_LIMITS = {
         "email_brief": True,
         "engagement_agent": True,
         "auto_approve": True,
-        "price_kes": 2500,
-        "price_usd": 49,
+        "price_kes": 1500,
+        "price_usd": 15,
+        "trial_days": 14,
     },
     "agency": {
         "label": "Wakala / Agency",
@@ -85,8 +88,9 @@ PLAN_LIMITS = {
         "email_brief": True,
         "engagement_agent": True,
         "auto_approve": True,
-        "price_kes": 5000,
-        "price_usd": 99,
+        "price_kes": 3500,
+        "price_usd": 29,
+        "trial_days": 14,
     },
 }
 

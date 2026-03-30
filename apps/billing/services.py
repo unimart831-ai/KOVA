@@ -16,7 +16,7 @@ import stripe
 from django.conf import settings
 from django.urls import reverse
 
-from apps.billing.models import BillingEvent
+from apps.billing.models import BillingEvent, get_plan_limits
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +62,8 @@ def create_checkout_session(user, plan_tier, request):
         raise ValueError(f"No Stripe Price ID configured for plan: {plan_tier}")
 
     customer_id = get_or_create_customer(user)
+    plan_limits = get_plan_limits(plan_tier)
+    trial_days = plan_limits.get("trial_days", 14)
 
     session = stripe.checkout.Session.create(
         customer=customer_id,
@@ -72,7 +74,7 @@ def create_checkout_session(user, plan_tier, request):
         ) + "?session_id={CHECKOUT_SESSION_ID}",
         cancel_url=request.build_absolute_uri(reverse("billing:checkout_cancel")),
         subscription_data={
-            "trial_period_days": 14,
+            "trial_period_days": trial_days,
             "metadata": {"kova_user_id": str(user.id), "plan_tier": plan_tier},
         },
         metadata={"kova_user_id": str(user.id), "plan_tier": plan_tier},
