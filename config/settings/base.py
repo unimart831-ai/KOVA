@@ -78,6 +78,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
+    "apps.billing.middleware.PlanEnforcementMiddleware",
 ]
 
 # ─── URLS ────────────────────────────────────────────────────────────────────
@@ -240,6 +241,10 @@ DEFAULT_LLM_MODEL = env("DEFAULT_LLM_MODEL", default="gpt-4o-mini")
 # ─── STRIPE ──────────────────────────────────────────────────────────────────
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY", default="")
+STRIPE_PRICE_STARTER = env("STRIPE_PRICE_STARTER", default="")  # Free tier — no Stripe price needed
+STRIPE_PRICE_GROWTH = env("STRIPE_PRICE_GROWTH", default="")
+STRIPE_PRICE_PRO = env("STRIPE_PRICE_PRO", default="")
+STRIPE_PRICE_AGENCY = env("STRIPE_PRICE_AGENCY", default="")
 
 # ─── SOCIAL PLATFORM OAUTH ───────────────────────────────────────────────────
 TWITTER_CLIENT_ID = env("TWITTER_CLIENT_ID", default="")

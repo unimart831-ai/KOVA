@@ -87,6 +87,20 @@ class UserProfile(models.Model):
     plan = models.CharField(max_length=20, choices=PlanTier.choices, default=PlanTier.STARTER)
     stripe_customer_id = models.CharField(max_length=255, blank=True)
     stripe_subscription_id = models.CharField(max_length=255, blank=True)
+    subscription_status = models.CharField(
+        max_length=20,
+        choices=[
+            ("active", "Active"),
+            ("trialing", "Trialing"),
+            ("past_due", "Past Due"),
+            ("canceled", "Canceled"),
+            ("incomplete", "Incomplete"),
+            ("none", "None"),
+        ],
+        default="none",
+    )
+    trial_ends_at = models.DateTimeField(null=True, blank=True)
+    current_period_end = models.DateTimeField(null=True, blank=True)
     # Agent autonomy preferences
     auto_approve_posts = models.BooleanField(
         default=False,

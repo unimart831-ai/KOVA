@@ -2,65 +2,112 @@
 
 {% block page_title %}Billing{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Plan and payment method</p>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Plan, usage, and payment method</p>
 {% endblock %}
 
 {% block content %}
 <div class="max-w-3xl mx-auto space-y-6">
-  {# Current plan hero #}
+
+  {# ── Current Plan Hero ── #}
   <div class="card overflow-hidden">
     <div class="px-6 py-5 bg-gradient-to-br from-kova-50 via-white to-indigo-50/40 dark:from-kova-950/40 dark:via-gray-900 dark:to-indigo-950/20 border-b border-gray-100 dark:border-gray-800">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <p class="text-xs font-semibold uppercase tracking-wider text-kova-600 dark:text-kova-400">Current plan</p>
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ request.user.profile.get_plan_display }}</h2>
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ profile.get_plan_display }}</h2>
+          {% if profile.subscription_status == 'trialing' %}
+            <p class="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
+              Trial ends {{ profile.trial_ends_at|date:"M d, Y" }}
+            </p>
+          {% elif profile.subscription_status == 'active' and profile.current_period_end %}
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Renews {{ profile.current_period_end|date:"M d, Y" }}
+            </p>
+          {% elif profile.subscription_status == 'past_due' %}
+            <p class="text-xs text-red-600 dark:text-red-400 mt-1 font-medium">
+              ⚠ Payment past due — please update your card
+            </p>
+          {% elif profile.subscription_status == 'canceled' %}
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Canceled — access until {{ profile.current_period_end|date:"M d, Y" }}
+            </p>
+          {% endif %}
         </div>
-        <button type="button" class="btn-primary w-full sm:w-auto shrink-0" disabled aria-disabled="true">Upgrade plan</button>
+        <div class="flex gap-2">
+          {% if profile.plan != 'starter' and profile.stripe_subscription_id %}
+            <a href="{% url 'billing:portal' %}" class="btn-secondary text-sm px-4 py-2">Manage subscription</a>
+          {% endif %}
+          <a href="{% url 'billing:pricing' %}" class="btn-primary text-sm px-4 py-2">
+            {% if profile.plan == 'starter' %}Upgrade plan{% else %}Change plan{% endif %}
+          </a>
+        </div>
       </div>
     </div>
+
+    {# Plan limits #}
     <div class="card-body">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">What's included</h3>
-      <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Your plan includes</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div class="text-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ limits.max_social_accounts }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Social accounts</p>
+        </div>
+        <div class="text-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{% if limits.max_posts_per_month > 9999 %}∞{% else %}{{ limits.max_posts_per_month }}{% endif %}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Posts / month</p>
+        </div>
+        <div class="text-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ limits.agents_enabled|length }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">AI agents</p>
+        </div>
+      </div>
+
+      <ul class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
         <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          AI content generation
-        </li>
-        <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <svg class="w-4 h-4 {% if limits.daily_brief %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
           Daily AI brief
         </li>
         <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          Multi-platform publishing
+          <svg class="w-4 h-4 {% if limits.email_brief %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Email brief reports
         </li>
         <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          Performance analytics
+          <svg class="w-4 h-4 {% if limits.engagement_agent %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Engagement agent
         </li>
         <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          6 AI agents
-        </li>
-        <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          Engagement suggestions
+          <svg class="w-4 h-4 {% if limits.auto_approve %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Auto-approve publishing
         </li>
       </ul>
     </div>
   </div>
 
-  {# Payment method placeholder #}
+  {# ── Payment Management ── #}
   <div class="card">
     <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Payment method</h3>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Payment & Invoices</h3>
     </div>
-    <div class="card-body text-center py-8">
-      <div class="w-12 h-12 mx-auto rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
-        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+    {% if profile.stripe_subscription_id %}
+      <div class="card-body space-y-3">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          Manage your payment method, view invoices, and update billing details through the secure Stripe portal.
+        </p>
+        <a href="{% url 'billing:portal' %}" class="inline-flex items-center gap-2 text-sm font-medium text-kova-600 dark:text-kova-400 hover:text-kova-700 dark:hover:text-kova-300">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          Open billing portal
+        </a>
       </div>
-      <p class="text-sm text-gray-500 dark:text-gray-400">Stripe billing will be enabled in a future release.</p>
-      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">You'll manage cards, invoices, and seats here.</p>
-    </div>
+    {% else %}
+      <div class="card-body text-center py-8">
+        <div class="w-12 h-12 mx-auto rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
+          <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+        </div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">No active subscription.</p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Upgrade to a paid plan to unlock more features.</p>
+        <a href="{% url 'billing:pricing' %}" class="btn-primary text-sm px-6 py-2 mt-4 inline-block">View plans</a>
+      </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

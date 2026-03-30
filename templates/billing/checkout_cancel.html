@@ -1,0 +1,28 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Checkout Cancelled{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto text-center py-12">
+  <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+    <svg class="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+    </svg>
+  </div>
+
+  <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">No worries!</h2>
+  <p class="text-gray-600 dark:text-gray-400 mb-8">
+    You cancelled the checkout. Your current plan hasn't changed.<br>
+    You can upgrade any time when you're ready.
+  </p>
+
+  <div class="flex items-center justify-center gap-4">
+    <a href="{% url 'billing:pricing' %}" class="btn-primary">
+      View plans again
+    </a>
+    <a href="{% url 'billing:overview' %}" class="btn-secondary">
+      Billing overview
+    </a>
+  </div>
+</div>
+{% endblock %}

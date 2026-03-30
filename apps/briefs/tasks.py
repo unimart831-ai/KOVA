@@ -10,20 +10,60 @@ import logging
 from datetime import timedelta
 
 from celery import shared_task
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
 from django.db.models import Count, Q
+from django.template.loader import render_to_string
 from django.utils import timezone
 
 from apps.agents.analyst_agent import analyze_performance, get_content_dna_summary
 from apps.agents.llm import generate
 from apps.agents.models import AgentAction, AgentConfig
 from apps.agents.research_agent import discover_trends
+from apps.billing.models import get_plan_limits
 from apps.briefs.models import DailyBrief
 from apps.content.models import ContentSeed, Post
 from apps.notifications.models import Notification
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
+
+
+def _send_brief_email(user, brief):
+    """Send the daily brief via email if the user's plan includes email briefs."""
+    profile = getattr(user, "profile", None)
+    if not profile:
+        return
+
+    limits = get_plan_limits(profile.plan)
+    if not limits.get("email_brief"):
+        return  # Plan doesn't include email briefs
+
+    try:
+        context = {
+            "user": user,
+            "brief": brief,
+            "site_url": settings.SITE_URL if hasattr(settings, "SITE_URL") else "",
+        }
+        html_body = render_to_string("briefs/email_brief.html", context)
+        text_body = (
+            f"Good morning! Your daily brief for {brief.date} is ready.\n\n"
+            f"{brief.summary}\n\n"
+            f"View the full brief at your Kova Agent dashboard."
+        )
+
+        send_mail(
+            subject=f"Your Daily Brief — {brief.date.strftime('%b %d, %Y')}",
+            message=text_body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            html_message=html_body,
+            fail_silently=True,
+        )
+        logger.info("Email brief sent to %s", user.email)
+    except Exception as e:
+        logger.warning("Failed to send email brief to %s: %s", user.email, e)
 
 
 def _gather_brief_data(user):
@@ -252,6 +292,9 @@ def generate_daily_brief(user):
             notification_type="system",
             message="Your daily brief is ready. Good morning!",
         )
+
+        # Send email brief (if plan includes it)
+        _send_brief_email(user, brief)
 
         action.status = AgentAction.ActionStatus.COMPLETED
         action.output_data = {"brief_id": str(brief.id)}
