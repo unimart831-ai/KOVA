@@ -833,7 +833,7 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 | Phase 1 | Sprint 4 | ✅ Complete | Auto-Publish, Metrics, Railway Deployment |
 | Phase 2 | Sprint 5 | ✅ Complete | Daily Brief, Analyst Agent, Content DNA |
 | Phase 2 | Sprint 6 | ✅ Complete | Research Agent, Adapt Agent, Agent Config UI |
-| Phase 2 | Sprint 7 | ⏳ Not Started | Billing + Growth Features |
+| Phase 2 | Sprint 7 | ✅ Complete | Billing + Growth Features |
 | Phase 2 | Sprint 8 | ⏳ Not Started | Quality + More Platforms |
 | Phase 3 | Sprint 9-12 | ⏳ Not Started | Engage Agent, Orchestration, Teams, Polish |
 | Phase 4 | Post-Launch  | ⏳ Not Started | Agency, White-label, API, Mobile PWA |
@@ -960,16 +960,21 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
   - New URLs: `/agents/activity/`, `/agents/<slug>/`, `/agents/<slug>/instructions/`
   - Templates: `activity_log.html`, `detail.html` (new), `control.html` + `agent_status.html` (updated)
 
-### Sprint 7 (Week 13-14): Billing + Growth Features
-- [ ] billing app: Plan, Subscription models
-- [ ] Stripe Checkout integration (subscribe to plan)
-- [ ] Stripe Customer Portal (manage subscription, invoices)
-- [ ] Stripe webhooks (subscription lifecycle events)
-- [ ] Free 7-day trial flow
-- [ ] Plan enforcement (feature gating based on subscription)
-- [ ] Pricing page with plan comparison
-- [ ] Agent email reports (Daily Brief → email)
-- DELIVERABLE: Monetization works. Users can subscribe and pay.
+### Sprint 7 (Week 13-14): Billing + Growth Features ✅
+- [x] billing app: BillingEvent model + PLAN_LIMITS config (4 tiers)
+- [x] Stripe Checkout integration (subscribe to plan)
+- [x] Stripe Customer Portal (manage subscription, invoices)
+- [x] Stripe webhooks (5 event handlers, idempotent processing)
+- [x] Free 14-day trial flow (via Stripe subscription_data)
+- [x] Plan enforcement middleware (platform connect + post creation limits)
+- [x] Pricing page with plan comparison (KES/USD toggle, 4 tiers)
+- [x] Agent email reports (Daily Brief → HTML email for Growth+ plans)
+- [x] Billing overview dashboard (subscription status, plan limits grid)
+- [x] Checkout success/cancel pages
+- [x] BillingEvent admin with search + filters
+- [x] UserProfile fields: subscription_status, trial_ends_at, current_period_end
+- DELIVERABLE: Monetization works. Users can subscribe and pay. ✅
+- COMMIT: 6481e9a — 17 files, 1306 insertions
 
 ### Sprint 8 (Week 15-16): Quality + More Platforms
 - [ ] Post preview per platform (mock how it'll look)
