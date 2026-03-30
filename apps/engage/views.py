@@ -51,16 +51,18 @@ def send_reply(request, pk):
         if interaction.interaction_type in ("comment", "reply"):
             # Reply to comment via provider
             provider.reply_to_comment(
-                account=account,
+                access_token=account.access_token,
                 comment_id=interaction.platform_interaction_id,
                 message=interaction.ai_suggested_reply,
+                account=account,
             )
         elif interaction.interaction_type == "dm":
             # Send DM via provider
             provider.send_message(
-                account=account,
+                access_token=account.access_token,
                 recipient_id=interaction.author_username or interaction.author_name,
                 message=interaction.ai_suggested_reply,
+                account=account,
             )
         else:
             return HttpResponse(

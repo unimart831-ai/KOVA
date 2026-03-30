@@ -178,6 +178,33 @@ class BaseProvider(ABC):
         """
         return {}
 
+    def delete_post(self, access_token: str, platform_post_id: str, **kwargs) -> bool:
+        """
+        Delete a published post. Returns True if successful.
+        """
+        return False
+
+    def update_post(self, access_token: str, platform_post_id: str,
+                    content: str, **kwargs) -> PublishResult:
+        """
+        Update/edit a published post. Returns PublishResult.
+        """
+        return PublishResult(success=False, error="Not supported by this provider")
+
+    def react_to_post(self, access_token: str, post_id: str,
+                      reaction: str = "LIKE", **kwargs) -> dict:
+        """
+        React to a post (like, celebrate, etc.). Returns dict with result.
+        """
+        return {}
+
+    def get_own_posts(self, access_token: str, count: int = 20, **kwargs) -> list[dict]:
+        """
+        Fetch the user's own posts/feed history.
+        Returns list of dicts with keys: id, text, created_at, metrics, url
+        """
+        return []
+
     def validate_token(self, access_token: str) -> bool:
         """
         Check if an access token is still valid. Default: try a lightweight API call.
