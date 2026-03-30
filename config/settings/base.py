@@ -245,9 +245,10 @@ DEFAULT_LLM_MODEL = env("DEFAULT_LLM_MODEL", default="gpt-4o-mini")
 # Tiered model routing — right model for each task.
 # Override individual tasks via env vars, or change the tier defaults.
 # Tier: premium (creative writing) | workhorse (reasoning) | fast (classification)
-LLM_MODEL_PREMIUM = env("LLM_MODEL_PREMIUM", default="anthropic/claude-sonnet-4-20250514")
-LLM_MODEL_WORKHORSE = env("LLM_MODEL_WORKHORSE", default="openai/gpt-4o")
-LLM_MODEL_FAST = env("LLM_MODEL_FAST", default="openai/gpt-4o-mini")
+# DEV: Using free OpenRouter models. Switch to paid models for production.
+LLM_MODEL_PREMIUM = env("LLM_MODEL_PREMIUM", default="google/gemini-2.0-flash-exp:free")
+LLM_MODEL_WORKHORSE = env("LLM_MODEL_WORKHORSE", default="google/gemini-2.0-flash-exp:free")
+LLM_MODEL_FAST = env("LLM_MODEL_FAST", default="google/gemini-2.0-flash-exp:free")
 
 AGENT_MODELS = {
     # Create Agent — user-facing content, needs top creative quality
