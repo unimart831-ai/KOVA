@@ -69,23 +69,60 @@
               </div>
             {% endif %}
 
+            {# ── LinkedIn: Profile Info ── #}
+            {% if account.platform == 'linkedin' and account.metadata.linkedin_sub %}
+              <div class="mt-3 flex items-center gap-2 px-2.5 py-1.5 bg-blue-50/80 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 rounded-lg">
+                <div class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-[10px]">💼</div>
+                <span class="text-xs font-medium text-blue-800 dark:text-blue-200 truncate">{{ account.display_name|default:account.username }}</span>
+              </div>
+            {% endif %}
+
+            {# ── TikTok: Creator Info ── #}
+            {% if account.platform == 'tiktok' %}
+              <div class="mt-3 flex items-center gap-2 px-2.5 py-1.5 bg-gray-50/80 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[10px]">🎵</div>
+                <span class="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">@{{ account.username }}</span>
+              </div>
+            {% endif %}
+
             {# ── Platform Capabilities ── #}
-            {% if account.platform == 'facebook' or account.platform == 'instagram' %}
+            {% if account.platform == 'facebook' or account.platform == 'instagram' or account.platform == 'linkedin' or account.platform == 'tiktok' %}
               <div class="mt-3">
                 <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Capabilities</p>
                 <div class="flex flex-wrap gap-1">
-                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Publish</span>
-                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Schedule</span>
-                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Insights</span>
-                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Comments</span>
-                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">DMs</span>
-                  {% if account.platform == 'instagram' %}
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Reels</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Stories</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Carousel</span>
-                  {% elif account.platform == 'facebook' %}
+                  {% if account.platform == 'facebook' or account.platform == 'instagram' %}
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Publish</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Schedule</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Insights</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Comments</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">DMs</span>
+                    {% if account.platform == 'instagram' %}
+                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Reels</span>
+                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Stories</span>
+                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Carousel</span>
+                    {% elif account.platform == 'facebook' %}
+                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Video</span>
+                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Multi-photo</span>
+                    {% endif %}
+                  {% elif account.platform == 'linkedin' %}
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Publish</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Schedule</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Images</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Multi-image</span>
                     <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Video</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Multi-photo</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Articles</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Edit Post</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Delete Post</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Comments</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Reactions</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Insights</span>
+                  {% elif account.platform == 'tiktok' %}
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Video</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Photos</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Schedule</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Status Track</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Video List</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Insights</span>
                   {% endif %}
                 </div>
               </div>

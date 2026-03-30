@@ -23,6 +23,10 @@ Usage: {% include "components/post_card.html" with post=post %}
             <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{ post.social_account.get_platform_display }}</span>
             {% if post.social_account.platform == 'facebook' and post.social_account.metadata.pages %}
               <span class="text-[9px] text-gray-400 dark:text-gray-500">· {{ post.social_account.metadata.pages.0.name }}</span>
+            {% elif post.social_account.platform == 'linkedin' %}
+              <span class="text-[9px] text-gray-400 dark:text-gray-500">· {{ post.social_account.display_name|default:post.social_account.username }}</span>
+            {% elif post.social_account.platform == 'tiktok' %}
+              <span class="text-[9px] text-gray-400 dark:text-gray-500">· @{{ post.social_account.username }}</span>
             {% endif %}
           {% endif %}
           {% if post.generated_by_agent %}

@@ -26,6 +26,10 @@
               {{ post.social_account.get_platform_display }} &middot; @{{ post.social_account.username }}
               {% if post.social_account.platform == 'facebook' and post.social_account.metadata.pages %}
                 &middot; {{ post.social_account.metadata.pages.0.name }}
+              {% elif post.social_account.platform == 'linkedin' %}
+                &middot; {{ post.social_account.display_name|default:post.social_account.username }}
+              {% elif post.social_account.platform == 'tiktok' %}
+                &middot; @{{ post.social_account.username }}
               {% endif %}
             </span>
             {% endif %}
