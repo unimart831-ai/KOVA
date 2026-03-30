@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from apps.content.forms import ContentSeedForm, PostEditForm
 from apps.content.models import ContentSeed, Post
@@ -114,6 +115,17 @@ def submit_seed(request):
         )
 
     messages.error(request, "Please enter your content idea.")
+    return redirect("content:studio")
+
+
+@login_required
+@require_POST
+def dismiss_failed_seeds(request):
+    """Clear all failed seeds so they don't clutter the studio."""
+    deleted, _ = request.user.content_seeds.filter(status="failed").delete()
+    if request.headers.get("HX-Request") == "true":
+        return HttpResponse("")
+    messages.success(request, f"Cleared {deleted} failed generation(s).")
     return redirect("content:studio")
 
 
