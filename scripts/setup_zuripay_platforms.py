@@ -34,6 +34,12 @@ platforms = [
         "display_name": "Zuri Pay",
     },
     {
+        "platform": "facebook",
+        "platform_user_id": "zp_fb_001",
+        "username": "ZuriPay",
+        "display_name": "Zuri Pay",
+    },
+    {
         "platform": "tiktok",
         "platform_user_id": "zp_tt_001",
         "username": "@zuripay",
