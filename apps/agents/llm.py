@@ -14,6 +14,23 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
+def get_model_for_task(task: str) -> str:
+    """
+    Resolve the best LLM model for a specific agent task.
+
+    Uses AGENT_MODELS config from settings for tiered routing.
+    Falls back to DEFAULT_LLM_MODEL if the task isn't mapped.
+
+    Args:
+        task: Dot-notation task key, e.g. "create.generate", "engage.reply"
+
+    Returns:
+        Model identifier string for the configured provider.
+    """
+    agent_models = getattr(settings, "AGENT_MODELS", {})
+    return agent_models.get(task, getattr(settings, "DEFAULT_LLM_MODEL", "gpt-4o-mini"))
+
+
 @dataclass
 class LLMResponse:
     """Standard response from any LLM call."""

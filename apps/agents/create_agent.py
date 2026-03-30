@@ -21,7 +21,7 @@ from datetime import datetime, timedelta, timezone
 
 from django.utils import timezone as dj_timezone
 
-from apps.agents.llm import generate, LLMResponse
+from apps.agents.llm import generate, get_model_for_task, LLMResponse
 from apps.agents.models import AgentAction, AgentConfig
 from apps.content.models import ContentSeed, Post
 from apps.platforms.models import SocialAccount
@@ -428,6 +428,7 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
         llm_response: LLMResponse = generate(
             prompt=prompt,
             system=system,
+            model=get_model_for_task("create.generate"),
             json_mode=True,
             temperature=0.7,
             max_tokens=4096,
@@ -599,6 +600,7 @@ Respond with a JSON object. No markdown code fences.
         llm_response: LLMResponse = generate(
             prompt=prompt,
             system=system,
+            model=get_model_for_task("create.regenerate"),
             json_mode=True,
             temperature=0.8,  # Slightly higher for creative diversity
             max_tokens=2048,
@@ -759,6 +761,7 @@ Respond with a JSON object. No markdown code fences.
         llm_response: LLMResponse = generate(
             prompt=prompt,
             system=system,
+            model=get_model_for_task("create.repurpose"),
             json_mode=True,
             temperature=0.7,
             max_tokens=4096,

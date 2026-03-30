@@ -16,7 +16,7 @@ from datetime import timedelta
 from django.db.models import Avg, Count, F
 from django.utils import timezone
 
-from apps.agents.llm import generate
+from apps.agents.llm import generate, get_model_for_task
 from apps.agents.models import AgentAction, AgentConfig
 from apps.analytics.models import PostMetric
 from apps.content.models import Post
@@ -150,6 +150,7 @@ def suggest_optimal_times(user):
         response = generate(
             prompt=prompt,
             system=system_prompt,
+            model=get_model_for_task("adapt.schedule"),
             json_mode=True,
             temperature=0.3,
             max_tokens=1200,

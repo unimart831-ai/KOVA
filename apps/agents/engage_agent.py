@@ -20,7 +20,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from apps.agents.llm import generate
+from apps.agents.llm import generate, get_model_for_task
 from apps.agents.models import AgentAction, AgentConfig
 from apps.engage.models import Interaction
 from apps.platforms.models import SocialAccount
@@ -236,6 +236,7 @@ def analyze_interactions(user, batch_size=20):
         response = generate(
             prompt=prompt,
             system=system_prompt,
+            model=get_model_for_task("engage.analyze"),
             json_mode=True,
             temperature=0.1,
             max_tokens=1500,
@@ -400,6 +401,7 @@ def _generate_single_reply(interaction, brand_voice, company):
     response = generate(
         prompt=prompt,
         system=system_prompt,
+        model=get_model_for_task("engage.reply"),
         json_mode=False,
         temperature=0.6,
         max_tokens=300,

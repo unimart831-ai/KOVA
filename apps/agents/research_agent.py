@@ -14,7 +14,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from apps.agents.llm import generate
+from apps.agents.llm import generate, get_model_for_task
 from apps.agents.models import AgentAction, AgentConfig
 from apps.content.models import Post
 
@@ -123,6 +123,7 @@ def discover_trends(user):
         response = generate(
             prompt=prompt,
             system=system_prompt,
+            model=get_model_for_task("research.trends"),
             json_mode=True,
             temperature=0.6,
             max_tokens=2000,
@@ -202,6 +203,7 @@ def generate_content_angles(user, topic):
         response = generate(
             prompt=prompt,
             system=system_prompt,
+            model=get_model_for_task("research.angles"),
             json_mode=True,
             temperature=0.7,
             max_tokens=1500,

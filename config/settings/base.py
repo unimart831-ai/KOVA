@@ -242,6 +242,34 @@ OPENROUTER_API_KEY = env("OPENROUTER_API_KEY", default="")
 DEFAULT_LLM_PROVIDER = env("DEFAULT_LLM_PROVIDER", default="openai")  # openai | anthropic | openrouter
 DEFAULT_LLM_MODEL = env("DEFAULT_LLM_MODEL", default="gpt-4o-mini")
 
+# Tiered model routing — right model for each task.
+# Override individual tasks via env vars, or change the tier defaults.
+# Tier: premium (creative writing) | workhorse (reasoning) | fast (classification)
+LLM_MODEL_PREMIUM = env("LLM_MODEL_PREMIUM", default="anthropic/claude-sonnet-4-20250514")
+LLM_MODEL_WORKHORSE = env("LLM_MODEL_WORKHORSE", default="openai/gpt-4o")
+LLM_MODEL_FAST = env("LLM_MODEL_FAST", default="openai/gpt-4o-mini")
+
+AGENT_MODELS = {
+    # Create Agent — user-facing content, needs top creative quality
+    "create.generate": env("LLM_MODEL_CREATE_GENERATE", default=LLM_MODEL_PREMIUM),
+    "create.regenerate": env("LLM_MODEL_CREATE_REGENERATE", default=LLM_MODEL_PREMIUM),
+    "create.repurpose": env("LLM_MODEL_CREATE_REPURPOSE", default=LLM_MODEL_PREMIUM),
+    # Engage Agent — replies are user-facing, analysis is not
+    "engage.analyze": env("LLM_MODEL_ENGAGE_ANALYZE", default=LLM_MODEL_FAST),
+    "engage.reply": env("LLM_MODEL_ENGAGE_REPLY", default=LLM_MODEL_PREMIUM),
+    # Analyst Agent — structured data extraction, no creativity needed
+    "analyst.performance": env("LLM_MODEL_ANALYST_PERFORMANCE", default=LLM_MODEL_FAST),
+    "analyst.content_dna": env("LLM_MODEL_ANALYST_DNA", default=LLM_MODEL_FAST),
+    "analyst.predict": env("LLM_MODEL_ANALYST_PREDICT", default=LLM_MODEL_FAST),
+    # Research Agent — reasoning + semi-creative
+    "research.trends": env("LLM_MODEL_RESEARCH_TRENDS", default=LLM_MODEL_WORKHORSE),
+    "research.angles": env("LLM_MODEL_RESEARCH_ANGLES", default=LLM_MODEL_WORKHORSE),
+    # Adapt Agent — data analysis
+    "adapt.schedule": env("LLM_MODEL_ADAPT_SCHEDULE", default=LLM_MODEL_FAST),
+    # Strategist (daily brief) — reasoning + synthesis
+    "strategist.brief": env("LLM_MODEL_STRATEGIST_BRIEF", default=LLM_MODEL_WORKHORSE),
+}
+
 # ─── STRIPE ──────────────────────────────────────────────────────────────────
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY", default="")

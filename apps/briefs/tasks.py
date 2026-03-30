@@ -18,7 +18,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from apps.agents.analyst_agent import analyze_performance, get_content_dna_summary
-from apps.agents.llm import generate
+from apps.agents.llm import generate, get_model_for_task
 from apps.agents.models import AgentAction, AgentConfig
 from apps.agents.research_agent import discover_trends
 from apps.billing.models import get_plan_limits
@@ -184,6 +184,7 @@ def _generate_brief_with_llm(user, brief_data):
     response = generate(
         prompt=prompt,
         system=system_prompt,
+        model=get_model_for_task("strategist.brief"),
         json_mode=True,
         temperature=0.4,
         max_tokens=1500,

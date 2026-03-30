@@ -15,7 +15,7 @@ from datetime import timedelta
 from django.db.models import Avg, Count, Q, Sum
 from django.utils import timezone
 
-from apps.agents.llm import generate
+from apps.agents.llm import generate, get_model_for_task
 from apps.agents.models import AgentAction, AgentConfig
 from apps.analytics.models import PostMetric
 from apps.content.models import Post
@@ -154,7 +154,7 @@ def analyze_performance(user, days=7):
             "Analyze this data and provide insights in the specified JSON format."
         )
 
-        response = generate(prompt=prompt, system=system_prompt, json_mode=True, temperature=0.3)
+        response = generate(prompt=prompt, system=system_prompt, model=get_model_for_task("analyst.performance"), json_mode=True, temperature=0.3)
 
         try:
             insights = json.loads(response.content)
@@ -220,7 +220,7 @@ def extract_content_dna(post):
     )
 
     try:
-        response = generate(prompt=prompt, system=system_prompt, json_mode=True, temperature=0.1, max_tokens=500)
+        response = generate(prompt=prompt, system=system_prompt, model=get_model_for_task("analyst.content_dna"), json_mode=True, temperature=0.1, max_tokens=500)
         dna = json.loads(response.content)
         post.content_dna = dna
         post.save(update_fields=["content_dna"])
@@ -290,7 +290,7 @@ def predict_engagement(post):
     )
 
     try:
-        response = generate(prompt=prompt, system=system_prompt, json_mode=True, temperature=0.2, max_tokens=200)
+        response = generate(prompt=prompt, system=system_prompt, model=get_model_for_task("analyst.predict"), json_mode=True, temperature=0.2, max_tokens=200)
         result = json.loads(response.content)
         score = float(result.get("score", 50))
         score = max(0, min(100, score))
