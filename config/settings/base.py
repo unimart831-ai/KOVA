@@ -246,9 +246,9 @@ DEFAULT_LLM_MODEL = env("DEFAULT_LLM_MODEL", default="gpt-4o-mini")
 # Override individual tasks via env vars, or change the tier defaults.
 # Tier: premium (creative writing) | workhorse (reasoning) | fast (classification)
 # DEV: Using free OpenRouter models. Switch to paid models for production.
-LLM_MODEL_PREMIUM = env("LLM_MODEL_PREMIUM", default="google/gemini-2.0-flash-exp:free")
-LLM_MODEL_WORKHORSE = env("LLM_MODEL_WORKHORSE", default="google/gemini-2.0-flash-exp:free")
-LLM_MODEL_FAST = env("LLM_MODEL_FAST", default="google/gemini-2.0-flash-exp:free")
+LLM_MODEL_PREMIUM = env("LLM_MODEL_PREMIUM", default="nvidia/nemotron-3-super-120b-a12b:free")
+LLM_MODEL_WORKHORSE = env("LLM_MODEL_WORKHORSE", default="nvidia/nemotron-3-super-120b-a12b:free")
+LLM_MODEL_FAST = env("LLM_MODEL_FAST", default="nvidia/nemotron-3-super-120b-a12b:free")
 
 AGENT_MODELS = {
     # Create Agent — user-facing content, needs top creative quality
