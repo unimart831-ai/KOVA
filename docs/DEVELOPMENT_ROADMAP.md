@@ -6,7 +6,7 @@
 #
 # This document is the SINGLE SOURCE OF TRUTH for building Kova Agent.
 # Every decision, every sprint, every feature traces back to here.
-# Last Updated: March 29, 2026
+# Last Updated: March 30, 2026
 # ============================================================================
 
 
@@ -725,6 +725,20 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 ## 7.3 Phase 3+ Platforms
 - Reddit, Mastodon, Telegram, Discord, Medium, Dev.to, WordPress
 
+## 7.5 Phase 5 Platform — WhatsApp (Cloud API)
+| Capability | API Support | Notes |
+|---|---|---|
+| Send/receive messages (text, image, video, docs) | ✅ Full | Meta Cloud API (Graph API v21.0) |
+| Template messages (pre-approved by Meta) | ✅ Full | Required for outbound to non-conversations |
+| Interactive messages (buttons, lists, CTAs) | ✅ Full | Product cards, quick replies |
+| Webhooks (incoming messages, delivery receipts) | ✅ Full | Real-time event streaming |
+| Business profile management | ✅ Full | Name, about, photo, address |
+| Catalog/product messages | ✅ Full | WhatsApp Commerce |
+| Flows (interactive forms) | ✅ Full | Multi-step data collection |
+| Status posting | ❌ Not in API | Workaround: one-tap deep link share |
+| Group management | ❌ Not in API | — |
+| Channels | ⚠️ Limited | Expanding — future-ready design |
+
 ## 7.4 Integration Architecture
 - Each platform = a Provider class inheriting from BaseProvider
 - BaseProvider defines interface: connect(), publish(), get_metrics(), get_engagement()
@@ -795,6 +809,16 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 - [ ] Content import (import from existing posts/RSS)
 - [ ] Bulk content upload (CSV)
 
+## 8.5 WHATSAPP INTELLIGENCE (Phase 5)
+- [ ] WhatsApp Cloud API provider (messaging, templates, interactive messages, webhooks)
+- [ ] Meme Intelligence Engine (trend detection → meme ranking → brand adaptation)
+- [ ] Status Content Studio (templates, AI generation, scheduling queue, one-tap share)
+- [ ] Conversational AI auto-reply (Swahili/Sheng/English, brand-voice trained)
+- [ ] Catalog assistant (product card responses, order status queries)
+- [ ] Broadcast campaign builder (smart segmentation, timing optimization, drip sequences)
+- [ ] WhatsApp analytics dashboard (response rates, sentiment trends, revenue attribution)
+- [ ] WhatsApp Channels integration (content curation, cross-post from Kova)
+
 
 # ============================================================================
 # 9. BUILD PHASES (Detailed Sprint Plans)
@@ -812,6 +836,8 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 | Phase 2 | Sprint 7 | ⏳ Not Started | Billing + Growth Features |
 | Phase 2 | Sprint 8 | ⏳ Not Started | Quality + More Platforms |
 | Phase 3 | Sprint 9-12 | ⏳ Not Started | Engage Agent, Orchestration, Teams, Polish |
+| Phase 4 | Post-Launch  | ⏳ Not Started | Agency, White-label, API, Mobile PWA |
+| Phase 5 | Post-Launch  | ⏳ Not Started | WhatsApp Intelligence, Meme Engine, Status Studio |
 
 ## CELERY BEAT SCHEDULE (Current — 5 tasks)
 | Task | Schedule | Source |
@@ -998,6 +1024,79 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 - Mobile PWA
 - Open-source self-hosted edition
 - Advanced AI features (voice memo input, AI video generation)
+
+## ─── PHASE 5: WhatsApp Intelligence — "Own the Most Important Channel" (Post-Launch) ───
+
+### Context
+WhatsApp is the operating system of business and social life in Kenya (90%+ smartphone
+penetration). 7.4M+ MSMEs run businesses through WhatsApp. Status is viewed more than
+Instagram Stories. No existing tool treats WhatsApp as a first-class content + intelligence
+channel — they're all customer support tools. This is category creation.
+
+### Sprint 5A: WhatsApp Provider + Conversational AI
+- [ ] WhatsApp Cloud API provider (extends BaseProvider, Graph API v21.0)
+- [ ] OAuth flow via Facebook Business (shared infra with FB/IG provider)
+- [ ] Send/receive text, image, video, document messages
+- [ ] Template message registration + sending (pre-approved by Meta)
+- [ ] Interactive messages: button replies, list menus, product cards, CTAs
+- [ ] Webhook handler for incoming messages + delivery/read receipts
+- [ ] Business profile management (name, about, photo, address)
+- [ ] Conversational AI auto-reply (brand-voice trained, not generic chatbot)
+- [ ] Language Intelligence: auto-detect Swahili/Sheng/English, respond in same language
+- [ ] Smart routing: AI handles 80% of FAQs, flags complex queries to human with context
+- [ ] Catalog assistant: customer asks about products → AI pulls from WhatsApp Catalog, sends cards
+- DELIVERABLE: WhatsApp connected, AI handles customer conversations 24/7.
+
+### Sprint 5B: Meme Intelligence Engine (THE UNIQUE MOAT)
+- [ ] Trend Detection: monitor Kenyan Twitter/X (KOT), TikTok Kenya, Reddit r/Kenya, FB meme pages
+- [ ] Meme Ranking: score each meme by virality velocity, brand-safety, cultural relevance, humor type
+- [ ] Cultural Intelligence: Sheng references, political context (safe vs risky), local events
+  - (Mashujaa Day, election cycle, KPL season, county-specific humor)
+- [ ] Meme Adaptation: AI takes trending meme FORMAT and adapts to user's brand/product/context
+  - Not reposting — REMIXING (original meme + brand context = viral brand content)
+- [ ] Meme queue with Kenya peak times (6-8am commute, 12-1pm lunch, 6-9pm evening scroll)
+- [ ] Celery Beat task: `discover-trending-memes` — runs every 2-4 hours, scores + adapts
+- DELIVERABLE: Users get auto-curated, brand-adapted memes from Kenyan trends.
+- UNIQUENESS TEST: Nobody does AI-powered meme intelligence localized to Kenya.
+
+### Sprint 5C: Status Content Studio
+- [ ] Status Content Queue: AI-curated content ready for WhatsApp Status
+- [ ] One-tap share: deep link to WhatsApp with pre-loaded media (API workaround for Status)
+- [ ] Status templates: new product, offer/discount, testimonial, BTS, poll/question
+- [ ] AI content generation: Status-optimized (short, visual, punchy, Kenyan tone)
+- [ ] Smart scheduling: AI learns when user's contacts are most active
+- [ ] Status calendar: 7-day visual planner with mix optimization
+  - (don't post 3 promos in a row — mix memes, quotes, BTS, offers)
+- [ ] Cross-platform repurposing: take LinkedIn/IG/TikTok post → AI-adapt for Status format
+- DELIVERABLE: Full Status content pipeline. AI does 95% of work, user taps once to share.
+
+### Sprint 5D: Broadcast Intelligence + Analytics
+- [ ] Smart segmentation: AI segments contacts by purchase history, message frequency, interests
+- [ ] Campaign builder: visual builder for broadcast campaigns with personalization tokens
+- [ ] Drip sequences: automated multi-day sequences (onboarding, re-engagement, cart abandonment)
+- [ ] Timing optimization: AI sends each message at optimal time for each contact (not blast)
+- [ ] Compliance guard: auto-check templates comply with Meta policies before submission
+- [ ] Message analytics: response rates, avg response time, conversation volume trends
+- [ ] Customer sentiment: AI analyzes incoming messages for sentiment trends over time
+- [ ] Revenue attribution: link WhatsApp conversations to conversions/sales
+- [ ] Weekly digest: "Top-performing Status was the chapati meme (847 views). Response time improved 34%."
+- DELIVERABLE: Broadcast campaigns + full analytics. WhatsApp becomes a measurable growth channel.
+
+### Sprint 5E: WhatsApp Channels + Future
+- [ ] Channel content curation: AI selects best content for channel posts
+- [ ] Cross-post from Kova: content from any platform adapted + pushed to Channel
+- [ ] Channel growth analytics: follower trends, reach, engagement per post
+- [ ] Full Status automation (when Meta opens the API — future-ready architecture)
+- DELIVERABLE: WhatsApp Channels managed by Kova. Ready for Status API when it drops.
+
+### WhatsApp Phase — Key Technical Notes
+- Provider: `apps/platforms/providers/whatsapp.py` (extends BaseProvider)
+- Shared FB Business infra: same Meta App as FB/IG, same Graph API
+- Meme engine: new app `apps/memes/` (trend detection + adaptation pipeline)
+- Webhook receiver: new endpoint in `apps/platforms/` for incoming messages
+- Template management: store approved templates in DB, render with context vars
+- Deep link for Status: `whatsapp://send?text=...` or `https://wa.me/?text=...` with media
+- Celery Beat tasks: `discover-trending-memes` (every 2-4h), `process-whatsapp-messages` (real-time via webhook)
 
 
 # ============================================================================
