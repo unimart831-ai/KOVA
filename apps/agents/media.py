@@ -1,15 +1,20 @@
 """
 AI Media Generation — generates images for social media posts.
 
-Uses Pollinations.ai API (Flux Schnell model) for fast, free image generation.
+Multi-provider support with automatic fallback:
+  1. Together.ai  — FLUX.1-schnell-Free (truly free, fast)
+  2. Pollinations.ai — Flux Schnell (free tier with API key)
+  3. Hugging Face — FLUX.1-schnell (free Inference API)
+
 Images are downloaded and saved to Django media storage so they persist
 independently of the external service.
 """
 
 import hashlib
+import json
 import logging
 import uuid
-from pathlib import Path
+from base64 import b64decode
 from urllib.parse import quote
 
 import requests
@@ -31,19 +36,117 @@ PLATFORM_IMAGE_SIZES = {
 
 DEFAULT_SIZE = (1200, 675)
 
-POLLINATIONS_BASE_URL = "https://gen.pollinations.ai/image"
 
+# ─── PROVIDER IMPLEMENTATIONS ────────────────────────────────────────────────
+
+def _fetch_together(prompt: str, width: int, height: int) -> bytes | None:
+    """Together.ai — FLUX.1-schnell-Free (free, no billing required)."""
+    api_key = getattr(settings, "TOGETHER_API_KEY", "")
+    if not api_key:
+        return None
+
+    response = requests.post(
+        "https://api.together.xyz/v1/images/generations",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": "black-forest-labs/FLUX.1-schnell-Free",
+            "prompt": prompt,
+            "width": width,
+            "height": height,
+            "n": 1,
+            "response_format": "b64_json",
+        },
+        timeout=90,
+    )
+    response.raise_for_status()
+    data = response.json()
+    b64 = data["data"][0]["b64_json"]
+    return b64decode(b64)
+
+
+def _fetch_pollinations(prompt: str, width: int, height: int) -> bytes | None:
+    """Pollinations.ai — Flux Schnell via GET URL."""
+    api_key = getattr(settings, "POLLINATIONS_API_KEY", "")
+    if not api_key:
+        return None
+
+    model = getattr(settings, "AI_IMAGE_MODEL", "flux")
+    encoded_prompt = quote(prompt, safe="")
+    url = f"https://gen.pollinations.ai/image/{encoded_prompt}"
+
+    params = {
+        "width": width,
+        "height": height,
+        "model": model,
+        "nologo": "true",
+        "seed": _prompt_seed(prompt),
+    }
+    headers = {"Authorization": f"Bearer {api_key}"}
+
+    response = requests.get(url, params=params, headers=headers, timeout=60)
+    response.raise_for_status()
+
+    content_type = response.headers.get("content-type", "")
+    if "image" not in content_type:
+        logger.warning("Pollinations returned non-image content-type: %s", content_type)
+        return None
+
+    if len(response.content) < 1024:
+        logger.warning("Pollinations returned small image (%d bytes)", len(response.content))
+        return None
+
+    return response.content
+
+
+def _fetch_huggingface(prompt: str, width: int, height: int) -> bytes | None:
+    """Hugging Face Inference API — FLUX.1-schnell (free tier)."""
+    api_key = getattr(settings, "HF_TOKEN", "")
+    if not api_key:
+        return None
+
+    response = requests.post(
+        "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={
+            "inputs": prompt,
+            "parameters": {"width": width, "height": height},
+        },
+        timeout=120,
+    )
+    response.raise_for_status()
+
+    content_type = response.headers.get("content-type", "")
+    if "image" not in content_type:
+        logger.warning("HuggingFace returned non-image content-type: %s", content_type)
+        return None
+
+    if len(response.content) < 1024:
+        logger.warning("HuggingFace returned small image (%d bytes)", len(response.content))
+        return None
+
+    return response.content
+
+
+# Provider registry — tried in order
+PROVIDERS = [
+    ("together", _fetch_together),
+    ("pollinations", _fetch_pollinations),
+    ("huggingface", _fetch_huggingface),
+]
+
+
+# ─── PUBLIC API ───────────────────────────────────────────────────────────────
 
 def generate_post_image(post, image_prompt: str) -> str | None:
     """
     Generate an AI image for a post and save it as a MediaAttachment.
-
-    Args:
-        post: Post instance to attach the image to.
-        image_prompt: Text description for image generation.
+    Tries each configured provider in order until one succeeds.
 
     Returns:
-        URL of the saved image, or None if generation failed.
+        URL of the saved image, or None if all providers failed.
     """
     if not getattr(settings, "AI_IMAGE_GENERATION_ENABLED", False):
         return None
@@ -54,11 +157,12 @@ def generate_post_image(post, image_prompt: str) -> str | None:
     platform = post.social_account.platform
     width, height = PLATFORM_IMAGE_SIZES.get(platform, DEFAULT_SIZE)
 
-    try:
-        image_bytes = _fetch_image(image_prompt, width, height)
-        if not image_bytes:
-            return None
+    image_bytes = _fetch_image_with_fallback(image_prompt, width, height)
+    if not image_bytes:
+        logger.warning("All image providers failed for post %s", post.id)
+        return None
 
+    try:
         # Save to Django storage via MediaAttachment
         filename = f"ai_{uuid.uuid4().hex[:12]}.jpg"
         filepath = f"post_media/ai/{filename}"
@@ -86,56 +190,29 @@ def generate_post_image(post, image_prompt: str) -> str | None:
 
     except Exception as exc:
         logger.warning(
-            "AI image generation failed for post %s: %s", post.id, exc,
+            "AI image save failed for post %s: %s", post.id, exc,
         )
         return None
 
 
-def _fetch_image(prompt: str, width: int, height: int) -> bytes | None:
-    """
-    Fetch generated image bytes from Pollinations.ai.
+# ─── INTERNAL HELPERS ─────────────────────────────────────────────────────────
 
-    Uses the GET endpoint with Flux Schnell model (fast, high quality).
-    """
-    api_key = getattr(settings, "POLLINATIONS_API_KEY", "")
-    model = getattr(settings, "AI_IMAGE_MODEL", "flux")
-
-    # Build URL with encoded prompt
-    encoded_prompt = quote(prompt, safe="")
-    url = f"{POLLINATIONS_BASE_URL}/{encoded_prompt}"
-
-    params = {
-        "width": width,
-        "height": height,
-        "model": model,
-        "nologo": "true",
-        "seed": _prompt_seed(prompt),
-    }
-
-    headers = {}
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
-
-    logger.debug("Fetching AI image: %s (%dx%d)", prompt[:80], width, height)
-
-    response = requests.get(
-        url,
-        params=params,
-        headers=headers,
-        timeout=60,
-    )
-    response.raise_for_status()
-
-    content_type = response.headers.get("content-type", "")
-    if "image" not in content_type:
-        logger.warning("Pollinations returned non-image content-type: %s", content_type)
-        return None
-
-    if len(response.content) < 1024:
-        logger.warning("Pollinations returned suspiciously small image (%d bytes)", len(response.content))
-        return None
-
-    return response.content
+def _fetch_image_with_fallback(prompt: str, width: int, height: int) -> bytes | None:
+    """Try each provider in order, return first successful result."""
+    for name, fetcher in PROVIDERS:
+        try:
+            logger.debug("Trying image provider: %s", name)
+            result = fetcher(prompt, width, height)
+            if result:
+                logger.info("Image generated via %s (%dx%d)", name, width, height)
+                return result
+        except requests.exceptions.HTTPError as exc:
+            logger.warning("Provider %s HTTP error: %s", name, exc)
+        except requests.exceptions.Timeout:
+            logger.warning("Provider %s timed out", name)
+        except Exception as exc:
+            logger.warning("Provider %s failed: %s", name, exc)
+    return None
 
 
 def _prompt_seed(prompt: str) -> int:
