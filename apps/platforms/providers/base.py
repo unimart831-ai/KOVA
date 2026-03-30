@@ -142,6 +142,42 @@ class BaseProvider(ABC):
         """
         return []
 
+    def get_comments(self, access_token: str, post_id: str, **kwargs) -> list[dict]:
+        """
+        Fetch comments on a specific post.
+        Returns list of dicts with keys: id, author_id, author_name, text, created_at
+        """
+        return []
+
+    def reply_to_comment(self, access_token: str, comment_id: str,
+                         message: str, **kwargs) -> dict:
+        """
+        Reply to a comment. Returns dict with reply id or error.
+        """
+        return {}
+
+    def get_messages(self, access_token: str, **kwargs) -> list[dict]:
+        """
+        Fetch direct messages / inbox conversations.
+        Returns list of dicts with keys: id, sender_id, sender_name, text, created_at
+        """
+        return []
+
+    def send_message(self, access_token: str, recipient_id: str,
+                     message: str, **kwargs) -> dict:
+        """
+        Send a direct message / reply to a conversation.
+        Returns dict with message id or error.
+        """
+        return {}
+
+    def get_account_insights(self, access_token: str, **kwargs) -> dict:
+        """
+        Fetch account-level insights (follower growth, reach, demographics).
+        Returns dict of metric_name: value.
+        """
+        return {}
+
     def validate_token(self, access_token: str) -> bool:
         """
         Check if an access token is still valid. Default: try a lightweight API call.
