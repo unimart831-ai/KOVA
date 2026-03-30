@@ -170,6 +170,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "agents.run_daily_research",
         "schedule": 12 * 3600.0,  # every 12 hours — trend data for daily briefs
     },
+    "run-engage-cycle": {
+        "task": "agents.run_engage_cycle",
+        "schedule": 30 * 60.0,  # every 30 minutes — fetch, analyze, reply
+    },
 }
 
 # ─── AUTH ────────────────────────────────────────────────────────────────────

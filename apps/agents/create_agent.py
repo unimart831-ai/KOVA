@@ -17,7 +17,7 @@ The agent is called:
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from django.utils import timezone as dj_timezone
 
@@ -27,6 +27,94 @@ from apps.content.models import ContentSeed, Post
 from apps.platforms.models import SocialAccount
 
 logger = logging.getLogger(__name__)
+
+
+# ─── Performance Intelligence (Content DNA Feedback Loop) ────────────────────
+
+def _get_performance_intelligence(user) -> str:
+    """
+    Query the Analyst Agent's historical findings and build an intelligence
+    briefing for the Create Agent. This is the feedback loop — the system
+    gets smarter with every post published.
+
+    Returns a formatted string for injection into the system prompt.
+    """
+    from apps.agents.analyst_agent import get_content_dna_summary
+    from apps.analytics.models import PostMetric
+
+    parts = []
+
+    # 1. Content DNA — what attributes correlate with high engagement
+    try:
+        dna = get_content_dna_summary(user, days=30)
+        winning = dna.get("winning_attributes", [])
+        if winning:
+            parts.append("## PERFORMANCE INTELLIGENCE (from your last 30 days)")
+            parts.append("The Analyst Agent identified these winning content patterns:\n")
+            for attr in winning[:8]:
+                parts.append(f"  - **{attr['attribute']}** → avg engagement: {attr['avg_engagement']}% ({attr['posts']} posts)")
+            parts.append("")
+            parts.append("INSTRUCTION: Bias your content toward these winning attributes when they fit naturally.")
+            parts.append("Don't force it — but all else being equal, prefer formats, tones, and hooks that have proven to work.")
+    except Exception:
+        pass
+
+    # 2. Top-performing posts — learn from actual wins
+    try:
+        top_posts = (
+            Post.objects.filter(
+                user=user,
+                status=Post.Status.PUBLISHED,
+                published_at__gte=dj_timezone.now() - timedelta(days=30),
+            )
+            .select_related("social_account", "metrics")
+            .order_by("-metrics__engagement_rate")[:5]
+        )
+
+        examples = []
+        for post in top_posts:
+            try:
+                m = post.metrics
+                if m.engagement_rate and m.engagement_rate > 0:
+                    examples.append({
+                        "platform": post.social_account.platform if post.social_account else "?",
+                        "preview": post.content_text[:150],
+                        "engagement_rate": round(m.engagement_rate, 2),
+                        "angle": post.ai_angle,
+                        "framework": post.ai_framework,
+                    })
+            except PostMetric.DoesNotExist:
+                continue
+
+        if examples:
+            parts.append("## TOP-PERFORMING POSTS (study these — they worked)")
+            for i, ex in enumerate(examples[:3], 1):
+                parts.append(f"### Win #{i} ({ex['platform']}, {ex['engagement_rate']}% engagement)")
+                parts.append(f"  Angle: {ex['angle'] or 'N/A'} | Framework: {ex['framework'] or 'N/A'}")
+                parts.append(f"  Content: \"{ex['preview']}...\"")
+            parts.append("\nLearn from these. What made them work? Apply those patterns to new content.\n")
+    except Exception:
+        pass
+
+    # 3. Recent topics — avoid repetition
+    try:
+        recent = (
+            Post.objects.filter(
+                user=user,
+                created_at__gte=dj_timezone.now() - timedelta(days=7),
+            )
+            .values_list("ai_angle", flat=True)
+        )
+        recent_angles = [a for a in recent if a]
+        if recent_angles:
+            parts.append("## RECENTLY USED ANGLES (avoid repeating these)")
+            for angle in recent_angles[:10]:
+                parts.append(f"  - {angle}")
+            parts.append("\nTake a FRESH angle. Don't repeat what was just posted.\n")
+    except Exception:
+        pass
+
+    return "\n".join(parts)
 
 # ─── Platform strategy guides (not just formatting — actual strategy) ────────
 
@@ -198,6 +286,11 @@ def build_system_prompt(user) -> str:
     if profile.goals:
         parts.append(f"## STRATEGIC GOALS\n{', '.join(profile.goals)}")
         parts.append("Bias content toward these objectives. Each post should serve at least one goal.")
+
+    # Performance intelligence — the feedback loop
+    intel = _get_performance_intelligence(user)
+    if intel:
+        parts.append(intel)
 
     return "\n".join(parts)
 
@@ -546,3 +639,183 @@ Respond with a JSON object. No markdown code fences.
         action.save()
         logger.error("Regenerate post error: %s", exc, exc_info=True)
         raise
+
+
+def repurpose_post(source_post: Post, target_platforms: list[str] = None) -> list[Post]:
+    """
+    Take a top-performing post and repurpose it for other platforms.
+
+    The AI doesn't just reformat — it reconceives the idea for each
+    platform's psychology and audience behavior. A LinkedIn framework post
+    becomes a Twitter hot take, an Instagram save-worthy carousel, etc.
+
+    Args:
+        source_post: The published Post to repurpose.
+        target_platforms: List of platform keys to repurpose for.
+                         If None, uses all connected platforms except the source.
+
+    Returns list of new Post objects (pending approval).
+    """
+    user = source_post.user
+    source_platform = source_post.social_account.platform if source_post.social_account else "unknown"
+
+    # Find target accounts
+    connected = SocialAccount.objects.filter(user=user, is_active=True)
+    if target_platforms:
+        connected = connected.filter(platform__in=target_platforms)
+    else:
+        connected = connected.exclude(platform=source_platform)
+
+    if not connected.exists():
+        return []
+
+    platforms = [{"platform": a.platform, "username": a.username, "account_id": str(a.id)} for a in connected]
+
+    # Build performance context for the source post
+    source_engagement = ""
+    try:
+        m = source_post.metrics
+        source_engagement = (
+            f"Engagement: {m.likes} likes, {m.comments} comments, {m.shares} shares, "
+            f"{m.impressions} impressions, {m.engagement_rate or 0:.1f}% rate"
+        )
+    except Exception:
+        source_engagement = "Performance data not yet available"
+
+    action = AgentAction.objects.create(
+        user=user,
+        agent_type="create",
+        action_type="repurpose_post",
+        description=f"Repurposing {source_platform} post to {len(platforms)} platforms",
+        status=AgentAction.ActionStatus.STARTED,
+        input_data={
+            "source_post_id": str(source_post.id),
+            "source_platform": source_platform,
+            "target_platforms": [p["platform"] for p in platforms],
+        },
+    )
+
+    try:
+        system = build_system_prompt(user)
+
+        platform_section = ""
+        for p in platforms:
+            guide = PLATFORM_GUIDES.get(p["platform"], {})
+            winning = "\n".join(f"    - {w}" for w in guide.get("winning_patterns", []))
+            platform_section += f"""
+### {guide.get('name', p['platform'].title())} (@{p['username']})
+- **Character limit**: {guide.get('max_chars', 'N/A')}
+- **Platform psychology**: {guide.get('psychology', 'Adapt to platform norms')}
+- **What wins here**:
+{winning}
+- **CTA approach**: {guide.get('cta_style', 'Adapt to context')}
+"""
+
+        prompt = f"""## REPURPOSE — TRANSFORM A WINNER FOR NEW PLATFORMS
+
+This post performed well on {PLATFORM_GUIDES.get(source_platform, {}).get('name', source_platform.title())}.
+Your job: extract the CORE INSIGHT and reconceive it natively for each target platform.
+
+DO NOT just reformat or shorten the original. Each platform version must:
+- Take an angle that's NATIVE to that platform's culture
+- Use hooks that work specifically on that platform
+- Feel like it was written FOR that platform, not cross-posted
+
+### SOURCE POST ({PLATFORM_GUIDES.get(source_platform, {}).get('name', source_platform.title())})
+{source_post.content_text}
+
+### SOURCE PERFORMANCE
+{source_engagement}
+{f"Angle: {source_post.ai_angle}" if source_post.ai_angle else ""}
+{f"Framework: {source_post.ai_framework}" if source_post.ai_framework else ""}
+
+### WHY IT WORKED
+Analyze what made this content perform. Then translate THOSE QUALITIES
+(not the exact words) into each platform's native language.
+
+### TARGET PLATFORMS
+{platform_section}
+
+### OUTPUT FORMAT
+Respond with a JSON object. No markdown code fences.
+{{
+  "repurpose_strategy": "One sentence: what's the core insight being repurposed and how the angle shifts per platform.",
+  "posts": [
+    {{
+      "platform": "twitter",
+      "username": "@handle",
+      "content_text": "Full post text, ready to publish.",
+      "content_type": "repurposed",
+      "format": "single tweet",
+      "framework_used": "Hook → Value → CTA",
+      "angle": "How this platform's version differs from the original",
+      "reasoning": "Why this adaptation works for this platform's audience",
+      "predicted_score": 75
+    }}
+  ]
+}}
+"""
+
+        llm_response: LLMResponse = generate(
+            prompt=prompt,
+            system=system,
+            json_mode=True,
+            temperature=0.7,
+            max_tokens=4096,
+        )
+
+        _, post_dicts = parse_posts(llm_response.content)
+
+        created_posts = []
+        account_map = {a.platform: a for a in connected}
+        platform_aliases = {
+            "twitter": "twitter", "x": "twitter", "x (twitter)": "twitter",
+            "linkedin": "linkedin", "instagram": "instagram",
+            "facebook": "facebook", "tiktok": "tiktok",
+        }
+
+        for pd in post_dicts:
+            raw_platform = pd.get("platform", "")
+            platform = platform_aliases.get(raw_platform.lower().strip(), raw_platform.lower().strip())
+            account = account_map.get(platform)
+            if not account:
+                continue
+
+            post = Post.objects.create(
+                user=user,
+                seed=source_post.seed,
+                social_account=account,
+                content_text=pd.get("content_text", ""),
+                content_type="repurposed",
+                status=Post.Status.PENDING_APPROVAL,
+                generated_by_agent="create",
+                predicted_engagement_score=pd.get("predicted_score"),
+                ai_reasoning=pd.get("reasoning", ""),
+                ai_angle=pd.get("angle", ""),
+                ai_framework=pd.get("framework_used", ""),
+            )
+            created_posts.append(post)
+
+        action.status = AgentAction.ActionStatus.COMPLETED
+        action.output_data = {
+            "posts_created": len(created_posts),
+            "post_ids": [str(p.id) for p in created_posts],
+            "source_post_id": str(source_post.id),
+        }
+        action.tokens_used = llm_response.total_tokens
+        action.completed_at = dj_timezone.now()
+        action.save()
+
+        logger.info(
+            "Repurposed %s post → %d new posts (%d tokens)",
+            source_platform, len(created_posts), llm_response.total_tokens,
+        )
+        return created_posts
+
+    except Exception as exc:
+        action.status = AgentAction.ActionStatus.FAILED
+        action.error_message = str(exc)
+        action.completed_at = dj_timezone.now()
+        action.save()
+        logger.error("Repurpose error: %s", exc, exc_info=True)
+        return []

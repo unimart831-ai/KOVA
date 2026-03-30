@@ -12,14 +12,69 @@ logger = logging.getLogger(__name__)
 
 @login_required
 def engage_inbox(request):
-    """Engagement inbox — view and respond to interactions."""
+    """Engagement inbox — view and respond to interactions with filter support."""
     interactions = request.user.interactions.select_related(
         "social_account", "post"
-    ).all()[:50]
+    )
+
+    # Filters
+    status_filter = request.GET.get("status", "")
+    sentiment_filter = request.GET.get("sentiment", "")
+    platform_filter = request.GET.get("platform", "")
+
+    if status_filter:
+        interactions = interactions.filter(status=status_filter)
+    if sentiment_filter:
+        interactions = interactions.filter(sentiment=sentiment_filter)
+    if platform_filter:
+        interactions = interactions.filter(social_account__platform=platform_filter)
+
+    interactions = interactions.all()[:50]
+
+    # Stats for the header
+    stats = {
+        "total": request.user.interactions.count(),
+        "new": request.user.interactions.filter(status="new").count(),
+        "flagged": request.user.interactions.filter(status="flagged").count(),
+        "needs_reply": request.user.interactions.filter(
+            ai_suggested_reply="",
+        ).exclude(status__in=["ignored", "ai_replied", "user_replied"]).exclude(sentiment="").count(),
+    }
+
     return render(request, "engage/inbox.html", {
         "interactions": interactions,
         "page_title": "Engagement Inbox",
+        "stats": stats,
+        "status_filter": status_filter,
+        "sentiment_filter": sentiment_filter,
+        "platform_filter": platform_filter,
     })
+
+
+@login_required
+def trigger_engage(request):
+    """Manually trigger the Engage Agent cycle for the current user (HTMX)."""
+    if request.method != "POST":
+        return HttpResponse(status=405)
+
+    from apps.agents.engage_agent import run_engage_cycle
+
+    try:
+        result = run_engage_cycle(request.user)
+        total = result["fetched"] + result["replies_generated"]
+        if total > 0:
+            msg = f"Found {result['fetched']} new interactions, generated {result['replies_generated']} replies."
+        else:
+            msg = "No new interactions found."
+        return HttpResponse(
+            f'<div class="text-sm text-green-600 dark:text-green-400 px-4 py-2">{msg}</div>',
+        )
+    except Exception as e:
+        logger.error("Manual engage cycle failed: %s", e)
+        return HttpResponse(
+            '<div class="text-sm text-red-600 px-4 py-2">Engage cycle failed. Try again later.</div>',
+            status=500,
+        )
 
 
 @login_required

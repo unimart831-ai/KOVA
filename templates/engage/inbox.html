@@ -7,6 +7,64 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-6">
+
+  {# Stats Bar #}
+  {% if stats.total > 0 %}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.total }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Total</p>
+    </div>
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ stats.new }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">New</p>
+    </div>
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ stats.flagged }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Flagged</p>
+    </div>
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-kova-600 dark:text-kova-400">{{ stats.needs_reply }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Needs Reply</p>
+    </div>
+  </div>
+  {% endif %}
+
+  {# Filter Bar + Trigger #}
+  <div class="flex flex-wrap items-center gap-3">
+    <form method="get" class="flex flex-wrap items-center gap-2 flex-1">
+      <select name="status" class="input-field !w-auto text-sm" onchange="this.form.submit()">
+        <option value="">All Statuses</option>
+        <option value="new" {% if status_filter == 'new' %}selected{% endif %}>New</option>
+        <option value="flagged" {% if status_filter == 'flagged' %}selected{% endif %}>Flagged</option>
+        <option value="ai_replied" {% if status_filter == 'ai_replied' %}selected{% endif %}>AI Replied</option>
+        <option value="user_replied" {% if status_filter == 'user_replied' %}selected{% endif %}>User Replied</option>
+        <option value="ignored" {% if status_filter == 'ignored' %}selected{% endif %}>Ignored</option>
+      </select>
+      <select name="sentiment" class="input-field !w-auto text-sm" onchange="this.form.submit()">
+        <option value="">All Sentiments</option>
+        <option value="positive" {% if sentiment_filter == 'positive' %}selected{% endif %}>Positive</option>
+        <option value="neutral" {% if sentiment_filter == 'neutral' %}selected{% endif %}>Neutral</option>
+        <option value="negative" {% if sentiment_filter == 'negative' %}selected{% endif %}>Negative</option>
+      </select>
+      {% if status_filter or sentiment_filter or platform_filter %}
+        <a href="{% url 'engage:inbox' %}" class="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">Clear filters</a>
+      {% endif %}
+    </form>
+    <div id="engage-trigger-result"></div>
+    <button type="button"
+            hx-post="{% url 'engage:trigger' %}"
+            hx-target="#engage-trigger-result"
+            hx-swap="innerHTML"
+            hx-indicator="#engage-spinner"
+            class="btn-primary btn-sm inline-flex items-center gap-1.5">
+      <svg id="engage-spinner" class="w-3.5 h-3.5 htmx-indicator animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      Fetch &amp; Analyze
+    </button>
+  </div>
+
+  {# Interaction List #}
   {% if interactions %}
     <ul class="card divide-y divide-gray-100 dark:divide-gray-800 list-none p-0 m-0">
       {% for interaction in interactions %}
