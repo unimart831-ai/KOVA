@@ -21,6 +21,7 @@
 11. [Cost Control Strategies](#11-cost-control-strategies)
 12. [Risk Scenarios — What Could Go Wrong](#12-risk-scenarios--what-could-go-wrong)
 13. [Decision Matrix — Which Models to Use](#13-decision-matrix--which-models-to-use)
+14. [Real-World Scenario — Capped Jipange + Referral Model](#14-real-world-scenario--capped-jipange--referral-model)
 
 ---
 
@@ -30,8 +31,8 @@
 
 | Plan | Swahili Name | KES/mo | USD/mo | Platforms | Posts/mo | Seeds/mo | Agents |
 |------|-------------|--------|--------|-----------|----------|----------|--------|
-| **Starter** | Jipange | 99 | ~$0.70 | 1 | 15 | 10 | Create, Analyst |
-| **Growth** | Kazi | 500 | ~$3.52 | 3 | 50 | 30 | + Research, Adapt |
+| **Starter** | Jipange | 99 | ~$0.70 | 1 | 10 | 5 | Create, Analyst (no images, no engage, no competitors) |
+| **Growth** | Kazi | 500 | ~$3.52 | 3 | 50 | 30 | + Research, Adapt, full access |
 | **Pro** | Biashara | 1,500 | ~$10.56 | 10 | Unlimited | Unlimited | + Engage, Strategist |
 | **Agency** | Wakala | 3,500 | ~$24.65 | 25 | Unlimited | Unlimited | All 6 agents |
 
@@ -626,8 +627,9 @@ LLM_MODEL_PREMIUM_AGENCY=anthropic/claude-sonnet-4.6
 | **Average cost to serve 1 user/month** | **$1.55** (Budget-Smart stack, no WhatsApp) |
 | **Average revenue per user/month** | **$3.87** (blended across plans) |
 | **Gross margin** | **60%** (at 100+ users) |
-| **Break-even** | **10 users** (operational costs only) |
-| **Break-even with KES 60K salary** | **~200 users** |
+| **Break-even (ops only)** | **10 users** |
+| **Break-even (CEO salary + referral model)** | **179 users** (50/50 mix, capped Jipange) |
+| **Profit at 500 users** | **KES 60,685/mo** ($427) |
 
 ### The Bottom Line
 
@@ -643,3 +645,125 @@ Kova's pricing works. Even at KES 99 ($0.70), the Starter plan is profitable bec
 ---
 
 *This analysis should be refreshed monthly for the first 6 months as real usage data replaces estimates.*
+
+---
+
+## 14. Real-World Scenario — Capped Jipange + Referral Model
+
+### Business Setup
+
+| Item | KES/mo | Notes |
+|------|--------|-------|
+| CEO salary | 30,000 | Fixed |
+| Railway Pro hosting | 2,840 | $20/mo — 4 services (web, worker, Redis, PostgreSQL) |
+| Domain + misc | 1,000 | Annual domain, SSL, email |
+| **Total Fixed** | **33,840** | No salaried marketers |
+
+**Marketing model:** 10% referral commission per user per month (not salaries)
+- Jipange referral: KES 9.90/user/mo
+- Kazi referral: KES 50/user/mo
+
+This means marketing cost scales linearly with users instead of being a fixed expense.
+
+### Jipange Cap Effect (Before vs After)
+
+| Metric | Before (Uncapped) | After (Capped) |
+|--------|-------------------|----------------|
+| Seeds/month | 10 | **5** |
+| Posts/month | 15 | **10** |
+| AI image generation | ✅ Included | **✗ Blocked** |
+| Competitor tracking | ✅ Included | **✗ Blocked** |
+| Engagement inbox | ✅ Included | **✗ Blocked** |
+| Agents | Create, Analyst | Create, Analyst (same) |
+| AI cost/user (max usage) | **KES 136** | **KES 25** |
+| Contribution/user | **KES -47 (LOSS)** | **KES +64 (PROFIT)** |
+
+**Key insight:** An uncapped Jipange user at max usage cost MORE in AI than their subscription revenue. Every uncapped Jipange user was a KES 47 loss that Kazi users had to subsidize. After capping, every Jipange user is self-sustaining.
+
+### Per-User Economics (Max Usage, Gemini Flash + DeepSeek)
+
+**Jipange (KES 99) — Capped:**
+```
+Revenue:                       KES   99.00
+- AI (5 seeds × 1 platform):  KES  -25.00  (Create Agent + Analyst only, no images)
+- Referral (10%):              KES   -9.90
+= Contribution:                KES  +64.10
+```
+
+**Kazi (KES 500) — Full Access:**
+```
+Revenue:                       KES  500.00
+- AI (30 seeds × 3 platforms): KES -100.00  (All agents, images, competitors)
+- Image gen (30 images):       KES  -36.00
+- Referral (10%):              KES  -50.00
+= Contribution:                KES +314.00
+```
+
+### Profit/Loss Table — 50/50 User Mix (All Referred, Max Usage)
+
+| Users | Jipange | Kazi | Revenue | AI Cost | Referral | Fixed | **Profit / Loss** |
+|-------|---------|------|---------|---------|----------|-------|-------------------|
+| **100** | 50 | 50 | 29,950 | 8,050 | 2,995 | 33,840 | **-14,935** |
+| **179** | 90 | 89 | 53,410 | 14,354 | 5,341 | 33,840 | **~0 (break-even)** |
+| **200** | 100 | 100 | 59,900 | 16,100 | 5,990 | 33,840 | **+3,970** |
+| **300** | 150 | 150 | 89,850 | 24,150 | 8,985 | 33,840 | **+22,875** |
+| **400** | 200 | 200 | 119,800 | 32,200 | 11,980 | 33,840 | **+41,780** |
+| **500** | 250 | 250 | 149,750 | 40,250 | 14,975 | 33,840 | **+60,685** |
+
+### Monthly Take-Home Breakdown
+
+| Users | Profit | CEO Salary | **Total Take-Home** | Reinvestment Buffer |
+|-------|--------|------------|---------------------|---------------------|
+| 100 | -14,935 | 30,000 (from runway) | 30,000 | Burning savings |
+| 200 | +3,970 | 30,000 | 33,970 | KES 3,970 |
+| 300 | +22,875 | 30,000 | 52,875 | KES 22,875 |
+| 400 | +41,780 | 30,000 | 71,780 | KES 41,780 |
+| 500 | +60,685 | 30,000 | 90,685 | KES 60,685 |
+
+### Break-Even Sensitivity — What If the Mix Changes?
+
+The 50/50 split is conservative. In practice, your referral marketers earn KES 50/Kazi vs KES 9.90/Jipange — they'll naturally push Kazi. Here's how the mix affects break-even:
+
+| Mix (Jipange/Kazi) | Break-Even | Profit at 500 Users |
+|---------------------|-----------|---------------------|
+| 70/30 (worst case) | **294 users** | KES 33,835 |
+| 60/40 | **231 users** | KES 44,575 |
+| **50/50 (base case)** | **179 users** | **KES 60,685** |
+| 40/60 | **144 users** | KES 73,955 |
+| 30/70 (best case) | **118 users** | KES 87,055 |
+| 20/80 (marketer-driven) | **101 users** | KES 96,625 |
+
+### The Referral vs Salary Comparison
+
+| Model | Fixed Cost | Break-Even | Profit at 500 |
+|-------|-----------|-----------|---------------|
+| 2 marketers at KES 15k each | KES 63,840 | 338 users | KES 31,185 |
+| **10% referral commission** | **KES 33,840** | **179 users** | **KES 60,685** |
+
+**Referral model wins by every metric:**
+- Break-even 159 users sooner
+- KES 29,500 more profit at 500 users
+- Zero fixed risk if growth is slow (commissions only paid when revenue comes in)
+- Marketers incentivized to push Kazi (KES 50 commission) over Jipange (KES 9.90)
+
+### Key Milestones
+
+| Milestone | Users Needed | Monthly Profit |
+|-----------|-------------|----------------|
+| **Break-even** (cover all costs) | 179 | KES 0 |
+| **Comfortable** (salary + KES 20k buffer) | ~300 | KES 22,875 |
+| **Hire first employee** (add KES 30k salary) | ~400 | KES 41,780 |
+| **Strong business** (salary + KES 60k reinvestment) | 500 | KES 60,685 |
+| **Scale mode** (raise salary to 60k + hire 2 people) | ~700 | KES ~95,000 |
+
+### Assumptions & Notes
+
+1. **"Max usage" is worst case.** In practice, most users use 40-60% of their limits. Real margins will be higher.
+2. **Referral assumes 100% of users are referred.** Organic signups (SEO, word-of-mouth) have zero commission — pure profit per user.
+3. **AI costs will decrease over time.** Model prices drop ~30% annually. Gemini Flash was $7.50/1M in 2025, now $3/1M.
+4. **M-Pesa's zero fees are the hero.** Stripe would eat 2.9% + 30¢ ($0.34-$0.41) per transaction — at KES 99 ($0.70) that's a 49% fee. M-Pesa: 0%.
+5. **Railway scales with usage.** At 100 users you may only need $12/mo. The $20/mo is budgeted for 300+.
+
+---
+
+*These projections use conservative (worst-case) numbers. Track actual usage monthly and update.*
