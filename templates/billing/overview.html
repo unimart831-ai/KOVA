@@ -47,7 +47,7 @@
     {# Plan limits #}
     <div class="card-body">
       <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Your plan includes</h3>
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div class="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ limits.max_social_accounts }}</p>
           <p class="text-xs text-gray-500 dark:text-gray-400">Social accounts</p>
@@ -55,6 +55,10 @@
         <div class="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <p class="text-2xl font-bold text-gray-900 dark:text-white">{% if limits.max_posts_per_month > 9999 %}∞{% else %}{{ limits.max_posts_per_month }}{% endif %}</p>
           <p class="text-xs text-gray-500 dark:text-gray-400">Posts / month</p>
+        </div>
+        <div class="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{% if limits.max_seeds_per_month > 9999 %}∞{% else %}{{ limits.max_seeds_per_month }}{% endif %}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Seeds / month</p>
         </div>
         <div class="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ limits.agents_enabled|length }}</p>
@@ -68,12 +72,20 @@
           Daily AI brief
         </li>
         <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <svg class="w-4 h-4 {% if limits.ai_image_generation %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          AI image generation
+        </li>
+        <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
           <svg class="w-4 h-4 {% if limits.email_brief %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
           Email brief reports
         </li>
         <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
           <svg class="w-4 h-4 {% if limits.engagement_agent %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          Engagement agent
+          Engagement inbox
+        </li>
+        <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <svg class="w-4 h-4 {% if limits.competitor_tracking %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Competitor tracking
         </li>
         <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
           <svg class="w-4 h-4 {% if limits.auto_approve %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>

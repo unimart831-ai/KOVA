@@ -18,6 +18,13 @@ logger = logging.getLogger(__name__)
 # URL name prefixes that should be checked for plan limits
 PLATFORM_CONNECT_URLS = ["platforms:connect", "platforms:callback"]
 CONTENT_CREATE_URLS = ["content:create", "content:generate"]
+COMPETITOR_URLS = [
+    "analytics:competitors", "analytics:competitor_add",
+    "analytics:competitor_detail", "analytics:competitor_analyze",
+    "analytics:competitor_landscape",
+]
+ENGAGE_URLS = ["engage:inbox", "engage:send_reply", "engage:trigger"]
+SEED_CREATE_URLS = ["content:generate"]
 
 
 class PlanEnforcementMiddleware:
@@ -94,13 +101,66 @@ class PlanEnforcementMiddleware:
             return redirect("billing:pricing")
         return None
 
+    def _check_seed_limit(self, request):
+        """Check if user can create another seed this month."""
+        from django.utils import timezone
+
+        from apps.content.models import ContentSeed
+
+        profile = request.user.profile
+        limits = get_plan_limits(profile.plan)
+
+        # Unlimited check
+        if limits["max_seeds_per_month"] >= 999999:
+            return None
+
+        now = timezone.now()
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        month_count = ContentSeed.objects.filter(
+            user=request.user,
+            created_at__gte=month_start,
+        ).count()
+
+        if month_count >= limits["max_seeds_per_month"]:
+            messages.warning(
+                request,
+                f"You've used all {limits['max_seeds_per_month']} content seeds for this month "
+                f"on your {limits['label']} plan. Upgrade for more.",
+            )
+            return redirect("billing:pricing")
+        return None
+
+    def _check_competitor_access(self, request):
+        """Check if user's plan includes competitor tracking."""
+        profile = request.user.profile
+        limits = get_plan_limits(profile.plan)
+
+        if not limits.get("competitor_tracking", False):
+            messages.warning(
+                request,
+                f"Competitor tracking is not included in your {limits['label']} plan. "
+                f"Upgrade to Kazi or higher to unlock.",
+            )
+            return redirect("billing:pricing")
+        return None
+
+    def _check_engage_access(self, request):
+        """Check if user's plan includes the engagement inbox."""
+        profile = request.user.profile
+        limits = get_plan_limits(profile.plan)
+
+        if not limits.get("engagement_agent", False):
+            messages.warning(
+                request,
+                f"The engagement inbox is not included in your {limits['label']} plan. "
+                f"Upgrade to Kazi or higher to unlock.",
+            )
+            return redirect("billing:pricing")
+        return None
+
     def process_view(self, request, view_func, view_args, view_kwargs):
         """Check plan limits before specific views execute."""
         if not request.user.is_authenticated:
-            return None
-
-        # Only enforce on POST/mutation requests
-        if request.method != "POST":
             return None
 
         # Resolve URL name
@@ -108,10 +168,24 @@ class PlanEnforcementMiddleware:
         namespace = request.resolver_match.namespace if request.resolver_match else ""
         full_name = f"{namespace}:{url_name}" if namespace else url_name
 
+        # ── Feature gates (block on ANY request method, not just POST) ──
+        if full_name in COMPETITOR_URLS:
+            return self._check_competitor_access(request)
+
+        if full_name in ENGAGE_URLS:
+            return self._check_engage_access(request)
+
+        # ── Limit checks (POST only) ──
+        if request.method != "POST":
+            return None
+
         if full_name in PLATFORM_CONNECT_URLS:
             return self._check_platform_limit(request)
 
         if full_name in CONTENT_CREATE_URLS:
             return self._check_post_limit(request)
+
+        if full_name in SEED_CREATE_URLS:
+            return self._check_seed_limit(request)
 
         return None

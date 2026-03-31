@@ -22,6 +22,8 @@ def run_daily_research():
     from apps.agents.models import AgentConfig
     from apps.agents.research_agent import discover_trends
 
+    from apps.billing.models import get_plan_limits
+
     # Find users with active research agents who have completed onboarding
     users_with_research = User.objects.filter(
         onboarding_completed=True,
@@ -32,6 +34,9 @@ def run_daily_research():
     researched = 0
     for user in users_with_research:
         try:
+            plan = getattr(getattr(user, "profile", None), "plan", "starter")
+            if "research" not in get_plan_limits(plan).get("agents_enabled", []):
+                continue
             result = discover_trends(user)
             if result.get("trending_topics"):
                 researched += 1
@@ -52,6 +57,7 @@ def run_engage_cycle():
     """
     from apps.agents.engage_agent import run_engage_cycle as engage_cycle
     from apps.agents.models import AgentConfig
+    from apps.billing.models import get_plan_limits
 
     users_with_engage = User.objects.filter(
         onboarding_completed=True,
@@ -62,6 +68,9 @@ def run_engage_cycle():
     processed = 0
     for user in users_with_engage:
         try:
+            plan = getattr(getattr(user, "profile", None), "plan", "starter")
+            if not get_plan_limits(plan).get("engagement_agent", False):
+                continue
             result = engage_cycle(user)
             if result.get("fetched", 0) > 0 or result.get("replies_generated", 0) > 0:
                 processed += 1
@@ -87,6 +96,7 @@ def run_strategy_cycle():
     """
     from apps.agents.models import AgentConfig
     from apps.agents.strategist_agent import run_strategy_cycle as strategist_cycle
+    from apps.billing.models import get_plan_limits
 
     users_with_strategist = User.objects.filter(
         onboarding_completed=True,
@@ -97,6 +107,9 @@ def run_strategy_cycle():
     processed = 0
     for user in users_with_strategist:
         try:
+            plan = getattr(getattr(user, "profile", None), "plan", "starter")
+            if "strategist" not in get_plan_limits(plan).get("agents_enabled", []):
+                continue
             result = strategist_cycle(user)
             if result.get("status") == "completed":
                 processed += 1

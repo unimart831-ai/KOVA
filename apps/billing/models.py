@@ -92,16 +92,20 @@ class MpesaPayment(models.Model):
 
 # ─── Plan Limits ─────────────────────────────────────────────────────────────
 # Defines what each plan tier can do. Used by middleware and views.
+# Jipange is deliberately capped to keep AI cost < KES 40/user/month.
+# It's a conversion funnel — not a revenue tier.
 PLAN_LIMITS = {
     "starter": {
         "label": "Jipange / Starter",
         "max_social_accounts": 1,
-        "max_posts_per_month": 15,
-        "max_seeds_per_month": 10,
+        "max_posts_per_month": 10,
+        "max_seeds_per_month": 5,
         "agents_enabled": ["create", "analyst"],
         "daily_brief": True,
         "email_brief": False,
         "engagement_agent": False,
+        "competitor_tracking": False,
+        "ai_image_generation": False,
         "auto_approve": False,
         "price_kes": 99,
         "price_usd": 1,
@@ -116,6 +120,8 @@ PLAN_LIMITS = {
         "daily_brief": True,
         "email_brief": True,
         "engagement_agent": True,
+        "competitor_tracking": True,
+        "ai_image_generation": True,
         "auto_approve": False,
         "price_kes": 500,
         "price_usd": 5,
@@ -130,6 +136,8 @@ PLAN_LIMITS = {
         "daily_brief": True,
         "email_brief": True,
         "engagement_agent": True,
+        "competitor_tracking": True,
+        "ai_image_generation": True,
         "auto_approve": True,
         "price_kes": 1500,
         "price_usd": 15,
@@ -144,6 +152,8 @@ PLAN_LIMITS = {
         "daily_brief": True,
         "email_brief": True,
         "engagement_agent": True,
+        "competitor_tracking": True,
+        "ai_image_generation": True,
         "auto_approve": True,
         "price_kes": 3500,
         "price_usd": 29,

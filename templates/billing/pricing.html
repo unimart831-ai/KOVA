@@ -58,11 +58,34 @@
       <ul class="mt-6 space-y-2 text-sm text-gray-600 dark:text-gray-400 flex-1">
         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {% if plan.max_social_accounts == 1 %}1 social account{% else %}{{ plan.max_social_accounts }} social accounts{% endif %}</li>
         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {% if plan.max_posts_per_month > 9999 %}Unlimited{% else %}{{ plan.max_posts_per_month }}{% endif %} AI posts/month</li>
+        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {% if plan.max_seeds_per_month > 9999 %}Unlimited{% else %}{{ plan.max_seeds_per_month }}{% endif %} content seeds/month</li>
         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {{ plan.agents_enabled|length }} AI agents</li>
         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Daily brief</li>
-        {% if plan.email_brief %}<li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Email brief reports</li>{% endif %}
-        {% if plan.engagement_agent %}<li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Engagement agent</li>{% endif %}
-        {% if plan.auto_approve %}<li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Auto-approve publishing</li>{% endif %}
+        {% if plan.ai_image_generation %}
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> AI image generation</li>
+        {% else %}
+          <li class="flex items-center"><span class="text-gray-300 dark:text-gray-600 mr-2">✗</span> <span class="text-gray-400 dark:text-gray-500">AI image generation</span></li>
+        {% endif %}
+        {% if plan.email_brief %}
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Email brief reports</li>
+        {% else %}
+          <li class="flex items-center"><span class="text-gray-300 dark:text-gray-600 mr-2">✗</span> <span class="text-gray-400 dark:text-gray-500">Email brief reports</span></li>
+        {% endif %}
+        {% if plan.engagement_agent %}
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Engagement inbox</li>
+        {% else %}
+          <li class="flex items-center"><span class="text-gray-300 dark:text-gray-600 mr-2">✗</span> <span class="text-gray-400 dark:text-gray-500">Engagement inbox</span></li>
+        {% endif %}
+        {% if plan.competitor_tracking %}
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Competitor tracking</li>
+        {% else %}
+          <li class="flex items-center"><span class="text-gray-300 dark:text-gray-600 mr-2">✗</span> <span class="text-gray-400 dark:text-gray-500">Competitor tracking</span></li>
+        {% endif %}
+        {% if plan.auto_approve %}
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Auto-approve publishing</li>
+        {% else %}
+          <li class="flex items-center"><span class="text-gray-300 dark:text-gray-600 mr-2">✗</span> <span class="text-gray-400 dark:text-gray-500">Auto-approve publishing</span></li>
+        {% endif %}
       </ul>
 
       {% if current_plan == tier %}

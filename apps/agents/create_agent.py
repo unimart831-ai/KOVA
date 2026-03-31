@@ -548,10 +548,16 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                 ai_framework=pd.get("framework_used", ""),
             )
 
-            # Generate AI image for the post
+            # Generate AI image for the post (Growth+ plans only)
             image_prompt = pd.get("image_prompt", "")
             if image_prompt:
-                generate_post_image(post, image_prompt)
+                from apps.billing.models import get_plan_limits
+                user_plan = getattr(getattr(seed.user, "profile", None), "plan", "starter")
+                plan_limits = get_plan_limits(user_plan)
+                if plan_limits.get("ai_image_generation", False):
+                    generate_post_image(post, image_prompt)
+                else:
+                    logger.info("Skipping AI image gen for %s (plan: %s)", seed.user, user_plan)
 
             created_posts.append(post)
 
