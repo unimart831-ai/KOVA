@@ -39,3 +39,43 @@ class Interaction(models.Model):
 
     def __str__(self):
         return f"{self.get_interaction_type_display()} from {self.author_name}"
+
+
+class Superfan(models.Model):
+    """
+    Tracked repeat engager — someone who interacts with the brand frequently.
+    Detected by the Engage Agent, surfaced by the Strategist in Daily Briefs.
+    """
+
+    class Tier(models.TextChoices):
+        RISING = "rising", "Rising"          # 3-5 interactions
+        LOYAL = "loyal", "Loyal"             # 6-15 interactions
+        SUPERFAN = "superfan", "Superfan"    # 16+ interactions
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="superfans")
+    author_username = models.CharField(max_length=255, db_index=True)
+    author_name = models.CharField(max_length=255)
+    platforms = models.JSONField(default=list, blank=True, help_text="Platforms this person engages on")
+    interaction_count = models.PositiveIntegerField(default=0)
+    tier = models.CharField(max_length=20, choices=Tier.choices, default=Tier.RISING)
+    last_sentiment = models.CharField(max_length=20, blank=True)
+    first_seen = models.DateTimeField(auto_now_add=True)
+    last_interaction_at = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True, help_text="AI-generated notes about this person's engagement patterns.")
+
+    class Meta:
+        ordering = ["-interaction_count"]
+        unique_together = ["user", "author_username"]
+
+    def __str__(self):
+        return f"{self.author_name} ({self.get_tier_display()}) — {self.interaction_count} interactions"
+
+    def update_tier(self):
+        """Recalculate tier based on interaction count."""
+        if self.interaction_count >= 16:
+            self.tier = self.Tier.SUPERFAN
+        elif self.interaction_count >= 6:
+            self.tier = self.Tier.LOYAL
+        else:
+            self.tier = self.Tier.RISING

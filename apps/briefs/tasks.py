@@ -21,6 +21,7 @@ from apps.agents.analyst_agent import analyze_performance, get_content_dna_summa
 from apps.agents.llm import generate, get_model_for_task
 from apps.agents.models import AgentAction, AgentConfig
 from apps.agents.research_agent import discover_trends
+from apps.agents.strategist_agent import get_engagement_report, run_strategy_cycle
 from apps.billing.models import get_plan_limits
 from apps.briefs.models import DailyBrief
 from apps.content.models import ContentSeed, Post
@@ -125,6 +126,13 @@ def _gather_brief_data(user):
         logger.warning("Trend discovery failed: %s", e)
         trends = {"trending_topics": [], "opportunity_briefs": []}
 
+    # Engagement report from Strategist Agent
+    try:
+        engagement = get_engagement_report(user, days=7)
+    except Exception as e:
+        logger.warning("Engagement report failed: %s", e)
+        engagement = {"total_interactions": 0, "summary": "Engagement data unavailable."}
+
     # Posts created this week
     week_stats = Post.objects.filter(
         user=user,
@@ -154,6 +162,7 @@ def _gather_brief_data(user):
         "performance": perf,
         "content_dna": dna_summary,
         "trends": trends,
+        "engagement": engagement,
     }
 
 
@@ -172,6 +181,8 @@ def _generate_brief_with_llm(user, brief_data):
         '- "trending_topics": list of 3-5 relevant trending topics/hashtags to consider for content today\n'
         '- "suggested_posts": list of 2-3 content ideas with {idea, reasoning, platform} — based on what\'s working\n'
         '- "performance_highlight": one standout metric or insight from yesterday\n'
+        '- "engagement_summary": 2-3 sentences about engagement health — response rate, sentiment trends, '
+        'superfans to acknowledge, unanswered items needing attention\n'
         '- "agent_summary": 1-2 sentences about what the AI agents did in the last 24 hours\n'
     )
 

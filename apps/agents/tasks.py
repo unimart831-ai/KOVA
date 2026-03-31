@@ -75,3 +75,39 @@ def run_engage_cycle():
 
     logger.info("Engage cycle complete: %d users processed", processed)
     return processed
+
+
+@shared_task(name="agents.run_strategy_cycle")
+def run_strategy_cycle():
+    """
+    Periodic task: Run the Chief Strategist Agent for all active users.
+    Gathers intelligence from all agents, makes strategic decisions,
+    and creates proactive content seeds.
+    Runs once daily (early morning, before daily briefs).
+    """
+    from apps.agents.models import AgentConfig
+    from apps.agents.strategist_agent import run_strategy_cycle as strategist_cycle
+
+    users_with_strategist = User.objects.filter(
+        onboarding_completed=True,
+        agent_configs__agent_type="strategist",
+        agent_configs__is_active=True,
+    ).distinct()
+
+    processed = 0
+    for user in users_with_strategist:
+        try:
+            result = strategist_cycle(user)
+            if result.get("status") == "completed":
+                processed += 1
+                logger.info(
+                    "Strategy cycle for %s: seeds=%d, recommendations=%d",
+                    user.email,
+                    result.get("seeds_created", 0),
+                    len(result.get("recommendations", [])),
+                )
+        except Exception as e:
+            logger.error("Strategy cycle failed for %s: %s", user.email, e)
+
+    logger.info("Strategy cycle complete: %d users processed", processed)
+    return processed

@@ -22,7 +22,7 @@ from django.utils import timezone
 
 from apps.agents.llm import generate, get_model_for_task
 from apps.agents.models import AgentAction, AgentConfig
-from apps.engage.models import Interaction
+from apps.engage.models import Interaction, Superfan
 from apps.platforms.models import SocialAccount
 from apps.platforms.providers.registry import get_provider
 
@@ -158,6 +158,53 @@ def _fetch_mentions(user, account, provider):
     return new_count
 
 
+# ─── Superfan Tracking ───────────────────────────────────────────────────────
+
+def _update_superfans(user, superfan_usernames, interactions):
+    """
+    Persist superfan records for repeat engagers.
+    Called after interaction analysis with the set of usernames
+    that have 3+ interactions in the last 30 days.
+    """
+    for interaction in interactions:
+        username = interaction.author_username
+        if not username or username not in superfan_usernames:
+            continue
+
+        platform = (
+            interaction.social_account.platform
+            if interaction.social_account else ""
+        )
+
+        fan, created = Superfan.objects.get_or_create(
+            user=user,
+            author_username=username,
+            defaults={
+                "author_name": interaction.author_name,
+                "platforms": [platform] if platform else [],
+                "interaction_count": 1,
+                "last_sentiment": interaction.sentiment or "",
+                "last_interaction_at": interaction.created_at,
+            },
+        )
+
+        if not created:
+            fan.interaction_count = Interaction.objects.filter(
+                user=user,
+                author_username=username,
+            ).count()
+            fan.last_sentiment = interaction.sentiment or fan.last_sentiment
+            fan.last_interaction_at = interaction.created_at
+            fan.author_name = interaction.author_name or fan.author_name
+
+            # Add platform if new
+            if platform and platform not in fan.platforms:
+                fan.platforms = fan.platforms + [platform]
+
+            fan.update_tier()
+            fan.save()
+
+
 # ─── Sentiment Analysis + Priority Scoring ───────────────────────────────────
 
 def analyze_interactions(user, batch_size=20):
@@ -262,6 +309,9 @@ def analyze_interactions(user, batch_size=20):
 
             interaction.save(update_fields=["sentiment", "status"])
             analyzed += 1
+
+        # Persist superfan records
+        _update_superfans(user, superfans, unanalyzed)
 
         action.status = AgentAction.ActionStatus.COMPLETED
         action.output_data = {

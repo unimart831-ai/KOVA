@@ -174,6 +174,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "agents.run_engage_cycle",
         "schedule": 30 * 60.0,  # every 30 minutes — fetch, analyze, reply
     },
+    "run-strategy-cycle": {
+        "task": "agents.run_strategy_cycle",
+        "schedule": 8 * 3600.0,  # every 8 hours — proactive content + strategy
+    },
 }
 
 # ─── AUTH ────────────────────────────────────────────────────────────────────
