@@ -17,6 +17,7 @@ urlpatterns = [
     path("<uuid:post_id>/approve/", views.approve_post, name="approve"),
     path("<uuid:post_id>/reject/", views.reject_post, name="reject"),
     path("<uuid:post_id>/regenerate/", views.regenerate_post, name="regenerate"),
+    path("<uuid:post_id>/preview/", views.post_preview, name="preview"),
     path("<uuid:post_id>/upload/", views.upload_media, name="upload_media"),
     path("<uuid:post_id>/", views.post_detail, name="post_detail"),
 ]

@@ -1,0 +1,68 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Connect Bluesky{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-8">
+  <div class="card">
+    <div class="card-body space-y-6">
+      <div class="text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-3xl mb-4">🦋</div>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Connect Bluesky</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+          Bluesky uses <strong>App Passwords</strong> instead of OAuth.
+          Create one in your Bluesky settings, then enter it below.
+        </p>
+      </div>
+
+      <div class="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-lg p-4">
+        <p class="text-xs font-semibold text-blue-800 dark:text-blue-200 mb-2">How to create an App Password:</p>
+        <ol class="text-xs text-blue-700 dark:text-blue-300 space-y-1 list-decimal list-inside">
+          <li>Go to <a href="https://bsky.app/settings/app-passwords" target="_blank" class="underline font-medium">bsky.app/settings/app-passwords</a></li>
+          <li>Click <strong>"Add App Password"</strong></li>
+          <li>Name it "Kova Agent" and click <strong>"Create"</strong></li>
+          <li>Copy the generated password and paste it below</li>
+        </ol>
+        <p class="text-[10px] text-blue-600 dark:text-blue-400 mt-2">App passwords have limited access and can be revoked anytime. We never see your main password.</p>
+      </div>
+
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+
+        <div>
+          <label for="handle" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bluesky Handle</label>
+          <input
+            type="text"
+            id="handle"
+            name="handle"
+            placeholder="yourname.bsky.social"
+            required
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+          <p class="text-[10px] text-gray-400 mt-1">Your full handle, e.g. yourname.bsky.social or your custom domain</p>
+        </div>
+
+        <div>
+          <label for="app_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">App Password</label>
+          <input
+            type="password"
+            id="app_password"
+            name="app_password"
+            placeholder="xxxx-xxxx-xxxx-xxxx"
+            required
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+          <p class="text-[10px] text-gray-400 mt-1">The app password from Step 3 above (not your main password)</p>
+        </div>
+
+        <div class="flex items-center gap-3 pt-2">
+          <button type="submit" class="flex-1 btn-primary text-sm py-2.5">
+            Connect Bluesky
+          </button>
+          <a href="{% url 'platforms:list' %}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

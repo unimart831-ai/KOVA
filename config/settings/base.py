@@ -316,6 +316,15 @@ FACEBOOK_APP_ID = env("FACEBOOK_APP_ID", default="")
 FACEBOOK_APP_SECRET = env("FACEBOOK_APP_SECRET", default="")
 TIKTOK_CLIENT_KEY = env("TIKTOK_CLIENT_KEY", default="")
 TIKTOK_CLIENT_SECRET = env("TIKTOK_CLIENT_SECRET", default="")
+
+# Sprint 8 — New platforms
+YOUTUBE_CLIENT_ID = env("YOUTUBE_CLIENT_ID", default="")
+YOUTUBE_CLIENT_SECRET = env("YOUTUBE_CLIENT_SECRET", default="")
+PINTEREST_APP_ID = env("PINTEREST_APP_ID", default="")
+PINTEREST_APP_SECRET = env("PINTEREST_APP_SECRET", default="")
+THREADS_APP_ID = env("THREADS_APP_ID", default="")        # Falls back to FACEBOOK_APP_ID in provider
+THREADS_APP_SECRET = env("THREADS_APP_SECRET", default="") # Falls back to FACEBOOK_APP_SECRET in provider
+
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
 
 # ─── EMAIL ───────────────────────────────────────────────────────────────────

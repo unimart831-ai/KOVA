@@ -13,6 +13,10 @@ class SocialAccount(models.Model):
         INSTAGRAM = "instagram", "Instagram"
         FACEBOOK = "facebook", "Facebook"
         TIKTOK = "tiktok", "TikTok"
+        YOUTUBE = "youtube", "YouTube"
+        PINTEREST = "pinterest", "Pinterest"
+        THREADS = "threads", "Threads"
+        BLUESKY = "bluesky", "Bluesky"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="social_accounts")

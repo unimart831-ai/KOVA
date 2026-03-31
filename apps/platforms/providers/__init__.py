@@ -6,5 +6,9 @@ from apps.platforms.providers import twitter  # noqa: F401
 from apps.platforms.providers import linkedin  # noqa: F401
 from apps.platforms.providers import instagram_facebook  # noqa: F401
 from apps.platforms.providers import tiktok  # noqa: F401
+from apps.platforms.providers import youtube  # noqa: F401
+from apps.platforms.providers import pinterest  # noqa: F401
+from apps.platforms.providers import threads  # noqa: F401
+from apps.platforms.providers import bluesky  # noqa: F401
 
 __all__ = ["BaseProvider", "provider_registry", "get_provider"]

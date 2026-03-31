@@ -484,6 +484,17 @@ def upload_media(request, post_id):
 
 
 @login_required
+def post_preview(request, post_id):
+    """HTMX partial: platform-specific visual preview of a post."""
+    post = get_object_or_404(
+        Post.objects.select_related("social_account"),
+        id=post_id,
+        user=request.user,
+    )
+    return render(request, "content/preview.html", {"post": post})
+
+
+@login_required
 def post_detail(request, post_id):
     """Full detail view for a single post with metrics and activity."""
     post = get_object_or_404(

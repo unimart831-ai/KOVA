@@ -32,6 +32,10 @@ PLATFORM_IMAGE_SIZES = {
     "instagram": (1080, 1080), # 1:1 — Instagram square
     "facebook": (1200, 630),   # ~1.91:1 — Facebook share
     "tiktok": (1080, 1920),    # 9:16 — TikTok vertical
+    "youtube": (1280, 720),    # 16:9 — YouTube thumbnail
+    "pinterest": (1000, 1500), # 2:3 — Pinterest pin
+    "threads": (1080, 1080),   # 1:1 — Threads square
+    "bluesky": (1200, 675),    # 16:9 — Bluesky card
 }
 
 DEFAULT_SIZE = (1200, 675)

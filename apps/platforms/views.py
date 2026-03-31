@@ -17,6 +17,10 @@ AVAILABLE_PLATFORMS = [
     {"key": "instagram", "label": "Instagram", "icon": "📷"},
     {"key": "facebook", "label": "Facebook", "icon": "📘"},
     {"key": "tiktok", "label": "TikTok", "icon": "🎵"},
+    {"key": "youtube", "label": "YouTube", "icon": "▶️"},
+    {"key": "pinterest", "label": "Pinterest", "icon": "📌"},
+    {"key": "threads", "label": "Threads", "icon": "🧵"},
+    {"key": "bluesky", "label": "Bluesky", "icon": "🦋"},
 ]
 
 
@@ -50,6 +54,41 @@ def connect_platform(request, platform):
     if not provider:
         messages.error(request, f"Platform '{platform}' is not available.")
         return redirect("platforms:list")
+
+    # Bluesky uses app password, not OAuth
+    if platform == "bluesky":
+        if request.method == "POST":
+            handle = request.POST.get("handle", "").strip()
+            app_password = request.POST.get("app_password", "").strip()
+            if not handle or not app_password:
+                messages.error(request, "Both handle and app password are required.")
+                return redirect("platforms:list")
+            try:
+                result = provider.handle_app_password(handle, app_password)
+                SocialAccount.objects.update_or_create(
+                    user=request.user,
+                    platform="bluesky",
+                    platform_user_id=result.platform_user_id,
+                    defaults={
+                        "username": result.username,
+                        "display_name": result.display_name,
+                        "avatar_url": result.avatar_url,
+                        "access_token": result.access_token,
+                        "refresh_token": result.refresh_token,
+                        "token_expires_at": result.token_expires_at,
+                        "token_scope": result.token_scope,
+                        "is_active": True,
+                        "last_error": "",
+                        "metadata": result.metadata,
+                    },
+                )
+                messages.success(request, f"Connected Bluesky — @{result.username}")
+            except Exception as exc:
+                logger.error("Bluesky connect failed: %s", exc, exc_info=True)
+                messages.error(request, f"Failed to connect Bluesky: {exc}")
+            return redirect("platforms:list")
+        # GET — show form
+        return render(request, "platforms/bluesky_connect.html", {"page_title": "Connect Bluesky"})
 
     # Generate and store a CSRF-like state token
     state = secrets.token_urlsafe(32)
