@@ -5,7 +5,7 @@
 # This creates the OAuth "pipes" that let ALL your users connect platforms.
 # Your clients never see any of this — they just click "Connect" and authorize.
 #
-# Last updated: March 2026 — aligned with Meta Developer Docs (Graph API v25.0)
+# Last updated: April 2026 — 9 platforms (FB, IG, Twitter, LinkedIn, TikTok, YouTube, Pinterest, Threads, Bluesky)
 # ============================================================================
 
 
@@ -423,6 +423,294 @@ You may need to submit your app for review before OAuth works.
 
 
 # ============================================================================
+# STEP 5: YOUTUBE
+# ============================================================================
+# Priority: Fifth — requires Google Cloud project + API enablement.
+# Time: ~15 minutes
+# Docs: https://developers.google.com/youtube/v3/getting-started
+# ============================================================================
+
+## 5a. Create a Google Cloud Project
+
+If you already have a Google Cloud account (from any Google service), skip to step 2.
+
+1. Go to https://console.cloud.google.com/
+2. Sign in with the Kova business email (or create a Google account)
+3. Click "Select a project" (top bar) → "New Project"
+4. Project name: Kova Agent
+5. Organization: leave as "No organization" (or select yours)
+6. Click "Create"
+
+## 5b. Enable the YouTube Data API v3
+
+1. In Google Cloud Console, go to:
+   APIs & Services → Library
+   (or: https://console.cloud.google.com/apis/library)
+2. Search for "YouTube Data API v3"
+3. Click it → Click "Enable"
+
+## 5c. Create OAuth 2.0 Credentials
+
+1. Go to APIs & Services → Credentials
+   (or: https://console.cloud.google.com/apis/credentials)
+2. Click "Create Credentials" → "OAuth client ID"
+3. If prompted, configure the OAuth consent screen first:
+   - User type: External
+   - App name: Kova Agent
+   - User support email: your Kova business email
+   - Developer contact: your Kova business email
+   - Scopes: add `youtube.upload`, `youtube.readonly`, `youtube.force-ssl`
+   - Save and continue (leave test users empty for now)
+4. Back to Create Credentials → OAuth client ID:
+   - Application type: Web application
+   - Name: Kova Agent
+   - Authorized redirect URIs:
+     https://kovaagent-production.up.railway.app/platforms/callback/youtube/
+   - Click "Create"
+
+## 5d. Get Your Credentials
+
+1. A dialog shows your Client ID and Client Secret
+2. Copy Client ID → YOUTUBE_CLIENT_ID
+3. Copy Client Secret → YOUTUBE_CLIENT_SECRET
+4. Download the JSON file as backup (store in password manager)
+
+## 5e. Set Railway Environment Variables
+
+  YOUTUBE_CLIENT_ID=xxxxxxxxxxxxxxxx.apps.googleusercontent.com
+  YOUTUBE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxx
+
+## 5f. Verify It Works
+
+1. Go to Platforms page → Click "Connect" on YouTube
+2. Should redirect to Google OAuth → authorize → connected
+
+Note: While in development mode, only test users you add in the
+OAuth consent screen can authorize. To go public, submit for Google
+verification (requires privacy policy URL + demo video).
+
+## 5g. YouTube API Quotas
+
+YouTube Data API v3 has a daily quota of 10,000 units.
+  - Video upload: 1,600 units per upload
+  - Read channel stats: 1 unit
+  - That means ~6 video uploads/day on the free default quota
+  - Request quota increase: https://console.cloud.google.com/apis/api/youtube.googleapis.com/quotas
+
+For Kova's use case (scheduling uploads + reading metrics), the default
+quota is sufficient for early users. Monitor in Google Cloud Console.
+
+
+# ============================================================================
+# STEP 6: PINTEREST
+# ============================================================================
+# Priority: Sixth — straightforward OAuth setup.
+# Time: ~10 minutes
+# Docs: https://developers.pinterest.com/docs/getting-started/set-up-app/
+# ============================================================================
+
+## 6a. Create a Pinterest Business Account
+
+1. Go to https://www.pinterest.com/business/create/
+   (or convert existing account: https://www.pinterest.com/business/convert/)
+2. Sign up with Kova business email
+3. Business name: Kova Agent
+4. Website: https://kovaagent-production.up.railway.app
+5. Select industry: Technology
+
+## 6b. Register as a Pinterest Developer
+
+1. Go to https://developers.pinterest.com/
+2. Sign in with the Pinterest business account
+3. Accept developer terms
+
+## 6c. Create an App
+
+1. Go to https://developers.pinterest.com/apps/
+2. Click "Create app"
+3. App name: Kova Agent
+4. Description: AI-powered social media management platform that creates
+   and publishes pins on behalf of users via OAuth 2.0
+5. Website URL: https://kovaagent-production.up.railway.app
+
+## 6d. Configure OAuth
+
+1. In your app settings, go to "OAuth" section
+2. Add Redirect URI:
+   https://kovaagent-production.up.railway.app/platforms/callback/pinterest/
+
+## 6e. Get Your Credentials
+
+1. In app settings, find:
+   - App ID → PINTEREST_APP_ID
+   - App Secret → PINTEREST_APP_SECRET
+2. Save these securely
+
+## 6f. Set Railway Environment Variables
+
+  PINTEREST_APP_ID=xxxxxxxxxxxxxxxx
+  PINTEREST_APP_SECRET=xxxxxxxxxxxxxxxx
+
+## 6g. Pinterest API Access Levels
+
+Pinterest API v5 has access tiers:
+  - Trial: limited rate limits, sandbox only
+  - Standard: request at https://developers.pinterest.com/ → app → "Request access"
+  - Requires: app description, use case, privacy policy URL
+
+Request Standard access once you have real users. Trial is fine for testing.
+
+## 6h. Verify It Works
+
+1. Go to Platforms page → Click "Connect" on Pinterest
+2. Should redirect to Pinterest auth → authorize → connected
+
+
+# ============================================================================
+# STEP 7: THREADS
+# ============================================================================
+# Priority: Seventh — uses the same Meta app from Step 1 (shared credentials).
+# Time: ~5 minutes (if Meta app already exists)
+# Docs: https://developers.facebook.com/docs/threads
+# ============================================================================
+
+## 7a. Prerequisites
+
+Threads uses the Meta Graph API with its own OAuth flow and scopes.
+It can use the SAME Meta App from Step 1, OR a separate "Threads App ID."
+
+Requirements:
+  - Meta Developer account (from Step 1)
+  - Instagram account linked to Threads (user must have Threads profile)
+  - Your Meta App from Step 1 (FACEBOOK_APP_ID / FACEBOOK_APP_SECRET)
+
+## 7b. Add Threads Use Case to Your Meta App
+
+1. Go to https://developers.facebook.com/apps/ → select your Kova app
+2. In the left sidebar, find "Use Cases" or "Add Product"
+3. Add the "Threads" product/use case
+4. Required permissions (scopes):
+   - threads_basic — Read Threads profile
+   - threads_content_publish — Create and publish Threads posts
+   - threads_manage_insights — Read Threads post metrics
+   - threads_manage_replies — Read and manage replies
+   - threads_read_replies — Read reply threads
+
+## 7c. Configure OAuth Redirect
+
+In App Settings or Threads product settings, add redirect URI:
+  https://kovaagent-production.up.railway.app/platforms/callback/threads/
+
+## 7d. Set Railway Environment Variables
+
+Threads falls back to FACEBOOK_APP_ID if THREADS_APP_ID is not set.
+You can use either approach:
+
+  # Option A: Use same Meta app credentials (recommended — simpler)
+  # No additional env vars needed — Threads provider falls back to
+  # FACEBOOK_APP_ID and FACEBOOK_APP_SECRET automatically.
+
+  # Option B: Separate Threads app (if you want isolation)
+  THREADS_APP_ID=xxxxxxxxxxxxxxxx
+  THREADS_APP_SECRET=xxxxxxxxxxxxxxxx
+
+## 7e. Important Notes
+
+  - Threads API has its own OAuth flow at https://threads.net/oauth/authorize
+    (NOT the same as Facebook/Instagram OAuth)
+  - Graph API base URL for Threads: https://graph.threads.net/v1.0
+  - Users must have an active Threads profile (just having Instagram isn't enough)
+  - Threads supports: text posts, image posts, carousel posts, replies
+  - Character limit: 500 characters per post
+  - Carousel: up to 20 images/videos per carousel
+  - Reply chains: post as reply to another Threads post (useful for threads)
+
+## 7f. Verify It Works
+
+1. Go to Platforms page → Click "Connect" on Threads
+2. Should redirect to Threads OAuth → authorize → connected
+3. Test: create a post, select Threads as platform, publish
+
+
+# ============================================================================
+# STEP 8: BLUESKY
+# ============================================================================
+# Priority: Eighth — no app review needed. Simplest setup.
+# Time: ~3 minutes
+# Docs: https://docs.bsky.app/ (AT Protocol)
+# ============================================================================
+
+## 8a. How Bluesky Authentication Works
+
+Bluesky is DIFFERENT from all other platforms:
+  - Uses the AT Protocol (open, decentralized)
+  - NO OAuth flow — uses App Passwords instead
+  - NO developer account needed — no app review, no API keys
+  - Each USER creates their own app password when connecting
+  - Kova stores the handle + app password in SocialAccount credentials
+
+This means: YOU (the platform owner) don't need to register anything.
+Each Kova user connects their own Bluesky account using their handle +
+an app password they generate from Bluesky settings.
+
+## 8b. How Users Connect Bluesky in Kova
+
+When a user clicks "Connect" on Bluesky, Kova shows a form (not an OAuth redirect):
+
+1. User enters their Bluesky handle (e.g., `username.bsky.social`)
+2. User creates an App Password in their Bluesky account:
+   - Go to https://bsky.app/settings/app-passwords
+   - Click "Add App Password"
+   - Name it: "Kova Agent"
+   - Copy the generated password
+3. User pastes the app password into the Kova form
+4. Kova validates by calling the AT Protocol auth endpoint
+5. If valid → account connected, tokens stored
+
+## 8c. No Environment Variables Needed
+
+Bluesky requires NO platform-level credentials. Unlike other platforms
+where you need a Client ID/Secret for your app, Bluesky authentication
+is entirely user-level (handle + app password).
+
+  # No Bluesky env vars needed!
+  # Each user provides their own credentials via the connect form.
+
+## 8d. AT Protocol Endpoints
+
+Kova uses these AT Protocol endpoints:
+
+  Endpoint                                    | Purpose
+  --------------------------------------------|----------------------------------
+  POST /xrpc/com.atproto.server.createSession | Authenticate (get access token)
+  POST /xrpc/com.atproto.server.refreshSession| Refresh expired token
+  POST /xrpc/com.atproto.repo.createRecord    | Create a post (text + images)
+  POST /xrpc/com.atproto.repo.uploadBlob      | Upload image for post
+  GET /xrpc/app.bsky.feed.getAuthorFeed       | Get user's posts (for metrics)
+  GET /xrpc/app.bsky.actor.getProfile         | Get profile info
+
+Default PDS (Personal Data Server): https://bsky.social
+If a user uses a custom PDS, they enter their full handle.
+
+## 8e. Bluesky Post Limits
+
+  - Text: 300 characters per post (grapheme-based, not byte-based)
+  - Images: up to 4 per post (JPEG/PNG, max 1MB each after upload)
+  - Links: auto-detected, displayed as link cards
+  - Mentions: @handle.bsky.social format
+  - Hashtags: not natively supported yet (just plain text #tags)
+  - No video upload via API (as of March 2026)
+
+## 8f. Verify It Works
+
+1. Create a Bluesky account at https://bsky.app/ (if testing)
+2. Generate an app password at https://bsky.app/settings/app-passwords
+3. Go to Platforms page → Click "Connect" on Bluesky
+4. Enter handle + app password in the form
+5. Should validate and connect immediately
+
+
+# ============================================================================
 # RAILWAY ENVIRONMENT VARIABLES — FULL REFERENCE
 # ============================================================================
 
@@ -448,8 +736,23 @@ Add all of these in Railway Dashboard → Your Service → Variables:
   TIKTOK_CLIENT_KEY=
   TIKTOK_CLIENT_SECRET=
 
+  # YouTube (Google Cloud OAuth)
+  YOUTUBE_CLIENT_ID=
+  YOUTUBE_CLIENT_SECRET=
+
+  # Pinterest
+  PINTEREST_APP_ID=
+  PINTEREST_APP_SECRET=
+
+  # Threads (optional — falls back to FACEBOOK_APP_ID/SECRET)
+  # THREADS_APP_ID=
+  # THREADS_APP_SECRET=
+
+  # Bluesky — NO env vars needed (user-level app passwords)
+
 Railway auto-redeploys after saving variables (~2 minutes).
 Platforms without credentials will show a grayed-out connect button.
+Bluesky always shows as connectable (no server credentials needed).
 
 
 # ============================================================================
@@ -465,6 +768,10 @@ Platforms without credentials will show a grayed-out connect button.
   Twitter/X  | https://kovaagent-production.up.railway.app/platforms/callback/twitter/
   LinkedIn   | https://kovaagent-production.up.railway.app/platforms/callback/linkedin/
   TikTok     | https://kovaagent-production.up.railway.app/platforms/callback/tiktok/
+  YouTube    | https://kovaagent-production.up.railway.app/platforms/callback/youtube/
+  Pinterest  | https://kovaagent-production.up.railway.app/platforms/callback/pinterest/
+  Threads    | https://kovaagent-production.up.railway.app/platforms/callback/threads/
+  Bluesky    | N/A — uses app password form, no OAuth redirect
 
   For local development, replace domain with: http://localhost:8000
 
@@ -478,7 +785,7 @@ Platforms without credentials will show a grayed-out connect button.
 
   ☐ Kova business email address + password
   ☐ Facebook account login (email + password)
-  ☐ Facebook App ID + App Secret (used for FB, IG, and WhatsApp)
+  ☐ Facebook App ID + App Secret (used for FB, IG, Threads, and WhatsApp)
   ☐ WhatsApp permanent access token + phone number ID (if using WhatsApp)
   ☐ Twitter/X account login (email + password)
   ☐ Twitter Client ID + Client Secret
@@ -486,6 +793,12 @@ Platforms without credentials will show a grayed-out connect button.
   ☐ LinkedIn Client ID + Client Secret
   ☐ TikTok account login (email + password)
   ☐ TikTok Client Key + Client Secret
+  ☐ Google Cloud account login (email + password)
+  ☐ YouTube Client ID + Client Secret (Google Cloud OAuth)
+  ☐ Pinterest business account login (email + password)
+  ☐ Pinterest App ID + App Secret
+  ☐ Threads App ID + Secret (optional — can reuse Facebook App credentials)
+  ☐ Bluesky — no platform credentials needed (users provide their own)
   ☐ Railway dashboard login
   ☐ GitHub repo access
 
@@ -518,6 +831,24 @@ Platforms without credentials will show a grayed-out connect button.
                                  | apps not connected to a verified business.
                                  | Connect a verified business portfolio to
                                  | existing apps, or remove unused ones.
+  YouTube "quotaExceeded"         | Daily API quota exceeded. Default is 10,000
+                                 | units/day. Request quota increase in Google
+                                 | Cloud Console → APIs → YouTube Data API v3.
+  YouTube "forbidden"             | YouTube Data API v3 not enabled in project,
+                                 | or OAuth consent screen not configured.
+  Pinterest "Insufficient scopes" | App needs Standard access tier. Apply at
+                                 | developers.pinterest.com → Manage → Access.
+  Pinterest 429 rate limit        | Trial tier: 10 calls/min. Standard: 1000/min.
+                                 | Implement backoff or request Standard access.
+  Threads "User not found"        | User hasn't set up a Threads profile yet.
+                                 | They must create one at threads.net first.
+  Threads token issues            | If reusing FB credentials, ensure Threads
+                                 | scopes are added to the FB app use case.
+  Bluesky "AuthenticationRequired"| App password is wrong or was revoked.
+                                 | User must generate a new one at
+                                 | bsky.app → Settings → App Passwords.
+  Bluesky "InvalidToken"          | Session expired. Re-authenticate with
+                                 | createSession endpoint. Sessions last ~2hrs.
 
 
 # ============================================================================
@@ -550,15 +881,42 @@ Platforms without credentials will show a grayed-out connect button.
 - Submit app description + demo video
 - Review takes 3-7 business days typically
 
+## YouTube App Review (Google OAuth Verification)
+- Google requires OAuth consent screen verification for apps with >100 users
+- Submit privacy policy URL, homepage URL, and authorized domains
+- If requesting sensitive scopes (youtube.upload), prepare a demo video
+- Verification can take 2-6 weeks (plan ahead)
+- While unverified, a "This app isn't verified" warning appears for users
+
+## Pinterest App Review
+- Trial access gives 10 API calls/min (enough for development)
+- Apply for Standard access when ready for production
+- Go to developers.pinterest.com → Your App → Manage → Request Standard Access
+- Provide app description and expected API usage
+- Review typically takes 1-2 weeks
+
+## Threads App Review
+- Uses the same Meta app as Facebook/Instagram — same review process
+- Ensure Threads-specific scopes are included in your permission requests
+- If your FB/IG app is already approved, Threads permissions may be auto-approved
+
+## Bluesky — No App Review Needed
+- Bluesky uses the AT Protocol — fully open, no app review required
+- Users authenticate with their own app passwords (generated in Bluesky settings)
+- No rate limit concerns for normal usage patterns
+- No platform credentials stored on your server
+
 Save App Review for when you have real users. For now, Development Mode
 with your own test accounts is sufficient.
 
 
 # ============================================================================
-# META DEVELOPER RESOURCES
+# DEVELOPER RESOURCES
 # ============================================================================
 # Bookmark these — you'll reference them often.
 # ============================================================================
+
+## Meta (Facebook / Instagram / Threads / WhatsApp)
 
   Resource                        | URL
   --------------------------------|-------------------------------------------
@@ -569,6 +927,59 @@ with your own test accounts is sufficient.
   Graph API Reference             | https://developers.facebook.com/docs/graph-api/reference
   Pages API Docs                  | https://developers.facebook.com/docs/pages-api/
   Instagram Platform Docs         | https://developers.facebook.com/docs/instagram-platform/
+  Threads API Docs                | https://developers.facebook.com/docs/threads/
   WhatsApp Cloud API Docs         | https://developers.facebook.com/docs/whatsapp/cloud-api/
   Platform Status                 | https://metastatus.com/
   Bug Reports                     | https://developers.facebook.com/support/bugs/
+
+## Google (YouTube)
+
+  Resource                        | URL
+  --------------------------------|-------------------------------------------
+  Google Cloud Console            | https://console.cloud.google.com/
+  YouTube Data API v3 Docs        | https://developers.google.com/youtube/v3
+  OAuth 2.0 Playground            | https://developers.google.com/oauthplayground/
+  API Quota Calculator            | https://developers.google.com/youtube/v3/determine_quota_cost
+  YouTube API Status              | https://status.cloud.google.com/
+
+## Pinterest
+
+  Resource                        | URL
+  --------------------------------|-------------------------------------------
+  Developer Portal                | https://developers.pinterest.com/
+  API v5 Reference                | https://developers.pinterest.com/docs/api/v5/
+  OAuth Guide                     | https://developers.pinterest.com/docs/getting-started/authentication/
+  Rate Limits                     | https://developers.pinterest.com/docs/getting-started/rate-limits/
+
+## Twitter / X
+
+  Resource                        | URL
+  --------------------------------|-------------------------------------------
+  Developer Portal                | https://developer.x.com/
+  API v2 Reference                | https://developer.x.com/en/docs/twitter-api
+  OAuth 2.0 Guide                 | https://developer.x.com/en/docs/authentication/oauth-2-0
+
+## LinkedIn
+
+  Resource                        | URL
+  --------------------------------|-------------------------------------------
+  Developer Portal                | https://developer.linkedin.com/
+  Marketing API Docs              | https://learn.microsoft.com/en-us/linkedin/marketing/
+  OAuth Guide                     | https://learn.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow
+
+## TikTok
+
+  Resource                        | URL
+  --------------------------------|-------------------------------------------
+  Developer Portal                | https://developers.tiktok.com/
+  Content Posting API             | https://developers.tiktok.com/doc/content-posting-api-get-started
+  Login Kit                       | https://developers.tiktok.com/doc/login-kit-web
+
+## Bluesky (AT Protocol)
+
+  Resource                        | URL
+  --------------------------------|-------------------------------------------
+  AT Protocol Docs                | https://atproto.com/
+  Bluesky API Reference           | https://docs.bsky.app/
+  Lexicon Reference               | https://atproto.com/specs/lexicon
+  App Passwords                   | https://bsky.app/settings/app-passwords
