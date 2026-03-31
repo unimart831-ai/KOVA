@@ -1,0 +1,207 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Competitor Intelligence{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Track competitors, discover gaps, steal winning strategies</p>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-2">
+  <a href="{% url 'analytics:competitor_landscape' %}" class="btn-secondary text-xs">
+    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+    Landscape
+  </a>
+  <a href="{% url 'analytics:competitor_add' %}" class="btn-primary text-xs">
+    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+    Track Competitor
+  </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+  {# Stats bar #}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="stat-card">
+      <div class="card-body p-4 text-center">
+        <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ competitors|length }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Tracked</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="card-body p-4 text-center">
+        <p class="text-3xl font-bold text-red-600 dark:text-red-400">{{ high_priority_count }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">High Priority</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="card-body p-4 text-center">
+        <p class="text-3xl font-bold text-amber-600 dark:text-amber-400">{{ content_gaps }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Content Gaps</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="card-body p-4 text-center">
+        <p class="text-3xl font-bold text-kova-600 dark:text-kova-400">{{ total_insights }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Open Insights</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    {# Competitors grid #}
+    <div class="lg:col-span-2 space-y-4">
+      <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Tracked Competitors</h2>
+
+      {% if competitors %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {% for comp in competitors %}
+          <a href="{% url 'analytics:competitor_detail' pk=comp.pk %}"
+             class="card hover:shadow-md transition-shadow group">
+            <div class="card-body p-4">
+              <div class="flex items-start justify-between">
+                <div>
+                  <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-kova-600 dark:group-hover:text-kova-400 transition-colors">{{ comp.name }}</h3>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ comp.industry|default:"Same industry" }}</p>
+                </div>
+                {% if comp.threat_level == 'high' %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300">
+                    High Threat
+                  </span>
+                {% elif comp.threat_level == 'medium' %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
+                    Medium
+                  </span>
+                {% elif comp.threat_level == 'low' %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
+                    Low
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                    Pending
+                  </span>
+                {% endif %}
+              </div>
+
+              {# Platform handles #}
+              <div class="flex flex-wrap gap-1.5 mt-3">
+                {% for platform, handle in comp.handles.items %}
+                  <span class="inline-flex items-center text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                    {% if platform == 'twitter' %}𝕏{% elif platform == 'instagram' %}📷{% elif platform == 'facebook' %}f{% elif platform == 'linkedin' %}in{% elif platform == 'tiktok' %}♪{% elif platform == 'youtube' %}▶{% elif platform == 'threads' %}@{% endif %}
+                    @{{ handle|truncatechars:15 }}
+                  </span>
+                {% endfor %}
+              </div>
+
+              {# Quick intel #}
+              {% if comp.strengths %}
+              <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                <p class="text-xs text-gray-500 dark:text-gray-400">Top strength:</p>
+                <p class="text-xs text-gray-700 dark:text-gray-300 mt-0.5">{{ comp.strengths.0 }}</p>
+              </div>
+              {% endif %}
+
+              <div class="flex items-center justify-between mt-3 pt-2 border-t border-gray-100 dark:border-gray-800">
+                <span class="text-xs text-gray-400 dark:text-gray-500">
+                  {% if comp.last_analyzed_at %}
+                    Analyzed {{ comp.last_analyzed_at|timesince }} ago
+                  {% else %}
+                    Analysis pending...
+                  {% endif %}
+                </span>
+                <svg class="w-4 h-4 text-gray-400 group-hover:text-kova-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              </div>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="card">
+          <div class="card-body p-8 text-center">
+            <div class="w-12 h-12 mx-auto bg-kova-50 dark:bg-kova-950/50 rounded-full flex items-center justify-center mb-3">
+              <svg class="w-6 h-6 text-kova-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+            </div>
+            <h3 class="font-semibold text-gray-900 dark:text-white">No competitors tracked yet</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Add a competitor to get AI-powered intelligence on their strategy.</p>
+            <a href="{% url 'analytics:competitor_add' %}" class="btn-primary text-sm mt-4 inline-flex">
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Track Your First Competitor
+            </a>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    {# Insights sidebar #}
+    <div class="space-y-4">
+      <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Latest Insights</h2>
+
+      {% if recent_insights %}
+        <div class="space-y-3">
+          {% for insight in recent_insights %}
+            <div id="insight-{{ insight.pk }}"
+                 hx-target="#insight-{{ insight.pk }}"
+                 hx-swap="outerHTML"
+                 class="card">
+              <div class="card-body p-3">
+                <div class="flex items-start gap-2">
+                  <span class="mt-0.5 text-sm">
+                    {% if insight.insight_type == 'content_gap' %}🔲
+                    {% elif insight.insight_type == 'trend_ahead' %}🚀
+                    {% elif insight.insight_type == 'weakness' %}🎯
+                    {% elif insight.insight_type == 'strategy_shift' %}🔄
+                    {% elif insight.insight_type == 'viral_content' %}🔥
+                    {% else %}💡{% endif %}
+                  </span>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1.5">
+                      {% if insight.priority == 'high' %}
+                        <span class="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span>
+                      {% elif insight.priority == 'medium' %}
+                        <span class="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></span>
+                      {% else %}
+                        <span class="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></span>
+                      {% endif %}
+                      <p class="text-xs font-semibold text-gray-900 dark:text-white truncate">{{ insight.title }}</p>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ insight.competitor.name }}</p>
+                    {% if insight.suggested_action %}
+                    <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">{{ insight.suggested_action|truncatechars:100 }}</p>
+                    {% endif %}
+
+                    <div class="flex items-center gap-2 mt-2">
+                      {% if insight.suggested_content_idea %}
+                      <form hx-post="{% url 'analytics:insight_action' pk=insight.pk %}" class="inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="create_seed">
+                        <button type="submit" class="text-xs text-kova-600 dark:text-kova-400 hover:underline font-medium">
+                          → Create content
+                        </button>
+                      </form>
+                      {% endif %}
+                      <form hx-post="{% url 'analytics:insight_action' pk=insight.pk %}" class="inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="dismiss">
+                        <button type="submit" class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">Dismiss</button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="card">
+          <div class="card-body p-4 text-center">
+            <p class="text-xs text-gray-500 dark:text-gray-400">Insights will appear here after competitor analyses run.</p>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

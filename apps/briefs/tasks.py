@@ -22,6 +22,7 @@ from apps.agents.llm import generate, get_model_for_task
 from apps.agents.models import AgentAction, AgentConfig
 from apps.agents.research_agent import discover_trends
 from apps.agents.strategist_agent import get_engagement_report, run_strategy_cycle
+from apps.analytics.competitor_intel import get_competitor_context_for_brief
 from apps.billing.models import get_plan_limits
 from apps.briefs.models import DailyBrief
 from apps.content.models import ContentSeed, Post
@@ -133,6 +134,13 @@ def _gather_brief_data(user):
         logger.warning("Engagement report failed: %s", e)
         engagement = {"total_interactions": 0, "summary": "Engagement data unavailable."}
 
+    # Competitor intelligence
+    try:
+        competitor_intel = get_competitor_context_for_brief(user)
+    except Exception as e:
+        logger.warning("Competitor intel for brief failed: %s", e)
+        competitor_intel = {}
+
     # Posts created this week
     week_stats = Post.objects.filter(
         user=user,
@@ -163,6 +171,7 @@ def _gather_brief_data(user):
         "content_dna": dna_summary,
         "trends": trends,
         "engagement": engagement,
+        "competitor_intel": competitor_intel,
     }
 
 
@@ -184,6 +193,8 @@ def _generate_brief_with_llm(user, brief_data):
         '- "engagement_summary": 2-3 sentences about engagement health — response rate, sentiment trends, '
         'superfans to acknowledge, unanswered items needing attention\n'
         '- "agent_summary": 1-2 sentences about what the AI agents did in the last 24 hours\n'
+        '- "competitor_update": 1-2 sentences about competitor activity — new insights, '
+        'content gaps to exploit, or threats to watch. Empty string if no competitor data.\n'
     )
 
     prompt = (

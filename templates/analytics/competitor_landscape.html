@@ -1,0 +1,193 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Competitive Landscape{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
+  All {{ competitors|length }} competitor{{ competitors|length|pluralize }} analyzed together
+</p>
+{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'analytics:competitor_dashboard' %}" class="btn-secondary text-xs">
+  ← Back to Competitors
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+  {% if landscape %}
+
+  {# Position Overview #}
+  <div class="card">
+    <div class="card-body p-5">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Your Market Position</h3>
+      <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ landscape.landscape_summary }}</p>
+      {% if landscape.user_position %}
+      <p class="text-sm text-kova-600 dark:text-kova-400 mt-2 font-medium">{{ landscape.user_position }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Strategic Grid #}
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+    {# Your Advantages #}
+    <div class="card border-l-4 border-l-green-500">
+      <div class="card-body p-4">
+        <h4 class="text-xs font-semibold text-green-700 dark:text-green-400 uppercase tracking-wider mb-2">🏆 Your Strongest Advantages</h4>
+        <ul class="space-y-1.5">
+          {% for item in landscape.strongest_advantages %}
+          <li class="text-xs text-gray-700 dark:text-gray-300 flex items-start gap-1.5">
+            <span class="text-green-500 mt-0.5 flex-shrink-0">✓</span> {{ item }}
+          </li>
+          {% empty %}
+          <li class="text-xs text-gray-400">Analysis pending</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    {# Vulnerabilities #}
+    <div class="card border-l-4 border-l-red-500">
+      <div class="card-body p-4">
+        <h4 class="text-xs font-semibold text-red-700 dark:text-red-400 uppercase tracking-wider mb-2">🎯 Biggest Vulnerabilities</h4>
+        <ul class="space-y-1.5">
+          {% for item in landscape.biggest_vulnerabilities %}
+          <li class="text-xs text-gray-700 dark:text-gray-300 flex items-start gap-1.5">
+            <span class="text-red-500 mt-0.5 flex-shrink-0">!</span> {{ item }}
+          </li>
+          {% empty %}
+          <li class="text-xs text-gray-400">Analysis pending</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    {# Market Gaps #}
+    <div class="card border-l-4 border-l-kova-500">
+      <div class="card-body p-4">
+        <h4 class="text-xs font-semibold text-kova-700 dark:text-kova-400 uppercase tracking-wider mb-2">💡 Market Gaps</h4>
+        <ul class="space-y-1.5">
+          {% for item in landscape.market_gaps %}
+          <li class="text-xs text-gray-700 dark:text-gray-300 flex items-start gap-1.5">
+            <span class="text-kova-500 mt-0.5 flex-shrink-0">→</span> {{ item }}
+          </li>
+          {% empty %}
+          <li class="text-xs text-gray-400">Analysis pending</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    {# Threat Summary #}
+    <div class="card border-l-4 border-l-amber-500">
+      <div class="card-body p-4">
+        <h4 class="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-2">⚡ Threat Landscape</h4>
+        <div class="space-y-2">
+          {% for item in landscape.threat_summary %}
+          <div class="text-xs text-gray-700 dark:text-gray-300 flex items-start gap-1.5">
+            <span class="text-amber-500 mt-0.5 flex-shrink-0">⚠</span> {{ item }}
+          </div>
+          {% empty %}
+          <div class="text-xs text-gray-400">Analysis pending</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Top Moves — Immediate Actions #}
+  {% if landscape.top_moves %}
+  <div class="card bg-gradient-to-r from-kova-50 to-transparent dark:from-kova-950/30">
+    <div class="card-body p-5">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">🎯 Top Strategic Moves</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {% for move in landscape.top_moves %}
+        <div class="p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+          <div class="flex items-start gap-2">
+            <span class="text-kova-500 font-bold text-sm">{{ forloop.counter }}.</span>
+            <p class="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">{{ move }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {# Competitor Comparison Table #}
+  <div class="card overflow-hidden">
+    <div class="card-body p-0">
+      <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Competitor Comparison</h3>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs">
+          <thead class="bg-gray-50 dark:bg-gray-800/50">
+            <tr>
+              <th class="text-left px-4 py-2 font-medium text-gray-500 dark:text-gray-400">Competitor</th>
+              <th class="text-left px-4 py-2 font-medium text-gray-500 dark:text-gray-400">Threat</th>
+              <th class="text-left px-4 py-2 font-medium text-gray-500 dark:text-gray-400">Platforms</th>
+              <th class="text-left px-4 py-2 font-medium text-gray-500 dark:text-gray-400">Top Strength</th>
+              <th class="text-left px-4 py-2 font-medium text-gray-500 dark:text-gray-400">Key Weakness</th>
+              <th class="text-right px-4 py-2 font-medium text-gray-500 dark:text-gray-400">Insights</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+            {% for c in competitors %}
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30">
+              <td class="px-4 py-3">
+                <a href="{% url 'analytics:competitor_detail' pk=c.pk %}" class="font-medium text-gray-900 dark:text-white hover:text-kova-600">
+                  {{ c.name }}
+                </a>
+              </td>
+              <td class="px-4 py-3">
+                {% if c.threat_level == 'high' %}
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-300">High</span>
+                {% elif c.threat_level == 'medium' %}
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300">Medium</span>
+                {% elif c.threat_level == 'low' %}
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-300">Low</span>
+                {% else %}
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-500">—</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-gray-600 dark:text-gray-400">
+                {{ c.platforms_tracked|truncatechars:30 }}
+              </td>
+              <td class="px-4 py-3 text-gray-600 dark:text-gray-400">
+                {% if c.strengths %}{{ c.strengths.0|truncatechars:40 }}{% else %}—{% endif %}
+              </td>
+              <td class="px-4 py-3 text-gray-600 dark:text-gray-400">
+                {% if c.weaknesses %}{{ c.weaknesses.0|truncatechars:40 }}{% else %}—{% endif %}
+              </td>
+              <td class="px-4 py-3 text-right">
+                <span class="text-gray-600 dark:text-gray-400">{{ c.insight_count }}</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+    {# No landscape yet — need more data #}
+    <div class="card max-w-lg mx-auto">
+      <div class="card-body p-8 text-center">
+        <div class="w-12 h-12 mx-auto bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3">
+          <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </div>
+        <h3 class="font-semibold text-gray-900 dark:text-white">Not Enough Data Yet</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Add at least 2 competitors with completed analyses to generate a landscape report.</p>
+        <a href="{% url 'analytics:competitor_add' %}" class="btn-primary text-sm mt-4 inline-block">
+          + Add Competitor
+        </a>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

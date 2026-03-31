@@ -27,6 +27,7 @@ from django.utils import timezone
 
 from apps.agents.llm import generate, get_model_for_task
 from apps.agents.models import AgentAction, AgentConfig
+from apps.analytics.competitor_intel import get_competitor_context_for_strategist
 from apps.content.models import ContentSeed, Post
 from apps.engage.models import Interaction
 from apps.platforms.models import SocialAccount
@@ -119,12 +120,20 @@ def _gather_strategy_inputs(user):
     # 6. User context
     profile = getattr(user, "profile", None)
 
+    # 7. Competitor intelligence
+    try:
+        competitor_intel = get_competitor_context_for_strategist(user)
+    except Exception as e:
+        logger.warning("Competitor intel failed for strategist: %s", e)
+        competitor_intel = {}
+
     return {
         "trends": trends,
         "performance": performance,
         "engagement": engagement_stats,
         "pipeline": pipeline,
         "platforms": platforms,
+        "competitor_intel": competitor_intel,
         "user_context": {
             "company": getattr(profile, "company_name", "") if profile else "",
             "industry": getattr(profile, "industry", "") if profile else "",
@@ -274,6 +283,8 @@ def _make_strategic_decisions(user, inputs):
         "- Consider content mix: don't suggest 3 promotional posts in a row.\n"
         "- If engagement sentiment is negative, address it in the strategy.\n"
         "- If certain content types outperform, lean into them.\n"
+        "- Use competitor intelligence to find content gaps they're missing.\n"
+        "- If competitors are weak in an area, suggest content that exploits that gap.\n"
         "- Flag any risks or issues that need human attention.\n\n"
         f"The user needs approximately {seeds_needed} new content ideas "
         f"(they have {already_queued} already queued, target is ~{target_posts}/day).\n"
@@ -319,6 +330,8 @@ def _make_strategic_decisions(user, inputs):
         f"Failed recent: {inputs['pipeline']['failed_recent']}\n\n"
         f"=== PLATFORMS ===\n"
         f"Connected: {', '.join(inputs['platforms'])}\n\n"
+        f"=== COMPETITOR INTELLIGENCE ===\n"
+        f"{json.dumps(inputs.get('competitor_intel', {}), indent=2, default=str)[:1500]}\n\n"
         f"=== USER GOALS ===\n"
         f"{json.dumps(inputs['user_context'].get('goals', []))}\n\n"
         f"Make strategic decisions. Create up to {seeds_needed} content ideas "

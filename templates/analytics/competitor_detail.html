@@ -1,0 +1,281 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}{{ competitor.name }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
+  {% if competitor.threat_level == 'high' %}🔴 High threat{% elif competitor.threat_level == 'medium' %}🟡 Medium threat{% elif competitor.threat_level == 'low' %}🟢 Low threat{% else %}⚪ Pending analysis{% endif %}
+  · {{ competitor.handle_count }} platform{{ competitor.handle_count|pluralize }} tracked
+  {% if competitor.last_analyzed_at %}· Last analyzed {{ competitor.last_analyzed_at|timesince }} ago{% endif %}
+</p>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-2">
+  <a href="{% url 'analytics:competitor_analyze' pk=competitor.pk %}" class="btn-secondary text-xs">
+    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+    Re-Analyze
+  </a>
+  <form method="post" action="{% url 'analytics:competitor_delete' pk=competitor.pk %}"
+        onsubmit="return confirm('Stop tracking {{ competitor.name }}?')">
+    {% csrf_token %}
+    <button type="submit" class="btn-secondary text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 border-red-200 dark:border-red-800">
+      <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+      Remove
+    </button>
+  </form>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+  {# Handles bar #}
+  <div class="flex flex-wrap gap-2">
+    {% for platform, handle in competitor.handles.items %}
+      <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium
+        {% if platform == 'twitter' %}bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300
+        {% elif platform == 'instagram' %}bg-pink-50 dark:bg-pink-950/50 text-pink-700 dark:text-pink-300
+        {% elif platform == 'facebook' %}bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300
+        {% elif platform == 'linkedin' %}bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300
+        {% elif platform == 'tiktok' %}bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300
+        {% elif platform == 'youtube' %}bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300
+        {% elif platform == 'threads' %}bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300
+        {% endif %}">
+        {{ platform|title }}: @{{ handle }}
+      </span>
+    {% endfor %}
+  </div>
+
+  {% if latest_analysis %}
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    {# Main analysis #}
+    <div class="lg:col-span-2 space-y-6">
+
+      {# Executive summary #}
+      <div class="card">
+        <div class="card-body p-5">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Executive Summary</h3>
+          <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ latest_analysis.summary }}</p>
+        </div>
+      </div>
+
+      {# SWOT grid #}
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {# Strengths #}
+        <div class="card border-l-4 border-l-green-500">
+          <div class="card-body p-4">
+            <h4 class="text-xs font-semibold text-green-700 dark:text-green-400 uppercase tracking-wider mb-2">Strengths</h4>
+            <ul class="space-y-1.5">
+              {% for item in latest_analysis.strengths %}
+              <li class="text-xs text-gray-700 dark:text-gray-300 flex items-start gap-1.5">
+                <span class="text-green-500 mt-0.5 flex-shrink-0">✓</span>
+                {{ item }}
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+
+        {# Weaknesses #}
+        <div class="card border-l-4 border-l-red-500">
+          <div class="card-body p-4">
+            <h4 class="text-xs font-semibold text-red-700 dark:text-red-400 uppercase tracking-wider mb-2">Weaknesses</h4>
+            <ul class="space-y-1.5">
+              {% for item in latest_analysis.weaknesses %}
+              <li class="text-xs text-gray-700 dark:text-gray-300 flex items-start gap-1.5">
+                <span class="text-red-500 mt-0.5 flex-shrink-0">✗</span>
+                {{ item }}
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+
+        {# Opportunities — things YOU can do that THEY miss #}
+        <div class="card border-l-4 border-l-kova-500">
+          <div class="card-body p-4">
+            <h4 class="text-xs font-semibold text-kova-700 dark:text-kova-400 uppercase tracking-wider mb-2">Opportunities for You</h4>
+            <ul class="space-y-1.5">
+              {% for item in latest_analysis.opportunities %}
+              <li class="text-xs text-gray-700 dark:text-gray-300 flex items-start gap-1.5">
+                <span class="text-kova-500 mt-0.5 flex-shrink-0">→</span>
+                {{ item }}
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+
+        {# Threats #}
+        <div class="card border-l-4 border-l-amber-500">
+          <div class="card-body p-4">
+            <h4 class="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-2">Threats</h4>
+            <ul class="space-y-1.5">
+              {% for item in latest_analysis.threats %}
+              <li class="text-xs text-gray-700 dark:text-gray-300 flex items-start gap-1.5">
+                <span class="text-amber-500 mt-0.5 flex-shrink-0">⚠</span>
+                {{ item }}
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {# Head-to-Head Comparison #}
+      {% if latest_analysis.comparison_to_user %}
+      <div class="card">
+        <div class="card-body p-5">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Head-to-Head: You vs {{ competitor.name }}</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <h4 class="text-xs font-semibold text-green-600 dark:text-green-400 mb-2">🏆 You Win</h4>
+              <ul class="space-y-1">
+                {% for item in latest_analysis.comparison_to_user.you_win %}
+                <li class="text-xs text-gray-700 dark:text-gray-300">• {{ item }}</li>
+                {% empty %}
+                <li class="text-xs text-gray-400">None identified yet</li>
+                {% endfor %}
+              </ul>
+            </div>
+            <div>
+              <h4 class="text-xs font-semibold text-red-600 dark:text-red-400 mb-2">🎯 They Win</h4>
+              <ul class="space-y-1">
+                {% for item in latest_analysis.comparison_to_user.they_win %}
+                <li class="text-xs text-gray-700 dark:text-gray-300">• {{ item }}</li>
+                {% empty %}
+                <li class="text-xs text-gray-400">None identified yet</li>
+                {% endfor %}
+              </ul>
+            </div>
+            <div>
+              <h4 class="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">⚖️ Even</h4>
+              <ul class="space-y-1">
+                {% for item in latest_analysis.comparison_to_user.neutral %}
+                <li class="text-xs text-gray-700 dark:text-gray-300">• {{ item }}</li>
+                {% empty %}
+                <li class="text-xs text-gray-400">None identified yet</li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# Content Strategy Breakdown #}
+      {% if latest_analysis.content_strategy %}
+      <div class="card">
+        <div class="card-body p-5">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Their Content Strategy</h3>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {% if latest_analysis.content_strategy.primary_themes %}
+            <div>
+              <h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Themes</h4>
+              <div class="flex flex-wrap gap-1">
+                {% for theme in latest_analysis.content_strategy.primary_themes %}
+                <span class="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">{{ theme }}</span>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+            {% if latest_analysis.content_strategy.content_formats %}
+            <div>
+              <h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Formats</h4>
+              <div class="flex flex-wrap gap-1">
+                {% for fmt in latest_analysis.content_strategy.content_formats %}
+                <span class="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">{{ fmt }}</span>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+            {% if latest_analysis.content_strategy.tone %}
+            <div>
+              <h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Tone</h4>
+              <p class="text-xs text-gray-700 dark:text-gray-300">{{ latest_analysis.content_strategy.tone }}</p>
+            </div>
+            {% endif %}
+            {% if latest_analysis.content_strategy.posting_frequency %}
+            <div>
+              <h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Frequency</h4>
+              <p class="text-xs text-gray-700 dark:text-gray-300">{{ latest_analysis.content_strategy.posting_frequency }}</p>
+            </div>
+            {% endif %}
+            {% if latest_analysis.content_strategy.best_platforms %}
+            <div>
+              <h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Strongest On</h4>
+              <div class="flex flex-wrap gap-1">
+                {% for plat in latest_analysis.content_strategy.best_platforms %}
+                <span class="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">{{ plat }}</span>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+            {% if latest_analysis.content_strategy.target_audience %}
+            <div>
+              <h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Their Audience</h4>
+              <p class="text-xs text-gray-700 dark:text-gray-300">{{ latest_analysis.content_strategy.target_audience }}</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    {# Insights sidebar #}
+    <div class="space-y-4">
+      <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Actionable Insights</h3>
+
+      {% for insight in active_insights %}
+        {% include "analytics/_insight_card.html" with insight=insight %}
+      {% empty %}
+        <div class="card">
+          <div class="card-body p-4 text-center">
+            <p class="text-xs text-gray-500 dark:text-gray-400">No new insights. Re-analyze to get fresh intelligence.</p>
+          </div>
+        </div>
+      {% endfor %}
+
+      {# Analysis history #}
+      {% if analyses|length > 1 %}
+      <div class="mt-6">
+        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3">Analysis History</h3>
+        <div class="space-y-2">
+          {% for a in analyses %}
+          <div class="flex items-center justify-between text-xs p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+            <span class="text-gray-700 dark:text-gray-300">{{ a.get_analysis_type_display }}</span>
+            <span class="text-gray-400 dark:text-gray-500">{{ a.created_at|date:"M d, Y" }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {# Notes #}
+      {% if competitor.notes %}
+      <div class="mt-6">
+        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Your Notes</h3>
+        <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{{ competitor.notes }}</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% else %}
+    {# No analysis yet #}
+    <div class="card max-w-lg mx-auto">
+      <div class="card-body p-8 text-center">
+        <div class="w-12 h-12 mx-auto bg-kova-50 dark:bg-kova-950/50 rounded-full flex items-center justify-center mb-3 animate-pulse">
+          <svg class="w-6 h-6 text-kova-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+        </div>
+        <h3 class="font-semibold text-gray-900 dark:text-white">Analysis in progress...</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">AI is analyzing {{ competitor.name }}'s strategy. This usually takes a minute.</p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-3">Refresh this page in a moment to see results.</p>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
