@@ -14,10 +14,10 @@ Usage: {% include "components/notification.html" with type="success" message="Do
      x-transition:leave-start="opacity-100 translate-y-0"
      x-transition:leave-end="opacity-0 translate-y-2"
      class="flex items-center space-x-3 px-4 py-3 rounded-lg shadow-lg border
-            {% if type == 'success' %}bg-green-50 border-green-200 text-green-800
-            {% elif type == 'error' %}bg-red-50 border-red-200 text-red-800
-            {% elif type == 'warning' %}bg-yellow-50 border-yellow-200 text-yellow-800
-            {% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}">
+            {% if type == 'success' %}bg-green-50 border-green-200 text-green-800 dark:bg-green-950/50 dark:border-green-800 dark:text-green-300
+            {% elif type == 'error' %}bg-red-50 border-red-200 text-red-800 dark:bg-red-950/50 dark:border-red-800 dark:text-red-300
+            {% elif type == 'warning' %}bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-950/50 dark:border-yellow-800 dark:text-yellow-300
+            {% else %}bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-300{% endif %}">
 
   {% if type == 'success' %}
     <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

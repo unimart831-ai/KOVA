@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect
 from django.utils import timezone
 
 from apps.briefs.models import DailyBrief
+from apps.engage.models import Superfan
 
 
 @login_required
@@ -31,11 +32,15 @@ def brief_home(request):
         status__in=["approved", "scheduled"],
     ).count()
 
+    # Top superfans to acknowledge
+    superfans = Superfan.objects.filter(user=request.user)[:5]
+
     return render(request, "briefs/home.html", {
         "brief": brief,
         "recent_briefs": recent_briefs,
         "published_today": published_today,
         "failed_count": failed_count,
         "scheduled_count": scheduled_count,
+        "superfans": superfans,
         "page_title": "Daily Brief",
     })

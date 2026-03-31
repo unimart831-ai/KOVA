@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 
-from apps.engage.models import Interaction
+from apps.engage.models import Interaction, Superfan
 from apps.platforms.providers.registry import get_provider
 
 logger = logging.getLogger(__name__)
@@ -41,10 +41,14 @@ def engage_inbox(request):
         ).exclude(status__in=["ignored", "ai_replied", "user_replied"]).exclude(sentiment="").count(),
     }
 
+    # Superfans tracked by the Engage Agent
+    superfans = Superfan.objects.filter(user=request.user)[:10]
+
     return render(request, "engage/inbox.html", {
         "interactions": interactions,
         "page_title": "Engagement Inbox",
         "stats": stats,
+        "superfans": superfans,
         "status_filter": status_filter,
         "sentiment_filter": sentiment_filter,
         "platform_filter": platform_filter,

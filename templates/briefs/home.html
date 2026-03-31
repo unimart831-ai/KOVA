@@ -169,6 +169,29 @@
           </div>
         </div>
 
+        {% if superfans %}
+        <div class="card">
+          <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2">
+            <span class="text-base" aria-hidden="true">⭐</span>
+            <h3 class="font-semibold text-gray-900 dark:text-white text-sm">Superfans to Acknowledge</h3>
+          </div>
+          <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+            {% for fan in superfans %}
+            <li class="px-6 py-3 flex items-center gap-3">
+              <span class="text-sm" aria-hidden="true">{% if fan.tier == 'superfan' %}🌟{% elif fan.tier == 'loyal' %}💎{% else %}🔥{% endif %}</span>
+              <div class="min-w-0 flex-1">
+                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ fan.author_name }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ fan.interaction_count }} interactions · {{ fan.get_tier_display }}</p>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+          <div class="px-6 py-3 border-t border-gray-100 dark:border-gray-800">
+            <a href="{% url 'engage:inbox' %}" class="text-sm text-kova-600 dark:text-kova-400 font-medium hover:underline">View inbox &rarr;</a>
+          </div>
+        </div>
+        {% endif %}
+
         {% if recent_briefs %}
           <div class="card">
             <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">

@@ -1,0 +1,38 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Payment Successful!{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-12">
+  <div class="card overflow-hidden">
+    {# Header #}
+    <div class="px-6 py-8 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-b border-gray-100 dark:border-gray-800 text-center">
+      <div class="w-16 h-16 mx-auto bg-green-100 dark:bg-green-900/50 rounded-2xl flex items-center justify-center mb-4">
+        <span class="text-3xl">🎉</span>
+      </div>
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Karibu sana!</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">You're now on the <span class="font-semibold text-kova-600 dark:text-kova-400">{{ plan_name }}</span> plan</p>
+    </div>
+
+    {# Body #}
+    <div class="card-body py-6 text-center space-y-4">
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Your M-Pesa payment was confirmed. Your subscription is active for 30 days.
+      </p>
+
+      {% if profile.subscription_status == 'trialing' %}
+        <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg p-3">
+          <p class="text-sm text-amber-700 dark:text-amber-400">
+            🎁 <span class="font-semibold">Free trial active!</span> Your trial runs until {{ profile.trial_ends_at|date:"M d, Y" }}.
+          </p>
+        </div>
+      {% endif %}
+
+      <div class="flex flex-col gap-2 pt-2">
+        <a href="{% url 'content:studio' %}" class="btn-primary w-full justify-center">Start creating content</a>
+        <a href="{% url 'billing:overview' %}" class="btn-secondary w-full justify-center">View billing details</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -5,11 +5,16 @@ from django.db import models
 
 
 class BillingEvent(models.Model):
-    """Audit trail for Stripe webhook events — never lose a payment event."""
+    """Audit trail for payment events (Stripe + M-Pesa)."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    stripe_event_id = models.CharField(max_length=255, unique=True)
-    event_type = models.CharField(max_length=100)  # e.g. checkout.session.completed
+    stripe_event_id = models.CharField(max_length=255, unique=True, blank=True, default="")
+    event_type = models.CharField(max_length=100)  # e.g. checkout.session.completed, mpesa.stk_callback
+    provider = models.CharField(
+        max_length=20,
+        choices=[("stripe", "Stripe"), ("mpesa", "M-Pesa")],
+        default="stripe",
+    )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -27,10 +32,62 @@ class BillingEvent(models.Model):
         indexes = [
             models.Index(fields=["stripe_event_id"]),
             models.Index(fields=["event_type", "-created_at"]),
+            models.Index(fields=["provider", "-created_at"]),
         ]
 
     def __str__(self):
-        return f"{self.event_type} ({self.stripe_event_id})"
+        return f"[{self.provider}] {self.event_type} ({self.stripe_event_id or self.id})"
+
+
+class MpesaPayment(models.Model):
+    """Tracks M-Pesa STK Push payments for subscriptions."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"          # STK push sent, waiting for user
+        COMPLETED = "completed", "Completed"    # User confirmed, payment received
+        FAILED = "failed", "Failed"             # User canceled or timeout
+        EXPIRED = "expired", "Expired"          # No callback after timeout
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="mpesa_payments",
+    )
+    # M-Pesa identifiers
+    checkout_request_id = models.CharField(max_length=100, unique=True, db_index=True)
+    merchant_request_id = models.CharField(max_length=100, blank=True)
+    receipt_number = models.CharField(max_length=50, blank=True, db_index=True)
+
+    # Payment details
+    phone_number = models.CharField(max_length=15)  # 254XXXXXXXXX
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    plan_tier = models.CharField(max_length=20)      # starter, growth, pro, agency
+    currency = models.CharField(max_length=3, default="KES")
+
+    # Status tracking
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    result_code = models.IntegerField(null=True, blank=True)
+    result_desc = models.TextField(blank=True)
+
+    # Subscription tracking
+    is_renewal = models.BooleanField(default=False)
+    subscription_period_start = models.DateTimeField(null=True, blank=True)
+    subscription_period_end = models.DateTimeField(null=True, blank=True)
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["status", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"M-Pesa {self.amount} KES → {self.user} ({self.get_status_display()})"
 
 
 # ─── Plan Limits ─────────────────────────────────────────────────────────────

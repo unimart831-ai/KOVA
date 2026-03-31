@@ -85,8 +85,20 @@ class UserProfile(models.Model):
     )
     # Subscription
     plan = models.CharField(max_length=20, choices=PlanTier.choices, default=PlanTier.STARTER)
+    payment_provider = models.CharField(
+        max_length=20,
+        choices=[("none", "None"), ("stripe", "Stripe"), ("mpesa", "M-Pesa")],
+        default="none",
+    )
+    # Stripe fields (kept for future international billing)
     stripe_customer_id = models.CharField(max_length=255, blank=True)
     stripe_subscription_id = models.CharField(max_length=255, blank=True)
+    # M-Pesa fields
+    mpesa_phone = models.CharField(
+        max_length=15,
+        blank=True,
+        help_text="Kenyan phone number for M-Pesa payments (254XXXXXXXXX)",
+    )
     subscription_status = models.CharField(
         max_length=20,
         choices=[

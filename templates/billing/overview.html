@@ -88,7 +88,56 @@
     <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
       <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Payment & Invoices</h3>
     </div>
-    {% if profile.stripe_subscription_id %}
+
+    {% if profile.payment_provider == 'mpesa' %}
+      {# ── M-Pesa Payment Info ── #}
+      <div class="card-body space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-green-100 dark:bg-green-900/50 rounded-lg flex items-center justify-center">
+            <span class="text-xl">📱</span>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">M-Pesa</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ profile.mpesa_phone|default:"Phone not set" }}</p>
+          </div>
+        </div>
+
+        {% if profile.current_period_end %}
+          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-500 dark:text-gray-400">Next payment due</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ profile.current_period_end|date:"M d, Y" }}</span>
+            </div>
+          </div>
+        {% endif %}
+
+        {# Payment history #}
+        {% if recent_payments %}
+          <div>
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Recent payments</h4>
+            <div class="space-y-2">
+              {% for payment in recent_payments %}
+                <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 dark:border-gray-800 last:border-0">
+                  <div>
+                    <span class="text-gray-900 dark:text-white font-medium">KSh {{ payment.amount }}</span>
+                    <span class="text-gray-400 dark:text-gray-500 ml-1">— {{ payment.created_at|date:"M d" }}</span>
+                  </div>
+                  <span class="{% if payment.status == 'completed' %}text-green-600 dark:text-green-400{% else %}text-red-500{% endif %} text-xs font-medium">
+                    {% if payment.status == 'completed' %}✓ Paid{% elif payment.status == 'pending' %}⏳ Pending{% else %}✗ Failed{% endif %}
+                  </span>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="flex gap-3">
+          <a href="{% url 'billing:pricing' %}" class="btn-secondary text-sm flex-1 justify-center">Change plan</a>
+        </div>
+      </div>
+
+    {% elif profile.stripe_subscription_id %}
+      {# ── Stripe Payment Info ── #}
       <div class="card-body space-y-3">
         <p class="text-sm text-gray-600 dark:text-gray-400">
           Manage your payment method, view invoices, and update billing details through the secure Stripe portal.
@@ -98,13 +147,15 @@
           Open billing portal
         </a>
       </div>
+
     {% else %}
+      {# ── No Subscription ── #}
       <div class="card-body text-center py-8">
         <div class="w-12 h-12 mx-auto rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
-          <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          <span class="text-2xl">📱</span>
         </div>
         <p class="text-sm text-gray-500 dark:text-gray-400">No active subscription.</p>
-        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Upgrade to a paid plan to unlock more features.</p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Pay with M-Pesa to unlock more features.</p>
         <a href="{% url 'billing:pricing' %}" class="btn-primary text-sm px-6 py-2 mt-4 inline-block">View plans</a>
       </div>
     {% endif %}

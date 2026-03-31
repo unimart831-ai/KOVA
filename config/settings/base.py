@@ -178,6 +178,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "agents.run_strategy_cycle",
         "schedule": 8 * 3600.0,  # every 8 hours — proactive content + strategy
     },
+    "check-mpesa-subscriptions": {
+        "task": "billing.check_mpesa_subscriptions",
+        "schedule": 24 * 3600.0,  # daily — expiry checks, grace period, renewals
+    },
 }
 
 # ─── AUTH ────────────────────────────────────────────────────────────────────
@@ -283,13 +287,25 @@ TOGETHER_API_KEY = env("TOGETHER_API_KEY", default="")        # https://api.toge
 POLLINATIONS_API_KEY = env("POLLINATIONS_API_KEY", default="") # https://pollinations.ai — Flux Schnell
 AI_IMAGE_MODEL = env("AI_IMAGE_MODEL", default="flux")        # Pollinations model: flux | gptimage | zimage
 
-# ─── STRIPE ──────────────────────────────────────────────────────────────────
+# ─── STRIPE (kept for future international billing) ─────────────────────────
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY", default="")
 STRIPE_PRICE_STARTER = env("STRIPE_PRICE_STARTER", default="")  # KES 99/mo — 14-day trial
 STRIPE_PRICE_GROWTH = env("STRIPE_PRICE_GROWTH", default="")
 STRIPE_PRICE_PRO = env("STRIPE_PRICE_PRO", default="")
 STRIPE_PRICE_AGENCY = env("STRIPE_PRICE_AGENCY", default="")
+
+# ─── M-PESA (Daraja API — primary payment for Kenya) ────────────────────────
+MPESA_ENVIRONMENT = env("MPESA_ENVIRONMENT", default="sandbox")  # sandbox | production
+MPESA_CONSUMER_KEY = env("MPESA_CONSUMER_KEY", default="")
+MPESA_CONSUMER_SECRET = env("MPESA_CONSUMER_SECRET", default="")
+MPESA_SHORTCODE = env("MPESA_SHORTCODE", default="174379")       # Sandbox default
+MPESA_PASSKEY = env(
+    "MPESA_PASSKEY",
+    default="bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919",  # Sandbox default
+)
+MPESA_CALLBACK_URL = env("MPESA_CALLBACK_URL", default="")       # e.g. https://yourdomain.com/billing/webhook/mpesa/
+MPESA_TRIAL_DAYS = env.int("MPESA_TRIAL_DAYS", default=14)
 
 # ─── SOCIAL PLATFORM OAUTH ───────────────────────────────────────────────────
 TWITTER_CLIENT_ID = env("TWITTER_CLIENT_ID", default="")
