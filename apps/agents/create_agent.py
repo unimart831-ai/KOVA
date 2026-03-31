@@ -293,6 +293,12 @@ def build_system_prompt(user) -> str:
     if intel:
         parts.append(intel)
 
+    # Industry Playbook — cold-start intelligence for new users
+    from apps.agents.playbooks import get_playbook_intelligence
+    playbook_intel = get_playbook_intelligence(user)
+    if playbook_intel:
+        parts.append(playbook_intel)
+
     return "\n".join(parts)
 
 

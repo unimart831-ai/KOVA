@@ -29,6 +29,10 @@ def content_studio(request):
 
     seed_form = ContentSeedForm()
 
+    # Industry Playbook seed suggestions (cold-start help)
+    from apps.agents.playbooks import get_seed_suggestions
+    seed_suggestions = get_seed_suggestions(request.user)
+
     return render(request, "content/studio.html", {
         "seed_groups": seed_groups,
         "ungrouped_posts": ungrouped,
@@ -37,6 +41,7 @@ def content_studio(request):
         "seed_form": seed_form,
         "connected_platforms": json.dumps(connected_platforms),
         "total_pending": total_pending,
+        "seed_suggestions": seed_suggestions,
         "page_title": "Content Studio",
     })
 

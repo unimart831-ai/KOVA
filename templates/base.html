@@ -15,7 +15,14 @@
     })();
   </script>
   <title>{% block title %}Kova Agent{% endblock %}</title>
-  <meta name="description" content="{% block meta_description %}Your social media runs itself. You stay in control.{% endblock %}">
+  <meta name="description" content="{% block meta_description %}6 AI agents create content, reply to comments, and optimize your timing — you approve in 5 minutes. From KSh 99/mo.{% endblock %}">
+
+  <!-- PWA -->
+  <link rel="manifest" href="{% static 'manifest.json' %}">
+  <meta name="theme-color" content="#7c3aed">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Kova Agent">
 
   <!-- Tailwind CSS -->
   <link rel="stylesheet" href="{% static 'css/output.css' %}">
@@ -67,5 +74,12 @@
   </div>
 
   {% block extra_js %}{% endblock %}
+
+  <!-- Service Worker registration -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(function () {});
+    }
+  </script>
 </body>
 </html>

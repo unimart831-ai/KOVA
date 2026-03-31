@@ -6,11 +6,47 @@ auto-publishing at scheduled times, and metrics fetching.
 """
 
 import logging
+import re
+from urllib.parse import urlencode, urlparse, urlunparse, parse_qs
 
 from celery import shared_task
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
+
+
+# ── UTM Tracking ─────────────────────────────────────────────────────────
+# Appends UTM parameters to URLs in post content so we can attribute
+# website traffic back to specific posts, platforms, and campaigns.
+
+_URL_RE = re.compile(r'(https?://[^\s<>"\']+)')
+
+
+def _add_utm_to_url(url: str, platform: str, post_id: str) -> str:
+    """Add UTM parameters to a single URL, preserving existing query params."""
+    parsed = urlparse(url)
+    existing = parse_qs(parsed.query)
+    # Don't overwrite if UTM already present
+    if any(k.startswith("utm_") for k in existing):
+        return url
+    utm = {
+        "utm_source": platform,
+        "utm_medium": "social",
+        "utm_campaign": f"kova_{post_id[:8]}",
+    }
+    separator = "&" if parsed.query else ""
+    new_query = f"{parsed.query}{separator}{urlencode(utm)}"
+    return urlunparse(parsed._replace(query=new_query))
+
+
+def add_utm_tracking(content: str, platform: str, post_id: str) -> str:
+    """
+    Find all URLs in post content and append UTM parameters.
+    Returns the content with UTM-tagged URLs.
+    """
+    def replace_url(match):
+        return _add_utm_to_url(match.group(0), platform, str(post_id))
+    return _URL_RE.sub(replace_url, content)
 
 
 @shared_task(name="content.generate_from_seed")
@@ -138,9 +174,12 @@ def publish_post(self, post_id: str):
                 publish_kwargs["page_id"] = pages[0]["id"]
                 publish_kwargs["page_access_token"] = pages[0].get("access_token", account.access_token)
 
+        # Add UTM tracking to any URLs in the content
+        publish_content = add_utm_tracking(post.content_text, account.platform, str(post.id))
+
         result = provider.publish_post(
             access_token=account.access_token,
-            content=post.content_text,
+            content=publish_content,
             media_urls=post.media_urls or None,
             **publish_kwargs,
         )

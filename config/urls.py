@@ -2,6 +2,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import include, path
 
@@ -12,9 +13,21 @@ def landing_page(request):
     return render(request, "pages/landing.html")
 
 
+def service_worker(request):
+    """Serve SW from root so it can control the full scope."""
+    from django.contrib.staticfiles import finders
+    sw_path = finders.find("sw.js")
+    if sw_path:
+        with open(sw_path) as f:
+            return HttpResponse(f.read(), content_type="application/javascript")
+    return HttpResponse(status=404)
+
+
 urlpatterns = [
     # Landing
     path("", landing_page, name="landing"),
+    # PWA service worker (must be served from root scope)
+    path("sw.js", service_worker, name="sw"),
     # Admin
     path("admin/", admin.site.urls),
     # Auth (allauth)
