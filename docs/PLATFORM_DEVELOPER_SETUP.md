@@ -4,6 +4,8 @@
 # One-time setup guide for the platform owner (you).
 # This creates the OAuth "pipes" that let ALL your users connect platforms.
 # Your clients never see any of this — they just click "Connect" and authorize.
+#
+# Last updated: March 2026 — aligned with Meta Developer Docs (Graph API v25.0)
 # ============================================================================
 
 
@@ -24,22 +26,34 @@ Save these credentials in a password manager (1Password, Bitwarden, etc.).
 
 
 # ============================================================================
-# STEP 1: FACEBOOK + INSTAGRAM (same app)
+# STEP 1: FACEBOOK + INSTAGRAM + WHATSAPP (one Meta app)
 # ============================================================================
-# Priority: DO THIS FIRST — one app unlocks both Facebook AND Instagram.
-# Time: ~15 minutes (+ up to 48 hours if identity verification is triggered)
+# Priority: DO THIS FIRST — one Meta app unlocks Facebook Pages, Instagram,
+#           and WhatsApp. Meta now uses a USE-CASE-BASED app creation flow.
+# Time: ~20 minutes (+ up to 48 hours if identity verification is triggered)
+# Docs: https://developers.facebook.com/docs/development
 # ============================================================================
 
-## 1a. Create a Facebook Account for Kova Agent
+## 1a. Create a Facebook Account & Register as Meta Developer
 
 1. Go to https://www.facebook.com/r.php
 2. Sign up with your Kova business email
 3. Use your real name (Facebook requires it, can get banned otherwise)
 4. Verify email + phone number when prompted
 
+Then register as a developer:
+
+1. Go to https://developers.facebook.com/async/registration
+   (or visit https://developers.facebook.com/ and click "Get Started")
+2. Click Next to agree to Meta Platform Terms and Developer Policies
+3. Verify your phone number and email (confirmation code sent to both)
+4. Select your occupation (e.g., "Developer")
+
+Docs: https://developers.facebook.com/docs/development/register
+
 ## 1b. Create a Facebook Page
 
-Required before you can create a developer app.
+Required before your app can manage Pages on behalf of users.
 
 1. Log into the new Facebook account
 2. Go to https://www.facebook.com/pages/create
@@ -48,31 +62,117 @@ Required before you can create a developer app.
 5. Add a profile picture (Kova logo) and cover image
 6. Publish the page
 
-## 1c. Create the Developer App
+## 1c. Create the Developer App (Use-Case-Based)
 
-1. Go to https://developers.facebook.com/
-2. Log in with the Kova Facebook account
-3. Click "My Apps" → "Create App"
-4. App type: Business
-5. App name: Kova Agent
-6. Contact email: your Kova business email
-7. Business Account: skip if you don't have a Meta Business Suite account
+Meta no longer uses "App type" (Business, Consumer, etc.).
+Apps are now created by selecting USE CASES that define what your app can do.
 
-## 1d. Get Your Credentials
+1. Go to https://developers.facebook.com/apps/creation/
+2. Enter app details:
+   - App name: Kova Agent
+   - Contact email: your Kova business email
+3. Click Next
 
-1. Go to App Settings → Basic
+4. Select these USE CASES (you need all three for Kova):
+
+   ┌─────────────────────────────────────────────────────────────┐
+   │ USE CASE                              │ WHAT IT UNLOCKS     │
+   ├─────────────────────────────────────────────────────────────┤
+   │ Manage everything on your Page        │ Facebook Pages API  │
+   │ Manage messaging & content on IG      │ Instagram API       │
+   │ Connect with customers through WA     │ WhatsApp Cloud API  │
+   └─────────────────────────────────────────────────────────────┘
+
+   Note: Some use cases are incompatible with each other — greyed-out ones
+   can't be added. The three above are compatible.
+   Note: Facebook Login for Business and Webhooks may be auto-added.
+   Note: Use cases CANNOT be removed after creation — only new ones added.
+
+5. Click Next
+
+6. Connect a Business Portfolio (or create one):
+   - Option A: Select an existing verified business portfolio
+   - Option B: Select an unverified business portfolio
+   - Option C: Create a business portfolio (enter your business info)
+   - Option D: "I don't want to connect a business portfolio yet"
+   Note: WhatsApp use case REQUIRES a business portfolio.
+
+7. Click Next → Review requirements → Click "Go to dashboard"
+
+Docs: https://developers.facebook.com/docs/development/create-an-app
+
+## 1d. Customize Use Cases & Permissions
+
+After creating the app, customize each use case from the App Dashboard.
+
+Go to: App Dashboard → Use Cases → click "Customize" on each use case.
+
+### For "Manage everything on your Page":
+Required permissions (auto-added, can't remove):
+  - business_management
+  - pages_show_list
+  - public_profile
+
+Add these optional permissions (click "Add" for each):
+  - pages_manage_posts          ← publish posts to Pages
+  - pages_read_engagement       ← read likes, comments, shares
+  - pages_read_user_content     ← read user posts on your Page
+  - pages_manage_engagement     ← respond to comments
+  - pages_manage_metadata       ← manage Page settings
+  - read_insights               ← Page analytics
+
+Docs: https://developers.facebook.com/docs/pages-api/
+
+### For "Manage messaging & content on Instagram":
+Required permissions (auto-added):
+  - public_profile
+
+Add these optional permissions:
+  - instagram_basic                       ← read profile info
+  - instagram_business_basic              ← business account data
+  - instagram_content_publish             ← publish posts
+  - instagram_business_content_publish    ← business content publishing
+  - instagram_manage_comments             ← moderate comments
+  - instagram_manage_insights             ← analytics
+  - instagram_manage_messages             ← DMs (if needed)
+  - pages_show_list                       ← required for FB-linked IG accounts
+  - pages_read_engagement                 ← read Page engagement
+
+Note: Instagram accounts must be Business or Creator type AND linked to a
+Facebook Page for the Facebook Login flow. Alternatively, use Instagram Login
+(Business Login for Instagram) which doesn't require a FB Page link.
+
+Docs: https://developers.facebook.com/docs/instagram-platform/
+
+### For "Connect with customers through WhatsApp":
+Required permissions (auto-added):
+  - whatsapp_business_messaging
+  - whatsapp_business_management
+  - public_profile
+
+Optional:
+  - business_management
+  - whatsapp_business_manage_events
+
+Note: WhatsApp requires a verified Business Portfolio. You'll set up a
+WhatsApp Business Account and register a phone number in the App Dashboard.
+
+Docs: https://developers.facebook.com/docs/whatsapp/cloud-api/get-started
+
+## 1e. Get Your Credentials
+
+1. Go to App Dashboard → App Settings → Basic
 2. Copy the App ID → this is FACEBOOK_APP_ID
 3. Click "Show" next to App Secret → this is FACEBOOK_APP_SECRET
 
-## 1e. Add Products
-
-1. From the app dashboard, click "Add Product"
-2. Add: Facebook Login for Business
-3. Add: Instagram Graph API
+These same credentials are used for Facebook Pages, Instagram, AND WhatsApp.
 
 ## 1f. Configure OAuth Redirect URIs
 
-Go to Facebook Login → Settings → Valid OAuth Redirect URIs. Add ALL of these:
+Go to App Dashboard → Use Cases → find the use case with Facebook Login for
+Business → click "Customize" → find Facebook Login for Business → Settings.
+
+Under "Valid OAuth Redirect URIs", add ALL of these:
 
   Production:
     https://kovaagent-production.up.railway.app/platforms/callback/facebook/
@@ -82,36 +182,60 @@ Go to Facebook Login → Settings → Valid OAuth Redirect URIs. Add ALL of thes
     http://localhost:8000/platforms/callback/facebook/
     http://localhost:8000/platforms/callback/instagram/
 
+Important: URIs must match EXACTLY — including trailing slashes and protocol
+(https vs http). Mismatches cause "Redirect URI mismatch" errors.
+
 ## 1g. App Roles (for testing in Development Mode)
 
-While the app is in Development Mode, only listed testers can use OAuth.
+While your app is in Development Mode, only people with a role on the app
+(or on the connected business portfolio) can use OAuth.
 
-1. Go to App Roles → Roles
+1. Go to App Dashboard → App Roles → Roles
 2. Click "Add People"
-3. Add yourself and any test users by Facebook account
+3. Add yourself and any test users by their Facebook account
 
-## 1h. Required Permissions
+You do NOT need App Review to test with users who have a role on your app.
 
-These are auto-requested by Kova's OAuth flow. For App Review (later):
-  - pages_show_list
-  - pages_manage_posts
-  - pages_read_engagement
-  - instagram_basic (Instagram)
-  - instagram_content_publish (Instagram)
+## 1h. WhatsApp-Specific Setup (if using WhatsApp)
 
-Note: You do NOT need App Review to test with users in your tester list.
+1. Go to App Dashboard → WhatsApp → Getting Started
+2. You'll get a temporary test phone number and access token
+3. To use your own number:
+   - Register a phone number under your WhatsApp Business Account
+   - The number must NOT be registered on WhatsApp consumer app
+4. Set Railway env vars (see 1i below)
 
 ## 1i. Set Railway Environment Variables
 
   FACEBOOK_APP_ID=123456789012345
   FACEBOOK_APP_SECRET=abc123def456ghi789...
 
+  # WhatsApp (optional — only if using WhatsApp use case)
+  WHATSAPP_TOKEN=your_permanent_access_token
+  WHATSAPP_PHONE_NUMBER_ID=your_phone_number_id
+
 ## 1j. Verify It Works
 
-1. Go to https://kovaagent-production.up.railway.app/platforms/
-2. Click "Connect" on Facebook
+1. Start your dev server (or go to production URL)
+2. Go to /platforms/ → Click "Connect" on Facebook
 3. Should redirect to Facebook → authorize → redirect back → Connected!
 4. Repeat for Instagram
+5. For WhatsApp: test sending a message via the WhatsApp Getting Started panel
+
+## 1k. App Review (When Ready for Public Launch)
+
+While in Development Mode, only people with roles on your app can use OAuth.
+For public access, submit each permission for App Review:
+
+1. Go to App Dashboard → App Review → Permissions and Features
+2. For each permission, provide:
+   - Screenshots showing how your app uses the permission
+   - A screencast (video walkthrough) demonstrating the user flow
+   - A clear description of why your app needs the permission
+3. Facebook reviews typically take 1-5 business days
+
+You also need to maintain data access — Meta may require periodic recertification.
+Docs: https://developers.facebook.com/docs/development/maintaining-data-access
 
 
 # ============================================================================
@@ -304,9 +428,13 @@ You may need to submit your app for review before OAuth works.
 
 Add all of these in Railway Dashboard → Your Service → Variables:
 
-  # Facebook + Instagram (same app)
+  # Facebook + Instagram + WhatsApp (same Meta app)
   FACEBOOK_APP_ID=
   FACEBOOK_APP_SECRET=
+
+  # WhatsApp (optional — only if using WhatsApp use case)
+  WHATSAPP_TOKEN=
+  WHATSAPP_PHONE_NUMBER_ID=
 
   # X (Twitter)
   TWITTER_CLIENT_ID=
@@ -350,7 +478,8 @@ Platforms without credentials will show a grayed-out connect button.
 
   ☐ Kova business email address + password
   ☐ Facebook account login (email + password)
-  ☐ Facebook App ID + App Secret
+  ☐ Facebook App ID + App Secret (used for FB, IG, and WhatsApp)
+  ☐ WhatsApp permanent access token + phone number ID (if using WhatsApp)
   ☐ Twitter/X account login (email + password)
   ☐ Twitter Client ID + Client Secret
   ☐ LinkedIn account login (email + password)
@@ -371,26 +500,42 @@ Platforms without credentials will show a grayed-out connect button.
   "Redirect URI mismatch"        | Callback URL in dev portal doesn't exactly
                                  | match (check trailing slash, https vs http)
   "App not set up"               | Twitter: user auth not configured in app
-  "Unauthorized"                 | App in dev mode — add yourself as tester
-  "Invalid scope"                | Platform hasn't approved required permissions
-  "This app is in development"   | Facebook: add user as tester in App Roles
+  "Unauthorized"                 | App in dev mode — add yourself via App Roles
+  "Invalid scope"                | Permission not added to the use case in
+                                 | App Dashboard → Use Cases → Customize
+  "This app is in development"   | Facebook: add user via App Roles → Roles
   Login works but no Page found  | Facebook: user must be admin of a FB Page
   Instagram not connecting       | Instagram account must be Business/Creator
-                                 | type AND linked to a Facebook Page
+                                 | type AND linked to a Facebook Page (for
+                                 | FB Login flow). Or use Instagram Login.
+  "Use case not found"           | Use case wasn't selected during app creation.
+                                 | You can add compatible use cases later from
+                                 | App Dashboard, but can't remove existing ones.
+  "Business portfolio required"  | WhatsApp use case requires a connected
+                                 | business portfolio. Go to App Settings →
+                                 | Basic → connect one.
+  Max 15 apps reached            | You can have developer/admin role on max 15
+                                 | apps not connected to a verified business.
+                                 | Connect a verified business portfolio to
+                                 | existing apps, or remove unused ones.
 
 
 # ============================================================================
 # APP REVIEW (WHEN READY TO GO PUBLIC)
 # ============================================================================
-# While in Development Mode, only testers you add can use OAuth.
+# While in Development Mode, only people with roles on your app (or on the
+# connected business portfolio) can use OAuth.
 # For public access, submit each app for review.
 # ============================================================================
 
-## Facebook App Review
-- Go to App Review → Permissions and Features
+## Facebook / Instagram / WhatsApp App Review
+- Go to App Dashboard → App Review → Permissions and Features
 - Request each permission with screenshots + screencasts showing usage
 - Facebook reviews typically take 1-5 business days
-- Required for: any user who isn't a listed tester
+- Required for: any user who doesn't have a role on your app
+- You must also maintain data access — Meta may require periodic recertification
+  Docs: https://developers.facebook.com/docs/development/maintaining-data-access
+- WhatsApp requires business verification before you can message non-test users
 
 ## Twitter App Review
 - Free tier has limited access; apply for Basic ($100/mo) or Pro for higher limits
@@ -407,3 +552,23 @@ Platforms without credentials will show a grayed-out connect button.
 
 Save App Review for when you have real users. For now, Development Mode
 with your own test accounts is sufficient.
+
+
+# ============================================================================
+# META DEVELOPER RESOURCES
+# ============================================================================
+# Bookmark these — you'll reference them often.
+# ============================================================================
+
+  Resource                        | URL
+  --------------------------------|-------------------------------------------
+  App Dashboard                   | https://developers.facebook.com/apps/
+  Graph API Explorer              | https://developers.facebook.com/tools/explorer/
+  Access Token Debugger           | https://developers.facebook.com/tools/debug/accesstoken/
+  Permissions Reference           | https://developers.facebook.com/docs/permissions
+  Graph API Reference             | https://developers.facebook.com/docs/graph-api/reference
+  Pages API Docs                  | https://developers.facebook.com/docs/pages-api/
+  Instagram Platform Docs         | https://developers.facebook.com/docs/instagram-platform/
+  WhatsApp Cloud API Docs         | https://developers.facebook.com/docs/whatsapp/cloud-api/
+  Platform Status                 | https://metastatus.com/
+  Bug Reports                     | https://developers.facebook.com/support/bugs/
