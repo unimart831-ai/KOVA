@@ -14,7 +14,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from apps.agents.llm import generate, get_model_for_task
+from apps.agents.llm import generate, get_model_for_task, parse_llm_json
 from apps.agents.models import AgentAction, AgentConfig
 from apps.content.models import Post
 
@@ -130,8 +130,8 @@ def discover_trends(user):
         )
 
         try:
-            result = json.loads(response.content)
-        except json.JSONDecodeError:
+            result = parse_llm_json(response.content)
+        except (json.JSONDecodeError, ValueError):
             logger.warning("Research Agent LLM returned non-JSON, wrapping")
             result = {
                 "trending_topics": [],
@@ -210,8 +210,8 @@ def generate_content_angles(user, topic):
         )
 
         try:
-            result = json.loads(response.content)
-        except json.JSONDecodeError:
+            result = parse_llm_json(response.content)
+        except (json.JSONDecodeError, ValueError):
             result = {"angles": [], "raw": response.content}
 
         action.status = AgentAction.ActionStatus.COMPLETED

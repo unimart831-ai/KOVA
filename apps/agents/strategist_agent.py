@@ -25,7 +25,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from apps.agents.llm import generate, get_model_for_task
+from apps.agents.llm import generate, get_model_for_task, parse_llm_json
 from apps.agents.models import AgentAction, AgentConfig
 from apps.analytics.competitor_intel import get_competitor_context_for_strategist
 from apps.content.models import ContentSeed, Post
@@ -348,8 +348,8 @@ def _make_strategic_decisions(user, inputs):
     )
 
     try:
-        result = json.loads(response.content)
-    except json.JSONDecodeError:
+        result = parse_llm_json(response.content)
+    except (json.JSONDecodeError, ValueError):
         logger.warning("Strategist LLM returned non-JSON")
         result = {
             "content_plan": [],

@@ -5,7 +5,9 @@ All agent code calls these functions instead of importing vendor SDKs directly.
 Supports structured output, streaming, and token tracking.
 """
 
+import json
 import logging
+import re
 import time
 from dataclasses import dataclass, field
 
@@ -41,6 +43,64 @@ class LLMResponse:
     total_tokens: int = 0
     duration_ms: int = 0
     raw: dict = field(default_factory=dict)
+
+
+def parse_llm_json(text: str) -> dict:
+    """
+    Parse JSON from LLM output, handling common quirks.
+
+    Handles: markdown fences, trailing commas, smart quotes,
+    embedded JSON in prose, unescaped newlines in strings.
+
+    Raises json.JSONDecodeError if all repair attempts fail.
+    """
+    if not text or not text.strip():
+        raise json.JSONDecodeError("LLM returned an empty response", doc="", pos=0)
+
+    cleaned = text.strip().lstrip("\ufeff")
+
+    # Strip markdown code fences
+    if cleaned.startswith("```"):
+        lines = cleaned.split("\n")
+        lines = [l for l in lines if not l.strip().startswith("```")]
+        cleaned = "\n".join(lines).strip()
+
+    # If text doesn't start with { or [, extract JSON from prose
+    if not cleaned.startswith(("{", "[")):
+        start = cleaned.find("{")
+        end = cleaned.rfind("}")
+        if start != -1 and end != -1:
+            cleaned = cleaned[start:end + 1]
+
+    # Replace smart/curly quotes
+    cleaned = cleaned.replace("\u201c", '"').replace("\u201d", '"')
+    cleaned = cleaned.replace("\u2018", "'").replace("\u2019", "'")
+
+    # Fix trailing commas before } or ]
+    cleaned = re.sub(r',\s*([}\]])', r'\1', cleaned)
+
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        pass
+
+    # Last resort: fix unescaped newlines inside JSON string values
+    try:
+        fixed = re.sub(
+            r'(?<=": ")(.*?)(?="[,\s*}])',
+            lambda m: m.group(0).replace("\n", "\\n"),
+            cleaned,
+            flags=re.DOTALL,
+        )
+        return json.loads(fixed)
+    except json.JSONDecodeError:
+        pass
+
+    # Final attempt: the raw text from the LLM (before our modifications)
+    raise json.JSONDecodeError(
+        f"Could not parse LLM JSON after cleanup. First 200 chars: {text[:200]}",
+        doc=text, pos=0,
+    )
 
 
 def get_llm_client():

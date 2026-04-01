@@ -20,7 +20,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from apps.agents.llm import generate, get_model_for_task
+from apps.agents.llm import generate, get_model_for_task, parse_llm_json
 from apps.agents.models import AgentAction, AgentConfig
 from apps.engage.models import Interaction, Superfan
 from apps.platforms.models import SocialAccount
@@ -290,9 +290,9 @@ def analyze_interactions(user, batch_size=20):
         )
 
         try:
-            result = json.loads(response.content)
+            result = parse_llm_json(response.content)
             analyses = {a["id"]: a for a in result.get("analyses", [])}
-        except (json.JSONDecodeError, KeyError):
+        except (json.JSONDecodeError, KeyError, ValueError):
             analyses = {}
 
         analyzed = 0

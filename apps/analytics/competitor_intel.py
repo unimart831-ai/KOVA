@@ -24,7 +24,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from apps.agents.llm import generate, get_model_for_task
+from apps.agents.llm import generate, get_model_for_task, parse_llm_json
 from apps.agents.models import AgentAction
 from apps.analytics.models import (
     Competitor,
@@ -216,8 +216,8 @@ def analyze_competitor(user, competitor):
         )
 
         try:
-            result = json.loads(response.content)
-        except json.JSONDecodeError:
+            result = parse_llm_json(response.content)
+        except (json.JSONDecodeError, ValueError):
             logger.warning("Competitor analysis LLM returned non-JSON for %s", competitor.name)
             result = {
                 "summary": response.content[:500],
@@ -394,8 +394,8 @@ def generate_landscape_report(user):
     )
 
     try:
-        return json.loads(response.content)
-    except json.JSONDecodeError:
+        return parse_llm_json(response.content)
+    except (json.JSONDecodeError, ValueError):
         return {"landscape_summary": response.content[:500], "top_moves": []}
 
 

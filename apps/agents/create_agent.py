@@ -17,11 +17,12 @@ The agent is called:
 
 import json
 import logging
+import re
 from datetime import datetime, timedelta, timezone
 
 from django.utils import timezone as dj_timezone
 
-from apps.agents.llm import generate, get_model_for_task, LLMResponse
+from apps.agents.llm import generate, get_model_for_task, LLMResponse, parse_llm_json
 from apps.agents.media import generate_post_image
 from apps.agents.models import AgentAction, AgentConfig
 from apps.content.models import ContentSeed, Post
@@ -428,18 +429,11 @@ IMPORTANT:
 
 def parse_posts(llm_content: str) -> tuple[str, list[dict]]:
     """
-    Parse the LLM JSON response into post dicts. Resilient to markdown fences.
+    Parse the LLM JSON response into post dicts.
+    Uses shared parse_llm_json for resilient parsing.
     Returns (batch_strategy, list_of_post_dicts).
     """
-    text = llm_content.strip()
-    # Strip markdown code fences if present
-    if text.startswith("```"):
-        lines = text.split("\n")
-        # Remove first line (```json or ```) and last line (```)
-        lines = [l for l in lines if not l.strip().startswith("```")]
-        text = "\n".join(lines)
-
-    data = json.loads(text)
+    data = parse_llm_json(llm_content)
     batch_strategy = data.get("batch_strategy", "")
     return batch_strategy, data.get("posts", [])
 
@@ -492,25 +486,48 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
         system = build_system_prompt(user)
         prompt = build_generation_prompt(seed, platforms)
 
-        # Call LLM
-        llm_response: LLMResponse = generate(
-            prompt=prompt,
-            system=system,
-            model=get_model_for_task("create.generate"),
-            json_mode=True,
-            temperature=0.7,
-            max_tokens=4096,
-        )
+        # Call LLM (with one retry on parse failure)
+        batch_strategy = ""
+        post_dicts = []
+        last_error = None
 
-        # Guard against empty LLM response (rate limit, model overload, etc.)
-        if not llm_response.content or not llm_response.content.strip():
-            raise json.JSONDecodeError(
-                "LLM returned an empty response — the AI model may be overloaded. Please try again.",
-                doc="", pos=0,
+        for attempt in range(2):
+            llm_response: LLMResponse = generate(
+                prompt=prompt,
+                system=system,
+                model=get_model_for_task("create.generate"),
+                json_mode=True,
+                temperature=0.7,
+                max_tokens=4096,
             )
 
-        # Parse response
-        batch_strategy, post_dicts = parse_posts(llm_response.content)
+            # Guard against empty LLM response
+            if not llm_response.content or not llm_response.content.strip():
+                last_error = "LLM returned an empty response — the AI model may be overloaded."
+                logger.warning("Create Agent: Empty response on attempt %d", attempt + 1)
+                continue
+
+            try:
+                batch_strategy, post_dicts = parse_posts(llm_response.content)
+                last_error = None
+                break  # Success
+            except json.JSONDecodeError as parse_err:
+                last_error = str(parse_err)
+                logger.warning(
+                    "Create Agent: JSON parse failed on attempt %d: %s",
+                    attempt + 1, parse_err,
+                )
+                # On retry, add a stricter instruction to the prompt
+                prompt = (
+                    prompt
+                    + "\n\nCRITICAL: Your previous response had invalid JSON. "
+                    "Return ONLY a valid JSON object. No markdown fences. "
+                    "No trailing commas. Escape all special characters in strings. "
+                    "Double-check every quote and bracket."
+                )
+
+        if last_error:
+            raise json.JSONDecodeError(last_error, doc="", pos=0)
 
         # Save batch strategy on the seed
         seed.batch_strategy = batch_strategy
@@ -693,13 +710,7 @@ Respond with a JSON object. No markdown code fences.
             max_tokens=2048,
         )
 
-        text = llm_response.content.strip()
-        if text.startswith("```"):
-            lines = text.split("\n")
-            lines = [l for l in lines if not l.strip().startswith("```")]
-            text = "\n".join(lines)
-
-        data = json.loads(text)
+        data = parse_llm_json(llm_response.content)
 
         post.content_text = data.get("content_text", post.content_text)
         post.ai_angle = data.get("angle", "")
