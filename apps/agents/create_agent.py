@@ -502,6 +502,13 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
             max_tokens=4096,
         )
 
+        # Guard against empty LLM response (rate limit, model overload, etc.)
+        if not llm_response.content or not llm_response.content.strip():
+            raise json.JSONDecodeError(
+                "LLM returned an empty response — the AI model may be overloaded. Please try again.",
+                doc="", pos=0,
+            )
+
         # Parse response
         batch_strategy, post_dicts = parse_posts(llm_response.content)
 

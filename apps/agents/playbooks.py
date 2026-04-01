@@ -22,7 +22,7 @@ PLAYBOOKS = {
     # ──────────────────────────────────────────────────────────────────────
     "food_restaurant": {
         "name": "Food & Restaurant",
-        "industries": ["ecommerce", "other"],  # matches UserProfile.Industry
+        "industries": [],  # food businesses should match via keywords, not catch-all
         "keywords": ["restaurant", "food", "cafe", "kitchen", "catering", "bakery", "chef"],
         "content_dna_presets": {
             "winning_formats": ["behind-the-scenes", "food-close-up", "customer-story", "process-video", "daily-special"],
