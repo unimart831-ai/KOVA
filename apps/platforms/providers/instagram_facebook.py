@@ -24,11 +24,17 @@ Schedule posts (via API)              │ Read DMs
 ─────────────────────────────────────────────────────────────────────────────
 
 Permissions required (enable in Meta Developer Portal):
-  Facebook: pages_show_list, pages_manage_posts, pages_read_engagement,
+  Facebook: pages_manage_metadata, pages_manage_posts, pages_read_engagement,
             read_insights, pages_manage_engagement, pages_messaging
-  Instagram: instagram_basic, instagram_content_publish,
-             instagram_manage_insights, instagram_manage_comments,
-             instagram_manage_messages
+  Instagram: instagram_content_publish, instagram_manage_insights,
+             instagram_manage_comments, instagram_manage_messages
+
+Auth method:
+  - Facebook Login for Business (recommended): Uses config_id — permissions
+    are bundled in a Login Configuration created in the Meta App Dashboard.
+    Set FB_LOGIN_CONFIG_ID in your .env.
+  - Classic Facebook Login (fallback): Uses scope parameter with comma-separated
+    permission names. Works if config_id is not set.
 
 Docs:
   https://developers.facebook.com/docs/pages-api/
@@ -54,31 +60,34 @@ from apps.platforms.providers.registry import register_provider
 logger = logging.getLogger(__name__)
 
 # ── Graph API versioning ─────────────────────────────────────────────────────
-FB_API_VERSION = "v21.0"
+FB_API_VERSION = "v25.0"
 FB_AUTH_URL = f"https://www.facebook.com/{FB_API_VERSION}/dialog/oauth"
 FB_TOKEN_URL = f"https://graph.facebook.com/{FB_API_VERSION}/oauth/access_token"
 FB_API_BASE = f"https://graph.facebook.com/{FB_API_VERSION}"
 
-# ── Scopes ───────────────────────────────────────────────────────────────────
-# All scopes listed. In development mode, app admins/testers can use ALL of
-# these without App Review. For production (public users), App Review is needed.
-#
-# We always request the full set so that every Kova Agent capability works as
-# soon as the Meta portal permissions are enabled.
+# ── Login Configuration ──────────────────────────────────────────────────────
+# Facebook Login for Business uses config_id (permission bundle created in
+# Meta App Dashboard → Facebook Login for Business → Configurations).
+# If FB_LOGIN_CONFIG_ID is set, we use config_id instead of scope.
+# If not set, we fall back to classic scope-based login.
+FB_LOGIN_CONFIG_ID = getattr(settings, "FB_LOGIN_CONFIG_ID", "")
 
+# ── Scopes (classic fallback) ────────────────────────────────────────────────
+# Used only when FB_LOGIN_CONFIG_ID is not set (classic Facebook Login).
+# In development mode, app admins/testers can use ALL of these without App
+# Review. For production (public users), App Review is needed.
 FB_SCOPES = ",".join([
     # Basic (always available)
     "email",
     "public_profile",
-    # Facebook Pages
-    "pages_show_list",
+    # Facebook Pages (current valid names for Graph API v25.0)
+    "pages_manage_metadata",
     "pages_manage_posts",
     "pages_read_engagement",
     "pages_manage_engagement",
     "pages_messaging",
     "read_insights",
-    # Instagram
-    "instagram_basic",
+    # Instagram (instagram_basic removed — deprecated in v21.0+)
     "instagram_content_publish",
     "instagram_manage_insights",
     "instagram_manage_comments",
@@ -112,10 +121,15 @@ class FacebookProvider(BaseProvider):
         params = {
             "client_id": self.app_id,
             "redirect_uri": redirect_uri,
-            "scope": FB_SCOPES,
             "state": state,
             "response_type": "code",
         }
+        # Facebook Login for Business: use config_id (permission bundle)
+        # Classic Facebook Login: use scope (comma-separated permissions)
+        if FB_LOGIN_CONFIG_ID:
+            params["config_id"] = FB_LOGIN_CONFIG_ID
+        else:
+            params["scope"] = FB_SCOPES
         return f"{FB_AUTH_URL}?{urlencode(params)}"
 
     def handle_callback(self, code: str, redirect_uri: str, **kwargs) -> OAuthResult:
@@ -159,7 +173,7 @@ class FacebookProvider(BaseProvider):
                 pages_resp.raise_for_status()
                 pages = pages_resp.json().get("data", [])
             except Exception:
-                logger.info("Could not fetch pages — pages_show_list may not be granted yet")
+                logger.info("Could not fetch pages — pages_manage_metadata may not be granted yet")
 
         expires_at = None
         if "expires_in" in long_data:
@@ -514,10 +528,15 @@ class InstagramProvider(BaseProvider):
         params = {
             "client_id": self.app_id,
             "redirect_uri": redirect_uri,
-            "scope": FB_SCOPES,
             "state": state,
             "response_type": "code",
         }
+        # Facebook Login for Business: use config_id (permission bundle)
+        # Classic Facebook Login: use scope (comma-separated permissions)
+        if FB_LOGIN_CONFIG_ID:
+            params["config_id"] = FB_LOGIN_CONFIG_ID
+        else:
+            params["scope"] = FB_SCOPES
         return f"{FB_AUTH_URL}?{urlencode(params)}"
 
     def handle_callback(self, code: str, redirect_uri: str, **kwargs) -> OAuthResult:
@@ -949,7 +968,7 @@ class InstagramProvider(BaseProvider):
 
     def search_hashtag(self, access_token: str, hashtag: str, **kwargs) -> list[dict]:
         """
-        Search for recent media by hashtag. Requires instagram_basic.
+        Search for recent media by hashtag. Requires instagram_manage_insights.
         kwargs: ig_user_id
         """
         ig_user_id = kwargs.get("ig_user_id", "")

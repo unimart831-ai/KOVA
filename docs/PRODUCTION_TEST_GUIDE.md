@@ -232,8 +232,10 @@ Facebook + Instagram share the same app.
 - While in Development Mode, only app admins/testers can use OAuth
 - Add yourself as a tester: App Roles → Roles → Add People
 - For full public access, submit for App Review (not needed yet)
-- Required permissions: pages_show_list, pages_manage_posts,
-  pages_read_engagement, instagram_basic, instagram_content_publish
+- Required permissions: pages_manage_metadata, pages_manage_posts,
+  pages_read_engagement, instagram_content_publish, instagram_manage_insights
+- Note: pages_show_list and instagram_basic are deprecated (v21.0+)
+- If using Facebook Login for Business, set FB_LOGIN_CONFIG_ID instead of scopes
 
 ### Step 5: Set Railway Env Vars
   FACEBOOK_APP_ID=123456789012345

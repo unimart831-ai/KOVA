@@ -110,7 +110,7 @@ Go to: App Dashboard → Use Cases → click "Customize" on each use case.
 ### For "Manage everything on your Page":
 Required permissions (auto-added, can't remove):
   - business_management
-  - pages_show_list
+  - pages_manage_metadata
   - public_profile
 
 Add these optional permissions (click "Add" for each):
@@ -118,8 +118,11 @@ Add these optional permissions (click "Add" for each):
   - pages_read_engagement       ← read likes, comments, shares
   - pages_read_user_content     ← read user posts on your Page
   - pages_manage_engagement     ← respond to comments
-  - pages_manage_metadata       ← manage Page settings
+  - pages_messaging             ← Page inbox messaging
   - read_insights               ← Page analytics
+
+Note: `pages_show_list` is deprecated as of Graph API v21.0+. Use
+`pages_manage_metadata` instead (auto-added in the use case above).
 
 Docs: https://developers.facebook.com/docs/pages-api/
 
@@ -128,17 +131,19 @@ Required permissions (auto-added):
   - public_profile
 
 Add these optional permissions:
-  - instagram_basic                       ← read profile info
   - instagram_business_basic              ← business account data
   - instagram_content_publish             ← publish posts
   - instagram_business_content_publish    ← business content publishing
   - instagram_manage_comments             ← moderate comments
   - instagram_manage_insights             ← analytics
   - instagram_manage_messages             ← DMs (if needed)
-  - pages_show_list                       ← required for FB-linked IG accounts
+  - pages_manage_metadata                 ← required for FB-linked IG accounts
   - pages_read_engagement                 ← read Page engagement
 
-Note: Instagram accounts must be Business or Creator type AND linked to a
+Note: `instagram_basic` is deprecated as of Graph API v21.0+. Use
+`instagram_business_basic` instead.
+
+Instagram accounts must be Business or Creator type AND linked to a
 Facebook Page for the Facebook Login flow. Alternatively, use Instagram Login
 (Business Login for Instagram) which doesn't require a FB Page link.
 
@@ -167,7 +172,29 @@ Docs: https://developers.facebook.com/docs/whatsapp/cloud-api/get-started
 
 These same credentials are used for Facebook Pages, Instagram, AND WhatsApp.
 
-## 1f. Configure OAuth Redirect URIs
+## 1f. Get Your Login Configuration ID (FB_LOGIN_CONFIG_ID)
+
+Facebook Login for Business uses a **Login Configuration** that bundles all
+your permissions into a single config_id. This replaces the old scope-based
+approach.
+
+1. Go to App Dashboard → Use Cases
+2. Click "Customize" on any use case that has Facebook Login for Business
+3. Click on "Facebook Login for Business" → "Settings"
+4. Under "Configurations", you should see a default configuration
+   (or create one by clicking "Create Configuration")
+5. The Configuration ID is listed — copy this value → this is FB_LOGIN_CONFIG_ID
+6. Make sure ALL the permissions from your use cases are checked/enabled
+   in this configuration
+
+Example: FB_LOGIN_CONFIG_ID=123456789012345
+
+If you don't see a configuration, or you prefer the classic approach:
+- Leave FB_LOGIN_CONFIG_ID empty in your .env
+- Add "Facebook Login" (classic) as a product instead
+- The code will fall back to scope-based authentication automatically
+
+## 1g. Configure OAuth Redirect URIs
 
 Go to App Dashboard → Use Cases → find the use case with Facebook Login for
 Business → click "Customize" → find Facebook Login for Business → Settings.
@@ -185,7 +212,7 @@ Under "Valid OAuth Redirect URIs", add ALL of these:
 Important: URIs must match EXACTLY — including trailing slashes and protocol
 (https vs http). Mismatches cause "Redirect URI mismatch" errors.
 
-## 1g. App Roles (for testing in Development Mode)
+## 1h. App Roles (for testing in Development Mode)
 
 While your app is in Development Mode, only people with a role on the app
 (or on the connected business portfolio) can use OAuth.
