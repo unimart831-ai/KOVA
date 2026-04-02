@@ -282,8 +282,15 @@ def fetch_post_metrics(post_id: str):
         return {"error": f"No provider for {account.platform}"}
 
     try:
+        # For Facebook/Instagram, use page token
+        token = account.access_token
+        if account.platform in ("facebook", "instagram"):
+            pages = (account.metadata or {}).get("pages", [])
+            if pages:
+                token = pages[0].get("access_token", account.access_token)
+
         metrics_data = provider.get_post_metrics(
-            access_token=account.access_token,
+            access_token=token,
             platform_post_id=post.platform_post_id,
         )
     except Exception as e:

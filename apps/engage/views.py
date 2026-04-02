@@ -107,21 +107,26 @@ def send_reply(request, pk):
         )
 
     try:
+        # For Facebook/Instagram, use page token instead of user token
+        token = account.access_token
+        if account.platform in ("facebook", "instagram"):
+            pages = (account.metadata or {}).get("pages", [])
+            if pages:
+                token = pages[0].get("access_token", account.access_token)
+
         if interaction.interaction_type in ("comment", "reply"):
             # Reply to comment via provider
             provider.reply_to_comment(
-                access_token=account.access_token,
+                access_token=token,
                 comment_id=interaction.platform_interaction_id,
                 message=interaction.ai_suggested_reply,
-                account=account,
             )
         elif interaction.interaction_type == "dm":
             # Send DM via provider
             provider.send_message(
-                access_token=account.access_token,
+                access_token=token,
                 recipient_id=interaction.author_username or interaction.author_name,
                 message=interaction.ai_suggested_reply,
-                account=account,
             )
         else:
             return HttpResponse(

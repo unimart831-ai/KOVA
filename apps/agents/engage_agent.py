@@ -76,12 +76,18 @@ def _fetch_post_comments(user, account, provider):
         published_at__gte=timezone.now() - timedelta(days=7),
     ).order_by("-published_at")[:10]
 
+    # For Facebook/Instagram, use page token instead of user token
+    token = account.access_token
+    if account.platform in ("facebook", "instagram"):
+        pages = (account.metadata or {}).get("pages", [])
+        if pages:
+            token = pages[0].get("access_token", account.access_token)
+
     for post in recent_posts:
         try:
             comments = provider.get_comments(
-                access_token=account.access_token,
+                access_token=token,
                 post_id=post.platform_post_id,
-                account=account,
             )
 
             for comment in comments:
@@ -124,7 +130,6 @@ def _fetch_mentions(user, account, provider):
     try:
         mentions = provider.get_mentions(
             access_token=account.access_token,
-            account=account,
         )
 
         for mention in mentions:
@@ -505,12 +510,18 @@ def auto_respond(user):
             continue
 
         try:
+            # For Facebook/Instagram, use page token
+            token = account.access_token
+            if account.platform in ("facebook", "instagram"):
+                pages = (account.metadata or {}).get("pages", [])
+                if pages:
+                    token = pages[0].get("access_token", account.access_token)
+
             if interaction.interaction_type in ("comment", "reply"):
                 provider.reply_to_comment(
-                    access_token=account.access_token,
+                    access_token=token,
                     comment_id=interaction.platform_interaction_id,
                     message=interaction.ai_suggested_reply,
-                    account=account,
                 )
 
             interaction.ai_reply_sent = interaction.ai_suggested_reply
