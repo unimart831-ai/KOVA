@@ -6,6 +6,10 @@ from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import include, path
 
+admin.site.site_header = "KOVA AI ADMIN"
+admin.site.site_title = "Kova AI"
+admin.site.index_title = "Administration"
+
 
 def landing_page(request):
     if request.user.is_authenticated:
