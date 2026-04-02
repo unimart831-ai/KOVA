@@ -27,5 +27,8 @@ echo "    DATABASE_URL is set: $(if [ -n \"$DATABASE_URL\" ]; then echo 'YES'; e
 echo "    DB host: $(echo $DATABASE_URL | sed 's/.*@\(.*\):.*/\1/' 2>/dev/null || echo 'could not parse')"
 python manage.py migrate --noinput 2>&1 || echo "WARNING: migrate failed"
 
+echo "==> Creating superuser (if not exists)..."
+python manage.py create_superuser 2>&1
+
 echo "==> Starting gunicorn on port ${PORT:-8000}..."
 exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3 --timeout 120
