@@ -1,0 +1,167 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Community health across all users</p>{% endblock %}
+
+{% block content %}
+<!-- ── Overview Cards ────────────────────────────────────────────────── -->
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Interactions (7d)</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ total_7d|format_number }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Auto-Reply Rate</p>
+    <p class="text-2xl font-bold {% if auto_reply_rate >= 50 %}text-emerald-600{% else %}text-gray-900 dark:text-white{% endif %} mt-1">{{ auto_reply_rate }}%</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">{{ ai_replied }} AI replies</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Flagged</p>
+    <p class="text-2xl font-bold {% if flagged %}text-red-500{% else %}text-gray-900 dark:text-white{% endif %} mt-1">{{ flagged }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Total Superfans</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ total_superfans }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Sentiment (7d)</p>
+    <div class="flex items-center gap-2 mt-2">
+      <span class="text-xs text-emerald-600 font-medium">+{{ sentiment_pct.positive }}%</span>
+      <span class="text-xs text-gray-400">~{{ sentiment_pct.neutral }}%</span>
+      <span class="text-xs text-red-500 font-medium">-{{ sentiment_pct.negative }}%</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Sentiment Donut + Superfan Tiers + Type Breakdown ─────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+  <!-- Sentiment Donut -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Sentiment Breakdown (7d)</h2>
+    <canvas id="sentimentDonut" height="220"></canvas>
+  </div>
+
+  <!-- Superfan Tiers -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Superfan Tiers</h2>
+    <div class="space-y-4">
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs text-gray-500 dark:text-gray-400">🌟 Superfan (16+)</span>
+          <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ superfan_super }}</span>
+        </div>
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+          <div class="bg-amber-500 h-2.5 rounded-full" style="width: {% if total_superfans %}{% widthratio superfan_super total_superfans 100 %}{% else %}0{% endif %}%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs text-gray-500 dark:text-gray-400">💪 Loyal (6–15)</span>
+          <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ superfan_loyal }}</span>
+        </div>
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+          <div class="bg-blue-500 h-2.5 rounded-full" style="width: {% if total_superfans %}{% widthratio superfan_loyal total_superfans 100 %}{% else %}0{% endif %}%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs text-gray-500 dark:text-gray-400">🌱 Rising (3–5)</span>
+          <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ superfan_rising }}</span>
+        </div>
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+          <div class="bg-emerald-500 h-2.5 rounded-full" style="width: {% if total_superfans %}{% widthratio superfan_rising total_superfans 100 %}{% else %}0{% endif %}%"></div>
+        </div>
+      </div>
+    </div>
+    <a href="{% url 'admin_dashboard:superfan_leaderboard' %}" class="block mt-5 text-center text-xs font-medium text-kova-600 dark:text-kova-400 hover:underline">View Leaderboard →</a>
+  </div>
+
+  <!-- Interaction Type Breakdown -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Interaction Types (7d)</h2>
+    <div class="space-y-3">
+      {% for item in type_breakdown %}
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-700 dark:text-gray-300 capitalize">{{ item.interaction_type }}</span>
+        <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.count }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-400 text-center py-4">No interactions yet</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── Sentiment Trend (30d) ─────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5 mb-6">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Sentiment Trend (30 Days)</h2>
+    <span class="text-xs text-gray-400">% of interactions by sentiment</span>
+  </div>
+  <canvas id="sentimentTrend" height="120"></canvas>
+</div>
+
+<!-- ── Quick Links ───────────────────────────────────────────────────── -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  <a href="{% url 'admin_dashboard:interaction_feed' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-kova-400 dark:hover:border-kova-500 transition-all">
+    <div class="w-9 h-9 bg-kova-100 dark:bg-kova-900/30 rounded-lg flex items-center justify-center">
+      <svg class="w-4.5 h-4.5 text-kova-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+    </div>
+    <div>
+      <p class="text-sm font-medium text-gray-900 dark:text-white">All Interactions</p>
+      <p class="text-xs text-gray-400">Search &amp; filter all comments, replies, DMs</p>
+    </div>
+  </a>
+  <a href="{% url 'admin_dashboard:superfan_leaderboard' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-amber-400 dark:hover:border-amber-500 transition-all">
+    <div class="w-9 h-9 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+      <svg class="w-4.5 h-4.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+    </div>
+    <div>
+      <p class="text-sm font-medium text-gray-900 dark:text-white">Superfan Leaderboard</p>
+      <p class="text-xs text-gray-400">Top fans across all brands</p>
+    </div>
+  </a>
+  <a href="{% url 'admin_dashboard:interaction_feed' %}?status=flagged" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-red-400 dark:hover:border-red-500 transition-all">
+    <div class="w-9 h-9 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+      <svg class="w-4.5 h-4.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/></svg>
+    </div>
+    <div>
+      <p class="text-sm font-medium text-gray-900 dark:text-white">Flagged Items</p>
+      <p class="text-xs text-gray-400">{{ flagged }} item{{ flagged|pluralize }} need attention</p>
+    </div>
+  </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Sentiment Donut
+  const sentimentData = {{ sentiment_chart_json|safe }};
+  new Chart(document.getElementById('sentimentDonut'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Positive', 'Neutral', 'Negative'],
+      datasets: [{ data: sentimentData, backgroundColor: ['#10b981','#9ca3af','#ef4444'], borderWidth: 0, hoverOffset: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyle: 'circle', font: { size: 11 }, color: '#9ca3af' } } } }
+  });
+
+  // Sentiment Trend
+  const trendData = {{ sentiment_trend_json|safe }};
+  new Chart(document.getElementById('sentimentTrend'), {
+    type: 'line',
+    data: {
+      labels: trendData.map(d => new Date(d.date).toLocaleDateString('en', { month: 'short', day: 'numeric' })),
+      datasets: [
+        { label: 'Positive %', data: trendData.map(d => d.positive), borderColor: '#10b981', backgroundColor: 'transparent', tension: 0.3, pointRadius: 0, borderWidth: 2 },
+        { label: 'Neutral %', data: trendData.map(d => d.neutral), borderColor: '#9ca3af', backgroundColor: 'transparent', tension: 0.3, pointRadius: 0, borderWidth: 2 },
+        { label: 'Negative %', data: trendData.map(d => d.negative), borderColor: '#ef4444', backgroundColor: 'transparent', tension: 0.3, pointRadius: 0, borderWidth: 2 }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle', font: { size: 11 }, color: '#9ca3af' } } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#9ca3af', maxTicksLimit: 10 } }, y: { min: 0, max: 100, grid: { color: 'rgba(156,163,175,0.1)' }, ticks: { font: { size: 10 }, color: '#9ca3af', callback: v => v + '%' } } } }
+  });
+});
+</script>
+{% endblock %}

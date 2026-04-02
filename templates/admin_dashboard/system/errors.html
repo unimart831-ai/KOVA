@@ -1,0 +1,121 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Failed agent actions &amp; system errors</p>{% endblock %}
+
+{% block content %}
+<!-- ── Back to System ────────────────────────────────────────────────── -->
+<a href="{% url 'admin_dashboard:system_health' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4">
+  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+  System Health
+</a>
+
+<!-- ── Filters ───────────────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm mb-4">
+  <form method="get" class="flex flex-wrap items-end gap-3">
+    <!-- Search -->
+    <div class="flex-1 min-w-[200px]">
+      <label class="block text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">Search</label>
+      <input type="text" name="q" value="{{ search }}" placeholder="Error message, email, agent..."
+             class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white px-3 py-2 focus:ring-kova-500 focus:border-kova-500">
+    </div>
+    <!-- Agent filter -->
+    <div class="w-36">
+      <label class="block text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">Agent</label>
+      <select name="agent" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white px-3 py-2 focus:ring-kova-500 focus:border-kova-500">
+        <option value="">All</option>
+        {% for val, label in agent_choices %}
+        <option value="{{ val }}" {% if val == current_agent %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <!-- Days filter -->
+    <div class="w-28">
+      <label class="block text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">Period</label>
+      <select name="days" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white px-3 py-2 focus:ring-kova-500 focus:border-kova-500">
+        <option value="1" {% if current_days == '1' %}selected{% endif %}>24h</option>
+        <option value="7" {% if current_days == '7' %}selected{% endif %}>7 days</option>
+        <option value="30" {% if current_days == '30' %}selected{% endif %}>30 days</option>
+        <option value="90" {% if current_days == '90' %}selected{% endif %}>90 days</option>
+      </select>
+    </div>
+    <button type="submit" class="px-4 py-2 bg-kova-600 text-white text-sm font-medium rounded-lg hover:bg-kova-700 transition-colors">
+      Filter
+    </button>
+    {% if search or current_agent or current_days != '7' %}
+    <a href="{% url 'admin_dashboard:error_log' %}" class="px-3 py-2 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- ── Count badge ───────────────────────────────────────────────────── -->
+<p class="text-xs text-gray-500 dark:text-gray-400 mb-3">{{ total_count }} error{{ total_count|pluralize }} found</p>
+
+<!-- ── Error Table ───────────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Time</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Agent</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Duration</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Error Message</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for err in page_obj %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ err.created_at|timesince }} ago</td>
+          <td class="px-4 py-3">
+            <span class="text-xs font-medium text-gray-900 dark:text-white capitalize">{{ err.agent_type }}</span>
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">{{ err.action_type }}</td>
+          <td class="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">
+            {% if err.user %}
+            <a href="{% url 'admin_dashboard:user_detail' pk=err.user.pk %}?tab=agents" class="text-kova-600 dark:text-kova-400 hover:underline">{{ err.user.email }}</a>
+            {% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-3 text-xs text-right text-gray-500 dark:text-gray-400">
+            {% if err.duration_ms %}{{ err.duration_ms }}ms{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-3">
+            <p class="text-xs text-red-500 max-w-md" title="{{ err.error_message }}">{{ err.error_message|truncatechars:120 }}</p>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="px-4 py-12 text-center text-sm text-gray-400">No errors found for this period 🎉</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Pagination ─────────────────────────────────────────────────────── -->
+{% if page_obj.has_other_pages %}
+<div class="flex items-center justify-between mt-4">
+  <p class="text-xs text-gray-500 dark:text-gray-400">
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+  </p>
+  <div class="flex gap-1">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&q={{ search }}&agent={{ current_agent }}&days={{ current_days }}"
+       class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+      ← Prev
+    </a>
+    {% endif %}
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&q={{ search }}&agent={{ current_agent }}&days={{ current_days }}"
+       class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+      Next →
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

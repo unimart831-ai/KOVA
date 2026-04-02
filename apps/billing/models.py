@@ -165,3 +165,55 @@ PLAN_LIMITS = {
 def get_plan_limits(plan_tier):
     """Get the limits for a plan tier. Defaults to starter if unknown."""
     return PLAN_LIMITS.get(plan_tier, PLAN_LIMITS["starter"])
+
+
+class SubscriptionOverride(models.Model):
+    """Audit trail for admin-initiated subscription changes."""
+
+    class ActionType(models.TextChoices):
+        PLAN_CHANGE = "plan_change", "Plan Change"
+        TRIAL_EXTENSION = "trial_extension", "Trial Extension"
+        COMP_ACCESS = "comp_access", "Complimentary Access"
+        STATUS_CHANGE = "status_change", "Status Change"
+        BULK_GRANT = "bulk_grant", "Bulk Grant"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="subscription_overrides",
+    )
+    admin = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="admin_overrides",
+    )
+    action = models.CharField(max_length=30, choices=ActionType.choices)
+
+    # What changed
+    previous_plan = models.CharField(max_length=20, blank=True)
+    new_plan = models.CharField(max_length=20, blank=True)
+    previous_status = models.CharField(max_length=20, blank=True)
+    new_status = models.CharField(max_length=20, blank=True)
+    days_granted = models.PositiveIntegerField(default=0)
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    # Context
+    reason = models.TextField(help_text="Why this override was applied")
+    batch_id = models.CharField(
+        max_length=50, blank=True,
+        help_text="Groups bulk operations together",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["action", "-created_at"]),
+            models.Index(fields=["batch_id"]),
+        ]
+
+    def __str__(self):
+        return f"{self.get_action_display()} → {self.user} by {self.admin}"

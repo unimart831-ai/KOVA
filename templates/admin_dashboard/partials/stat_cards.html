@@ -1,0 +1,64 @@
+{% load dashboard_tags %}
+<div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
+
+  <!-- Total Users -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Users</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ total_users }}</p>
+    {% if users_7d_ago and users_7d_ago < total_users %}
+    <p class="text-xs text-green-600 dark:text-green-400 mt-1">
+      <span class="inline-block">↑</span> +{{ total_users|add:"-"|add:users_7d_ago|default:"0" }} this week
+    </p>
+    {% else %}
+    <p class="text-xs text-gray-400 dark:text-gray-600 mt-1">→ No change (7d)</p>
+    {% endif %}
+  </div>
+
+  <!-- Active Users -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Active (7d)</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ active_users_7d }}</p>
+    <p class="text-xs text-gray-400 dark:text-gray-600 mt-1">
+      {% if total_users > 0 %}{{ active_users_7d|percentage:total_users }}% of total{% else %}—{% endif %}
+    </p>
+  </div>
+
+  <!-- Paying Users -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Paying Users</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ paying_users }}</p>
+    <p class="text-xs text-gray-400 dark:text-gray-600 mt-1">
+      {% if total_users > 0 %}{{ paying_users|percentage:total_users }}% conversion{% else %}—{% endif %}
+    </p>
+  </div>
+
+  <!-- Posts Today -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Published Today</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ posts_today }}</p>
+    {% if posts_today > posts_yesterday %}
+    <p class="text-xs text-green-600 dark:text-green-400 mt-1">↑ vs yesterday ({{ posts_yesterday }})</p>
+    {% elif posts_today < posts_yesterday %}
+    <p class="text-xs text-red-600 dark:text-red-400 mt-1">↓ vs yesterday ({{ posts_yesterday }})</p>
+    {% else %}
+    <p class="text-xs text-gray-400 dark:text-gray-600 mt-1">→ same as yesterday</p>
+    {% endif %}
+  </div>
+
+  <!-- Agent Success Rate -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Agent Success</p>
+    <p class="text-2xl font-bold {% if agent_success_rate >= 95 %}text-green-600 dark:text-green-400{% elif agent_success_rate >= 80 %}text-yellow-600 dark:text-yellow-400{% else %}text-red-600 dark:text-red-400{% endif %} mt-1">{{ agent_success_rate }}%</p>
+    <p class="text-xs text-gray-400 dark:text-gray-600 mt-1">{{ agent_total_24h }} runs (24h)</p>
+  </div>
+
+  <!-- MRR -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">MRR</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+      <span class="text-base text-gray-400 dark:text-gray-500">KES</span> {{ mrr_kes|format_number }}
+    </p>
+    <p class="text-xs text-gray-400 dark:text-gray-600 mt-1">{{ paying_users }} subscriber{{ paying_users|pluralize }}</p>
+  </div>
+
+</div>

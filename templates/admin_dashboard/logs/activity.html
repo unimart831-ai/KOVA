@@ -1,0 +1,120 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Unified cross-model event stream</p>{% endblock %}
+
+{% block content %}
+<!-- ── Filters ───────────────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm mb-4">
+  <form method="get" class="flex flex-wrap items-end gap-3">
+    <!-- Search -->
+    <div class="flex-1 min-w-[200px]">
+      <label class="block text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">Search</label>
+      <input type="text" name="q" value="{{ search }}" placeholder="User email, event, detail..."
+             class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white px-3 py-2 focus:ring-kova-500 focus:border-kova-500">
+    </div>
+    <!-- Category -->
+    <div class="w-36">
+      <label class="block text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">Category</label>
+      <select name="category" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white px-3 py-2 focus:ring-kova-500 focus:border-kova-500">
+        <option value="">All</option>
+        {% for val, label in category_choices %}
+        <option value="{{ val }}" {% if val == current_category %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <!-- Period -->
+    <div class="w-28">
+      <label class="block text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">Period</label>
+      <select name="days" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white px-3 py-2 focus:ring-kova-500 focus:border-kova-500">
+        <option value="1" {% if current_days == '1' %}selected{% endif %}>24h</option>
+        <option value="7" {% if current_days == '7' %}selected{% endif %}>7 days</option>
+        <option value="30" {% if current_days == '30' %}selected{% endif %}>30 days</option>
+      </select>
+    </div>
+    <button type="submit" class="px-4 py-2 bg-kova-600 text-white text-sm font-medium rounded-lg hover:bg-kova-700 transition-colors">
+      Filter
+    </button>
+    {% if search or current_category or current_days != '7' %}
+    <a href="{% url 'admin_dashboard:activity_log' %}" class="px-3 py-2 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white">Clear</a>
+    {% endif %}
+    <!-- Export -->
+    <a href="{% url 'admin_dashboard:log_export' %}?category={{ current_category }}&days={{ current_days }}"
+       class="ml-auto px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+      <svg class="w-4 h-4 inline -mt-0.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      Export CSV
+    </a>
+  </form>
+</div>
+
+<!-- ── Count badge ───────────────────────────────────────────────────── -->
+<p class="text-xs text-gray-500 dark:text-gray-400 mb-3">{{ total_count }} event{{ total_count|pluralize }} found</p>
+
+<!-- ── Activity Feed ─────────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Time</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Category</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Event</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Detail</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for item in page_obj %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ item.timestamp|timesince }} ago</td>
+          <td class="px-4 py-3">
+            <span class="inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-full
+              {% if item.category_color == 'indigo' %}bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400
+              {% elif item.category_color == 'blue' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+              {% elif item.category_color == 'emerald' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400
+              {% elif item.category_color == 'amber' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
+              {% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+              {{ item.category }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">{{ item.user_email }}</td>
+          <td class="px-4 py-3">
+            <span class="text-xs mr-1">{{ item.status_icon }}</span>
+            <span class="text-xs font-medium text-gray-900 dark:text-white">{{ item.event }}</span>
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 max-w-xs truncate" title="{{ item.detail }}">{{ item.detail|truncatechars:80 }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="px-4 py-12 text-center text-sm text-gray-400">No activity found for this period</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Pagination ─────────────────────────────────────────────────────── -->
+{% if page_obj.has_other_pages %}
+<div class="flex items-center justify-between mt-4">
+  <p class="text-xs text-gray-500 dark:text-gray-400">
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+  </p>
+  <div class="flex gap-1">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&q={{ search }}&category={{ current_category }}&days={{ current_days }}"
+       class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+      ← Prev
+    </a>
+    {% endif %}
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&q={{ search }}&category={{ current_category }}&days={{ current_days }}"
+       class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+      Next →
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

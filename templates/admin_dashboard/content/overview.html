@@ -1,0 +1,158 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ total_seeds }} seeds → {{ total_posts }} posts pipeline</p>{% endblock %}
+
+{% block content %}
+<!-- ── Pipeline Funnel ───────────────────────────────────────────────── -->
+<div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
+  {% with sc=seed_counts pc=post_counts %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ sc.new|default:0 }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">New Seeds</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ sc.processing|default:0 }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Processing</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ pc.draft|default:0 }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Drafts</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-yellow-600 dark:text-yellow-400">{{ pc.pending_approval|default:0 }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Pending</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-indigo-600 dark:text-indigo-400">{{ pc.scheduled|default:0 }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Scheduled</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-purple-600 dark:text-purple-400">{{ pc.publishing|default:0 }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Publishing</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-green-600 dark:text-green-400">{{ pc.published|default:0 }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Published</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-red-200 dark:border-red-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-red-600 dark:text-red-400">{{ pc.failed|default:0 }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Failed</p>
+  </div>
+  {% endwith %}
+</div>
+
+<!-- ── 7-Day Throughput Chart ────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm mb-6">
+  <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">7-Day Throughput</h3>
+  <div class="h-64">
+    <canvas id="throughputChart"></canvas>
+  </div>
+</div>
+
+<!-- ── Breakdowns Row ────────────────────────────────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
+
+  <!-- Platform Breakdown -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">By Platform</h3>
+    <div class="space-y-2">
+      {% for item in platform_breakdown %}
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-6 text-center">{{ item.social_account__platform|platform_icon }}</span>
+          <span class="text-sm text-gray-900 dark:text-white capitalize">{{ item.social_account__platform|default:"unknown" }}</span>
+        </div>
+        <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.c }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No published posts yet</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Agent Breakdown -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">By Agent</h3>
+    <div class="space-y-2">
+      {% for item in agent_breakdown %}
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-900 dark:text-white">{{ item.generated_by_agent }}</span>
+        <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.c }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No agent-generated posts yet</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Content Type Breakdown -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">By Content Type</h3>
+    <div class="space-y-2">
+      {% for item in type_breakdown %}
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-900 dark:text-white capitalize">{{ item.content_type }}</span>
+        <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.c }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No posts yet</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── Quick Links ───────────────────────────────────────────────────── -->
+<div class="flex flex-wrap gap-3">
+  <a href="{% url 'admin_dashboard:post_list' %}" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+    View All Posts →
+  </a>
+  <a href="{% url 'admin_dashboard:seed_list' %}" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+    View All Seeds →
+  </a>
+  <a href="{% url 'admin_dashboard:failed_content' %}" class="px-4 py-2 text-sm font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+    Failed Content →
+  </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+  const isDark = document.documentElement.classList.contains('dark');
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const textColor = isDark ? '#9ca3af' : '#6b7280';
+  Chart.defaults.color = textColor;
+  Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+  Chart.defaults.font.size = 11;
+
+  const data = {{ pipeline_7d_json|safe }};
+  new Chart(document.getElementById('throughputChart'), {
+    type: 'bar',
+    data: {
+      labels: data.map(d => {
+        const dt = new Date(d.date);
+        return dt.toLocaleDateString('en', {weekday: 'short', month: 'short', day: 'numeric'});
+      }),
+      datasets: [
+        { label: 'Seeds', data: data.map(d => d.seeds), backgroundColor: isDark ? '#6366f1' : '#818cf8', borderRadius: 4 },
+        { label: 'Generated', data: data.map(d => d.generated), backgroundColor: isDark ? '#3b82f6' : '#60a5fa', borderRadius: 4 },
+        { label: 'Published', data: data.map(d => d.published), backgroundColor: isDark ? '#22c55e' : '#4ade80', borderRadius: 4 },
+        { label: 'Failed', data: data.map(d => d.failed), backgroundColor: isDark ? '#ef4444' : '#f87171', borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', labels: { boxWidth: 10, padding: 16 } }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { beginAtZero: true, grid: { color: gridColor } }
+      }
+    }
+  });
+</script>
+{% endblock %}

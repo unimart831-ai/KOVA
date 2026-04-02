@@ -1,0 +1,151 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ total_count }} account{{ total_count|pluralize }} total</p>{% endblock %}
+
+{% block content %}
+<!-- ── Back to Platforms ──────────────────────────────────────────────── -->
+<a href="{% url 'admin_dashboard:platform_overview' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4">
+  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+  Platform Overview
+</a>
+
+<!-- ── Search & Filters ──────────────────────────────────────────────── -->
+<form method="get" class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm mb-6">
+  <div class="flex flex-wrap gap-3 items-end">
+    <div class="flex-1 min-w-[200px]">
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Search</label>
+      <input type="text" name="q" value="{{ search }}" placeholder="Username, display name, or email…"
+             class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500 focus:border-transparent">
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Platform</label>
+      <select name="platform" class="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <option value="">All Platforms</option>
+        {% for value, label in platform_choices %}
+        <option value="{{ value }}" {% if current_platform == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Status</label>
+      <select name="status" class="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <option value="">All Statuses</option>
+        <option value="active" {% if current_status == "active" %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if current_status == "inactive" %}selected{% endif %}>Inactive</option>
+        <option value="error" {% if current_status == "error" %}selected{% endif %}>Has Error</option>
+        <option value="expiring" {% if current_status == "expiring" %}selected{% endif %}>Expiring Soon</option>
+      </select>
+    </div>
+    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors">Filter</button>
+    <a href="{% url 'admin_dashboard:platform_accounts' %}" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Reset</a>
+  </div>
+</form>
+
+<!-- ── Accounts Table ────────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <a href="?sort={% if current_sort == 'platform' %}-platform{% else %}platform{% endif %}&q={{ search }}&platform={{ current_platform }}&status={{ current_status }}" class="hover:text-gray-900 dark:hover:text-white">
+              Platform {% if current_sort == 'platform' %}↑{% elif current_sort == '-platform' %}↓{% endif %}
+            </a>
+          </th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <a href="?sort={% if current_sort == 'username' %}-username{% else %}username{% endif %}&q={{ search }}&platform={{ current_platform }}&status={{ current_status }}" class="hover:text-gray-900 dark:hover:text-white">
+              Username {% if current_sort == 'username' %}↑{% elif current_sort == '-username' %}↓{% endif %}
+            </a>
+          </th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">
+            <a href="?sort={% if current_sort == '-post_count' %}post_count{% else %}-post_count{% endif %}&q={{ search }}&platform={{ current_platform }}&status={{ current_status }}" class="hover:text-gray-900 dark:hover:text-white">
+              Posts {% if current_sort == '-post_count' %}↓{% elif current_sort == 'post_count' %}↑{% endif %}
+            </a>
+          </th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <a href="?sort={% if current_sort == '-connected_at' %}connected_at{% else %}-connected_at{% endif %}&q={{ search }}&platform={{ current_platform }}&status={{ current_status }}" class="hover:text-gray-900 dark:hover:text-white">
+              Connected {% if current_sort == '-connected_at' %}↓{% elif current_sort == 'connected_at' %}↑{% endif %}
+            </a>
+          </th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <a href="?sort={% if current_sort == 'token_expires_at' %}-token_expires_at{% else %}token_expires_at{% endif %}&q={{ search }}&platform={{ current_platform }}&status={{ current_status }}" class="hover:text-gray-900 dark:hover:text-white">
+              Token Expires {% if current_sort == 'token_expires_at' %}↑{% elif current_sort == '-token_expires_at' %}↓{% endif %}
+            </a>
+          </th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for account in page_obj %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+              <span class="text-base">{{ account.platform|platform_icon }}</span>
+              <span class="text-xs font-medium text-gray-900 dark:text-white capitalize">{{ account.get_platform_display }}</span>
+            </div>
+          </td>
+          <td class="px-4 py-3">
+            <p class="text-sm text-gray-900 dark:text-white">@{{ account.username }}</p>
+            {% if account.display_name and account.display_name != account.username %}
+            <p class="text-[10px] text-gray-400">{{ account.display_name }}</p>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            <a href="{% url 'admin_dashboard:user_detail' pk=account.user.pk %}?tab=platforms" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">{{ account.user.email|truncatechars:25 }}</a>
+          </td>
+          <td class="px-4 py-3">
+            {% if account.last_error %}
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400" title="{{ account.last_error }}">Error</span>
+            {% elif account.is_active %}
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">Active</span>
+            {% else %}
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500">Inactive</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">{{ account.post_count }}</td>
+          <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
+            {% if account.connected_at %}{{ account.connected_at|timesince }} ago{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-3 text-xs">
+            {% if account.token_expires_at %}
+              {% if account.is_token_expired %}
+              <span class="text-red-500 font-medium">Expired</span>
+              {% elif account.needs_reauth %}
+              <span class="text-amber-500 font-medium">{{ account.token_expires_at|timeuntil }}</span>
+              {% else %}
+              <span class="text-gray-500 dark:text-gray-400">{{ account.token_expires_at|timeuntil }}</span>
+              {% endif %}
+            {% else %}
+              <span class="text-gray-400">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">No accounts found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
+    <div class="text-xs text-gray-500 dark:text-gray-400">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</div>
+    <div class="flex items-center gap-1">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}&q={{ search }}&platform={{ current_platform }}&status={{ current_status }}&sort={{ current_sort }}"
+         class="px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700">← Prev</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}&q={{ search }}&platform={{ current_platform }}&status={{ current_status }}&sort={{ current_sort }}"
+         class="px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700">Next →</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -63,6 +63,7 @@ LOCAL_APPS = [
     "apps.engage",
     "apps.billing",
     "apps.notifications",
+    "apps.admin_dashboard",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -281,6 +282,42 @@ AGENT_MODELS = {
     "adapt.schedule": env("LLM_MODEL_ADAPT_SCHEDULE", default=LLM_MODEL_FAST),
     # Strategist (daily brief) — reasoning + synthesis
     "strategist.brief": env("LLM_MODEL_STRATEGIST_BRIEF", default=LLM_MODEL_WORKHORSE),
+}
+
+# ─── TOKEN COST REGISTRY ─────────────────────────────────────────────────────
+# Per-model pricing in USD per 1K tokens: (input_cost, output_cost)
+# Updated: 2026-04-02. Source: provider pricing pages.
+# Add your models here. Unknown models fall back to DEFAULT_TOKEN_COST.
+# Free models are explicitly $0. This ensures accurate cost tracking.
+DEFAULT_TOKEN_COST = (0.0, 0.0)  # fallback for unrecognized models
+
+MODEL_TOKEN_COSTS = {
+    # ── Free OpenRouter models (dev) ──────────────────────────────────
+    "stepfun/step-3.5-flash:free":          (0.0, 0.0),
+    "google/gemma-3-1b-it:free":            (0.0, 0.0),
+    "meta-llama/llama-3.2-3b-instruct:free":(0.0, 0.0),
+    "qwen/qwen-2.5-7b-instruct:free":      (0.0, 0.0),
+    "mistralai/mistral-7b-instruct:free":   (0.0, 0.0),
+
+    # ── OpenAI ────────────────────────────────────────────────────────
+    "gpt-4o-mini":          (0.00015, 0.0006),   # $0.15/$0.60 per 1M
+    "gpt-4o":               (0.0025,  0.01),      # $2.50/$10 per 1M
+    "gpt-4o-2024-11-20":    (0.0025,  0.01),
+    "gpt-4-turbo":          (0.01,    0.03),      # $10/$30 per 1M
+    "gpt-3.5-turbo":        (0.0005,  0.0015),    # $0.50/$1.50 per 1M
+    "o3-mini":              (0.0011,  0.0044),     # $1.10/$4.40 per 1M
+
+    # ── Anthropic ─────────────────────────────────────────────────────
+    "claude-3-5-haiku-20241022": (0.0008, 0.004),  # $0.80/$4 per 1M
+    "claude-3-5-sonnet-20241022":(0.003,  0.015),   # $3/$15 per 1M
+    "claude-3-opus-20240229":    (0.015,  0.075),    # $15/$75 per 1M
+    "claude-sonnet-4-20250514":  (0.003,  0.015),
+
+    # ── OpenRouter paid models ────────────────────────────────────────
+    "google/gemini-2.0-flash-001":    (0.0001, 0.0004),  # $0.10/$0.40 per 1M
+    "google/gemini-2.5-pro-preview":  (0.00125, 0.01),
+    "deepseek/deepseek-chat-v3-0324": (0.00014, 0.00028),
+    "meta-llama/llama-3.3-70b-instruct": (0.00039, 0.00039),
 }
 
 # ─── AI IMAGE GENERATION ─────────────────────────────────────────────────────

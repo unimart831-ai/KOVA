@@ -1,0 +1,185 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ post.get_status_display }} · {{ post.get_content_type_display }}</p>{% endblock %}
+
+{% block content %}
+<!-- ── Back to Posts ──────────────────────────────────────────────────── -->
+<a href="{% url 'admin_dashboard:post_list' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4">
+  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+  All Posts
+</a>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- ── Main Content (2 cols) ───────────────────────────────────────── -->
+  <div class="lg:col-span-2 space-y-6">
+
+    <!-- Post Content -->
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {{ post.status|status_color }}">{{ post.get_status_display }}</span>
+          <span class="text-xs text-gray-500 dark:text-gray-400 capitalize">{{ post.content_type }}</span>
+        </div>
+        {% if post.platform_post_url %}
+        <a href="{{ post.platform_post_url }}" target="_blank" rel="noopener" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">View on Platform →</a>
+        {% endif %}
+      </div>
+      <div class="prose prose-sm dark:prose-invert max-w-none">
+        <p class="whitespace-pre-line text-gray-900 dark:text-white">{{ post.content_text }}</p>
+      </div>
+      {% if post.hashtags %}
+      <div class="mt-3 flex flex-wrap gap-1">
+        {% for tag in post.hashtags %}
+        <span class="text-xs text-kova-600 dark:text-kova-400">#{{ tag }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Media Attachments -->
+    {% if attachments %}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Media ({{ attachments.count }})</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {% for att in attachments %}
+        <div class="aspect-square rounded-lg bg-gray-100 dark:bg-gray-800 overflow-hidden">
+          {% if att.file %}
+          <img src="{{ att.file.url }}" alt="" class="w-full h-full object-cover">
+          {% elif att.url %}
+          <img src="{{ att.url }}" alt="" class="w-full h-full object-cover">
+          {% else %}
+          <div class="w-full h-full flex items-center justify-center text-xs text-gray-500 dark:text-gray-400">No preview</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- AI Content DNA -->
+    {% if post.content_dna %}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Content DNA</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {% for key, value in post.content_dna.items %}
+        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+          <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ key }}</p>
+          <p class="text-sm font-medium text-gray-900 dark:text-white mt-0.5">{{ value }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Error Message -->
+    {% if post.error_message %}
+    <div class="bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-900/50 p-5">
+      <h3 class="text-sm font-semibold text-red-700 dark:text-red-400 mb-2">Error Message</h3>
+      <pre class="text-xs text-red-600 dark:text-red-400 whitespace-pre-wrap font-mono">{{ post.error_message }}</pre>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ── Sidebar (1 col) ─────────────────────────────────────────────── -->
+  <div class="space-y-6">
+
+    <!-- Meta Info -->
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Details</h3>
+      <dl class="space-y-2.5">
+        <div class="flex justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">User</dt>
+          <dd><a href="{% url 'admin_dashboard:user_detail' pk=post.user.pk %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">{{ post.user.email|truncatechars:25 }}</a></dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Platform</dt>
+          <dd class="text-xs text-gray-900 dark:text-white capitalize">{{ post.social_account.platform|platform_icon }} {{ post.social_account.platform|default:"—" }}</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Agent</dt>
+          <dd class="text-xs text-gray-900 dark:text-white">{{ post.generated_by_agent|default:"—" }}</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Created</dt>
+          <dd class="text-xs text-gray-900 dark:text-white">{{ post.created_at|date:"M j, Y H:i" }}</dd>
+        </div>
+        {% if post.scheduled_at %}
+        <div class="flex justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Scheduled</dt>
+          <dd class="text-xs text-gray-900 dark:text-white">{{ post.scheduled_at|date:"M j, Y H:i" }}</dd>
+        </div>
+        {% endif %}
+        {% if post.published_at %}
+        <div class="flex justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Published</dt>
+          <dd class="text-xs text-gray-900 dark:text-white">{{ post.published_at|date:"M j, Y H:i" }}</dd>
+        </div>
+        {% endif %}
+        {% if post.predicted_engagement_score %}
+        <div class="flex justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Predicted Score</dt>
+          <dd class="text-xs font-semibold text-kova-600 dark:text-kova-400">{{ post.predicted_engagement_score }}%</dd>
+        </div>
+        {% endif %}
+      </dl>
+    </div>
+
+    <!-- Source Seed -->
+    {% if post.seed %}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Source Seed</h3>
+      <p class="text-xs text-gray-700 dark:text-gray-300">{{ post.seed.idea|truncatechars:200 }}</p>
+      <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">{{ post.seed.created_at|date:"M j, Y" }} · <span class="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded-full {{ post.seed.status|status_color }}">{{ post.seed.get_status_display }}</span></p>
+    </div>
+    {% endif %}
+
+    <!-- Metrics -->
+    {% if metric %}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Performance</h3>
+      <dl class="space-y-2">
+        {% if metric.impressions %}
+        <div class="flex justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Impressions</dt>
+          <dd class="text-sm font-semibold text-gray-900 dark:text-white">{{ metric.impressions|format_number }}</dd>
+        </div>
+        {% endif %}
+        {% if metric.reach %}
+        <div class="flex justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Reach</dt>
+          <dd class="text-sm font-semibold text-gray-900 dark:text-white">{{ metric.reach|format_number }}</dd>
+        </div>
+        {% endif %}
+        {% if metric.likes %}
+        <div class="flex justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Likes</dt>
+          <dd class="text-sm font-semibold text-gray-900 dark:text-white">{{ metric.likes|format_number }}</dd>
+        </div>
+        {% endif %}
+        {% if metric.comments %}
+        <div class="flex justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Comments</dt>
+          <dd class="text-sm font-semibold text-gray-900 dark:text-white">{{ metric.comments|format_number }}</dd>
+        </div>
+        {% endif %}
+        {% if metric.shares %}
+        <div class="flex justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Shares</dt>
+          <dd class="text-sm font-semibold text-gray-900 dark:text-white">{{ metric.shares|format_number }}</dd>
+        </div>
+        {% endif %}
+        {% if metric.engagement_rate %}
+        <div class="flex justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Engagement Rate</dt>
+          <dd class="text-sm font-semibold text-kova-600 dark:text-kova-400">{{ metric.engagement_rate }}%</dd>
+        </div>
+        {% endif %}
+      </dl>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

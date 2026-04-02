@@ -597,6 +597,9 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
             "platforms": [p.social_account.platform for p in created_posts],
         }
         action.tokens_used = llm_response.total_tokens
+        action.input_tokens = llm_response.input_tokens
+        action.output_tokens = llm_response.output_tokens
+        action.model_used = llm_response.model
         action.duration_ms = llm_response.duration_ms
         action.completed_at = dj_timezone.now()
         action.save()
@@ -725,6 +728,9 @@ Respond with a JSON object. No markdown code fences.
         action.status = AgentAction.ActionStatus.COMPLETED
         action.output_data = {"post_id": str(post.id), "platform": platform}
         action.tokens_used = llm_response.total_tokens
+        action.input_tokens = llm_response.input_tokens
+        action.output_tokens = llm_response.output_tokens
+        action.model_used = llm_response.model
         action.duration_ms = llm_response.duration_ms
         action.completed_at = dj_timezone.now()
         action.save()
@@ -904,6 +910,9 @@ Respond with a JSON object. No markdown code fences.
             "source_post_id": str(source_post.id),
         }
         action.tokens_used = llm_response.total_tokens
+        action.input_tokens = llm_response.input_tokens
+        action.output_tokens = llm_response.output_tokens
+        action.model_used = llm_response.model
         action.completed_at = dj_timezone.now()
         action.save()
 

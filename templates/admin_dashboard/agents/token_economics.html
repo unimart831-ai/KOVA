@@ -1,0 +1,245 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">AI token usage &amp; cost analysis</p>{% endblock %}
+
+{% block content %}
+<!-- ── Back to Agents ────────────────────────────────────────────────── -->
+<a href="{% url 'admin_dashboard:agent_overview' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4">
+  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+  Agent Overview
+</a>
+
+<!-- ── Stat Cards ────────────────────────────────────────────────────── -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <!-- Tokens Today -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Tokens Today</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ tokens_today|format_number }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">${{ cost_today|floatformat:4 }}</p>
+  </div>
+  <!-- Tokens This Month -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Tokens This Month</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ tokens_month|format_number }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">${{ cost_month|floatformat:4 }}</p>
+  </div>
+  <!-- Cost per User -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Avg Cost / User</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">${{ cost_per_user|floatformat:4 }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">{{ active_users }} active user{{ active_users|pluralize }}</p>
+  </div>
+  <!-- Cost per Post -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Avg Cost / Post</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">${{ cost_per_post|floatformat:4 }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">{{ posts_generated }} post{{ posts_generated|pluralize }} generated</p>
+  </div>
+</div>
+
+<!-- ── Per-Agent Breakdown ───────────────────────────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+  <!-- Agent Breakdown Table -->
+  <div class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Token Usage by Agent (This Month)</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Agent</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Runs</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Tokens</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Cost</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Share</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for agent in agent_totals %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+            <td class="px-4 py-3">
+              <span class="text-sm font-medium text-gray-900 dark:text-white capitalize">{{ agent.agent_type }}</span>
+            </td>
+            <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">{{ agent.runs|format_number }}</td>
+            <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">{{ agent.tokens|format_number }}</td>
+            <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">${{ agent.cost|floatformat:4 }}</td>
+            <td class="px-4 py-3 w-32">
+              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div class="bg-kova-500 h-2 rounded-full" style="width: {% widthratio agent.tokens tokens_month 100 %}%"></div>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-400">No token usage this month</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Doughnut Chart: Token Share -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Token Share by Agent</h2>
+    <canvas id="tokenShareChart" height="260"></canvas>
+  </div>
+</div>
+
+<!-- ── Top Users by Token Usage ──────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Top 10 Users by Token Consumption</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-8">#</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Runs</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Tokens</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Cost</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for u in top_users %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <td class="px-4 py-3 text-xs text-gray-400">{{ forloop.counter }}</td>
+          <td class="px-4 py-3">
+            <a href="{% url 'admin_dashboard:user_detail' pk=u.user_id %}?tab=agents" class="text-sm text-kova-600 dark:text-kova-400 hover:underline">{{ u.user__email }}</a>
+          </td>
+          <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">{{ u.runs|format_number }}</td>
+          <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">{{ u.tokens|format_number }}</td>
+          <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">${{ u.cost|floatformat:4 }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-400">No user token data available</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Cost by Model ──────────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden mt-6">
+  <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Cost by Model (This Month)</h2>
+    <p class="text-xs text-gray-400 mt-0.5">Per-model breakdown with actual input/output token rates</p>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Model</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Runs</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Input Tokens</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Output Tokens</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Rate (per 1K)</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Cost</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for m in model_breakdown %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <td class="px-4 py-3">
+            <span class="text-xs font-mono text-gray-900 dark:text-white">{{ m.model }}</span>
+            {% if m.input_rate == 0 and m.output_rate == 0 %}
+            <span class="ml-1.5 inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">{{ m.runs|format_number }}</td>
+          <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">{{ m.input_tokens|format_number }}</td>
+          <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">{{ m.output_tokens|format_number }}</td>
+          <td class="px-4 py-3 text-right text-xs text-gray-500 dark:text-gray-400">
+            <span class="text-gray-400">in:</span>${{ m.input_rate }}
+            <span class="text-gray-400 ml-1">out:</span>${{ m.output_rate }}
+          </td>
+          <td class="px-4 py-3 text-right text-sm font-medium {% if m.cost > 0 %}text-amber-600 dark:text-amber-400{% else %}text-emerald-600 dark:text-emerald-400{% endif %}">${{ m.cost|floatformat:6 }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-400">No model usage data this month</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Active Model Configuration ─────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden mt-6">
+  <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Active Model Configuration</h2>
+    <p class="text-xs text-gray-400 mt-0.5">Which model handles each agent task (from settings)</p>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Task</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Model</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for task, model in agent_models.items %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-2.5">
+            <span class="text-xs font-medium text-gray-900 dark:text-white">{{ task }}</span>
+          </td>
+          <td class="px-4 py-2.5">
+            <span class="text-xs font-mono text-gray-600 dark:text-gray-400">{{ model }}</span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="2" class="px-4 py-6 text-center text-sm text-gray-400">No agent models configured</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const agentLabels = [{% for a in agent_totals %}'{{ a.agent_type|capfirst }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+  const agentTokens = [{% for a in agent_totals %}{{ a.tokens }}{% if not forloop.last %},{% endif %}{% endfor %}];
+  const agentColors = {
+    'Research': '#6366f1', 'Create': '#3b82f6', 'Adapt': '#8b5cf6',
+    'Engage': '#f59e0b', 'Analyst': '#10b981', 'Strategist': '#ef4444'
+  };
+  const colors = agentLabels.map(l => agentColors[l] || '#9ca3af');
+
+  if (agentLabels.length > 0) {
+    new Chart(document.getElementById('tokenShareChart'), {
+      type: 'doughnut',
+      data: {
+        labels: agentLabels,
+        datasets: [{
+          data: agentTokens,
+          backgroundColor: colors,
+          borderWidth: 0,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: {
+          legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyle: 'circle', font: { size: 11 }, color: '#9ca3af' } }
+        }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

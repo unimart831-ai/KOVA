@@ -166,8 +166,11 @@ def suggest_optimal_times(user):
         action.status = AgentAction.ActionStatus.COMPLETED
         action.output_data = result
         action.tokens_used = response.total_tokens
+        action.input_tokens = response.input_tokens
+        action.output_tokens = response.output_tokens
+        action.model_used = response.model
         action.completed_at = timezone.now()
-        action.save(update_fields=["status", "output_data", "tokens_used", "completed_at"])
+        action.save(update_fields=["status", "output_data", "tokens_used", "input_tokens", "output_tokens", "model_used", "completed_at"])
 
         return result
 

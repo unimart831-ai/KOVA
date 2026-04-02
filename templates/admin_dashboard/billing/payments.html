@@ -1,0 +1,109 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ total_count }} payment{{ total_count|pluralize }} total</p>{% endblock %}
+
+{% block content %}
+<a href="{% url 'admin_dashboard:billing_overview' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4">
+  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+  Billing Overview
+</a>
+
+<!-- ── Search & Filters ──────────────────────────────────────────────── -->
+<form method="get" class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm mb-6">
+  <div class="flex flex-wrap gap-3 items-end">
+    <div class="flex-1 min-w-[200px]">
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Search</label>
+      <input type="text" name="q" value="{{ search }}" placeholder="Email, receipt #, or phone…"
+             class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500 focus:border-transparent">
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Status</label>
+      <select name="status" class="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <option value="">All Statuses</option>
+        {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Plan</label>
+      <select name="plan" class="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <option value="">All Plans</option>
+        {% for value, label in plan_choices %}
+        <option value="{{ value }}" {% if current_plan == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors">Filter</button>
+    <a href="{% url 'admin_dashboard:payment_list' %}" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Reset</a>
+  </div>
+</form>
+
+<!-- ── Payments Table ────────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <a href="?sort={% if current_sort == '-created_at' %}created_at{% else %}-created_at{% endif %}&q={{ search }}&status={{ current_status }}&plan={{ current_plan }}" class="hover:text-gray-900 dark:hover:text-white">
+              Date {% if current_sort == '-created_at' %}↓{% elif current_sort == 'created_at' %}↑{% endif %}
+            </a>
+          </th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phone</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">
+            <a href="?sort={% if current_sort == '-amount' %}amount{% else %}-amount{% endif %}&q={{ search }}&status={{ current_status }}&plan={{ current_plan }}" class="hover:text-gray-900 dark:hover:text-white">
+              Amount {% if current_sort == '-amount' %}↓{% elif current_sort == 'amount' %}↑{% endif %}
+            </a>
+          </th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Plan</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Receipt</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for payment in page_obj %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{{ payment.created_at|timesince }} ago</td>
+          <td class="px-4 py-3">
+            <a href="{% url 'admin_dashboard:user_detail' pk=payment.user.pk %}?tab=billing" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">{{ payment.user.email|truncatechars:25 }}</a>
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 font-mono">{{ payment.phone_number|mask_phone }}</td>
+          <td class="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">KES {{ payment.amount|format_number }}</td>
+          <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 capitalize">{{ payment.plan_tier }}</td>
+          <td class="px-4 py-3">
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {{ payment.status|status_color }}">{{ payment.get_status_display }}</span>
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 font-mono">{{ payment.receipt_number|default:"—" }}</td>
+          <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{% if payment.is_renewal %}Renewal{% else %}New{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">No payments found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
+    <div class="text-xs text-gray-500 dark:text-gray-400">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</div>
+    <div class="flex items-center gap-1">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}&q={{ search }}&status={{ current_status }}&plan={{ current_plan }}&sort={{ current_sort }}"
+         class="px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700">← Prev</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}&q={{ search }}&status={{ current_status }}&plan={{ current_plan }}&sort={{ current_sort }}"
+         class="px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700">Next →</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

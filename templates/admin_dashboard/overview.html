@@ -1,0 +1,287 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Real-time platform health — auto-refreshes every 30s</p>{% endblock %}
+
+{% block content %}
+<!-- ── Stat Cards ─────────────────────────────────────────────────────── -->
+<div id="stat-cards"
+     hx-get="{% url 'admin_dashboard:partial_stat_cards' %}"
+     hx-trigger="every 30s"
+     hx-swap="innerHTML">
+  {% include "admin_dashboard/partials/stat_cards.html" %}
+</div>
+
+<!-- ── Charts Row ────────────────────────────────────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mt-6">
+
+  <!-- User Growth Chart -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">User Growth (30d)</h3>
+    <div class="h-48">
+      <canvas id="userGrowthChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Content Pipeline Chart -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Content Pipeline (7d)</h3>
+    <div class="h-48">
+      <canvas id="contentPipelineChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Revenue Chart -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Revenue (30d)</h3>
+    <div class="h-48">
+      <canvas id="revenueChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ── Agent Health Grid ─────────────────────────────────────────────── -->
+<div class="mt-6">
+  <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Agent Health (24h)</h3>
+  <div id="agent-health"
+       hx-get="{% url 'admin_dashboard:partial_agent_health' %}"
+       hx-trigger="every 30s"
+       hx-swap="innerHTML">
+    {% include "admin_dashboard/partials/agent_health.html" %}
+  </div>
+</div>
+
+<!-- ── Bottom Row: Activity Feed + Platform Health + Failures ────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mt-6">
+
+  <!-- Activity Feed (2 cols) -->
+  <div class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+    <div class="px-4 sm:px-5 py-3 border-b border-gray-200 dark:border-gray-800">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Live Agent Activity</h3>
+    </div>
+    <div id="activity-feed"
+         hx-get="{% url 'admin_dashboard:partial_activity_feed' %}"
+         hx-trigger="every 30s"
+         hx-swap="innerHTML"
+         class="divide-y divide-gray-100 dark:divide-gray-800 max-h-96 overflow-y-auto">
+      {% include "admin_dashboard/partials/activity_feed.html" %}
+    </div>
+  </div>
+
+  <!-- Right column: Platform Health + Failed -->
+  <div class="space-y-4 sm:space-y-6">
+    <!-- Platform Health -->
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Platform Health</h3>
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-gray-500 dark:text-gray-400">Connected Accounts</span>
+          <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ active_accounts }}/{{ total_accounts }}</span>
+        </div>
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+          {% widthratio active_accounts total_accounts 100 as active_pct %}
+          <div class="bg-green-500 h-1.5 rounded-full" style="width: {% widthratio active_accounts total_accounts 100 %}%"></div>
+        </div>
+
+        {% if expiring_tokens > 0 %}
+        <div class="flex items-center gap-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+          <div class="w-2 h-2 bg-yellow-500 rounded-full animate-pulse-dot"></div>
+          <span class="text-xs text-yellow-700 dark:text-yellow-400">{{ expiring_tokens }} token{{ expiring_tokens|pluralize }} expiring in 24h</span>
+        </div>
+        {% endif %}
+
+        {% if errored_accounts > 0 %}
+        <div class="flex items-center gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
+          <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+          <span class="text-xs text-red-700 dark:text-red-400">{{ errored_accounts }} account{{ errored_accounts|pluralize }} with errors</span>
+        </div>
+        {% endif %}
+
+        {% if expiring_tokens == 0 and errored_accounts == 0 %}
+        <div class="flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+          <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+          <span class="text-xs text-green-700 dark:text-green-400">All platforms healthy</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Quick Stats</h3>
+      <dl class="space-y-2">
+        <div class="flex items-center justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Total Posts</dt>
+          <dd class="text-sm font-semibold text-gray-900 dark:text-white">{{ total_posts|format_number }}</dd>
+        </div>
+        <div class="flex items-center justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Published</dt>
+          <dd class="text-sm font-semibold text-green-600 dark:text-green-400">{{ total_published|format_number }}</dd>
+        </div>
+        <div class="flex items-center justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Content Seeds</dt>
+          <dd class="text-sm font-semibold text-gray-900 dark:text-white">{{ total_seeds|format_number }}</dd>
+        </div>
+        <div class="flex items-center justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Interactions</dt>
+          <dd class="text-sm font-semibold text-gray-900 dark:text-white">{{ total_interactions|format_number }}</dd>
+        </div>
+        <div class="flex items-center justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Superfans</dt>
+          <dd class="text-sm font-semibold text-purple-600 dark:text-purple-400">{{ total_superfans }}</dd>
+        </div>
+      </dl>
+    </div>
+
+    <!-- Recent Failures -->
+    {% if recent_failures %}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-red-200 dark:border-red-900/50 p-4 sm:p-5 shadow-sm">
+      <h3 class="text-sm font-semibold text-red-700 dark:text-red-400 mb-3">Recent Failures</h3>
+      <div class="space-y-2">
+        {% for post in recent_failures %}
+        <div class="text-xs">
+          <div class="flex items-center gap-1.5">
+            <span class="font-medium text-gray-900 dark:text-white">{{ post.user.email|truncatechars:20 }}</span>
+            <span class="text-gray-400">→</span>
+            <span class="text-gray-500 dark:text-gray-400">{{ post.social_account.platform|default:"unknown" }}</span>
+          </div>
+          <p class="text-gray-400 dark:text-gray-500 mt-0.5 truncate">{{ post.content_text|truncatechars:60 }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+  // ── Chart.js Defaults ──────────────────────────────────────────────
+  const isDark = document.documentElement.classList.contains('dark');
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const textColor = isDark ? '#9ca3af' : '#6b7280';
+
+  Chart.defaults.color = textColor;
+  Chart.defaults.borderColor = gridColor;
+  Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+  Chart.defaults.font.size = 11;
+  Chart.defaults.plugins.legend.display = false;
+  Chart.defaults.scales.linear = Chart.defaults.scales.linear || {};
+  Chart.defaults.elements.line.tension = 0.3;
+  Chart.defaults.elements.point.radius = 0;
+  Chart.defaults.elements.point.hoverRadius = 4;
+
+  // ── User Growth Chart ──────────────────────────────────────────────
+  const userGrowthData = {{ user_growth_json|safe }};
+  new Chart(document.getElementById('userGrowthChart'), {
+    type: 'line',
+    data: {
+      labels: userGrowthData.map(d => {
+        const dt = new Date(d.date);
+        return dt.toLocaleDateString('en', {month: 'short', day: 'numeric'});
+      }),
+      datasets: [{
+        label: 'Total Users',
+        data: userGrowthData.map(d => d.total),
+        borderColor: '#4c6ef5',
+        backgroundColor: 'rgba(76, 110, 245, 0.1)',
+        fill: true,
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { grid: { display: false } },
+        y: { beginAtZero: true, grid: { color: gridColor } }
+      },
+      plugins: { tooltip: { mode: 'index', intersect: false } }
+    }
+  });
+
+  // ── Content Pipeline Chart ─────────────────────────────────────────
+  const pipelineData = {{ content_pipeline_json|safe }};
+  new Chart(document.getElementById('contentPipelineChart'), {
+    type: 'bar',
+    data: {
+      labels: pipelineData.map(d => {
+        const dt = new Date(d.date);
+        return dt.toLocaleDateString('en', {weekday: 'short'});
+      }),
+      datasets: [
+        {
+          label: 'Seeds',
+          data: pipelineData.map(d => d.seeds),
+          backgroundColor: '#93c5fd',
+          borderRadius: 3,
+        },
+        {
+          label: 'Generated',
+          data: pipelineData.map(d => d.generated),
+          backgroundColor: '#4c6ef5',
+          borderRadius: 3,
+        },
+        {
+          label: 'Published',
+          data: pipelineData.map(d => d.published),
+          backgroundColor: '#22c55e',
+          borderRadius: 3,
+        },
+        {
+          label: 'Failed',
+          data: pipelineData.map(d => d.failed),
+          backgroundColor: '#ef4444',
+          borderRadius: 3,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { stacked: true, grid: { display: false } },
+        y: { stacked: true, beginAtZero: true, grid: { color: gridColor } }
+      },
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { boxWidth: 8, usePointStyle: true, pointStyle: 'circle', padding: 8, font: { size: 10 } } },
+        tooltip: { mode: 'index' }
+      }
+    }
+  });
+
+  // ── Revenue Chart ──────────────────────────────────────────────────
+  const revenueData = {{ revenue_json|safe }};
+  new Chart(document.getElementById('revenueChart'), {
+    type: 'line',
+    data: {
+      labels: revenueData.map(d => {
+        const dt = new Date(d.date);
+        return dt.toLocaleDateString('en', {month: 'short', day: 'numeric'});
+      }),
+      datasets: [{
+        label: 'Revenue (KES)',
+        data: revenueData.map(d => d.mpesa),
+        borderColor: '#22c55e',
+        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+        fill: true,
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { grid: { display: false } },
+        y: { beginAtZero: true, grid: { color: gridColor } }
+      },
+      plugins: { tooltip: { mode: 'index', intersect: false, callbacks: {
+        label: ctx => `KES ${ctx.parsed.y.toLocaleString()}`
+      }}}
+    }
+  });
+</script>
+{% endblock %}

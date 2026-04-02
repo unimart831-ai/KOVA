@@ -1,0 +1,182 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ total_count }} user{{ total_count|pluralize }} total</p>{% endblock %}
+
+{% block content %}
+<!-- ── Search & Filters ──────────────────────────────────────────────── -->
+<form method="get" class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm mb-6">
+  <div class="flex flex-wrap gap-3 items-end">
+    <div class="flex-1 min-w-[200px]">
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Search</label>
+      <input type="text" name="q" value="{{ search }}" placeholder="Email, name, or company…"
+             class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500 focus:border-transparent">
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Plan</label>
+      <select name="plan" class="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <option value="">All Plans</option>
+        {% for value, label in plan_choices %}
+        <option value="{{ value }}" {% if current_plan == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Status</label>
+      <select name="status" class="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <option value="">All Statuses</option>
+        {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Industry</label>
+      <select name="industry" class="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <option value="">All Industries</option>
+        {% for value, label in industry_choices %}
+        <option value="{{ value }}" {% if current_industry == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Onboarded</label>
+      <select name="onboarded" class="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <option value="">All</option>
+        <option value="yes" {% if current_onboarded == "yes" %}selected{% endif %}>Yes</option>
+        <option value="no" {% if current_onboarded == "no" %}selected{% endif %}>No</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Staff</label>
+      <select name="is_staff" class="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <option value="">All</option>
+        <option value="yes" {% if current_staff == "yes" %}selected{% endif %}>Staff</option>
+        <option value="no" {% if current_staff == "no" %}selected{% endif %}>Non-Staff</option>
+      </select>
+    </div>
+    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors">Filter</button>
+    <a href="{% url 'admin_dashboard:user_list' %}" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Reset</a>
+  </div>
+</form>
+
+<!-- ── Actions Bar ────────────────────────────────────────────────────── -->
+<div class="flex items-center justify-between mb-4">
+  <p class="text-sm text-gray-500 dark:text-gray-400">
+    Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ total_count }}
+  </p>
+  <a href="{% url 'admin_dashboard:user_export' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    Export CSV
+  </a>
+</div>
+
+<!-- ── Users Table ───────────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          {% with base_url="admin_dashboard:user_list" %}
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <a href="?sort={% if current_sort == 'email' %}-email{% else %}email{% endif %}&q={{ search }}&plan={{ current_plan }}&status={{ current_status }}&industry={{ current_industry }}" class="hover:text-gray-900 dark:hover:text-white">
+              User {% if current_sort == 'email' %}↑{% elif current_sort == '-email' %}↓{% endif %}
+            </a>
+          </th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Plan</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Industry</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">
+            <a href="?sort={% if current_sort == '-post_count' %}post_count{% else %}-post_count{% endif %}&q={{ search }}&plan={{ current_plan }}&status={{ current_status }}&industry={{ current_industry }}" class="hover:text-gray-900 dark:hover:text-white">
+              Posts {% if current_sort == '-post_count' %}↓{% elif current_sort == 'post_count' %}↑{% endif %}
+            </a>
+          </th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">Platforms</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <a href="?sort={% if current_sort == '-date_joined' %}date_joined{% else %}-date_joined{% endif %}&q={{ search }}&plan={{ current_plan }}&status={{ current_status }}&industry={{ current_industry }}" class="hover:text-gray-900 dark:hover:text-white">
+              Joined {% if current_sort == '-date_joined' %}↓{% elif current_sort == 'date_joined' %}↑{% endif %}
+            </a>
+          </th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">Flags</th>
+          {% endwith %}
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for user in page_obj %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <td class="px-4 py-3">
+            <a href="{% url 'admin_dashboard:user_detail' pk=user.pk %}" class="group">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-kova-100 dark:bg-kova-900/30 flex items-center justify-center text-xs font-bold text-kova-700 dark:text-kova-300 shrink-0">
+                  {{ user.first_initial }}
+                </div>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-gray-900 dark:text-white truncate group-hover:text-kova-600 dark:group-hover:text-kova-400">{{ user.full_name|default:user.email }}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ user.email }}</p>
+                </div>
+              </div>
+            </a>
+          </td>
+          <td class="px-4 py-3">
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {{ user.profile.plan|status_color }}">
+              {{ user.profile.get_plan_display }}
+            </span>
+          </td>
+          <td class="px-4 py-3">
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {{ user.profile.subscription_status|status_color }}">
+              {{ user.profile.subscription_status|default:"none" }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">{{ user.profile.get_industry_display|default:"—" }}</td>
+          <td class="px-4 py-3 text-center text-sm font-medium text-gray-900 dark:text-white">{{ user.post_count }}</td>
+          <td class="px-4 py-3 text-center text-sm font-medium text-gray-900 dark:text-white">{{ user.platform_count }}</td>
+          <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{{ user.date_joined|date:"M j, Y" }}</td>
+          <td class="px-4 py-3 text-center">
+            <div class="flex items-center justify-center gap-1">
+              {% if user.is_staff %}
+              <span class="px-1.5 py-0.5 text-[10px] font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded">STAFF</span>
+              {% endif %}
+              {% if user.onboarding_completed %}
+              <span class="w-2 h-2 bg-green-500 rounded-full" title="Onboarded"></span>
+              {% else %}
+              <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full" title="Not onboarded"></span>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+            No users found matching your criteria.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
+    <div class="text-xs text-gray-500 dark:text-gray-400">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </div>
+    <div class="flex items-center gap-1">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}&q={{ search }}&plan={{ current_plan }}&status={{ current_status }}&industry={{ current_industry }}&sort={{ current_sort }}"
+         class="px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700">
+        ← Prev
+      </a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}&q={{ search }}&plan={{ current_plan }}&status={{ current_status }}&industry={{ current_industry }}&sort={{ current_sort }}"
+         class="px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700">
+        Next →
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

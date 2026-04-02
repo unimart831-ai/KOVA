@@ -1,0 +1,138 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Format × tone performance patterns across {{ total_posts }} published posts</p>{% endblock %}
+
+{% block content %}
+<!-- ── Back to Analytics ─────────────────────────────────────────────── -->
+<a href="{% url 'admin_dashboard:analytics_overview' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4">
+  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+  Analytics Overview
+</a>
+
+<!-- ── Format Stats + Tone Stats ─────────────────────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+  <!-- Format Performance -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Performance by Format</h2>
+      <p class="text-xs text-gray-400 mt-0.5">Which content formats get the most engagement</p>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-8">#</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Format</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Posts</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Avg Rate</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Best</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for f in format_stats %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+            <td class="px-4 py-2.5 text-xs text-gray-400">{{ forloop.counter }}</td>
+            <td class="px-4 py-2.5">
+              <span class="text-xs font-medium text-gray-900 dark:text-white capitalize">{{ f.format }}</span>
+            </td>
+            <td class="px-4 py-2.5 text-right text-xs text-gray-600 dark:text-gray-400">{{ f.count }}</td>
+            <td class="px-4 py-2.5 text-right text-xs font-semibold {% if f.avg_rate >= 5 %}text-emerald-600 dark:text-emerald-400{% else %}text-gray-900 dark:text-white{% endif %}">{{ f.avg_rate }}%</td>
+            <td class="px-4 py-2.5 text-right text-xs text-gray-500 dark:text-gray-400">{{ f.best }}%</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-400">No format data yet</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tone Performance -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Performance by Tone</h2>
+      <p class="text-xs text-gray-400 mt-0.5">Which tones resonate best with audiences</p>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-8">#</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tone</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Posts</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Avg Rate</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Best</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for t in tone_stats %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+            <td class="px-4 py-2.5 text-xs text-gray-400">{{ forloop.counter }}</td>
+            <td class="px-4 py-2.5">
+              <span class="text-xs font-medium text-gray-900 dark:text-white capitalize">{{ t.tone }}</span>
+            </td>
+            <td class="px-4 py-2.5 text-right text-xs text-gray-600 dark:text-gray-400">{{ t.count }}</td>
+            <td class="px-4 py-2.5 text-right text-xs font-semibold {% if t.avg_rate >= 5 %}text-emerald-600 dark:text-emerald-400{% else %}text-gray-900 dark:text-white{% endif %}">{{ t.avg_rate }}%</td>
+            <td class="px-4 py-2.5 text-right text-xs text-gray-500 dark:text-gray-400">{{ t.best }}%</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-400">No tone data yet</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── Format × Tone Heatmap Table ───────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Format × Tone: All Combinations</h2>
+    <p class="text-xs text-gray-400 mt-0.5">Sorted by average engagement rate — higher is better</p>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">#</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Format</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tone</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Posts</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Avg Engagement</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Performance</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for h in heatmap_data %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-2.5 text-xs text-gray-400">{{ forloop.counter }}</td>
+          <td class="px-4 py-2.5">
+            <span class="text-xs font-medium text-gray-900 dark:text-white capitalize">{{ h.format }}</span>
+          </td>
+          <td class="px-4 py-2.5">
+            <span class="text-xs text-gray-700 dark:text-gray-300 capitalize">{{ h.tone }}</span>
+          </td>
+          <td class="px-4 py-2.5 text-right text-xs text-gray-600 dark:text-gray-400">{{ h.count }}</td>
+          <td class="px-4 py-2.5 text-right text-xs font-semibold {% if h.avg_rate >= 5 %}text-emerald-600 dark:text-emerald-400{% elif h.avg_rate >= 2 %}text-amber-600 dark:text-amber-400{% else %}text-gray-600 dark:text-gray-400{% endif %}">{{ h.avg_rate }}%</td>
+          <td class="px-4 py-2.5 w-32">
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div class="h-2 rounded-full {% if h.avg_rate >= 5 %}bg-emerald-500{% elif h.avg_rate >= 2 %}bg-amber-500{% else %}bg-gray-400{% endif %}" style="width: {{ h.avg_rate|floatformat:0 }}0%"></div>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="px-4 py-12 text-center text-sm text-gray-400">No content DNA combinations found — posts need published status, metrics, and DNA tags</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

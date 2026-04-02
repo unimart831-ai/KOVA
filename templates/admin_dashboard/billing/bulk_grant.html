@@ -1,0 +1,178 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Upgrade multiple users at once — partnerships, promos, comps</p>{% endblock %}
+
+{% block content %}
+<a href="{% url 'admin_dashboard:subscription_management' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4">
+  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+  Subscription Management
+</a>
+
+<!-- ── Django Messages ────────────────────────────────────────────────── -->
+{% if messages %}
+<div class="mb-4 space-y-2">
+  {% for message in messages %}
+  <div class="px-4 py-3 rounded-lg text-sm {% if message.tags == 'success' %}bg-emerald-50 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800{% elif message.tags == 'error' %}bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800{% else %}bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800{% endif %}">
+    {{ message }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if step == "confirm" %}
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<!-- ── STEP 2: Preview & Confirm ─────────────────────────────────────── -->
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden mb-6">
+  <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Preview: Bulk Grant</h2>
+    <p class="text-xs text-gray-400 mt-0.5">Review before applying changes</p>
+  </div>
+
+  <!-- Summary -->
+  <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/30">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+      <div>
+        <span class="text-xs text-gray-500 dark:text-gray-400">Plan</span>
+        <p class="font-semibold text-gray-900 dark:text-white">{{ plan_label }}</p>
+      </div>
+      <div>
+        <span class="text-xs text-gray-500 dark:text-gray-400">Duration</span>
+        <p class="font-semibold text-gray-900 dark:text-white">{{ days }} days</p>
+      </div>
+      <div>
+        <span class="text-xs text-gray-500 dark:text-gray-400">Users Found</span>
+        <p class="font-semibold text-emerald-600 dark:text-emerald-400">{{ total_found }}</p>
+      </div>
+      <div>
+        <span class="text-xs text-gray-500 dark:text-gray-400">Not Found</span>
+        <p class="font-semibold {% if total_not_found %}text-red-500{% else %}text-gray-400{% endif %}">{{ total_not_found }}</p>
+      </div>
+    </div>
+    <div class="mt-3">
+      <span class="text-xs text-gray-500 dark:text-gray-400">Reason</span>
+      <p class="text-sm text-gray-900 dark:text-white">{{ reason }}</p>
+    </div>
+  </div>
+
+  <!-- Users table -->
+  {% if preview_users %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Current Plan</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Current Status</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Will Change To</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for u in preview_users %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-3">
+            <span class="text-sm font-medium text-gray-900 dark:text-white">{{ u.full_name|default:u.email }}</span>
+            <p class="text-xs text-gray-400">{{ u.email }}</p>
+          </td>
+          <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ u.profile.get_plan_display }}</td>
+          <td class="px-4 py-3">
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {{ u.profile.subscription_status|status_color }}">{{ u.profile.subscription_status }}</span>
+          </td>
+          <td class="px-4 py-3">
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">{{ plan_label }} · Active · {{ days }}d</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Not found emails -->
+  {% if not_found_emails %}
+  <div class="px-5 py-3 border-t border-gray-200 dark:border-gray-800 bg-red-50 dark:bg-red-900/10">
+    <p class="text-xs font-medium text-red-600 dark:text-red-400 mb-1">Emails not found (will be skipped):</p>
+    <p class="text-xs text-red-500 dark:text-red-400">{{ not_found_emails|join:", " }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Confirm form -->
+  <div class="px-5 py-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
+    <a href="{% url 'admin_dashboard:bulk_grant' %}" class="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white">← Back to edit</a>
+    {% if total_found > 0 %}
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="step" value="confirm">
+      <input type="hidden" name="plan" value="{{ plan }}">
+      <input type="hidden" name="days" value="{{ days }}">
+      <input type="hidden" name="reason" value="{{ reason }}">
+      <input type="hidden" name="emails" value="{{ emails_raw }}">
+      <button type="submit" class="px-5 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
+              onclick="return confirm('Grant {{ plan_label }} access to {{ total_found }} user{{ total_found|pluralize }} for {{ days }} days?')">
+        Confirm &amp; Apply to {{ total_found }} User{{ total_found|pluralize }}
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+{% else %}
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<!-- ── STEP 1: Input Form ────────────────────────────────────────────── -->
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<form method="post" class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  {% csrf_token %}
+  <input type="hidden" name="step" value="preview">
+
+  <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Grant Plan Access</h2>
+    <p class="text-xs text-gray-400 mt-0.5">Enter user emails and specify the plan, duration, and reason</p>
+  </div>
+
+  <div class="p-5 space-y-5">
+    <!-- Plan + Days row -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Plan Tier *</label>
+        <select name="plan" required class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500 focus:border-transparent">
+          <option value="">Select plan…</option>
+          {% for value, label in plan_choices %}
+          <option value="{{ value }}" {% if form_plan == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Duration (days) *</label>
+        <input type="number" name="days" min="1" max="730" value="{{ form_days|default:'30' }}" required
+               class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500 focus:border-transparent">
+        <p class="text-[10px] text-gray-400 mt-1">Common: 30 (1 month), 90 (quarter), 365 (year)</p>
+      </div>
+    </div>
+
+    <!-- Reason -->
+    <div>
+      <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Reason *</label>
+      <input type="text" name="reason" value="{{ form_reason|default:'' }}" required
+             placeholder="e.g. Safaricom partnership batch · Q2 promo · Conference attendee comp"
+             class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500 focus:border-transparent">
+    </div>
+
+    <!-- Emails -->
+    <div>
+      <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">User Emails *</label>
+      <textarea name="emails" rows="8" required
+                placeholder="Enter one email per line, e.g.:&#10;john@company.com&#10;jane@startup.co&#10;team@partner.org"
+                class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500 focus:border-transparent font-mono">{{ form_emails|default:'' }}</textarea>
+      <p class="text-[10px] text-gray-400 mt-1">One email per line. Comma-separated also works. Duplicates are automatically removed.</p>
+    </div>
+  </div>
+
+  <div class="px-5 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/30 flex items-center justify-between">
+    <p class="text-xs text-gray-400">Changes will be previewed before applying.</p>
+    <button type="submit" class="px-5 py-2 text-sm font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors">Preview Changes</button>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

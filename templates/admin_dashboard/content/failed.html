@@ -1,0 +1,97 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ total_failed_posts }} failed post{{ total_failed_posts|pluralize }} · {{ total_failed_seeds }} failed seed{{ total_failed_seeds|pluralize }}</p>{% endblock %}
+
+{% block content %}
+<!-- ── Back to Pipeline ──────────────────────────────────────────────── -->
+<a href="{% url 'admin_dashboard:content_overview' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4">
+  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+  Content Pipeline
+</a>
+
+<!-- ── Failed Posts ──────────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-red-200 dark:border-red-900/50 shadow-sm mb-6">
+  <div class="px-4 py-3 border-b border-red-200 dark:border-red-900/50">
+    <h3 class="text-sm font-semibold text-red-700 dark:text-red-400">Failed Posts ({{ total_failed_posts }})</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Content</th>
+          <th class="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">User</th>
+          <th class="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Platform</th>
+          <th class="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Error</th>
+          <th class="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">When</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for post in failed_posts %}
+        <tr class="hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-colors">
+          <td class="px-4 py-2 max-w-[200px]">
+            <a href="{% url 'admin_dashboard:post_detail_admin' pk=post.pk %}" class="text-sm text-gray-900 dark:text-white hover:text-kova-600 dark:hover:text-kova-400 truncate block">
+              {{ post.content_text|truncatechars:50 }}
+            </a>
+          </td>
+          <td class="px-4 py-2">
+            <a href="{% url 'admin_dashboard:user_detail' pk=post.user.pk %}" class="text-xs text-gray-600 dark:text-gray-400 hover:text-kova-600">
+              {{ post.user.email|truncatechars:20 }}
+            </a>
+          </td>
+          <td class="px-4 py-2 text-xs text-gray-500 dark:text-gray-400 capitalize">
+            {{ post.social_account.platform|platform_icon }} {{ post.social_account.platform|default:"—" }}
+          </td>
+          <td class="px-4 py-2 max-w-[250px]">
+            <p class="text-xs text-red-600 dark:text-red-400 truncate">{{ post.error_message|default:"No error message" }}</p>
+          </td>
+          <td class="px-4 py-2 text-xs text-gray-500 dark:text-gray-400">{{ post.updated_at|timesince }} ago</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No failed posts</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Failed Seeds ──────────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-red-200 dark:border-red-900/50 shadow-sm">
+  <div class="px-4 py-3 border-b border-red-200 dark:border-red-900/50">
+    <h3 class="text-sm font-semibold text-red-700 dark:text-red-400">Failed Seeds ({{ total_failed_seeds }})</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Idea</th>
+          <th class="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">User</th>
+          <th class="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Error</th>
+          <th class="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">When</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for seed in failed_seeds %}
+        <tr class="hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-colors">
+          <td class="px-4 py-2 max-w-[250px]">
+            <p class="text-sm text-gray-900 dark:text-white truncate">{{ seed.idea|truncatechars:60 }}</p>
+          </td>
+          <td class="px-4 py-2">
+            <a href="{% url 'admin_dashboard:user_detail' pk=seed.user.pk %}" class="text-xs text-gray-600 dark:text-gray-400 hover:text-kova-600">
+              {{ seed.user.email|truncatechars:20 }}
+            </a>
+          </td>
+          <td class="px-4 py-2 max-w-[300px]">
+            <p class="text-xs text-red-600 dark:text-red-400 truncate">{{ seed.error_message|default:"No error message" }}</p>
+          </td>
+          <td class="px-4 py-2 text-xs text-gray-500 dark:text-gray-400">{{ seed.updated_at|timesince }} ago</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No failed seeds</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

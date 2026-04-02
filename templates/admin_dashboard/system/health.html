@@ -1,0 +1,327 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Infrastructure monitoring &amp; diagnostics</p>{% endblock %}
+
+{% block content %}
+<!-- ── Component Status Cards ────────────────────────────────────────── -->
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+  <!-- Web Server -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <div class="flex items-center justify-between">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Web Server</p>
+      <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+    </div>
+    <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-1">Online</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">Django {{ django_version|default:"5.x" }}</p>
+  </div>
+
+  <!-- Database -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <div class="flex items-center justify-between">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Database</p>
+      <span class="w-2.5 h-2.5 rounded-full {% if db_status.status == 'online' %}bg-emerald-500{% else %}bg-red-500 animate-pulse{% endif %}"></span>
+    </div>
+    <p class="text-lg font-bold {% if db_status.status == 'online' %}text-emerald-600 dark:text-emerald-400{% else %}text-red-600 dark:text-red-400{% endif %} mt-1">{{ db_status.status|title }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">{{ db_status.engine|default:"—" }}</p>
+  </div>
+
+  <!-- Redis -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <div class="flex items-center justify-between">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Redis / Cache</p>
+      <span class="w-2.5 h-2.5 rounded-full {% if redis_status.status == 'online' %}bg-emerald-500{% elif redis_status.status == 'degraded' %}bg-amber-500{% else %}bg-red-500 animate-pulse{% endif %}"></span>
+    </div>
+    <p class="text-lg font-bold {% if redis_status.status == 'online' %}text-emerald-600 dark:text-emerald-400{% elif redis_status.status == 'degraded' %}text-amber-600 dark:text-amber-400{% else %}text-red-600 dark:text-red-400{% endif %} mt-1">{{ redis_status.status|title }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">{% if redis_status.error %}{{ redis_status.error|truncatechars:40 }}{% else %}Cache operational{% endif %}</p>
+  </div>
+
+  <!-- Celery Worker -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <div class="flex items-center justify-between">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Celery Worker</p>
+      <span class="w-2.5 h-2.5 rounded-full {% if celery_status.status == 'online' %}bg-emerald-500{% else %}bg-red-500 animate-pulse{% endif %}"></span>
+    </div>
+    <p class="text-lg font-bold {% if celery_status.status == 'online' %}text-emerald-600 dark:text-emerald-400{% else %}text-red-600 dark:text-red-400{% endif %} mt-1">{{ celery_status.status|title }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">{{ celery_status.workers }} worker{{ celery_status.workers|pluralize }}, {{ celery_status.active_tasks|default:0 }} active</p>
+  </div>
+
+  <!-- Celery Beat -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <div class="flex items-center justify-between">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Celery Beat</p>
+      <span class="w-2.5 h-2.5 rounded-full {% if beat_status.status == 'online' %}bg-emerald-500{% elif beat_status.status == 'stale' %}bg-amber-500{% else %}bg-gray-400{% endif %}"></span>
+    </div>
+    <p class="text-lg font-bold {% if beat_status.status == 'online' %}text-emerald-600 dark:text-emerald-400{% elif beat_status.status == 'stale' %}text-amber-600 dark:text-amber-400{% else %}text-gray-500{% endif %} mt-1">{{ beat_status.status|title }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">{{ beat_status.enabled_tasks }} scheduled task{{ beat_status.enabled_tasks|pluralize }}</p>
+  </div>
+</div>
+
+<!-- ── Error Summary + Expiring Tokens ───────────────────────────────── -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Agent Errors (24h)</p>
+    <p class="text-2xl font-bold {% if agent_errors_24h %}text-red-600 dark:text-red-400{% else %}text-gray-900 dark:text-white{% endif %} mt-1">{{ agent_errors_24h }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Post Failures (24h)</p>
+    <p class="text-2xl font-bold {% if post_errors_24h %}text-red-600 dark:text-red-400{% else %}text-gray-900 dark:text-white{% endif %} mt-1">{{ post_errors_24h }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Platform Errors</p>
+    <p class="text-2xl font-bold {% if platform_errors %}text-amber-600 dark:text-amber-400{% else %}text-gray-900 dark:text-white{% endif %} mt-1">{{ platform_errors }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Expiring Tokens (&lt;24h)</p>
+    <p class="text-2xl font-bold {% if expiring_soon %}text-red-600 dark:text-red-400{% else %}text-gray-900 dark:text-white{% endif %} mt-1">{{ expiring_soon }}</p>
+  </div>
+</div>
+
+<!-- ── Celery Beat Schedule + Error Trend ─────────────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+  <!-- Beat Schedule -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Celery Beat Schedule</h2>
+      <p class="text-xs text-gray-400 mt-0.5">Periodic tasks and their run status</p>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Task</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Schedule</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Last Run</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Runs</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for t in beat_tasks %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+            <td class="px-4 py-2.5">
+              <p class="text-xs font-medium text-gray-900 dark:text-white">{{ t.name }}</p>
+              <p class="text-[10px] text-gray-400 font-mono">{{ t.task }}</p>
+            </td>
+            <td class="px-4 py-2.5 text-xs text-gray-500 dark:text-gray-400">{{ t.schedule }}</td>
+            <td class="px-4 py-2.5 text-xs text-gray-500 dark:text-gray-400">
+              {% if t.last_run %}{{ t.last_run|timesince }} ago{% else %}<span class="text-gray-300 dark:text-gray-600">Never</span>{% endif %}
+            </td>
+            <td class="px-4 py-2.5 text-xs text-right text-gray-500 dark:text-gray-400">{{ t.total_run_count|format_number }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="px-4 py-8 text-center text-sm text-gray-400">No scheduled tasks found</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Error Trend Chart -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Error Trend (48h)</h2>
+        <p class="text-xs text-gray-400 mt-0.5">Agent failures per hour</p>
+      </div>
+      <span class="text-xs font-medium {% if total_errors_24h %}text-red-500{% else %}text-emerald-500{% endif %}">
+        {{ total_errors_24h }} errors (24h)
+      </span>
+    </div>
+    <canvas id="errorTrendChart" height="200"></canvas>
+  </div>
+</div>
+
+<!-- ── LLM Provider Status ───────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden mb-6">
+  <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">LLM Provider Status (24h)</h2>
+    <p class="text-xs text-gray-400 mt-0.5">Model health, latency, and error rates</p>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Model</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Calls (24h)</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Errors</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Success Rate</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Avg Latency</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for p in llm_providers %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-3">
+            <span class="text-xs font-mono text-gray-900 dark:text-white">{{ p.model }}</span>
+          </td>
+          <td class="px-4 py-3">
+            {% if p.status == 'online' %}
+            <span class="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online
+            </span>
+            {% elif p.status == 'degraded' %}
+            <span class="inline-flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Degraded
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1 text-xs font-medium text-gray-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Idle
+            </span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">{{ p.total_24h }}</td>
+          <td class="px-4 py-3 text-right text-sm {% if p.failed_24h %}text-red-500{% else %}text-gray-600 dark:text-gray-400{% endif %}">{{ p.failed_24h }}</td>
+          <td class="px-4 py-3 text-right text-sm {% if p.success_rate >= 95 %}text-emerald-600{% elif p.success_rate >= 80 %}text-amber-600{% else %}text-red-500{% endif %}">
+            {% if p.total_24h %}{{ p.success_rate }}%{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">
+            {% if p.avg_latency %}{{ p.avg_latency }}s{% else %}—{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-400">No LLM provider data in the last 24 hours</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Recent Errors + Database Stats ─────────────────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+  <!-- Recent Errors -->
+  <div class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+      <div>
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Recent Agent Errors (24h)</h2>
+      </div>
+      <a href="{% url 'admin_dashboard:error_log' %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">View all →</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Time</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Agent</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Error</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for err in recent_errors %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+            <td class="px-4 py-2.5 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ err.created_at|timesince }} ago</td>
+            <td class="px-4 py-2.5">
+              <span class="text-xs font-medium text-gray-900 dark:text-white capitalize">{{ err.agent_type }}</span>
+              <span class="text-[10px] text-gray-400 ml-1">{{ err.action_type }}</span>
+            </td>
+            <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">{{ err.user.email|default:"—" }}</td>
+            <td class="px-4 py-2.5 text-xs text-red-500" title="{{ err.error_message }}">{{ err.error_message|truncatechars:60 }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="px-4 py-8 text-center text-sm text-gray-400">No errors in the last 24 hours 🎉</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Database Stats -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Database Records</h2>
+      <p class="text-xs text-gray-400 mt-0.5">{{ total_records|format_number }} total rows</p>
+    </div>
+    <div class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for s in db_stats %}
+      <div class="flex items-center justify-between px-4 py-2.5">
+        <span class="text-xs text-gray-600 dark:text-gray-400">{{ s.table }}</span>
+        <span class="text-xs font-semibold text-gray-900 dark:text-white">{{ s.count|format_number }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── Quick Links ───────────────────────────────────────────────────── -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  <a href="{% url 'admin_dashboard:error_log' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-red-400 dark:hover:border-red-500 transition-all">
+    <div class="w-9 h-9 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+      <svg class="w-4.5 h-4.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.072 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+    </div>
+    <div>
+      <p class="text-sm font-medium text-gray-900 dark:text-white">Full Error Log</p>
+      <p class="text-xs text-gray-400">Search &amp; filter all system errors</p>
+    </div>
+  </a>
+  <a href="{% url 'admin_dashboard:activity_log' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-kova-400 dark:hover:border-kova-500 transition-all">
+    <div class="w-9 h-9 bg-kova-100 dark:bg-kova-900/30 rounded-lg flex items-center justify-center">
+      <svg class="w-4.5 h-4.5 text-kova-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    </div>
+    <div>
+      <p class="text-sm font-medium text-gray-900 dark:text-white">Activity Log</p>
+      <p class="text-xs text-gray-400">Unified cross-model event stream</p>
+    </div>
+  </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Error Trend Chart
+  const trendData = {{ error_trend_json|safe }};
+  const labels = trendData.map(d => d.hour);
+  const counts = trendData.map(d => d.count);
+  const maxVal = Math.max(...counts, 1);
+
+  if (document.getElementById('errorTrendChart')) {
+    new Chart(document.getElementById('errorTrendChart'), {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Errors',
+          data: counts,
+          backgroundColor: counts.map(c => c > 0 ? '#ef4444' : '#e5e7eb'),
+          borderWidth: 0,
+          borderRadius: 2,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: (items) => items[0].label,
+              label: (item) => `${item.raw} error${item.raw !== 1 ? 's' : ''}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            display: true,
+            ticks: { maxTicksLimit: 12, font: { size: 10 }, color: '#9ca3af' },
+            grid: { display: false }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: { stepSize: 1, font: { size: 10 }, color: '#9ca3af' },
+            grid: { color: 'rgba(156, 163, 175, 0.1)' }
+          }
+        }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

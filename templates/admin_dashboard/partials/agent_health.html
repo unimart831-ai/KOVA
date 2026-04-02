@@ -1,0 +1,43 @@
+{% load dashboard_tags %}
+<div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
+  {% for agent in agent_health %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border
+    {% if agent.status == 'green' %}border-green-200 dark:border-green-900/50
+    {% elif agent.status == 'yellow' %}border-yellow-200 dark:border-yellow-900/50
+    {% else %}border-red-200 dark:border-red-900/50{% endif %}
+    p-4 shadow-sm">
+
+    <!-- Status dot + name -->
+    <div class="flex items-center gap-2 mb-2">
+      <div class="w-2.5 h-2.5 rounded-full
+        {% if agent.status == 'green' %}bg-green-500
+        {% elif agent.status == 'yellow' %}bg-yellow-500 animate-pulse-dot
+        {% else %}bg-red-500 animate-pulse-dot{% endif %}"></div>
+      <span class="text-sm font-semibold text-gray-900 dark:text-white uppercase">{{ agent.name }}</span>
+    </div>
+
+    <!-- Metrics -->
+    <div class="space-y-1.5">
+      <div class="flex items-center justify-between">
+        <span class="text-[10px] text-gray-400 dark:text-gray-500 uppercase">Success</span>
+        <span class="text-xs font-semibold
+          {% if agent.success_rate >= 95 %}text-green-600 dark:text-green-400
+          {% elif agent.success_rate >= 80 %}text-yellow-600 dark:text-yellow-400
+          {% else %}text-red-600 dark:text-red-400{% endif %}">{{ agent.success_rate }}%</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-[10px] text-gray-400 dark:text-gray-500 uppercase">Runs</span>
+        <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{{ agent.runs_24h }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-[10px] text-gray-400 dark:text-gray-500 uppercase">Avg</span>
+        <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{{ agent.avg_duration_ms|duration_display }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-[10px] text-gray-400 dark:text-gray-500 uppercase">Tokens</span>
+        <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{{ agent.tokens_24h|format_number }}</span>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
