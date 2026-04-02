@@ -215,12 +215,16 @@ def competitor_landscape(request):
             "competitors": [],
         })
 
-    report = generate_landscape_report(request.user)
+    try:
+        report = generate_landscape_report(request.user)
+    except Exception:
+        report = None
+        messages.warning(request, "Could not generate landscape report right now. Try again shortly.")
 
     # Annotate competitors with insight counts for the table
     from django.db.models import Count
     competitors = competitors.annotate(
-        insight_count=Count("competitorinsight", filter=~models.Q(competitorinsight__is_dismissed=True)),
+        insight_count=Count("insights", filter=~models.Q(insights__is_dismissed=True)),
     )
 
     return render(request, "analytics/competitor_landscape.html", {
