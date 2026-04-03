@@ -20,7 +20,6 @@ from django.utils import timezone
 from apps.agents.analyst_agent import analyze_performance, get_content_dna_summary
 from apps.agents.llm import generate, get_model_for_task
 from apps.agents.models import AgentAction, AgentConfig
-from apps.agents.research_agent import discover_trends
 from apps.agents.strategist_agent import get_engagement_report, run_strategy_cycle
 from apps.analytics.competitor_intel import get_competitor_context_for_brief
 from apps.billing.models import get_plan_limits
@@ -120,11 +119,23 @@ def _gather_brief_data(user):
         logger.warning("Content DNA summary failed: %s", e)
         dna_summary = {"winning_attributes": [], "total_analyzed": 0}
 
-    # Trend research from Research Agent
+    # Trend research — use cached Research Agent results (avoid live LLM call)
     try:
-        trends = discover_trends(user)
+        from apps.agents.models import AgentAction as _AA
+        latest_research = (
+            _AA.objects.filter(
+                user=user,
+                agent_type="research",
+                action_type="discover_trends",
+                status=_AA.ActionStatus.COMPLETED,
+            )
+            .order_by("-created_at")
+            .values_list("output_data", flat=True)
+            .first()
+        )
+        trends = latest_research or {"trending_topics": [], "opportunity_briefs": []}
     except Exception as e:
-        logger.warning("Trend discovery failed: %s", e)
+        logger.warning("Trend data retrieval failed: %s", e)
         trends = {"trending_topics": [], "opportunity_briefs": []}
 
     # Engagement report from Strategist Agent

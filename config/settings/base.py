@@ -280,8 +280,9 @@ AGENT_MODELS = {
     "research.angles": env("LLM_MODEL_RESEARCH_ANGLES", default=LLM_MODEL_WORKHORSE),
     # Adapt Agent — data analysis
     "adapt.schedule": env("LLM_MODEL_ADAPT_SCHEDULE", default=LLM_MODEL_FAST),
-    # Strategist (daily brief) — reasoning + synthesis
+    # Strategist — reasoning + synthesis
     "strategist.brief": env("LLM_MODEL_STRATEGIST_BRIEF", default=LLM_MODEL_WORKHORSE),
+    "strategist.decide": env("LLM_MODEL_STRATEGIST_DECIDE", default=LLM_MODEL_WORKHORSE),
 }
 
 # ─── TOKEN COST REGISTRY ─────────────────────────────────────────────────────

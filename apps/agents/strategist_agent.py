@@ -262,9 +262,13 @@ def _make_strategic_decisions(user, inputs):
     company = getattr(profile, "company_name", "") if profile else ""
 
     # Determine how many seeds to create based on posting frequency
-    freq = inputs["user_context"].get("posting_frequency", "daily")
-    freq_map = {"few_weekly": 2, "daily": 3, "multiple_daily": 5}
-    target_posts = freq_map.get(freq, 3)
+    # posting_frequency is an int (posts per week), convert to daily target
+    freq = inputs["user_context"].get("posting_frequency", 5)
+    if isinstance(freq, int):
+        target_posts = max(1, round(freq / 7 * 2))  # ~2 days' worth of seeds
+    else:
+        freq_map = {"few_weekly": 2, "daily": 3, "multiple_daily": 5}
+        target_posts = freq_map.get(freq, 3)
 
     # Account for what's already queued
     already_queued = inputs["pipeline"]["pending_approval"] + inputs["pipeline"]["scheduled_upcoming"]

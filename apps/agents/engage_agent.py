@@ -54,8 +54,9 @@ def fetch_interactions(user):
         # Fetch comments on recent posts
         total_new += _fetch_post_comments(user, account, provider)
 
-        # Fetch mentions
-        total_new += _fetch_mentions(user, account, provider)
+        # Fetch mentions (only for platforms that implement it)
+        if account.platform not in ("facebook", "instagram"):
+            total_new += _fetch_mentions(user, account, provider)
 
     if total_new > 0:
         logger.info("Fetched %d new interactions for %s", total_new, user.email)

@@ -8,6 +8,7 @@ import logging
 
 from celery import shared_task
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -24,9 +25,9 @@ def run_daily_research():
 
     from apps.billing.models import get_plan_limits
 
-    # Find users with active research agents who have completed onboarding
+    # Find users with active research agents who have completed onboarding or published posts
     users_with_research = User.objects.filter(
-        onboarding_completed=True,
+        Q(onboarding_completed=True) | Q(posts__status="published"),
         agent_configs__agent_type="research",
         agent_configs__is_active=True,
     ).distinct()
@@ -60,7 +61,7 @@ def run_engage_cycle():
     from apps.billing.models import get_plan_limits
 
     users_with_engage = User.objects.filter(
-        onboarding_completed=True,
+        Q(onboarding_completed=True) | Q(posts__status="published"),
         agent_configs__agent_type="engage",
         agent_configs__is_active=True,
     ).distinct()
@@ -106,7 +107,7 @@ def run_strategy_cycle():
     from apps.billing.models import get_plan_limits
 
     users_with_strategist = User.objects.filter(
-        onboarding_completed=True,
+        Q(onboarding_completed=True) | Q(posts__status="published"),
         agent_configs__agent_type="strategist",
         agent_configs__is_active=True,
     ).distinct()
