@@ -1,0 +1,209 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}{{ team.name }}{% endblock %}
+{% block page_subtitle %}
+  <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
+    <a href="{% url 'teams:list' %}" class="hover:text-kova-600 dark:hover:text-kova-400">Teams</a>
+    <span class="mx-1">/</span> {{ team.name }}
+  </p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+  <!-- Team info card -->
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-base font-semibold text-gray-900 dark:text-white">{{ team.name }}</h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          {{ current_count }} of {{ max_members }} member{{ max_members|pluralize }} &middot;
+          Owner: {{ team.owner.full_name|default:team.owner.email }}
+        </p>
+      </div>
+      {% if member.role != 'owner' %}
+      <form method="post" action="{% url 'teams:leave' team.slug %}" onsubmit="return confirm('Are you sure you want to leave this team?')">
+        {% csrf_token %}
+        <button type="submit" class="text-xs text-red-600 dark:text-red-400 hover:underline">Leave Team</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Members -->
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Members</h3>
+      {% if can_invite %}
+      <button type="button" onclick="document.getElementById('invite-form').classList.toggle('hidden')"
+              class="text-xs text-kova-600 dark:text-kova-400 hover:underline">+ Invite Member</button>
+      {% endif %}
+    </div>
+
+    <!-- Invite form (hidden by default) -->
+    {% if can_invite %}
+    <div id="invite-form" class="hidden px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+      <form method="post" action="{% url 'teams:invite' team.slug %}" class="flex flex-wrap items-end gap-3">
+        {% csrf_token %}
+        <div class="flex-1 min-w-[200px]">
+          <label for="email" class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Email</label>
+          <input type="email" name="email" id="email" required
+                 placeholder="colleague@company.com"
+                 class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-kova-500 focus:border-transparent">
+        </div>
+        <div>
+          <label for="role" class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Role</label>
+          <select name="role" id="role"
+                  class="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-kova-500">
+            <option value="editor" selected>Editor</option>
+            <option value="admin">Admin</option>
+            <option value="viewer">Viewer</option>
+          </select>
+        </div>
+        <button type="submit"
+                class="px-4 py-2 bg-kova-600 hover:bg-kova-700 text-white text-sm font-medium rounded-lg transition-colors">
+          Send Invite
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
+    <!-- Member list -->
+    <div class="divide-y divide-gray-200 dark:divide-gray-700">
+      {% for m in members %}
+      <div class="px-5 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-kova-100 dark:bg-kova-900/30 flex items-center justify-center flex-shrink-0">
+            <span class="text-xs font-semibold text-kova-700 dark:text-kova-300">{{ m.user.full_name|default:m.user.email|truncatechars:2|upper }}</span>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ m.user.full_name|default:m.user.email }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ m.user.email }}</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+            {% if m.role == 'owner' %}bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-300
+            {% elif m.role == 'admin' %}bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300
+            {% elif m.role == 'editor' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300
+            {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+            {{ m.get_role_display }}
+          </span>
+
+          {% if member.can_manage_members and m.role != 'owner' and m.user != request.user %}
+          <div x-data="{ open: false }" class="relative">
+            <button @click="open = !open" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01"/>
+              </svg>
+            </button>
+            <div x-show="open" @click.away="open = false" x-cloak
+                 class="absolute right-0 mt-1 w-44 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 z-10">
+
+              <!-- Role change options -->
+              {% if m.role != 'admin' %}
+              <form method="post" action="{% url 'teams:member_role' team.slug m.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="role" value="admin">
+                <button type="submit" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Make Admin</button>
+              </form>
+              {% endif %}
+
+              {% if m.role != 'editor' %}
+              <form method="post" action="{% url 'teams:member_role' team.slug m.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="role" value="editor">
+                <button type="submit" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Make Editor</button>
+              </form>
+              {% endif %}
+
+              {% if m.role != 'viewer' %}
+              <form method="post" action="{% url 'teams:member_role' team.slug m.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="role" value="viewer">
+                <button type="submit" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Make Viewer</button>
+              </form>
+              {% endif %}
+
+              <div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+
+              <form method="post" action="{% url 'teams:member_remove' team.slug m.id %}"
+                    onsubmit="return confirm('Remove {{ m.user.email }} from the team?')">
+                {% csrf_token %}
+                <button type="submit" class="w-full text-left px-3 py-1.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30">Remove</button>
+              </form>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Pending Invitations -->
+  {% if pending_invitations and member.can_manage_members %}
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Pending Invitations</h3>
+    </div>
+    <div class="divide-y divide-gray-200 dark:divide-gray-700">
+      {% for inv in pending_invitations %}
+      <div class="px-5 py-3 flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-900 dark:text-white">{{ inv.email }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            {{ inv.get_role_display }} &middot; Invited by {{ inv.invited_by.full_name|default:inv.invited_by.email }} &middot;
+            Expires {{ inv.expires_at|timesince }} ago
+          </p>
+        </div>
+        <form method="post" action="{% url 'teams:invitation_cancel' team.slug inv.id %}">
+          {% csrf_token %}
+          <button type="submit" class="text-xs text-red-600 dark:text-red-400 hover:underline">Cancel</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Role guide -->
+  <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Role Permissions</h3>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+      <div>
+        <p class="font-medium text-kova-600 dark:text-kova-400 mb-1">Owner</p>
+        <ul class="space-y-0.5 text-gray-600 dark:text-gray-400">
+          <li>Everything</li>
+          <li>Delete team</li>
+          <li>Manage billing</li>
+        </ul>
+      </div>
+      <div>
+        <p class="font-medium text-purple-600 dark:text-purple-400 mb-1">Admin</p>
+        <ul class="space-y-0.5 text-gray-600 dark:text-gray-400">
+          <li>Approve posts</li>
+          <li>Manage members</li>
+          <li>Create content</li>
+        </ul>
+      </div>
+      <div>
+        <p class="font-medium text-blue-600 dark:text-blue-400 mb-1">Editor</p>
+        <ul class="space-y-0.5 text-gray-600 dark:text-gray-400">
+          <li>Create content</li>
+          <li>Submit for review</li>
+          <li>Edit own posts</li>
+        </ul>
+      </div>
+      <div>
+        <p class="font-medium text-gray-600 dark:text-gray-400 mb-1">Viewer</p>
+        <ul class="space-y-0.5 text-gray-600 dark:text-gray-400">
+          <li>View content</li>
+          <li>View analytics</li>
+          <li>Read-only</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

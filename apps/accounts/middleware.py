@@ -16,6 +16,7 @@ class OnboardingMiddleware:
         "/platforms/connect/",
         "/platforms/callback/",
         "/help/",
+        "/teams/invite/",
         "/admin/",
         "/health/",
         "/static/",

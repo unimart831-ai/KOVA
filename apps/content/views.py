@@ -3,13 +3,14 @@ from collections import defaultdict
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.content.forms import ContentSeedForm, PostEditForm
 from apps.content.models import ContentSeed, Post
 from apps.content.tasks import generate_from_seed
+from apps.teams.permissions import can_approve_post, can_edit_post, get_teammate_ids
 
 
 @login_required
@@ -48,9 +49,11 @@ def content_studio(request):
 
 def _get_studio_posts(user):
     """Return (seed_groups, ungrouped, total_pending) for the studio."""
-    posts = user.posts.filter(
+    visible_user_ids = get_teammate_ids(user)
+    posts = Post.objects.filter(
+        user_id__in=visible_user_ids,
         status__in=["draft", "pending_approval", "rejected"]
-    ).select_related("social_account", "seed").order_by("-created_at")
+    ).select_related("social_account", "seed", "user").order_by("-created_at")
 
     seed_groups = []
     grouped = defaultdict(list)
@@ -152,18 +155,21 @@ def seed_status(request, seed_id):
 @login_required
 def content_queue(request):
     """View scheduled and published posts, grouped by seed where possible."""
-    scheduled = request.user.posts.filter(
+    visible_user_ids = get_teammate_ids(request.user)
+    team_posts = Post.objects.filter(user_id__in=visible_user_ids)
+
+    scheduled = team_posts.filter(
         status__in=["approved", "scheduled"]
-    ).select_related("social_account", "seed").order_by("scheduled_at")
-    publishing = request.user.posts.filter(
+    ).select_related("social_account", "seed", "user").order_by("scheduled_at")
+    publishing = team_posts.filter(
         status="publishing"
-    ).select_related("social_account", "seed").order_by("-updated_at")
-    failed = request.user.posts.filter(
+    ).select_related("social_account", "seed", "user").order_by("-updated_at")
+    failed = team_posts.filter(
         status="failed"
-    ).select_related("social_account", "seed").order_by("-updated_at")
-    published = request.user.posts.filter(
+    ).select_related("social_account", "seed", "user").order_by("-updated_at")
+    published = team_posts.filter(
         status="published"
-    ).select_related("social_account", "seed").order_by("-published_at")[:30]
+    ).select_related("social_account", "seed", "user").order_by("-published_at")[:30]
 
     def group_by_seed(posts_qs):
         """Group posts into seed batches + ungrouped."""
@@ -286,7 +292,9 @@ def approve_post(request, post_id):
         get_smart_queue_slot,
     )
 
-    post = get_object_or_404(Post.objects.select_related("social_account"), id=post_id, user=request.user)
+    post = get_object_or_404(Post.objects.select_related("social_account", "user"), id=post_id)
+    if not can_approve_post(request.user, post):
+        raise Http404
     if post.status not in (Post.Status.DRAFT, Post.Status.PENDING_APPROVAL):
         return render(request, "components/post_card.html", {"post": post})
 
@@ -339,10 +347,13 @@ def batch_approve(request, seed_id):
         get_smart_queue_slot,
     )
 
-    seed = get_object_or_404(ContentSeed, id=seed_id, user=request.user)
+    seed = get_object_or_404(ContentSeed, id=seed_id)
+    visible_user_ids = get_teammate_ids(request.user)
+    if seed.user_id not in visible_user_ids:
+        raise Http404
     posts = Post.objects.filter(
         seed=seed,
-        user=request.user,
+        user_id__in=visible_user_ids,
         status__in=(Post.Status.DRAFT, Post.Status.PENDING_APPROVAL),
     ).select_related("social_account")
 
@@ -395,7 +406,9 @@ def batch_approve(request, seed_id):
 @login_required
 def reject_post(request, post_id):
     """Reject a pending post (HTMX)."""
-    post = get_object_or_404(Post.objects.select_related("social_account"), id=post_id, user=request.user)
+    post = get_object_or_404(Post.objects.select_related("social_account", "user"), id=post_id)
+    if not can_approve_post(request.user, post):
+        raise Http404
     if post.status in (Post.Status.DRAFT, Post.Status.PENDING_APPROVAL):
         post.status = Post.Status.REJECTED
         post.save(update_fields=["status", "updated_at"])
@@ -407,7 +420,9 @@ def regenerate_post(request, post_id):
     """Regenerate content for a single post via HTMX."""
     from apps.agents.create_agent import regenerate_single_post
 
-    post = get_object_or_404(Post.objects.select_related("social_account"), id=post_id, user=request.user)
+    post = get_object_or_404(Post.objects.select_related("social_account", "user"), id=post_id)
+    if not can_edit_post(request.user, post):
+        raise Http404
 
     if request.method != "POST":
         return HttpResponse(status=405)
@@ -431,7 +446,9 @@ def regenerate_post(request, post_id):
 @login_required
 def edit_post(request, post_id):
     """Edit a post's content."""
-    post = get_object_or_404(Post.objects.select_related("social_account", "seed"), id=post_id, user=request.user)
+    post = get_object_or_404(Post.objects.select_related("social_account", "seed", "user"), id=post_id)
+    if not can_edit_post(request.user, post):
+        raise Http404
     if request.method == "POST":
         form = PostEditForm(request.POST, instance=post)
         if form.is_valid():
@@ -455,7 +472,9 @@ def upload_media(request, post_id):
     """Upload an image to a post."""
     from apps.content.models import MediaAttachment
 
-    post = get_object_or_404(Post, id=post_id, user=request.user)
+    post = get_object_or_404(Post.objects.select_related("user"), id=post_id)
+    if not can_edit_post(request.user, post):
+        raise Http404
     if request.method == "POST" and request.FILES.get("file"):
         uploaded = request.FILES["file"]
         # Basic validation
@@ -487,10 +506,11 @@ def upload_media(request, post_id):
 def post_preview(request, post_id):
     """HTMX partial: platform-specific visual preview of a post."""
     post = get_object_or_404(
-        Post.objects.select_related("social_account"),
+        Post.objects.select_related("social_account", "user"),
         id=post_id,
-        user=request.user,
     )
+    if not can_edit_post(request.user, post):
+        raise Http404
     return render(request, "content/preview.html", {"post": post})
 
 
@@ -498,10 +518,11 @@ def post_preview(request, post_id):
 def post_detail(request, post_id):
     """Full detail view for a single post with metrics and activity."""
     post = get_object_or_404(
-        Post.objects.select_related("social_account", "seed"),
+        Post.objects.select_related("social_account", "seed", "user"),
         id=post_id,
-        user=request.user,
     )
+    if not can_edit_post(request.user, post):
+        raise Http404
 
     metrics = None
     try:
