@@ -128,8 +128,8 @@ Nobody should be able to say "Kova is like [X]."
 - Python 3.12+ ✅ (Python 3.12.8)
 - Django 5.x ✅ (Django 5.1.15)
 - ~~Django REST Framework~~ — Not needed yet. HTMX returns HTML partials, agents call services directly
-- Celery ✅ (configured, runs in ALWAYS_EAGER mode — synchronous, no broker needed yet)
-- ~~Redis~~ — Not deployed yet. Using LocMemCache + CELERY_TASK_ALWAYS_EAGER. Redis planned when scaling
+- Celery ✅ (configured, Redis broker on Railway)
+- Redis ✅ (Railway Redis plugin — cache, Celery broker, Channels backend)
 - PostgreSQL 16+ ✅ (Railway PostgreSQL plugin)
 - ~~Django Channels~~ — Not needed yet. HTMX polling covers real-time needs for now
 - django-allauth ✅ (authentication — registration, login, email verification, social OAuth)
@@ -161,10 +161,12 @@ Nobody should be able to say "Kova is like [X]."
 
 ## 3.5 External Services
 - Social platform OAuth + APIs (see Section 7)
-- Resend or Django SMTP (transactional email: notifications, Daily Brief email)
-- Stripe (subscription billing)
+- Resend ✅ (transactional email via SMTP relay: Daily Brief emails, notifications)
+- Stripe ✅ (subscription billing: Checkout, Portal, Webhooks)
+- M-Pesa ✅ (STK Push for KES payments)
 - S3-compatible storage (media files: images, videos for posts)
   Options: AWS S3, Cloudflare R2 (cheaper), MinIO (self-hosted)
+- Sentry ✅ (error monitoring: Django + Celery integrations, release tracking)
 
 ## 3.6 Development Tools
 - Git + GitHub ✅ (version control — github.com/kakumagreens-ai/KOVA_AGENT)
@@ -761,7 +763,7 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 - [x] Post approval workflow (approve / edit / reject)
 - [x] Manual scheduling (pick date/time)
 - [x] Content queue view (list of upcoming posts)
-- [ ] Basic calendar view (month/week) — deferred to future sprint
+- [x] Basic calendar view (month/week) — `content/calendar/` timeline view
 - [x] Auto-publish at scheduled time — Celery Beat task (60s check)
 - [x] Post status tracking (draft → approved → scheduled → published → failed)
 - [x] Basic post metrics display (likes, comments, shares after publishing)
@@ -787,16 +789,16 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 - [ ] Free trial (7 days)
 
 ## 8.3 NICE TO HAVE (Phase 3)
-- [ ] Engage Agent: Comment/DM monitoring + auto-reply drafts
-- [ ] Relationship Memory: Track audience members, superfans
-- [ ] Unified inbox (all comments/DMs across platforms)
-- [ ] Full agent orchestration (Chief Strategist coordinates all agents)
+- [x] Engage Agent: Comment/DM monitoring + auto-reply drafts — Celery Beat every 30 min
+- [x] Relationship Memory: Track audience members, superfans — Superfan model with tier system
+- [x] Unified inbox (all comments/DMs across platforms) — engage/inbox with status/sentiment/platform filters
+- [x] Full agent orchestration (Chief Strategist coordinates all agents) — Strategist Agent with proactive seeds
 - [ ] Content A/B testing (auto-generate variations)
 - [ ] Team features: invite members, roles, approval workflows
 - [ ] Hashtag research + suggestions
 - [ ] Re-queue evergreen content
 - [ ] Voice memo input (speech-to-text → content seed)
-- [ ] AI image generation for posts
+- [x] AI image generation for posts — Multi-provider: HuggingFace → Together.ai → Pollinations.ai
 
 ## 8.4 FUTURE (Phase 4+)
 - [ ] Agency/multi-brand management
@@ -834,12 +836,15 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 | Phase 2 | Sprint 5 | ✅ Complete | Daily Brief, Analyst Agent, Content DNA |
 | Phase 2 | Sprint 6 | ✅ Complete | Research Agent, Adapt Agent, Agent Config UI |
 | Phase 2 | Sprint 7 | ✅ Complete | Billing + Growth Features |
-| Phase 2 | Sprint 8 | ⏳ Not Started | Quality + More Platforms |
-| Phase 3 | Sprint 9-12 | ⏳ Not Started | Engage Agent, Orchestration, Teams, Polish |
+| Phase 2 | Sprint 8 | ✅ Complete | More Platforms, Competitor Intel, Multi-image, Previews |
+| Phase 3 | Sprint 9 | ✅ Complete | Engage Agent, Unified Inbox, Superfan Detection |
+| Phase 3 | Sprint 10 | ✅ Complete | Strategist Orchestration, Full Pipeline |
+| Phase 3 | Sprint 11 | ⏳ Not Started | Team Features, Multi-brand |
+| Phase 3 | Sprint 12 | 🔄 In Progress | Production Hardening (security, monitoring, email, load testing) |
 | Phase 4 | Post-Launch  | ⏳ Not Started | Agency, White-label, API, Mobile PWA |
 | Phase 5 | Post-Launch  | ⏳ Not Started | WhatsApp Intelligence, Meme Engine, Status Studio |
 
-## CELERY BEAT SCHEDULE (Current — 5 tasks)
+## CELERY BEAT SCHEDULE (Current — 9 tasks)
 | Task | Schedule | Source |
 |------|----------|--------|
 | `check-and-publish` | Every 60 seconds | `apps/content/tasks.py` |
@@ -847,6 +852,10 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 | `refresh-expiring-tokens` | Every 30 minutes | `apps/platforms/tasks.py` |
 | `generate-daily-briefs` | Every 15 minutes | `apps/briefs/tasks.py` |
 | `run-daily-research` | Every 12 hours | `apps/agents/tasks.py` |
+| `run-engage-cycle` | Every 30 minutes | `apps/agents/tasks.py` |
+| `run-strategy-cycle` | Every 8 hours | `apps/agents/tasks.py` |
+| `check-mpesa-subscriptions` | Every 24 hours | `apps/billing/tasks.py` |
+| `analyze-all-competitors` | Weekly | `apps/analytics/tasks.py` |
 
 ## ─── PHASE 1: MVP — "AI-Assisted Scheduling" (Weeks 1-8) ✅ COMPLETE ───
 
@@ -976,35 +985,54 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 - DELIVERABLE: Monetization works. Users can subscribe and pay. ✅
 - COMMIT: 6481e9a — 17 files, 1306 insertions
 
-### Sprint 8 (Week 15-16): Quality + More Platforms
-- [ ] Post preview per platform (mock how it'll look)
-- [ ] Carousel/multi-image post support
-- [ ] Add YouTube provider
-- [ ] Add Pinterest provider
-- [ ] Add Threads provider
-- [ ] Add Bluesky provider
-- [ ] Competitor tracking (manual add, basic metric monitoring)
-- [ ] Performance + security audit
-- [ ] Load testing
-- DELIVERABLE: 9 platforms, previews, billing, ready for public launch.
+### Sprint 8 (Week 15-16): Quality + More Platforms ✅ COMPLETE
+- [x] Post preview per platform (mock how it'll look) — 9 platform-specific mockups + character limit warnings
+- [x] Carousel/multi-image post support — MediaAttachment model with ordering
+- [x] Add YouTube provider — `apps/platforms/providers/youtube.py`
+- [x] Add Pinterest provider — `apps/platforms/providers/pinterest.py`
+- [x] Add Threads provider — `apps/platforms/providers/threads.py`
+- [x] Add Bluesky provider — `apps/platforms/providers/bluesky.py` (AT Protocol, app password auth)
+- [x] Competitor tracking (manual add, basic metric monitoring) — Full AI competitor intelligence engine with insights
+- [x] Performance + security audit — CSP, HSTS, rate limiting, Sentry, Resend email
+- [x] Load testing — Locust load test suite
+- DELIVERABLE: ✅ 9 platforms, previews, competitor intel, production hardened.
+- **IMPLEMENTATION NOTES:**
+  - Providers: YouTube, Pinterest, Threads, Bluesky (all in `apps/platforms/providers/`)
+  - Competitor Intel: `Competitor`, `CompetitorAnalysis`, `CompetitorInsight` models + LLM analysis
+  - Preview: HTMX modal with realistic platform mockups (Twitter, LinkedIn, IG, FB, TikTok, YT, Pinterest, Threads, Bluesky)
+  - Security: Sentry (Django+Celery integrations), CSP headers (django-csp), allauth rate limiting, HSTS preload
+  - Email: Resend SMTP relay wired up for Daily Brief emails
+  - Calendar view: `/content/calendar/` timeline view by date
 
 ## ─── PHASE 3: Autonomy — "The System Runs Itself" (Weeks 17-24) ───
 
-### Sprint 9 (Week 17-18): Engage Agent + Community
-- [ ] engage app: AudienceMember, Conversation models
-- [ ] Engage Agent v1: Monitor comments/mentions across platforms
-- [ ] Engage Agent: Draft replies with confidence scoring
-- [ ] Auto-reply for high-confidence responses
-- [ ] Flagged items in Daily Brief
-- [ ] Unified inbox (all engagement in one place)
-- [ ] Relationship scoring (track interaction frequency per audience member)
+### Sprint 9 (Week 17-18): Engage Agent + Community ✅ COMPLETE
+- [x] engage app: Interaction, Superfan models — sentiment tracking, tier system (RISING/LOYAL/SUPERFAN)
+- [x] Engage Agent v1: Monitor comments/mentions across platforms — `apps/agents/engage_agent.py`
+- [x] Engage Agent: Draft replies with confidence scoring — LLM-powered, brand-voice-aware
+- [x] Auto-reply for high-confidence responses — configurable per agent
+- [x] Flagged items in Daily Brief — pending interactions surfaced
+- [x] Unified inbox (all engagement in one place) — `engage/inbox` with status/sentiment/platform filters
+- [x] Relationship scoring (track interaction frequency per audience member) — Superfan tiers by interaction count
+- DELIVERABLE: ✅ Community engagement automated. Inbox, sentiment, superfan detection working.
+- **IMPLEMENTATION NOTES:**
+  - Models: `Interaction` (status: NEW/AI_REPLIED/USER_REPLIED/IGNORED/FLAGGED, sentiment tracking), `Superfan` (tiers + interaction counting)
+  - Engage Agent cycle: fetch interactions → analyze sentiment → generate replies → auto-respond (30min Celery Beat)
+  - Unified inbox: filter by status, sentiment, platform. Send AI-suggested replies.
+  - Skips `get_mentions()` for Facebook/Instagram (only Twitter/Bluesky support it)
 
-### Sprint 10 (Week 19-20): Full Orchestration
-- [ ] Chief Strategist Agent: Coordinate all agents
-- [ ] Full seed-to-publish pipeline (seed → research → create → score → schedule → publish → engage → learn)
+### Sprint 10 (Week 19-20): Full Orchestration ✅ COMPLETE
+- [x] Chief Strategist Agent: Coordinate all agents — `apps/agents/strategist_agent.py` (8h Celery Beat cycle)
+- [x] Full seed-to-publish pipeline (seed → research → create → score → schedule → publish → engage → learn)
 - [ ] Content A/B testing: Auto-generate variations, test them
-- [ ] Self-adjusting strategy (Analyst → Create Agent feedback loop)
-- [ ] Superfan detection + alerts
+- [x] Self-adjusting strategy (Analyst → Create Agent feedback loop) — Content DNA feeds back into creation
+- [x] Superfan detection + alerts — Superfan model with tier escalation
+- DELIVERABLE: ✅ Strategist orchestrates all agents. Proactive content seeds. Full autonomous pipeline.
+- **IMPLEMENTATION NOTES:**
+  - Strategist: `run_strategy_cycle()` gathers inputs from all agents, makes LLM-powered decisions, creates proactive ContentSeeds
+  - Autonomy levels: Manual (seeds as suggestions) vs Autonomous (auto-create → generate → schedule)
+  - Feeds into Daily Brief compilation
+  - Fixed: `posting_frequency` type mismatch, missing `strategist.decide` model config
 
 ### Sprint 11 (Week 21-22): Team Features
 - [ ] Team invitations and roles (admin, editor, viewer)
@@ -1012,13 +1040,18 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 - [ ] Team activity feed
 - [ ] Multi-brand support (Agency plan groundwork)
 
-### Sprint 12 (Week 23-24): Polish + Scale
+### Sprint 12 (Week 23-24): Polish + Scale 🔄 IN PROGRESS
+- [x] Sentry error monitoring + alerting — Django + Celery integrations, release tracking
+- [x] CSP security headers (django-csp) — script/style/img/font/connect/frame policies
+- [x] Authentication rate limiting — allauth built-in: login, signup, password reset
+- [x] Health check endpoint — `/health/` for Railway + uptime monitors
+- [x] Email sending (Resend SMTP) — Daily Brief email, plan-gated
+- [x] Production security hardening — HSTS preload, referrer policy, cookie security, CSRF
+- [x] Load testing suite — Locust: authenticated flows, agent cycles, realistic user simulation
 - [ ] Performance optimization (query optimization, caching)
-- [ ] Comprehensive error handling
 - [ ] Onboarding improvements based on user feedback
 - [ ] Help docs / knowledge base
-- [ ] Security hardening
-- [ ] Monitoring + alerting setup
+- [ ] OAuth token encryption (django-fernet-fields-v2) — planned migration
 
 ## ─── PHASE 4: Moat — "Unbeatable" (Weeks 25+) ───
 - Agency multi-brand management

@@ -327,6 +327,18 @@ Usage: {% url 'content:preview' post.id %}
     {# Footer: character count + tips #}
     <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/50 flex-shrink-0">
       {% with platform=post.social_account.platform %}
+
+      {# Engagement prediction #}
+      {% if post.predicted_engagement_score %}
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Predicted Engagement</span>
+        <div class="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div class="h-full rounded-full {% if post.predicted_engagement_score >= 75 %}bg-green-500{% elif post.predicted_engagement_score >= 50 %}bg-yellow-500{% else %}bg-red-400{% endif %}" style="width: {{ post.predicted_engagement_score }}%"></div>
+        </div>
+        <span class="text-xs font-bold {% if post.predicted_engagement_score >= 75 %}text-green-600 dark:text-green-400{% elif post.predicted_engagement_score >= 50 %}text-yellow-600 dark:text-yellow-400{% else %}text-red-500{% endif %}">{{ post.predicted_engagement_score|floatformat:0 }}/100</span>
+      </div>
+      {% endif %}
+
       <div class="flex items-center justify-between">
         <span class="text-xs text-gray-500 dark:text-gray-400">
           {{ post.content_text|length }} characters
@@ -363,6 +375,19 @@ Usage: {% url 'content:preview' post.id %}
       </div>
       {% endif %}
       {% endwith %}
+
+      {# Copy text button #}
+      <div class="mt-2 flex items-center gap-2">
+        <button onclick="navigator.clipboard.writeText(this.dataset.text).then(() => { this.textContent='Copied!'; setTimeout(() => this.textContent='Copy text', 1500) })"
+                data-text="{{ post.content_text }}"
+                class="text-[11px] text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 font-medium transition-colors">
+          Copy text
+        </button>
+        {% if post.ai_angle %}
+        <span class="text-gray-300 dark:text-gray-600">·</span>
+        <span class="text-[10px] text-gray-400 dark:text-gray-500 truncate" title="{{ post.ai_angle }}">🎯 {{ post.ai_angle|truncatewords:8 }}</span>
+        {% endif %}
+      </div>
     </div>
   </div>
 </div>

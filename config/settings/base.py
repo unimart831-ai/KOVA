@@ -208,6 +208,14 @@ ACCOUNT_SIGNUP_REDIRECT_URL = "/accounts/onboarding/"
 LOGIN_REDIRECT_URL = "/brief/"
 LOGOUT_REDIRECT_URL = "/"
 LOGIN_URL = "/accounts/login/"
+# Rate limiting (allauth built-in)
+ACCOUNT_RATE_LIMITS = {
+    "login": "5/m/ip,30/h/ip",          # 5 attempts/min, 30/hour per IP
+    "login_failed": "5/m/ip,10/h/ip",   # After 10 failed/hour, lock out
+    "signup": "5/m/ip,20/h/ip",          # 5 signups/min per IP
+    "confirm_email": "3/m/key",          # 3 confirm attempts/min per key
+    "reset_password": "5/m/ip,10/h/ip",  # 5 resets/min per IP
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -370,6 +378,11 @@ THREADS_APP_SECRET = env("THREADS_APP_SECRET", default="") # Falls back to FACEB
 
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
 
+# ─── SITE URL ────────────────────────────────────────────────────────────────
+SITE_URL = env("SITE_URL", default="http://localhost:8000")
+
 # ─── EMAIL ───────────────────────────────────────────────────────────────────
+# Default: console backend for dev. Production uses Resend SMTP.
 EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Kova Agent <noreply@kovaagent.com>")
+RESEND_API_KEY = env("RESEND_API_KEY", default="")

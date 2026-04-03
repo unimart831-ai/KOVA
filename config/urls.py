@@ -27,7 +27,14 @@ def service_worker(request):
     return HttpResponse(status=404)
 
 
+def health_check(request):
+    """Lightweight health endpoint for Railway + uptime monitors."""
+    return HttpResponse("ok", content_type="text/plain")
+
+
 urlpatterns = [
+    # Health check (before auth — no login required)
+    path("health/", health_check, name="health"),
     # Landing
     path("", landing_page, name="landing"),
     # PWA service worker (must be served from root scope)
