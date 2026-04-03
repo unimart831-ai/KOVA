@@ -344,20 +344,40 @@ def generate_all_daily_briefs():
     """
     now = timezone.now()
     today = now.date()
+    current_time = now.time()
 
     # Find users who need a brief:
-    # 1. Their preferred brief time has passed today
+    # 1. Their preferred brief time has passed today (server UTC)
     # 2. They don't have a brief for today yet
-    # 3. They've completed onboarding
-    users = (
+    # 3. They've completed onboarding OR have published posts (active user)
+    users = list(
         User.objects.filter(
-            onboarding_completed=True,
-            daily_brief_time__lte=now.time(),
+            Q(onboarding_completed=True) | Q(posts__status="published"),
+            daily_brief_time__lte=current_time,
         )
         .exclude(
             briefs__date=today,
         )
+        .distinct()
     )
+
+    eligible_count = len(users)
+    if not users:
+        # Diagnostic: log why no users matched
+        total_users = User.objects.count()
+        onboarded = User.objects.filter(onboarding_completed=True).count()
+        with_posts = User.objects.filter(posts__status="published").distinct().count()
+        time_match = User.objects.filter(
+            Q(onboarding_completed=True) | Q(posts__status="published"),
+            daily_brief_time__lte=current_time,
+        ).distinct().count()
+        already_briefed = User.objects.filter(briefs__date=today).count()
+        logger.debug(
+            "Brief eligibility: %d total users, %d onboarded, %d with posts, "
+            "%d past brief time (%s UTC), %d already briefed today",
+            total_users, onboarded, with_posts, time_match,
+            current_time.strftime("%H:%M"), already_briefed,
+        )
 
     generated = 0
     for user in users:
@@ -368,5 +388,5 @@ def generate_all_daily_briefs():
         except Exception as e:
             logger.error("Failed to generate brief for %s: %s", user.email, e)
 
-    logger.info("Daily brief run: generated %d briefs for %d eligible users", generated, users.count())
+    logger.info("Daily brief run: generated %d briefs for %d eligible users", generated, eligible_count)
     return generated

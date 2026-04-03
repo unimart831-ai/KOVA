@@ -78,11 +78,12 @@ def competitor_dashboard(request):
         is_dismissed=False,
     ).select_related("competitor").order_by("-created_at")[:10]
 
-    # Stats
-    high_priority_count = recent_insights.filter(priority="high").count()
-    total_insights = CompetitorInsight.objects.filter(
+    # Stats (use unsliced queries — Django can't filter after slicing)
+    unacted_insights = CompetitorInsight.objects.filter(
         user=request.user, is_acted_on=False, is_dismissed=False,
-    ).count()
+    )
+    high_priority_count = unacted_insights.filter(priority="high").count()
+    total_insights = unacted_insights.count()
     content_gaps = CompetitorInsight.objects.filter(
         user=request.user,
         insight_type=CompetitorInsight.InsightType.CONTENT_GAP,

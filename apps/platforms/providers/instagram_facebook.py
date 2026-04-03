@@ -298,42 +298,65 @@ class FacebookProvider(BaseProvider):
     def get_post_metrics(self, access_token: str,
                          platform_post_id: str) -> PostMetrics:
         """Fetch engagement metrics for a Page post. Requires pages_read_engagement."""
+        likes = 0
+        comments = 0
+        shares = 0
+        impressions = 0
+        reach = 0
+        clicks = 0
+
         try:
             with httpx.Client(timeout=HTTP_TIMEOUT) as client:
+                # Step 1: Basic engagement (likes, comments, shares) — always works
                 resp = client.get(f"{FB_API_BASE}/{platform_post_id}", params={
-                    "fields": "likes.summary(true),comments.summary(true),shares,"
-                              "insights.metric(post_impressions,post_impressions_unique,"
-                              "post_clicks_by_type)",
+                    "fields": "likes.summary(true),comments.summary(true),shares",
                     "access_token": access_token,
                 })
                 resp.raise_for_status()
                 data = resp.json()
+                likes = data.get("likes", {}).get("summary", {}).get("total_count", 0)
+                comments = data.get("comments", {}).get("summary", {}).get("total_count", 0)
+                shares = data.get("shares", {}).get("count", 0)
 
-                # Parse insights if available
-                impressions = 0
-                reach = 0
-                clicks = 0
-                for insight in data.get("insights", {}).get("data", []):
-                    name = insight.get("name", "")
-                    val = insight.get("values", [{}])[0].get("value", 0)
-                    if name == "post_impressions":
-                        impressions = val if isinstance(val, int) else 0
-                    elif name == "post_impressions_unique":
-                        reach = val if isinstance(val, int) else 0
-                    elif name == "post_clicks_by_type":
-                        clicks = sum(val.values()) if isinstance(val, dict) else 0
+                # Step 2: Post insights (impressions, reach, clicks) — may fail
+                # on certain post types or API versions; don't lose basic data
+                try:
+                    insights_resp = client.get(
+                        f"{FB_API_BASE}/{platform_post_id}/insights",
+                        params={
+                            "metric": "post_impressions,post_impressions_unique,post_clicks",
+                            "access_token": access_token,
+                        },
+                    )
+                    insights_resp.raise_for_status()
+                    for insight in insights_resp.json().get("data", []):
+                        name = insight.get("name", "")
+                        val = insight.get("values", [{}])[0].get("value", 0)
+                        if name == "post_impressions":
+                            impressions = val if isinstance(val, int) else 0
+                        elif name == "post_impressions_unique":
+                            reach = val if isinstance(val, int) else 0
+                        elif name == "post_clicks":
+                            clicks = val if isinstance(val, int) else 0
+                except httpx.HTTPStatusError as e:
+                    logger.warning("Facebook post insights unavailable for %s: %s",
+                                   platform_post_id, e.response.text[:200])
+                except Exception as e:
+                    logger.warning("Facebook post insights error for %s: %s",
+                                   platform_post_id, e)
 
-                return PostMetrics(
-                    likes=data.get("likes", {}).get("summary", {}).get("total_count", 0),
-                    comments=data.get("comments", {}).get("summary", {}).get("total_count", 0),
-                    shares=data.get("shares", {}).get("count", 0),
-                    impressions=impressions,
-                    reach=reach,
-                    clicks=clicks,
-                )
         except httpx.HTTPStatusError as e:
             logger.error("Facebook metrics fetch failed: %s", e.response.text)
             return PostMetrics()
+
+        return PostMetrics(
+            likes=likes,
+            comments=comments,
+            shares=shares,
+            impressions=impressions,
+            reach=reach,
+            clicks=clicks,
+        )
 
     def get_account_insights(self, access_token: str, **kwargs) -> dict:
         """

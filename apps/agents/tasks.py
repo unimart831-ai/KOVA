@@ -66,11 +66,13 @@ def run_engage_cycle():
     ).distinct()
 
     processed = 0
+    checked = 0
     for user in users_with_engage:
         try:
             plan = getattr(getattr(user, "profile", None), "plan", "starter")
             if not get_plan_limits(plan).get("engagement_agent", False):
                 continue
+            checked += 1
             result = engage_cycle(user)
             if result.get("fetched", 0) > 0 or result.get("replies_generated", 0) > 0:
                 processed += 1
@@ -79,10 +81,15 @@ def run_engage_cycle():
                     user.email, result["fetched"], result["analyzed"],
                     result["replies_generated"], result["auto_sent"],
                 )
+            else:
+                logger.debug(
+                    "Engage cycle for %s: no new interactions (fetched=%d, analyzed=%d)",
+                    user.email, result.get("fetched", 0), result.get("analyzed", 0),
+                )
         except Exception as e:
             logger.error("Engage cycle failed for %s: %s", user.email, e)
 
-    logger.info("Engage cycle complete: %d users processed", processed)
+    logger.info("Engage cycle complete: %d users checked, %d with new activity", checked, processed)
     return processed
 
 
