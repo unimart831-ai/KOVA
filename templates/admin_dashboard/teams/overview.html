@@ -1,0 +1,106 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ total_teams }} team{{ total_teams|pluralize }} · {{ total_members }} member{{ total_members|pluralize }}</p>{% endblock %}
+
+{% block content %}
+<!-- ── Stat Cards ─────────────────────────────────────────────────────── -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ total_teams }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Total Teams</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ total_members }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Total Members</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-green-600 dark:text-green-400">+{{ teams_7d }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Teams (7d)</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-green-600 dark:text-green-400">+{{ members_7d }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Members (7d)</p>
+  </div>
+</div>
+
+<!-- ── Invitations Stats ─────────────────────────────────────────────── -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ total_invitations }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Total Invitations</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-yellow-200 dark:border-yellow-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-yellow-600 dark:text-yellow-400">{{ pending_invitations }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Pending</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-green-600 dark:text-green-400">{{ accepted_invitations }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Accepted</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-red-200 dark:border-red-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-red-600 dark:text-red-400">{{ expired_invitations }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Expired</p>
+  </div>
+</div>
+
+<!-- ── Breakdowns Row ────────────────────────────────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
+
+  <!-- Role Distribution -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Role Distribution</h3>
+    <div class="space-y-2">
+      {% for item in role_breakdown %}
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-900 dark:text-white capitalize">{{ item.role }}</span>
+        <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.count }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No members yet</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Team Size Distribution -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Team Sizes</h3>
+    <div class="space-y-2">
+      {% for item in team_sizes %}
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-900 dark:text-white">{{ item.member_count }} member{{ item.member_count|pluralize }}</span>
+        <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.team_count }} team{{ item.team_count|pluralize }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No teams yet</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Largest Teams -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Largest Teams</h3>
+    <div class="space-y-2">
+      {% for team in largest_teams %}
+      <div class="flex items-center justify-between">
+        <div>
+          <a href="{% url 'admin_dashboard:team_detail' pk=team.pk %}" class="text-sm text-kova-600 dark:text-kova-400 hover:underline">{{ team.name }}</a>
+          <p class="text-xs text-gray-400 dark:text-gray-500">{{ team.owner.email|truncatechars:25 }}</p>
+        </div>
+        <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ team.member_count }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No teams yet</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── Quick Links ───────────────────────────────────────────────────── -->
+<div class="flex flex-wrap gap-3">
+  <a href="{% url 'admin_dashboard:team_list' %}" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+    View All Teams →
+  </a>
+</div>
+{% endblock %}

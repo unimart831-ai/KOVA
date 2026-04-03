@@ -1,0 +1,169 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ total_tests }} test{{ total_tests|pluralize }} · {{ tests_7d }} created this week</p>{% endblock %}
+
+{% block content %}
+<!-- ── Stat Cards ─────────────────────────────────────────────────────── -->
+<div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ total_tests }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Total Tests</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-blue-200 dark:border-blue-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ tests_by_status.generating|default:0 }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Generating</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ tests_by_status.draft|default:0 }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Draft</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-green-600 dark:text-green-400">{{ tests_by_status.running|default:0 }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Running</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-purple-600 dark:text-purple-400">{{ tests_by_status.concluded|default:0 }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Concluded</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-red-200 dark:border-red-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-red-600 dark:text-red-400">{{ tests_by_status.cancelled|default:0 }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Cancelled</p>
+  </div>
+</div>
+
+<!-- ── 30-Day Activity Chart ─────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm mb-6">
+  <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">30-Day Activity</h3>
+  <div class="h-64">
+    <canvas id="abChart"></canvas>
+  </div>
+</div>
+
+<!-- ── Breakdowns Row ────────────────────────────────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
+
+  <!-- Averages -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Test Averages</h3>
+    <dl class="space-y-2">
+      <div class="flex items-center justify-between">
+        <dt class="text-xs text-gray-500 dark:text-gray-400">Avg. Variants</dt>
+        <dd class="text-sm font-semibold text-gray-900 dark:text-white">{{ avg_variants }}</dd>
+      </div>
+      <div class="flex items-center justify-between">
+        <dt class="text-xs text-gray-500 dark:text-gray-400">Avg. Duration</dt>
+        <dd class="text-sm font-semibold text-gray-900 dark:text-white">{{ avg_duration }}h</dd>
+      </div>
+      <div class="flex items-center justify-between">
+        <dt class="text-xs text-gray-500 dark:text-gray-400">Tests This Week</dt>
+        <dd class="text-sm font-semibold text-green-600 dark:text-green-400">{{ tests_7d }}</dd>
+      </div>
+      <div class="flex items-center justify-between">
+        <dt class="text-xs text-gray-500 dark:text-gray-400">Concluded This Week</dt>
+        <dd class="text-sm font-semibold text-purple-600 dark:text-purple-400">{{ concluded_7d }}</dd>
+      </div>
+    </dl>
+  </div>
+
+  <!-- Platform Breakdown -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">By Platform</h3>
+    <div class="space-y-2">
+      {% for item in platform_breakdown %}
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-6 text-center">{{ item.social_account__platform|platform_icon }}</span>
+          <span class="text-sm text-gray-900 dark:text-white capitalize">{{ item.social_account__platform|default:"unknown" }}</span>
+        </div>
+        <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.c }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No tests yet</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Top Testers -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Top Testers</h3>
+    <div class="space-y-2">
+      {% for tester in top_testers %}
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-900 dark:text-white">{{ tester.user__full_name|default:tester.user__email }}</p>
+          <p class="text-xs text-gray-400 dark:text-gray-500">{{ tester.user__email|truncatechars:30 }}</p>
+        </div>
+        <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ tester.test_count }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No tests yet</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── Overdue Tests ─────────────────────────────────────────────────── -->
+{% if overdue_tests %}
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-yellow-200 dark:border-yellow-900/50 p-4 sm:p-5 shadow-sm mb-6">
+  <h3 class="text-sm font-semibold text-yellow-700 dark:text-yellow-400 mb-3">Overdue Tests ({{ overdue_tests|length }})</h3>
+  <div class="space-y-2">
+    {% for test in overdue_tests %}
+    <div class="flex items-center justify-between">
+      <div>
+        <a href="{% url 'admin_dashboard:ab_test_detail_admin' pk=test.pk %}" class="text-sm text-kova-600 dark:text-kova-400 hover:underline">{{ test.name|truncatechars:40 }}</a>
+        <p class="text-xs text-gray-400 dark:text-gray-500">{{ test.user.email }} · Started {{ test.started_at|timesince }} ago</p>
+      </div>
+      <span class="text-xs text-yellow-600 dark:text-yellow-400">{{ test.test_duration_hours }}h test</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Quick Links ───────────────────────────────────────────────────── -->
+<div class="flex flex-wrap gap-3">
+  <a href="{% url 'admin_dashboard:ab_test_list_admin' %}" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+    View All Tests →
+  </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+  const isDark = document.documentElement.classList.contains('dark');
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const textColor = isDark ? '#9ca3af' : '#6b7280';
+  Chart.defaults.color = textColor;
+  Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+  Chart.defaults.font.size = 11;
+
+  const data = {{ chart_data_json|safe }};
+  new Chart(document.getElementById('abChart'), {
+    type: 'bar',
+    data: {
+      labels: data.map(d => {
+        const dt = new Date(d.date);
+        return dt.toLocaleDateString('en', {month: 'short', day: 'numeric'});
+      }),
+      datasets: [
+        { label: 'Created', data: data.map(d => d.created), backgroundColor: isDark ? '#6366f1' : '#818cf8', borderRadius: 4 },
+        { label: 'Concluded', data: data.map(d => d.concluded), backgroundColor: isDark ? '#22c55e' : '#4ade80', borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', labels: { boxWidth: 10, padding: 16 } }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { stepSize: 1 } }
+      }
+    }
+  });
+</script>
+{% endblock %}

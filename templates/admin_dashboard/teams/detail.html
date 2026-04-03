@@ -1,0 +1,153 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<div class="flex items-center gap-2 mt-0.5">
+  <span class="text-xs text-gray-500 dark:text-gray-400">Owner: {{ team.owner.email }}</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- ── Back Link ──────────────────────────────────────────────────────── -->
+<a href="{% url 'admin_dashboard:team_list' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4">
+  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+  Back to Teams
+</a>
+
+<!-- ── Team Info Card ────────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm mb-6">
+  <div class="flex items-start justify-between">
+    <div>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ team.name }}</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400">Slug: {{ team.slug }}</p>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Created {{ team.created_at|date:"M j, Y H:i" }}</p>
+    </div>
+    <div class="grid grid-cols-3 gap-4 text-center">
+      <div>
+        <p class="text-xl font-bold text-gray-900 dark:text-white">{{ members|length }}</p>
+        <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">Members</p>
+      </div>
+      <div>
+        <p class="text-xl font-bold text-gray-900 dark:text-white">{{ invitations|length }}</p>
+        <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">Invitations</p>
+      </div>
+      <div>
+        <p class="text-xl font-bold text-gray-900 dark:text-white">{{ content_stats.total }}</p>
+        <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">Posts</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Content Stats ─────────────────────────────────────────────────── -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ content_stats.total }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Total Posts</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-green-600 dark:text-green-400">{{ content_stats.published }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Published</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-yellow-200 dark:border-yellow-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-yellow-600 dark:text-yellow-400">{{ content_stats.pending }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Pending</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ content_stats.drafts }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Drafts</p>
+  </div>
+</div>
+
+<!-- ── Members Table ─────────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden mb-6">
+  <div class="px-4 sm:px-5 py-3 border-b border-gray-200 dark:border-gray-800">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Members ({{ members|length }})</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Joined</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for member in members %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <td class="px-4 py-3">
+            <a href="{% url 'admin_dashboard:user_detail' pk=member.user.pk %}" class="group">
+              <p class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-kova-600 dark:group-hover:text-kova-400">{{ member.user.full_name|default:member.user.email }}</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500">{{ member.user.email }}</p>
+            </a>
+          </td>
+          <td class="px-4 py-3">
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full
+              {% if member.role == 'owner' %}bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400
+              {% elif member.role == 'admin' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+              {% elif member.role == 'editor' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
+              {% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+              {{ member.get_role_display }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{{ member.joined_at|date:"M j, Y" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="3" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No members yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Invitations Table ─────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="px-4 sm:px-5 py-3 border-b border-gray-200 dark:border-gray-800">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Invitations ({{ invitations|length }})</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Invited By</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Created</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for inv in invitations %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ inv.email }}</td>
+          <td class="px-4 py-3">
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">
+              {{ inv.get_role_display }}
+            </span>
+          </td>
+          <td class="px-4 py-3">
+            {% if inv.accepted %}
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Accepted</span>
+            {% elif inv.expires_at < now %}
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Expired</span>
+            {% else %}
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">Pending</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{{ inv.invited_by.email|default:"—" }}</td>
+          <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{{ inv.created_at|date:"M j, Y" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No invitations yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -14,9 +14,10 @@ def overview(request):
     from apps.accounts.models import User, UserProfile
     from apps.agents.models import AgentAction, AgentConfig
     from apps.billing.models import MpesaPayment
-    from apps.content.models import ContentSeed, Post
+    from apps.content.models import ABTest, ContentSeed, Post
     from apps.engage.models import Interaction, Superfan
     from apps.platforms.models import SocialAccount
+    from apps.teams.models import Team, TeamMember
 
     now = timezone.now()
     today = now.date()
@@ -201,6 +202,12 @@ def overview(request):
     total_interactions = Interaction.objects.count()
     total_superfans = Superfan.objects.count()
 
+    # ── Teams & A/B Tests ────────────────────────────────────────────────
+    total_teams = Team.objects.count()
+    total_team_members = TeamMember.objects.count()
+    total_ab_tests = ABTest.objects.count()
+    running_ab_tests = ABTest.objects.filter(status="running").count()
+
     # ── Failed Content (recent) ──────────────────────────────────────────
     recent_failures = Post.objects.filter(
         status="failed",
@@ -241,5 +248,10 @@ def overview(request):
         "sub_breakdown": sub_breakdown,
         # Failures
         "recent_failures": recent_failures,
+        # Teams & A/B Tests
+        "total_teams": total_teams,
+        "total_team_members": total_team_members,
+        "total_ab_tests": total_ab_tests,
+        "running_ab_tests": running_ab_tests,
     }
     return render(request, "admin_dashboard/overview.html", context)

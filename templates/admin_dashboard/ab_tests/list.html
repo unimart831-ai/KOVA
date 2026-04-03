@@ -1,0 +1,118 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ total_count }} test{{ total_count|pluralize }} total</p>{% endblock %}
+
+{% block content %}
+<!-- ── Search & Filters ──────────────────────────────────────────────── -->
+<form method="get" class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm mb-6">
+  <div class="flex flex-wrap gap-3 items-end">
+    <div class="flex-1 min-w-[200px]">
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Search</label>
+      <input type="text" name="q" value="{{ search }}" placeholder="Test name or user email…"
+             class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500 focus:border-transparent">
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Status</label>
+      <select name="status" class="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <option value="">All Statuses</option>
+        {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Sort</label>
+      <select name="sort" class="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <option value="-created_at" {% if current_sort == "-created_at" %}selected{% endif %}>Newest First</option>
+        <option value="created_at" {% if current_sort == "created_at" %}selected{% endif %}>Oldest First</option>
+        <option value="status" {% if current_sort == "status" %}selected{% endif %}>Status A–Z</option>
+        <option value="-status" {% if current_sort == "-status" %}selected{% endif %}>Status Z–A</option>
+      </select>
+    </div>
+    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors">Filter</button>
+    <a href="{% url 'admin_dashboard:ab_test_list_admin' %}" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Reset</a>
+  </div>
+</form>
+
+<!-- ── Results ────────────────────────────────────────────────────────── -->
+<div class="flex items-center justify-between mb-4">
+  <p class="text-sm text-gray-500 dark:text-gray-400">
+    Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ total_count }}
+  </p>
+</div>
+
+<!-- ── Tests Table ───────────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Test</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Platform</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">Variants</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Winner</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Created</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for test in page_obj %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <td class="px-4 py-3">
+            <a href="{% url 'admin_dashboard:ab_test_detail_admin' pk=test.pk %}" class="text-sm font-medium text-kova-600 dark:text-kova-400 hover:underline">
+              {{ test.name|truncatechars:40 }}
+            </a>
+          </td>
+          <td class="px-4 py-3">
+            <p class="text-sm text-gray-900 dark:text-white">{{ test.user.full_name|default:test.user.email }}</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500">{{ test.user.email|truncatechars:25 }}</p>
+          </td>
+          <td class="px-4 py-3">
+            <span class="text-sm text-gray-900 dark:text-white capitalize">{{ test.social_account.platform|default:"—" }}</span>
+          </td>
+          <td class="px-4 py-3 text-center text-sm font-medium text-gray-900 dark:text-white">{{ test.variant_count }}</td>
+          <td class="px-4 py-3">
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full
+              {% if test.status == 'running' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
+              {% elif test.status == 'concluded' %}bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400
+              {% elif test.status == 'generating' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+              {% elif test.status == 'cancelled' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
+              {% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+              {{ test.get_status_display }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
+            {% if test.winner %}{{ test.winner.variant_label }}{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{{ test.created_at|date:"M j, Y" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">No A/B tests found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Pagination ─────────────────────────────────────────────────────── -->
+{% if page_obj.has_other_pages %}
+<div class="flex items-center justify-center gap-2 mt-6">
+  {% if page_obj.has_previous %}
+  <a href="?page={{ page_obj.previous_page_number }}&q={{ search }}&status={{ current_status }}&sort={{ current_sort }}"
+     class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">← Prev</a>
+  {% endif %}
+  <span class="px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400">
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+  </span>
+  {% if page_obj.has_next %}
+  <a href="?page={{ page_obj.next_page_number }}&q={{ search }}&status={{ current_status }}&sort={{ current_sort }}"
+     class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">Next →</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

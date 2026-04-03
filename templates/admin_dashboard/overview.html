@@ -131,6 +131,14 @@
           <dt class="text-xs text-gray-500 dark:text-gray-400">Superfans</dt>
           <dd class="text-sm font-semibold text-purple-600 dark:text-purple-400">{{ total_superfans }}</dd>
         </div>
+        <div class="flex items-center justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Teams</dt>
+          <dd class="text-sm font-semibold text-gray-900 dark:text-white">{{ total_teams }} <span class="text-xs text-gray-400 font-normal">({{ total_team_members }} members)</span></dd>
+        </div>
+        <div class="flex items-center justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">A/B Tests</dt>
+          <dd class="text-sm font-semibold text-gray-900 dark:text-white">{{ total_ab_tests }} <span class="text-xs text-green-500 font-normal">{{ running_ab_tests }} running</span></dd>
+        </div>
       </dl>
     </div>
 

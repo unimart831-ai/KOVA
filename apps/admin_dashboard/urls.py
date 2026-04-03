@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import agents, analytics, billing, content, engage, logs, overview, partials, platforms, system, users
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, content, engage, logs, overview, partials, platforms, system, teams, users
 
 app_name = "admin_dashboard"
 
@@ -62,4 +62,14 @@ urlpatterns = [
     path("analytics/", analytics.analytics_overview, name="analytics_overview"),
     path("analytics/content-dna/", analytics.content_dna_analysis, name="content_dna_analysis"),
     path("analytics/competitors/", analytics.competitor_overview, name="competitor_overview"),
+
+    # Teams
+    path("teams/", teams.teams_overview, name="teams_overview"),
+    path("teams/list/", teams.team_list, name="team_list"),
+    path("teams/<uuid:pk>/", teams.team_detail, name="team_detail"),
+
+    # A/B Tests
+    path("ab-tests/", ab_tests.ab_tests_overview, name="ab_tests_overview"),
+    path("ab-tests/list/", ab_tests.ab_test_list_admin, name="ab_test_list_admin"),
+    path("ab-tests/<uuid:pk>/", ab_tests.ab_test_detail_admin, name="ab_test_detail_admin"),
 ]
