@@ -15,6 +15,7 @@ class OnboardingMiddleware:
         "/accounts/password/reset/",
         "/platforms/connect/",
         "/platforms/callback/",
+        "/help/",
         "/admin/",
         "/health/",
         "/static/",
