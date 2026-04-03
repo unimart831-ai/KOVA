@@ -286,7 +286,7 @@ def approve_post(request, post_id):
         get_smart_queue_slot,
     )
 
-    post = get_object_or_404(Post, id=post_id, user=request.user)
+    post = get_object_or_404(Post.objects.select_related("social_account"), id=post_id, user=request.user)
     if post.status not in (Post.Status.DRAFT, Post.Status.PENDING_APPROVAL):
         return render(request, "components/post_card.html", {"post": post})
 
@@ -395,7 +395,7 @@ def batch_approve(request, seed_id):
 @login_required
 def reject_post(request, post_id):
     """Reject a pending post (HTMX)."""
-    post = get_object_or_404(Post, id=post_id, user=request.user)
+    post = get_object_or_404(Post.objects.select_related("social_account"), id=post_id, user=request.user)
     if post.status in (Post.Status.DRAFT, Post.Status.PENDING_APPROVAL):
         post.status = Post.Status.REJECTED
         post.save(update_fields=["status", "updated_at"])
@@ -407,7 +407,7 @@ def regenerate_post(request, post_id):
     """Regenerate content for a single post via HTMX."""
     from apps.agents.create_agent import regenerate_single_post
 
-    post = get_object_or_404(Post, id=post_id, user=request.user)
+    post = get_object_or_404(Post.objects.select_related("social_account"), id=post_id, user=request.user)
 
     if request.method != "POST":
         return HttpResponse(status=405)
@@ -431,7 +431,7 @@ def regenerate_post(request, post_id):
 @login_required
 def edit_post(request, post_id):
     """Edit a post's content."""
-    post = get_object_or_404(Post, id=post_id, user=request.user)
+    post = get_object_or_404(Post.objects.select_related("social_account", "seed"), id=post_id, user=request.user)
     if request.method == "POST":
         form = PostEditForm(request.POST, instance=post)
         if form.is_valid():

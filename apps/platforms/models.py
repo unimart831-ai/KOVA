@@ -3,6 +3,8 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
+from apps.platforms.encryption import EncryptedTokenField
+
 
 class SocialAccount(models.Model):
     """A connected social media account."""
@@ -25,8 +27,8 @@ class SocialAccount(models.Model):
     username = models.CharField(max_length=255, blank=True)
     display_name = models.CharField(max_length=255, blank=True)
     avatar_url = models.URLField(blank=True)
-    access_token = models.TextField(blank=True)  # TODO: migrate to EncryptedTextField (django-fernet-fields-v2)
-    refresh_token = models.TextField(blank=True)  # TODO: migrate to EncryptedTextField (django-fernet-fields-v2)
+    access_token = EncryptedTokenField(blank=True)
+    refresh_token = EncryptedTokenField(blank=True)
     token_expires_at = models.DateTimeField(null=True, blank=True)
     token_scope = models.TextField(blank=True, help_text="OAuth scopes granted by the user")
     is_active = models.BooleanField(default=True)

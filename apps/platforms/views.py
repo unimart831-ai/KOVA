@@ -163,6 +163,9 @@ def oauth_callback(request, platform):
         logger.error("OAuth callback failed for %s: %s", platform, exc, exc_info=True)
         messages.error(request, f"Failed to connect: {exc}")
 
+    # If user is still in onboarding, send them back to step 4
+    if not request.user.onboarding_completed:
+        return redirect("/accounts/onboarding/?step=4")
     return redirect("platforms:list")
 
 

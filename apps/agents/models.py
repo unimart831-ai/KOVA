@@ -74,10 +74,10 @@ class AgentAction(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="agent_actions")
-    agent_type = models.CharField(max_length=20, choices=AgentConfig.AgentType.choices)
+    agent_type = models.CharField(max_length=20, choices=AgentConfig.AgentType.choices, db_index=True)
     action_type = models.CharField(max_length=100)
     description = models.TextField()
-    status = models.CharField(max_length=20, choices=ActionStatus.choices, default=ActionStatus.STARTED)
+    status = models.CharField(max_length=20, choices=ActionStatus.choices, default=ActionStatus.STARTED, db_index=True)
     input_data = models.JSONField(default=dict, blank=True)
     output_data = models.JSONField(default=dict, blank=True)
     error_message = models.TextField(blank=True)

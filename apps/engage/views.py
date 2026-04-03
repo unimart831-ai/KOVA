@@ -88,7 +88,7 @@ def send_reply(request, pk):
         return HttpResponse(status=405)
 
     interaction = get_object_or_404(
-        Interaction, pk=pk, user=request.user
+        Interaction.objects.select_related("social_account"), pk=pk, user=request.user
     )
 
     if not interaction.ai_suggested_reply:

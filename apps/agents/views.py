@@ -100,11 +100,9 @@ def agent_detail(request, slug):
         "actions_today": AgentAction.objects.filter(
             user=request.user, agent_type=slug, created_at__date=today
         ).count(),
-        "total_tokens": sum(
-            a.tokens_used for a in AgentAction.objects.filter(
-                user=request.user, agent_type=slug, tokens_used__gt=0
-            )
-        ),
+        "total_tokens": AgentAction.objects.filter(
+            user=request.user, agent_type=slug, tokens_used__gt=0
+        ).aggregate(total=Sum("tokens_used"))["total"] or 0,
     }
 
     return render(request, "agents/detail.html", {

@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Avg, Count, Sum
+from django.db.models import Avg, Count, Q, Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -225,7 +225,7 @@ def competitor_landscape(request):
     # Annotate competitors with insight counts for the table
     from django.db.models import Count
     competitors = competitors.annotate(
-        insight_count=Count("insights", filter=~models.Q(insights__is_dismissed=True)),
+        insight_count=Count("insights", filter=~Q(insights__is_dismissed=True)),
     )
 
     return render(request, "analytics/competitor_landscape.html", {

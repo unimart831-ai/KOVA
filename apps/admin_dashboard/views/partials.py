@@ -89,26 +89,30 @@ def partial_agent_health(request):
 
     now = timezone.now()
     agent_types = ["create", "analyst", "research", "adapt", "engage", "strategist"]
+    agent_stats = {
+        row["agent_type"]: row
+        for row in AgentAction.objects.filter(
+            created_at__gte=now - timedelta(hours=24),
+        ).values("agent_type").annotate(
+            total=Count("id"),
+            completed=Count("id", filter=Q(status="completed")),
+            tokens=Sum("tokens_used"),
+            avg_dur=Avg("duration_ms", filter=Q(duration_ms__gt=0)),
+        )
+    }
     agent_health = []
     for at in agent_types:
-        actions = AgentAction.objects.filter(
-            agent_type=at, created_at__gte=now - timedelta(hours=24),
-        )
-        total = actions.count()
-        completed = actions.filter(status="completed").count()
-        tokens = actions.aggregate(t=Sum("tokens_used"))["t"] or 0
-        avg_dur = actions.filter(duration_ms__gt=0).aggregate(
-            a=Avg("duration_ms"),
-        )["a"] or 0
+        row = agent_stats.get(at, {})
+        total = row.get("total", 0)
+        completed = row.get("completed", 0)
         rate = round((completed / total) * 100, 1) if total > 0 else 100.0
-
         agent_health.append({
             "type": at,
             "name": at.title(),
             "success_rate": rate,
             "runs_24h": total,
-            "avg_duration_ms": int(avg_dur),
-            "tokens_24h": tokens,
+            "avg_duration_ms": int(row.get("avg_dur", 0) or 0),
+            "tokens_24h": row.get("tokens", 0) or 0,
             "status": "green" if rate >= 95 else ("yellow" if rate >= 80 else "red"),
         })
 

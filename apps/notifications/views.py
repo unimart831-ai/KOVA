@@ -8,7 +8,7 @@ from apps.notifications.models import Notification
 @login_required
 def notification_list(request):
     """Full notifications page."""
-    notifications = Notification.objects.filter(user=request.user)[:50]
+    notifications = Notification.objects.filter(user=request.user).select_related("related_post")[:50]
     Notification.mark_all_read(request.user)
     return render(request, "notifications/list.html", {
         "notifications": notifications,

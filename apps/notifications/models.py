@@ -24,7 +24,7 @@ class Notification(models.Model):
         max_length=30, choices=NotificationType.choices, default=NotificationType.SYSTEM
     )
     message = models.TextField()
-    is_read = models.BooleanField(default=False)
+    is_read = models.BooleanField(default=False, db_index=True)
     related_post = models.ForeignKey(
         "content.Post",
         on_delete=models.SET_NULL,

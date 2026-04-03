@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from django.core.paginator import Paginator
 from django.db.models import Avg, Count, F, Q, Sum
+from django.db.models.functions import TruncDate
 from django.shortcuts import render
 from django.utils import timezone
 
@@ -23,32 +24,47 @@ def analytics_overview(request):
     now = timezone.now()
     last_30d = now - timedelta(days=30)
 
-    # ── Engagement overview cards ────────────────────────────────────
+    # ── Engagement overview cards (single query) ──────────────────────
     metrics_30d = PostMetric.objects.filter(post__published_at__gte=last_30d)
-    total_impressions = metrics_30d.aggregate(s=Sum("impressions"))["s"] or 0
-    total_likes = metrics_30d.aggregate(s=Sum("likes"))["s"] or 0
-    total_comments = metrics_30d.aggregate(s=Sum("comments"))["s"] or 0
-    total_shares = metrics_30d.aggregate(s=Sum("shares"))["s"] or 0
-    avg_engagement = metrics_30d.aggregate(a=Avg("engagement_rate"))["a"] or 0
-    posts_with_metrics = metrics_30d.count()
+    metrics_agg = metrics_30d.aggregate(
+        total_impressions=Sum("impressions"),
+        total_likes=Sum("likes"),
+        total_comments=Sum("comments"),
+        total_shares=Sum("shares"),
+        avg_engagement=Avg("engagement_rate"),
+        posts_with_metrics=Count("id"),
+    )
+    total_impressions = metrics_agg["total_impressions"] or 0
+    total_likes = metrics_agg["total_likes"] or 0
+    total_comments = metrics_agg["total_comments"] or 0
+    total_shares = metrics_agg["total_shares"] or 0
+    avg_engagement = metrics_agg["avg_engagement"] or 0
+    posts_with_metrics = metrics_agg["posts_with_metrics"]
 
-    # ── Engagement trend (30 days) ───────────────────────────────────
-    engagement_trend = []
-    for i in range(29, -1, -1):
-        d = (now - timedelta(days=i)).date()
-        day_qs = PostMetric.objects.filter(post__published_at__date=d)
-        aggs = day_qs.aggregate(
+    # ── Engagement trend (30 days — single query) ────────────────────
+    thirty_days_ago_date = (now - timedelta(days=29)).date()
+    daily_engagement = {
+        row["day"]: row
+        for row in PostMetric.objects.filter(
+            post__published_at__date__gte=thirty_days_ago_date,
+        ).annotate(day=TruncDate("post__published_at"))
+        .values("day").annotate(
             impressions=Sum("impressions"),
             likes=Sum("likes"),
             comments=Sum("comments"),
             shares=Sum("shares"),
         )
+    }
+    engagement_trend = []
+    for i in range(29, -1, -1):
+        d = (now - timedelta(days=i)).date()
+        row = daily_engagement.get(d, {})
         engagement_trend.append({
             "date": d.isoformat(),
-            "impressions": aggs["impressions"] or 0,
-            "likes": aggs["likes"] or 0,
-            "comments": aggs["comments"] or 0,
-            "shares": aggs["shares"] or 0,
+            "impressions": row.get("impressions", 0) or 0,
+            "likes": row.get("likes", 0) or 0,
+            "comments": row.get("comments", 0) or 0,
+            "shares": row.get("shares", 0) or 0,
         })
 
     # ── Avg engagement rate by platform ──────────────────────────────

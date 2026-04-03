@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core.paginator import Paginator
 from django.db import connection
 from django.db.models import Count, Q
+from django.db.models.functions import TruncHour
 from django.shortcuts import render
 from django.utils import timezone
 
@@ -157,19 +158,20 @@ def system_health(request):
         .order_by("-created_at")[:20]
     )
 
-    # Error trend — hourly buckets for last 48h
+    # Error trend — hourly buckets for last 48h (single query)
+    error_by_hour = {
+        row["hour"]: row["count"]
+        for row in AgentAction.objects.filter(
+            status="failed", created_at__gte=last_48h,
+        ).annotate(hour=TruncHour("created_at"))
+        .values("hour").annotate(count=Count("id"))
+    }
     error_trend = []
     for i in range(47, -1, -1):
-        hour_start = now - timedelta(hours=i + 1)
-        hour_end = now - timedelta(hours=i)
-        count = AgentAction.objects.filter(
-            status="failed",
-            created_at__gte=hour_start,
-            created_at__lt=hour_end,
-        ).count()
+        hour_end = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=i)
         error_trend.append({
             "hour": hour_end.strftime("%b %d %H:00"),
-            "count": count,
+            "count": error_by_hour.get(hour_end, 0),
         })
 
     # Error breakdown by category (from error_message patterns)

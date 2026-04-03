@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.core.paginator import Paginator
 from django.db.models import Avg, Count, Q, Sum
+from django.db.models.functions import TruncDate
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
@@ -28,16 +29,41 @@ def content_overview(request):
         .values_list("status", "c")
     )
 
-    # 7-day throughput
+    # 7-day throughput (4 queries instead of 28)
+    seven_days_ago = today - timedelta(days=6)
+    seed_by_day = dict(
+        ContentSeed.objects.filter(created_at__date__gte=seven_days_ago)
+        .annotate(day=TruncDate("created_at"))
+        .values("day").annotate(count=Count("id"))
+        .values_list("day", "count")
+    )
+    gen_by_day = dict(
+        Post.objects.filter(created_at__date__gte=seven_days_ago)
+        .annotate(day=TruncDate("created_at"))
+        .values("day").annotate(count=Count("id"))
+        .values_list("day", "count")
+    )
+    pub_by_day = dict(
+        Post.objects.filter(status="published", published_at__date__gte=seven_days_ago)
+        .annotate(day=TruncDate("published_at"))
+        .values("day").annotate(count=Count("id"))
+        .values_list("day", "count")
+    )
+    fail_by_day = dict(
+        Post.objects.filter(status="failed", updated_at__date__gte=seven_days_ago)
+        .annotate(day=TruncDate("updated_at"))
+        .values("day").annotate(count=Count("id"))
+        .values_list("day", "count")
+    )
     pipeline_7d = []
     for i in range(6, -1, -1):
         d = today - timedelta(days=i)
         pipeline_7d.append({
             "date": d.isoformat(),
-            "seeds": ContentSeed.objects.filter(created_at__date=d).count(),
-            "generated": Post.objects.filter(created_at__date=d).count(),
-            "published": Post.objects.filter(status="published", published_at__date=d).count(),
-            "failed": Post.objects.filter(status="failed", updated_at__date=d).count(),
+            "seeds": seed_by_day.get(d, 0),
+            "generated": gen_by_day.get(d, 0),
+            "published": pub_by_day.get(d, 0),
+            "failed": fail_by_day.get(d, 0),
         })
 
     # Platform breakdown (published posts)

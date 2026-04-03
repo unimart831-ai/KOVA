@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.conf import settings as django_settings
 from django.core.paginator import Paginator
 from django.db.models import Avg, Count, F, Q, Sum
+from django.db.models.functions import TruncDate
 from django.shortcuts import render
 from django.utils import timezone
 
@@ -62,16 +63,27 @@ def agent_overview(request):
     last_24h = now - timedelta(hours=24)
     last_30d = now - timedelta(days=30)
 
-    # Per-agent health grid
+    # Per-agent health grid (single query instead of 30+)
+    agent_stats = {
+        row["agent_type"]: row
+        for row in AgentAction.objects.filter(
+            created_at__gte=last_24h,
+        ).values("agent_type").annotate(
+            total=Count("id"),
+            completed=Count("id", filter=Q(status="completed")),
+            failed=Count("id", filter=Q(status="failed")),
+            tokens=Sum("tokens_used"),
+            avg_dur=Avg("duration_ms", filter=Q(duration_ms__gt=0)),
+        )
+    }
     agents = []
     for agent_type, label in AGENT_TYPES:
-        qs_24h = AgentAction.objects.filter(agent_type=agent_type, created_at__gte=last_24h)
-        total = qs_24h.count()
-        completed = qs_24h.filter(status="completed").count()
-        failed = qs_24h.filter(status="failed").count()
-        tokens = qs_24h.aggregate(t=Sum("tokens_used"))["t"] or 0
-        avg_dur = qs_24h.filter(duration_ms__gt=0).aggregate(a=Avg("duration_ms"))["a"]
-
+        row = agent_stats.get(agent_type, {})
+        total = row.get("total", 0)
+        completed = row.get("completed", 0)
+        failed = row.get("failed", 0)
+        tokens = row.get("tokens", 0) or 0
+        avg_dur = row.get("avg_dur")
         success_rate = (completed / total * 100) if total else 0
         if success_rate >= 95:
             health = "green"
@@ -92,42 +104,55 @@ def agent_overview(request):
             "avg_duration_ms": round(avg_dur) if avg_dur else None,
         })
 
-    # Global totals
-    total_actions_24h = AgentAction.objects.filter(created_at__gte=last_24h).count()
-    total_tokens_24h = AgentAction.objects.filter(created_at__gte=last_24h).aggregate(
-        t=Sum("tokens_used"),
-    )["t"] or 0
-    total_failed_24h = AgentAction.objects.filter(
-        created_at__gte=last_24h, status="failed",
-    ).count()
+    # Global totals (derived from agent_stats — no extra queries)
+    total_actions_24h = sum(row.get("total", 0) for row in agent_stats.values())
+    total_tokens_24h = sum((row.get("tokens", 0) or 0) for row in agent_stats.values())
+    total_failed_24h = sum(row.get("failed", 0) for row in agent_stats.values())
     global_success = (
         (total_actions_24h - total_failed_24h) / total_actions_24h * 100
         if total_actions_24h
         else 0
     )
 
-    # 30-day success rate trend (daily)
+    # 30-day success rate trend (single query)
+    thirty_days_ago_date = (now - timedelta(days=29)).date()
+    daily_stats = {
+        row["day"]: row
+        for row in AgentAction.objects.filter(
+            created_at__date__gte=thirty_days_ago_date,
+        ).annotate(day=TruncDate("created_at"))
+        .values("day").annotate(
+            total=Count("id"),
+            completed=Count("id", filter=Q(status="completed")),
+        )
+    }
     success_trend = []
     for i in range(29, -1, -1):
         d = (now - timedelta(days=i)).date()
-        day_qs = AgentAction.objects.filter(created_at__date=d)
-        day_total = day_qs.count()
-        day_completed = day_qs.filter(status="completed").count()
+        row = daily_stats.get(d, {})
+        day_total = row.get("total", 0)
+        day_completed = row.get("completed", 0)
         success_trend.append({
             "date": d.isoformat(),
             "rate": round(day_completed / day_total * 100, 1) if day_total else None,
             "total": day_total,
         })
 
-    # 30-day token consumption (daily, stacked by agent)
+    # 30-day token consumption by agent (single query)
+    token_by_day_agent = {}
+    for row in AgentAction.objects.filter(
+        created_at__date__gte=thirty_days_ago_date,
+    ).annotate(day=TruncDate("created_at")).values("day", "agent_type").annotate(
+        tokens=Sum("tokens_used"),
+    ):
+        token_by_day_agent.setdefault(row["day"], {})[row["agent_type"]] = row["tokens"] or 0
     token_trend = []
     for i in range(29, -1, -1):
         d = (now - timedelta(days=i)).date()
         day_data = {"date": d.isoformat()}
+        agent_tokens = token_by_day_agent.get(d, {})
         for agent_type, _ in AGENT_TYPES:
-            day_data[agent_type] = AgentAction.objects.filter(
-                agent_type=agent_type, created_at__date=d,
-            ).aggregate(t=Sum("tokens_used"))["t"] or 0
+            day_data[agent_type] = agent_tokens.get(agent_type, 0)
         token_trend.append(day_data)
 
     # Recent errors (last 20)

@@ -56,7 +56,15 @@ class BrandProfileForm(forms.ModelForm):
 
 
 class OnboardingStep1Form(forms.ModelForm):
-    """Brand basics."""
+    """About you & brand basics."""
+
+    full_name = forms.CharField(
+        max_length=255,
+        widget=forms.TextInput(attrs={"class": "input", "placeholder": "Your full name"}),
+    )
+    timezone = forms.ChoiceField(
+        widget=forms.Select(attrs={"class": "input"}),
+    )
 
     class Meta:
         model = UserProfile
@@ -66,6 +74,25 @@ class OnboardingStep1Form(forms.ModelForm):
             "website_url": forms.URLInput(attrs={"class": "input", "placeholder": "https://yoursite.com"}),
             "industry": forms.Select(attrs={"class": "input"}),
         }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+        import zoneinfo
+        tz_list = sorted(zoneinfo.available_timezones())
+        self.fields["timezone"].choices = [(tz, tz) for tz in tz_list]
+        if user:
+            self.fields["full_name"].initial = user.full_name
+            self.fields["timezone"].initial = user.timezone or "UTC"
+
+    def save(self, commit=True):
+        profile = super().save(commit=commit)
+        if self.user:
+            self.user.full_name = self.cleaned_data["full_name"]
+            self.user.timezone = self.cleaned_data["timezone"]
+            if commit:
+                self.user.save(update_fields=["full_name", "timezone"])
+        return profile
 
 
 class OnboardingStep2Form(forms.ModelForm):
@@ -138,6 +165,11 @@ class OnboardingStep3Form(forms.ModelForm):
         required=False,
     )
 
+    daily_brief_time = forms.TimeField(
+        widget=forms.TimeInput(attrs={"class": "input", "type": "time"}),
+        help_text="When should your daily AI brief be compiled?",
+    )
+
     class Meta:
         model = UserProfile
         fields = ["posting_frequency", "auto_approve_posts"]
@@ -145,8 +177,11 @@ class OnboardingStep3Form(forms.ModelForm):
             "posting_frequency": forms.NumberInput(attrs={"class": "input", "min": 1, "max": 50}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.user = user
+        if user:
+            self.fields["daily_brief_time"].initial = user.daily_brief_time
         if self.instance and self.instance.goals:
             self.fields["goals_selection"].initial = self.instance.goals
 
@@ -155,4 +190,8 @@ class OnboardingStep3Form(forms.ModelForm):
         instance.goals = self.cleaned_data.get("goals_selection", [])
         if commit:
             instance.save()
+        if self.user:
+            self.user.daily_brief_time = self.cleaned_data["daily_brief_time"]
+            if commit:
+                self.user.save(update_fields=["daily_brief_time"])
         return instance

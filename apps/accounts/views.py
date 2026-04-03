@@ -38,6 +38,25 @@ def onboarding_view(request):
     """Multi-step onboarding wizard."""
     profile = request.user.profile
     step = int(request.GET.get("step", 1))
+    total_steps = 4
+
+    # Step 4 is a template-only step (connect platforms)
+    if step == 4:
+        if request.method == "POST":
+            # "Skip" or "I've connected" — complete onboarding
+            request.user.onboarding_completed = True
+            request.user.save(update_fields=["onboarding_completed"])
+            messages.success(request, "Welcome to Kova Agent! Your agents are ready.")
+            return redirect("brief:home")
+
+        from apps.platforms.models import SocialAccount
+        connected = SocialAccount.objects.filter(user=request.user, is_active=True)
+        return render(request, "accounts/onboarding.html", {
+            "step": 4,
+            "total_steps": total_steps,
+            "connected_accounts": connected,
+            "page_title": "Connect a Platform",
+        })
 
     if step == 1:
         form_class = OnboardingStep1Form
@@ -48,24 +67,22 @@ def onboarding_view(request):
     else:
         return redirect("accounts:onboarding")
 
+    # Forms that also update User fields receive `user` kwarg
+    extra_kwargs = {}
+    if step in (1, 3):
+        extra_kwargs["user"] = request.user
+
     if request.method == "POST":
-        form = form_class(request.POST, instance=profile)
+        form = form_class(request.POST, instance=profile, **extra_kwargs)
         if form.is_valid():
             form.save()
-            if step < 3:
-                return redirect(f"/accounts/onboarding/?step={step + 1}")
-            else:
-                # Final step — mark onboarding as complete
-                request.user.onboarding_completed = True
-                request.user.save(update_fields=["onboarding_completed"])
-                messages.success(request, "Welcome to Kova Agent! Your agents are ready.")
-                return redirect("brief:home")
+            return redirect(f"/accounts/onboarding/?step={step + 1}")
     else:
-        form = form_class(instance=profile)
+        form = form_class(instance=profile, **extra_kwargs)
 
     return render(request, "accounts/onboarding.html", {
         "form": form,
         "step": step,
-        "total_steps": 3,
+        "total_steps": total_steps,
         "page_title": "Setup Your Brand",
     })

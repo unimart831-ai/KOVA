@@ -29,6 +29,10 @@ DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
+# ─── ENCRYPTION ──────────────────────────────────────────────────────────────
+# Dedicated key for Fernet token encryption (falls back to SECRET_KEY)
+FERNET_KEYS = [env("FIELD_ENCRYPTION_KEY", default=SECRET_KEY)]
+
 # ─── APPLICATIONS ────────────────────────────────────────────────────────────
 DJANGO_APPS = [
     "daphne",  # Must be before django.contrib.staticfiles for ASGI
@@ -79,6 +83,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
+    "apps.accounts.middleware.OnboardingMiddleware",
     "apps.billing.middleware.PlanEnforcementMiddleware",
 ]
 

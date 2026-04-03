@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
+from django.db.models.functions import TruncDate
 from django.shortcuts import render
 from django.utils import timezone
 
@@ -18,31 +19,46 @@ def platform_overview(request):
 
     from apps.content.models import Post
 
-    # Per-platform summary
+    # Per-platform summary (bulk queries instead of per-platform loops)
+    acct_stats = {
+        row["platform"]: row
+        for row in SocialAccount.objects.values("platform").annotate(
+            total=Count("id"),
+            active=Count("id", filter=Q(is_active=True)),
+            errors=Count("id", filter=~Q(last_error="")),
+            expiring=Count("id", filter=Q(
+                token_expires_at__isnull=False,
+                token_expires_at__lte=next_24h,
+                token_expires_at__gt=now,
+            )),
+        )
+    }
+    pub_stats = {
+        row["social_account__platform"]: row
+        for row in Post.objects.filter(
+            published_at__gte=last_7d,
+            status="published",
+        ).values("social_account__platform").annotate(count=Count("id"))
+    }
+    fail_stats = {
+        row["social_account__platform"]: row
+        for row in Post.objects.filter(
+            updated_at__gte=last_7d,
+            status="failed",
+        ).values("social_account__platform").annotate(count=Count("id"))
+    }
+
     platforms = []
     for platform_code, platform_label in SocialAccount.Platform.choices:
-        qs = SocialAccount.objects.filter(platform=platform_code)
-        total = qs.count()
+        row = acct_stats.get(platform_code, {})
+        total = row.get("total", 0)
         if total == 0:
             continue
-
-        active = qs.filter(is_active=True).count()
-        errors = qs.exclude(last_error="").count()
-        expiring = qs.filter(
-            token_expires_at__isnull=False,
-            token_expires_at__lte=next_24h,
-            token_expires_at__gt=now,
-        ).count()
-        pub_week = Post.objects.filter(
-            social_account__platform=platform_code,
-            status="published",
-            published_at__gte=last_7d,
-        ).count()
-        failed_week = Post.objects.filter(
-            social_account__platform=platform_code,
-            status="failed",
-            updated_at__gte=last_7d,
-        ).count()
+        active = row.get("active", 0)
+        errors = row.get("errors", 0)
+        expiring = row.get("expiring", 0)
+        pub_week = pub_stats.get(platform_code, {}).get("count", 0)
+        failed_week = fail_stats.get(platform_code, {}).get("count", 0)
 
         platforms.append({
             "code": platform_code,
@@ -69,16 +85,28 @@ def platform_overview(request):
         token_expires_at__gt=now,
     ).count()
 
-    # 7-day publishing success rate chart
+    # 7-day publishing success rate chart (2 queries instead of 14)
+    pub_by_day = dict(
+        Post.objects.filter(
+            status="published", published_at__date__gte=(now - timedelta(days=6)).date(),
+        ).annotate(day=TruncDate("published_at"))
+        .values("day").annotate(count=Count("id"))
+        .values_list("day", "count")
+    )
+    fail_by_day = dict(
+        Post.objects.filter(
+            status="failed", updated_at__date__gte=(now - timedelta(days=6)).date(),
+        ).annotate(day=TruncDate("updated_at"))
+        .values("day").annotate(count=Count("id"))
+        .values_list("day", "count")
+    )
     pub_chart = []
     for i in range(6, -1, -1):
         d = (now - timedelta(days=i)).date()
-        published = Post.objects.filter(status="published", published_at__date=d).count()
-        failed = Post.objects.filter(status="failed", updated_at__date=d).count()
         pub_chart.append({
             "date": d.isoformat(),
-            "published": published,
-            "failed": failed,
+            "published": pub_by_day.get(d, 0),
+            "failed": fail_by_day.get(d, 0),
         })
 
     context = {

@@ -1,6 +1,7 @@
 from datetime import timedelta
 
-from django.db.models import Avg, Count, Q, Sum
+from django.db.models import Avg, Case, Count, Q, Sum, When
+from django.db.models.functions import TruncDate
 from django.shortcuts import render
 from django.utils import timezone
 
@@ -75,66 +76,103 @@ def overview(request):
     ).count()
 
     # ── User Growth (30-day chart data) ──────────────────────────────────
+    # Single query: count users by registration date, then compute running total
+    thirty_days_ago_date = today - timedelta(days=30)
+    daily_signups = dict(
+        User.objects.filter(date_joined__date__gte=thirty_days_ago_date)
+        .values_list("date_joined__date")
+        .annotate(count=Count("id"))
+        .values_list("date_joined__date", "count")
+    )
+    base_count = User.objects.filter(date_joined__date__lt=thirty_days_ago_date).count()
     user_growth = []
+    running = base_count
     for i in range(30, -1, -1):
         d = today - timedelta(days=i)
-        user_growth.append({
-            "date": d.isoformat(),
-            "total": User.objects.filter(date_joined__date__lte=d).count(),
-        })
+        running += daily_signups.get(d, 0)
+        user_growth.append({"date": d.isoformat(), "total": running})
 
     # ── Content Pipeline (7-day chart data) ──────────────────────────────
+    seven_days_ago_date = today - timedelta(days=6)
+    seed_counts = dict(
+        ContentSeed.objects.filter(created_at__date__gte=seven_days_ago_date)
+        .annotate(day=TruncDate("created_at"))
+        .values("day").annotate(count=Count("id"))
+        .values_list("day", "count")
+    )
+    post_counts = dict(
+        Post.objects.filter(created_at__date__gte=seven_days_ago_date)
+        .annotate(day=TruncDate("created_at"))
+        .values("day").annotate(count=Count("id"))
+        .values_list("day", "count")
+    )
+    pub_counts = dict(
+        Post.objects.filter(status="published", published_at__date__gte=seven_days_ago_date)
+        .annotate(day=TruncDate("published_at"))
+        .values("day").annotate(count=Count("id"))
+        .values_list("day", "count")
+    )
+    fail_counts = dict(
+        Post.objects.filter(status="failed", updated_at__date__gte=seven_days_ago_date)
+        .annotate(day=TruncDate("updated_at"))
+        .values("day").annotate(count=Count("id"))
+        .values_list("day", "count")
+    )
     content_pipeline = []
     for i in range(6, -1, -1):
         d = today - timedelta(days=i)
         content_pipeline.append({
             "date": d.isoformat(),
-            "seeds": ContentSeed.objects.filter(created_at__date=d).count(),
-            "generated": Post.objects.filter(created_at__date=d).count(),
-            "published": Post.objects.filter(
-                status="published", published_at__date=d,
-            ).count(),
-            "failed": Post.objects.filter(
-                status="failed", updated_at__date=d,
-            ).count(),
+            "seeds": seed_counts.get(d, 0),
+            "generated": post_counts.get(d, 0),
+            "published": pub_counts.get(d, 0),
+            "failed": fail_counts.get(d, 0),
         })
 
     # ── Revenue (30-day chart data) ──────────────────────────────────────
+    mpesa_by_day = dict(
+        MpesaPayment.objects.filter(
+            status="completed", created_at__date__gte=thirty_days_ago_date,
+        ).annotate(day=TruncDate("created_at"))
+        .values("day").annotate(total=Sum("amount"))
+        .values_list("day", "total")
+    )
     revenue_data = []
     for i in range(30, -1, -1):
         d = today - timedelta(days=i)
-        mpesa = MpesaPayment.objects.filter(
-            status="completed", created_at__date=d,
-        ).aggregate(total=Sum("amount"))["total"] or 0
         revenue_data.append({
             "date": d.isoformat(),
-            "mpesa": float(mpesa),
+            "mpesa": float(mpesa_by_day.get(d, 0) or 0),
         })
 
     # ── Agent Health Grid ────────────────────────────────────────────────
     agent_types = ["create", "analyst", "research", "adapt", "engage", "strategist"]
+    agent_stats = {
+        row["agent_type"]: row
+        for row in AgentAction.objects.filter(
+            created_at__gte=now - timedelta(hours=24),
+        ).values("agent_type").annotate(
+            total=Count("id"),
+            completed=Count("id", filter=Q(status="completed")),
+            failed=Count("id", filter=Q(status="failed")),
+            tokens=Sum("tokens_used"),
+            avg_dur=Avg("duration_ms", filter=Q(duration_ms__gt=0)),
+        )
+    }
     agent_health = []
     for at in agent_types:
-        actions = AgentAction.objects.filter(
-            agent_type=at, created_at__gte=now - timedelta(hours=24),
-        )
-        total = actions.count()
-        completed = actions.filter(status="completed").count()
-        failed = actions.filter(status="failed").count()
-        tokens = actions.aggregate(t=Sum("tokens_used"))["t"] or 0
-        avg_dur = actions.filter(duration_ms__gt=0).aggregate(
-            a=Avg("duration_ms"),
-        )["a"] or 0
+        row = agent_stats.get(at, {})
+        total = row.get("total", 0)
+        completed = row.get("completed", 0)
         rate = round((completed / total) * 100, 1) if total > 0 else 100.0
-
         agent_health.append({
             "type": at,
             "name": at.title(),
             "success_rate": rate,
             "runs_24h": total,
-            "failed_24h": failed,
-            "avg_duration_ms": int(avg_dur),
-            "tokens_24h": tokens,
+            "failed_24h": row.get("failed", 0),
+            "avg_duration_ms": int(row.get("avg_dur", 0) or 0),
+            "tokens_24h": row.get("tokens", 0) or 0,
             "status": "green" if rate >= 95 else ("yellow" if rate >= 80 else "red"),
         })
 

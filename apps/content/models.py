@@ -20,7 +20,7 @@ class ContentSeed(models.Model):
         default=list, blank=True,
         help_text='Platforms to generate for, e.g. ["twitter", "linkedin"]. Empty = all connected.',
     )
-    status = models.CharField(max_length=20, choices=SeedStatus.choices, default=SeedStatus.NEW)
+    status = models.CharField(max_length=20, choices=SeedStatus.choices, default=SeedStatus.NEW, db_index=True)
     error_message = models.TextField(blank=True)
     batch_strategy = models.TextField(blank=True, help_text="AI-generated content strategy for this batch of posts.")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -62,14 +62,14 @@ class Post(models.Model):
     )
     content_text = models.TextField()
     content_type = models.CharField(max_length=20, choices=ContentType.choices, default=ContentType.ORIGINAL)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT, db_index=True)
 
     # Media
     media_urls = models.JSONField(default=list, blank=True)
 
     # Scheduling
-    scheduled_at = models.DateTimeField(null=True, blank=True)
-    published_at = models.DateTimeField(null=True, blank=True)
+    scheduled_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    published_at = models.DateTimeField(null=True, blank=True, db_index=True)
 
     # AI metadata
     generated_by_agent = models.CharField(max_length=100, blank=True)

@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.core.paginator import Paginator
 from django.db.models import Avg, Count, Q, Sum
+from django.db.models.functions import TruncDate
 from django.shortcuts import render
 from django.utils import timezone
 
@@ -47,18 +48,31 @@ def engagement_overview(request):
     superfan_super = Superfan.objects.filter(tier="superfan").count()
     total_superfans = superfan_rising + superfan_loyal + superfan_super
 
-    # ── Sentiment trend (30 days) ────────────────────────────────────
+    # ── Sentiment trend (30 days — single query) ──────────────────────
+    thirty_days_ago_date = (now - timedelta(days=29)).date()
+    daily_sentiment = {
+        row["day"]: row
+        for row in Interaction.objects.filter(
+            created_at__date__gte=thirty_days_ago_date,
+        ).exclude(sentiment="").annotate(day=TruncDate("created_at"))
+        .values("day").annotate(
+            total=Count("id"),
+            positive=Count("id", filter=Q(sentiment="positive")),
+            neutral=Count("id", filter=Q(sentiment="neutral")),
+            negative=Count("id", filter=Q(sentiment="negative")),
+        )
+    }
     sentiment_trend = []
     for i in range(29, -1, -1):
         d = (now - timedelta(days=i)).date()
-        day_qs = Interaction.objects.filter(created_at__date=d).exclude(sentiment="")
-        day_total = day_qs.count()
+        row = daily_sentiment.get(d, {})
+        day_total = row.get("total", 0)
         if day_total:
             sentiment_trend.append({
                 "date": d.isoformat(),
-                "positive": round(day_qs.filter(sentiment="positive").count() / day_total * 100, 1),
-                "neutral": round(day_qs.filter(sentiment="neutral").count() / day_total * 100, 1),
-                "negative": round(day_qs.filter(sentiment="negative").count() / day_total * 100, 1),
+                "positive": round(row.get("positive", 0) / day_total * 100, 1),
+                "neutral": round(row.get("neutral", 0) / day_total * 100, 1),
+                "negative": round(row.get("negative", 0) / day_total * 100, 1),
             })
         else:
             sentiment_trend.append({

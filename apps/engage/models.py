@@ -24,14 +24,14 @@ class Interaction(models.Model):
     social_account = models.ForeignKey("platforms.SocialAccount", on_delete=models.CASCADE, related_name="interactions")
     post = models.ForeignKey("content.Post", on_delete=models.SET_NULL, null=True, blank=True, related_name="interactions")
     interaction_type = models.CharField(max_length=20, choices=InteractionType.choices)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW, db_index=True)
     author_name = models.CharField(max_length=255)
     author_username = models.CharField(max_length=255, blank=True)
     content = models.TextField()
     ai_suggested_reply = models.TextField(blank=True)
     ai_reply_sent = models.TextField(blank=True)
-    platform_interaction_id = models.CharField(max_length=255, blank=True)
-    sentiment = models.CharField(max_length=20, blank=True)  # positive, neutral, negative
+    platform_interaction_id = models.CharField(max_length=255, blank=True, db_index=True)
+    sentiment = models.CharField(max_length=20, blank=True, db_index=True)  # positive, neutral, negative
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
