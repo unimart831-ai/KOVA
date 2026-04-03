@@ -929,3 +929,175 @@ Respond with a JSON object. No markdown code fences.
         action.save()
         logger.error("Repurpose error: %s", exc, exc_info=True)
         return []
+
+
+# ─── A/B Testing — Multi-variant generation ──────────────────────────────────
+
+VARIANT_LABELS = "ABCDEFGHIJ"
+
+
+def generate_ab_variants(ab_test) -> list[Post]:
+    """
+    Generate multiple content variants for an A/B test.
+
+    Each variant gets a different strategic angle/framework/hook so the user
+    can publish them and let real engagement data determine the winner.
+
+    Args:
+        ab_test: ABTest instance with seed, social_account, variant_count set.
+
+    Returns list of created Post objects (one per variant).
+    """
+    from apps.content.models import ABTest
+
+    user = ab_test.user
+    account = ab_test.social_account
+    platform = account.platform
+    seed = ab_test.seed
+    n = ab_test.variant_count
+
+    guide = PLATFORM_GUIDES.get(platform, {})
+    winning = "\n".join(f"    - {w}" for w in guide.get("winning_patterns", []))
+
+    idea = seed.idea if seed else ab_test.name
+    notes = seed.notes if seed else ""
+
+    action = AgentAction.objects.create(
+        user=user,
+        agent_type="create",
+        action_type="ab_variant_generation",
+        description=f"Generating {n} A/B variants for: {idea[:80]}",
+        status=AgentAction.ActionStatus.STARTED,
+        input_data={
+            "ab_test_id": str(ab_test.id),
+            "platform": platform,
+            "variant_count": n,
+        },
+    )
+
+    try:
+        system = build_system_prompt(user)
+
+        prompt = f"""## A/B TEST — GENERATE {n} DISTINCT CONTENT VARIANTS
+
+Your goal: create {n} meaningfully different versions of the same idea.
+Each variant MUST differ in at least TWO of these dimensions:
+  - **Angle**: The perspective or spin on the topic
+  - **Hook**: How the first line grabs attention
+  - **Framework**: Content structure (Hook→Value→CTA, PAS, Story→Lesson, etc.)
+  - **Tone**: Emotional register (bold, educational, humorous, provocative, etc.)
+  - **Format**: Length, structure, use of questions/stats/emojis
+
+The purpose is A/B testing — we'll publish these variants and measure which
+one the real audience engages with most. So maximize GENUINE diversity.
+
+### THE IDEA
+{idea}
+{f"### ADDITIONAL CONTEXT" + chr(10) + notes if notes else ""}
+
+### PLATFORM: {guide.get('name', platform.title())} (@{account.username})
+- **Character limit**: {guide.get('max_chars', 'N/A')}
+- **Platform psychology**: {guide.get('psychology', 'Adapt to platform norms')}
+- **What wins here**:
+{winning}
+- **Avoid**: {guide.get('avoid', 'Generic content')}
+- **CTA approach**: {guide.get('cta_style', 'Adapt to context')}
+
+{CONTENT_FRAMEWORKS}
+{ENGAGEMENT_ENGINEERING}
+
+### OUTPUT FORMAT
+Respond with a JSON object. No markdown code fences.
+{{
+  "variants": [
+    {{
+      "label": "A",
+      "content_text": "Full post text, ready to publish.",
+      "framework_used": "Hook → Value → CTA",
+      "angle": "Specific angle taken",
+      "reasoning": "Why this variant might win — what engagement pattern it targets.",
+      "predicted_score": 72,
+      "differentiation": "How this variant differs from the others"
+    }}
+  ]
+}}
+
+Generate exactly {n} variants labeled {', '.join(VARIANT_LABELS[:n])}.
+"""
+
+        llm_response: LLMResponse = generate(
+            prompt=prompt,
+            system=system,
+            model=get_model_for_task("create.generate"),
+            json_mode=True,
+            temperature=0.85,  # Higher for maximum diversity
+            max_tokens=4096,
+        )
+
+        data = parse_llm_json(llm_response.content)
+        variant_dicts = data.get("variants", [])
+
+        if not variant_dicts:
+            raise ValueError("LLM returned no variants")
+
+        created_posts = []
+        auto_approve = getattr(user.profile, "auto_approve_posts", False)
+        initial_status = Post.Status.APPROVED if auto_approve else Post.Status.PENDING_APPROVAL
+
+        for i, vd in enumerate(variant_dicts[:n]):
+            label = vd.get("label", VARIANT_LABELS[i] if i < len(VARIANT_LABELS) else str(i + 1))
+            post = Post.objects.create(
+                user=user,
+                seed=seed,
+                social_account=account,
+                ab_test=ab_test,
+                variant_label=label,
+                content_text=vd.get("content_text", ""),
+                content_type="original",
+                status=initial_status,
+                generated_by_agent="create",
+                predicted_engagement_score=vd.get("predicted_score"),
+                ai_reasoning=vd.get("reasoning", ""),
+                ai_angle=vd.get("angle", ""),
+                ai_framework=vd.get("framework_used", ""),
+            )
+            created_posts.append(post)
+
+        # Update test status
+        ab_test.status = ABTest.Status.DRAFT
+        ab_test.save(update_fields=["status", "updated_at"])
+
+        # Mark seed as completed if present
+        if seed and seed.status != "completed":
+            from apps.content.models import ContentSeed
+            seed.status = ContentSeed.SeedStatus.COMPLETED
+            seed.save(update_fields=["status", "updated_at"])
+
+        action.status = AgentAction.ActionStatus.COMPLETED
+        action.output_data = {
+            "posts_created": len(created_posts),
+            "post_ids": [str(p.id) for p in created_posts],
+            "labels": [p.variant_label for p in created_posts],
+        }
+        action.tokens_used = llm_response.total_tokens
+        action.input_tokens = llm_response.input_tokens
+        action.output_tokens = llm_response.output_tokens
+        action.model_used = llm_response.model
+        action.completed_at = dj_timezone.now()
+        action.save()
+
+        logger.info(
+            "A/B Test: Generated %d variants for '%s' (%d tokens)",
+            len(created_posts), idea[:50], llm_response.total_tokens,
+        )
+        return created_posts
+
+    except Exception as exc:
+        ab_test.status = ABTest.Status.CANCELLED
+        ab_test.save(update_fields=["status", "updated_at"])
+        action.status = AgentAction.ActionStatus.FAILED
+        action.error_message = str(exc)
+        action.completed_at = dj_timezone.now()
+        action.save()
+        logger.error("A/B variant generation error: %s", exc, exc_info=True)
+        return []

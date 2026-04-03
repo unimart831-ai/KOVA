@@ -84,6 +84,12 @@ class Post(models.Model):
         help_text='Content attributes for analysis. E.g. {"format": "question", "tone": "inspirational", "topic": "success_story", "has_cta": true, "has_stats": true, "length": "short"}',
     )
 
+    # A/B Testing
+    ab_test = models.ForeignKey(
+        "ABTest", on_delete=models.SET_NULL, null=True, blank=True, related_name="variants",
+    )
+    variant_label = models.CharField(max_length=10, blank=True, help_text="Variant label: A, B, C…")
+
     # Platform post reference
     platform_post_id = models.CharField(max_length=255, blank=True)
     platform_post_url = models.URLField(blank=True)
@@ -97,6 +103,61 @@ class Post(models.Model):
 
     def __str__(self):
         return f"{self.get_status_display()} — {self.content_text[:60]}"
+
+
+class ABTest(models.Model):
+    """A/B Test — group post variants to find the best-performing content."""
+
+    class Status(models.TextChoices):
+        GENERATING = "generating", "Generating Variants"
+        DRAFT = "draft", "Variants Ready"
+        RUNNING = "running", "Running"
+        CONCLUDED = "concluded", "Concluded"
+        CANCELLED = "cancelled", "Cancelled"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="ab_tests",
+    )
+    name = models.CharField(max_length=255)
+    seed = models.ForeignKey(
+        ContentSeed, on_delete=models.SET_NULL, null=True, blank=True, related_name="ab_tests",
+    )
+    social_account = models.ForeignKey(
+        "platforms.SocialAccount", on_delete=models.CASCADE, related_name="ab_tests",
+    )
+    variant_count = models.PositiveSmallIntegerField(default=3)
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.GENERATING, db_index=True,
+    )
+    winner = models.ForeignKey(
+        "Post", on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+    )
+    test_duration_hours = models.PositiveIntegerField(
+        default=48, help_text="Hours after last variant published before declaring winner.",
+    )
+    started_at = models.DateTimeField(null=True, blank=True)
+    concluded_at = models.DateTimeField(null=True, blank=True)
+    conclusion_summary = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "A/B Test"
+        verbose_name_plural = "A/B Tests"
+
+    def __str__(self):
+        return f"A/B: {self.name[:50]}"
+
+    @property
+    def is_overdue(self):
+        """True if running and past its test duration window."""
+        if self.status != self.Status.RUNNING or not self.started_at:
+            return False
+        from django.utils import timezone as tz
+        from datetime import timedelta
+        return tz.now() > self.started_at + timedelta(hours=self.test_duration_hours)
 
 
 class MediaAttachment(models.Model):

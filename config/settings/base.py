@@ -194,6 +194,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "analyze-all-competitors",
         "schedule": 7 * 24 * 3600.0,  # weekly — AI competitive analysis
     },
+    "evaluate-ab-tests": {
+        "task": "content.evaluate_ab_tests",
+        "schedule": 3600.0,  # every hour — check running A/B tests
+    },
 }
 
 # ─── AUTH ────────────────────────────────────────────────────────────────────

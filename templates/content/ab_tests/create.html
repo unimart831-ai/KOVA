@@ -1,0 +1,94 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}New A/B Test{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Generate multiple content variants and let engagement data pick the winner</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="card">
+    <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Create A/B Test</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+        Enter one idea — Kova generates distinct variants with different angles, hooks, and frameworks. Publish them, and real engagement data determines the winner.
+      </p>
+    </div>
+
+    <form method="post" class="card-body space-y-6">
+      {% csrf_token %}
+
+      {# Content idea #}
+      <div>
+        <label for="idea" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Content Idea</label>
+        <textarea id="idea" name="idea" rows="3" required
+          class="input w-full"
+          placeholder="e.g. How AI is changing small business marketing in 2025"></textarea>
+      </div>
+
+      {# Notes #}
+      <div>
+        <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Extra Context <span class="text-gray-400 font-normal">(optional)</span></label>
+        <textarea id="notes" name="notes" rows="2"
+          class="input w-full"
+          placeholder="Tone preferences, specific points to cover, target audience details..."></textarea>
+      </div>
+
+      {# Platform #}
+      <div>
+        <label for="social_account" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Platform</label>
+        <select id="social_account" name="social_account" required class="input w-full">
+          {% for account in accounts %}
+          <option value="{{ account.id }}">{{ account.get_platform_display }} — @{{ account.username }}</option>
+          {% endfor %}
+        </select>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">A/B variants are tested on a single platform for accurate comparison.</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        {# Variant count #}
+        <div>
+          <label for="variant_count" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Variants</label>
+          <select id="variant_count" name="variant_count" class="input w-full">
+            <option value="2">2 variants (A/B)</option>
+            <option value="3" selected>3 variants (A/B/C)</option>
+            <option value="4">4 variants</option>
+            <option value="5">5 variants</option>
+          </select>
+        </div>
+
+        {# Duration #}
+        <div>
+          <label for="test_duration_hours" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Test Duration</label>
+          <select id="test_duration_hours" name="test_duration_hours" class="input w-full">
+            <option value="24">24 hours</option>
+            <option value="48" selected>48 hours</option>
+            <option value="72">72 hours (3 days)</option>
+            <option value="168">168 hours (1 week)</option>
+          </select>
+        </div>
+      </div>
+
+      {# How it works #}
+      <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">How A/B Testing works</h4>
+        <ol class="text-xs text-gray-500 dark:text-gray-400 space-y-1.5 list-decimal list-inside">
+          <li>Kova generates multiple distinct variants of your idea</li>
+          <li>Review, edit, and approve each variant</li>
+          <li>Start the test — variants get published to your platform</li>
+          <li>After the test duration, Kova compares engagement metrics</li>
+          <li>The winning variant's patterns inform all future content</li>
+        </ol>
+      </div>
+
+      <div class="flex items-center justify-between pt-2">
+        <a href="{% url 'content:ab_test_list' %}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Cancel</a>
+        <button type="submit" class="btn-primary">
+          <svg class="h-4 w-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          Generate Variants
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

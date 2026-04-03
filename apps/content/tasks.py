@@ -346,3 +346,73 @@ def fetch_all_recent_metrics():
 
     logger.info("Queued metrics fetch for %d recent posts", count)
     return {"queued": count}
+
+
+# ── A/B Testing Tasks ────────────────────────────────────────────────────────
+
+@shared_task(name="content.generate_ab_test_variants")
+def generate_ab_test_variants(ab_test_id: str):
+    """
+    Run the Create Agent to generate variants for an A/B test.
+    Called when user creates a new A/B test.
+    """
+    from apps.content.models import ABTest
+    from apps.agents.create_agent import generate_ab_variants
+    from apps.agents.analyst_agent import extract_content_dna, predict_engagement
+
+    try:
+        ab_test = ABTest.objects.select_related(
+            "user", "user__profile", "social_account", "seed",
+        ).get(pk=ab_test_id)
+    except ABTest.DoesNotExist:
+        logger.error("ABTest %s not found", ab_test_id)
+        return {"error": "ABTest not found"}
+
+    posts = generate_ab_variants(ab_test)
+
+    # Tag each variant with Content DNA and engagement prediction
+    for post in posts:
+        try:
+            extract_content_dna(post)
+        except Exception as e:
+            logger.warning("Content DNA extraction failed for variant %s: %s", post.id, e)
+        try:
+            predict_engagement(post)
+        except Exception as e:
+            logger.warning("Engagement prediction failed for variant %s: %s", post.id, e)
+
+    return {
+        "ab_test_id": str(ab_test_id),
+        "variants_created": len(posts),
+        "post_ids": [str(p.id) for p in posts],
+    }
+
+
+@shared_task(name="content.evaluate_ab_tests")
+def evaluate_ab_tests():
+    """
+    Periodic task: find running A/B tests past their duration and evaluate them.
+    Should be called by Celery Beat every hour.
+    """
+    from datetime import timedelta
+    from apps.content.models import ABTest
+    from apps.agents.analyst_agent import evaluate_ab_test
+
+    now = timezone.now()
+    overdue_tests = ABTest.objects.filter(
+        status=ABTest.Status.RUNNING,
+        started_at__isnull=False,
+    ).select_related("user", "social_account")
+
+    evaluated = 0
+    for test in overdue_tests:
+        if now > test.started_at + timedelta(hours=test.test_duration_hours):
+            try:
+                evaluate_ab_test(test)
+                evaluated += 1
+            except Exception as e:
+                logger.error("Failed to evaluate A/B test %s: %s", test.id, e)
+
+    if evaluated:
+        logger.info("Auto-evaluated %d A/B tests", evaluated)
+    return {"evaluated": evaluated}

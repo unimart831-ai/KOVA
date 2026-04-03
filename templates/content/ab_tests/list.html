@@ -1,0 +1,91 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}A/B Tests{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Test content variations and let real engagement data pick the winner</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+  {# Header with create button #}
+  <div class="flex items-center justify-between">
+    <div>
+      <p class="text-sm text-gray-600 dark:text-gray-400">{{ tests.count }} test{{ tests.count|pluralize }}</p>
+    </div>
+    {% if request.plan_limits.ab_testing %}
+    <a href="{% url 'content:ab_test_create' %}" class="btn-primary inline-flex items-center gap-2">
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      New A/B Test
+    </a>
+    {% else %}
+    <a href="{% url 'billing:pricing' %}" class="btn-secondary inline-flex items-center gap-2 text-sm">
+      <svg class="h-4 w-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m4-10V5a2 2 0 00-2-2H8a2 2 0 00-2 2v2"/></svg>
+      Upgrade for A/B Testing
+    </a>
+    {% endif %}
+  </div>
+
+  {% if not tests %}
+  {# Empty state #}
+  <div class="card text-center py-16">
+    <svg class="mx-auto h-16 w-16 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+    </svg>
+    <h3 class="text-lg font-medium text-gray-900 dark:text-white mt-4">No A/B tests yet</h3>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-md mx-auto">
+      Create your first A/B test to generate multiple content variants and let real engagement data determine which version performs best.
+    </p>
+    {% if request.plan_limits.ab_testing %}
+    <a href="{% url 'content:ab_test_create' %}" class="btn-primary inline-flex items-center gap-2 mt-6">
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Create First Test
+    </a>
+    {% endif %}
+  </div>
+  {% else %}
+
+  {# Test cards #}
+  <div class="space-y-4">
+    {% for test in tests %}
+    <a href="{% url 'content:ab_test_detail' test_id=test.id %}" class="card block hover:shadow-md transition-shadow">
+      <div class="card-body flex items-center justify-between">
+        <div class="flex items-center gap-4 min-w-0">
+          {# Status badge #}
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
+            {% if test.status == 'generating' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300
+            {% elif test.status == 'draft' %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300
+            {% elif test.status == 'running' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
+            {% elif test.status == 'concluded' %}bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300
+            {% elif test.status == 'cancelled' %}bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400
+            {% endif %}">
+            {% if test.status == 'generating' %}
+            <svg class="h-3 w-3 mr-1 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            {% endif %}
+            {{ test.get_status_display }}
+          </span>
+
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ test.name }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              {{ test.social_account.get_platform_display }} · {{ test.variant_count }} variants · {{ test.test_duration_hours }}h test
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4 shrink-0">
+          {% if test.winner %}
+          <span class="text-xs font-medium text-purple-600 dark:text-purple-400">
+            Winner: Variant {{ test.winner.variant_label }}
+          </span>
+          {% endif %}
+          <span class="text-xs text-gray-400 dark:text-gray-500">{{ test.created_at|timesince }} ago</span>
+          <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

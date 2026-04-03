@@ -359,3 +359,157 @@ def get_content_dna_summary(user, days=30):
         "winning_attributes": winning[:10],
         "total_analyzed": posts.count(),
     }
+
+
+# ─── A/B Test Evaluation ─────────────────────────────────────────────────────
+
+def evaluate_ab_test(ab_test):
+    """
+    Evaluate an A/B test by comparing variant metrics.
+
+    Compares all published variants' engagement data via the LLM and
+    declares a winner. Updates the ABTest with the result.
+
+    Returns a dict with winner info and analysis summary.
+    """
+    from apps.content.models import ABTest
+
+    user = ab_test.user
+    variants = (
+        ab_test.variants.filter(status=Post.Status.PUBLISHED)
+        .select_related("social_account")
+        .prefetch_related("metrics")
+    )
+
+    if variants.count() < 2:
+        return {"error": "Need at least 2 published variants to evaluate."}
+
+    action = AgentAction.objects.create(
+        user=user,
+        agent_type="analyst",
+        action_type="ab_test_evaluation",
+        description=f"Evaluating A/B test: {ab_test.name[:80]}",
+        status=AgentAction.ActionStatus.STARTED,
+        input_data={"ab_test_id": str(ab_test.id)},
+    )
+
+    try:
+        # Build comparison data
+        variant_data = []
+        for v in variants:
+            entry = {
+                "label": v.variant_label,
+                "post_id": str(v.id),
+                "content_preview": v.content_text[:200],
+                "angle": v.ai_angle,
+                "framework": v.ai_framework,
+                "content_dna": v.content_dna,
+            }
+            try:
+                m = v.metrics
+                entry["metrics"] = {
+                    "impressions": m.impressions,
+                    "reach": m.reach,
+                    "likes": m.likes,
+                    "comments": m.comments,
+                    "shares": m.shares,
+                    "saves": m.saves,
+                    "clicks": m.clicks,
+                    "engagement_rate": m.engagement_rate,
+                }
+            except PostMetric.DoesNotExist:
+                entry["metrics"] = None
+            variant_data.append(entry)
+
+        # Determine winner by engagement rate (hard metric)
+        scored = [
+            v for v in variant_data
+            if v["metrics"] and v["metrics"]["engagement_rate"] is not None
+        ]
+
+        if not scored:
+            # No metrics yet — can't determine winner
+            action.status = AgentAction.ActionStatus.COMPLETED
+            action.output_data = {"message": "No engagement metrics available yet."}
+            action.save(update_fields=["status", "output_data"])
+            return {"error": "No engagement metrics collected yet. Wait for more data."}
+
+        # Pick winner by engagement rate
+        winner_data = max(scored, key=lambda v: v["metrics"]["engagement_rate"])
+
+        # Ask LLM to explain WHY the winner won
+        system_prompt = (
+            "You are the Analyst Agent evaluating an A/B content test. "
+            "Compare the variants and explain why the winner performed best. "
+            "Respond in JSON with keys:\n"
+            '- "winner_label": the winning variant label\n'
+            '- "summary": 2-3 sentence executive summary of results\n'
+            '- "why_winner_won": specific analysis of what made the winning content perform better\n'
+            '- "learnings": list of 2-3 actionable content insights from this test\n'
+            '- "confidence": "high", "medium", or "low" based on data quality\n'
+        )
+
+        prompt = (
+            f"A/B Test: {ab_test.name}\n"
+            f"Platform: {ab_test.social_account.platform}\n"
+            f"Test duration: {ab_test.test_duration_hours} hours\n\n"
+            f"Variants:\n{json.dumps(variant_data, indent=2, default=str)}\n\n"
+            f"Winner by engagement rate: Variant {winner_data['label']} "
+            f"({winner_data['metrics']['engagement_rate']:.2f}%)\n\n"
+            "Explain these results. What content lessons can we learn?"
+        )
+
+        response = generate(
+            prompt=prompt,
+            system=system_prompt,
+            model=get_model_for_task("analyst.performance"),
+            json_mode=True,
+            temperature=0.3,
+        )
+
+        try:
+            analysis = parse_llm_json(response.content)
+        except (json.JSONDecodeError, ValueError):
+            analysis = {
+                "winner_label": winner_data["label"],
+                "summary": response.content[:500],
+                "why_winner_won": "",
+                "learnings": [],
+                "confidence": "low",
+            }
+
+        # Update ABTest with winner
+        winner_post = variants.get(variant_label=winner_data["label"])
+        ab_test.winner = winner_post
+        ab_test.status = ABTest.Status.CONCLUDED
+        ab_test.concluded_at = timezone.now()
+        ab_test.conclusion_summary = analysis.get("summary", "")
+        ab_test.save(update_fields=[
+            "winner", "status", "concluded_at", "conclusion_summary", "updated_at",
+        ])
+
+        result = {
+            "winner_label": winner_data["label"],
+            "winner_post_id": str(winner_post.id),
+            "analysis": analysis,
+            "variant_data": variant_data,
+        }
+
+        action.status = AgentAction.ActionStatus.COMPLETED
+        action.output_data = result
+        action.tokens_used = response.total_tokens
+        action.input_tokens = response.input_tokens
+        action.output_tokens = response.output_tokens
+        action.model_used = response.model
+        action.completed_at = timezone.now()
+        action.save()
+
+        logger.info("A/B Test %s concluded — winner: Variant %s", ab_test.id, winner_data["label"])
+        return result
+
+    except Exception as e:
+        logger.exception("A/B test evaluation failed: %s", e)
+        action.status = AgentAction.ActionStatus.FAILED
+        action.error_message = str(e)
+        action.save(update_fields=["status", "error_message"])
+        return {"error": str(e)}

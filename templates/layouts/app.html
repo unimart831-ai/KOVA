@@ -72,6 +72,16 @@
         Timeline
       </a>
 
+      <a href="{% if request.plan_limits.ab_testing %}{% url 'content:ab_test_list' %}{% else %}{% url 'billing:pricing' %}{% endif %}"
+         {% if '/content/ab-tests' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/content/ab-tests' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/content/ab-tests' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        A/B Tests
+        {% if not request.plan_limits.ab_testing %}<span class="ml-auto text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">GROWTH</span>{% endif %}
+      </a>
+
       <p class="nav-section">Intelligence</p>
       <a href="{% if request.plan_limits.engagement_agent %}{% url 'engage:inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}"
          {% if '/engage/' in request.path %}aria-current="page"{% endif %}
