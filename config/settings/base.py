@@ -261,7 +261,7 @@ DEFAULT_LLM_MODEL = env("DEFAULT_LLM_MODEL", default="gpt-4o-mini")
 # DEV: Using free OpenRouter models. Switch to paid models for production.
 LLM_MODEL_PREMIUM = env("LLM_MODEL_PREMIUM", default="stepfun/step-3.5-flash:free")
 LLM_MODEL_WORKHORSE = env("LLM_MODEL_WORKHORSE", default="stepfun/step-3.5-flash:free")
-LLM_MODEL_FAST = env("LLM_MODEL_FAST", default="stepfun/step-3.5-flash:free")
+LLM_MODEL_FAST = env("LLM_MODEL_FAST", default="stepun/step-3.5-flash:free")
 
 AGENT_MODELS = {
     # Create Agent — user-facing content, needs top creative quality
