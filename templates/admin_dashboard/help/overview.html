@@ -1,0 +1,159 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ total_articles }} articles · {{ total_categories }} categories</p>{% endblock %}
+
+{% block content %}
+<!-- ── Stat Cards ─────────────────────────────────────────────────────── -->
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ total_views }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Total Views</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ views_7d }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Views (7d)</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-green-600 dark:text-green-400">{{ views_today }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Views Today</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-purple-600 dark:text-purple-400">{{ unique_users_7d }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Unique Users (7d)</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-kova-200 dark:border-kova-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-kova-600 dark:text-kova-400">{{ center_views_7d }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Center Views (7d)</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-amber-200 dark:border-amber-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-amber-600 dark:text-amber-400">{{ article_views_7d }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Article Views (7d)</p>
+  </div>
+</div>
+
+<!-- ── Daily Views Chart ─────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm mb-6">
+  <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Daily Help Views (14 days)</h3>
+  <div class="h-48" id="daily-views-chart">
+    <div class="flex items-end justify-between h-full gap-1">
+      {% for day in daily_views_json %}
+      <div class="flex-1 flex flex-col items-center justify-end h-full">
+        {% if day.views > 0 %}
+        <span class="text-[9px] text-gray-500 dark:text-gray-400 mb-1">{{ day.views }}</span>
+        {% endif %}
+        <div class="w-full bg-kova-500 dark:bg-kova-400 rounded-t transition-all"
+             style="height: {% widthratio day.views daily_max 100 %}%{% if day.views == 0 %}; min-height: 2px; background-color: #e5e7eb{% endif %}"
+             title="{{ day.date }}: {{ day.views }} views"></div>
+        <span class="text-[8px] text-gray-400 dark:text-gray-500 mt-1 {% if not forloop.first and not forloop.last %}hidden sm:block{% endif %}">{{ day.date|slice:"-5:" }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── Top Articles & Category Breakdown ─────────────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
+
+  <!-- Top Articles (30 days) -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Top Articles (30d)</h3>
+      <a href="{% url 'admin_dashboard:help_article_views' %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">View all →</a>
+    </div>
+    <div class="space-y-2">
+      {% for art in top_articles %}
+      <div class="flex items-center justify-between py-1.5 {% if not forloop.last %}border-b border-gray-100 dark:border-gray-800{% endif %}">
+        <div class="min-w-0 flex-1 mr-3">
+          <p class="text-sm text-gray-900 dark:text-white truncate">{{ art.article_title }}</p>
+          <p class="text-[10px] text-gray-500 dark:text-gray-400">{{ art.category_name }}</p>
+        </div>
+        <span class="text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">{{ art.views }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-6">No article views yet</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Category Breakdown -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Category Usage (30d)</h3>
+    <div class="space-y-3">
+      {% for cs in category_stats %}
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-sm text-gray-900 dark:text-white">{{ cs.category_name }}</span>
+          <span class="text-xs text-gray-500 dark:text-gray-400">{{ cs.views }} views · {{ cs.unique_users }} users</span>
+        </div>
+        <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
+          <div class="bg-kova-500 dark:bg-kova-400 h-2 rounded-full transition-all"
+               style="width: {% widthratio cs.views views_7d 100 %}%{% if cs.views == 0 %}; min-width: 4px{% endif %}"></div>
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-6">No category data yet</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── Bottom Row: Unviewed Articles & Top Users ─────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
+
+  <!-- Unviewed Articles -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Never-viewed Articles</h3>
+    <div class="space-y-2">
+      {% for art in unviewed_articles %}
+      <div class="flex items-center justify-between py-1.5 {% if not forloop.last %}border-b border-gray-100 dark:border-gray-800{% endif %}">
+        <div class="min-w-0 flex-1 mr-3">
+          <p class="text-sm text-gray-900 dark:text-white truncate">{{ art.title }}</p>
+          <p class="text-[10px] text-gray-500 dark:text-gray-400">{{ art.category }}</p>
+        </div>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">No views</span>
+      </div>
+      {% empty %}
+      <div class="text-center py-6">
+        <svg class="w-8 h-8 text-green-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        <p class="text-sm text-green-600 dark:text-green-400 font-medium">All articles have been viewed!</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Top Users -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Top Help Users (30d)</h3>
+    <div class="space-y-2">
+      {% for u in top_users %}
+      <div class="flex items-center justify-between py-1.5 {% if not forloop.last %}border-b border-gray-100 dark:border-gray-800{% endif %}">
+        <div class="min-w-0 flex-1 mr-3">
+          <p class="text-sm text-gray-900 dark:text-white truncate">{{ u.user__full_name|default:u.user__email }}</p>
+          <p class="text-[10px] text-gray-500 dark:text-gray-400">{{ u.user__email }}</p>
+        </div>
+        <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ u.views }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-6">No users yet</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── Quick Links ────────────────────────────────────────────────────── -->
+<div class="flex flex-wrap gap-2">
+  <a href="{% url 'admin_dashboard:help_article_views' %}" class="btn-secondary text-xs">
+    <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+    Article Stats
+  </a>
+  <a href="{% url 'admin_dashboard:help_view_log' %}" class="btn-secondary text-xs">
+    <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    View Log
+  </a>
+  <a href="{% url 'help:center' %}" target="_blank" class="btn-secondary text-xs">
+    <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-lienjoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+    View Help Center →
+  </a>
+</div>
+{% endblock %}

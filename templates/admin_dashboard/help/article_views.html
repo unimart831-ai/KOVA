@@ -1,0 +1,91 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ total_articles }} articles · Last 30 days</p>{% endblock %}
+
+{% block content %}
+<!-- ── Search & Sort ──────────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm mb-6">
+  <form method="get" class="flex flex-col sm:flex-row gap-3">
+    <div class="flex-1">
+      <input type="text" name="q" value="{{ search }}" placeholder="Search articles or categories…"
+             class="input w-full">
+    </div>
+    <div class="flex gap-2">
+      <select name="sort" class="input w-auto">
+        <option value="-views_30d" {% if sort == '-views_30d' %}selected{% endif %}>Most viewed</option>
+        <option value="views_30d" {% if sort == 'views_30d' %}selected{% endif %}>Least viewed</option>
+        <option value="-unique_users_30d" {% if sort == '-unique_users_30d' %}selected{% endif %}>Most users</option>
+        <option value="title" {% if sort == 'title' %}selected{% endif %}>Title A-Z</option>
+        <option value="-title" {% if sort == '-title' %}selected{% endif %}>Title Z-A</option>
+      </select>
+      <button type="submit" class="btn-primary text-xs">Filter</button>
+      {% if search or sort != '-views_30d' %}
+      <a href="{% url 'admin_dashboard:help_article_views' %}" class="btn-ghost text-xs">Clear</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- ── Article Table ──────────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+          <th class="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-300 text-xs">#</th>
+          <th class="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-300 text-xs">Article</th>
+          <th class="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-300 text-xs">Category</th>
+          <th class="text-right px-4 py-3 font-semibold text-gray-700 dark:text-gray-300 text-xs">Views (30d)</th>
+          <th class="text-right px-4 py-3 font-semibold text-gray-700 dark:text-gray-300 text-xs">Unique Users</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for art in page_obj %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30">
+          <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ forloop.counter0|add:page_obj.start_index }}</td>
+          <td class="px-4 py-3">
+            <p class="font-medium text-gray-900 dark:text-white">{{ art.title }}</p>
+            <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{{ art.slug }}</p>
+          </td>
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">{{ art.category_name }}</span>
+          </td>
+          <td class="px-4 py-3 text-right">
+            <span class="font-semibold text-gray-900 dark:text-white">{{ art.views_30d }}</span>
+          </td>
+          <td class="px-4 py-3 text-right text-gray-600 dark:text-gray-400">{{ art.unique_users_30d }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+            {% if search %}No articles match "{{ search }}"{% else %}No article data{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="border-t border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
+    <span class="text-xs text-gray-500 dark:text-gray-400">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+    <div class="flex gap-1">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}&q={{ search }}&sort={{ sort }}" class="btn-ghost text-xs">← Prev</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}&q={{ search }}&sort={{ sort }}" class="btn-ghost text-xs">Next →</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── Back Link ──────────────────────────────────────────────────────── -->
+<div class="mt-4">
+  <a href="{% url 'admin_dashboard:help_overview' %}" class="text-xs text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400">← Back to Help Overview</a>
+</div>
+{% endblock %}

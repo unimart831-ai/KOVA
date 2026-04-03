@@ -5,6 +5,8 @@ from django.http import Http404
 from django.shortcuts import render
 from django.utils.safestring import mark_safe
 
+from apps.help.models import HelpPageView
+
 # Article registry — metadata for all help articles
 # Each article renders a template at help/articles/{slug}.html
 CATEGORIES = [
@@ -173,6 +175,9 @@ def _get_articles_by_category():
 
 @login_required
 def help_center(request):
+    # Track page view
+    HelpPageView.objects.create(user=request.user, page_type="center")
+
     search_data = [
         {"slug": a["slug"], "title": a["title"], "description": a["description"], "category": a["category"]}
         for a in ARTICLES
@@ -199,6 +204,15 @@ def help_article(request, slug):
     idx = next(i for i, a in enumerate(siblings) if a["slug"] == slug)
     prev_article = siblings[idx - 1] if idx > 0 else None
     next_article = siblings[idx + 1] if idx < len(siblings) - 1 else None
+
+    # Track article view
+    HelpPageView.objects.create(
+        user=request.user,
+        page_type="article",
+        article_slug=slug,
+        article_title=article["title"],
+        category=article["category"],
+    )
 
     return render(request, "help/article.html", {
         "article": article,

@@ -16,6 +16,7 @@ def overview(request):
     from apps.billing.models import MpesaPayment
     from apps.content.models import ABTest, ContentSeed, Post
     from apps.engage.models import Interaction, Superfan
+    from apps.help.models import HelpPageView
     from apps.platforms.models import SocialAccount
     from apps.teams.models import Team, TeamMember
 
@@ -208,6 +209,10 @@ def overview(request):
     total_ab_tests = ABTest.objects.count()
     running_ab_tests = ABTest.objects.filter(status="running").count()
 
+    # ── Help Center ──────────────────────────────────────────────────────
+    help_views_7d = HelpPageView.objects.filter(viewed_at__gte=seven_days_ago).count()
+    help_articles = 15  # Static count from help article registry
+
     # ── Failed Content (recent) ──────────────────────────────────────────
     recent_failures = Post.objects.filter(
         status="failed",
@@ -253,5 +258,8 @@ def overview(request):
         "total_team_members": total_team_members,
         "total_ab_tests": total_ab_tests,
         "running_ab_tests": running_ab_tests,
+        # Help Center
+        "help_views_7d": help_views_7d,
+        "help_articles": help_articles,
     }
     return render(request, "admin_dashboard/overview.html", context)
