@@ -6,6 +6,15 @@
   display: none !important;
 }
 
+@layer utilities {
+  .counter-reset-list {
+    counter-reset: list-counter;
+  }
+  .border-l-3 {
+    border-left-width: 3px;
+  }
+}
+
 @layer base {
   html {
     @apply scroll-smooth;
@@ -97,5 +106,64 @@
   /* Shimmer loading effect */
   .shimmer {
     @apply bg-gradient-to-r from-transparent via-white/20 to-transparent bg-[length:200%_100%] animate-shimmer;
+  }
+
+  /* ── Help Article Typography ────────────────────────────────────────── */
+  .article-content {
+    @apply text-base leading-relaxed text-gray-600 dark:text-gray-300;
+  }
+  .article-content h2 {
+    @apply text-xl font-bold text-gray-900 dark:text-white mt-0 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700;
+  }
+  .article-content h3 {
+    @apply text-base font-semibold text-gray-800 dark:text-gray-100 mt-8 mb-3;
+  }
+  .article-content h4 {
+    @apply text-sm font-semibold text-gray-700 dark:text-gray-200 mt-6 mb-2;
+  }
+  .article-content p {
+    @apply mb-4 leading-relaxed;
+  }
+  .article-content ul {
+    @apply mb-5 pl-0 space-y-2 list-none;
+  }
+  .article-content ol {
+    @apply mb-5 pl-0 space-y-2 list-none counter-reset-list;
+  }
+  .article-content ul > li {
+    @apply relative pl-5 text-sm leading-relaxed;
+  }
+  .article-content ul > li::before {
+    content: "";
+    @apply absolute left-0 top-2 w-1.5 h-1.5 rounded-full bg-kova-500 dark:bg-kova-400;
+  }
+  .article-content ol > li {
+    @apply relative pl-8 text-sm leading-relaxed;
+    counter-increment: list-counter;
+  }
+  .article-content ol > li::before {
+    content: counter(list-counter);
+    @apply absolute left-0 top-0 w-5 h-5 rounded-full bg-kova-100 dark:bg-kova-900/40 text-kova-700 dark:text-kova-300 text-xs font-bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .article-content strong {
+    @apply font-semibold text-gray-900 dark:text-white;
+  }
+  .article-content em {
+    @apply italic text-gray-700 dark:text-gray-200;
+  }
+  .article-content a {
+    @apply text-kova-600 dark:text-kova-400 font-medium underline decoration-kova-300 dark:decoration-kova-700 underline-offset-2 hover:decoration-kova-500 dark:hover:decoration-kova-400 transition-colors;
+  }
+  .article-content code {
+    @apply text-xs font-mono bg-gray-100 dark:bg-gray-800 text-kova-600 dark:text-kova-400 px-1.5 py-0.5 rounded;
+  }
+  .article-content blockquote {
+    @apply border-l-3 border-kova-400 dark:border-kova-600 bg-kova-50/50 dark:bg-kova-950/20 pl-4 py-3 pr-4 my-5 rounded-r-lg text-sm text-gray-700 dark:text-gray-300 italic;
+  }
+  .article-content hr {
+    @apply my-8 border-gray-200 dark:border-gray-700;
   }
 }
