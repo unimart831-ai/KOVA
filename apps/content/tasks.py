@@ -310,6 +310,11 @@ def fetch_post_metrics(post_id: str):
             "engagement_rate": _calc_engagement_rate(metrics_data),
         },
     )
+
+    # Intelligence: validate engagement prediction against actual metrics
+    from apps.agents.memory import validate_prediction
+    validate_prediction(post)
+
     logger.info("Metrics updated for post %s", post_id)
     return {"success": True, "post_id": post_id}
 

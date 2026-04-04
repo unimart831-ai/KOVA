@@ -132,3 +132,39 @@ def run_strategy_cycle():
 
     logger.info("Strategy cycle complete: %d users processed", processed)
     return processed
+
+
+@shared_task(name="agents.measure_agent_outcomes")
+def measure_agent_outcomes():
+    """
+    Periodic task: Score past agent actions against actual outcomes.
+    This is the engine that closes the feedback loop — comparing what agents
+    did against what actually happened (engagement, user edits, rejections).
+
+    Runs daily. Retroactively scores Create Agent and Strategist actions
+    from the last 7 days that haven't been measured yet.
+    """
+    from apps.agents.memory import (
+        measure_create_agent_outcomes,
+        measure_strategist_outcomes,
+    )
+
+    users = User.objects.filter(
+        Q(onboarding_completed=True) | Q(posts__status="published"),
+    ).distinct()
+
+    total_create = 0
+    total_strategy = 0
+
+    for user in users:
+        try:
+            total_create += measure_create_agent_outcomes(user)
+            total_strategy += measure_strategist_outcomes(user)
+        except Exception as e:
+            logger.error("Outcome measurement failed for %s: %s", user.email, e)
+
+    logger.info(
+        "Agent outcomes measured: %d create actions, %d strategy actions scored",
+        total_create, total_strategy,
+    )
+    return {"create_scored": total_create, "strategy_scored": total_strategy}

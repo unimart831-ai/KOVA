@@ -338,6 +338,24 @@ def _make_strategic_decisions(user, inputs):
         f"{json.dumps(inputs.get('competitor_intel', {}), indent=2, default=str)[:1500]}\n\n"
         f"=== USER GOALS ===\n"
         f"{json.dumps(inputs['user_context'].get('goals', []))}\n\n"
+    )
+
+    # Intelligence: inject past strategy outcomes so Strategist learns from itself
+    from apps.agents.memory import get_strategy_history, get_prediction_accuracy
+    strategy_history = get_strategy_history(user)
+    if strategy_history:
+        prompt += f"\n{strategy_history}\n"
+
+    accuracy = get_prediction_accuracy(user, days=14)
+    if accuracy.get("validated_count", 0) > 0:
+        prompt += (
+            f"=== CONTENT PREDICTION ACCURACY (last 14 days) ===\n"
+            f"Accurate within ±10: {accuracy['accuracy_rate']}%\n"
+            f"Avg predicted: {accuracy['avg_predicted']}, Avg actual: {accuracy['avg_actual']}\n"
+            f"Use this to calibrate expectations for new content.\n\n"
+        )
+
+    prompt += (
         f"Make strategic decisions. Create up to {seeds_needed} content ideas "
         f"(0 if queue is full). Always provide recommendations and insights."
     )

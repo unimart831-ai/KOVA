@@ -455,6 +455,11 @@ def edit_post(request, post_id):
             post = form.save(commit=False)
             post.status = Post.Status.DRAFT
             post.save(update_fields=["content_text", "status", "updated_at"])
+
+            # Intelligence: track edit feedback for agent learning
+            from apps.agents.memory import record_edit_feedback
+            record_edit_feedback(post)
+
             messages.success(request, "Post updated.")
             return redirect("content:studio")
     else:

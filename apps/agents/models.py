@@ -89,6 +89,17 @@ class AgentAction(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 
+    # Intelligence: outcome tracking — did this action actually work?
+    outcome_score = models.FloatField(
+        null=True, blank=True,
+        help_text="Measured outcome (0-100). E.g. engagement rate of generated posts, accuracy of prediction.",
+    )
+    outcome_data = models.JSONField(
+        default=dict, blank=True,
+        help_text="Structured outcome: {posts_created, avg_engagement, user_edits, prediction_accuracy, etc.}",
+    )
+    outcome_measured_at = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         ordering = ["-created_at"]
 

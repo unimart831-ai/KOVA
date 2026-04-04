@@ -17,6 +17,24 @@ class PostMetric(models.Model):
     engagement_rate = models.FloatField(null=True, blank=True)
     fetched_at = models.DateTimeField(auto_now=True)
 
+    # Intelligence: predicted vs. actual comparison
+    predicted_score = models.FloatField(
+        null=True, blank=True,
+        help_text="Snapshot of Post.predicted_engagement_score at publish time.",
+    )
+    actual_score = models.FloatField(
+        null=True, blank=True,
+        help_text="Normalized actual engagement score (0-100) calculated from real metrics.",
+    )
+    prediction_error = models.FloatField(
+        null=True, blank=True,
+        help_text="actual_score - predicted_score. Positive = underestimated, negative = overestimated.",
+    )
+    prediction_validated_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the prediction was compared against actuals.",
+    )
+
     def __str__(self):
         return f"Metrics for {self.post_id}"
 

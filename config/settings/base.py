@@ -198,6 +198,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "content.evaluate_ab_tests",
         "schedule": 3600.0,  # every hour — check running A/B tests
     },
+    "measure-agent-outcomes": {
+        "task": "agents.measure_agent_outcomes",
+        "schedule": 12 * 3600.0,  # every 12 hours — score past agent actions against outcomes
+    },
 }
 
 # ─── AUTH ────────────────────────────────────────────────────────────────────

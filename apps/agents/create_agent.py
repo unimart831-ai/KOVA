@@ -354,6 +354,15 @@ def build_system_prompt(user) -> str:
     if intel:
         parts.append(intel)
 
+    # Agent memory — learn from past actions and user corrections
+    from apps.agents.memory import get_agent_learning_context, get_user_edit_patterns
+    learning = get_agent_learning_context(user, "create", action_type="generate_from_seed")
+    if learning:
+        parts.append(learning)
+    edit_patterns = get_user_edit_patterns(user)
+    if edit_patterns:
+        parts.append(edit_patterns)
+
     # Industry Playbook — cold-start intelligence for new users
     from apps.agents.playbooks import get_playbook_intelligence
     playbook_intel = get_playbook_intelligence(user)
@@ -558,11 +567,12 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                 logger.warning("LLM generated for platform '%s' but no account connected", platform)
                 continue
 
+            content_text = pd.get("content_text", "")
             post = Post.objects.create(
                 user=user,
                 seed=seed,
                 social_account=account,
-                content_text=pd.get("content_text", ""),
+                content_text=content_text,
                 content_type=pd.get("content_type", "original"),
                 status=initial_status,
                 generated_by_agent="create",
@@ -570,6 +580,7 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                 ai_reasoning=pd.get("reasoning", ""),
                 ai_angle=pd.get("angle", ""),
                 ai_framework=pd.get("framework_used", ""),
+                ai_original_text=content_text,
             )
 
             # Generate AI image for the post (Growth+ plans only)

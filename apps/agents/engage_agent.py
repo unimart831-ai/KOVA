@@ -29,6 +29,55 @@ from apps.platforms.providers.registry import get_provider
 logger = logging.getLogger(__name__)
 
 
+# ─── Reply Learning (feedback from user-edited replies) ──────────────────────
+
+def _get_reply_edit_patterns(user):
+    """
+    Analyze past AI-suggested replies that the user edited before sending.
+    Shows the agent what kinds of replies the user prefers so it can learn.
+    """
+    edited = Interaction.objects.filter(
+        user=user,
+        user_edited_reply=True,
+        ai_suggested_reply__gt="",
+        ai_reply_sent__gt="",
+    ).order_by("-created_at")[:5]
+
+    if not edited.exists():
+        return ""
+
+    total_replies = Interaction.objects.filter(
+        user=user,
+        ai_reply_sent__gt="",
+    ).count()
+    edit_count = edited.count()
+
+    parts = ["## REPLY STYLE LEARNING (from your past corrections)"]
+    parts.append(f"User edited {edit_count} of their last {total_replies} replies.\n")
+    parts.append("Study these corrections to match their preferred reply style:")
+
+    for i, intr in enumerate(edited[:3], 1):
+        parts.append(f"\n### Correction #{i}:")
+        parts.append(f"  Interaction: \"{intr.content[:100]}...\"")
+        parts.append(f"  AI suggested: \"{intr.ai_suggested_reply[:100]}...\"")
+        parts.append(f"  User rewrote to: \"{intr.ai_reply_sent[:100]}...\"")
+
+    # Also show accepted replies (ones the user approved without changes)
+    accepted = Interaction.objects.filter(
+        user=user,
+        user_edited_reply=False,
+        ai_reply_sent__gt="",
+    ).order_by("-created_at")[:3]
+
+    if accepted:
+        parts.append("\n### Replies the user sent WITHOUT editing (aim for this style):")
+        for intr in accepted:
+            parts.append(f"  - To \"{intr.content[:80]}...\" → \"{intr.ai_reply_sent[:100]}\"")
+
+    parts.append("\nINSTRUCTION: Match the user's correction patterns. Write replies they would send as-is.\n")
+    return "\n".join(parts)
+
+
 # ─── Interaction Fetching ────────────────────────────────────────────────────
 
 def fetch_interactions(user):
@@ -431,6 +480,9 @@ def _generate_single_reply(interaction, brand_voice, company):
     if interaction.post:
         post_context = f"\nOriginal post they're responding to:\n\"{interaction.post.content_text[:200]}...\""
 
+    # Intelligence: learn from past reply edits
+    reply_learning = _get_reply_edit_patterns(interaction.user)
+
     system_prompt = (
         f"You are the community manager for {company}. "
         f"Your brand voice: {brand_voice}\n\n"
@@ -453,9 +505,13 @@ def _generate_single_reply(interaction, brand_voice, company):
         f"From: {interaction.author_name}"
         f"{f' (@{interaction.author_username})' if interaction.author_username else ''}\n"
         f"Their message:\n\"{interaction.content}\""
-        f"{post_context}\n\n"
-        "Write a reply."
+        f"{post_context}\n"
     )
+
+    if reply_learning:
+        prompt += f"\n{reply_learning}\n"
+
+    prompt += "\nWrite a reply."
 
     response = generate(
         prompt=prompt,

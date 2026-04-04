@@ -151,8 +151,24 @@ def analyze_performance(user, days=7):
             f"Average engagement rate: {perf_data['avg_engagement_rate']}%\n\n"
             f"Platform breakdown:\n{json.dumps(perf_data['platform_stats'], indent=2)}\n\n"
             f"Top performing posts:\n{json.dumps(perf_data['top_posts'], indent=2)}\n\n"
-            "Analyze this data and provide insights in the specified JSON format."
         )
+
+        # Intelligence: inject prediction accuracy so analyst knows its track record
+        from apps.agents.memory import get_prediction_accuracy
+        accuracy = get_prediction_accuracy(user, days=30)
+        if accuracy.get("validated_count", 0) > 0:
+            prompt += (
+                f"\n=== YOUR PREDICTION ACCURACY (last 30 days) ===\n"
+                f"Predictions validated: {accuracy['validated_count']}\n"
+                f"Avg predicted score: {accuracy['avg_predicted']}\n"
+                f"Avg actual score: {accuracy['avg_actual']}\n"
+                f"Avg error: {accuracy['avg_error']} (positive = underestimate)\n"
+                f"Accurate within ±10: {accuracy['accuracy_rate']}%\n"
+                f"Overestimates: {accuracy['overestimates']}, Underestimates: {accuracy['underestimates']}\n"
+                f"LEARN FROM THIS: Adjust your predictions based on your track record.\n\n"
+            )
+
+        prompt += "Analyze this data and provide insights in the specified JSON format."
 
         response = generate(prompt=prompt, system=system_prompt, model=get_model_for_task("analyst.performance"), json_mode=True, temperature=0.3)
 
@@ -334,6 +350,10 @@ def get_content_dna_summary(user, days=30):
         except PostMetric.DoesNotExist:
             continue
 
+        # Recency weighting: recent posts count more (exponential decay)
+        days_old = (timezone.now() - post.published_at).days if post.published_at else days
+        recency_weight = 0.95 ** days_old  # ~60% weight at 10 days, ~36% at 20 days
+
         dna = post.content_dna
         for key, value in dna.items():
             if isinstance(value, bool):
@@ -342,16 +362,35 @@ def get_content_dna_summary(user, days=30):
                 attr_key = f"{key}={value}"
 
             if attr_key not in attribute_scores:
-                attribute_scores[attr_key] = {"total_engagement": 0, "count": 0}
+                attribute_scores[attr_key] = {"total_engagement": 0, "weighted_total": 0, "count": 0}
             attribute_scores[attr_key]["total_engagement"] += engagement
+            attribute_scores[attr_key]["weighted_total"] += engagement * recency_weight
             attribute_scores[attr_key]["count"] += 1
 
-    # Calculate average engagement per attribute
+    # Calculate average engagement per attribute — with statistical minimum
+    MIN_SAMPLE_SIZE = 5  # Don't trust patterns with fewer than 5 posts
     winning = []
     for attr, data in attribute_scores.items():
-        if data["count"] >= 2:
+        if data["count"] >= MIN_SAMPLE_SIZE:
+            avg = data["weighted_total"] / data["count"]
+            raw_avg = data["total_engagement"] / data["count"]
+            winning.append({
+                "attribute": attr,
+                "avg_engagement": round(avg, 2),
+                "raw_avg_engagement": round(raw_avg, 2),
+                "posts": data["count"],
+                "confidence": "high" if data["count"] >= 10 else "moderate",
+            })
+        elif data["count"] >= 2:
+            # Include with low confidence for visibility, but flag it
             avg = data["total_engagement"] / data["count"]
-            winning.append({"attribute": attr, "avg_engagement": round(avg, 2), "posts": data["count"]})
+            winning.append({
+                "attribute": attr,
+                "avg_engagement": round(avg, 2),
+                "raw_avg_engagement": round(avg, 2),
+                "posts": data["count"],
+                "confidence": "low",
+            })
 
     winning.sort(key=lambda x: x["avg_engagement"], reverse=True)
 

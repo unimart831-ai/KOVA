@@ -30,6 +30,10 @@ class Interaction(models.Model):
     content = models.TextField()
     ai_suggested_reply = models.TextField(blank=True)
     ai_reply_sent = models.TextField(blank=True)
+    user_edited_reply = models.BooleanField(
+        default=False,
+        help_text="Whether the user modified the AI-suggested reply before sending.",
+    )
     platform_interaction_id = models.CharField(max_length=255, blank=True, db_index=True)
     sentiment = models.CharField(max_length=20, blank=True, db_index=True)  # positive, neutral, negative
     created_at = models.DateTimeField(auto_now_add=True)

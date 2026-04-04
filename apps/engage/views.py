@@ -97,6 +97,14 @@ def send_reply(request, pk):
             status=422,
         )
 
+    # Intelligence: allow user to edit the reply before sending
+    reply_text = request.POST.get("reply_text", "").strip()
+    if reply_text and reply_text != interaction.ai_suggested_reply:
+        interaction.user_edited_reply = True
+        interaction.ai_reply_sent = reply_text
+    else:
+        reply_text = interaction.ai_suggested_reply
+
     account = interaction.social_account
     provider = get_provider(account.platform)
 
@@ -119,14 +127,14 @@ def send_reply(request, pk):
             provider.reply_to_comment(
                 access_token=token,
                 comment_id=interaction.platform_interaction_id,
-                message=interaction.ai_suggested_reply,
+                message=reply_text,
             )
         elif interaction.interaction_type == "dm":
             # Send DM via provider
             provider.send_message(
                 access_token=token,
                 recipient_id=interaction.author_username or interaction.author_name,
-                message=interaction.ai_suggested_reply,
+                message=reply_text,
             )
         else:
             return HttpResponse(
@@ -135,9 +143,9 @@ def send_reply(request, pk):
             )
 
         # Mark as replied
-        interaction.ai_reply_sent = interaction.ai_suggested_reply
+        interaction.ai_reply_sent = reply_text
         interaction.status = Interaction.Status.AI_REPLIED
-        interaction.save(update_fields=["ai_reply_sent", "status"])
+        interaction.save(update_fields=["ai_reply_sent", "status", "user_edited_reply"])
 
         # Re-render the interaction item
         return render(request, "engage/_interaction_item.html", {

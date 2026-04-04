@@ -78,6 +78,20 @@ class Post(models.Model):
     ai_angle = models.CharField(max_length=255, blank=True, help_text="The strategic angle chosen for this platform.")
     ai_framework = models.CharField(max_length=100, blank=True, help_text="Content framework used (e.g. Hook→Value→CTA).")
 
+    # Intelligence feedback loop — tracks what AI suggested vs. what user approved
+    ai_original_text = models.TextField(
+        blank=True,
+        help_text="Original AI-generated text before user edits. Set once during generation, never overwritten.",
+    )
+    user_edited = models.BooleanField(
+        default=False,
+        help_text="Whether the user modified the AI-generated content.",
+    )
+    edit_distance_ratio = models.FloatField(
+        null=True, blank=True,
+        help_text="0.0 = no changes, 1.0 = completely rewritten. Measures how much user changed AI output.",
+    )
+
     # Content DNA — attributes for performance correlation
     content_dna = models.JSONField(
         default=dict, blank=True,
