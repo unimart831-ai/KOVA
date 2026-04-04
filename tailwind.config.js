@@ -57,6 +57,36 @@ module.exports = {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.4" },
         },
+        "float": {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-20px)" },
+        },
+        "float-delayed": {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-15px)" },
+        },
+        "agent-glow": {
+          "0%, 18%, 100%": { boxShadow: "0 1px 3px rgba(0,0,0,0.08)" },
+          "6%, 12%": { boxShadow: "0 0 0 2px rgba(92,124,250,0.15), 0 0 20px rgba(92,124,250,0.08)" },
+        },
+        "dash-flow": {
+          "to": { strokeDashoffset: "-20" },
+        },
+        "dash-flow-reverse": {
+          "to": { strokeDashoffset: "20" },
+        },
+        "orbit": {
+          "0%": { transform: "rotate(0deg) translateX(var(--orbit-radius, 120px)) rotate(0deg)" },
+          "100%": { transform: "rotate(360deg) translateX(var(--orbit-radius, 120px)) rotate(-360deg)" },
+        },
+        "blink": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0" },
+        },
+        "pulse-ring": {
+          "0%": { transform: "scale(1)", opacity: "0.6" },
+          "100%": { transform: "scale(1.8)", opacity: "0" },
+        },
       },
       animation: {
         "shimmer": "shimmer 2.5s ease-in-out infinite",
@@ -64,6 +94,13 @@ module.exports = {
         "slide-in-right": "slide-in-right 0.3s ease-out",
         "scale-in": "scale-in 0.2s ease-out",
         "pulse-dot": "pulse-dot 2s ease-in-out infinite",
+        "float": "float 6s ease-in-out infinite",
+        "float-delayed": "float-delayed 8s ease-in-out infinite",
+        "agent-glow": "agent-glow 10s ease-in-out infinite",
+        "dash-flow": "dash-flow 2s linear infinite",
+        "orbit": "orbit 20s linear infinite",
+        "blink": "blink 1s step-end infinite",
+        "pulse-ring": "pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       },
     },
   },

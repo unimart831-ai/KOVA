@@ -166,4 +166,60 @@
   .article-content hr {
     @apply my-8 border-gray-200 dark:border-gray-700;
   }
+
+  /* ── Landing Page Animations ──────────────────────────────────────── */
+
+  /* Scroll reveal - elements start invisible and slide up */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+  .reveal-delay-5 { transition-delay: 0.5s; }
+  .reveal-delay-6 { transition-delay: 0.6s; }
+
+  /* Agent network connection lines */
+  .agent-connection {
+    stroke-dasharray: 6 4;
+    animation: dash-flow 2s linear infinite;
+  }
+  .agent-connection-reverse {
+    stroke-dasharray: 6 4;
+    animation: dash-flow-reverse 2s linear infinite;
+  }
+
+  /* Agent node hover glow */
+  .agent-node {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .agent-node:hover {
+    transform: scale(1.05);
+  }
+
+  /* Gradient orb backgrounds */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.15;
+    pointer-events: none;
+  }
+  .dark .orb {
+    opacity: 0.08;
+  }
+
+  /* Typing cursor blink */
+  .cursor-blink::after {
+    content: '|';
+    animation: blink 1s step-end infinite;
+  }
 }
