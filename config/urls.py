@@ -56,6 +56,7 @@ urlpatterns = [
     path("help/", include("apps.help.urls")),
     path("teams/", include("apps.teams.urls")),
     path("dashboard/", include("apps.admin_dashboard.urls")),
+    path("api/v1/", include("apps.api.urls")),
 ]
 
 if settings.DEBUG:

@@ -209,15 +209,18 @@ def content_queue(request):
 @login_required
 def calendar_view(request):
     """Timeline view — scheduled + published posts grouped by day, then by seed."""
-    scheduled_posts = request.user.posts.filter(
+    visible_user_ids = get_teammate_ids(request.user)
+    team_posts = Post.objects.filter(user_id__in=visible_user_ids)
+
+    scheduled_posts = team_posts.filter(
         status__in=["approved", "scheduled", "published"],
         scheduled_at__isnull=False,
-    ).select_related("social_account", "seed").order_by("scheduled_at")
+    ).select_related("social_account", "seed", "user").order_by("scheduled_at")
 
-    unscheduled_posts = request.user.posts.filter(
+    unscheduled_posts = team_posts.filter(
         status__in=["approved", "scheduled"],
         scheduled_at__isnull=True,
-    ).select_related("social_account", "seed").order_by("-updated_at")
+    ).select_related("social_account", "seed", "user").order_by("-updated_at")
 
     # Group scheduled posts by date
     raw_by_date = defaultdict(list)

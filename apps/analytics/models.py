@@ -227,3 +227,56 @@ class CompetitorInsight(models.Model):
 
     def __str__(self):
         return f"[{self.insight_type}] {self.title}"
+
+
+# ─── Revenue Attribution ─────────────────────────────────────────────────────
+
+
+class Conversion(models.Model):
+    """Tracks revenue/conversion events attributed to social posts via UTM parameters."""
+
+    class ConversionType(models.TextChoices):
+        CLICK = "click", "Link Click"
+        LEAD = "lead", "Lead / Sign-up"
+        SALE = "sale", "Sale"
+        CUSTOM = "custom", "Custom Event"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE, related_name="conversions"
+    )
+    post = models.ForeignKey(
+        "content.Post", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="conversions",
+    )
+    social_account = models.ForeignKey(
+        "platforms.SocialAccount", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="conversions",
+    )
+
+    conversion_type = models.CharField(
+        max_length=20, choices=ConversionType.choices, default=ConversionType.CLICK,
+    )
+    revenue = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        help_text="Revenue attributed to this conversion (0 if non-revenue event).",
+    )
+    event_name = models.CharField(max_length=255, blank=True, help_text="Custom event label")
+
+    # UTM tracking
+    utm_source = models.CharField(max_length=255, blank=True)
+    utm_medium = models.CharField(max_length=255, blank=True)
+    utm_campaign = models.CharField(max_length=255, blank=True)
+    utm_content = models.CharField(max_length=255, blank=True, help_text="Usually the post ID")
+
+    # Optional metadata
+    metadata = models.JSONField(default=dict, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        amt = f" ${self.revenue}" if self.revenue else ""
+        return f"{self.get_conversion_type_display()}{amt} — {self.post_id or 'unattributed'}"

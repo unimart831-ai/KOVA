@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.views.decorators.http import require_POST
@@ -73,7 +74,7 @@ def agent_activity_log(request):
     if status_filter:
         actions = actions.filter(status=status_filter)
 
-    actions = actions[:100]
+    actions = list(actions[:100])
 
     return render(request, "agents/activity_log.html", {
         "actions": actions,

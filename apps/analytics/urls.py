@@ -14,4 +14,6 @@ urlpatterns = [
     path("competitors/<uuid:pk>/analyze/", views.competitor_analyze, name="competitor_analyze"),
     path("competitors/<uuid:pk>/delete/", views.competitor_delete, name="competitor_delete"),
     path("insights/<uuid:pk>/action/", views.insight_action, name="insight_action"),
+    # Revenue Attribution
+    path("revenue/", views.revenue_dashboard, name="revenue"),
 ]

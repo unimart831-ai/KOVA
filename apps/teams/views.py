@@ -10,7 +10,7 @@ from django.utils.text import slugify
 
 from apps.billing.models import get_plan_limits
 
-from .models import Team, TeamInvitation, TeamMember
+from .models import Brand, Team, TeamActivity, TeamInvitation, TeamMember
 
 User = get_user_model()
 
@@ -77,6 +77,7 @@ def team_create(request):
         TeamMember.objects.create(
             team=team, user=request.user, role=TeamMember.Role.OWNER,
         )
+        TeamActivity.log(team, request.user, TeamActivity.EventType.MEMBER_JOINED, f"{request.user.email} created the team")
         messages.success(request, f'Team "{name}" created successfully.')
         return redirect("teams:detail", slug=team.slug)
 
@@ -94,6 +95,8 @@ def team_detail(request, slug):
     limits = get_plan_limits(team.owner.profile.plan)
     max_members = limits.get("max_team_members", 0)
     current_count = members.count()
+    brands = team.brands.all()
+    recent_activities = team.activities.select_related("actor").order_by("-created_at")[:20]
 
     return render(request, "teams/detail.html", {
         "team": team,
@@ -103,6 +106,8 @@ def team_detail(request, slug):
         "max_members": max_members,
         "current_count": current_count,
         "can_invite": member.can_manage_members and current_count < max_members,
+        "brands": brands,
+        "recent_activities": recent_activities,
     })
 
 
@@ -152,6 +157,7 @@ def team_invite(request, slug):
             invited_by=request.user,
             expires_at=timezone.now() + timezone.timedelta(days=7),
         )
+        TeamActivity.log(team, request.user, TeamActivity.EventType.INVITATION_SENT, f"Invited {email} as {role}", email=email, role=role)
         messages.success(request, f"Invitation sent to {email}.")
         return redirect("teams:detail", slug=slug)
 
@@ -186,6 +192,7 @@ def invitation_accept(request, token):
             )
         invitation.accepted = True
         invitation.save(update_fields=["accepted"])
+        TeamActivity.log(invitation.team, request.user, TeamActivity.EventType.MEMBER_JOINED, f"{request.user.email} joined as {invitation.get_role_display()}")
         messages.success(request, f'You joined "{invitation.team.name}" as {invitation.get_role_display()}.')
         return redirect("teams:detail", slug=invitation.team.slug)
 
@@ -214,6 +221,7 @@ def member_update_role(request, slug, member_id):
         if new_role in [TeamMember.Role.ADMIN, TeamMember.Role.EDITOR, TeamMember.Role.VIEWER]:
             target.role = new_role
             target.save(update_fields=["role"])
+            TeamActivity.log(team, request.user, TeamActivity.EventType.ROLE_CHANGED, f"Changed {target.user.email} to {target.get_role_display()}", target_email=target.user.email, new_role=new_role)
             messages.success(request, f"Updated {target.user.email} to {target.get_role_display()}.")
 
     return redirect("teams:detail", slug=slug)
@@ -236,6 +244,7 @@ def member_remove(request, slug, member_id):
 
     if request.method == "POST":
         email = target.user.email
+        TeamActivity.log(team, request.user, TeamActivity.EventType.MEMBER_LEFT, f"Removed {email} from the team", email=email)
         target.delete()
         messages.success(request, f"Removed {email} from the team.")
 
@@ -253,6 +262,7 @@ def team_leave(request, slug):
         return redirect("teams:detail", slug=slug)
 
     if request.method == "POST":
+        TeamActivity.log(team, request.user, TeamActivity.EventType.MEMBER_LEFT, f"{request.user.email} left the team")
         member.delete()
         messages.success(request, f'You left "{team.name}".')
         return redirect("teams:list")
@@ -270,5 +280,114 @@ def invitation_cancel(request, slug, invitation_id):
     if request.method == "POST":
         invitation.delete()
         messages.success(request, "Invitation cancelled.")
+
+    return redirect("teams:detail", slug=slug)
+
+
+# ─── Brand Management ────────────────────────────────────────────────────────
+
+
+@login_required
+def brand_create(request, slug):
+    """Create a new brand within a team."""
+    team = get_object_or_404(Team, slug=slug)
+    _require_membership(request.user, team, min_role="admin")
+
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        if not name:
+            messages.error(request, "Brand name is required.")
+            return redirect("teams:detail", slug=slug)
+
+        brand_slug = slugify(name)[:240]
+        base_slug = brand_slug
+        counter = 1
+        while Brand.objects.filter(team=team, slug=brand_slug).exists():
+            brand_slug = f"{base_slug}-{counter}"
+            counter += 1
+
+        Brand.objects.create(
+            team=team,
+            name=name,
+            slug=brand_slug,
+            brand_voice=request.POST.get("brand_voice", "").strip(),
+            industry=request.POST.get("industry", "").strip(),
+            website_url=request.POST.get("website_url", "").strip(),
+            target_audience=request.POST.get("target_audience", "").strip(),
+        )
+        TeamActivity.log(team, request.user, TeamActivity.EventType.BRAND_CREATED, f'Created brand "{name}"', brand_name=name)
+        messages.success(request, f'Brand "{name}" created.')
+        return redirect("teams:detail", slug=slug)
+
+    return redirect("teams:detail", slug=slug)
+
+
+@login_required
+def brand_edit(request, slug, brand_id):
+    """Edit an existing brand."""
+    team = get_object_or_404(Team, slug=slug)
+    _require_membership(request.user, team, min_role="admin")
+    brand = get_object_or_404(Brand, id=brand_id, team=team)
+
+    if request.method == "POST":
+        brand.name = request.POST.get("name", brand.name).strip()
+        brand.brand_voice = request.POST.get("brand_voice", "").strip()
+        brand.industry = request.POST.get("industry", "").strip()
+        brand.website_url = request.POST.get("website_url", "").strip()
+        brand.target_audience = request.POST.get("target_audience", "").strip()
+
+        pillars_raw = request.POST.get("content_pillars", "").strip()
+        if pillars_raw:
+            brand.content_pillars = [p.strip() for p in pillars_raw.split(",") if p.strip()]
+        else:
+            brand.content_pillars = []
+
+        goals_raw = request.POST.get("goals", "").strip()
+        if goals_raw:
+            brand.goals = [g.strip() for g in goals_raw.split(",") if g.strip()]
+        else:
+            brand.goals = []
+
+        brand.save()
+        TeamActivity.log(team, request.user, TeamActivity.EventType.BRAND_UPDATED, f'Updated brand "{brand.name}"', brand_id=str(brand.id))
+        messages.success(request, f'Brand "{brand.name}" updated.')
+        return redirect("teams:brand_detail", slug=slug, brand_id=brand.id)
+
+    return render(request, "teams/brand_edit.html", {
+        "team": team,
+        "brand": brand,
+    })
+
+
+@login_required
+def brand_detail(request, slug, brand_id):
+    """View brand details + recent content."""
+    team = get_object_or_404(Team, slug=slug)
+    _require_membership(request.user, team)
+    brand = get_object_or_404(Brand, id=brand_id, team=team)
+
+    recent_posts = brand.posts.select_related("social_account", "user").order_by("-created_at")[:20]
+    recent_seeds = brand.content_seeds.order_by("-created_at")[:10]
+
+    return render(request, "teams/brand_detail.html", {
+        "team": team,
+        "brand": brand,
+        "recent_posts": recent_posts,
+        "recent_seeds": recent_seeds,
+    })
+
+
+@login_required
+def brand_toggle(request, slug, brand_id):
+    """Activate/deactivate a brand."""
+    team = get_object_or_404(Team, slug=slug)
+    _require_membership(request.user, team, min_role="admin")
+    brand = get_object_or_404(Brand, id=brand_id, team=team)
+
+    if request.method == "POST":
+        brand.is_active = not brand.is_active
+        brand.save(update_fields=["is_active"])
+        state = "activated" if brand.is_active else "deactivated"
+        messages.success(request, f'Brand "{brand.name}" {state}.')
 
     return redirect("teams:detail", slug=slug)

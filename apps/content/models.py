@@ -14,6 +14,10 @@ class ContentSeed(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="content_seeds")
+    brand = models.ForeignKey(
+        "teams.Brand", on_delete=models.SET_NULL, null=True, blank=True, related_name="content_seeds",
+        help_text="Brand this content is for. Null = user's default brand voice.",
+    )
     idea = models.TextField(help_text="Your raw idea, topic, or content seed.")
     notes = models.TextField(blank=True, help_text="Additional context or instructions for the AI.")
     target_platforms = models.JSONField(
@@ -54,6 +58,10 @@ class Post(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="posts")
+    brand = models.ForeignKey(
+        "teams.Brand", on_delete=models.SET_NULL, null=True, blank=True, related_name="posts",
+        help_text="Brand this post belongs to. Null = user's default brand voice.",
+    )
     seed = models.ForeignKey(
         ContentSeed, on_delete=models.SET_NULL, null=True, blank=True, related_name="posts",
     )

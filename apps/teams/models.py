@@ -25,6 +25,49 @@ class Team(models.Model):
         return self.name
 
 
+class Brand(models.Model):
+    """A brand within a team — each brand has its own voice, audience, and goals.
+
+    Agency-plan teams can manage multiple brands (clients).
+    Solo users get one implicit brand from their UserProfile.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="brands")
+    name = models.CharField(max_length=255, help_text="Brand or client name")
+    slug = models.SlugField(max_length=255)
+    logo = models.ImageField(upload_to="brand_logos/", blank=True, null=True)
+    brand_voice = models.TextField(
+        blank=True,
+        help_text="Describe this brand's tone and style.",
+    )
+    brand_voice_examples = models.JSONField(
+        default=list, blank=True,
+        help_text="Sample posts that represent this brand's voice.",
+    )
+    industry = models.CharField(max_length=30, blank=True)
+    website_url = models.URLField(blank=True)
+    target_audience = models.TextField(blank=True)
+    content_pillars = models.JSONField(
+        default=list, blank=True,
+        help_text="Main topics/themes for this brand's content.",
+    )
+    goals = models.JSONField(
+        default=list, blank=True,
+        help_text='Social media goals for this brand.',
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [("team", "slug")]
+        ordering = ["name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.team.name})"
+
+
 class TeamMember(models.Model):
     """A user's membership in a team with a specific role."""
 
@@ -105,3 +148,52 @@ class TeamInvitation(models.Model):
     @property
     def is_valid(self):
         return not self.accepted and not self.is_expired
+
+
+class TeamActivity(models.Model):
+    """Lightweight activity log for team-level events."""
+
+    class EventType(models.TextChoices):
+        MEMBER_JOINED = "member_joined", "Member Joined"
+        MEMBER_LEFT = "member_left", "Member Left"
+        ROLE_CHANGED = "role_changed", "Role Changed"
+        POST_CREATED = "post_created", "Post Created"
+        POST_PUBLISHED = "post_published", "Post Published"
+        POST_APPROVED = "post_approved", "Post Approved"
+        BRAND_CREATED = "brand_created", "Brand Created"
+        BRAND_UPDATED = "brand_updated", "Brand Updated"
+        SEED_SUBMITTED = "seed_submitted", "Seed Submitted"
+        INVITATION_SENT = "invitation_sent", "Invitation Sent"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="activities")
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    event_type = models.CharField(max_length=30, choices=EventType.choices, db_index=True)
+    description = models.CharField(max_length=500)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name_plural = "Team activities"
+
+    def __str__(self):
+        actor_name = self.actor.email if self.actor else "System"
+        return f"{actor_name}: {self.description}"
+
+    @classmethod
+    def log(cls, team, actor, event_type, description, **metadata):
+        """Convenience method to log an activity."""
+        return cls.objects.create(
+            team=team,
+            actor=actor,
+            event_type=event_type,
+            description=description,
+            metadata=metadata,
+        )

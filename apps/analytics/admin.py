@@ -4,6 +4,7 @@ from apps.analytics.models import (
     Competitor,
     CompetitorAnalysis,
     CompetitorInsight,
+    Conversion,
     PostMetric,
 )
 
@@ -35,4 +36,12 @@ class CompetitorInsightAdmin(admin.ModelAdmin):
     list_display = ["title", "competitor", "insight_type", "priority", "is_acted_on", "is_dismissed", "created_at"]
     list_filter = ["insight_type", "priority", "is_acted_on", "is_dismissed"]
     search_fields = ["title", "competitor__name", "user__email"]
+    readonly_fields = ["created_at"]
+
+
+@admin.register(Conversion)
+class ConversionAdmin(admin.ModelAdmin):
+    list_display = ["user", "conversion_type", "revenue", "post", "utm_campaign", "created_at"]
+    list_filter = ["conversion_type"]
+    search_fields = ["user__email", "utm_campaign", "event_name"]
     readonly_fields = ["created_at"]

@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.db.models import Avg, Count, Q, Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -8,6 +9,7 @@ from apps.analytics.models import (
     Competitor,
     CompetitorAnalysis,
     CompetitorInsight,
+    Conversion,
     PostMetric,
 )
 
@@ -15,13 +17,18 @@ from apps.analytics.models import (
 @login_required
 def insights(request):
     """Analytics dashboard with real metrics."""
+    platform = request.GET.get("platform", "")
+    cache_key = f"insights:{request.user.id}:{platform}"
+    cached = cache.get(cache_key)
+
+    if cached:
+        return render(request, "analytics/insights.html", cached)
+
     metrics = PostMetric.objects.filter(
         post__user=request.user,
         post__status="published",
     ).select_related("post__social_account")
 
-    # Platform filter
-    platform = request.GET.get("platform")
     if platform:
         metrics = metrics.filter(post__social_account__platform=platform)
 
@@ -36,29 +43,31 @@ def insights(request):
         avg_engagement=Avg("engagement_rate"),
     )
 
-    top_posts = metrics.order_by("-engagement_rate")[:5]
+    top_posts = list(metrics.order_by("-engagement_rate")[:5])
 
     published_count = request.user.posts.filter(status="published")
     if platform:
         published_count = published_count.filter(social_account__platform=platform)
     published_count = published_count.count()
 
-    # Connected platforms for filter dropdown
     connected_platforms = list(
         request.user.social_accounts.filter(is_active=True)
         .values_list("platform", flat=True)
         .distinct()
     )
 
-    return render(request, "analytics/insights.html", {
+    ctx = {
         "page_title": "Insights & Analytics",
         "totals": totals,
         "top_posts": top_posts,
         "published_count": published_count,
-        "has_data": metrics.exists(),
+        "has_data": bool(top_posts),
         "connected_platforms": connected_platforms,
         "current_platform": platform,
-    })
+    }
+    cache.set(cache_key, ctx, 300)  # 5 min
+
+    return render(request, "analytics/insights.html", ctx)
 
 
 # ─── Competitor Tracking ─────────────────────────────────────────────────────
@@ -276,3 +285,47 @@ def insight_action(request, pk):
         })
 
     return redirect("analytics:competitors")
+
+
+@login_required
+def revenue_dashboard(request):
+    """Revenue attribution dashboard — shows conversions linked to posts."""
+    from decimal import Decimal
+
+    conversions = Conversion.objects.filter(user=request.user).select_related(
+        "post", "social_account",
+    ).order_by("-created_at")
+
+    # Aggregate stats
+    totals = conversions.aggregate(
+        total_revenue=Sum("revenue"),
+        total_conversions=Count("id"),
+        total_sales=Count("id", filter=Q(conversion_type="sale")),
+        total_leads=Count("id", filter=Q(conversion_type="lead")),
+        total_clicks=Count("id", filter=Q(conversion_type="click")),
+    )
+
+    # Revenue by platform
+    platform_revenue = (
+        conversions
+        .filter(social_account__isnull=False)
+        .values("social_account__platform")
+        .annotate(revenue=Sum("revenue"), count=Count("id"))
+        .order_by("-revenue")
+    )
+
+    # Top posts by revenue
+    top_posts = (
+        conversions
+        .filter(post__isnull=False)
+        .values("post__id", "post__content_text", "post__social_account__platform")
+        .annotate(revenue=Sum("revenue"), count=Count("id"))
+        .order_by("-revenue")[:10]
+    )
+
+    return render(request, "analytics/revenue.html", {
+        "conversions": conversions[:50],
+        "totals": {k: v or (Decimal("0") if "revenue" in k else 0) for k, v in totals.items()},
+        "platform_revenue": platform_revenue,
+        "top_posts": top_posts,
+    })
