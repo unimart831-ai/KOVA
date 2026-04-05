@@ -184,10 +184,15 @@ def system_health(request):
 
     # ── Database stats ───────────────────────────────────────────────
     from apps.accounts.models import User
+    from apps.analytics.models import Conversion
     from apps.billing.models import BillingEvent, MpesaPayment
     from apps.briefs.models import DailyBrief
     from apps.engage.models import Interaction, Superfan
     from apps.notifications.models import Notification
+    from apps.teams.models import Brand, TeamActivity
+    from rest_framework.authtoken.models import Token
+
+    total_api_tokens = Token.objects.count()
 
     db_stats = [
         {"table": "Users", "count": User.objects.count()},
@@ -201,6 +206,10 @@ def system_health(request):
         {"table": "Daily Briefs", "count": DailyBrief.objects.count()},
         {"table": "M-Pesa Payments", "count": MpesaPayment.objects.count()},
         {"table": "Billing Events", "count": BillingEvent.objects.count()},
+        {"table": "Brands", "count": Brand.objects.count()},
+        {"table": "Team Activities", "count": TeamActivity.objects.count()},
+        {"table": "Conversions", "count": Conversion.objects.count()},
+        {"table": "API Tokens", "count": total_api_tokens},
     ]
     total_records = sum(s["count"] for s in db_stats)
     db_stats.sort(key=lambda x: x["count"], reverse=True)
@@ -273,6 +282,8 @@ def system_health(request):
         "llm_providers": llm_providers,
         # Tokens
         "expiring_soon": expiring_soon,
+        # API
+        "total_api_tokens": total_api_tokens,
     }
     return render(request, "admin_dashboard/system/health.html", context)
 

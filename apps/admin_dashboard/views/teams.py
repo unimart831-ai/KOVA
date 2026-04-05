@@ -11,7 +11,7 @@ from apps.admin_dashboard.decorators import staff_required
 @staff_required
 def teams_overview(request):
     """Teams overview — total teams, members, invitations, role distribution."""
-    from apps.teams.models import Team, TeamInvitation, TeamMember
+    from apps.teams.models import Team, TeamActivity, TeamInvitation, TeamMember
 
     now = timezone.now()
     seven_days_ago = now - timedelta(days=7)
@@ -20,6 +20,12 @@ def teams_overview(request):
     total_members = TeamMember.objects.count()
     teams_7d = Team.objects.filter(created_at__gte=seven_days_ago).count()
     members_7d = TeamMember.objects.filter(joined_at__gte=seven_days_ago).count()
+
+    # Brands
+    from apps.teams.models import Brand
+    total_brands = Brand.objects.count()
+    active_brands = Brand.objects.filter(is_active=True).count()
+    brands_7d = Brand.objects.filter(created_at__gte=seven_days_ago).count()
 
     # Invitations
     total_invitations = TeamInvitation.objects.count()
@@ -53,12 +59,29 @@ def teams_overview(request):
         .order_by("-member_count")[:10]
     )
 
+    # Recent team activity (all teams)
+    recent_activity = (
+        TeamActivity.objects.select_related("team", "actor")
+        .order_by("-created_at")[:15]
+    )
+
+    # Activity type breakdown (7d)
+    activity_breakdown = list(
+        TeamActivity.objects.filter(created_at__gte=seven_days_ago)
+        .values("event_type")
+        .annotate(count=Count("id"))
+        .order_by("-count")
+    )
+
     context = {
         "page_title": "Teams",
         "total_teams": total_teams,
         "total_members": total_members,
         "teams_7d": teams_7d,
         "members_7d": members_7d,
+        "total_brands": total_brands,
+        "active_brands": active_brands,
+        "brands_7d": brands_7d,
         "total_invitations": total_invitations,
         "pending_invitations": pending_invitations,
         "accepted_invitations": accepted_invitations,
@@ -66,6 +89,8 @@ def teams_overview(request):
         "role_breakdown": role_breakdown,
         "team_sizes": team_sizes,
         "largest_teams": largest_teams,
+        "recent_activity": recent_activity,
+        "activity_breakdown": activity_breakdown,
     }
     return render(request, "admin_dashboard/teams/overview.html", context)
 
@@ -78,6 +103,7 @@ def team_list(request):
     qs = Team.objects.annotate(
         member_count=Count("members", distinct=True),
         invitation_count=Count("invitations", distinct=True),
+        brand_count=Count("brands", distinct=True),
     ).select_related("owner")
 
     search = request.GET.get("q", "").strip()
@@ -111,7 +137,7 @@ def team_list(request):
 def team_detail(request, pk):
     """Single team detail — members, invitations, content."""
     from apps.content.models import Post
-    from apps.teams.models import Team, TeamInvitation, TeamMember
+    from apps.teams.models import Brand, Team, TeamActivity, TeamInvitation, TeamMember
 
     team = get_object_or_404(
         Team.objects.select_related("owner").annotate(
@@ -121,6 +147,16 @@ def team_detail(request, pk):
     )
     members = TeamMember.objects.filter(team=team).select_related("user").order_by("role")
     invitations = TeamInvitation.objects.filter(team=team).order_by("-created_at")[:20]
+
+    # Team brands
+    brands = Brand.objects.filter(team=team).order_by("-created_at")
+
+    # Team activity feed
+    team_activity = (
+        TeamActivity.objects.filter(team=team)
+        .select_related("actor")
+        .order_by("-created_at")[:20]
+    )
 
     # Team content stats
     member_user_ids = list(members.values_list("user_id", flat=True))
@@ -138,6 +174,8 @@ def team_detail(request, pk):
         "members": members,
         "invitations": invitations,
         "content_stats": content_stats,
+        "brands": brands,
+        "team_activity": team_activity,
         "now": timezone.now(),
     }
     return render(request, "admin_dashboard/teams/detail.html", context)

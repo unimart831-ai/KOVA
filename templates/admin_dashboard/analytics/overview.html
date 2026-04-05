@@ -159,6 +159,89 @@
   </div>
 </div>
 
+<!-- ── Revenue Attribution ─────────────────────────────────────────────── -->
+<div class="mt-6">
+  <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Revenue Attribution (30d)</h3>
+</div>
+
+<!-- Revenue cards -->
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ total_conversions }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Total Conversions</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-emerald-200 dark:border-emerald-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400">{{ conversions_30d_count }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Conversions (30d)</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-emerald-200 dark:border-emerald-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400"><span class="text-sm text-gray-400">KES</span> {{ conversion_revenue_30d|floatformat:0 }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Revenue (30d)</p>
+  </div>
+</div>
+
+<!-- Conversion breakdowns -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
+
+  <!-- By Type -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">By Type</h3>
+    <div class="space-y-2">
+      {% for item in conversion_by_type %}
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-900 dark:text-white capitalize">{{ item.conversion_type }}</span>
+        <div class="text-right">
+          <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.count }}</span>
+          {% if item.revenue %}
+          <span class="text-xs text-emerald-600 dark:text-emerald-400 ml-1">KES {{ item.revenue|floatformat:0 }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No conversions yet</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- By Platform -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">By Platform</h3>
+    <div class="space-y-2">
+      {% for item in conversion_by_platform %}
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-900 dark:text-white capitalize">{{ item.platform }}</span>
+        <div class="text-right">
+          <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.count }}</span>
+          {% if item.revenue %}
+          <span class="text-xs text-emerald-600 dark:text-emerald-400 ml-1">KES {{ item.revenue|floatformat:0 }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No platform data yet</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Top Converting Posts -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Top Converting Posts</h3>
+    <div class="space-y-2">
+      {% for item in top_converting_posts %}
+      <div class="text-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[60%]">{{ item.post__content_text|truncatechars:40 }}</span>
+          <span class="text-emerald-600 dark:text-emerald-400 font-semibold">KES {{ item.total_revenue|floatformat:0 }}</span>
+        </div>
+        <p class="text-gray-400 dark:text-gray-500 mt-0.5">{{ item.conv_count }} conversion{{ item.conv_count|pluralize }}</p>
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No converting posts yet</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
 <!-- ── Quick Links ───────────────────────────────────────────────────── -->
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
   <a href="{% url 'admin_dashboard:content_dna_analysis' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-purple-400 dark:hover:border-purple-500 transition-all">

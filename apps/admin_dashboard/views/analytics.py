@@ -12,6 +12,7 @@ from apps.analytics.models import (
     Competitor,
     CompetitorAnalysis,
     CompetitorInsight,
+    Conversion,
     PostMetric,
 )
 from apps.content.models import Post
@@ -163,6 +164,37 @@ def analytics_overview(request):
         .order_by("-count")
     )
 
+    # ── Revenue Attribution / Conversions ────────────────────────────
+    total_conversions = Conversion.objects.count()
+    conversions_30d = Conversion.objects.filter(created_at__gte=last_30d)
+    conversions_30d_count = conversions_30d.count()
+    conversion_revenue_30d = conversions_30d.aggregate(
+        total_revenue=Sum("revenue"),
+    )["total_revenue"] or 0
+
+    # Conversions by type
+    conversion_by_type = list(
+        conversions_30d.values("conversion_type")
+        .annotate(count=Count("id"), revenue=Sum("revenue"))
+        .order_by("-count")
+    )
+
+    # Conversions by platform
+    conversion_by_platform = list(
+        conversions_30d.filter(social_account__isnull=False)
+        .values(platform=F("social_account__platform"))
+        .annotate(count=Count("id"), revenue=Sum("revenue"))
+        .order_by("-count")
+    )
+
+    # Top converting posts
+    top_converting_posts = list(
+        conversions_30d.filter(post__isnull=False)
+        .values("post__id", "post__content_text")
+        .annotate(conv_count=Count("id"), total_revenue=Sum("revenue"))
+        .order_by("-total_revenue")[:10]
+    )
+
     context = {
         "page_title": "Analytics & Intelligence",
         # Cards
@@ -185,6 +217,13 @@ def analytics_overview(request):
         "unacted_insights": unacted_insights,
         "insight_types": insight_types,
         "insight_priority": insight_priority,
+        # Revenue Attribution
+        "total_conversions": total_conversions,
+        "conversions_30d_count": conversions_30d_count,
+        "conversion_revenue_30d": conversion_revenue_30d,
+        "conversion_by_type": conversion_by_type,
+        "conversion_by_platform": conversion_by_platform,
+        "top_converting_posts": top_converting_posts,
     }
     return render(request, "admin_dashboard/analytics/overview.html", context)
 

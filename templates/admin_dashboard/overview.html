@@ -143,6 +143,25 @@
           <dt class="text-xs text-gray-500 dark:text-gray-400">Help Views (7d)</dt>
           <dd class="text-sm font-semibold text-gray-900 dark:text-white">{{ help_views_7d }} <span class="text-xs text-gray-400 font-normal">{{ help_articles }} articles</span></dd>
         </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+
+        <div class="flex items-center justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Brands</dt>
+          <dd class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">{{ total_brands }} <span class="text-xs text-gray-400 font-normal">{{ active_brands }} active</span></dd>
+        </div>
+        <div class="flex items-center justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Conversions (30d)</dt>
+          <dd class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{{ conversions_30d }}</dd>
+        </div>
+        <div class="flex items-center justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Conv. Revenue (30d)</dt>
+          <dd class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">KES {{ conversion_revenue|format_number }}</dd>
+        </div>
+        <div class="flex items-center justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">API Tokens</dt>
+          <dd class="text-sm font-semibold text-orange-600 dark:text-orange-400">{{ total_api_tokens }}</dd>
+        </div>
       </dl>
     </div>
 
@@ -164,6 +183,26 @@
       </div>
     </div>
     {% endif %}
+
+    <!-- Team Activity Feed -->
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Team Activity</h3>
+      <div class="space-y-2">
+        {% for activity in recent_team_activity %}
+        <div class="text-xs">
+          <div class="flex items-center gap-1.5">
+            <span class="font-medium text-gray-900 dark:text-white">{{ activity.actor.email|default:"System"|truncatechars:20 }}</span>
+            <span class="text-gray-400">·</span>
+            <span class="text-indigo-600 dark:text-indigo-400">{{ activity.team.name|truncatechars:15 }}</span>
+          </div>
+          <p class="text-gray-500 dark:text-gray-400 mt-0.5 truncate">{{ activity.description }}</p>
+          <p class="text-gray-300 dark:text-gray-600 mt-0.5">{{ activity.created_at|timesince }} ago</p>
+        </div>
+        {% empty %}
+        <p class="text-xs text-gray-400 dark:text-gray-500 text-center py-2">No team activity yet</p>
+        {% endfor %}
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

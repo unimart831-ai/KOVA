@@ -6,7 +6,7 @@
 
 {% block content %}
 <!-- ── Component Status Cards ────────────────────────────────────────── -->
-<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+<div class="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
   <!-- Web Server -->
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <div class="flex items-center justify-between">
@@ -55,6 +55,16 @@
     </div>
     <p class="text-lg font-bold {% if beat_status.status == 'online' %}text-emerald-600 dark:text-emerald-400{% elif beat_status.status == 'stale' %}text-amber-600 dark:text-amber-400{% else %}text-gray-500{% endif %} mt-1">{{ beat_status.status|title }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">{{ beat_status.enabled_tasks }} scheduled task{{ beat_status.enabled_tasks|pluralize }}</p>
+  </div>
+
+  <!-- API Tokens -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <div class="flex items-center justify-between">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Public API</p>
+      <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+    </div>
+    <p class="text-lg font-bold text-orange-600 dark:text-orange-400 mt-1">{{ total_api_tokens }} token{{ total_api_tokens|pluralize }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">REST API v1</p>
   </div>
 </div>
 

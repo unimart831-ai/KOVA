@@ -6,7 +6,7 @@
 
 {% block content %}
 <!-- ── Stat Cards ─────────────────────────────────────────────────────── -->
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
     <p class="text-xl font-bold text-gray-900 dark:text-white">{{ total_teams }}</p>
     <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Total Teams</p>
@@ -15,6 +15,10 @@
     <p class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ total_members }}</p>
     <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Total Members</p>
   </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-indigo-200 dark:border-indigo-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-indigo-600 dark:text-indigo-400">{{ total_brands }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Brands <span class="text-gray-400">({{ active_brands }} active)</span></p>
+  </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 shadow-sm text-center">
     <p class="text-xl font-bold text-green-600 dark:text-green-400">+{{ teams_7d }}</p>
     <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Teams (7d)</p>
@@ -22,6 +26,10 @@
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 shadow-sm text-center">
     <p class="text-xl font-bold text-green-600 dark:text-green-400">+{{ members_7d }}</p>
     <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Members (7d)</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-green-600 dark:text-green-400">+{{ brands_7d }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Brands (7d)</p>
   </div>
 </div>
 
@@ -92,6 +100,55 @@
       </div>
       {% empty %}
       <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No teams yet</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── Team Activity ──────────────────────────────────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
+
+  <!-- Recent Activity Feed (2 cols) -->
+  <div class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div class="px-4 sm:px-5 py-3 border-b border-gray-200 dark:border-gray-800">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Recent Team Activity</h3>
+    </div>
+    <div class="divide-y divide-gray-100 dark:divide-gray-800 max-h-80 overflow-y-auto">
+      {% for activity in recent_activity %}
+      <div class="px-4 sm:px-5 py-3">
+        <div class="flex items-center gap-2 text-xs">
+          <span class="inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full
+            {% if 'created' in activity.event_type or 'joined' in activity.event_type %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
+            {% elif 'left' in activity.event_type %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
+            {% else %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400{% endif %}">
+            {{ activity.get_event_type_display }}
+          </span>
+          <span class="text-gray-400 dark:text-gray-500">{{ activity.created_at|timesince }} ago</span>
+        </div>
+        <p class="text-sm text-gray-900 dark:text-white mt-1">{{ activity.description }}</p>
+        <div class="flex items-center gap-2 mt-1 text-xs text-gray-400 dark:text-gray-500">
+          <span>{{ activity.actor.email|default:"System" }}</span>
+          <span>·</span>
+          <a href="{% url 'admin_dashboard:team_detail' pk=activity.team.pk %}" class="text-kova-600 dark:text-kova-400 hover:underline">{{ activity.team.name }}</a>
+        </div>
+      </div>
+      {% empty %}
+      <div class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No team activity recorded yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Activity Breakdown (1 col) -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Activity Types (7d)</h3>
+    <div class="space-y-2">
+      {% for item in activity_breakdown %}
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-900 dark:text-white capitalize">{{ item.event_type|cut:"_" }}</span>
+        <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.count }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No activity this week</p>
       {% endfor %}
     </div>
   </div>

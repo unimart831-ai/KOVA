@@ -13,12 +13,14 @@ def overview(request):
     """Admin dashboard home — key metrics, charts data, activity feed."""
     from apps.accounts.models import User, UserProfile
     from apps.agents.models import AgentAction, AgentConfig
+    from apps.analytics.models import Conversion
     from apps.billing.models import MpesaPayment
     from apps.content.models import ABTest, ContentSeed, Post
     from apps.engage.models import Interaction, Superfan
     from apps.help.models import HelpPageView
     from apps.platforms.models import SocialAccount
-    from apps.teams.models import Team, TeamMember
+    from apps.teams.models import Brand, Team, TeamActivity, TeamMember
+    from rest_framework.authtoken.models import Token
 
     now = timezone.now()
     today = now.date()
@@ -209,6 +211,26 @@ def overview(request):
     total_ab_tests = ABTest.objects.count()
     running_ab_tests = ABTest.objects.filter(status="running").count()
 
+    # ── Brands ───────────────────────────────────────────────────────────
+    total_brands = Brand.objects.count()
+    active_brands = Brand.objects.filter(is_active=True).count()
+
+    # ── Revenue Attribution / Conversions ────────────────────────────────
+    total_conversions = Conversion.objects.count()
+    conversions_30d = Conversion.objects.filter(created_at__gte=thirty_days_ago).count()
+    conversion_revenue = Conversion.objects.filter(
+        created_at__gte=thirty_days_ago,
+    ).aggregate(total=Sum("revenue"))["total"] or 0
+
+    # ── API Tokens ───────────────────────────────────────────────────────
+    total_api_tokens = Token.objects.count()
+
+    # ── Team Activity (recent across all teams) ──────────────────────────
+    recent_team_activity = (
+        TeamActivity.objects.select_related("team", "actor")
+        .order_by("-created_at")[:10]
+    )
+
     # ── Help Center ──────────────────────────────────────────────────────
     help_views_7d = HelpPageView.objects.filter(viewed_at__gte=seven_days_ago).count()
     help_articles = 15  # Static count from help article registry
@@ -261,5 +283,16 @@ def overview(request):
         # Help Center
         "help_views_7d": help_views_7d,
         "help_articles": help_articles,
+        # Brands
+        "total_brands": total_brands,
+        "active_brands": active_brands,
+        # Conversions / Revenue Attribution
+        "total_conversions": total_conversions,
+        "conversions_30d": conversions_30d,
+        "conversion_revenue": conversion_revenue,
+        # API
+        "total_api_tokens": total_api_tokens,
+        # Team Activity
+        "recent_team_activity": recent_team_activity,
     }
     return render(request, "admin_dashboard/overview.html", context)
