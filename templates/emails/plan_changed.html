@@ -1,0 +1,37 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Plan updated{% endblock %}
+{% block header_title %}Your plan has been updated{% endblock %}
+{% block header_subtitle %}<p style="margin:4px 0 0;color:#ddd6fe;font-size:14px;">Here's what changed</p>{% endblock %}
+
+{% block content %}
+<p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#374151;">
+  {% if first_name %}Hi {{ first_name }},{% endif %} Your Kova Agent plan has been updated.
+</p>
+
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:20px;">
+  <tr>
+    <td width="48%" style="text-align:center;padding:16px;background-color:#f9fafb;border-radius:8px;">
+      <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">Previous plan</div>
+      <div style="font-size:16px;font-weight:700;color:#374151;">{{ old_plan|title }}</div>
+    </td>
+    <td width="4%" style="text-align:center;color:#9ca3af;font-size:20px;">→</td>
+    <td width="48%" style="text-align:center;padding:16px;background-color:#f0fdf4;border-radius:8px;">
+      <div style="font-size:12px;color:#059669;margin-bottom:4px;">New plan</div>
+      <div style="font-size:16px;font-weight:700;color:#059669;">{{ new_plan|title }}</div>
+    </td>
+  </tr>
+</table>
+
+<p style="margin:0;font-size:13px;color:#6b7280;">
+  Your new features are active immediately. Visit your dashboard to explore what's available.
+</p>
+{% endblock %}
+
+{% block cta %}
+<tr>
+  <td align="center" style="padding:0 32px 28px;">
+    <a href="{{ site_url }}/brief/" style="display:inline-block;background-color:#7c3aed;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">Go to dashboard</a>
+  </td>
+</tr>
+{% endblock %}

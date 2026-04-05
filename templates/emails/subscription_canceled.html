@@ -1,0 +1,28 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Subscription canceled{% endblock %}
+{% block header_bg %}#6b7280{% endblock %}
+{% block header_title %}Subscription canceled{% endblock %}
+{% block header_subtitle %}<p style="margin:4px 0 0;color:#d1d5db;font-size:14px;">We're sorry to see you go</p>{% endblock %}
+
+{% block content %}
+<p style="margin:0 0 16px;font-size:14px;line-height:1.7;color:#374151;">
+  {% if first_name %}Hi {{ first_name }},{% endif %} Your Kova Agent subscription has been canceled. Your account has been moved to the free Starter plan.
+</p>
+<p style="margin:0 0 16px;font-size:14px;line-height:1.7;color:#374151;">
+  You'll still have access to basic features, but AI agents, advanced analytics, and other premium features are no longer available.
+</p>
+<div style="background-color:#eff6ff;border-left:4px solid #3b82f6;padding:12px 16px;border-radius:0 8px 8px 0;">
+  <p style="margin:0;font-size:13px;color:#1e40af;">
+    <strong>Changed your mind?</strong> You can resubscribe anytime and pick up where you left off. Your data is safe.
+  </p>
+</div>
+{% endblock %}
+
+{% block cta %}
+<tr>
+  <td align="center" style="padding:0 32px 28px;">
+    <a href="{{ site_url }}/billing/" style="display:inline-block;background-color:#7c3aed;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">Resubscribe</a>
+  </td>
+</tr>
+{% endblock %}

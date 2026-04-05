@@ -1,0 +1,19 @@
+{% extends "emails/base_email.html" %}
+{# Daily brief email — wrapper for the existing brief template structure #}
+{% block title %}Your Daily Brief{% endblock %}
+{% block header_title %}☀️ Good morning{% if first_name %}, {{ first_name }}{% endif %}!{% endblock %}
+{% block header_subtitle %}<p style="margin:4px 0 0;color:#ddd6fe;font-size:14px;">Your daily brief is ready</p>{% endblock %}
+
+{% block content %}
+<p style="margin:0 0 16px;font-size:14px;line-height:1.7;color:#374151;">
+  Your daily brief has been generated. Head to your dashboard to review today's content ideas, performance highlights, and trending topics.
+</p>
+{% endblock %}
+
+{% block cta %}
+<tr>
+  <td align="center" style="padding:0 32px 28px;">
+    <a href="{{ site_url }}/brief/" style="display:inline-block;background-color:#7c3aed;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">View full brief →</a>
+  </td>
+</tr>
+{% endblock %}

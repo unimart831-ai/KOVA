@@ -1,0 +1,23 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Trial ending soon{% endblock %}
+{% block header_bg %}#d97706{% endblock %}
+{% block header_title %}Your trial ends in {{ days_left }} day{{ days_left|pluralize }}{% endblock %}
+{% block header_subtitle %}<p style="margin:4px 0 0;color:#fef3c7;font-size:14px;">Upgrade to keep all your features</p>{% endblock %}
+
+{% block content %}
+<p style="margin:0 0 16px;font-size:14px;line-height:1.7;color:#374151;">
+  {% if first_name %}Hi {{ first_name }},{% endif %} You've been using Kova Agent's premium features during your trial. Don't lose access — upgrade now to keep everything running.
+</p>
+<p style="margin:0 0 16px;font-size:14px;line-height:1.7;color:#374151;">
+  Plans start at just <strong>KES 99/month</strong> (about $1). Pick the plan that fits your needs.
+</p>
+{% endblock %}
+
+{% block cta %}
+<tr>
+  <td align="center" style="padding:0 32px 28px;">
+    <a href="{{ site_url }}/billing/" style="display:inline-block;background-color:#7c3aed;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">Choose a plan →</a>
+  </td>
+</tr>
+{% endblock %}

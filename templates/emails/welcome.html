@@ -1,0 +1,76 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Welcome to Kova Agent{% endblock %}
+{% block header_title %}Welcome to Kova Agent! 🎉{% endblock %}
+{% block header_subtitle %}<p style="margin:4px 0 0;color:#ddd6fe;font-size:14px;">Your AI-powered social media team is ready</p>{% endblock %}
+{% block header_badge %}NEW ACCOUNT{% endblock %}
+
+{% block content %}
+<h2 style="margin:0 0 12px;font-size:18px;font-weight:600;color:#111827;">Hey {{ first_name }}, welcome aboard!</h2>
+<p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#374151;">
+  We're excited to have you on Kova Agent. You now have an AI team that creates content, tracks performance, and engages with your audience — while you focus on growing your business.
+</p>
+
+<h3 style="margin:0 0 12px;font-size:15px;font-weight:600;color:#111827;">Here's how to get started:</h3>
+
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:20px;">
+  <tr>
+    <td style="padding:12px 16px;background-color:#f0fdf4;border-radius:8px;margin-bottom:8px;">
+      <table role="presentation" cellspacing="0" cellpadding="0">
+        <tr>
+          <td style="vertical-align:top;padding-right:12px;">
+            <span style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;background:#22c55e;color:#fff;border-radius:50%;font-size:13px;font-weight:700;">1</span>
+          </td>
+          <td>
+            <strong style="color:#166534;font-size:14px;">Connect your social accounts</strong>
+            <p style="margin:2px 0 0;font-size:13px;color:#15803d;">Link Instagram, Facebook, X, TikTok, or LinkedIn</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr><td style="height:8px;"></td></tr>
+  <tr>
+    <td style="padding:12px 16px;background-color:#eff6ff;border-radius:8px;">
+      <table role="presentation" cellspacing="0" cellpadding="0">
+        <tr>
+          <td style="vertical-align:top;padding-right:12px;">
+            <span style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;background:#3b82f6;color:#fff;border-radius:50%;font-size:13px;font-weight:700;">2</span>
+          </td>
+          <td>
+            <strong style="color:#1e40af;font-size:14px;">Tell us about your brand</strong>
+            <p style="margin:2px 0 0;font-size:13px;color:#1d4ed8;">Complete onboarding so our AI learns your voice</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr><td style="height:8px;"></td></tr>
+  <tr>
+    <td style="padding:12px 16px;background-color:#faf5ff;border-radius:8px;">
+      <table role="presentation" cellspacing="0" cellpadding="0">
+        <tr>
+          <td style="vertical-align:top;padding-right:12px;">
+            <span style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;background:#7c3aed;color:#fff;border-radius:50%;font-size:13px;font-weight:700;">3</span>
+          </td>
+          <td>
+            <strong style="color:#581c87;font-size:14px;">Generate your first content</strong>
+            <p style="margin:2px 0 0;font-size:13px;color:#7c3aed;">Create a content seed and watch AI draft posts for you</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+{% endblock %}
+
+{% block cta %}
+<tr>
+  <td align="center" style="padding:0 32px 28px;">
+    <a href="{{ onboarding_url }}" style="display:inline-block;background-color:#7c3aed;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">Complete your setup →</a>
+    <p style="margin:12px 0 0;font-size:13px;color:#6b7280;">
+      Or <a href="{{ help_url }}" style="color:#7c3aed;text-decoration:none;">explore our guides</a> first
+    </p>
+  </td>
+</tr>
+{% endblock %}

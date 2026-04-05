@@ -1,0 +1,21 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}System notification{% endblock %}
+{% block header_title %}{{ subject|default:"Important update" }}{% endblock %}
+
+{% block content %}
+<p style="margin:0;font-size:14px;line-height:1.7;color:#374151;">
+  {% if first_name %}Hi {{ first_name }},{% endif %}
+</p>
+<p style="margin:12px 0 0;font-size:14px;line-height:1.7;color:#374151;">
+  {{ message|default:"We have an important update for your Kova Agent account. Please visit your dashboard for more details." }}
+</p>
+{% endblock %}
+
+{% block cta %}
+<tr>
+  <td align="center" style="padding:0 32px 28px;">
+    <a href="{{ site_url }}/brief/" style="display:inline-block;background-color:#7c3aed;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">Go to dashboard</a>
+  </td>
+</tr>
+{% endblock %}

@@ -68,6 +68,7 @@ LOCAL_APPS = [
     "apps.engage",
     "apps.billing",
     "apps.notifications",
+    "apps.emails",
     "apps.admin_dashboard",
     "apps.help",
     "apps.teams",

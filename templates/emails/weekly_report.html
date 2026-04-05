@@ -1,0 +1,39 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Weekly Report{% endblock %}
+{% block header_title %}📊 Your weekly report{% endblock %}
+{% block header_subtitle %}<p style="margin:4px 0 0;color:#ddd6fe;font-size:14px;">{{ report.period_start }} – {{ report.period_end }}</p>{% endblock %}
+{% block header_badge %}WEEKLY{% endblock %}
+
+{% block content %}
+<p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#374151;">
+  {% if first_name %}Hi {{ first_name }},{% endif %} Here's how your week went on Kova Agent.
+</p>
+
+{# Stats grid #}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:20px;">
+  <tr>
+    <td width="48%" style="text-align:center;padding:16px;background-color:#f9fafb;border-radius:8px;">
+      <div style="font-size:28px;font-weight:700;color:#7c3aed;">{{ report.posts_created|default:"0" }}</div>
+      <div style="font-size:12px;color:#6b7280;margin-top:2px;">Posts created</div>
+    </td>
+    <td width="4%"></td>
+    <td width="48%" style="text-align:center;padding:16px;background-color:#f0fdf4;border-radius:8px;">
+      <div style="font-size:28px;font-weight:700;color:#059669;">{{ report.posts_published|default:"0" }}</div>
+      <div style="font-size:12px;color:#6b7280;margin-top:2px;">Posts published</div>
+    </td>
+  </tr>
+</table>
+
+<p style="margin:0 0 8px;font-size:13px;color:#6b7280;">
+  Current plan: <strong style="color:#111827;">{{ report.plan|default:"Starter" }}</strong>
+</p>
+{% endblock %}
+
+{% block cta %}
+<tr>
+  <td align="center" style="padding:0 32px 28px;">
+    <a href="{{ site_url }}/analytics/" style="display:inline-block;background-color:#7c3aed;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">View full analytics →</a>
+  </td>
+</tr>
+{% endblock %}

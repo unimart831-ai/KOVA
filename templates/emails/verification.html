@@ -1,0 +1,23 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Verify your email{% endblock %}
+{% block header_title %}Verify your email address{% endblock %}
+{% block header_subtitle %}<p style="margin:4px 0 0;color:#ddd6fe;font-size:14px;">One quick step to secure your account</p>{% endblock %}
+
+{% block content %}
+<p style="margin:0 0 16px;font-size:14px;line-height:1.7;color:#374151;">
+  {% if first_name %}Hi {{ first_name }},{% endif %} Please confirm your email address by clicking the button below.
+</p>
+<p style="margin:0 0 8px;font-size:13px;color:#6b7280;">
+  If you didn't create an account on Kova Agent, you can safely ignore this email.
+</p>
+{% endblock %}
+
+{% block cta %}
+<tr>
+  <td align="center" style="padding:0 32px 28px;">
+    <a href="{{ activate_url }}" style="display:inline-block;background-color:#7c3aed;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">Verify email address</a>
+    <p style="margin:12px 0 0;font-size:12px;color:#9ca3af;">This link expires in 72 hours.</p>
+  </td>
+</tr>
+{% endblock %}

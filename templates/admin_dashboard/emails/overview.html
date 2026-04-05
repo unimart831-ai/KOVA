@@ -1,0 +1,248 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}Email System{% endblock %}
+{% block page_subtitle %}<p class="text-sm text-gray-500 dark:text-gray-400">Monitor delivery, track engagement, send broadcasts</p>{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  {# ── Stat Cards ──────────────────────────────────────────────────── #}
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Sent (7d)</p>
+      <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{{ sent_7d }}</p>
+      <p class="text-xs text-gray-400 mt-1">{{ sent_today }} today</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Delivery Rate</p>
+      <p class="mt-1 text-2xl font-bold {% if delivery_rate >= 95 %}text-green-600{% elif delivery_rate >= 80 %}text-yellow-600{% else %}text-red-600{% endif %}">{{ delivery_rate }}%</p>
+      <p class="text-xs text-gray-400 mt-1">Last 7 days</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Open Rate</p>
+      <p class="mt-1 text-2xl font-bold text-kova-600 dark:text-kova-400">{{ open_rate }}%</p>
+      <p class="text-xs text-gray-400 mt-1">Click rate: {{ click_rate }}%</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Failed (7d)</p>
+      <p class="mt-1 text-2xl font-bold {% if failed_7d > 0 %}text-red-600{% else %}text-green-600{% endif %}">{{ failed_7d }}</p>
+      <p class="text-xs text-gray-400 mt-1">Bounce rate: {{ bounce_rate }}%</p>
+    </div>
+  </div>
+
+  {# ── Volume chart + Actions ─────────────────────────────────────── #}
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {# Chart #}
+    <div class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Daily Email Volume (30 days)</h2>
+      <div style="height:220px;">
+        <canvas id="emailVolumeChart"></canvas>
+      </div>
+    </div>
+
+    {# Quick Actions #}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 space-y-4">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Quick Actions</h2>
+
+      {# Test Email #}
+      <form method="post" action="{% url 'admin_dashboard:email_test' %}"
+            x-data="{ loading: false, result: '' }"
+            @submit.prevent="loading=true; result='';
+              fetch($el.action, {method:'POST', headers:{'X-CSRFToken':'{{ csrf_token }}'}})
+              .then(r=>r.json()).then(d=>{result=d.message;loading=false;})
+              .catch(()=>{result='Failed';loading=false;})">
+        {% csrf_token %}
+        <button type="submit" :disabled="loading"
+                class="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-white bg-kova-600 hover:bg-kova-700 disabled:opacity-50 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          <span x-text="loading ? 'Sending...' : 'Send test email'"></span>
+        </button>
+        <p x-show="result" x-text="result" class="mt-2 text-xs text-center text-green-600 dark:text-green-400" x-cloak></p>
+      </form>
+
+      {# Broadcast #}
+      <div x-data="{ open: false }">
+        <button @click="open = !open"
+                class="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
+          Send Broadcast
+        </button>
+
+        <form x-show="open" x-cloak method="post" action="{% url 'admin_dashboard:email_broadcast' %}"
+              x-data="{ sending: false, result: '' }"
+              @submit.prevent="sending=true;
+                const fd = new FormData($el);
+                fetch($el.action, {method:'POST', body:fd, headers:{'X-CSRFToken':'{{ csrf_token }}'}})
+                .then(r=>r.json()).then(d=>{result=d.message;sending=false;})
+                .catch(()=>{result='Failed';sending=false;})"
+              class="mt-3 space-y-3 border-t border-gray-200 dark:border-gray-700 pt-3">
+          {% csrf_token %}
+          <input type="text" name="title" placeholder="Subject / Title" required
+                 class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500">
+          <textarea name="body" placeholder="Message body..." rows="3" required
+                    class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500"></textarea>
+          <input type="text" name="cta_url" placeholder="CTA link (optional)"
+                 class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500">
+          <button type="submit" :disabled="sending"
+                  class="w-full px-4 py-2 text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  x-text="sending ? 'Sending...' : 'Send to all active users'"></button>
+          <p x-show="result" x-text="result" class="text-xs text-center text-green-600 dark:text-green-400" x-cloak></p>
+        </form>
+      </div>
+
+      {# Links #}
+      <div class="pt-2 space-y-2 border-t border-gray-200 dark:border-gray-700">
+        <a href="{% url 'admin_dashboard:email_log' %}"
+           class="flex items-center gap-2 text-sm text-kova-600 dark:text-kova-400 hover:underline">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          View full email log
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {# ── Breakdown by type + status ─────────────────────────────────── #}
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {# By Type #}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Emails by Type (7 days)</h2>
+      <div class="space-y-2">
+        {% for item in by_type %}
+        <div class="flex items-center justify-between">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-kova-100 text-kova-800 dark:bg-kova-900/30 dark:text-kova-300">{{ item.email_type }}</span>
+          <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.count }}</span>
+        </div>
+        {% empty %}
+        <p class="text-sm text-gray-400 dark:text-gray-500">No emails sent in the last 7 days.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# By Status #}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Emails by Status (7 days)</h2>
+      <div class="space-y-2">
+        {% for item in by_status %}
+        <div class="flex items-center justify-between">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+            {% if item.status == 'delivered' or item.status == 'opened' or item.status == 'clicked' %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300
+            {% elif item.status == 'sent' %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300
+            {% elif item.status == 'queued' %}bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300
+            {% else %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300{% endif %}">
+            {{ item.status }}
+          </span>
+          <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.count }}</span>
+        </div>
+        {% empty %}
+        <p class="text-sm text-gray-400 dark:text-gray-500">No email data yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {# ── Recent Emails ──────────────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Recent Emails</h2>
+      <a href="{% url 'admin_dashboard:email_log' %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">View all →</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+        <thead class="bg-gray-50 dark:bg-gray-800/50">
+          <tr>
+            <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">To</th>
+            <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Type</th>
+            <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Subject</th>
+            <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+            <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Sent</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+          {% for email in recent_emails %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30 cursor-pointer" onclick="window.location='{% url 'admin_dashboard:email_detail' email.pk %}'">
+            <td class="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">{{ email.to_email|truncatechars:30 }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-kova-100 text-kova-800 dark:bg-kova-900/30 dark:text-kova-300">{{ email.email_type }}</span>
+            </td>
+            <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 max-w-xs truncate">{{ email.subject }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                {% if email.status == 'delivered' or email.status == 'opened' or email.status == 'clicked' %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300
+                {% elif email.status == 'sent' %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300
+                {% elif email.status == 'queued' %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400
+                {% else %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300{% endif %}">
+                {{ email.get_status_display }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">{{ email.created_at|timesince }} ago</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-400 dark:text-gray-500">No emails sent yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {# ── Recent Failures ────────────────────────────────────────────── #}
+  {% if recent_failures %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-red-200 dark:border-red-800/50 overflow-hidden">
+    <div class="px-5 py-4 border-b border-red-200 dark:border-red-800/50 bg-red-50 dark:bg-red-900/10">
+      <h2 class="text-sm font-semibold text-red-700 dark:text-red-400">Recent Failures</h2>
+    </div>
+    <div class="divide-y divide-gray-200 dark:divide-gray-800">
+      {% for email in recent_failures %}
+      <div class="px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/30">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-sm font-medium text-gray-900 dark:text-white">{{ email.to_email }}</span>
+            <span class="mx-2 text-gray-300">·</span>
+            <span class="text-xs text-gray-500 dark:text-gray-400">{{ email.email_type }}</span>
+          </div>
+          <span class="text-xs text-red-600 dark:text-red-400">{{ email.created_at|timesince }} ago</span>
+        </div>
+        {% if email.error_message %}
+        <p class="mt-1 text-xs text-red-500 dark:text-red-400 truncate">{{ email.error_message|truncatechars:120 }}</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+const ctx = document.getElementById('emailVolumeChart');
+if (ctx) {
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: {{ chart_labels|safe }},
+      datasets: [{
+        label: 'Emails',
+        data: {{ chart_data|safe }},
+        backgroundColor: 'rgba(124, 58, 237, 0.6)',
+        borderColor: 'rgb(124, 58, 237)',
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}

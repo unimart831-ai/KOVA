@@ -1,0 +1,26 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Payment failed{% endblock %}
+{% block header_bg %}#dc2626{% endblock %}
+{% block header_title %}Payment failed{% endblock %}
+{% block header_subtitle %}<p style="margin:4px 0 0;color:#fecaca;font-size:14px;">Action needed to keep your {{ plan }} plan active</p>{% endblock %}
+{% block header_badge %}ACTION NEEDED{% endblock %}
+
+{% block content %}
+<p style="margin:0 0 16px;font-size:14px;line-height:1.7;color:#374151;">
+  {% if first_name %}Hi {{ first_name }},{% endif %} We were unable to process your payment. Your account will be downgraded to the Starter plan if payment isn't resolved.
+</p>
+<div style="background-color:#fef2f2;border-left:4px solid #ef4444;padding:12px 16px;border-radius:0 8px 8px 0;margin-bottom:16px;">
+  <p style="margin:0;font-size:13px;color:#991b1b;">
+    <strong>Common reasons:</strong> Expired card, insufficient funds, or bank declined the charge. Please update your payment method.
+  </p>
+</div>
+{% endblock %}
+
+{% block cta %}
+<tr>
+  <td align="center" style="padding:0 32px 28px;">
+    <a href="{{ site_url }}/billing/" style="display:inline-block;background-color:#dc2626;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">Update payment method</a>
+  </td>
+</tr>
+{% endblock %}

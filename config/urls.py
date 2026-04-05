@@ -55,6 +55,7 @@ urlpatterns = [
     path("engage/", include("apps.engage.urls")),
     path("billing/", include("apps.billing.urls")),
     path("notifications/", include("apps.notifications.urls")),
+    path("emails/", include("apps.emails.urls")),
     path("help/", include("apps.help.urls")),
     path("teams/", include("apps.teams.urls")),
     path("dashboard/", include("apps.admin_dashboard.urls")),

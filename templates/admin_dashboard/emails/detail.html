@@ -1,0 +1,138 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}Email Detail{% endblock %}
+{% block page_subtitle %}<p class="text-sm text-gray-500 dark:text-gray-400">{{ email.subject|truncatechars:60 }}</p>{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  {# ── Back link ───────────────────────────────────────────────────── #}
+  <a href="{% url 'admin_dashboard:email_log' %}" class="inline-flex items-center gap-1 text-sm text-kova-600 dark:text-kova-400 hover:underline">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    Back to email log
+  </a>
+
+  {# ── Detail card ─────────────────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+    {# Status header #}
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between
+      {% if email.status == 'delivered' or email.status == 'opened' or email.status == 'clicked' %}bg-green-50 dark:bg-green-900/10
+      {% elif email.status == 'failed' or email.status == 'bounced' or email.status == 'spam' %}bg-red-50 dark:bg-red-900/10
+      {% else %}bg-gray-50 dark:bg-gray-800/30{% endif %}">
+      <div>
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider
+          {% if email.status == 'delivered' or email.status == 'opened' or email.status == 'clicked' %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300
+          {% elif email.status == 'sent' %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300
+          {% elif email.status == 'queued' %}bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300
+          {% else %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300{% endif %}">
+          {{ email.get_status_display }}
+        </span>
+      </div>
+      <span class="text-xs text-gray-500 dark:text-gray-400">{{ email.pk }}</span>
+    </div>
+
+    {# Fields #}
+    <div class="divide-y divide-gray-100 dark:divide-gray-800">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-0">
+        <div class="px-6 py-4 md:border-r border-gray-100 dark:border-gray-800">
+          <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">To</p>
+          <p class="text-sm font-medium text-gray-900 dark:text-white">{{ email.to_email }}</p>
+        </div>
+        <div class="px-6 py-4 md:border-r border-gray-100 dark:border-gray-800">
+          <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">From</p>
+          <p class="text-sm text-gray-700 dark:text-gray-300">{{ email.from_email }}</p>
+        </div>
+        <div class="px-6 py-4">
+          <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">User</p>
+          <p class="text-sm text-gray-700 dark:text-gray-300">{% if email.user %}{{ email.user.email }}{% else %}—{% endif %}</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-0">
+        <div class="px-6 py-4 md:border-r border-gray-100 dark:border-gray-800">
+          <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Type</p>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-kova-100 text-kova-800 dark:bg-kova-900/30 dark:text-kova-300">{{ email.get_email_type_display }}</span>
+        </div>
+        <div class="px-6 py-4 md:col-span-2">
+          <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Subject</p>
+          <p class="text-sm font-medium text-gray-900 dark:text-white">{{ email.subject }}</p>
+        </div>
+      </div>
+
+      {# Provider Info #}
+      {% if email.provider_message_id %}
+      <div class="px-6 py-4">
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Provider Message ID</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400 font-mono">{{ email.provider_message_id }}</p>
+      </div>
+      {% endif %}
+
+      {# Error #}
+      {% if email.error_message %}
+      <div class="px-6 py-4 bg-red-50 dark:bg-red-900/10">
+        <p class="text-xs font-medium text-red-600 dark:text-red-400 uppercase tracking-wider mb-1">Error</p>
+        <p class="text-sm text-red-700 dark:text-red-300">{{ email.error_message }}</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Timeline ────────────────────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Timeline</h3>
+    <div class="space-y-3">
+      {% if email.created_at %}
+      <div class="flex items-center gap-3">
+        <div class="w-2 h-2 rounded-full bg-gray-400"></div>
+        <span class="text-sm text-gray-700 dark:text-gray-300">Created</span>
+        <span class="text-xs text-gray-400 dark:text-gray-500 ml-auto">{{ email.created_at }}</span>
+      </div>
+      {% endif %}
+      {% if email.sent_at %}
+      <div class="flex items-center gap-3">
+        <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+        <span class="text-sm text-gray-700 dark:text-gray-300">Sent</span>
+        <span class="text-xs text-gray-400 dark:text-gray-500 ml-auto">{{ email.sent_at }}</span>
+      </div>
+      {% endif %}
+      {% if email.delivered_at %}
+      <div class="flex items-center gap-3">
+        <div class="w-2 h-2 rounded-full bg-green-500"></div>
+        <span class="text-sm text-gray-700 dark:text-gray-300">Delivered</span>
+        <span class="text-xs text-gray-400 dark:text-gray-500 ml-auto">{{ email.delivered_at }}</span>
+      </div>
+      {% endif %}
+      {% if email.opened_at %}
+      <div class="flex items-center gap-3">
+        <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+        <span class="text-sm text-gray-700 dark:text-gray-300">Opened</span>
+        <span class="text-xs text-gray-400 dark:text-gray-500 ml-auto">{{ email.opened_at }}</span>
+      </div>
+      {% endif %}
+      {% if email.clicked_at %}
+      <div class="flex items-center gap-3">
+        <div class="w-2 h-2 rounded-full bg-kova-600"></div>
+        <span class="text-sm text-gray-700 dark:text-gray-300">Clicked</span>
+        <span class="text-xs text-gray-400 dark:text-gray-500 ml-auto">{{ email.clicked_at }}</span>
+      </div>
+      {% endif %}
+      {% if email.failed_at %}
+      <div class="flex items-center gap-3">
+        <div class="w-2 h-2 rounded-full bg-red-500"></div>
+        <span class="text-sm text-gray-700 dark:text-gray-300">Failed</span>
+        <span class="text-xs text-gray-400 dark:text-gray-500 ml-auto">{{ email.failed_at }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Metadata ────────────────────────────────────────────────────── #}
+  {% if email.metadata %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Metadata</h3>
+    <pre class="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-lg p-4 overflow-x-auto">{{ email.metadata|pprint }}</pre>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

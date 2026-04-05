@@ -134,6 +134,15 @@ def process_mpesa_callback(callback_data):
         # Activate subscription
         activate_subscription(payment)
 
+        # Send payment confirmation email
+        from apps.emails.tasks import send_payment_confirmation_email
+        send_payment_confirmation_email.delay(
+            str(payment.user.pk),
+            payment.plan,
+            str(payment.amount),
+            "mpesa",
+        )
+
         logger.info(
             "M-Pesa payment SUCCESS: user=%s amount=%s receipt=%s",
             payment.user.email, payment.amount, payment.receipt_number,

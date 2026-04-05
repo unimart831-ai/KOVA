@@ -9,3 +9,7 @@ def create_user_profile(sender, instance, created, **kwargs):
     """Automatically create a UserProfile when a new User is created."""
     if created:
         UserProfile.objects.create(user=instance)
+
+        # Send welcome email asynchronously
+        from apps.emails.tasks import send_welcome_email
+        send_welcome_email.delay(str(instance.pk))

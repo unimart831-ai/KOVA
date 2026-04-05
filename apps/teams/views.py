@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 
@@ -158,6 +159,14 @@ def team_invite(request, slug):
             expires_at=timezone.now() + timezone.timedelta(days=7),
         )
         TeamActivity.log(team, request.user, TeamActivity.EventType.INVITATION_SENT, f"Invited {email} as {role}", email=email, role=role)
+
+        # Send invitation email
+        from apps.emails.tasks import send_team_invitation_email
+        invite_url = request.build_absolute_uri(
+            reverse("teams:invitation_accept", kwargs={"token": token})
+        )
+        send_team_invitation_email.delay(email, team.name, request.user.get_full_name() or request.user.email, invite_url)
+
         messages.success(request, f"Invitation sent to {email}.")
         return redirect("teams:detail", slug=slug)
 

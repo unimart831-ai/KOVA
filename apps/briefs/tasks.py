@@ -42,25 +42,18 @@ def _send_brief_email(user, brief):
         return  # Plan doesn't include email briefs
 
     try:
-        context = {
-            "user": user,
-            "brief": brief,
-            "site_url": settings.SITE_URL if hasattr(settings, "SITE_URL") else "",
-        }
-        html_body = render_to_string("briefs/email_brief.html", context)
-        text_body = (
-            f"Good morning! Your daily brief for {brief.date} is ready.\n\n"
-            f"{brief.summary}\n\n"
-            f"View the full brief at your Kova Agent dashboard."
-        )
-
-        send_mail(
+        from apps.emails.services import email_service
+        email_service._send(
+            email_type="daily_brief",
+            to_email=user.email,
+            context={
+                "first_name": user.first_name,
+                "user": user,
+                "brief": brief,
+                "site_url": settings.SITE_URL if hasattr(settings, "SITE_URL") else "",
+            },
+            user=user,
             subject=f"Your Daily Brief — {brief.date.strftime('%b %d, %Y')}",
-            message=text_body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            html_message=html_body,
-            fail_silently=True,
         )
         logger.info("Email brief sent to %s", user.email)
     except Exception as e:

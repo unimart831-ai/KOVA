@@ -190,6 +190,15 @@ def _handle_checkout_completed(event, billing_event):
             sync_subscription(user, subscription_id)
         logger.info("Checkout completed for user %s", user.email)
 
+        # Send payment confirmation email
+        from apps.emails.tasks import send_payment_confirmation_email
+        send_payment_confirmation_email.delay(
+            str(user.pk),
+            user.profile.get_plan_display(),
+            str(session.get("amount_total", 0) / 100),
+            "stripe",
+        )
+
 
 def _handle_subscription_updated(event, billing_event):
     """customer.subscription.updated — Plan change, renewal, trial end, etc."""
@@ -199,7 +208,14 @@ def _handle_subscription_updated(event, billing_event):
     user = _find_user_from_customer(customer_id)
     if user:
         billing_event.user = user
+        old_plan = user.profile.plan
         sync_subscription(user, sub["id"])
+        user.profile.refresh_from_db()
+        new_plan = user.profile.plan
+
+        if old_plan != new_plan:
+            from apps.emails.tasks import send_plan_changed_email
+            send_plan_changed_email.delay(str(user.pk), old_plan, new_plan)
 
 
 def _handle_subscription_deleted(event, billing_event):
@@ -217,6 +233,10 @@ def _handle_subscription_deleted(event, billing_event):
         profile.save(update_fields=["plan", "subscription_status", "stripe_subscription_id"])
         logger.info("Subscription canceled for user %s, reverted to starter", user.email)
 
+        # Send cancellation email
+        from apps.emails.tasks import send_subscription_canceled_email
+        send_subscription_canceled_email.delay(str(user.pk))
+
 
 def _handle_invoice_paid(event, billing_event):
     """invoice.paid — Successful payment."""
@@ -231,6 +251,21 @@ def _handle_invoice_paid(event, billing_event):
         if sub_id:
             sync_subscription(user, sub_id)
 
+        # Send receipt email
+        from apps.emails.tasks import send_email_task
+        send_email_task.delay(
+            email_type="receipt",
+            to_email=user.email,
+            context={
+                "first_name": user.first_name,
+                "plan": user.profile.get_plan_display(),
+                "amount": str((invoice.get("amount_paid", 0) or 0) / 100),
+                "receipt_number": invoice.get("number", ""),
+                "payment_date": invoice.get("status_transitions", {}).get("paid_at", ""),
+            },
+            user_id=str(user.pk),
+        )
+
 
 def _handle_invoice_failed(event, billing_event):
     """invoice.payment_failed — Payment failed (card declined, etc.)."""
@@ -244,6 +279,10 @@ def _handle_invoice_failed(event, billing_event):
         profile.subscription_status = "past_due"
         profile.save(update_fields=["subscription_status"])
         logger.warning("Payment failed for user %s", user.email)
+
+        # Send payment failed email
+        from apps.emails.tasks import send_payment_failed_email
+        send_payment_failed_email.delay(str(user.pk))
 
 
 EVENT_HANDLERS = {

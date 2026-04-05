@@ -1,0 +1,30 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Usage limit warning{% endblock %}
+{% block header_bg %}#d97706{% endblock %}
+{% block header_title %}You're approaching your {{ resource }} limit{% endblock %}
+{% block header_subtitle %}<p style="margin:4px 0 0;color:#fef3c7;font-size:14px;">{{ pct }}% of your monthly allowance used</p>{% endblock %}
+{% block header_badge %}WARNING{% endblock %}
+
+{% block content %}
+<p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#374151;">
+  {% if first_name %}Hi {{ first_name }},{% endif %} You've used <strong>{{ current }}</strong> out of <strong>{{ limit }}</strong> {{ resource }} this month.
+</p>
+
+{# Progress bar #}
+<div style="background-color:#e5e7eb;border-radius:999px;overflow:hidden;height:12px;margin-bottom:20px;">
+  <div style="background-color:{% if pct >= 90 %}#dc2626{% elif pct >= 75 %}#d97706{% else %}#7c3aed{% endif %};height:100%;width:{{ pct }}%;border-radius:999px;"></div>
+</div>
+
+<p style="margin:0;font-size:13px;color:#6b7280;">
+  Upgrade your plan for higher limits, or wait until next month for your allowance to reset.
+</p>
+{% endblock %}
+
+{% block cta %}
+<tr>
+  <td align="center" style="padding:0 32px 28px;">
+    <a href="{{ site_url }}/billing/" style="display:inline-block;background-color:#d97706;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">Upgrade plan</a>
+  </td>
+</tr>
+{% endblock %}

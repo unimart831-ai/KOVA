@@ -1,0 +1,91 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}Email Log{% endblock %}
+{% block page_subtitle %}<p class="text-sm text-gray-500 dark:text-gray-400">All sent emails with filtering</p>{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  {# ── Filters ─────────────────────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+    <form method="get" class="flex flex-wrap items-end gap-3">
+      <div class="flex-1 min-w-[180px]">
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Search</label>
+        <input type="text" name="q" value="{{ search }}" placeholder="Email, subject…"
+               class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500">
+      </div>
+      <div class="min-w-[150px]">
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Type</label>
+        <select name="type" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500">
+          <option value="">All types</option>
+          {% for value, label in email_type_choices %}
+          <option value="{{ value }}" {% if value == current_type %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="min-w-[130px]">
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Status</label>
+        <select name="status" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500">
+          <option value="">All statuses</option>
+          {% for value, label in status_choices %}
+          <option value="{{ value }}" {% if value == current_status %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="px-4 py-2 text-sm font-medium rounded-lg text-white bg-kova-600 hover:bg-kova-700 transition-colors">Filter</button>
+      <a href="{% url 'admin_dashboard:email_log' %}" class="px-4 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Reset</a>
+    </form>
+  </div>
+
+  {# ── Table ───────────────────────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+        <thead class="bg-gray-50 dark:bg-gray-800/50">
+          <tr>
+            <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">To</th>
+            <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Type</th>
+            <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Subject</th>
+            <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+            <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Sent</th>
+            <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Delivered</th>
+            <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Opened</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+          {% for email in emails %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30 cursor-pointer" onclick="window.location='{% url 'admin_dashboard:email_detail' email.pk %}'">
+            <td class="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">{{ email.to_email|truncatechars:30 }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-kova-100 text-kova-800 dark:bg-kova-900/30 dark:text-kova-300">{{ email.email_type }}</span>
+            </td>
+            <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 max-w-xs truncate">{{ email.subject }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                {% if email.status == 'delivered' or email.status == 'opened' or email.status == 'clicked' %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300
+                {% elif email.status == 'sent' %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300
+                {% elif email.status == 'queued' %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400
+                {% else %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300{% endif %}">
+                {{ email.get_status_display }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">{% if email.sent_at %}{{ email.sent_at|timesince }} ago{% else %}—{% endif %}</td>
+            <td class="px-4 py-3 text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">{% if email.delivered_at %}{{ email.delivered_at|timesince }} ago{% else %}—{% endif %}</td>
+            <td class="px-4 py-3 text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">{% if email.opened_at %}{{ email.opened_at|timesince }} ago{% else %}—{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="px-4 py-8 text-center text-sm text-gray-400 dark:text-gray-500">No emails match your filters.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-between">
+    <a href="{% url 'admin_dashboard:emails' %}" class="text-sm text-kova-600 dark:text-kova-400 hover:underline">← Back to overview</a>
+    <p class="text-xs text-gray-400">Showing up to 100 most recent results</p>
+  </div>
+</div>
+{% endblock %}
