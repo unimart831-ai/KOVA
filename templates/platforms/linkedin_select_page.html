@@ -1,0 +1,54 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Connect LinkedIn Company Page{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto mt-8">
+  <div class="card">
+    <div class="card-body space-y-6">
+      <div class="text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/50 mb-4">
+          <svg class="w-8 h-8 text-[#0A66C2]" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        </div>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Select a Company Page</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+          Choose which LinkedIn Company Page you want Kova to manage. You must be an admin of the page.
+        </p>
+      </div>
+
+      <div class="space-y-3">
+        {% for org in organizations %}
+        <form method="post" class="block">
+          {% csrf_token %}
+          <input type="hidden" name="org_id" value="{{ org.id }}">
+          <input type="hidden" name="org_name" value="{{ org.name }}">
+          <input type="hidden" name="org_vanity" value="{{ org.vanity_name }}">
+          <input type="hidden" name="org_logo" value="{{ org.logo_url }}">
+
+          <button type="submit" class="w-full flex items-center gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 hover:border-blue-300 dark:hover:border-blue-700 transition-all text-left group">
+            {% if org.logo_url %}
+              <img src="{{ org.logo_url }}" alt="" class="w-12 h-12 rounded-lg object-cover ring-1 ring-gray-100 dark:ring-gray-700">
+            {% else %}
+              <div class="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+              </div>
+            {% endif %}
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">{{ org.name }}</p>
+              {% if org.vanity_name %}
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">linkedin.com/company/{{ org.vanity_name }}</p>
+              {% endif %}
+            </div>
+            <svg class="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+          </button>
+        </form>
+        {% endfor %}
+      </div>
+
+      <div class="flex items-center gap-3 pt-2">
+        <a href="{% url 'platforms:list' %}" class="flex-1 btn-secondary text-sm py-2.5 text-center">Cancel</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

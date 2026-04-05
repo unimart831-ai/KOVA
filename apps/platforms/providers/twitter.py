@@ -47,6 +47,11 @@ TWITTER_TOKEN_URL = "https://api.twitter.com/2/oauth2/token"
 TWITTER_API_BASE = "https://api.twitter.com/2"
 
 TWITTER_SCOPES = "tweet.read tweet.write users.read offline.access like.write like.read"
+TWITTER_UPLOAD_URL = "https://upload.twitter.com/1.1/media/upload.json"
+
+# Supported media types for Twitter upload
+TWITTER_IMAGE_TYPES = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+TWITTER_VIDEO_TYPES = {".mp4", ".mov"}
 
 
 class TwitterProvider(BaseProvider):
@@ -149,16 +154,136 @@ class TwitterProvider(BaseProvider):
             result["expires_at"] = datetime.now(timezone.utc) + timedelta(seconds=tokens["expires_in"])
         return result
 
+    def _get_media_type(self, url: str) -> str:
+        """Determine if URL is image or video based on extension."""
+        path = url.lower().split("?")[0]
+        for ext in TWITTER_VIDEO_TYPES:
+            if path.endswith(ext):
+                return "video"
+        return "image"
+
+    def _upload_media(self, access_token: str, media_url: str) -> Optional[str]:
+        """Upload media to Twitter via the chunked media upload endpoint.
+
+        Uses v1.1 media/upload with INIT → APPEND → FINALIZE flow.
+        Returns media_id_string on success, None on failure.
+
+        Note: Twitter API v2 OAuth 2.0 tokens work with the v1.1 upload endpoint
+        if the app has the tweet.write scope.
+        """
+        headers = {"Authorization": f"Bearer {access_token}"}
+
+        try:
+            with httpx.Client(timeout=60) as client:
+                # 1. Download the source media
+                dl = client.get(media_url, follow_redirects=True, timeout=30)
+                dl.raise_for_status()
+                media_bytes = dl.content
+                content_type = dl.headers.get("content-type", "application/octet-stream")
+                file_size = len(media_bytes)
+
+                media_type = self._get_media_type(media_url)
+                media_category = "tweet_image" if media_type == "image" else "tweet_video"
+
+                # 2. INIT — tell Twitter we're starting an upload
+                init_resp = client.post(
+                    TWITTER_UPLOAD_URL,
+                    data={
+                        "command": "INIT",
+                        "total_bytes": str(file_size),
+                        "media_type": content_type,
+                        "media_category": media_category,
+                    },
+                    headers=headers,
+                )
+                init_resp.raise_for_status()
+                media_id = init_resp.json().get("media_id_string", "")
+                if not media_id:
+                    logger.error("Twitter media INIT: no media_id returned")
+                    return None
+
+                # 3. APPEND — upload in 4MB chunks
+                chunk_size = 4 * 1024 * 1024  # 4 MB
+                for segment, offset in enumerate(range(0, file_size, chunk_size)):
+                    chunk = media_bytes[offset:offset + chunk_size]
+                    append_resp = client.post(
+                        TWITTER_UPLOAD_URL,
+                        data={
+                            "command": "APPEND",
+                            "media_id": media_id,
+                            "segment_index": str(segment),
+                        },
+                        files={"media_data": ("chunk", chunk, content_type)},
+                        headers=headers,
+                    )
+                    append_resp.raise_for_status()
+
+                # 4. FINALIZE — tell Twitter upload is complete
+                finalize_resp = client.post(
+                    TWITTER_UPLOAD_URL,
+                    data={
+                        "command": "FINALIZE",
+                        "media_id": media_id,
+                    },
+                    headers=headers,
+                )
+                finalize_resp.raise_for_status()
+                finalize_data = finalize_resp.json()
+
+                # 5. Check processing status for video (async processing)
+                processing = finalize_data.get("processing_info")
+                if processing:
+                    import time
+                    state = processing.get("state", "")
+                    check_after = processing.get("check_after_secs", 5)
+                    max_checks = 30  # Max 150 seconds wait (30 * 5s)
+                    checks = 0
+                    while state in ("pending", "in_progress") and checks < max_checks:
+                        time.sleep(min(check_after, 10))
+                        checks += 1
+                        status_resp = client.get(
+                            TWITTER_UPLOAD_URL,
+                            params={
+                                "command": "STATUS",
+                                "media_id": media_id,
+                            },
+                            headers=headers,
+                        )
+                        status_resp.raise_for_status()
+                        processing = status_resp.json().get("processing_info", {})
+                        state = processing.get("state", "succeeded")
+                        check_after = processing.get("check_after_secs", 5)
+
+                    if state == "failed":
+                        error = processing.get("error", {})
+                        logger.error("Twitter media processing failed: %s", error)
+                        return None
+
+                logger.info("Twitter media uploaded: %s (%s, %d bytes)", media_id, media_type, file_size)
+                return media_id
+
+        except httpx.HTTPStatusError as e:
+            logger.error("Twitter media upload failed: %s", e.response.text)
+            return None
+        except Exception as e:
+            logger.error("Twitter media upload error: %s", e)
+            return None
+
     def publish_post(self, access_token: str, content: str,
                      media_urls: Optional[list[str]] = None,
                      **kwargs) -> PublishResult:
         headers = {"Authorization": f"Bearer {access_token}"}
         payload = {"text": content}
 
-        # Media upload would go through v1.1 media/upload endpoint
-        # then attach media_ids — simplified for now
+        # Upload media and attach media_ids
         if media_urls:
-            payload["text"] = content  # Media upload TBD
+            media_ids = []
+            for url in media_urls[:4]:  # Twitter allows max 4 media per tweet
+                media_id = self._upload_media(access_token, url)
+                if media_id:
+                    media_ids.append(media_id)
+            if media_ids:
+                payload["media"] = {"media_ids": media_ids}
 
         try:
             with httpx.Client() as client:

@@ -184,6 +184,15 @@ def oauth_callback(request, platform):
         )
 
         # Create or update the SocialAccount
+        # Determine account_type based on platform and metadata
+        account_type = result.metadata.get("account_type", "personal")
+        if platform == "facebook":
+            account_type = "page"
+        elif platform == "instagram":
+            account_type = result.metadata.get("account_type", "business")
+        elif platform == "linkedin":
+            account_type = result.metadata.get("account_type", "personal")
+
         account, created = SocialAccount.objects.update_or_create(
             user=request.user,
             platform=platform,
@@ -199,10 +208,15 @@ def oauth_callback(request, platform):
                 "is_active": True,
                 "last_error": "",
                 "metadata": result.metadata,
+                "account_type": account_type,
             },
         )
         action = "connected" if created else "reconnected"
         messages.success(request, f"Successfully {action} {account.get_platform_display()} — @{account.username}")
+
+        # If this was a LinkedIn org flow, redirect to page selection
+        if platform == "linkedin" and request.session.pop("linkedin_org_flow", False):
+            return redirect("platforms:linkedin_select_page")
 
     except Exception as exc:
         logger.error("OAuth callback failed for %s: %s", platform, exc, exc_info=True)
@@ -228,3 +242,93 @@ def disconnect_platform(request, pk):
 
     messages.success(request, f"Disconnected {platform_display} — @{username}")
     return redirect("platforms:list")
+
+
+@login_required
+def linkedin_connect_page(request):
+    """Start OAuth flow for LinkedIn with organization scopes to connect a Company Page."""
+    provider = get_provider("linkedin")
+    if not provider:
+        messages.error(request, "LinkedIn provider is not available.")
+        return redirect("platforms:list")
+
+    state = secrets.token_urlsafe(32)
+    request.session["oauth_state_linkedin"] = state
+    request.session["oauth_platform"] = "linkedin"
+    request.session["linkedin_org_flow"] = True  # Flag to route to page selection after callback
+
+    redirect_uri = request.build_absolute_uri(
+        reverse("platforms:oauth_callback", kwargs={"platform": "linkedin"})
+    )
+    auth_url = provider.get_auth_url(state=state, redirect_uri=redirect_uri, include_org_scopes=True)
+    return redirect(auth_url)
+
+
+@login_required
+def linkedin_select_page(request):
+    """Show available LinkedIn Company Pages to connect, or create the account if one is selected."""
+    # Find the user's LinkedIn personal account (needed for the access token)
+    li_account = request.user.social_accounts.filter(
+        platform="linkedin", is_active=True
+    ).first()
+
+    if not li_account:
+        messages.error(request, "Please connect your LinkedIn personal account first.")
+        return redirect("platforms:list")
+
+    provider = get_provider("linkedin")
+    if not provider:
+        messages.error(request, "LinkedIn provider is not available.")
+        return redirect("platforms:list")
+
+    if request.method == "POST":
+        org_id = request.POST.get("org_id", "").strip()
+        org_name = request.POST.get("org_name", "").strip()
+        org_vanity = request.POST.get("org_vanity", "").strip()
+        org_logo = request.POST.get("org_logo", "").strip()
+
+        if not org_id:
+            messages.error(request, "No organization selected.")
+            return redirect("platforms:linkedin_select_page")
+
+        # Create a separate SocialAccount for the Company Page
+        account, created = SocialAccount.objects.update_or_create(
+            user=request.user,
+            platform="linkedin",
+            platform_user_id=f"org_{org_id}",
+            defaults={
+                "username": org_vanity or org_name.lower().replace(" ", ""),
+                "display_name": org_name,
+                "avatar_url": org_logo,
+                "access_token": li_account.access_token,
+                "refresh_token": li_account.refresh_token,
+                "token_expires_at": li_account.token_expires_at,
+                "token_scope": li_account.token_scope,
+                "is_active": True,
+                "last_error": "",
+                "account_type": "organization",
+                "metadata": {
+                    "linkedin_sub": li_account.metadata.get("linkedin_sub", ""),
+                    "organization_id": org_id,
+                    "organization_name": org_name,
+                    "account_type": "organization",
+                },
+            },
+        )
+        action = "connected" if created else "reconnected"
+        messages.success(request, f"Successfully {action} LinkedIn Company Page — {org_name}")
+        return redirect("platforms:list")
+
+    # GET — fetch available organizations and show selection form
+    organizations = provider.get_organizations(li_account.access_token)
+    if not organizations:
+        messages.warning(
+            request,
+            "No LinkedIn Company Pages found. You must be an administrator of a Company Page to connect it."
+        )
+        return redirect("platforms:list")
+
+    return render(request, "platforms/linkedin_select_page.html", {
+        "organizations": organizations,
+        "page_title": "Connect LinkedIn Company Page",
+    })

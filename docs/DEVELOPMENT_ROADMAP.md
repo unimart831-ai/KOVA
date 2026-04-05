@@ -712,11 +712,11 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 ## 7.1 Phase 1 Platforms (MVP — 5 platforms)
 | Platform  | Auth         | Capabilities                              | API Notes                    |
 |-----------|-------------|-------------------------------------------|------------------------------|
-| X/Twitter | OAuth 2.0   | Post text/images, read metrics, read mentions | Free tier: 1500 posts/mo    |
-| LinkedIn  | OAuth 2.0   | Post text/images/articles, read metrics    | Requires LinkedIn app review |
-| Instagram | OAuth via FB | Post images/carousels/reels, read comments | Requires Facebook app review |
-| Facebook  | OAuth 2.0   | Post to pages, read metrics, read comments | Requires Facebook app review |
-| TikTok    | OAuth 2.0   | Post videos via Content Posting API        | Requires TikTok app review   |
+| X/Twitter | OAuth 2.0   | Post text/images/video, read metrics, read mentions, threads, like/retweet | Free tier: 1500 posts/mo. Chunked media upload (v1.1) |
+| LinkedIn  | OAuth 2.0   | Post text/images/video/articles, Company Pages, read metrics, comments | Personal: w_member_social. Org: w_organization_social |
+| Instagram | OAuth via FB | Post images/carousels/reels, read comments | Requires Business/Creator account |
+| Facebook  | OAuth 2.0   | Post to Pages only, read metrics, read comments | Personal profiles NOT supported (Meta restriction since 2018) |
+| TikTok    | OAuth 2.0   | Post videos via Content Posting API        | Unaudited apps: SELF_ONLY privacy |
 
 ## 7.2 Phase 2 Platforms (add 4 more)
 - YouTube (OAuth 2.0 — upload videos, read metrics)
@@ -749,6 +749,16 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 - All API calls go through rate-limit-aware wrapper
 - Failed publishes retry with exponential backoff (max 3 retries)
 
+### Account Type Tracking
+- SocialAccount.account_type: personal | business | creator | page | organization
+- Auto-detected during OAuth callback (Facebook→page, Instagram→business, LinkedIn→personal)
+- LinkedIn Company Pages: separate connect flow with organization scopes
+- Platform limitations:
+  - Facebook: Meta removed personal profile publishing in 2018 (Graph API v3.0+). Pages only.
+  - Instagram: Requires Business or Creator account (not personal). Guide provided in UI.
+  - Twitter/X, YouTube, Pinterest, Threads, Bluesky: All account types supported.
+  - TikTok: Unaudited apps restricted to SELF_ONLY privacy level.
+
 
 # ============================================================================
 # 8. FEATURE MAP (Complete)
@@ -780,6 +790,8 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 - [x] Adapt Agent: Smart scheduling (optimal times based on user's audience)
 - [x] Content DNA system: Track which content attributes drive engagement — JSONField on Post model
 - [x] Email Daily Brief (receive brief in inbox) — routed through EmailService for logging
+- [x] Twitter/X media upload — chunked upload via v1.1 API (images + video)
+- [x] LinkedIn Company Page publishing — w_organization_social scope, page selection UI
 - [ ] Multi-image / carousel support
 - [ ] Post preview (see how it will look on each platform)
 - [ ] Basic competitor tracking (manually add competitor accounts)
@@ -1065,6 +1077,11 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 - [x] Email sending (Resend SMTP) — Full email system: 19 types, 20 templates, admin dashboard, webhook tracking
 - [x] Production security hardening — HSTS preload, referrer policy, cookie security, CSRF
 - [x] Load testing suite — Locust: authenticated flows, agent cycles, realistic user simulation
+- [x] Platform Account Type System — SocialAccount.account_type field (personal/business/creator/page/organization)
+- [x] Twitter/X Media Upload — Full chunked media upload via v1.1 API (images + video with async processing)
+- [x] LinkedIn Company Pages — Organization auth scopes, page selection UI, org-level publishing
+- [x] Instagram Creator Guide — In-app instructions for converting personal → Creator account
+- [x] Platform Capability Badges — Account type badges on connected accounts, FB/IG limitations documented in UI
 - [ ] Performance optimization (query optimization, caching)
 - [ ] Onboarding improvements based on user feedback
 - [ ] Help docs / knowledge base

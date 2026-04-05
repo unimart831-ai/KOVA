@@ -63,6 +63,7 @@ LINKEDIN_USERINFO_URL = "https://api.linkedin.com/v2/userinfo"
 LINKEDIN_REST_BASE = "https://api.linkedin.com/rest"
 LINKEDIN_VERSION = "202401"
 LINKEDIN_SCOPES = "openid profile w_member_social"
+LINKEDIN_ORG_SCOPES = "openid profile w_member_social w_organization_social r_organization_social"
 
 
 class LinkedInProvider(BaseProvider):
@@ -91,7 +92,11 @@ class LinkedInProvider(BaseProvider):
         return h
 
     def _get_author_urn(self, access_token: str, **kwargs) -> str:
-        """Resolve the member URN (urn:li:person:{sub}).
+        """Resolve the author URN — either a person or organization.
+
+        For organization accounts, returns urn:li:organization:{org_id}.
+        For personal accounts, returns urn:li:person:{sub}.
+
         Checks kwargs → account metadata → /userinfo fallback."""
         if kwargs.get("author_urn"):
             return kwargs["author_urn"]
@@ -100,6 +105,11 @@ class LinkedInProvider(BaseProvider):
         if account and hasattr(account, "metadata") and isinstance(
             account.metadata, dict
         ):
+            # Check for organization URN first (Company Page accounts)
+            org_id = account.metadata.get("organization_id", "")
+            if org_id and getattr(account, "account_type", "") == "organization":
+                return f"urn:li:organization:{org_id}"
+
             sub = account.metadata.get("linkedin_sub", "")
             if sub:
                 return f"urn:li:person:{sub}"
@@ -234,15 +244,70 @@ class LinkedInProvider(BaseProvider):
 
     # ── OAuth ────────────────────────────────────────────────────────────
 
-    def get_auth_url(self, state: str, redirect_uri: str) -> str:
+    def get_auth_url(self, state: str, redirect_uri: str,
+                     include_org_scopes: bool = False) -> str:
+        scopes = LINKEDIN_ORG_SCOPES if include_org_scopes else LINKEDIN_SCOPES
         params = {
             "response_type": "code",
             "client_id": self.client_id,
             "redirect_uri": redirect_uri,
-            "scope": LINKEDIN_SCOPES,
+            "scope": scopes,
             "state": state,
         }
         return f"{LINKEDIN_AUTH_URL}?{urlencode(params)}"
+
+    def get_organizations(self, access_token: str) -> list[dict]:
+        """Fetch LinkedIn Company Pages the user is an admin of.
+
+        Uses the organizationAcls endpoint to find orgs where the
+        authenticated user has ADMINISTRATOR role.
+
+        Returns list of dicts with id, name, vanity_name, logo_url."""
+        headers = self._rest_headers(access_token)
+        try:
+            with httpx.Client(timeout=30) as client:
+                # Get organization admin roles
+                resp = client.get(
+                    f"{LINKEDIN_REST_BASE}/organizationAcls",
+                    params={
+                        "q": "roleAssignee",
+                        "role": "ADMINISTRATOR",
+                        "projection": "(elements*(organization~(id,localizedName,vanityName,logoV2(original~:playableStreams))))",
+                    },
+                    headers=headers,
+                )
+                resp.raise_for_status()
+                elements = resp.json().get("elements", [])
+
+                orgs = []
+                for el in elements:
+                    org_data = el.get("organization~", {})
+                    org_urn = el.get("organization", "")
+                    org_id = org_urn.split(":")[-1] if org_urn else ""
+
+                    logo_url = ""
+                    logo_v2 = org_data.get("logoV2", {})
+                    if logo_v2:
+                        original = logo_v2.get("original~", {})
+                        streams = original.get("elements", [])
+                        if streams:
+                            logo_url = streams[0].get("identifiers", [{}])[0].get("identifier", "")
+
+                    orgs.append({
+                        "id": org_id,
+                        "urn": org_urn,
+                        "name": org_data.get("localizedName", ""),
+                        "vanity_name": org_data.get("vanityName", ""),
+                        "logo_url": logo_url,
+                    })
+                return orgs
+
+        except httpx.HTTPStatusError as e:
+            logger.error("LinkedIn get_organizations failed: %s", e.response.text)
+            return []
+        except Exception as e:
+            logger.error("LinkedIn get_organizations error: %s", e)
+            return []
 
     def handle_callback(self, code: str, redirect_uri: str,
                         **kwargs) -> OAuthResult:
@@ -291,7 +356,10 @@ class LinkedInProvider(BaseProvider):
             refresh_token=tokens.get("refresh_token", ""),
             token_expires_at=expires_at,
             token_scope=tokens.get("scope", ""),
-            metadata={"linkedin_sub": user_id},
+            metadata={
+                "linkedin_sub": user_id,
+                "account_type": "personal",
+            },
         )
 
     def refresh_access_token(self, refresh_token: str) -> dict:

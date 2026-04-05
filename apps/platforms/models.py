@@ -20,9 +20,22 @@ class SocialAccount(models.Model):
         THREADS = "threads", "Threads"
         BLUESKY = "bluesky", "Bluesky"
 
+    class AccountType(models.TextChoices):
+        PERSONAL = "personal", "Personal"
+        BUSINESS = "business", "Business"
+        CREATOR = "creator", "Creator"
+        PAGE = "page", "Page"
+        ORGANIZATION = "organization", "Organization"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="social_accounts")
     platform = models.CharField(max_length=20, choices=Platform.choices)
+    account_type = models.CharField(
+        max_length=20,
+        choices=AccountType.choices,
+        default="personal",
+        help_text="Type of account: personal, business, creator, page, or organization",
+    )
     platform_user_id = models.CharField(max_length=255)
     username = models.CharField(max_length=255, blank=True)
     display_name = models.CharField(max_length=255, blank=True)
@@ -43,7 +56,12 @@ class SocialAccount(models.Model):
         ordering = ["platform", "username"]
 
     def __str__(self):
-        return f"{self.get_platform_display()} - @{self.username}"
+        type_label = f" ({self.get_account_type_display()})" if self.account_type != "personal" else ""
+        return f"{self.get_platform_display()} - @{self.username}{type_label}"
+
+    @property
+    def is_organization_account(self):
+        return self.account_type in ("business", "page", "organization")
 
     @property
     def is_token_expired(self):
