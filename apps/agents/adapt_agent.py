@@ -202,6 +202,24 @@ def auto_schedule_post(post):
     if not platform:
         return None
 
+    # ── Respect posting_frequency: check weekly budget ──
+    profile = getattr(user, "profile", None)
+    posting_frequency = getattr(profile, "posting_frequency", 5) or 5
+
+    week_start = timezone.now() - timedelta(days=7)
+    posts_this_week = Post.objects.filter(
+        user=user,
+        status__in=[Post.Status.APPROVED, Post.Status.SCHEDULED, Post.Status.PUBLISHED],
+        scheduled_at__gte=week_start,
+    ).count()
+
+    if posts_this_week >= posting_frequency:
+        logger.info(
+            "Weekly posting limit reached for %s (%d/%d). Skipping auto-schedule for post %s.",
+            user.email, posts_this_week, posting_frequency, post.id,
+        )
+        return None
+
     # Get cached optimal times or compute them
     timing = suggest_optimal_times(user)
     platform_times = timing.get("optimal_times", {}).get(platform, {})
@@ -210,6 +228,14 @@ def auto_schedule_post(post):
     best_days = platform_times.get("best_days", [])
 
     now = timezone.now()
+
+    # ── Convert best_hours to user's timezone for accurate scheduling ──
+    import zoneinfo
+    user_tz_name = user.timezone or "UTC"
+    try:
+        user_tz = zoneinfo.ZoneInfo(user_tz_name)
+    except (KeyError, Exception):
+        user_tz = zoneinfo.ZoneInfo("UTC")
 
     # Find the next available optimal slot
     # Strategy: look ahead up to 7 days, find the first best_hour that's in the future
@@ -222,9 +248,13 @@ def auto_schedule_post(post):
             continue
 
         for hour in sorted(best_hours):
-            candidate = candidate_date.replace(
+            # Build candidate in user's timezone, then convert to UTC for storage
+            from datetime import datetime as dt
+            local_candidate = candidate_date.astimezone(user_tz).replace(
                 hour=hour, minute=0, second=0, microsecond=0
             )
+            # Convert back to UTC-aware datetime
+            candidate = local_candidate.astimezone(zoneinfo.ZoneInfo("UTC"))
 
             # Must be in the future (at least 30 min from now)
             if candidate <= now + timedelta(minutes=30):
@@ -245,17 +275,18 @@ def auto_schedule_post(post):
                 post.scheduled_at = candidate
                 post.save(update_fields=["scheduled_at"])
                 logger.info(
-                    "Auto-scheduled post %s for %s on %s",
-                    post.id, platform, candidate.isoformat()
+                    "Auto-scheduled post %s for %s at %s (user TZ: %s)",
+                    post.id, platform, candidate.isoformat(), user_tz_name,
                 )
                 return candidate
 
-    # Fallback: schedule for tomorrow at the first best hour
+    # Fallback: schedule for tomorrow at the first best hour (in user's timezone)
     tomorrow = now + timedelta(days=1)
     fallback_hour = best_hours[0] if best_hours else 9
-    fallback = tomorrow.replace(
+    local_fallback = tomorrow.astimezone(user_tz).replace(
         hour=fallback_hour, minute=0, second=0, microsecond=0
     )
+    fallback = local_fallback.astimezone(zoneinfo.ZoneInfo("UTC"))
     post.scheduled_at = fallback
     post.save(update_fields=["scheduled_at"])
     return fallback

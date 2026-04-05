@@ -32,6 +32,8 @@ class BrandProfileForm(forms.ModelForm):
             "posting_frequency",
             "auto_approve_posts",
             "auto_engage",
+            "content_language",
+            "brand_restrictions",
         ]
         widgets = {
             "company_name": forms.TextInput(attrs={"class": "input", "placeholder": "Your company or brand name"}),
@@ -52,6 +54,14 @@ class BrandProfileForm(forms.ModelForm):
                 }
             ),
             "posting_frequency": forms.NumberInput(attrs={"class": "input", "min": 1, "max": 50}),
+            "content_language": forms.Select(attrs={"class": "input"}),
+            "brand_restrictions": forms.Textarea(
+                attrs={
+                    "class": "input",
+                    "rows": 3,
+                    "placeholder": "Never mention competitors by name, always include a call-to-action...",
+                }
+            ),
         }
 
 
@@ -65,14 +75,27 @@ class OnboardingStep1Form(forms.ModelForm):
     timezone = forms.ChoiceField(
         widget=forms.Select(attrs={"class": "input"}),
     )
+    key_offerings_text = forms.CharField(
+        required=False,
+        widget=forms.Textarea(
+            attrs={
+                "class": "input",
+                "rows": 3,
+                "placeholder": "One product or service per line. E.g.:\nCustom birthday cakes\nCatering services\nBaking masterclasses",
+            }
+        ),
+        label="Key products / services",
+        help_text="What does your business sell or offer? One per line.",
+    )
 
     class Meta:
         model = UserProfile
-        fields = ["company_name", "website_url", "industry"]
+        fields = ["company_name", "website_url", "industry", "content_language"]
         widgets = {
             "company_name": forms.TextInput(attrs={"class": "input", "placeholder": "Your brand name"}),
             "website_url": forms.URLInput(attrs={"class": "input", "placeholder": "https://yoursite.com"}),
             "industry": forms.Select(attrs={"class": "input"}),
+            "content_language": forms.Select(attrs={"class": "input"}),
         }
 
     def __init__(self, *args, user=None, **kwargs):
@@ -84,9 +107,16 @@ class OnboardingStep1Form(forms.ModelForm):
         if user:
             self.fields["full_name"].initial = user.full_name
             self.fields["timezone"].initial = user.timezone or "UTC"
+        if self.instance and self.instance.key_offerings:
+            self.fields["key_offerings_text"].initial = "\n".join(self.instance.key_offerings)
 
     def save(self, commit=True):
-        profile = super().save(commit=commit)
+        profile = super().save(commit=False)
+        # Save key_offerings from text
+        offerings_text = self.cleaned_data.get("key_offerings_text", "")
+        profile.key_offerings = [o.strip() for o in offerings_text.split("\n") if o.strip()]
+        if commit:
+            profile.save()
         if self.user:
             self.user.full_name = self.cleaned_data["full_name"]
             self.user.timezone = self.cleaned_data["timezone"]
@@ -96,27 +126,57 @@ class OnboardingStep1Form(forms.ModelForm):
 
 
 class OnboardingStep2Form(forms.ModelForm):
-    """Brand voice & audience."""
+    """Brand voice & audience — with guided tone selection and examples."""
+
+    TONE_CHOICES = [
+        ("confident", "Confident"),
+        ("approachable", "Approachable"),
+        ("witty", "Witty / Humorous"),
+        ("professional", "Professional"),
+        ("casual", "Casual / Relaxed"),
+        ("bold", "Bold / Provocative"),
+        ("educational", "Educational"),
+        ("inspirational", "Inspirational"),
+        ("empathetic", "Empathetic / Warm"),
+        ("authoritative", "Authoritative / Expert"),
+        ("playful", "Playful / Fun"),
+        ("minimalist", "Minimalist / Direct"),
+    ]
 
     class Meta:
         model = UserProfile
-        fields = ["brand_voice", "target_audience", "content_pillars"]
+        fields = ["brand_voice", "target_audience", "content_pillars", "brand_restrictions"]
         widgets = {
             "brand_voice": forms.Textarea(
                 attrs={
                     "class": "input",
                     "rows": 4,
-                    "placeholder": "Describe how your brand sounds on social media...",
+                    "placeholder": "Describe how your brand sounds on social media.\n\nE.g.: 'We sound like a smart friend who happens to be an expert — confident but never arrogant, uses data and real examples, occasionally drops humor, always ends with something actionable.'",
                 }
             ),
             "target_audience": forms.Textarea(
                 attrs={
                     "class": "input",
                     "rows": 3,
-                    "placeholder": "Who are you trying to reach?",
+                    "placeholder": "Be specific! Not just 'young professionals' but:\n'Female entrepreneurs aged 25-40 in Nairobi, running service businesses, active on Instagram/LinkedIn, budget-conscious but willing to pay for time-saving tools.'",
+                }
+            ),
+            "brand_restrictions": forms.Textarea(
+                attrs={
+                    "class": "input",
+                    "rows": 3,
+                    "placeholder": "Topics or words to avoid. E.g.:\nNever mention competitors by name\nDon't use slang or abbreviations\nAvoid political topics\nAlways include a call-to-action",
                 }
             ),
         }
+
+    tone_selection = forms.MultipleChoiceField(
+        choices=TONE_CHOICES,
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "rounded text-kova-600"}),
+        required=False,
+        label="Brand tone (pick 3-5)",
+        help_text="Select the tones that best describe how your brand communicates.",
+    )
 
     content_pillars_text = forms.CharField(
         required=False,
@@ -130,17 +190,45 @@ class OnboardingStep2Form(forms.ModelForm):
         help_text="Enter your main content topics/themes, one per line.",
     )
 
+    brand_voice_examples_text = forms.CharField(
+        required=False,
+        widget=forms.Textarea(
+            attrs={
+                "class": "input",
+                "rows": 5,
+                "placeholder": "Paste 2-3 posts that represent your brand voice well.\nSeparate each example with a blank line.\n\nE.g.:\nWe just shipped our biggest feature yet. 6 months of work, 47 user interviews, and one obsession: make scheduling actually intelligent. Here's what we built →\n\nEvery morning I wake up to a Daily Brief from our AI. Trending topics, ready-to-approve posts, optimal times calculated. My entire social media takes 5 minutes. That's the future of content.",
+            }
+        ),
+        label="Voice examples (optional but powerful)",
+        help_text="Paste your best posts or content that sounds like your brand. Separate examples with a blank line.",
+    )
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.content_pillars:
             self.fields["content_pillars_text"].initial = "\n".join(self.instance.content_pillars)
-        # Hide the JSON field
+        if self.instance and self.instance.tone_attributes:
+            self.fields["tone_selection"].initial = self.instance.tone_attributes
+        if self.instance and self.instance.brand_voice_examples:
+            self.fields["brand_voice_examples_text"].initial = "\n\n".join(self.instance.brand_voice_examples)
+        # Hide the JSON fields — we use text proxies
         self.fields.pop("content_pillars")
 
     def save(self, commit=True):
         instance = super().save(commit=False)
+        # Content pillars
         pillars_text = self.cleaned_data.get("content_pillars_text", "")
         instance.content_pillars = [p.strip() for p in pillars_text.split("\n") if p.strip()]
+        # Tone attributes
+        instance.tone_attributes = self.cleaned_data.get("tone_selection", [])
+        # Brand voice examples — split on double newlines
+        examples_text = self.cleaned_data.get("brand_voice_examples_text", "")
+        if examples_text.strip():
+            # Split on blank lines, keep max 5
+            examples = [ex.strip() for ex in examples_text.split("\n\n") if ex.strip()]
+            instance.brand_voice_examples = examples[:5]
+        else:
+            instance.brand_voice_examples = []
         if commit:
             instance.save()
         return instance
@@ -172,7 +260,7 @@ class OnboardingStep3Form(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        fields = ["posting_frequency", "auto_approve_posts"]
+        fields = ["posting_frequency", "auto_approve_posts", "auto_engage"]
         widgets = {
             "posting_frequency": forms.NumberInput(attrs={"class": "input", "min": 1, "max": 50}),
         }

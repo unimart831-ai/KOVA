@@ -323,6 +323,11 @@ def build_system_prompt(user) -> str:
         for i, ex in enumerate(profile.brand_voice_examples[:3], 1):
             parts.append(f"  {i}. {ex}")
 
+    # Tone attributes — structured voice descriptors
+    if getattr(profile, "tone_attributes", None):
+        parts.append(f"### Tone Attributes: {', '.join(profile.tone_attributes)}")
+        parts.append("Combine these tone qualities in every post. They define HOW the brand speaks.")
+
     # Company context
     context_lines = []
     if profile.company_name:
@@ -331,8 +336,16 @@ def build_system_prompt(user) -> str:
         context_lines.append(f"**Industry**: {profile.get_industry_display()}")
     if profile.website_url:
         context_lines.append(f"**Website**: {profile.website_url}")
+    if getattr(profile, "key_offerings", None):
+        context_lines.append(f"**Products/Services**: {', '.join(profile.key_offerings)}")
     if context_lines:
         parts.append("## BRAND CONTEXT\n" + "\n".join(context_lines))
+
+    # Content language preference
+    if getattr(profile, "content_language", "en") != "en":
+        lang_display = profile.get_content_language_display()
+        parts.append(f"## CONTENT LANGUAGE\nGenerate all content in **{lang_display}**.")
+        parts.append("Use natural, native language patterns — not translated-from-English phrasing.")
 
     # Audience intelligence
     if profile.target_audience:
@@ -348,6 +361,11 @@ def build_system_prompt(user) -> str:
     if profile.goals:
         parts.append(f"## STRATEGIC GOALS\n{', '.join(profile.goals)}")
         parts.append("Bias content toward these objectives. Each post should serve at least one goal.")
+
+    # Brand restrictions / guardrails
+    if getattr(profile, "brand_restrictions", ""):
+        parts.append(f"## BRAND GUARDRAILS (MUST FOLLOW)\n{profile.brand_restrictions}")
+        parts.append("These are non-negotiable rules. Violating any guardrail is a critical failure.")
 
     # Performance intelligence — the feedback loop
     intel = _get_performance_intelligence(user)

@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from django.contrib import messages
+from django.http import JsonResponse
 
 from apps.accounts.forms import (
     UserSettingsForm,
@@ -86,3 +87,11 @@ def onboarding_view(request):
         "total_steps": total_steps,
         "page_title": "Setup Your Brand",
     })
+
+
+@login_required
+def profile_industry_api(request):
+    """Tiny JSON endpoint returning the user's industry for pillar suggestions."""
+    profile = getattr(request.user, "profile", None)
+    industry = getattr(profile, "industry", "") if profile else ""
+    return JsonResponse({"industry": industry})

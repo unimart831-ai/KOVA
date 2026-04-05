@@ -99,12 +99,15 @@
         {% elif step == 2 %}
           <div class="mb-6">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">Define your voice & audience</h2>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">The more detail you provide, the better your AI agents will perform.</p>
+            <p class="text-gray-600 dark:text-gray-400 mt-1">
+              The more detail you give here, the better your AI agents will sound from day one.
+              Think of this as training your content team.
+            </p>
           </div>
         {% elif step == 3 %}
           <div class="mb-6">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Set your goals</h2>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">Choose what matters most — your agents will optimize for these.</p>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Set your goals & agent preferences</h2>
+            <p class="text-gray-600 dark:text-gray-400 mt-1">Choose what matters most — your agents will optimize for these objectives.</p>
           </div>
         {% endif %}
 
@@ -112,7 +115,25 @@
           {% csrf_token %}
 
           {% for field in form %}
-            {% if field.name == 'goals_selection' %}
+            {# ── Tone selection (Step 2) — visual grid ── #}
+            {% if field.name == 'tone_selection' %}
+              <div>
+                <label class="label mb-1">{{ field.label }}</label>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">{{ field.help_text }}</p>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {% for choice in field.field.choices %}
+                    <label class="flex items-center space-x-2 p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-kova-300 dark:hover:border-kova-600 cursor-pointer transition-colors has-[:checked]:border-kova-500 has-[:checked]:bg-kova-50 dark:has-[:checked]:bg-kova-950/40">
+                      <input type="checkbox" name="{{ field.html_name }}" value="{{ choice.0 }}"
+                             {% if choice.0 in field.value %}checked{% endif %}
+                             class="rounded border-gray-300 text-kova-600 focus:ring-kova-500">
+                      <span class="text-sm text-gray-700 dark:text-gray-300">{{ choice.1 }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+              </div>
+
+            {# ── Goals selection (Step 3) — visual grid ── #}
+            {% elif field.name == 'goals_selection' %}
               <div>
                 <label class="label mb-3">{{ field.label }}</label>
                 <div class="grid grid-cols-2 gap-3">
@@ -129,6 +150,8 @@
                   <p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>
                 {% endif %}
               </div>
+
+            {# ── Auto-approve toggle (Step 3) ── #}
             {% elif field.name == 'auto_approve_posts' %}
               <div class="flex items-start space-x-3 p-4 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-100 dark:border-gray-700">
                 <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
@@ -143,6 +166,56 @@
                   </p>
                 </div>
               </div>
+
+            {# ── Auto-engage toggle (Step 3) ── #}
+            {% elif field.name == 'auto_engage' %}
+              <div class="flex items-start space-x-3 p-4 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-100 dark:border-gray-700">
+                <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
+                       {% if field.value %}checked{% endif %}
+                       class="mt-0.5 rounded border-gray-300 text-kova-600 focus:ring-kova-500">
+                <div>
+                  <label for="id_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">
+                    Auto-reply to positive comments
+                  </label>
+                  <p class="text-xs text-gray-500 mt-0.5">
+                    The Engage Agent will automatically respond to positive comments on your posts. Only replies to friendly, supportive comments — never to criticism or questions.
+                  </p>
+                </div>
+              </div>
+
+            {# ── Brand voice examples (Step 2) — larger textarea with guidance ── #}
+            {% elif field.name == 'brand_voice_examples_text' %}
+              <div>
+                <label for="id_{{ field.name }}" class="label">{{ field.label }}</label>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  {{ field.help_text }}
+                  This dramatically improves content quality — even 1-2 examples help the AI match your exact style.
+                </p>
+                {{ field }}
+                {% for error in field.errors %}
+                  <p class="text-xs text-red-600 mt-1">{{ error }}</p>
+                {% endfor %}
+              </div>
+
+            {# ── Brand restrictions (Step 2) — with collapsible ── #}
+            {% elif field.name == 'brand_restrictions' %}
+              <details class="group">
+                <summary class="flex items-center justify-between cursor-pointer p-3 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-kova-300 dark:hover:border-kova-600 transition-colors">
+                  <div>
+                    <span class="text-sm font-medium text-gray-900 dark:text-white">Brand guardrails</span>
+                    <span class="text-xs text-gray-500 ml-2">(optional — things your AI should never do)</span>
+                  </div>
+                  <svg class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </summary>
+                <div class="mt-3">
+                  {{ field }}
+                  <p class="text-xs text-gray-500 mt-1">Topics, words, or approaches to avoid in all AI-generated content.</p>
+                </div>
+              </details>
+
+            {# ── Default field rendering ── #}
             {% else %}
               <div>
                 <label for="id_{{ field.name }}" class="label">{{ field.label }}</label>
@@ -156,6 +229,14 @@
               </div>
             {% endif %}
           {% endfor %}
+
+          {# ── Pillar suggestions based on industry (Step 2, injected via JS) ── #}
+          {% if step == 2 %}
+            <div id="pillar-suggestions" class="hidden">
+              <p class="text-xs font-medium text-kova-600 dark:text-kova-400 mb-2">💡 Suggested pillars for your industry (click to add):</p>
+              <div id="pillar-chips" class="flex flex-wrap gap-2"></div>
+            </div>
+          {% endif %}
 
           <div class="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
             {% if step > 1 %}
@@ -187,4 +268,63 @@
     </p>
   {% endif %}
 </div>
+
+{% if step == 2 %}
+{# ── Industry-based pillar suggestions (P3 UX enhancement) ── #}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const pillarSuggestions = {
+    saas: ['Product updates & feature launches', 'Industry trends & analysis', 'Customer success stories', 'Behind-the-scenes engineering', 'Tips & how-to guides'],
+    ecommerce: ['New product showcases', 'Customer reviews & testimonials', 'Styling/usage tips', 'Behind-the-scenes', 'Sales & promotions', 'Brand story'],
+    agency: ['Case studies & results', 'Marketing tips & strategies', 'Industry news & trends', 'Team culture & hiring', 'Client spotlights'],
+    creator: ['Personal stories & lessons', 'Niche expertise content', 'Behind-the-scenes', 'Community Q&A', 'Collaborations & features'],
+    consulting: ['Thought leadership & frameworks', 'Client results (anonymized)', 'Industry insights', 'Professional development tips', 'Event recaps & keynotes'],
+    nonprofit: ['Impact stories', 'Volunteer spotlights', 'Donation campaigns', 'Event announcements', 'Behind-the-mission'],
+    education: ['Learning tips & resources', 'Student/alumni stories', 'Course highlights', 'Industry career paths', 'Research & insights'],
+    health: ['Wellness tips & advice', 'Patient success stories', 'Health news & research', 'Team spotlights', 'Service education'],
+    finance: ['Financial tips & literacy', 'Market insights', 'Product education', 'Customer stories', 'Regulatory updates'],
+    real_estate: ['Property showcases', 'Market analysis', 'Buying/selling tips', 'Neighborhood guides', 'Client testimonials'],
+    food_restaurant: ['Menu highlights & specials', 'Kitchen behind-the-scenes', 'Customer stories', 'Ingredient sourcing', 'Recipes & cooking tips'],
+    other: ['Industry insights', 'Product/service updates', 'Customer stories', 'Tips & how-tos', 'Behind-the-scenes'],
+  };
+
+  // Check if industry was selected on step 1 (passed via hidden field or detected)
+  const pillarsTextarea = document.getElementById('id_content_pillars_text');
+  const suggestionsDiv = document.getElementById('pillar-suggestions');
+  const chipsDiv = document.getElementById('pillar-chips');
+
+  // Try to get industry from the URL referer or localStorage
+  function showSuggestions(industry) {
+    const suggestions = pillarSuggestions[industry] || pillarSuggestions['other'];
+    if (!suggestions || !pillarsTextarea) return;
+
+    chipsDiv.innerHTML = '';
+    suggestions.forEach(function(suggestion) {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'px-3 py-1 text-xs font-medium bg-kova-50 dark:bg-kova-950/40 text-kova-700 dark:text-kova-300 border border-kova-200 dark:border-kova-700 rounded-full hover:bg-kova-100 dark:hover:bg-kova-900/60 transition-colors';
+      chip.textContent = suggestion;
+      chip.addEventListener('click', function() {
+        const current = pillarsTextarea.value.trim();
+        if (current && !current.endsWith('\n')) {
+          pillarsTextarea.value = current + '\n' + suggestion;
+        } else {
+          pillarsTextarea.value = (current + suggestion).trim();
+        }
+        chip.classList.add('opacity-50');
+        chip.disabled = true;
+      });
+      chipsDiv.appendChild(chip);
+    });
+    suggestionsDiv.classList.remove('hidden');
+  }
+
+  // Fetch industry from profile via meta tag or use a sensible default
+  fetch('/accounts/api/profile-industry/')
+    .then(r => r.json())
+    .then(data => { if (data.industry) showSuggestions(data.industry); })
+    .catch(() => showSuggestions('other'));
+});
+</script>
+{% endif %}
 {% endblock %}

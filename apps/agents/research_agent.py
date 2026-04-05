@@ -37,6 +37,8 @@ def _get_user_context(user):
         "target_audience": getattr(profile, "target_audience", "") if profile else "",
         "content_pillars": getattr(profile, "content_pillars", []) if profile else [],
         "goals": getattr(profile, "goals", []) if profile else [],
+        "key_offerings": getattr(profile, "key_offerings", []) if profile else [],
+        "content_language": getattr(profile, "content_language", "en") if profile else "en",
         "recent_topics": [text[:100] for text in recent_posts],
     }
 
@@ -113,7 +115,9 @@ def discover_trends(user):
             f"Target audience: {ctx['target_audience'] or 'Not specified'}\n"
             f"Content pillars: {json.dumps(ctx['content_pillars']) if ctx['content_pillars'] else 'Not specified'}\n"
             f"Goals: {json.dumps(ctx['goals']) if ctx['goals'] else 'Not specified'}\n"
-            f"Brand voice: {ctx['brand_voice'] or 'Not specified'}\n\n"
+            f"Brand voice: {ctx['brand_voice'] or 'Not specified'}\n"
+            f"Key products/services: {json.dumps(ctx['key_offerings']) if ctx['key_offerings'] else 'Not specified'}\n"
+            f"Content language: {ctx['content_language']}\n\n"
             f"Recent content topics (to avoid repetition):\n"
             f"{json.dumps(ctx['recent_topics'], indent=2)}\n\n"
             "Discover trending topics and content opportunities for this brand. "

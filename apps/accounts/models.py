@@ -62,6 +62,11 @@ class UserProfile(models.Model):
         blank=True,
         help_text="Sample posts that represent your brand voice.",
     )
+    tone_attributes = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Structured tone descriptors. E.g., ['confident', 'witty', 'educational']",
+    )
     industry = models.CharField(max_length=30, choices=Industry.choices, blank=True)
     company_name = models.CharField(max_length=255, blank=True)
     website_url = models.URLField(blank=True)
@@ -82,6 +87,39 @@ class UserProfile(models.Model):
     posting_frequency = models.PositiveIntegerField(
         default=5,
         help_text="Target posts per week.",
+    )
+    # ── Enhanced brand intelligence fields ──
+    brand_restrictions = models.TextField(
+        blank=True,
+        help_text="Topics, words, or themes to avoid. E.g., 'Never mention competitors by name.'",
+    )
+    content_language = models.CharField(
+        max_length=30,
+        choices=[
+            ("en", "English"),
+            ("sw", "Swahili"),
+            ("sw_en", "Swahili & English mix"),
+            ("fr", "French"),
+            ("fr_en", "French & English mix"),
+            ("yo", "Yoruba"),
+            ("yo_en", "Yoruba & English mix"),
+            ("zu", "Zulu"),
+            ("sheng", "Sheng"),
+            ("pidgin", "Pidgin English"),
+            ("other", "Other"),
+        ],
+        default="en",
+        help_text="Primary language for generated content.",
+    )
+    key_offerings = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Main products or services. E.g., ['Custom cakes', 'Catering', 'Baking classes']",
+    )
+    platform_priority = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Platform importance ranking. E.g., {'linkedin': 1, 'twitter': 2, 'instagram': 3}",
     )
     # Subscription
     plan = models.CharField(max_length=20, choices=PlanTier.choices, default=PlanTier.STARTER)
