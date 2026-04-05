@@ -119,11 +119,13 @@ WHAT KOVA AGENT DOES:
 We built 6 AI agents that work 24/7 as your social media team:
 
 🔍 Research Agent — finds trending topics in your niche before they peak
-✍️ Create Agent — writes platform-native content (not generic cross-posts)
+✍️ Create Agent — writes platform-native content in YOUR tone, YOUR language (11 languages inc. Swahili, Sheng, Pidgin)
 📊 Analyst Agent — predicts engagement before you publish
-⏰ Adapt Agent — schedules at your audience's peak attention times
-💬 Engage Agent — monitors and responds to comments/mentions
+⏰ Adapt Agent — schedules in YOUR timezone at YOUR audience's peak times, respects YOUR posting budget
+💬 Engage Agent — auto-replies to positive comments within minutes
 🧠 Content DNA — learns what works and makes every post smarter than the last
+
+Sign up, and the intelligent onboarding captures your brand DNA: tone attributes, voice examples, content language, key offerings, and guardrails. Within 5 minutes, the AI knows your brand better than a freelancer after 3 meetings.
 
 Your job? Wake up, review your Daily Brief, approve content, and go run your business. 5 minutes a day.
 
@@ -212,9 +214,13 @@ WHAT I'VE BUILT:
 → Full-stack Django application with 8 specialized app modules
 → 6 AI agents (Research, Create, Analyst, Adapt, Engage, Strategist) powered by OpenRouter
 → 9 platform integrations (Facebook, Instagram, X/Twitter, LinkedIn, TikTok, YouTube, Pinterest, Threads, Bluesky)
+→ Intelligent onboarding that captures brand DNA: tone attributes, voice examples, content language (11 languages inc. Swahili/Sheng/Pidgin), key offerings, and brand guardrails
+→ Content DNA system — proprietary learning engine that improves every post
+→ Timezone-aware scheduling — AI schedules in YOUR timezone, not server time
+→ Smart posting limits — respects your posting frequency budget, never over-posts
+→ Auto-engagement — AI replies to positive comments within minutes
 → Celery Beat automation — 9 scheduled tasks running 24/7
 → M-Pesa + Stripe billing for Africa-first payments
-→ Content DNA system — proprietary learning engine that improves every post
 → Production deployment on Railway (PostgreSQL, Redis, Web + Worker + Beat services)
 
 TECH STACK:
@@ -426,27 +432,35 @@ This is just the beginning.
 ### Day 3 — Technical Post
 Share something you built:
 ```
-I shipped chunked media upload for Twitter/X this week.
+Most AI content tools ask you ONE question: "What's your brand voice?"
 
-Here's what that means in plain English:
+Then they generate generic content that sounds like every other brand.
 
-When you attach a photo or video to a tweet, Twitter doesn't just
-"receive" it. You have to:
+This week I rebuilt Kova Agent's entire onboarding to capture real brand DNA.
 
-1. INIT — Tell Twitter "I'm about to send you a 4MB image"
-2. APPEND — Upload in 4MB chunks (videos can be hundreds of MB)
-3. FINALIZE — Tell Twitter "that's all the pieces"
-4. WAIT — For videos, Twitter processes them async. You poll status.
+Now the system captures:
 
-Only then can you attach the media to a tweet.
+→ TONE ATTRIBUTES: Pick from 12 structured tones (confident, witty, bold, educational...) — not just "professional and approachable"
+→ BRAND VOICE EXAMPLES: Paste 1-5 real posts that sound like you. The AI matches your EXACT style, not a generic version of it
+→ CONTENT LANGUAGE: 11 options including Swahili, Sheng, Pidgin, French mixes — native patterns, not translated-from-English
+→ KEY OFFERINGS: Your actual products/services, so the AI references what you sell
+→ BRAND GUARDRAILS: Words, topics, and approaches the AI must NEVER use
+→ INDUSTRY-SMART SUGGESTIONS: Pick your industry, get pre-built content pillar suggestions
 
-Kova Agent now handles all of this automatically.
-Your AI-generated post + image → chunked upload → tweet.
-Zero manual work.
+All of this gets injected into 3 AI agents:
+- Create Agent (writes content that sounds like you)
+- Research Agent (finds trends relevant to what you sell)
+- Adapt Agent (schedules in YOUR timezone, respects YOUR posting budget)
 
-One of 9 platforms. More shipping next week.
+The result?
 
-#BuildingInPublic #Django #APIIntegration #SocialMedia
+A business that sells mandazi in Mombasa gets different AI content than a SaaS startup in Lagos.
+
+Because they should.
+
+That's what "built for Africa" actually means — not a translated template.
+
+#BuildingInPublic #AI #Django #SocialMedia #AfricaTech
 ```
 
 ### Day 4 — Insight Post (Social Media Knowledge)
@@ -461,9 +475,10 @@ Here's what actual social media intelligence looks like:
 
 → BEFORE posting: Research what's trending in YOUR niche right now
 → BEFORE posting: Predict engagement score based on YOUR audience data
-→ DURING scheduling: Pick the exact time YOUR followers are most active
+→ DURING scheduling: Pick the exact time YOUR followers are most active (in YOUR timezone, not UTC)
+→ DURING scheduling: Respect YOUR posting budget — 7/week means 7/week, not random volume
 → AFTER publishing: Track what worked, feed it back, improve next time
-→ ALWAYS: Monitor comments, generate smart replies, engage for you
+→ ALWAYS: Auto-reply to positive comments in minutes — not hours later when the algorithm moved on
 
 That's what we built at Kova Agent.
 Not a scheduler. Not a dashboard. Not a content generator.
@@ -520,8 +535,9 @@ Use these phrases consistently across your LinkedIn content:
 - "Your social media runs itself. You stay in control."
 - "Every African business deserves an AI team. We're building it."
 - "Not a scheduler. Not a dashboard. Autonomous Social Intelligence."
-- "6 AI agents. 9 platforms. Starting at $1/month."
-- "Built for Africa. Priced for Africa."
+- "6 AI agents. 9 platforms. 11 languages. Starting at $1/month."
+- "Built for Africa. Priced for Africa. Speaks Africa's languages."
+- "Your AI knows your tone, your language, your guardrails, and your products — from day one."
 
 ### Category Definition
 - Always say **"Autonomous Social Intelligence"** — never "social media tool" or "scheduling app"

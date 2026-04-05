@@ -605,6 +605,26 @@ Kova's Engage Agent should have these response patterns for its OWN accounts:
 
 ## 6. KOVA SYSTEM CONFIGURATION
 
+### Tone Attributes (Select in Kova Onboarding → Step 2 → Tone Grid)
+
+The onboarding now offers a visual 12-option tone grid. Select the tones that define Kova's voice:
+
+- [x] **Confident** — earned authority, shows receipts
+- [x] **Bold** — makes strong claims, backs them up
+- [x] **Witty** — sharp humor, observational, never corny
+- [x] **Educational** — teaches without being preachy
+- [x] **Approachable** — the smartest friend in the room, not the lecturer
+- [ ] Professional — we're casual-formal, not corporate
+- [ ] Casual — close, but we have more intensity
+- [ ] Inspirational — we show proof, not just motivation
+- [ ] Empathetic — we understand pain points but lead with solutions
+- [ ] Authoritative — close, but "confident" captures it better
+- [ ] Playful — we're witty, not playful
+- [ ] Minimalist — our content is dense with value, not minimal
+
+> These tone attributes are injected directly into the Create Agent's system prompt.
+> They tell the AI HOW to speak, complementing the brand voice text which describes the full style.
+
 ### Brand Voice Text (Paste into Kova Onboarding → Step 2 → Brand Voice)
 
 ```
@@ -631,7 +651,41 @@ We're builders who ship, not talkers who announce.
 ]
 ```
 
-### Target Audience (Paste into Kova Onboarding → Target Audience)
+### Content Language (Select in Kova Onboarding → Step 1 → Content Language)
+
+Kova now supports 11 language options. Select the language the AI should generate content in:
+
+- **English** ← Select this as primary
+- Swahili
+- Swahili-English Mix
+- French
+- French-English Mix
+- Yoruba
+- Yoruba-English Mix
+- Zulu
+- Sheng
+- Pidgin English
+- Other
+
+> When set to anything other than English, the Create Agent generates ALL content in that language using native patterns — not translated-from-English phrasing.
+
+For Kova's own accounts, use **English** as default. When creating content targeting Kenyan audiences specifically, you can switch to **Swahili-English Mix** or **Sheng** for select posts.
+
+### Key Offerings (Paste into Kova Onboarding → Step 1 → Key Products/Services)
+
+```
+Autonomous Social Intelligence Platform
+6 AI Agents (Research, Create, Analyst, Adapt, Engage, Strategist)
+Content DNA Learning System
+Daily Brief Dashboard
+9-Platform Social Media Management
+M-Pesa Native Payments
+AI-Powered Engagement Automation
+```
+
+> These product/service names are injected into the Create Agent and Research Agent. The AI will naturally reference these offerings in generated content — never generic "our product" language.
+
+### Target Audience (Paste into Kova Onboarding → Step 2 → Target Audience)
 
 ```
 African entrepreneurs, small business owners (MSMEs), content creators, digital
@@ -642,7 +696,26 @@ TikTok, and LinkedIn. Budget-conscious but willing to pay for tools that save re
 Value authenticity over polish. Building side hustles while managing primary work.
 ```
 
-### Content Pillars (Paste into Kova Onboarding → Content Pillars, one per line)
+### Brand Restrictions / Guardrails (Paste into Kova Onboarding → Step 2 → Brand Guardrails)
+
+```
+Never use: revolutionize, cutting-edge, leverage, synergy, world-class, game-changer,
+empower, seamless, unlock your potential, we're excited to announce, stay tuned.
+
+Never compare Kova to a "social media tool" — always position as Autonomous Social
+Intelligence. Never use corporate jargon, hype language, or startup buzzwords without
+substance. Never punch down at small businesses or solopreneurs. Never use forced/
+performative African references. Never promise specific ROI numbers or guaranteed results.
+Never use more than 3 emojis per post. Never use hashtags as sentences.
+```
+
+> Brand restrictions are injected into the Create Agent system prompt as non-negotiable rules. This maps directly to the "Banned Words & Phrases" table in Section 2 and ensures no AI-generated content violates brand guidelines.
+
+### Content Pillars (Paste into Kova Onboarding → Step 2 → Content Pillars, one per line)
+
+> **Tip**: The onboarding now shows clickable pillar suggestions based on your industry.
+> For SaaS, you'll see suggestions like "Product updates & feature launches" and "Customer success stories".
+> Click to add, then customize.
 
 ```
 Product demos, features, and shipping updates
@@ -654,7 +727,7 @@ Community engagement, questions, and conversations
 
 ### Goals Selection
 
-Check these in onboarding:
+Check these in onboarding Step 3 (visual grid):
 - [x] Grow followers
 - [x] Drive website traffic
 - [x] Generate leads
@@ -663,10 +736,17 @@ Check these in onboarding:
 - [x] Establish thought leadership
 
 ### Posting Frequency
-- Set to: **7** posts per week (across all platforms combined, Kova distributes intelligently)
+- Set to: **7** posts per week (across all platforms combined)
+- **Enforcement**: The Adapt Agent now respects this limit — it counts posts scheduled in the last 7 days and stops auto-scheduling when the budget is reached. No more over-posting.
 
 ### Auto-Approve Posts
 - Set to: **OFF** initially (review AI output for first 2 weeks to train the system, then enable)
+
+### Auto-Engage (NEW — Step 3)
+- Set to: **ON**
+- **What it does**: The Engage Agent automatically replies to positive comments on your posts
+- **Safety**: Only responds to friendly, supportive comments — never to criticism, questions, or ambiguous sentiment
+- **Why ON for Kova**: We want to engage with every supporter quickly. The agent responds within minutes, not hours
 
 ---
 
@@ -846,8 +926,16 @@ Social Media Followers → Website Visit → Signup → Trial → Paid
 - [ ] Connect Facebook Page via Kova OAuth
 - [ ] Connect TikTok via Kova OAuth
 - [ ] Connect YouTube via Kova OAuth
-- [ ] Configure brand voice in Kova (copy from Section 6)
+- [ ] Configure brand voice + tone attributes in Kova (copy from Section 6)
+- [ ] Configure brand voice examples in Kova (copy from Section 6)
 - [ ] Configure target audience in Kova (copy from Section 6)
+- [ ] Set content language to English (Section 6)
+- [ ] Paste key offerings / products & services (Section 6)
+- [ ] Set brand restrictions / guardrails (Section 6)
+- [ ] Set content pillars — use the industry-based suggestions + customize (Section 6)
+- [ ] Enable auto-engage (lets AI respond to positive comments)
+- [ ] Set posting frequency to 7/week
+- [ ] Keep auto-approve OFF for first 2 weeks
 - [ ] Configure content pillars in Kova (copy from Section 6)
 - [ ] Set goals and posting frequency
 
