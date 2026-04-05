@@ -48,3 +48,14 @@ def link_referral_on_signup(sender, request, user, **kwargs):
         partner.referral_code,
         partner.user.email,
     )
+
+    # Notify the partner via email (async)
+    try:
+        from apps.emails.tasks import send_partner_new_referral_email
+        send_partner_new_referral_email.delay(
+            str(partner.user.pk),
+            user.email,
+            partner.total_referrals_count,
+        )
+    except Exception:
+        pass  # Don't break signup if email fails

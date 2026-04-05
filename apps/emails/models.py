@@ -43,6 +43,13 @@ class EmailLog(models.Model):
         # Marketing
         PROMOTIONAL = "promotional", "Promotional"
 
+        # Partners
+        PARTNER_APPLICATION_RECEIVED = "partner_app_received", "Partner Application Received"
+        PARTNER_APPLICATION_APPROVED = "partner_app_approved", "Partner Application Approved"
+        PARTNER_APPLICATION_REJECTED = "partner_app_rejected", "Partner Application Rejected"
+        PARTNER_NEW_REFERRAL = "partner_new_referral", "Partner New Referral"
+        PARTNER_MILESTONE_ACHIEVED = "partner_milestone", "Partner Milestone Achieved"
+
         # System
         USAGE_WARNING = "usage_warning", "Usage Warning"
         SYSTEM = "system", "System"
@@ -70,7 +77,7 @@ class EmailLog(models.Model):
     from_email = models.EmailField(default="")
     email_type = models.CharField(
         max_length=30, choices=EmailType.choices, db_index=True,
-    )
+    )  # max_length covers longest key: partner_app_received (20 chars)
     subject = models.CharField(max_length=255)
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.QUEUED, db_index=True,

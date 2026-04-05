@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, content, emails, engage, help, logs, overview, partials, platforms, system, teams, users
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, content, emails, engage, help, logs, overview, partners, partials, platforms, system, teams, users
 
 app_name = "admin_dashboard"
 
@@ -79,6 +79,13 @@ urlpatterns = [
     path("emails/<uuid:pk>/", emails.email_detail, name="email_detail"),
     path("emails/test/", emails.send_test_email, name="email_test"),
     path("emails/broadcast/", emails.send_broadcast, name="email_broadcast"),
+
+    # Partners
+    path("partners/", partners.partners_overview, name="partners_overview"),
+    path("partners/applications/", partners.application_list, name="partner_applications"),
+    path("partners/applications/action/", partners.application_action, name="partner_application_action"),
+    path("partners/list/", partners.partner_list, name="partner_list"),
+    path("partners/<int:pk>/", partners.partner_detail, name="partner_detail"),
 
     # Help Center
     path("help/", help.help_overview, name="help_overview"),

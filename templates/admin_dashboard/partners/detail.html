@@ -1,0 +1,154 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ partner.user.email }} · Joined {{ partner.joined_at|date:"M d, Y" }}</p>{% endblock %}
+
+{% block content %}
+<!-- ── Back link ──────────────────────────────────────────────────────── -->
+<div class="mb-4">
+  <a href="{% url 'admin_dashboard:partner_list' %}" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">← Back to Partners</a>
+</div>
+
+<!-- ── Partner Card ──────────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm mb-6">
+  <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
+    <div>
+      <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Referral Code</p>
+      <p class="text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400">{{ partner.referral_code }}</p>
+    </div>
+    <div>
+      <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Tier</p>
+      <span class="inline-block px-2 py-0.5 text-xs font-medium rounded-full
+        {% if partner.tier == 'powerhouse' %}bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400
+        {% elif partner.tier == 'catalyst' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+        {% elif partner.tier == 'connector' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
+        {% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+        {{ partner.get_tier_display }}
+      </span>
+    </div>
+    <div>
+      <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Commission Rate</p>
+      <p class="text-lg font-bold text-gray-900 dark:text-white">{{ partner.commission_rate|floatformat:0 }}%</p>
+    </div>
+    <div>
+      <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Active Clients</p>
+      <p class="text-lg font-bold text-green-600 dark:text-green-400">{{ active_count }}</p>
+    </div>
+    <div>
+      <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Pending Clients</p>
+      <p class="text-lg font-bold text-amber-600 dark:text-amber-400">{{ pending_count }}</p>
+    </div>
+    <div>
+      <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Total Earned</p>
+      <p class="text-lg font-bold text-gray-900 dark:text-white">KES {{ partner.total_earned_kes|floatformat:0 }}</p>
+    </div>
+    <div>
+      <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Pending Payout</p>
+      <p class="text-lg font-bold text-amber-600 dark:text-amber-400">KES {{ partner.pending_payout_kes|floatformat:0 }}</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Milestones ─────────────────────────────────────────────────────── -->
+{% if milestones %}
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm mb-6">
+  <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Milestones Achieved</h3>
+  <div class="flex flex-wrap gap-3">
+    {% for m in milestones %}
+    <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+      <span class="text-lg">🏆</span>
+      <div>
+        <p class="text-sm font-semibold text-amber-800 dark:text-amber-300">{{ m.label }}</p>
+        <p class="text-xs text-amber-600 dark:text-amber-400">KES {{ m.bonus_kes|floatformat:0 }} · {{ m.awarded_at|date:"M d, Y" }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Referrals Table ────────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden mb-6">
+  <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Referrals ({{ total_count }})</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-800/50 text-xs text-gray-500 dark:text-gray-400 uppercase">
+        <tr>
+          <th class="px-4 py-2 text-left">User</th>
+          <th class="px-4 py-2 text-center">Status</th>
+          <th class="px-4 py-2 text-center">Plan</th>
+          <th class="px-4 py-2 text-center">Paid Months</th>
+          <th class="px-4 py-2 text-right">Signed Up</th>
+          <th class="px-4 py-2 text-right">Activated</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for ref in referrals %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30">
+          <td class="px-4 py-2 text-gray-900 dark:text-white">{{ ref.referred_user.email }}</td>
+          <td class="px-4 py-2 text-center">
+            {% if ref.activated_at %}
+            <span class="inline-block px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Active</span>
+            {% elif ref.is_active %}
+            <span class="inline-block px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Pending</span>
+            {% else %}
+            <span class="inline-block px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Inactive</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-2 text-center text-gray-700 dark:text-gray-300 capitalize">{{ ref.current_plan|default:"-" }}</td>
+          <td class="px-4 py-2 text-center text-gray-700 dark:text-gray-300">{{ ref.consecutive_paid_months }}</td>
+          <td class="px-4 py-2 text-right text-xs text-gray-500 dark:text-gray-400">{{ ref.signed_up_at|date:"M d, Y" }}</td>
+          <td class="px-4 py-2 text-right text-xs text-gray-500 dark:text-gray-400">{{ ref.activated_at|date:"M d, Y"|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">No referrals yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Commissions Table ─────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Commission History</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-800/50 text-xs text-gray-500 dark:text-gray-400 uppercase">
+        <tr>
+          <th class="px-4 py-2 text-left">Period</th>
+          <th class="px-4 py-2 text-right">Client Revenue</th>
+          <th class="px-4 py-2 text-center">Rate</th>
+          <th class="px-4 py-2 text-right">Commission</th>
+          <th class="px-4 py-2 text-center">Status</th>
+          <th class="px-4 py-2 text-right">Paid</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for c in commissions %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30">
+          <td class="px-4 py-2 text-gray-900 dark:text-white">{{ c.period_start|date:"M Y" }}</td>
+          <td class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">KES {{ c.client_revenue_kes|floatformat:0 }}</td>
+          <td class="px-4 py-2 text-center text-gray-700 dark:text-gray-300">{{ c.commission_rate|floatformat:0 }}%</td>
+          <td class="px-4 py-2 text-right font-semibold text-gray-900 dark:text-white">KES {{ c.amount_kes|floatformat:0 }}</td>
+          <td class="px-4 py-2 text-center">
+            <span class="inline-block px-2 py-0.5 text-xs font-medium rounded-full
+              {% if c.status == 'paid' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
+              {% elif c.status == 'approved' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+              {% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400{% endif %}">
+              {{ c.get_status_display }}
+            </span>
+          </td>
+          <td class="px-4 py-2 text-right text-xs text-gray-500 dark:text-gray-400">{{ c.paid_at|date:"M d, Y"|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">No commissions yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

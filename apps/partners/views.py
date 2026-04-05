@@ -130,6 +130,18 @@ def partners_apply(request):
             if request.user.is_authenticated:
                 application.user = request.user
             application.save()
+
+            # Send confirmation email (async)
+            try:
+                from apps.emails.tasks import send_partner_app_received_email
+                send_partner_app_received_email.delay(
+                    application.email,
+                    application.full_name,
+                    str(request.user.pk) if request.user.is_authenticated else None,
+                )
+            except Exception:
+                pass  # Don't block submission if email fails
+
             messages.success(
                 request,
                 "Application submitted! We'll review it within 48 hours.",

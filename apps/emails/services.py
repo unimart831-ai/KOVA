@@ -60,6 +60,13 @@ EMAIL_TEMPLATES = {
     # System
     "usage_warning": ("emails/usage_warning.html", "You're approaching your plan limits"),
     "system": ("emails/system.html", "Important update from Kova Agent"),
+
+    # Partners
+    "partner_app_received": ("emails/partner_app_received.html", "We received your Growth Partner application — Kova Agent"),
+    "partner_app_approved": ("emails/partner_app_approved.html", "You're approved! Welcome to the Growth Partners Program 🎉"),
+    "partner_app_rejected": ("emails/partner_app_rejected.html", "Update on your Growth Partner application — Kova Agent"),
+    "partner_new_referral": ("emails/partner_new_referral.html", "New referral! Someone signed up with your link 🔥"),
+    "partner_milestone": ("emails/partner_milestone.html", "Milestone achieved! You've unlocked a bonus 🏆"),
 }
 
 
@@ -257,6 +264,55 @@ class EmailService:
         return self._send(
             "usage_warning", user.email, user=user,
             context={"resource": resource, "current": current, "limit": limit, "pct": pct},
+        )
+
+    # ─── Partners ────────────────────────────────────────────────────────
+
+    def send_partner_application_received(self, to_email, full_name, user=None):
+        return self._send(
+            "partner_app_received", to_email, user=user,
+            context={"applicant_name": full_name},
+            metadata={"applicant_name": full_name},
+        )
+
+    def send_partner_application_approved(self, user, referral_code, dashboard_url=""):
+        return self._send(
+            "partner_app_approved", user.email, user=user,
+            context={
+                "referral_code": referral_code,
+                "dashboard_url": dashboard_url or f"{getattr(settings, 'SITE_URL', '')}/partners/dashboard/",
+                "partners_url": f"{getattr(settings, 'SITE_URL', '')}/partners/",
+            },
+            metadata={"referral_code": referral_code},
+        )
+
+    def send_partner_application_rejected(self, to_email, full_name, user=None, reason=""):
+        return self._send(
+            "partner_app_rejected", to_email, user=user,
+            context={"applicant_name": full_name, "reason": reason},
+        )
+
+    def send_partner_new_referral(self, partner_user, referred_email, total_referrals=0):
+        return self._send(
+            "partner_new_referral", partner_user.email, user=partner_user,
+            context={
+                "referred_email": referred_email,
+                "total_referrals": total_referrals,
+                "dashboard_url": f"{getattr(settings, 'SITE_URL', '')}/partners/dashboard/",
+            },
+            metadata={"referred_email": referred_email},
+        )
+
+    def send_partner_milestone(self, partner_user, milestone_label, bonus_kes, extras=""):
+        return self._send(
+            "partner_milestone", partner_user.email, user=partner_user,
+            context={
+                "milestone_label": milestone_label,
+                "bonus_kes": bonus_kes,
+                "extras": extras,
+                "dashboard_url": f"{getattr(settings, 'SITE_URL', '')}/partners/dashboard/",
+            },
+            metadata={"milestone": milestone_label, "bonus_kes": str(bonus_kes)},
         )
 
 

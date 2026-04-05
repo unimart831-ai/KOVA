@@ -162,6 +162,23 @@
           <dt class="text-xs text-gray-500 dark:text-gray-400">API Tokens</dt>
           <dd class="text-sm font-semibold text-orange-600 dark:text-orange-400">{{ total_api_tokens }}</dd>
         </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+
+        <div class="flex items-center justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Partners</dt>
+          <dd class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{{ total_partners }}</dd>
+        </div>
+        {% if pending_partner_apps %}
+        <div class="flex items-center justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Pending Apps</dt>
+          <dd class="text-sm font-semibold text-amber-600 dark:text-amber-400">{{ pending_partner_apps }}</dd>
+        </div>
+        {% endif %}
+        <div class="flex items-center justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Referrals</dt>
+          <dd class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{{ total_referrals }} <span class="text-xs text-gray-400 font-normal">{{ active_referrals }} active</span></dd>
+        </div>
       </dl>
     </div>
 

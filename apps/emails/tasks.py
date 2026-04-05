@@ -161,6 +161,73 @@ def send_usage_warning_email(user_id, resource, current, limit):
         logger.error("Usage warning email failed for user %s: %s", user_id, e)
 
 
+# ─── Partner emails ─────────────────────────────────────────────────────────
+
+@shared_task(name="emails.send_partner_app_received")
+def send_partner_app_received_email(to_email, full_name, user_id=None):
+    from apps.emails.services import email_service
+    user = None
+    if user_id:
+        from apps.accounts.models import User
+        try:
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            pass
+    try:
+        email_service.send_partner_application_received(to_email, full_name, user)
+    except Exception as e:
+        logger.error("Partner app received email failed for %s: %s", to_email, e)
+
+
+@shared_task(name="emails.send_partner_app_approved")
+def send_partner_app_approved_email(user_id, referral_code):
+    from apps.accounts.models import User
+    from apps.emails.services import email_service
+    try:
+        user = User.objects.get(pk=user_id)
+        email_service.send_partner_application_approved(user, referral_code)
+    except Exception as e:
+        logger.error("Partner app approved email failed for user %s: %s", user_id, e)
+
+
+@shared_task(name="emails.send_partner_app_rejected")
+def send_partner_app_rejected_email(to_email, full_name, user_id=None, reason=""):
+    from apps.emails.services import email_service
+    user = None
+    if user_id:
+        from apps.accounts.models import User
+        try:
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            pass
+    try:
+        email_service.send_partner_application_rejected(to_email, full_name, user, reason)
+    except Exception as e:
+        logger.error("Partner app rejected email failed for %s: %s", to_email, e)
+
+
+@shared_task(name="emails.send_partner_new_referral")
+def send_partner_new_referral_email(partner_user_id, referred_email, total_referrals=0):
+    from apps.accounts.models import User
+    from apps.emails.services import email_service
+    try:
+        partner_user = User.objects.get(pk=partner_user_id)
+        email_service.send_partner_new_referral(partner_user, referred_email, total_referrals)
+    except Exception as e:
+        logger.error("Partner new referral email failed for user %s: %s", partner_user_id, e)
+
+
+@shared_task(name="emails.send_partner_milestone")
+def send_partner_milestone_email(partner_user_id, milestone_label, bonus_kes, extras=""):
+    from apps.accounts.models import User
+    from apps.emails.services import email_service
+    try:
+        partner_user = User.objects.get(pk=partner_user_id)
+        email_service.send_partner_milestone(partner_user, milestone_label, bonus_kes, extras)
+    except Exception as e:
+        logger.error("Partner milestone email failed for user %s: %s", partner_user_id, e)
+
+
 # ─── Scheduled tasks ────────────────────────────────────────────────────────
 
 @shared_task(name="emails.send_weekly_reports_all")

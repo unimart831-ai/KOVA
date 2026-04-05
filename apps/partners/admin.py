@@ -1,6 +1,7 @@
 from django.contrib import admin
+from django.utils import timezone
 
-from .models import Commission, MilestoneAward, Partner, PartnerApplication, Referral
+from .models import Commission, MilestoneAward, Partner, PartnerApplication, Referral, generate_referral_code
 
 
 @admin.register(PartnerApplication)
@@ -13,15 +14,57 @@ class PartnerApplicationAdmin(admin.ModelAdmin):
 
     @admin.action(description="Approve selected applications")
     def approve_applications(self, request, queryset):
-        from django.utils import timezone
+        now = timezone.now()
+        for application in queryset.filter(status="pending"):
+            application.status = "approved"
+            application.reviewed_at = now
+            application.save(update_fields=["status", "reviewed_at"])
 
-        queryset.update(status="approved", reviewed_at=timezone.now())
+            # Auto-create Partner if user is linked
+            if application.user and not Partner.objects.filter(user=application.user).exists():
+                name = application.full_name or application.user.get_full_name()
+                partner = Partner.objects.create(
+                    user=application.user,
+                    application=application,
+                    referral_code=generate_referral_code(name),
+                )
+                # Send approval email
+                try:
+                    from apps.emails.tasks import send_partner_app_approved_email
+                    send_partner_app_approved_email.delay(str(application.user.pk), partner.referral_code)
+                except Exception:
+                    pass
+            elif application.user:
+                # Partner already exists, still send email
+                try:
+                    partner = Partner.objects.get(user=application.user)
+                    from apps.emails.tasks import send_partner_app_approved_email
+                    send_partner_app_approved_email.delay(str(application.user.pk), partner.referral_code)
+                except Exception:
+                    pass
+
+        self.message_user(request, f"{queryset.filter(status='approved').count()} applications approved.")
 
     @admin.action(description="Reject selected applications")
     def reject_applications(self, request, queryset):
-        from django.utils import timezone
+        now = timezone.now()
+        for application in queryset.filter(status="pending"):
+            application.status = "rejected"
+            application.reviewed_at = now
+            application.save(update_fields=["status", "reviewed_at"])
 
-        queryset.update(status="rejected", reviewed_at=timezone.now())
+            # Send rejection email
+            try:
+                from apps.emails.tasks import send_partner_app_rejected_email
+                send_partner_app_rejected_email.delay(
+                    application.email,
+                    application.full_name,
+                    str(application.user.pk) if application.user else None,
+                )
+            except Exception:
+                pass
+
+        self.message_user(request, f"Applications rejected.")
 
 
 @admin.register(Partner)

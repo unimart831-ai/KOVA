@@ -1,0 +1,259 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ total_partners }} active partner{{ total_partners|pluralize }} · {{ total_referrals }} total referral{{ total_referrals|pluralize }}</p>{% endblock %}
+
+{% block content %}
+<!-- ── Stat Cards ─────────────────────────────────────────────────────── -->
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400">{{ total_partners }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Active Partners</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-amber-200 dark:border-amber-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-amber-600 dark:text-amber-400">{{ pending_applications }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Pending Apps</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-blue-200 dark:border-blue-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ total_referrals }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Total Referrals</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-green-600 dark:text-green-400">{{ active_referrals }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Active Clients</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-gray-900 dark:text-white">KES {{ total_commissions_paid|floatformat:0 }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Commissions Paid</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-purple-600 dark:text-purple-400">KES {{ total_milestones_paid|floatformat:0 }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Milestones Paid</p>
+  </div>
+</div>
+
+<!-- ── 7-Day Activity ────────────────────────────────────────────────── -->
+<div class="grid grid-cols-3 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-green-600 dark:text-green-400">+{{ applications_7d }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Applications (7d)</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-green-600 dark:text-green-400">+{{ referrals_7d }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Referrals (7d)</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-green-600 dark:text-green-400">+{{ partners_7d }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">New Partners (7d)</p>
+  </div>
+</div>
+
+<!-- ── Charts + Breakdowns ───────────────────────────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
+
+  <!-- Referral Growth Chart -->
+  <div class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Referral Growth (30d)</h3>
+    <div class="h-48">
+      <canvas id="referralChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Tier Breakdown -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Partner Tiers</h3>
+    <div class="space-y-3">
+      {% for item in tier_breakdown %}
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-700 dark:text-gray-300 capitalize">{{ item.tier }}</span>
+        <span class="text-sm font-bold text-gray-900 dark:text-white">{{ item.count }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No partners yet</p>
+      {% endfor %}
+    </div>
+
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3 mt-6">Application Status</h3>
+    <div class="space-y-3">
+      {% for item in app_breakdown %}
+      <div class="flex items-center justify-between">
+        <span class="text-sm capitalize
+          {% if item.status == 'pending' %}text-amber-600 dark:text-amber-400
+          {% elif item.status == 'approved' %}text-green-600 dark:text-green-400
+          {% else %}text-red-600 dark:text-red-400{% endif %}">{{ item.status }}</span>
+        <span class="text-sm font-bold text-gray-900 dark:text-white">{{ item.count }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No applications yet</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── Quick Links ───────────────────────────────────────────────────── -->
+<div class="flex flex-wrap gap-2 mb-6">
+  <a href="{% url 'admin_dashboard:partner_applications' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/30 border border-amber-200 dark:border-amber-800">
+    📋 Applications {% if pending_applications %}<span class="ml-2 px-2 py-0.5 text-xs bg-amber-200 dark:bg-amber-800 rounded-full">{{ pending_applications }}</span>{% endif %}
+  </a>
+  <a href="{% url 'admin_dashboard:partner_list' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800">
+    👥 All Partners
+  </a>
+</div>
+
+<!-- ── Top Partners + Recent Tables ──────────────────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
+
+  <!-- Top Partners -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Top Partners (by Active Clients)</h3>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-800/50 text-xs text-gray-500 dark:text-gray-400 uppercase">
+          <tr>
+            <th class="px-4 py-2 text-left">Partner</th>
+            <th class="px-4 py-2 text-center">Tier</th>
+            <th class="px-4 py-2 text-center">Active</th>
+            <th class="px-4 py-2 text-right">Earned</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for p in top_partners %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30">
+            <td class="px-4 py-2">
+              <a href="{% url 'admin_dashboard:partner_detail' pk=p.pk %}" class="text-emerald-600 dark:text-emerald-400 hover:underline font-medium">{{ p.referral_code }}</a>
+              <p class="text-xs text-gray-400 dark:text-gray-500">{{ p.user.email|truncatechars:30 }}</p>
+            </td>
+            <td class="px-4 py-2 text-center">
+              <span class="inline-block px-2 py-0.5 text-xs font-medium rounded-full
+                {% if p.tier == 'powerhouse' %}bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400
+                {% elif p.tier == 'catalyst' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+                {% elif p.tier == 'connector' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
+                {% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+                {{ p.get_tier_display }}
+              </span>
+            </td>
+            <td class="px-4 py-2 text-center font-semibold text-gray-900 dark:text-white">{{ p.active_count }}</td>
+            <td class="px-4 py-2 text-right text-gray-900 dark:text-white">KES {{ p.total_earned|default:"0"|floatformat:0 }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">No partners yet</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent Applications -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Recent Applications</h3>
+      <a href="{% url 'admin_dashboard:partner_applications' %}" class="text-xs text-emerald-600 dark:text-emerald-400 hover:underline">View all →</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-800/50 text-xs text-gray-500 dark:text-gray-400 uppercase">
+          <tr>
+            <th class="px-4 py-2 text-left">Name</th>
+            <th class="px-4 py-2 text-left">Email</th>
+            <th class="px-4 py-2 text-center">Status</th>
+            <th class="px-4 py-2 text-right">Date</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for app in recent_applications %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30">
+            <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">{{ app.full_name|truncatechars:20 }}</td>
+            <td class="px-4 py-2 text-gray-600 dark:text-gray-400">{{ app.email|truncatechars:25 }}</td>
+            <td class="px-4 py-2 text-center">
+              <span class="inline-block px-2 py-0.5 text-xs font-medium rounded-full
+                {% if app.status == 'pending' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
+                {% elif app.status == 'approved' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
+                {% else %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400{% endif %}">
+                {{ app.get_status_display }}
+              </span>
+            </td>
+            <td class="px-4 py-2 text-right text-xs text-gray-500 dark:text-gray-400">{{ app.created_at|timesince }} ago</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">No applications yet</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── Recent Referrals ──────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Recent Referrals</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-800/50 text-xs text-gray-500 dark:text-gray-400 uppercase">
+        <tr>
+          <th class="px-4 py-2 text-left">Referred User</th>
+          <th class="px-4 py-2 text-left">Partner</th>
+          <th class="px-4 py-2 text-center">Status</th>
+          <th class="px-4 py-2 text-right">Signed Up</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for ref in recent_referrals %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30">
+          <td class="px-4 py-2 text-gray-900 dark:text-white">{{ ref.referred_user.email|truncatechars:30 }}</td>
+          <td class="px-4 py-2">
+            <a href="{% url 'admin_dashboard:partner_detail' pk=ref.partner.pk %}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ ref.partner.referral_code }}</a>
+          </td>
+          <td class="px-4 py-2 text-center">
+            {% if ref.activated_at %}
+            <span class="inline-block px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Active</span>
+            {% else %}
+            <span class="inline-block px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Pending</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-2 text-right text-xs text-gray-500 dark:text-gray-400">{{ ref.signed_up_at|timesince }} ago</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">No referrals yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  const ctx = document.getElementById('referralChart');
+  if (ctx) {
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: {{ chart_labels|safe }},
+        datasets: [{
+          label: 'Referrals',
+          data: {{ chart_data|safe }},
+          backgroundColor: 'rgba(16, 185, 129, 0.7)',
+          borderColor: 'rgb(16, 185, 129)',
+          borderWidth: 1,
+          borderRadius: 4,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0 } },
+          x: { grid: { display: false } },
+        },
+      },
+    });
+  }
+</script>
+{% endblock %}

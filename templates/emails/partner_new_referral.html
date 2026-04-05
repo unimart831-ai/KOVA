@@ -1,0 +1,54 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}New Referral! — Kova Agent Partners{% endblock %}
+{% block header_bg %}#059669{% endblock %}
+{% block header_title %}New Referral! 🔥{% endblock %}
+{% block header_subtitle %}<p style="margin:4px 0 0;color:#d1fae5;font-size:14px;">Someone signed up with your link</p>{% endblock %}
+{% block header_badge %}REFERRAL{% endblock %}
+
+{% block content %}
+<h2 style="margin:0 0 12px;font-size:18px;font-weight:600;color:#111827;">Nice work {{ first_name }}!</h2>
+<p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#374151;">
+  A new user just signed up using your referral link. Once they complete 2 consecutive paid months, they'll be marked as an <strong>active client</strong> and you'll start earning commission on their subscription.
+</p>
+
+<!-- Referral Details -->
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:20px;">
+  <tr>
+    <td style="padding:16px;background-color:#f0fdf4;border-radius:8px;">
+      <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;">
+        <tr>
+          <td style="padding:6px 0;">
+            <span style="font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">New Signup</span><br>
+            <span style="font-size:14px;font-weight:600;color:#111827;">{{ referred_email }}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0;">
+            <span style="font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">Total Referrals</span><br>
+            <span style="font-size:14px;font-weight:600;color:#059669;">{{ total_referrals }} client{{ total_referrals|pluralize }}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0;">
+            <span style="font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">Status</span><br>
+            <span style="display:inline-block;padding:2px 8px;background-color:#fef3c7;color:#92400e;font-size:12px;font-weight:600;border-radius:4px;">Pending Activation</span>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<p style="margin:0;font-size:13px;color:#6b7280;">
+  Keep sharing your link to grow your earnings. Check your <a href="{{ dashboard_url }}" style="color:#059669;text-decoration:none;font-weight:600;">Partner Dashboard</a> for live stats.
+</p>
+{% endblock %}
+
+{% block cta %}
+<tr>
+  <td align="center" style="padding:0 32px 28px;">
+    <a href="{{ dashboard_url }}" style="display:inline-block;background-color:#059669;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">View Dashboard →</a>
+  </td>
+</tr>
+{% endblock %}

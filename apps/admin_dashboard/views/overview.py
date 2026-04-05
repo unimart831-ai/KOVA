@@ -235,6 +235,13 @@ def overview(request):
     help_views_7d = HelpPageView.objects.filter(viewed_at__gte=seven_days_ago).count()
     help_articles = 15  # Static count from help article registry
 
+    # ── Partners ─────────────────────────────────────────────────────────
+    from apps.partners.models import Partner, PartnerApplication, Referral
+    total_partners = Partner.objects.filter(is_active=True).count()
+    pending_partner_apps = PartnerApplication.objects.filter(status="pending").count()
+    total_referrals = Referral.objects.count()
+    active_referrals = Referral.objects.filter(is_active=True, activated_at__isnull=False).count()
+
     # ── Failed Content (recent) ──────────────────────────────────────────
     recent_failures = Post.objects.filter(
         status="failed",
@@ -294,5 +301,10 @@ def overview(request):
         "total_api_tokens": total_api_tokens,
         # Team Activity
         "recent_team_activity": recent_team_activity,
+        # Partners
+        "total_partners": total_partners,
+        "pending_partner_apps": pending_partner_apps,
+        "total_referrals": total_referrals,
+        "active_referrals": active_referrals,
     }
     return render(request, "admin_dashboard/overview.html", context)
