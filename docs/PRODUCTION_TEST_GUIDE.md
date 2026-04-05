@@ -73,9 +73,13 @@ Fill in:
 - Company Name: DigiBridge Academy
 - Website URL: https://digibridge.org
 - Industry: Education / Non-Profit (pick the closest available option)
+- Content Language: English (select from dropdown — 11 options available including Swahili, Sheng, Pidgin, French)
+- Key Offerings: Type in "Digital Skills Training for Refugees" and "Remote Work Placements"
 
 What to verify:
   ☐ All fields accept input correctly
+  ☐ Content language dropdown shows all 11 options
+  ☐ Key offerings field accepts multiple entries
   ☐ "Next" button advances to Step 2
   ☐ Progress indicator shows Step 1 complete
 
@@ -101,6 +105,11 @@ remote talent, volunteer tech mentors, and the refugees themselves
 who follow for motivation and announcements.
 ```
 
+Tone Attributes (select from the visual grid):
+  ✓ Inspirational
+  ✓ Confident
+  ✓ Empathetic
+
 Content Pillars (topics — select or type as many as the form allows):
 - Refugee success stories
 - Digital skills education
@@ -108,10 +117,22 @@ Content Pillars (topics — select or type as many as the form allows):
 - Behind-the-scenes at Kakuma
 - Remote work & freelancing tips
 - Donor/partner spotlights
+(Also try clicking the industry-suggested pillars — should auto-suggest relevant topics
+for Education / Non-Profit)
+
+Brand Restrictions / Guardrails (expand the collapsible section):
+```
+Never use pity language or portray refugees as helpless. Avoid words like
+"victims" or "charity cases". Never share personal details of students without
+consent. Do not promise employment outcomes.
+```
 
 What to verify:
   ☐ Long text fields accept the full brand voice paragraph
+  ☐ Tone attribute grid allows multiple selections
   ☐ Content pillars save correctly
+  ☐ Industry-based pillar suggestions appear and are clickable
+  ☐ Brand restrictions collapsible section expands and saves text
   ☐ "Next" button advances to Step 3
 
 
@@ -127,11 +148,13 @@ Fill in:
 
 - Posting frequency: 7 posts/week (1 per day across platforms)
 - Auto-approve posts: OFF (we want to review everything first)
+- Auto-engage: ON (toggle it — lets AI auto-reply to positive comments)
 
 What to verify:
   ☐ Multiple goals can be selected
   ☐ Posting frequency slider/input works
   ☐ Auto-approve toggle saves correctly
+  ☐ Auto-engage toggle is visible and saves correctly
   ☐ "Complete" button finishes onboarding
   ☐ You are redirected to the Daily Brief (home page)
   ☐ Onboarding is marked complete (you shouldn't see onboarding again)

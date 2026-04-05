@@ -92,11 +92,11 @@ Same AI power. Same automation. Built specifically for the businesses that need 
 
 When you sign up, you complete a quick 3-step setup:
 
-1. **Brand Basics** — Your company name, website, and industry
-2. **Your Voice** — Describe how your brand sounds (friendly? professional? playful?), who your audience is, and what topics you want to cover
-3. **Your Goals** — What you want from social media (grow followers, drive traffic, generate leads, build community, etc.)
+1. **Brand Basics** — Your company name, website, industry, content language (11 languages including Swahili, Sheng, Pidgin), and key products/services you sell
+2. **Your Voice** — Select tone attributes from a visual grid (confident, witty, bold, etc.), describe your brand voice in detail, paste real examples of how you sound, set your target audience, pick content pillars (with industry-smart suggestions), and define brand guardrails (topics and words the AI must avoid)
+3. **Your Goals & Preferences** — Choose your goals, set posting frequency (enforced by AI), toggle auto-approve and auto-engage (AI replies to positive comments)
 
-That's it. Kova now knows your brand better than most social media managers would after a month.
+That's it. In 5 minutes, Kova captures your complete brand DNA — tone, language, products, audience, and restrictions. Your AI team knows your brand better than a freelancer would after 3 meetings.
 
 ### Step 2: Connect Your Social Accounts (2 minutes)
 
@@ -137,6 +137,8 @@ When you join Kova, you don't get a tool. You get a team of 6 AI agents, each wi
 Your Research Agent scans trends in your industry, monitors what's buzzing in your niche, and finds content opportunities — before they become yesterday's news.
 
 - Discovers 5-8 trending topics relevant to YOUR business every day
+- Factors in your actual products/services — trends are relevant to what you sell, not just your industry
+- Researches in your content language — finds trends in the markets where you operate
 - Creates opportunity briefs: "Here's a hot topic, here's why it matters to you, here's the angle to take"
 - Identifies seasonal moments and emerging conversations
 - Feeds intelligence to the rest of the team
@@ -150,6 +152,10 @@ Your Research Agent scans trends in your industry, monitors what's buzzing in yo
 Your Creator Agent generates platform-native content in your brand voice — not generic AI text that sounds like everyone else.
 
 - Takes your raw ideas ("share tips about saving for school fees") and turns them into polished posts
+- Uses your tone attributes (confident? witty? bold?) to match HOW you speak, not just what you say
+- Writes in your chosen language — Swahili, Sheng, Pidgin, French mixes, or English — using native patterns, not translations
+- References your actual products and services naturally in content
+- Respects your brand guardrails — topics, words, and approaches you said to avoid are NEVER used
 - Writes differently for each platform (Facebook caption vs. Twitter hook vs. LinkedIn article)
 - Uses proven frameworks: Hook → Value → Call-to-Action
 - Learns from your best-performing posts and biases toward what works
@@ -178,10 +184,12 @@ Your Adapt Agent analyzes 30 days of your posting history to find the exact hour
 
 - Identifies your best hours per platform (e.g., "Your LinkedIn audience peaks at 12pm and 6pm")
 - Identifies your best days (e.g., "Tuesday and Thursday get 2x more engagement")
+- Schedules in YOUR timezone — if you're in Nairobi, 9 AM means 9 AM East Africa Time, not server time
+- Respects your posting frequency budget — if you set 7/week, it stops at 7. No over-posting
 - Automatically schedules posts at optimal times
 - Adjusts as your audience behavior changes
 
-*No more guessing when to post.*
+*No more guessing when to post. No more posting at the wrong time for your audience.*
 
 ### 💬 The Engagement Manager
 
@@ -294,7 +302,7 @@ Now go run your business. Here's what Kova does for the rest of the day:
 
 | Feature | What It Does |
 |---------|-------------|
-| **Smart Scheduling** | AI analyzes your audience's online patterns to find the perfect publishing time |
+| **Smart Scheduling** | AI analyzes your audience's online patterns and schedules in YOUR timezone at the perfect time |
 | **Auto-Publishing** | Posts publish automatically at scheduled times — no manual intervention |
 | **Auto-Approve** | For hands-off users (Pro plan): AI creates, schedules, and publishes entirely on its own |
 | **Retry Logic** | If a post fails to publish, Kova retries up to 3 times with exponential backoff |

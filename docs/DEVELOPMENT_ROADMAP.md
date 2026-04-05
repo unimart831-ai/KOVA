@@ -419,6 +419,11 @@ kova_agent/
 - goals (JSON — array: "grow_followers", "drive_traffic", "build_community", etc.)
 - target_audience_description (text)
 - avatar (image)
+- tone_attributes (JSON — array of selected tones from 12-option grid: confident, witty, bold, inspirational, etc.)
+- content_language (choice field — 11 options: English, Swahili, Sheng, Pidgin, French, etc.)
+- key_offerings (JSON — array of products/services the business sells)
+- brand_restrictions (text — guardrails: topics, words, and approaches the AI must avoid)
+- platform_priority (JSON — ordered platform preferences)
 
 ### Subscription
 - user (OneToOne → User)
@@ -881,7 +886,7 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 - [x] Create base.html template with Tailwind + HTMX + Alpine
 - [x] Create app layout template (sidebar + main area)
 - [x] accounts app: User model, registration, login, logout — django-allauth
-- [x] accounts app: User profile + onboarding form — 3-step onboarding (basics, platforms, goals)
+- [x] accounts app: User profile + onboarding form — 3-step onboarding (basics + language + offerings, voice + tone grid + guardrails + pillar suggestions, goals + auto-engage)
 - [x] Basic landing page (marketing) — with KSH/USD pricing toggle
 - ~~Evaluate LangGraph vs CrewAI~~ → Built custom agent layer instead (simpler, no heavy deps)
 - DELIVERABLE: ✅ User can register, login, complete onboarding. App looks good.
@@ -1232,12 +1237,9 @@ channel — they're all customer support tools. This is category creation.
 - Team management (Phase 3)
 
 ### Screen 8: Onboarding (first-time wizard)
-Step 1: Welcome — what is Kova Agent, how it works (30-second video)
-Step 2: Your brand — name, industry, goals, brand voice description
-Step 3: Voice training — paste 5-10 of your best past posts
-Step 4: Connect accounts — OAuth flows for platforms
-Step 5: Preferences — set Daily Brief time, autonomy comfort level
-Step 6: First seed — drop your first content idea, see AI magic
+Step 1: Brand Basics — company name, website, industry, content language (11 options), key products/services (key_offerings)
+Step 2: Your Voice — brand voice description, brand voice examples, tone attributes (12-option visual grid), target audience, content pillars (with industry-based smart suggestions), brand restrictions/guardrails (collapsible section)
+Step 3: Goals & Preferences — goals (multi-select), posting frequency (enforced by AI), auto-approve toggle, auto-engage toggle (AI replies to positive comments)
 
 
 # ============================================================================

@@ -56,6 +56,41 @@
 ```
 *Example: "A campus marketplace that connects student sellers to student buyers within their university ecosystem."*
 
+### Content Language
+```
+[Select ONE — this determines what language the AI generates ALL content in]
+```
+
+| Option | When to Use |
+|--------|-------------|
+| `English` | Default — standard English content |
+| `Swahili` | Pure Swahili content for East Africa |
+| `Swahili-English Mix` | Natural code-switching common in Nairobi, Dar es Salaam |
+| `French` | Pure French for Francophone Africa |
+| `French-English Mix` | Bilingual audiences in Cameroon, DRC, etc. |
+| `Yoruba` | Yoruba-language content for Nigeria |
+| `Yoruba-English Mix` | Lagos-style bilingual content |
+| `Zulu` | Zulu-language content for South Africa |
+| `Sheng` | Nairobi youth slang — casual, street-smart |
+| `Pidgin English` | Nigerian/West African Pidgin |
+| `Other` | Specify in brand voice description |
+
+> **Critical**: When set to anything other than English, the Create Agent generates ALL content using native language patterns — not translated-from-English phrasing. A Sheng post sounds like someone actually speaking Sheng, not a Google Translate output.
+
+### Key Products / Services
+```
+[List the main products or services this business sells — one per line]
+```
+*Example:*
+```
+Textbook marketplace
+Campus delivery service
+Student-to-student tutoring
+Merch printing and custom orders
+```
+
+> **Why this matters**: The Create Agent references these offerings naturally in content. The Research Agent finds trends relevant to what you actually sell. Without this, the AI writes generic industry content instead of product-aware posts.
+
 ---
 
 ## Section 2: Brand Voice — The Most Critical Section
@@ -294,6 +329,8 @@ Rank them — where should Kova focus the most energy?
 Posts per week: [number]
 ```
 
+> **Important**: The Adapt Agent now enforces this number. It counts posts scheduled in the last 7 days and STOPS auto-scheduling when the budget is reached. Set this thoughtfully — too low and you miss opportunities, too high and you overwhelm your audience.
+
 | Plan | Limit | Recommendation |
 |------|-------|---------------|
 | Starter (KES 99) | 10 posts/month | 2-3 per week |
@@ -304,6 +341,8 @@ Posts per week: [number]
 ### Preferred Posting Times
 
 If you know when your audience is most active, note it here. If not, Kova's Adapt Agent will learn from data.
+
+> **Timezone note**: The Adapt Agent now schedules in YOUR timezone, not server time. Make sure the account timezone is set correctly during signup (e.g., Africa/Nairobi, Africa/Lagos). All optimal times shown in the Daily Brief are in your local time.
 
 ```
 Morning window:  [e.g., 9am-11am] — Best for: [Platform]
@@ -342,6 +381,8 @@ No posting on: [e.g., "Sundays" or "None — post every day" or "Religious holid
 |---------|------------------|-------------|
 | **Auto-approve posts** | ☐ OFF | Turn ON after 30 days if content quality is consistently good |
 | **Auto-engage (replies)** | ☐ OFF | Turn ON after reviewing 50+ AI reply suggestions and trusting quality |
+
+> **Auto-engage details**: When ON, the Engage Agent automatically replies to positive comments on your posts. It ONLY responds to friendly, supportive comments — never to criticism, questions, or ambiguous sentiment. This is safe for most brands but test first with it OFF.
 
 ### Custom Agent Instructions (Optional)
 
@@ -543,6 +584,8 @@ over stock images. Vibrant colors. No corporate stock photo energy."]
 ## Section 12: What This Brand Should NEVER Do
 
 > *Guardrails are as important as guidelines. Tell the AI what's off-limits.*
+> 
+> **NEW**: Kova now has a dedicated `Brand Restrictions` field in onboarding Step 2 (collapsible "Brand guardrails" section). Everything in this section should ALSO be pasted into that field — the Create Agent treats restrictions as non-negotiable rules.
 
 ### Content Boundaries
 
@@ -669,10 +712,14 @@ Use this checklist when entering everything into Kova:
 - [ ] Company name entered
 - [ ] Industry selected
 - [ ] Website URL added
+- [ ] Content language set (English, Swahili, Sheng, etc. — Section 1)
+- [ ] Key products/services listed (Section 1)
 - [ ] Brand voice written (3-5 sentences — Section 2)
+- [ ] Tone attributes selected (3-5 from 12-option grid — Section 2)
 - [ ] Brand voice examples added (3 sample posts — Section 2)
+- [ ] Brand restrictions / guardrails set (Section 12 → paste into onboarding)
 - [ ] Target audience described (detailed paragraph — Section 3)
-- [ ] Content pillars listed (4-6 pillars — Section 4)
+- [ ] Content pillars listed (4-6 pillars — Section 4, use industry suggestions as starting point)
 - [ ] Goals added (3-5 goals — Section 5)
 - [ ] Posting frequency set
 
@@ -719,22 +766,24 @@ After completing the template, score yourself:
 | Section | Excellent (3) | Good (2) | Weak (1) | Score |
 |---------|-------------|---------|---------|-------|
 | Brand Voice | 5+ sentences, specific, with personality | 2-3 sentences, somewhat generic | 1 sentence or copy-pasted | /3 |
+| Tone Attributes | 3-5 well-chosen tones with reasoning | 2-3 tones selected | None selected or random picks | /3 |
 | Voice Examples | 3 diverse, authentic-sounding examples | 2 examples, decent quality | 1 or generic examples | /3 |
 | Target Audience | Paragraph with age, location, psychographics | Basic demographics only | "Everyone" or 1 line | /3 |
 | Content Pillars | 4-6 with descriptions and mix % | 3-4 without descriptions | Less than 3 or vague | /3 |
 | Goals | 3-5 specific, measurable goals | 2-3 general goals | 1 vague goal | /3 |
 | Business Deep Dive | Origin story + stats + testimonials + FAQs | Some context filled in | Mostly empty | /3 |
+| Key Offerings | All products/services with content angles | A few products listed | None | /3 |
+| Brand Restrictions | 5+ never-do rules + sensitive topics | A few boundaries | None | /3 |
 | Competitor Info | 3+ competitors with handles and analysis | 1-2 competitors listed | None | /3 |
 | First 10 Seeds | All 10 with detailed notes | 5-7 seeds | Less than 5 | /3 |
 | Visual Guidelines | Colors + style + emoji + hashtag strategy | Some visual guidelines | None | /3 |
-| Guardrails | 5+ never-do rules + sensitive topics | A few boundaries | None | /3 |
-| **TOTAL** | | | | **/30** |
+| **TOTAL** | | | | **/36** |
 
 **Scoring:**
-- **25-30:** Kova will produce excellent, on-brand content from day 1
-- **18-24:** Good start. Kova will learn, but early content may need more editing
-- **12-17:** Kova will struggle. Invest more time in the brand voice and audience sections
-- **Under 12:** Don't set up yet. Complete the template first.
+- **30-36:** Kova will produce excellent, on-brand content from day 1
+- **22-29:** Good start. Kova will learn, but early content may need more editing
+- **14-21:** Kova will struggle. Invest more time in the brand voice, tone, and audience sections
+- **Under 14:** Don't set up yet. Complete the template first.
 
 ---
 

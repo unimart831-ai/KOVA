@@ -140,11 +140,11 @@ The user is the strategist. The AI is the team. The daily interaction is 5 minut
 
 | Agent | Role | Business Value |
 |-------|------|---------------|
-| **Research Agent** | Scans industry trends, competitor activity, emerging conversations | Never miss a trending topic again |
-| **Creator Agent** | Generates platform-native content in the user's brand voice | No more blank-screen paralysis |
+| **Research Agent** | Scans industry trends factoring in your products/services and content language | Never miss a trending topic again |
+| **Creator Agent** | Generates platform-native content using your tone attributes, brand voice, language, and offerings — while respecting your brand guardrails | No more blank-screen paralysis |
 | **Analyst Agent** | Tracks metrics, extracts Content DNA, predicts engagement | Every post is data-informed |
-| **Adapt Agent** | Analyzes audience activity to find optimal posting times | Posts go live when the audience is active |
-| **Engage Agent** | Monitors comments/mentions, analyzes sentiment, generates/sends replies | Audience feels heard 24/7 |
+| **Adapt Agent** | Finds optimal posting times in your timezone, enforces your weekly posting frequency | Posts go live when the audience is active |
+| **Engage Agent** | Monitors comments/mentions, analyzes sentiment, auto-replies when enabled | Audience feels heard 24/7 |
 | **Chief Strategist** | Reads all other agents, makes coordinated decisions, creates proactive content | The system thinks and acts autonomously |
 
 ### The Autonomy Loop
@@ -197,7 +197,7 @@ No other tool on the market does this. Not Buffer. Not Hootsuite. Not Jasper. No
 
 | Step | What Happens | Time |
 |------|-------------|------|
-| **1. Sign Up** | Create account, complete 3-step onboarding (brand, voice, goals) | 5 minutes |
+| **1. Sign Up** | Create account, complete 3-step intelligent onboarding (brand basics + language + offerings, voice + tone grid + guardrails, goals + auto-engage) | 5 minutes |
 | **2. Connect** | Link social media accounts via OAuth | 2 minutes |
 | **3. Morning Brief** | Every morning: AI delivers a brief with yesterday's performance, today's content, trending topics | 2 min reading |
 | **4. Approve** | Review AI-drafted posts. Edit if needed. Approve or reject. | 3 minutes |

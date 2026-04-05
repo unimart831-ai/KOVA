@@ -108,7 +108,7 @@ ContentSeed {
 
 The Celery task `generate_from_seed` fires immediately:
 
-1. **Load context** — User's brand voice, goals, industry, target audience, content pillars
+1. **Load context** — User's brand voice, tone attributes, goals, industry, target audience, content pillars, content language, key offerings, and brand restrictions/guardrails
 2. **Get performance intelligence** — What Content DNA attributes have worked best in last 30 days (e.g., "question format gets 2.4x more comments")
 3. **Get recent angles** — What angles were used recently (to avoid repetition)
 4. **For each target platform:**
@@ -314,7 +314,7 @@ discover_trends(user):
   │
   ├── Gather context:
   │     ├── Company name, industry, brand voice, target audience
-  │     ├── Content pillars and goals
+  │     ├── Content pillars, goals, key offerings, and content language
   │     └── Recent posts (last 10) — to avoid repetition
   │
   └── LLM generates:
@@ -495,8 +495,10 @@ When auto_approve is enabled, the Adapt Agent automatically schedules posts:
 
 1. Get optimal times for the post's target platform
 2. Pick the next available optimal hour based on current day/time
-3. Set `post.scheduled_at`
-4. Change `post.status` to `"scheduled"`
+3. Schedule in the user's timezone (uses `zoneinfo` for accurate local time)
+4. Enforce posting frequency limits — if the user set 7/week and 7 are already scheduled, no more are added
+5. Set `post.scheduled_at`
+6. Change `post.status` to `"scheduled"`
 
 ---
 

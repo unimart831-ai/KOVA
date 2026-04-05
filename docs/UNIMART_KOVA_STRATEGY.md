@@ -57,8 +57,18 @@ Unimart Africa has a unique challenge that makes Kova almost unfairly perfect fo
 
 Your Kova account is configured with Unimart's DNA:
 
+**Content Language:** English + Sheng (Kenyan market), English + Pidgin (Nigerian market)
+
+**Key Offerings:**
+- Student-to-student marketplace (buy/sell textbooks, electronics, clothes)
+- Campus delivery services
+- Student seller storefronts
+- Campus ambassador program
+
 **Brand Voice:**
 > Young, vibrant, and relatable. We speak like a smart friend who gets campus life. We use casual but respectful language, occasional slang (campus vibes, hustle, squad), and emojis. We champion student entrepreneurship, peer-to-peer commerce, and financial empowerment. Our tone is encouraging, slightly playful, and always inclusive. We mix English with occasional Swahili/Sheng phrases when targeting East African campuses.
+
+**Tone Attributes:** Bold, Witty, Casual, Playful, Confident
 
 **Target Audience:**
 > University students aged 18-26 across African campuses. Both sellers (student entrepreneurs, people decluttering, small-scale traders) and buyers (budget-conscious students looking for affordable goods and services within their campus ecosystem). Primary markets: Kenya, Nigeria, South Africa, Ghana, Tanzania. Tech-savvy, mobile-first, active on Twitter/X, Instagram, TikTok.
@@ -74,12 +84,17 @@ Your Kova account is configured with Unimart's DNA:
 | 5 | Platform Features & How-To Guides | How to list, how to buy, safety features, new features |
 | 6 | Community & University Partnerships | Campus ambassador program, university events, brand collaborations |
 
+**Brand Restrictions / Guardrails:**
+> Never promote gambling or betting. Avoid political content or tribal references. Never use language that could be seen as mocking students' financial situations. Don't reference alcohol brands or adult content.
+
 **Goals:**
 1. Grow brand awareness among university students
 2. Drive app downloads and seller signups
 3. Build a community of student entrepreneurs
 4. Increase marketplace transactions
 5. Establish Unimart as THE campus commerce platform in Africa
+
+**Auto-Engage:** ON — AI auto-replies to positive comments and questions about the platform
 
 **Connected Platforms:** Twitter/X, Instagram, TikTok, LinkedIn
 
