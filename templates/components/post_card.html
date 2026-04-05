@@ -32,6 +32,15 @@ Usage: {% include "components/post_card.html" with post=post %}
           {% if post.generated_by_agent %}
             <span class="text-[9px] bg-kova-50 text-kova-600 dark:bg-kova-950 dark:text-kova-300 px-1.5 py-0.5 rounded-md font-semibold tracking-wide">AI</span>
           {% endif %}
+          {% if post.media_status == 'generated' %}
+            <span class="text-[9px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 px-1.5 py-0.5 rounded-md font-medium">🖼️ AI image</span>
+          {% elif post.media_status == 'uploaded' %}
+            <span class="text-[9px] bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 px-1.5 py-0.5 rounded-md font-medium">📎 Uploaded</span>
+          {% elif post.media_status == 'pending' %}
+            <span class="text-[9px] bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400 px-1.5 py-0.5 rounded-md font-medium">⏳ Generating…</span>
+          {% elif post.media_status == 'failed' %}
+            <span class="text-[9px] bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400 px-1.5 py-0.5 rounded-md font-medium">⚠ Image failed</span>
+          {% endif %}
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -127,6 +136,16 @@ Usage: {% include "components/post_card.html" with post=post %}
       <div class="mb-3 px-2.5 py-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-lg">
         <p class="text-[11px] text-red-700 dark:text-red-300 font-medium">Publishing failed</p>
         <a href="{% url 'content:post_detail' post.id %}" class="text-[11px] text-red-600 dark:text-red-400 hover:underline mt-0.5 inline-block">View details &rarr;</a>
+      </div>
+    {% endif %}
+
+    {# ── Media warning (image-required platforms) ── #}
+    {% if post.media_warning %}
+      <div class="mb-3 px-2.5 py-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-lg">
+        <p class="text-[11px] text-amber-700 dark:text-amber-300 font-medium flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+          {{ post.media_warning }}
+        </p>
       </div>
     {% endif %}
 

@@ -21,6 +21,18 @@ class UserSettingsForm(forms.ModelForm):
 
 
 class BrandProfileForm(forms.ModelForm):
+    brand_colors_text = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "input",
+                "placeholder": "#FF5733, #1A1A2E, #FFFFFF",
+            }
+        ),
+        label="Brand colors",
+        help_text="Enter hex color codes separated by commas. Used for graphics, carousels, and AI image prompts.",
+    )
+
     class Meta:
         model = UserProfile
         fields = [
@@ -34,6 +46,8 @@ class BrandProfileForm(forms.ModelForm):
             "auto_engage",
             "content_language",
             "brand_restrictions",
+            "visual_style",
+            "brand_logo_url",
         ]
         widgets = {
             "company_name": forms.TextInput(attrs={"class": "input", "placeholder": "Your company or brand name"}),
@@ -62,7 +76,27 @@ class BrandProfileForm(forms.ModelForm):
                     "placeholder": "Never mention competitors by name, always include a call-to-action...",
                 }
             ),
+            "visual_style": forms.Select(attrs={"class": "input"}),
+            "brand_logo_url": forms.URLInput(
+                attrs={"class": "input", "placeholder": "https://yourcdn.com/logo.png"}
+            ),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.brand_colors:
+            self.fields["brand_colors_text"].initial = ", ".join(self.instance.brand_colors)
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        colors_text = self.cleaned_data.get("brand_colors_text", "")
+        if colors_text.strip():
+            instance.brand_colors = [c.strip() for c in colors_text.split(",") if c.strip()]
+        else:
+            instance.brand_colors = []
+        if commit:
+            instance.save()
+        return instance
 
 
 class OnboardingStep1Form(forms.ModelForm):
@@ -143,9 +177,21 @@ class OnboardingStep2Form(forms.ModelForm):
         ("minimalist", "Minimalist / Direct"),
     ]
 
+    brand_colors_text = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "input",
+                "placeholder": "#FF5733, #1A1A2E, #FFFFFF",
+            }
+        ),
+        label="Brand colors",
+        help_text="Pick your brand colors — used for graphics, carousels, and AI image styling.",
+    )
+
     class Meta:
         model = UserProfile
-        fields = ["brand_voice", "target_audience", "content_pillars", "brand_restrictions"]
+        fields = ["brand_voice", "target_audience", "content_pillars", "brand_restrictions", "visual_style"]
         widgets = {
             "brand_voice": forms.Textarea(
                 attrs={
@@ -211,6 +257,8 @@ class OnboardingStep2Form(forms.ModelForm):
             self.fields["tone_selection"].initial = self.instance.tone_attributes
         if self.instance and self.instance.brand_voice_examples:
             self.fields["brand_voice_examples_text"].initial = "\n\n".join(self.instance.brand_voice_examples)
+        if self.instance and self.instance.brand_colors:
+            self.fields["brand_colors_text"].initial = ", ".join(self.instance.brand_colors)
         # Hide the JSON fields — we use text proxies
         self.fields.pop("content_pillars")
 
@@ -229,6 +277,12 @@ class OnboardingStep2Form(forms.ModelForm):
             instance.brand_voice_examples = examples[:5]
         else:
             instance.brand_voice_examples = []
+        # Brand colors
+        colors_text = self.cleaned_data.get("brand_colors_text", "")
+        if colors_text.strip():
+            instance.brand_colors = [c.strip() for c in colors_text.split(",") if c.strip()]
+        else:
+            instance.brand_colors = []
         if commit:
             instance.save()
         return instance

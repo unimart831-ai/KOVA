@@ -51,6 +51,55 @@
                   {% endif %}
                 </div>
               </div>
+
+            {% elif field.name == 'visual_style' %}
+              {# Visual Identity section header #}
+              <div class="pt-4 mt-2 border-t border-gray-100 dark:border-gray-800 mb-4">
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Visual identity</h4>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Controls how AI generates images, graphics, and carousels for your brand</p>
+              </div>
+              <div class="mb-4">
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ field.help_text }}</p>
+                {% endif %}
+                {% for error in field.errors %}
+                  <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ error }}</p>
+                {% endfor %}
+              </div>
+
+            {% elif field.name == 'brand_colors_text' %}
+              <div class="mb-4" x-data="{
+                colors: '{{ field.value|default:''|escapejs }}'.split(',').map(c => c.trim()).filter(c => c.startsWith('#')),
+                labels: ['Primary', 'Secondary', 'Accent', 'Extra', 'Extra']
+              }">
+                <label class="label mb-1">{{ field.label }}</label>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">{{ field.help_text }}</p>
+                <div class="flex items-end gap-3 flex-wrap">
+                  <template x-for="(color, i) in colors" :key="i">
+                    <div class="flex flex-col items-center gap-1.5">
+                      <div class="relative">
+                        <input type="color" :value="color" @input="colors[i] = $el.value"
+                               class="w-12 h-12 rounded-xl cursor-pointer border-2 border-gray-200 dark:border-gray-700 hover:border-kova-400 dark:hover:border-kova-400 transition-colors p-0.5">
+                        <button type="button" @click="colors.splice(i, 1)"
+                                class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] leading-none flex items-center justify-center hover:bg-red-600 transition-colors"
+                                x-show="colors.length > 1">&times;</button>
+                      </div>
+                      <span class="text-[10px] text-gray-400 dark:text-gray-500" x-text="labels[i] || 'Extra'"></span>
+                      <span class="text-[9px] text-gray-300 dark:text-gray-600 font-mono" x-text="color"></span>
+                    </div>
+                  </template>
+                  <button type="button" @click="colors.push('#6366F1')" x-show="colors.length < 5"
+                          class="w-12 h-12 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-kova-400 hover:text-kova-500 dark:hover:border-kova-400 dark:hover:text-kova-400 transition-colors text-xl flex items-center justify-center mb-6">+</button>
+                </div>
+                <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-1" x-show="colors.length === 0">No colors set — AI will use elegant defaults.</p>
+                <input type="hidden" name="{{ field.html_name }}" :value="colors.join(', ')">
+                {% for error in field.errors %}
+                  <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ error }}</p>
+                {% endfor %}
+              </div>
+
             {% else %}
               <div class="mb-4">
                 <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>

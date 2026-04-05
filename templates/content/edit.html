@@ -56,10 +56,23 @@
 
   {# Media uploads #}
   <div class="card">
-    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
       <h3 class="font-semibold text-gray-900 dark:text-white">Media</h3>
+      {% if post.media_status and post.media_status != 'none' %}
+        <span class="text-[10px] font-medium px-2 py-0.5 rounded-md {% if post.media_status == 'generated' %}bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400{% elif post.media_status == 'uploaded' %}bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400{% elif post.media_status == 'failed' %}bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400{% elif post.media_status == 'pending' %}bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400{% endif %}">
+          {% if post.media_status == 'generated' %}🖼️ AI-generated{% elif post.media_status == 'uploaded' %}📎 Uploaded{% elif post.media_status == 'failed' %}⚠ Generation failed{% elif post.media_status == 'pending' %}⏳ Generating…{% endif %}
+        </span>
+      {% endif %}
     </div>
     <div class="card-body">
+      {% if post.media_warning %}
+      <div class="mb-4 px-3 py-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-lg">
+        <p class="text-sm text-amber-700 dark:text-amber-300 font-medium flex items-center gap-2">
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+          {{ post.media_warning }} Upload an image below.
+        </p>
+      </div>
+      {% endif %}
       {# AI-generated images from media_urls #}
       {% if post.media_urls and not post.attachments.exists %}
       <div class="grid grid-cols-3 gap-3 mb-4">
