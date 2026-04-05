@@ -56,6 +56,16 @@ class Post(models.Model):
         CURATED = "curated", "Curated"
         REPLY = "reply", "Reply"
 
+    class MediaStatus(models.TextChoices):
+        NONE = "none", "No media"
+        PENDING = "pending", "Pending generation"
+        GENERATED = "generated", "AI-generated"
+        UPLOADED = "uploaded", "Manually uploaded"
+        FAILED = "failed", "Generation failed"
+
+    # Platforms that REQUIRE an image/video — text-only posts will fail.
+    MEDIA_REQUIRED_PLATFORMS = {"instagram", "tiktok", "pinterest"}
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="posts")
     brand = models.ForeignKey(
@@ -74,6 +84,12 @@ class Post(models.Model):
 
     # Media
     media_urls = models.JSONField(default=list, blank=True)
+    media_status = models.CharField(
+        max_length=20,
+        choices=MediaStatus.choices,
+        default=MediaStatus.NONE,
+        help_text="Tracks whether AI image generation succeeded, failed, or was skipped.",
+    )
 
     # Scheduling
     scheduled_at = models.DateTimeField(null=True, blank=True, db_index=True)
@@ -125,6 +141,27 @@ class Post(models.Model):
 
     def __str__(self):
         return f"{self.get_status_display()} — {self.content_text[:60]}"
+
+    @property
+    def has_media(self):
+        """True if the post has at least one image/video attached."""
+        return bool(self.media_urls) or self.attachments.exists()
+
+    @property
+    def needs_media(self):
+        """True if this post's platform requires media and none is attached."""
+        platform = self.social_account.platform if self.social_account else ""
+        return platform in self.MEDIA_REQUIRED_PLATFORMS and not self.has_media
+
+    @property
+    def media_warning(self):
+        """User-facing warning message for media issues."""
+        if self.media_status == self.MediaStatus.FAILED:
+            return "Image generation failed. Upload an image or retry."
+        if self.needs_media:
+            platform = self.social_account.get_platform_display() if self.social_account else "This platform"
+            return f"{platform} requires an image. Upload one before approving."
+        return ""
 
 
 class ABTest(models.Model):

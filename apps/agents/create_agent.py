@@ -367,6 +367,19 @@ def build_system_prompt(user) -> str:
         parts.append(f"## BRAND GUARDRAILS (MUST FOLLOW)\n{profile.brand_restrictions}")
         parts.append("These are non-negotiable rules. Violating any guardrail is a critical failure.")
 
+    # Visual brand identity — guides AI image generation
+    visual_parts = []
+    if getattr(profile, "brand_colors", None):
+        visual_parts.append(f"**Brand Colors**: {', '.join(profile.brand_colors)}")
+    if getattr(profile, "visual_style", "auto") != "auto":
+        visual_parts.append(f"**Visual Style**: {profile.get_visual_style_display()}")
+    if visual_parts:
+        parts.append("## VISUAL BRAND IDENTITY\n" + "\n".join(visual_parts))
+        parts.append(
+            "When writing image_prompt descriptions, incorporate these brand visuals. "
+            "Images should feel like they belong to THIS brand, not generic stock photos."
+        )
+
     # Performance intelligence — the feedback loop
     intel = _get_performance_intelligence(user)
     if intel:
@@ -440,7 +453,19 @@ Respond with a JSON object. No markdown code fences. Structure:
       "angle": "Brief description of the specific angle chosen for this platform",
       "reasoning": "Why this angle, framework, and format will perform well here. What engagement pattern it targets.",
       "predicted_score": 72,
-      "image_prompt": "A vivid, specific description for AI image generation. Describe the visual that would best complement this post — style, mood, subject, colors. Make it platform-appropriate. Keep it under 200 words."
+      "image_prompt": "A vivid, specific description for AI image generation that matches the brand's visual identity. Describe: subject, composition, style/mood, colors (use brand colors if provided), and lighting. Make it platform-appropriate (square for Instagram, vertical for TikTok/Pinterest, landscape for Twitter/LinkedIn). Keep it under 200 words. NEVER include text/words in the image — text overlays are handled separately.",
+      "visual_strategy": {{
+        "strategy": "One of: ai_photo | quote_card | tip_graphic | stat_highlight | cta_banner | carousel | none. Pick the visual type that best complements this content and platform.",
+        "text": "For quote_card: the quote text. For tip_graphic: the title.",
+        "attribution": "For quote_card: who said it (optional).",
+        "tips": ["For tip_graphic: array of tip strings."],
+        "stat_number": "For stat_highlight: the big number (e.g. '87%', '10,000+').",
+        "stat_label": "For stat_highlight: what the number means (e.g. 'Customer satisfaction').",
+        "headline": "For cta_banner: the main headline. For carousel: opening slide title.",
+        "subtext": "For cta_banner: supporting text. For carousel: opening slide subtitle.",
+        "cta_text": "For cta_banner: button text. For carousel: closing slide CTA.",
+        "slides": "For carousel: array of objects with 'content' (str), optional 'title' (str), optional 'type' ('content'|'quote'|'stat'|'tip')."
+      }}
     }}
   ]
 }}
@@ -601,16 +626,58 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                 ai_original_text=content_text,
             )
 
-            # Generate AI image for the post (Growth+ plans only)
+            # Generate visual for the post (plan-gated with monthly limit)
             image_prompt = pd.get("image_prompt", "")
-            if image_prompt:
+            visual_strategy_data = pd.get("visual_strategy", {})
+            has_visual_request = image_prompt or visual_strategy_data.get("strategy", "none") != "none"
+
+            if has_visual_request:
                 from apps.billing.models import get_plan_limits
                 user_plan = getattr(getattr(seed.user, "profile", None), "plan", "starter")
                 plan_limits = get_plan_limits(user_plan)
                 if plan_limits.get("ai_image_generation", False):
-                    generate_post_image(post, image_prompt)
+                    # Enforce monthly image limit
+                    from django.utils import timezone as tz
+                    monthly_limit = plan_limits.get("ai_images_per_month", 5)
+                    month_start = tz.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                    images_this_month = Post.objects.filter(
+                        user=seed.user,
+                        media_status="generated",
+                        created_at__gte=month_start,
+                    ).count()
+                    if images_this_month < monthly_limit:
+                        # Use visual strategy system if available, fall back to ai_photo
+                        from apps.agents.visual_strategy import apply_visual_strategy, infer_visual_strategy
+                        if visual_strategy_data and visual_strategy_data.get("strategy"):
+                            # New format: LLM provided a full visual strategy
+                            if not visual_strategy_data.get("image_prompt") and image_prompt:
+                                visual_strategy_data["image_prompt"] = image_prompt
+                            apply_visual_strategy(post, visual_strategy_data)
+                        elif image_prompt:
+                            # Legacy format: just image_prompt — infer best strategy
+                            strategy = infer_visual_strategy(
+                                content_text,
+                                post.social_account.platform if post.social_account else "twitter",
+                            )
+                            if strategy == "ai_photo":
+                                generate_post_image(post, image_prompt)
+                            else:
+                                # For non-photo strategies inferred from content, use the graphic engine
+                                apply_visual_strategy(post, {
+                                    "strategy": strategy,
+                                    "image_prompt": image_prompt,
+                                    "text": content_text[:300],
+                                    "headline": content_text.split("\n")[0][:120],
+                                })
+                    else:
+                        logger.info(
+                            "Image limit reached for %s (%d/%d this month)",
+                            seed.user, images_this_month, monthly_limit,
+                        )
+                        post.media_status = "none"
+                        post.save(update_fields=["media_status", "updated_at"])
                 else:
-                    logger.info("Skipping AI image gen for %s (plan: %s)", seed.user, user_plan)
+                    logger.info("Skipping visual gen for %s (plan: %s)", seed.user, user_plan)
 
             created_posts.append(post)
 

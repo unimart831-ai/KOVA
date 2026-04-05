@@ -121,6 +121,33 @@ class UserProfile(models.Model):
         blank=True,
         help_text="Platform importance ranking. E.g., {'linkedin': 1, 'twitter': 2, 'instagram': 3}",
     )
+    # ── Visual brand identity ──
+    brand_colors = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Brand color hex codes. E.g., ['#FF5733', '#1A1A2E', '#FFFFFF']",
+    )
+    visual_style = models.CharField(
+        max_length=30,
+        choices=[
+            ("photography", "Photography / Real Photos"),
+            ("illustration", "Illustrations / Drawn Art"),
+            ("flat_design", "Flat Design / Minimal"),
+            ("3d_render", "3D Renders"),
+            ("collage", "Collage / Mixed Media"),
+            ("abstract", "Abstract / Artistic"),
+            ("corporate", "Corporate / Clean"),
+            ("vibrant", "Vibrant / Colorful"),
+            ("dark_moody", "Dark / Moody"),
+            ("auto", "Let AI Decide"),
+        ],
+        default="auto",
+        help_text="Preferred visual style for AI-generated images.",
+    )
+    brand_logo_url = models.URLField(
+        blank=True,
+        help_text="Public URL to brand logo for overlay on graphics.",
+    )
     # Subscription
     plan = models.CharField(max_length=20, choices=PlanTier.choices, default=PlanTier.STARTER)
     payment_provider = models.CharField(

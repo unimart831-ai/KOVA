@@ -164,6 +164,8 @@ def generate_post_image(post, image_prompt: str) -> str | None:
     image_bytes = _fetch_image_with_fallback(image_prompt, width, height)
     if not image_bytes:
         logger.warning("All image providers failed for post %s", post.id)
+        post.media_status = "failed"
+        post.save(update_fields=["media_status", "updated_at"])
         return None
 
     try:
@@ -184,7 +186,8 @@ def generate_post_image(post, image_prompt: str) -> str | None:
         if not post.media_urls:
             post.media_urls = []
         post.media_urls.append(media_url)
-        post.save(update_fields=["media_urls", "updated_at"])
+        post.media_status = "generated"
+        post.save(update_fields=["media_urls", "media_status", "updated_at"])
 
         logger.info(
             "Generated AI image for post %s (%s): %s",

@@ -177,6 +177,16 @@ def publish_post(self, post_id: str):
         # Add UTM tracking to any URLs in the content
         publish_content = add_utm_tracking(post.content_text, account.platform, str(post.id))
 
+        # Safety: block publishing to platforms that require media if none attached
+        if post.needs_media:
+            _fail_post(post, f"{account.get_platform_display()} requires an image but none is attached.")
+            Notification.create_for_user(
+                post.user, "publish_failed",
+                f"{account.get_platform_display()} requires an image. Upload one and retry.",
+                related_post=post,
+            )
+            return {"error": "Media required"}
+
         result = provider.publish_post(
             access_token=account.access_token,
             content=publish_content,

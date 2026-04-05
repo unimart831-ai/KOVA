@@ -44,11 +44,43 @@ if CUSTOM_DOMAIN:
 # ─── STATIC FILES (WhiteNoise) ──────────────────────────────────────────────
 MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")  # noqa: F405
 MIDDLEWARE.append("csp.middleware.CSPMiddleware")  # noqa: F405
-STORAGES = {
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
-    },
-}
+
+# ─── MEDIA STORAGE (Cloudflare R2 / S3-compatible) ──────────────────────────
+# R2 is S3-compatible with free egress. Set these env vars on Railway:
+#   AWS_STORAGE_BUCKET_NAME, AWS_S3_ENDPOINT_URL,
+#   AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY
+_R2_BUCKET = env("AWS_STORAGE_BUCKET_NAME", default="")  # noqa: F405
+if _R2_BUCKET:
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        },
+    }
+    AWS_STORAGE_BUCKET_NAME = _R2_BUCKET
+    AWS_S3_ENDPOINT_URL = env("AWS_S3_ENDPOINT_URL", default="")  # noqa: F405
+    AWS_S3_ACCESS_KEY_ID = env("AWS_S3_ACCESS_KEY_ID", default="")  # noqa: F405
+    AWS_S3_SECRET_ACCESS_KEY = env("AWS_S3_SECRET_ACCESS_KEY", default="")  # noqa: F405
+    AWS_S3_REGION_NAME = "auto"
+    AWS_S3_SIGNATURE_VERSION = "s3v4"
+    AWS_DEFAULT_ACL = None
+    AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
+    AWS_QUERYSTRING_AUTH = False  # Public URLs for media (images served to platforms)
+    # If custom domain set for R2 bucket (optional)
+    _R2_CUSTOM_DOMAIN = env("AWS_S3_CUSTOM_DOMAIN", default="")  # noqa: F405
+    if _R2_CUSTOM_DOMAIN:
+        AWS_S3_CUSTOM_DOMAIN = _R2_CUSTOM_DOMAIN
+        MEDIA_URL = f"https://{_R2_CUSTOM_DOMAIN}/"
+    else:
+        MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{_R2_BUCKET}/"
+else:
+    STORAGES = {
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        },
+    }
 
 # ─── CONTENT SECURITY POLICY ────────────────────────────────────────────────
 # django-csp: Restrict what the browser can load to prevent XSS/injection.

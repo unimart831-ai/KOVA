@@ -230,11 +230,22 @@ def extract_content_dna(post):
         '- "has_hashtags": boolean — does it include hashtags?\n'
         '- "length": one of [short, medium, long] based on character count relative to platform\n'
         '- "hook_type": one of [statistic, question, bold_claim, story_opener, curiosity_gap, none]\n'
+        '- "has_image": boolean — does this post have a visual attached?\n'
+        '- "image_source": one of [ai_generated, uploaded, none] — where the visual came from\n'
+        '- "image_type": one of [photo, illustration, graphic, meme, infographic, carousel, none] — what kind of visual\n'
     )
+
+    # Determine visual context for the LLM
+    has_image = bool(post.media_urls) or post.attachments.exists()
+    image_source = "none"
+    if has_image:
+        image_source = "ai_generated" if post.media_status == "generated" else "uploaded"
 
     prompt = (
         f"Platform: {post.social_account.platform if post.social_account else 'unknown'}\n"
-        f"Content:\n{post.content_text}\n\n"
+        f"Content:\n{post.content_text}\n"
+        f"Has image: {has_image}\n"
+        f"Image source: {image_source}\n\n"
         "Extract the Content DNA attributes."
     )
 

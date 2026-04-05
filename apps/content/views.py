@@ -301,6 +301,16 @@ def approve_post(request, post_id):
     if post.status not in (Post.Status.DRAFT, Post.Status.PENDING_APPROVAL):
         return render(request, "components/post_card.html", {"post": post})
 
+    # Block approval if platform requires media and none exists
+    if post.needs_media:
+        from django.contrib import messages
+        platform_name = post.social_account.get_platform_display() if post.social_account else "This platform"
+        messages.warning(
+            request,
+            f"{platform_name} requires an image. Upload one before approving.",
+        )
+        return render(request, "components/post_card.html", {"post": post})
+
     intent = request.POST.get("schedule_intent", "next_best")
     platform = post.social_account.platform if post.social_account else None
 
@@ -505,6 +515,10 @@ def upload_media(request, post_id):
             alt_text=request.POST.get("alt_text", ""),
             order=order,
         )
+        # Update media_status to reflect manual upload
+        if post.media_status != Post.MediaStatus.GENERATED:
+            post.media_status = Post.MediaStatus.UPLOADED
+            post.save(update_fields=["media_status", "updated_at"])
         return render(request, "content/_media_item.html", {"attachment": attachment})
 
     return HttpResponse(status=405)
