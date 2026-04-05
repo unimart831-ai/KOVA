@@ -6,7 +6,7 @@
 #
 # This document is the SINGLE SOURCE OF TRUTH for building Kova Agent.
 # Every decision, every sprint, every feature traces back to here.
-# Last Updated: March 30, 2026
+# Last Updated: April 5, 2026
 # ============================================================================
 
 
@@ -161,7 +161,7 @@ Nobody should be able to say "Kova is like [X]."
 
 ## 3.5 External Services
 - Social platform OAuth + APIs (see Section 7)
-- Resend ✅ (transactional email via SMTP relay: Daily Brief emails, notifications)
+- Resend ✅ (transactional email via SMTP relay: 19 email types, delivery/open/click tracking via webhooks)
 - Stripe ✅ (subscription billing: Checkout, Portal, Webhooks)
 - M-Pesa ✅ (STK Push for KES payments)
 - S3-compatible storage (media files: images, videos for posts)
@@ -779,7 +779,7 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 - [x] Research Agent v1: Trending topic detection in user's niche — LLM-powered with urgency/relevance scoring
 - [x] Adapt Agent: Smart scheduling (optimal times based on user's audience)
 - [x] Content DNA system: Track which content attributes drive engagement — JSONField on Post model
-- [ ] Email Daily Brief (receive brief in inbox)
+- [x] Email Daily Brief (receive brief in inbox) — routed through EmailService for logging
 - [ ] Multi-image / carousel support
 - [ ] Post preview (see how it will look on each platform)
 - [ ] Basic competitor tracking (manually add competitor accounts)
@@ -794,7 +794,7 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 - [x] Unified inbox (all comments/DMs across platforms) — engage/inbox with status/sentiment/platform filters
 - [x] Full agent orchestration (Chief Strategist coordinates all agents) — Strategist Agent with proactive seeds
 - [ ] Content A/B testing (auto-generate variations)
-- [ ] Team features: invite members, roles, approval workflows
+- [x] Team features: invite members, roles, approval workflows — Team model, invitations, roles (admin/editor/viewer)
 - [ ] Hashtag research + suggestions
 - [ ] Re-queue evergreen content
 - [ ] Voice memo input (speech-to-text → content seed)
@@ -839,8 +839,8 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 | Phase 2 | Sprint 8 | ✅ Complete | More Platforms, Competitor Intel, Multi-image, Previews |
 | Phase 3 | Sprint 9 | ✅ Complete | Engage Agent, Unified Inbox, Superfan Detection |
 | Phase 3 | Sprint 10 | ✅ Complete | Strategist Orchestration, Full Pipeline |
-| Phase 3 | Sprint 11 | ⏳ Not Started | Team Features, Multi-brand |
-| Phase 3 | Sprint 12 | 🔄 In Progress | Production Hardening (security, monitoring, email, load testing) |
+| Phase 3 | Sprint 11 | ✅ Complete | Team Features, Help Center, Admin Dashboard, API, Email System |
+| Phase 3 | Sprint 12 | 🔄 In Progress | Production Hardening (security, monitoring, load testing) |
 | Phase 4 | Post-Launch  | ⏳ Not Started | Agency, White-label, API, Mobile PWA |
 | Phase 5 | Post-Launch  | ⏳ Not Started | WhatsApp Intelligence, Meme Engine, Status Studio |
 
@@ -856,6 +856,7 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 | `run-strategy-cycle` | Every 8 hours | `apps/agents/tasks.py` |
 | `check-mpesa-subscriptions` | Every 24 hours | `apps/billing/tasks.py` |
 | `analyze-all-competitors` | Weekly | `apps/analytics/tasks.py` |
+| `send-weekly-reports-all` | Weekly (Monday 8AM) | `apps/emails/tasks.py` |
 
 ## ─── PHASE 1: MVP — "AI-Assisted Scheduling" (Weeks 1-8) ✅ COMPLETE ───
 
@@ -1034,18 +1035,34 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
   - Feeds into Daily Brief compilation
   - Fixed: `posting_frequency` type mismatch, missing `strategist.decide` model config
 
-### Sprint 11 (Week 21-22): Team Features
-- [ ] Team invitations and roles (admin, editor, viewer)
-- [ ] Approval workflows (editor creates → admin approves)
-- [ ] Team activity feed
-- [ ] Multi-brand support (Agency plan groundwork)
+### Sprint 11 (Week 21-22): Teams, Help, Admin Dashboard, API, Email System ✅ COMPLETE
+- [x] teams app: Team, TeamMember, TeamInvitation, TeamActivity, Brand models
+- [x] Team invitations and roles (admin, editor, viewer) — token-based invites, 7-day expiry
+- [x] Team activity feed — TeamActivity model with event logging
+- [x] Multi-brand support — Brand model linked to teams
+- [x] Help center: HelpArticle + HelpCategory models, admin management, public /learn/ section
+- [x] Admin dashboard: overview, users, content, agents, platforms, billing, engage, teams, analytics, A/B tests, system health, logs — 15+ views
+- [x] REST API v1: /api/v1/ — briefs, content, agents, analytics, engage endpoints with token auth
+- [x] Full email system: apps/emails/ — EmailLog model (19 types, 8 statuses), EmailService, 12 Celery tasks, 20 HTML templates
+- [x] Email admin dashboard: /dashboard/emails/ — stats, charts, log, detail, test email, broadcast
+- [x] Email wiring: welcome (signup), payment confirmation/failed/receipt (Stripe+M-Pesa), plan changes, cancellations, payment reminders, team invitations, daily briefs, weekly reports
+- [x] Resend webhook handler: delivery/open/click/bounce tracking via provider_message_id
+- DELIVERABLE: ✅ Teams, help center, admin dashboard, API, and full email system operational.
+- **IMPLEMENTATION NOTES:**
+  - Email: `apps/emails/` — EmailService singleton, central `_send()` method, all emails logged to EmailLog
+  - Templates: 20 HTML email templates extending `base_email.html` (table layout, responsive, branded)
+  - Async: All emails sent via Celery tasks (never blocking HTTP requests), max_retries=3
+  - Admin: /dashboard/emails/ with stats cards, 30-day volume chart, filterable log, detail view, test/broadcast actions
+  - Wired into: accounts (signals), billing (services + tasks + mpesa), teams (views), briefs (tasks)
+  - Celery Beat: `send-weekly-reports-all` weekly on Monday 8AM
+  - See docs/EMAIL_SYSTEM_GUIDE.md for complete reference
 
 ### Sprint 12 (Week 23-24): Polish + Scale 🔄 IN PROGRESS
 - [x] Sentry error monitoring + alerting — Django + Celery integrations, release tracking
 - [x] CSP security headers (django-csp) — script/style/img/font/connect/frame policies
 - [x] Authentication rate limiting — allauth built-in: login, signup, password reset
 - [x] Health check endpoint — `/health/` for Railway + uptime monitors
-- [x] Email sending (Resend SMTP) — Daily Brief email, plan-gated
+- [x] Email sending (Resend SMTP) — Full email system: 19 types, 20 templates, admin dashboard, webhook tracking
 - [x] Production security hardening — HSTS preload, referrer policy, cookie security, CSRF
 - [x] Load testing suite — Locust: authenticated flows, agent cycles, realistic user simulation
 - [ ] Performance optimization (query optimization, caching)
