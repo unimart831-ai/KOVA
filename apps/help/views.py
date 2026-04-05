@@ -221,3 +221,58 @@ def help_article(request, slug):
         "next_article": next_article,
         "template_name": f"help/articles/{slug}.html",
     })
+
+
+# ── Public (unauthenticated) help views ──────────────────────────────────────
+
+
+def public_help_center(request):
+    """Public-facing help center — no login required."""
+    search_data = [
+        {"slug": a["slug"], "title": a["title"], "description": a["description"], "category": a["category"]}
+        for a in ARTICLES
+    ]
+
+    # Track view for authenticated users only
+    if request.user.is_authenticated:
+        HelpPageView.objects.create(user=request.user, page_type="center")
+
+    return render(request, "help/public_index.html", {
+        "grouped_articles": _get_articles_by_category(),
+        "articles_json": mark_safe(json.dumps(search_data)),
+    })
+
+
+def public_help_article(request, slug):
+    """Public-facing article view — no login required."""
+    article = _ARTICLE_MAP.get(slug)
+    if not article:
+        raise Http404("Article not found")
+
+    category = _CATEGORY_MAP.get(article["category"])
+
+    siblings = sorted(
+        [a for a in ARTICLES if a["category"] == article["category"]],
+        key=lambda a: a["order"],
+    )
+    idx = next(i for i, a in enumerate(siblings) if a["slug"] == slug)
+    prev_article = siblings[idx - 1] if idx > 0 else None
+    next_article = siblings[idx + 1] if idx < len(siblings) - 1 else None
+
+    # Track view for authenticated users only
+    if request.user.is_authenticated:
+        HelpPageView.objects.create(
+            user=request.user,
+            page_type="article",
+            article_slug=slug,
+            article_title=article["title"],
+            category=article["category"],
+        )
+
+    return render(request, "help/public_article.html", {
+        "article": article,
+        "category": category,
+        "prev_article": prev_article,
+        "next_article": next_article,
+        "template_name": f"help/articles/{slug}.html",
+    })

@@ -1,0 +1,61 @@
+{% extends "layouts/marketing.html" %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+
+  <!-- Breadcrumb -->
+  <nav class="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 mb-6">
+    <a href="{% url 'learn:center' %}" class="hover:text-kova-600 dark:hover:text-kova-400 transition-colors">Learn</a>
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    <span>{{ category.name }}</span>
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    <span class="text-gray-900 dark:text-white font-medium">{{ article.title }}</span>
+  </nav>
+
+  <!-- Article content -->
+  <article class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-6 sm:p-8 shadow-sm">
+    <div class="article-content max-w-none">
+      {% include template_name %}
+    </div>
+  </article>
+
+  <!-- Prev / Next navigation -->
+  <div class="flex items-center justify-between mt-6 gap-4">
+    {% if prev_article %}
+    <a href="{% url 'learn:article' prev_article.slug %}"
+       class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 transition-colors">
+      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+      {{ prev_article.title }}
+    </a>
+    {% else %}
+    <div></div>
+    {% endif %}
+
+    {% if next_article %}
+    <a href="{% url 'learn:article' next_article.slug %}"
+       class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 transition-colors ml-auto">
+      {{ next_article.title }}
+      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      </svg>
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- Back + CTA -->
+  <div class="mt-8 flex flex-col items-center gap-4">
+    <a href="{% url 'learn:center' %}" class="text-sm text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 transition-colors">
+      &larr; Back to all articles
+    </a>
+    {% if not user.is_authenticated %}
+    <div class="bg-gradient-to-r from-kova-50 to-blue-50 dark:from-kova-950/30 dark:to-blue-950/30 border border-kova-200 dark:border-kova-800 rounded-xl p-5 text-center w-full">
+      <p class="text-sm font-medium text-gray-900 dark:text-white">Want to try this yourself?</p>
+      <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Start your free 14-day trial — no credit card required.</p>
+      <a href="{% url 'account_signup' %}" class="inline-block mt-3 btn-primary btn-sm">Start free trial</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
