@@ -1,0 +1,84 @@
+{% extends "partners/articles/_base.html" %}
+
+{% block article_content %}
+<h2>General Questions</h2>
+
+<h3>Do I need to be a Kova customer to be a partner?</h3>
+<p>No. However, approved partners receive a <strong>free Pro account</strong> so you can experience the product firsthand and speak authentically about it. We find that partners who use Kova themselves are significantly more effective.</p>
+
+<h3>Is there a cost to join?</h3>
+<p>No. The Growth Partners Program is <strong>completely free</strong> to join. There are no fees, minimums, or obligations.</p>
+
+<h3>How long does approval take?</h3>
+<p>We review all applications within <strong>48 hours</strong>. Most are reviewed within 24 hours during business days.</p>
+
+<h3>Can I be a partner in any country?</h3>
+<p>Yes. The program is open to partners worldwide. Payouts are available via M-Pesa (Kenya), bank transfer, or Stripe (international).</p>
+
+<h2>Referrals & Tracking</h2>
+
+<h3>How are referrals tracked?</h3>
+<p>When someone clicks your referral link, a cookie is set that persists for 30 days. If they sign up within that window, they're permanently tagged as your referral. Alternatively, if they manually enter your referral code during signup, they're tagged immediately.</p>
+
+<h3>Can I get credit for referrals made before I joined?</h3>
+<p>No. Referrals must use your unique link or code at signup. We don't do retroactive attribution to prevent disputes.</p>
+
+<h3>What if a client signs up but doesn't enter my code?</h3>
+<p>If they clicked your referral link, the cookie should handle it automatically. If they typed the URL directly without your link, there's no way to attribute them. Always encourage people to use your specific link.</p>
+
+<h3>Can I refer myself?</h3>
+<p>No. Self-referral is not allowed and will result in the referral being removed.</p>
+
+<h2>Commission & Payouts</h2>
+
+<h3>When do I start earning commission?</h3>
+<p>Commission starts after your referred client completes <strong>2 consecutive monthly payments</strong> (the activation period). This typically means you receive your first commission payout about 3 months after the referral signs up.</p>
+
+<h3>How is commission calculated?</h3>
+<p>Commission = client's monthly subscription amount × your current commission rate. It's calculated on the <strong>net amount</strong> (after payment processing fees). For example, if a client pays KES 500 on the Growth plan and your rate is 20%, you earn KES 100 that month.</p>
+
+<h3>What if a client upgrades or downgrades?</h3>
+<p>Your commission automatically adjusts to the new plan amount. An upgrade means more commission; a downgrade means less.</p>
+
+<h3>What if a client cancels?</h3>
+<p>Commission stops for that client immediately. However, they still count toward your milestone progress (milestones are cumulative).</p>
+
+<h3>When are payouts made?</h3>
+<p>Monthly payouts are processed on the <strong>15th of each month</strong> for the previous month's earnings. Minimum payout is KES 500 — anything below rolls over to the next month.</p>
+
+<h3>What payment methods are available?</h3>
+<p>M-Pesa (Kenya), bank transfer, or Stripe (international). You can set your preferred method in your Partner Dashboard.</p>
+
+<h2>Tiers & Growth</h2>
+
+<h3>How is my tier calculated?</h3>
+<p>Your tier is based on your current count of <strong>active clients</strong> (those who've been paying for 2+ consecutive months and haven't cancelled). It's recalculated monthly.</p>
+
+<h3>Can my tier go down?</h3>
+<p>Yes. If clients churn and your active count drops below a tier threshold, your commission rate adjusts accordingly. However, milestone bonuses you've already earned are never taken back.</p>
+
+<h3>Is there a limit to how many clients I can refer?</h3>
+<p>No limit. The more you refer, the higher your tier and the more you earn per client.</p>
+
+<h2>Promotion Guidelines</h2>
+
+<h3>Can I run paid ads?</h3>
+<p>Yes, with one restriction: you <strong>cannot bid on "Kova" or "Kova Agent" brand keywords</strong> in search ads. You also cannot make misleading claims about the product's capabilities.</p>
+
+<h3>Are there brand assets I can use?</h3>
+<p>Yes. Approved partners get access to official Kova logos, screenshots, and promotional materials. Contact us at partners@kovaagent.com for the brand kit.</p>
+
+<h3>What happens if I violate the program terms?</h3>
+<p>Violations (fake accounts, spam, misrepresentation, self-referrals) result in a warning for minor issues or immediate termination for fraud. Pending commissions are forfeited in cases of fraud.</p>
+
+<h2>Profit Share</h2>
+
+<h3>How do I qualify for profit sharing?</h3>
+<p>You need 100+ active referred clients with an average retention of 6 months, plus a signed annual partnership agreement. See the <a href="{% url 'partners:article' 'profit-sharing' %}">Profit Sharing</a> article for full details.</p>
+
+<h3>How many partners can have profit share?</h3>
+<p>Maximum 10 partners at any time. Total profit share pool is capped at 15% of net profit.</p>
+
+<h3>What if Kova isn't profitable yet?</h3>
+<p>If net profit is zero or negative in a quarter, profit share payouts are zero for that quarter. No obligation, no debt. It only pays out when there are actual profits.</p>
+{% endblock %}

@@ -20,6 +20,7 @@
       </a>
       <div class="flex items-center gap-2 sm:gap-4">
         <a href="{% url 'learn:center' %}" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors hidden sm:inline">Learn</a>
+        <a href="{% url 'partners:landing' %}" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors hidden sm:inline">Partners</a>
         <button type="button"
                 x-data="{ dark: document.documentElement.classList.contains('dark') }"
                 x-init="dark = document.documentElement.classList.contains('dark')"
@@ -63,6 +64,7 @@
       </div>
       <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
         <a href="{% url 'learn:center' %}" class="hover:text-white transition-colors">Learn</a>
+        <a href="{% url 'partners:landing' %}" class="hover:text-white transition-colors">Partners</a>
         <a href="{% url 'account_login' %}" class="hover:text-white transition-colors">Sign in</a>
         <a href="{% url 'account_signup' %}" class="hover:text-white transition-colors">Sign up</a>
         <span class="text-gray-600">Terms & privacy — coming soon</span>

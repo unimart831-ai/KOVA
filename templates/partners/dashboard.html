@@ -1,0 +1,169 @@
+{% extends "layouts/marketing.html" %}
+
+{% block title %}Partner Dashboard — Kova Agent{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Partner Dashboard</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Welcome back, {{ request.user.get_full_name|default:request.user.email }}</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
+        {{ partner.get_tier_display }}
+      </span>
+      <a href="{% url 'partners:landing' %}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">← Partners home</a>
+    </div>
+  </div>
+
+  <!-- Referral Code Card -->
+  <div class="bg-gradient-to-r from-emerald-500 to-kova-600 rounded-2xl p-6 mb-8 text-white"
+       x-data="{ copied: false }">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <p class="text-sm text-emerald-100">Your Referral Code</p>
+        <p class="text-2xl font-mono font-bold mt-1">{{ partner.referral_code }}</p>
+        <p class="text-sm text-emerald-100 mt-2">Share link: <span class="text-white font-medium">kovaagent.com/?ref={{ partner.referral_code }}</span></p>
+      </div>
+      <button
+        @click="navigator.clipboard.writeText('https://kovaagent.com/?ref={{ partner.referral_code }}'); copied = true; setTimeout(() => copied = false, 2000)"
+        class="inline-flex items-center gap-2 px-5 py-2.5 bg-white/20 hover:bg-white/30 rounded-xl font-medium text-sm transition-colors self-start"
+      >
+        <svg x-show="!copied" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+        <svg x-show="copied" x-cloak class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        <span x-text="copied ? 'Copied!' : 'Copy Link'"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+      <p class="text-sm text-gray-500 dark:text-gray-400">Active Clients</p>
+      <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ active_count }}</p>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ pending_count }} pending activation</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+      <p class="text-sm text-gray-500 dark:text-gray-400">Commission Rate</p>
+      <p class="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{{ partner.commission_rate|floatformat:0 }}%</p>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ partner.get_tier_display }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+      <p class="text-sm text-gray-500 dark:text-gray-400">Total Earned</p>
+      <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">KES {{ partner.total_earned_kes|floatformat:0 }}</p>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Lifetime earnings</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+      <p class="text-sm text-gray-500 dark:text-gray-400">Pending Payout</p>
+      <p class="text-3xl font-bold text-amber-600 dark:text-amber-400 mt-1">KES {{ partner.pending_payout_kes|floatformat:0 }}</p>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Paid on 15th monthly</p>
+    </div>
+  </div>
+
+  <!-- Milestone Progress -->
+  {% if next_milestone %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800 mb-8">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold text-gray-900 dark:text-white">Next Milestone: {{ next_milestone.label }}</h2>
+      <span class="text-sm text-gray-500 dark:text-gray-400">{{ next_milestone.progress }}/{{ next_milestone.clients_required }} clients</span>
+    </div>
+    <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-3">
+      <div class="bg-gradient-to-r from-amber-400 to-amber-500 h-3 rounded-full transition-all" style="width: {% widthratio next_milestone.progress next_milestone.clients_required 100 %}%"></div>
+    </div>
+    <div class="flex items-center justify-between mt-3 text-sm">
+      <span class="text-gray-500 dark:text-gray-400">{{ next_milestone.remaining }} more to go</span>
+      <span class="text-amber-600 dark:text-amber-400 font-medium">Bonus: KES {{ next_milestone.bonus_kes|floatformat:0 }}</span>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Recent Referrals -->
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
+      <div class="p-5 border-b border-gray-100 dark:border-gray-800">
+        <h2 class="font-semibold text-gray-900 dark:text-white">Recent Referrals</h2>
+      </div>
+      {% if referrals %}
+      <div class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for ref in referrals %}
+        <div class="p-4 flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ ref.referred_user.email }}</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500">{{ ref.signed_up_at|date:"M j, Y" }}{% if ref.current_plan %} · {{ ref.current_plan|title }}{% endif %}</p>
+          </div>
+          {% if ref.activated_at %}
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">Active</span>
+          {% else %}
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300">Pending</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="p-8 text-center">
+        <p class="text-sm text-gray-400 dark:text-gray-500">No referrals yet. Share your code to get started!</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Recent Commissions -->
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
+      <div class="p-5 border-b border-gray-100 dark:border-gray-800">
+        <h2 class="font-semibold text-gray-900 dark:text-white">Recent Commissions</h2>
+      </div>
+      {% if recent_commissions %}
+      <div class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for c in recent_commissions %}
+        <div class="p-4 flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ c.period_start|date:"M Y" }}</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500">{{ c.commission_rate|floatformat:0 }}% on KES {{ c.client_revenue_kes|floatformat:0 }}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-semibold text-gray-900 dark:text-white">KES {{ c.amount_kes|floatformat:0 }}</p>
+            <span class="text-[10px] {% if c.status == 'paid' %}text-emerald-600 dark:text-emerald-400{% elif c.status == 'approved' %}text-blue-600 dark:text-blue-400{% else %}text-gray-400{% endif %}">{{ c.get_status_display }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="p-8 text-center">
+        <p class="text-sm text-gray-400 dark:text-gray-500">Commissions will appear here once your referrals are active.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Achieved Milestones -->
+  {% if milestones %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 mt-8">
+    <div class="p-5 border-b border-gray-100 dark:border-gray-800">
+      <h2 class="font-semibold text-gray-900 dark:text-white">Achieved Milestones</h2>
+    </div>
+    <div class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for m in milestones %}
+      <div class="p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-amber-100 dark:bg-amber-950/40 rounded-lg flex items-center justify-center">
+            <span class="text-xs font-bold text-amber-700 dark:text-amber-400">🏅</span>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ m.label }}</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500">{{ m.clients_required }} clients · {{ m.extras }}</p>
+          </div>
+        </div>
+        <div class="text-right">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white">KES {{ m.bonus_kes|floatformat:0 }}</p>
+          <span class="text-[10px] {% if m.paid %}text-emerald-600 dark:text-emerald-400{% else %}text-amber-600 dark:text-amber-400{% endif %}">
+            {% if m.paid %}Paid{% else %}Pending{% endif %}
+          </span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

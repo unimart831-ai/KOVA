@@ -39,6 +39,8 @@ urlpatterns = [
     path("", landing_page, name="landing"),
     # Public help / learn section (no login required)
     path("learn/", include("apps.help.urls_public")),
+    # Growth Partners (public + authenticated)
+    path("partners/", include("apps.partners.urls")),
     # PWA service worker (must be served from root scope)
     path("sw.js", service_worker, name="sw"),
     # Admin

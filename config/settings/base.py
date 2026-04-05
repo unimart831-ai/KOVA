@@ -72,6 +72,7 @@ LOCAL_APPS = [
     "apps.admin_dashboard",
     "apps.help",
     "apps.teams",
+    "apps.partners",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -89,6 +90,7 @@ MIDDLEWARE = [
     "django_htmx.middleware.HtmxMiddleware",
     "apps.accounts.middleware.OnboardingMiddleware",
     "apps.billing.middleware.PlanEnforcementMiddleware",
+    "apps.partners.middleware.ReferralMiddleware",
 ]
 
 # ─── URLS ────────────────────────────────────────────────────────────────────

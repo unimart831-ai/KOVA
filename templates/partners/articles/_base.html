@@ -1,0 +1,55 @@
+{% extends "layouts/marketing.html" %}
+
+{% block title %}{{ article.title }} — Growth Partners | Kova Agent{% endblock %}
+
+{% block content %}
+<article class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+  <!-- Breadcrumb -->
+  <nav class="text-sm text-gray-500 dark:text-gray-400 mb-8">
+    <a href="{% url 'partners:landing' %}" class="hover:text-gray-700 dark:hover:text-gray-300">Growth Partners</a>
+    <span class="mx-2">›</span>
+    <span class="text-gray-900 dark:text-white">{{ article.title }}</span>
+  </nav>
+
+  <div class="text-3xl mb-4">{{ article.icon }}</div>
+  <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">{{ article.title }}</h1>
+  <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">{{ article.description }}</p>
+
+  <div class="mt-10 prose prose-gray dark:prose-invert max-w-none 
+              prose-headings:font-bold prose-headings:text-gray-900 dark:prose-headings:text-white
+              prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4
+              prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3
+              prose-p:text-gray-600 dark:prose-p:text-gray-400 prose-p:leading-relaxed
+              prose-li:text-gray-600 dark:prose-li:text-gray-400
+              prose-strong:text-gray-900 dark:prose-strong:text-white
+              prose-a:text-kova-600 dark:prose-a:text-kova-400">
+    {% block article_content %}{% endblock %}
+  </div>
+
+  <!-- Navigation -->
+  <div class="mt-16 pt-8 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
+    {% if prev_article %}
+    <a href="{% url 'partners:article' prev_article.slug %}" class="group flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+      <svg class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      {{ prev_article.title }}
+    </a>
+    {% else %}<span></span>{% endif %}
+
+    {% if next_article %}
+    <a href="{% url 'partners:article' next_article.slug %}" class="group flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+      {{ next_article.title }}
+      <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    </a>
+    {% else %}<span></span>{% endif %}
+  </div>
+
+  <!-- CTA -->
+  <div class="mt-12 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl p-8 text-center border border-emerald-100 dark:border-emerald-900/40">
+    <h3 class="text-xl font-bold text-gray-900 dark:text-white">Ready to start earning?</h3>
+    <p class="mt-2 text-gray-600 dark:text-gray-400">Apply to the Growth Partners Program today.</p>
+    <a href="{% url 'partners:apply' %}" class="inline-flex items-center mt-4 px-6 py-2.5 text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl font-semibold text-sm transition-colors">
+      Apply Now
+    </a>
+  </div>
+</article>
+{% endblock %}

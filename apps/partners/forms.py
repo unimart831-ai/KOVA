@@ -1,0 +1,55 @@
+from django import forms
+
+from .models import PartnerApplication
+
+
+class PartnerApplicationForm(forms.ModelForm):
+    class Meta:
+        model = PartnerApplication
+        fields = [
+            "full_name",
+            "email",
+            "phone",
+            "company",
+            "website",
+            "audience_description",
+        ]
+        widgets = {
+            "full_name": forms.TextInput(
+                attrs={
+                    "class": "w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-kova-500 focus:border-kova-500",
+                    "placeholder": "Your full name",
+                }
+            ),
+            "email": forms.EmailInput(
+                attrs={
+                    "class": "w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-kova-500 focus:border-kova-500",
+                    "placeholder": "you@company.com",
+                }
+            ),
+            "phone": forms.TextInput(
+                attrs={
+                    "class": "w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-kova-500 focus:border-kova-500",
+                    "placeholder": "+254 7XX XXX XXX (optional)",
+                }
+            ),
+            "company": forms.TextInput(
+                attrs={
+                    "class": "w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-kova-500 focus:border-kova-500",
+                    "placeholder": "Your company or brand (optional)",
+                }
+            ),
+            "website": forms.URLInput(
+                attrs={
+                    "class": "w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-kova-500 focus:border-kova-500",
+                    "placeholder": "https://yoursite.com (optional)",
+                }
+            ),
+            "audience_description": forms.Textarea(
+                attrs={
+                    "class": "w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-kova-500 focus:border-kova-500",
+                    "rows": 4,
+                    "placeholder": "Tell us about your audience, channels, and how you plan to share Kova...",
+                }
+            ),
+        }
