@@ -1,84 +1,259 @@
 {% extends "partners/articles/_base.html" %}
 
 {% block article_content %}
+<!-- FAQ uses Alpine.js accordion pattern for each section -->
+
 <h2>General Questions</h2>
 
-<h3>Do I need to be a Kova customer to be a partner?</h3>
-<p>No. However, approved partners receive a <strong>free Pro account</strong> so you can experience the product firsthand and speak authentically about it. We find that partners who use Kova themselves are significantly more effective.</p>
+<div class="not-prose my-6 space-y-2" x-data="{ open: null }">
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 1 ? null : 1" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">Do I need to be a Kova customer to be a partner?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 1 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 1" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      No. However, approved partners receive a <strong class="text-gray-900 dark:text-white">free Pro account</strong> so you can experience the product firsthand and speak authentically about it. We find that partners who use Kova themselves are significantly more effective.
+    </div>
+  </div>
 
-<h3>Is there a cost to join?</h3>
-<p>No. The Growth Partners Program is <strong>completely free</strong> to join. There are no fees, minimums, or obligations.</p>
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 2 ? null : 2" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">Is there a cost to join?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 2 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 2" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      No. The Growth Partners Program is <strong class="text-gray-900 dark:text-white">completely free</strong> to join. There are no fees, minimums, or obligations.
+    </div>
+  </div>
 
-<h3>How long does approval take?</h3>
-<p>We review all applications within <strong>48 hours</strong>. Most are reviewed within 24 hours during business days.</p>
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 3 ? null : 3" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">How long does approval take?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 3 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 3" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      We review all applications within <strong class="text-gray-900 dark:text-white">48 hours</strong>. Most are reviewed within 24 hours during business days.
+    </div>
+  </div>
 
-<h3>Can I be a partner in any country?</h3>
-<p>Yes. The program is open to partners worldwide. Payouts are available via M-Pesa (Kenya), bank transfer, or Stripe (international).</p>
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 4 ? null : 4" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">Can I be a partner in any country?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 4 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 4" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      Yes. The program is open to partners worldwide. Payouts are available via M-Pesa (Kenya), bank transfer, or Stripe (international).
+    </div>
+  </div>
+</div>
 
 <h2>Referrals & Tracking</h2>
 
-<h3>How are referrals tracked?</h3>
-<p>When someone clicks your referral link, a cookie is set that persists for 30 days. If they sign up within that window, they're permanently tagged as your referral. Alternatively, if they manually enter your referral code during signup, they're tagged immediately.</p>
+<div class="not-prose my-6 space-y-2" x-data="{ open: null }">
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 1 ? null : 1" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">How are referrals tracked?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 1 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 1" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      When someone clicks your referral link, a cookie is set that persists for 30 days. If they sign up within that window, they're permanently tagged as your referral. Alternatively, if they manually enter your referral code during signup, they're tagged immediately.
+    </div>
+  </div>
 
-<h3>Can I get credit for referrals made before I joined?</h3>
-<p>No. Referrals must use your unique link or code at signup. We don't do retroactive attribution to prevent disputes.</p>
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 2 ? null : 2" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">Can I get credit for referrals made before I joined?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 2 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 2" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      No. Referrals must use your unique link or code at signup. We don't do retroactive attribution to prevent disputes.
+    </div>
+  </div>
 
-<h3>What if a client signs up but doesn't enter my code?</h3>
-<p>If they clicked your referral link, the cookie should handle it automatically. If they typed the URL directly without your link, there's no way to attribute them. Always encourage people to use your specific link.</p>
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 3 ? null : 3" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">What if a client signs up but doesn't enter my code?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 3 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 3" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      If they clicked your referral link, the cookie should handle it automatically. If they typed the URL directly without your link, there's no way to attribute them. Always encourage people to use your specific link.
+    </div>
+  </div>
 
-<h3>Can I refer myself?</h3>
-<p>No. Self-referral is not allowed and will result in the referral being removed.</p>
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 4 ? null : 4" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">Can I refer myself?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 4 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 4" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      No. Self-referral is not allowed and will result in the referral being removed.
+    </div>
+  </div>
+</div>
 
 <h2>Commission & Payouts</h2>
 
-<h3>When do I start earning commission?</h3>
-<p>Commission starts after your referred client completes <strong>2 consecutive monthly payments</strong> (the activation period). This typically means you receive your first commission payout about 3 months after the referral signs up.</p>
+<div class="not-prose my-6 space-y-2" x-data="{ open: null }">
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 1 ? null : 1" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">When do I start earning commission?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 1 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 1" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      Commission starts after your referred client completes <strong class="text-gray-900 dark:text-white">2 consecutive monthly payments</strong> (the activation period). This typically means you receive your first commission payout about 3 months after the referral signs up.
+    </div>
+  </div>
 
-<h3>How is commission calculated?</h3>
-<p>Commission = client's monthly subscription amount × your current commission rate. It's calculated on the <strong>net amount</strong> (after payment processing fees). For example, if a client pays KES 500 on the Growth plan and your rate is 20%, you earn KES 100 that month.</p>
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 2 ? null : 2" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">How is commission calculated?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 2 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 2" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      Commission = client's monthly subscription amount × your current commission rate. It's calculated on the <strong class="text-gray-900 dark:text-white">net amount</strong> (after payment processing fees). For example, if a client pays KES 500 on the Growth plan and your rate is 20%, you earn KES 100 that month.
+    </div>
+  </div>
 
-<h3>What if a client upgrades or downgrades?</h3>
-<p>Your commission automatically adjusts to the new plan amount. An upgrade means more commission; a downgrade means less.</p>
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 3 ? null : 3" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">What if a client upgrades or downgrades?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 3 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 3" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      Your commission automatically adjusts to the new plan amount. An upgrade means more commission; a downgrade means less.
+    </div>
+  </div>
 
-<h3>What if a client cancels?</h3>
-<p>Commission stops for that client immediately. However, they still count toward your milestone progress (milestones are cumulative).</p>
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 4 ? null : 4" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">What if a client cancels?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 4 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 4" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      Commission stops for that client immediately. However, they still count toward your milestone progress (milestones are cumulative).
+    </div>
+  </div>
 
-<h3>When are payouts made?</h3>
-<p>Monthly payouts are processed on the <strong>15th of each month</strong> for the previous month's earnings. Minimum payout is KES 500 — anything below rolls over to the next month.</p>
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 5 ? null : 5" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">When are payouts made?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 5 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 5" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      Monthly payouts are processed on the <strong class="text-gray-900 dark:text-white">15th of each month</strong> for the previous month's earnings. Minimum payout is KES 500 — anything below rolls over to the next month.
+    </div>
+  </div>
 
-<h3>What payment methods are available?</h3>
-<p>M-Pesa (Kenya), bank transfer, or Stripe (international). You can set your preferred method in your Partner Dashboard.</p>
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 6 ? null : 6" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">What payment methods are available?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 6 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 6" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      M-Pesa (Kenya), bank transfer, or Stripe (international). You can set your preferred method in your Partner Dashboard.
+    </div>
+  </div>
+</div>
 
 <h2>Tiers & Growth</h2>
 
-<h3>How is my tier calculated?</h3>
-<p>Your tier is based on your current count of <strong>active clients</strong> (those who've been paying for 2+ consecutive months and haven't cancelled). It's recalculated monthly.</p>
+<div class="not-prose my-6 space-y-2" x-data="{ open: null }">
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 1 ? null : 1" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">How is my tier calculated?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 1 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 1" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      Your tier is based on your current count of <strong class="text-gray-900 dark:text-white">active clients</strong> (those who've been paying for 2+ consecutive months and haven't cancelled). It's recalculated monthly.
+    </div>
+  </div>
 
-<h3>Can my tier go down?</h3>
-<p>Yes. If clients churn and your active count drops below a tier threshold, your commission rate adjusts accordingly. However, milestone bonuses you've already earned are never taken back.</p>
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 2 ? null : 2" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">Can my tier go down?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 2 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 2" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      Yes. If clients churn and your active count drops below a tier threshold, your commission rate adjusts accordingly. However, milestone bonuses you've already earned are never taken back.
+    </div>
+  </div>
 
-<h3>Is there a limit to how many clients I can refer?</h3>
-<p>No limit. The more you refer, the higher your tier and the more you earn per client.</p>
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 3 ? null : 3" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">Is there a limit to how many clients I can refer?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 3 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 3" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      No limit. The more you refer, the higher your tier and the more you earn per client.
+    </div>
+  </div>
+</div>
 
 <h2>Promotion Guidelines</h2>
 
-<h3>Can I run paid ads?</h3>
-<p>Yes, with one restriction: you <strong>cannot bid on "Kova" or "Kova Agent" brand keywords</strong> in search ads. You also cannot make misleading claims about the product's capabilities.</p>
+<div class="not-prose my-6 space-y-2" x-data="{ open: null }">
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 1 ? null : 1" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">Can I run paid ads?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 1 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 1" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      Yes, with one restriction: you <strong class="text-gray-900 dark:text-white">cannot bid on "Kova" or "Kova Agent" brand keywords</strong> in search ads. You also cannot make misleading claims about the product's capabilities.
+    </div>
+  </div>
 
-<h3>Are there brand assets I can use?</h3>
-<p>Yes. Approved partners get access to official Kova logos, screenshots, and promotional materials. Contact us at partners@kovaagent.com for the brand kit.</p>
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 2 ? null : 2" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">Are there brand assets I can use?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 2 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 2" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      Yes. Approved partners get access to official Kova logos, screenshots, and promotional materials. Contact us at partners@kovaagent.com for the brand kit.
+    </div>
+  </div>
 
-<h3>What happens if I violate the program terms?</h3>
-<p>Violations (fake accounts, spam, misrepresentation, self-referrals) result in a warning for minor issues or immediate termination for fraud. Pending commissions are forfeited in cases of fraud.</p>
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 3 ? null : 3" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">What happens if I violate the program terms?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 3 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 3" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      Violations (fake accounts, spam, misrepresentation, self-referrals) result in a warning for minor issues or immediate termination for fraud. Pending commissions are forfeited in cases of fraud.
+    </div>
+  </div>
+</div>
 
 <h2>Profit Share</h2>
 
-<h3>How do I qualify for profit sharing?</h3>
-<p>You need 100+ active referred clients with an average retention of 6 months, plus a signed annual partnership agreement. See the <a href="{% url 'partners:article' 'profit-sharing' %}">Profit Sharing</a> article for full details.</p>
+<div class="not-prose my-6 space-y-2" x-data="{ open: null }">
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 1 ? null : 1" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">How do I qualify for profit sharing?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 1 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 1" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      You need 100+ active referred clients with an average retention of 6 months, plus a signed annual partnership agreement. See the <a href="{% url 'partners:article' 'profit-sharing' %}" class="text-kova-600 dark:text-kova-400 font-medium underline underline-offset-2">Profit Sharing</a> article for full details.
+    </div>
+  </div>
 
-<h3>How many partners can have profit share?</h3>
-<p>Maximum 10 partners at any time. Total profit share pool is capped at 15% of net profit.</p>
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 2 ? null : 2" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">How many partners can have profit share?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 2 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 2" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      Maximum 10 partners at any time. Total profit share pool is capped at 15% of net profit.
+    </div>
+  </div>
 
-<h3>What if Kova isn't profitable yet?</h3>
-<p>If net profit is zero or negative in a quarter, profit share payouts are zero for that quarter. No obligation, no debt. It only pays out when there are actual profits.</p>
+  <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <button @click="open = open === 3 ? null : 3" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">What if Kova isn't profitable yet?</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" :class="open === 3 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open === 3" x-collapse class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+      If net profit is zero or negative in a quarter, profit share payouts are zero for that quarter. No obligation, no debt. It only pays out when there are actual profits.
+    </div>
+  </div>
+</div>
 {% endblock %}

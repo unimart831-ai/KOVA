@@ -1,16 +1,35 @@
 {% extends "partners/articles/_base.html" %}
 
 {% block article_content %}
-<h2>Step 1: Apply</h2>
+<!-- Step 1 -->
+<div class="not-prose mb-8">
+  <div class="flex items-center gap-3 mb-4">
+    <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+      <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400">1</span>
+    </div>
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white m-0 p-0 border-0">Apply</h2>
+  </div>
+</div>
 <p>Head to the <a href="{% url 'partners:apply' %}">application page</a> and fill out the form. We ask for:</p>
 <ul>
   <li>Your name and email</li>
   <li>Your company or brand (optional)</li>
   <li>A description of your audience and how you plan to share Kova</li>
 </ul>
-<p>You don't need to be an existing Kova customer. Anyone with a relevant audience can apply.</p>
 
-<h2>Step 2: Get Approved</h2>
+<blockquote>You don't need to be an existing Kova customer. Anyone with a relevant audience can apply.</blockquote>
+
+<hr>
+
+<!-- Step 2 -->
+<div class="not-prose mb-4">
+  <div class="flex items-center gap-3 mb-4">
+    <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+      <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400">2</span>
+    </div>
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white m-0 p-0 border-0">Get Approved</h2>
+  </div>
+</div>
 <p>We review every application within <strong>48 hours</strong>. We're looking for partners who:</p>
 <ul>
   <li>Have a genuine audience (social media, email list, community, clients)</li>
@@ -19,17 +38,57 @@
 </ul>
 <p>Once approved, you'll receive an email with your unique referral code and a link to your Partner Dashboard.</p>
 
-<h2>Step 3: Set Up Your Dashboard</h2>
-<p>Your <a href="{% url 'partners:dashboard' %}">Partner Dashboard</a> is where you track everything:</p>
-<ul>
-  <li>Your referral code and shareable link</li>
-  <li>Number of referred clients (pending and active)</li>
-  <li>Your current commission tier and rate</li>
-  <li>Monthly earnings and payout history</li>
-  <li>Milestone progress</li>
-</ul>
+<hr>
 
-<h2>Step 4: Share Your Link</h2>
+<!-- Step 3 -->
+<div class="not-prose mb-4">
+  <div class="flex items-center gap-3 mb-4">
+    <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+      <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400">3</span>
+    </div>
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white m-0 p-0 border-0">Set Up Your Dashboard</h2>
+  </div>
+</div>
+<p>Your <a href="{% url 'partners:dashboard' %}">Partner Dashboard</a> is where you track everything:</p>
+
+<div class="not-prose my-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+  <div class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+    <div class="w-7 h-7 rounded-md bg-kova-100 dark:bg-kova-900/40 flex items-center justify-center flex-shrink-0">
+      <svg class="w-3.5 h-3.5 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+    </div>
+    <span class="text-sm text-gray-700 dark:text-gray-300">Referral code & shareable link</span>
+  </div>
+  <div class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+    <div class="w-7 h-7 rounded-md bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+      <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    </div>
+    <span class="text-sm text-gray-700 dark:text-gray-300">Pending & active clients</span>
+  </div>
+  <div class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+    <div class="w-7 h-7 rounded-md bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+      <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    </div>
+    <span class="text-sm text-gray-700 dark:text-gray-300">Earnings & payout history</span>
+  </div>
+  <div class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+    <div class="w-7 h-7 rounded-md bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
+      <svg class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+    </div>
+    <span class="text-sm text-gray-700 dark:text-gray-300">Milestone progress</span>
+  </div>
+</div>
+
+<hr>
+
+<!-- Step 4 -->
+<div class="not-prose mb-4">
+  <div class="flex items-center gap-3 mb-4">
+    <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+      <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400">4</span>
+    </div>
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white m-0 p-0 border-0">Share Your Link</h2>
+  </div>
+</div>
 <p>Use your personalized referral link wherever you talk about social media management:</p>
 <ul>
   <li><strong>Social media:</strong> Post about your experience, share tips, mention Kova</li>
@@ -41,23 +100,50 @@
 
 <h3>What Works Best</h3>
 <p>Our most successful partners share from <strong>genuine experience</strong>. Instead of "Sign up for this tool", they say:</p>
-<ul>
-  <li>"Here's how I automated my social media and got better results"</li>
-  <li>"My clients used to spend 2 hours daily on social media. Now it's 5 minutes."</li>
-  <li>"I tested 5 social media AI tools. Here's why I recommend Kova."</li>
-</ul>
 
-<h2>Step 5: Track Your Earnings</h2>
+<div class="not-prose my-6 space-y-2">
+  <div class="bg-emerald-50 dark:bg-emerald-950/20 rounded-lg p-4 border-l-4 border-emerald-500 dark:border-emerald-600">
+    <p class="text-sm text-gray-700 dark:text-gray-300 italic">"Here's how I automated my social media and got better results"</p>
+  </div>
+  <div class="bg-emerald-50 dark:bg-emerald-950/20 rounded-lg p-4 border-l-4 border-emerald-500 dark:border-emerald-600">
+    <p class="text-sm text-gray-700 dark:text-gray-300 italic">"My clients used to spend 2 hours daily on social media. Now it's 5 minutes."</p>
+  </div>
+  <div class="bg-emerald-50 dark:bg-emerald-950/20 rounded-lg p-4 border-l-4 border-emerald-500 dark:border-emerald-600">
+    <p class="text-sm text-gray-700 dark:text-gray-300 italic">"I tested 5 social media AI tools. Here's why I recommend Kova."</p>
+  </div>
+</div>
+
+<hr>
+
+<!-- Step 5 -->
+<div class="not-prose mb-4">
+  <div class="flex items-center gap-3 mb-4">
+    <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+      <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400">5</span>
+    </div>
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white m-0 p-0 border-0">Track Your Earnings</h2>
+  </div>
+</div>
 <p>Here's the timeline from referral to payout:</p>
 <ol>
   <li><strong>Day 1:</strong> Someone signs up using your link → appears as "Pending" in your dashboard</li>
   <li><strong>Month 1:</strong> They make their first payment → still pending</li>
-  <li><strong>Month 2:</strong> They make their second consecutive payment → status changes to "Active", commission begins</li>
+  <li><strong>Month 2:</strong> Second consecutive payment → "Active", commission begins</li>
   <li><strong>Month 3, 15th:</strong> Your first commission payout for this client arrives</li>
   <li><strong>Every month after:</strong> Commission continues automatically for 24 months</li>
 </ol>
 
-<h2>Step 6: Grow and Unlock More</h2>
+<hr>
+
+<!-- Step 6 -->
+<div class="not-prose mb-4">
+  <div class="flex items-center gap-3 mb-4">
+    <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+      <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400">6</span>
+    </div>
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white m-0 p-0 border-0">Grow and Unlock More</h2>
+  </div>
+</div>
 <p>As your active client count grows:</p>
 <ul>
   <li><strong>10 clients:</strong> First milestone bonus (KES 2,500)</li>
@@ -66,11 +152,125 @@
   <li><strong>250+ clients:</strong> Maximum rates, maximum bonuses, Advisory Board eligibility</li>
 </ul>
 
+<hr>
+
 <h2>Tips for Success</h2>
+<div class="not-prose my-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+  <div class="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+    <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1">🎯 Use Kova yourself</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">The best recommendations come from real experience.</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+    <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1">👥 Target the right audience</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">Business owners, freelancers, and marketers who struggle with consistent social media.</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+    <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1">⏳ Be patient</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">Commission starts after the 2-month activation. Focus on quality referrals.</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+    <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1">📝 Create content</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">Reviews, tutorials, and comparison posts drive long-term referrals.</p>
+  </div>
+</div  <svg class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+    </div>
+    <span class="text-sm text-gray-700 dark:text-gray-300">Milestone progress</span>
+  </div>
+</div>
+
+<hr>
+
+<!-- Step 4 -->
+<div class="not-prose mb-4">
+  <div class="flex items-center gap-3 mb-4">
+    <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+      <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400">4</span>
+    </div>
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white m-0 p-0 border-0">Share Your Link</h2>
+  </div>
+</div>
+<p>Use your personalized referral link wherever you talk about social media management:</p>
 <ul>
-  <li><strong>Use Kova yourself.</strong> The best recommendations come from real experience.</li>
-  <li><strong>Target the right audience.</strong> Business owners, freelancers, and marketers who struggle with consistent social media.</li>
-  <li><strong>Be patient.</strong> Commission starts after the 2-month activation. Focus on quality referrals.</li>
-  <li><strong>Create content.</strong> Reviews, tutorials, and comparison posts drive long-term referrals.</li>
+  <li><strong>Social media:</strong> Post about your experience, share tips, mention Kova</li>
+  <li><strong>Blog/YouTube:</strong> Write reviews, tutorials, comparisons</li>
+  <li><strong>Client conversations:</strong> Recommend to prospects who need automation</li>
+  <li><strong>Email:</strong> Include in newsletters or direct outreach</li>
+  <li><strong>Communities:</strong> Share in relevant groups (where allowed)</li>
 </ul>
+
+<h3>What Works Best</h3>
+<p>Our most successful partners share from <strong>genuine experience</strong>. Instead of "Sign up for this tool", they say:</p>
+
+<div class="not-prose my-6 space-y-2">
+  <div class="bg-emerald-50 dark:bg-emerald-950/20 rounded-lg p-4 border-l-4 border-emerald-500 dark:border-emerald-600">
+    <p class="text-sm text-gray-700 dark:text-gray-300 italic">"Here's how I automated my social media and got better results"</p>
+  </div>
+  <div class="bg-emerald-50 dark:bg-emerald-950/20 rounded-lg p-4 border-l-4 border-emerald-500 dark:border-emerald-600">
+    <p class="text-sm text-gray-700 dark:text-gray-300 italic">"My clients used to spend 2 hours daily on social media. Now it's 5 minutes."</p>
+  </div>
+  <div class="bg-emerald-50 dark:bg-emerald-950/20 rounded-lg p-4 border-l-4 border-emerald-500 dark:border-emerald-600">
+    <p class="text-sm text-gray-700 dark:text-gray-300 italic">"I tested 5 social media AI tools. Here's why I recommend Kova."</p>
+  </div>
+</div>
+
+<hr>
+
+<!-- Step 5 -->
+<div class="not-prose mb-4">
+  <div class="flex items-center gap-3 mb-4">
+    <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+      <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400">5</span>
+    </div>
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white m-0 p-0 border-0">Track Your Earnings</h2>
+  </div>
+</div>
+<p>Here's the timeline from referral to payout:</p>
+<ol>
+  <li><strong>Day 1:</strong> Someone signs up using your link → appears as "Pending" in your dashboard</li>
+  <li><strong>Month 1:</strong> They make their first payment → still pending</li>
+  <li><strong>Month 2:</strong> Second consecutive payment → "Active", commission begins</li>
+  <li><strong>Month 3, 15th:</strong> Your first commission payout for this client arrives</li>
+  <li><strong>Every month after:</strong> Commission continues automatically for 24 months</li>
+</ol>
+
+<hr>
+
+<!-- Step 6 -->
+<div class="not-prose mb-4">
+  <div class="flex items-center gap-3 mb-4">
+    <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+      <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400">6</span>
+    </div>
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white m-0 p-0 border-0">Grow and Unlock More</h2>
+  </div>
+</div>
+<p>As your active client count grows:</p>
+<ul>
+  <li><strong>10 clients:</strong> First milestone bonus (KES 2,500)</li>
+  <li><strong>26 clients:</strong> Commission rate jumps to 20%</li>
+  <li><strong>100 clients:</strong> Profit share unlocked</li>
+  <li><strong>250+ clients:</strong> Maximum rates, maximum bonuses, Advisory Board eligibility</li>
+</ul>
+
+<hr>
+
+<h2>Tips for Success</h2>
+<div class="not-prose my-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+  <div class="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+    <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1">🎯 Use Kova yourself</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">The best recommendations come from real experience.</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+    <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1">👥 Target the right audience</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">Business owners, freelancers, and marketers who struggle with consistent social media.</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+    <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1">⏳ Be patient</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">Commission starts after the 2-month activation. Focus on quality referrals.</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+    <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1">📝 Create content</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">Reviews, tutorials, and comparison posts drive long-term referrals.</p>
+  </div>
+</div>
 {% endblock %}

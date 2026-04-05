@@ -103,6 +103,7 @@ def partners_article(request, slug):
 
     context = {
         "article": article,
+        "articles": ARTICLES,
         "prev_article": prev_article,
         "next_article": next_article,
         "commission_tiers": COMMISSION_TIERS,
