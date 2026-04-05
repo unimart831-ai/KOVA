@@ -35,6 +35,21 @@
       </a>
       <a href="#how-it-works" class="btn-secondary text-lg px-8 py-3.5">See how it works</a>
     </div>
+
+    <!-- Partner login / dashboard link -->
+    <div class="mt-6 reveal reveal-delay-3">
+      {% if user.is_authenticated and user.partner_profile %}
+        <a href="{% url 'partners:dashboard' %}" class="inline-flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Go to my Partner Dashboard →
+        </a>
+      {% else %}
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          Already a partner?
+          <a href="{% url 'account_login' %}?next={% url 'partners:dashboard' %}" class="text-emerald-600 dark:text-emerald-400 hover:underline font-medium">Log in to your dashboard</a>
+        </p>
+      {% endif %}
+    </div>
   </div>
 </section>
 
@@ -259,4 +274,26 @@
     <p class="mt-4 text-sm text-gray-400 dark:text-gray-500 reveal reveal-delay-3">Free to join &middot; No obligations &middot; Applications reviewed within 48 hours</p>
   </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Scroll reveal script -->
+<script>
+(function() {
+  var els = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)) {
+    els.forEach(function(el) { el.classList.add('visible'); });
+    return;
+  }
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  els.forEach(function(el) { observer.observe(el); });
+})();
+</script>
 {% endblock %}

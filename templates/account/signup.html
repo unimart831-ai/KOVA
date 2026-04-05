@@ -80,7 +80,13 @@
       <div class="card-body">
         <form method="post" action="{% url 'account_signup' %}" class="space-y-5">
           {% csrf_token %}
-          {% if request.COOKIES.kova_ref %}<input type="hidden" name="ref_code" value="{{ request.COOKIES.kova_ref }}">{% endif %}
+          {% if request.COOKIES.kova_ref %}
+          <input type="hidden" name="ref_code" value="{{ request.COOKIES.kova_ref }}">
+          <div class="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg px-4 py-2.5">
+            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <p class="text-sm text-emerald-700 dark:text-emerald-300">Referred by partner <span class="font-mono font-semibold">{{ request.COOKIES.kova_ref }}</span></p>
+          </div>
+          {% endif %}
 
           {% if form.errors %}
             <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">

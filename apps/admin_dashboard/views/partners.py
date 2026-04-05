@@ -199,6 +199,16 @@ def application_action(request):
                 send_partner_app_approved_email.delay(str(application.user.pk), partner.referral_code)
             except Exception:
                 pass
+        elif not application.user:
+            # No Kova account yet — send email telling them to create one
+            try:
+                from apps.emails.tasks import send_partner_app_approved_no_account_email
+                send_partner_app_approved_no_account_email.delay(
+                    application.email,
+                    application.full_name,
+                )
+            except Exception:
+                pass
 
         return JsonResponse({"ok": True, "message": f"Application by {application.full_name} approved."})
 

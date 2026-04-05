@@ -64,6 +64,7 @@ EMAIL_TEMPLATES = {
     # Partners
     "partner_app_received": ("emails/partner_app_received.html", "We received your Growth Partner application — Kova Agent"),
     "partner_app_approved": ("emails/partner_app_approved.html", "You're approved! Welcome to the Growth Partners Program 🎉"),
+    "partner_approved_noacc": ("emails/partner_approved_no_account.html", "You're approved! Create your account to get started 🎉"),
     "partner_app_rejected": ("emails/partner_app_rejected.html", "Update on your Growth Partner application — Kova Agent"),
     "partner_new_referral": ("emails/partner_new_referral.html", "New referral! Someone signed up with your link 🔥"),
     "partner_milestone": ("emails/partner_milestone.html", "Milestone achieved! You've unlocked a bonus 🏆"),
@@ -284,6 +285,17 @@ class EmailService:
                 "partners_url": f"{getattr(settings, 'SITE_URL', '')}/partners/",
             },
             metadata={"referral_code": referral_code},
+        )
+
+    def send_partner_approved_no_account(self, to_email, full_name):
+        return self._send(
+            "partner_approved_noacc", to_email,
+            context={
+                "applicant_name": full_name,
+                "signup_url": f"{getattr(settings, 'SITE_URL', '')}/accounts/signup/",
+                "partners_url": f"{getattr(settings, 'SITE_URL', '')}/partners/",
+            },
+            metadata={"applicant_name": full_name},
         )
 
     def send_partner_application_rejected(self, to_email, full_name, user=None, reason=""):

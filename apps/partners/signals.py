@@ -59,3 +59,43 @@ def link_referral_on_signup(sender, request, user, **kwargs):
         )
     except Exception:
         pass  # Don't break signup if email fails
+
+
+@receiver(user_signed_up)
+def auto_link_partner_application(sender, request, user, **kwargs):
+    """
+    When a new user signs up, check if there's an approved PartnerApplication
+    with the same email. If so, link the application to this user and
+    auto-create the Partner record so they can access their dashboard.
+    """
+    from apps.partners.models import Partner, PartnerApplication, generate_referral_code
+
+    # Only proceed if user doesn't already have a partner profile
+    if Partner.objects.filter(user=user).exists():
+        return
+
+    # Find approved application matching this email (not yet linked to a user)
+    application = (
+        PartnerApplication.objects
+        .filter(email__iexact=user.email, status="approved", user__isnull=True)
+        .first()
+    )
+    if not application:
+        return
+
+    # Link application to user
+    application.user = user
+    application.save(update_fields=["user"])
+
+    # Create Partner record
+    name = application.full_name or user.email.split("@")[0]
+    partner = Partner.objects.create(
+        user=user,
+        application=application,
+        referral_code=generate_referral_code(name),
+    )
+    logger.info(
+        "Auto-linked partner application for %s → partner %s",
+        user.email,
+        partner.referral_code,
+    )

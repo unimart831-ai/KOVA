@@ -46,6 +46,7 @@ class EmailLog(models.Model):
         # Partners
         PARTNER_APPLICATION_RECEIVED = "partner_app_received", "Partner Application Received"
         PARTNER_APPLICATION_APPROVED = "partner_app_approved", "Partner Application Approved"
+        PARTNER_APPROVED_NO_ACCOUNT = "partner_approved_noacc", "Partner Approved (No Account)"
         PARTNER_APPLICATION_REJECTED = "partner_app_rejected", "Partner Application Rejected"
         PARTNER_NEW_REFERRAL = "partner_new_referral", "Partner New Referral"
         PARTNER_MILESTONE_ACHIEVED = "partner_milestone", "Partner Milestone Achieved"

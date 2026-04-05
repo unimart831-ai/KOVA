@@ -15,10 +15,12 @@ class PartnerApplicationAdmin(admin.ModelAdmin):
     @admin.action(description="Approve selected applications")
     def approve_applications(self, request, queryset):
         now = timezone.now()
+        approved = 0
         for application in queryset.filter(status="pending"):
             application.status = "approved"
             application.reviewed_at = now
             application.save(update_fields=["status", "reviewed_at"])
+            approved += 1
 
             # Auto-create Partner if user is linked
             if application.user and not Partner.objects.filter(user=application.user).exists():
@@ -28,7 +30,7 @@ class PartnerApplicationAdmin(admin.ModelAdmin):
                     application=application,
                     referral_code=generate_referral_code(name),
                 )
-                # Send approval email
+                # Send approval email with referral code
                 try:
                     from apps.emails.tasks import send_partner_app_approved_email
                     send_partner_app_approved_email.delay(str(application.user.pk), partner.referral_code)
@@ -42,8 +44,18 @@ class PartnerApplicationAdmin(admin.ModelAdmin):
                     send_partner_app_approved_email.delay(str(application.user.pk), partner.referral_code)
                 except Exception:
                     pass
+            else:
+                # No Kova account yet — send approval email telling them to create one
+                try:
+                    from apps.emails.tasks import send_partner_app_approved_no_account_email
+                    send_partner_app_approved_no_account_email.delay(
+                        application.email,
+                        application.full_name,
+                    )
+                except Exception:
+                    pass
 
-        self.message_user(request, f"{queryset.filter(status='approved').count()} applications approved.")
+        self.message_user(request, f"{approved} application(s) approved.")
 
     @admin.action(description="Reject selected applications")
     def reject_applications(self, request, queryset):

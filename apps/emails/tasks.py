@@ -190,6 +190,15 @@ def send_partner_app_approved_email(user_id, referral_code):
         logger.error("Partner app approved email failed for user %s: %s", user_id, e)
 
 
+@shared_task(name="emails.send_partner_approved_no_account")
+def send_partner_app_approved_no_account_email(to_email, full_name):
+    from apps.emails.services import email_service
+    try:
+        email_service.send_partner_approved_no_account(to_email, full_name)
+    except Exception as e:
+        logger.error("Partner approved (no account) email failed for %s: %s", to_email, e)
+
+
 @shared_task(name="emails.send_partner_app_rejected")
 def send_partner_app_rejected_email(to_email, full_name, user_id=None, reason=""):
     from apps.emails.services import email_service
