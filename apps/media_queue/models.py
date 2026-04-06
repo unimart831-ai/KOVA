@@ -56,6 +56,12 @@ class MediaQueue(models.Model):
     )
     timezone = models.CharField(max_length=50, default="UTC")
 
+    # ── Batch settings ───────────────────────────────────────────
+    posts_per_slot = models.PositiveIntegerField(
+        default=1,
+        help_text="How many photos to post per time slot (1 = single, 2+ = bulk).",
+    )
+
     # ── Notifications ────────────────────────────────────────────
     notify_when_low = models.PositiveIntegerField(
         default=3,

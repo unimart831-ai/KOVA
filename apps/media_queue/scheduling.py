@@ -40,6 +40,7 @@ def recalculate_schedule(queue: MediaQueue):
 
     now = dj_tz.now().astimezone(user_tz)
     slots = _build_slot_iterator(queue, now, user_tz)
+    batch_size = max(1, getattr(queue, "posts_per_slot", 1) or 1)
 
     for item in items:
         slot_dt = next(slots)
@@ -56,11 +57,20 @@ def _build_slot_iterator(queue: MediaQueue, start: datetime, user_tz):
     """
     Yield an infinite sequence of upcoming publish datetimes
     based on the queue's rhythm.
+
+    When posts_per_slot > 1, each time slot yields N datetimes
+    spaced 1 minute apart for batch posting.
     """
+    batch_size = max(1, getattr(queue, "posts_per_slot", 1) or 1)
+
     if queue.rhythm_type == MediaQueue.RhythmType.WEEKLY:
-        yield from _weekly_slots(queue, start, user_tz)
+        base = _weekly_slots(queue, start, user_tz)
     else:
-        yield from _daily_slots(queue, start, user_tz)
+        base = _daily_slots(queue, start, user_tz)
+
+    for slot_dt in base:
+        for offset in range(batch_size):
+            yield slot_dt + timedelta(minutes=offset)
 
 
 def _daily_slots(queue: MediaQueue, start: datetime, user_tz):

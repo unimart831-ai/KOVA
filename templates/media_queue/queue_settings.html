@@ -82,6 +82,28 @@
         </label>
       </div>
 
+      <!-- Posts Per Slot -->
+      <div>
+        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Photos per time slot</label>
+        <div class="flex items-center gap-3">
+          <div class="flex items-center rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+            <button type="button" @click="postsPerSlot = Math.max(1, postsPerSlot - 1)"
+                    class="px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">−</button>
+            <input type="number" name="posts_per_slot" x-model.number="postsPerSlot" min="1" max="10"
+                   class="w-14 text-center text-sm border-x border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white py-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+            <button type="button" @click="postsPerSlot = Math.min(10, postsPerSlot + 1)"
+                    class="px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">+</button>
+          </div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">
+            <span x-show="postsPerSlot === 1">Single photo per time slot</span>
+            <span x-show="postsPerSlot > 1" x-text="postsPerSlot + ' photos batch-posted at each time slot'"></span>
+          </div>
+        </div>
+        <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-1">
+          E.g. 3 time slots × <span x-text="postsPerSlot"></span> per slot = <span x-text="dailyTimes.length * postsPerSlot"></span> photos/day
+        </p>
+      </div>
+
       <!-- Daily Settings -->
       <div x-show="rhythmType === 'daily'" x-cloak class="space-y-4">
         <div>
@@ -105,8 +127,8 @@
         <div>
           <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Active days</label>
           <div class="flex gap-2">
-            {% with days="Mon,Tue,Wed,Thu,Fri,Sat,Sun" %}
-            {% for day in days.split %}
+            {% with day_names="Mon Tue Wed Thu Fri Sat Sun" %}
+            {% for day in day_names.split %}
             <label class="cursor-pointer">
               <input type="checkbox" name="active_days" value="{{ forloop.counter0 }}"
                      {% if forloop.counter0 in queue.active_days or not queue.active_days %}checked{% endif %}
@@ -147,6 +169,21 @@
           + Add slot
         </button>
       </div>
+
+      <!-- Schedule Preview -->
+      <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 mt-3" x-show="dailyTimes.length > 0 || weeklySlots.length > 0">
+        <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Schedule summary</p>
+        <p class="text-sm text-gray-700 dark:text-gray-300" x-show="rhythmType === 'daily'">
+          <span x-text="dailyTimes.length"></span> time<span x-show="dailyTimes.length !== 1">s</span>/day
+          × <span x-text="postsPerSlot"></span> photo<span x-show="postsPerSlot !== 1">s</span>/slot
+          = <span class="font-semibold text-kova-600 dark:text-kova-400" x-text="dailyTimes.length * postsPerSlot"></span> photos/day
+        </p>
+        <p class="text-sm text-gray-700 dark:text-gray-300" x-show="rhythmType === 'weekly'">
+          <span x-text="weeklySlots.length"></span> slot<span x-show="weeklySlots.length !== 1">s</span>/week
+          × <span x-text="postsPerSlot"></span> photo<span x-show="postsPerSlot !== 1">s</span>/slot
+          = <span class="font-semibold text-kova-600 dark:text-kova-400" x-text="weeklySlots.length * postsPerSlot"></span> photos/week
+        </p>
+      </div>
     </div>
 
     <!-- Save -->
@@ -178,6 +215,7 @@ function queueSettings() {
   // Parse existing settings from the queue's JSON fields
   const existingTimeSlots = {{ queue.time_slots|safe }};
   const rhythmType = '{{ queue.rhythm_type }}';
+  const postsPerSlot = {{ queue.posts_per_slot|default:"1" }};
 
   let dailyTimes = ['09:00', '13:00', '18:00'];
   let weeklySlots = [{day: '0', time: '09:00'}];
@@ -196,6 +234,7 @@ function queueSettings() {
     rhythmType,
     dailyTimes,
     weeklySlots,
+    postsPerSlot: Math.max(1, postsPerSlot),
   };
 }
 </script>

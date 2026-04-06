@@ -99,6 +99,7 @@ def queue_settings(request, queue_id):
         queue.rhythm_type = request.POST.get("rhythm_type", queue.rhythm_type)
         queue.timezone = request.POST.get("timezone", queue.timezone)
         queue.notify_when_low = int(request.POST.get("notify_when_low", 3))
+        queue.posts_per_slot = max(1, min(10, int(request.POST.get("posts_per_slot", 1))))
 
         # Parse time slots
         rhythm_type = queue.rhythm_type
