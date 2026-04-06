@@ -213,6 +213,11 @@ def generate(
     """
     Generate a completion from the configured LLM provider.
 
+    Includes automatic retry with backoff for empty responses and transient
+    errors.  Free-tier OpenRouter models frequently return empty — this
+    retries up to 2 times with increasing delay and, optionally, falls back
+    to alternative free models.
+
     Args:
         prompt: The user message / main prompt.
         system: System message (instructions, persona).
@@ -227,18 +232,61 @@ def generate(
     provider = getattr(settings, "DEFAULT_LLM_PROVIDER", "openai")
     model = model or getattr(settings, "DEFAULT_LLM_MODEL", "gpt-4o-mini")
 
-    start = time.monotonic()
+    # Fallback models for free-tier OpenRouter when primary returns empty
+    _FREE_FALLBACKS = [
+        "google/gemma-3-1b-it:free",
+        "meta-llama/llama-3.2-3b-instruct:free",
+        "qwen/qwen-2.5-7b-instruct:free",
+        "mistralai/mistral-7b-instruct:free",
+    ]
 
-    try:
-        if provider == "anthropic":
-            return _generate_anthropic(prompt, system, model, temperature, max_tokens)
-        if provider == "openrouter":
-            return _generate_openrouter(prompt, system, model, temperature, max_tokens, json_mode)
-        return _generate_openai(prompt, system, model, temperature, max_tokens, json_mode)
-    except Exception as exc:
-        duration = int((time.monotonic() - start) * 1000)
-        logger.error("LLM call failed (%s/%s) after %dms: %s", provider, model, duration, exc)
-        raise
+    models_to_try = [model]
+    if provider == "openrouter" and model.endswith(":free"):
+        # Add fallback models (skip if already using one)
+        for fb in _FREE_FALLBACKS:
+            if fb != model and fb not in models_to_try:
+                models_to_try.append(fb)
+                if len(models_to_try) >= 3:
+                    break
+
+    last_exc = None
+    for attempt, try_model in enumerate(models_to_try):
+        start = time.monotonic()
+        try:
+            if provider == "anthropic":
+                resp = _generate_anthropic(prompt, system, try_model, temperature, max_tokens)
+            elif provider == "openrouter":
+                resp = _generate_openrouter(prompt, system, try_model, temperature, max_tokens, json_mode)
+            else:
+                resp = _generate_openai(prompt, system, try_model, temperature, max_tokens, json_mode)
+
+            # Guard against empty responses from free models
+            if resp.content and resp.content.strip():
+                return resp
+
+            logger.warning(
+                "LLM returned empty response (%s, attempt %d/%d)",
+                try_model, attempt + 1, len(models_to_try),
+            )
+            last_exc = None  # not an exception, just empty
+            # Brief backoff before trying next model
+            if attempt < len(models_to_try) - 1:
+                time.sleep(min(2 ** attempt, 4))
+
+        except Exception as exc:
+            duration = int((time.monotonic() - start) * 1000)
+            logger.error(
+                "LLM call failed (%s/%s) after %dms (attempt %d/%d): %s",
+                provider, try_model, duration, attempt + 1, len(models_to_try), exc,
+            )
+            last_exc = exc
+            if attempt < len(models_to_try) - 1:
+                time.sleep(min(2 ** attempt, 4))
+
+    # All attempts exhausted — return empty or re-raise
+    if last_exc:
+        raise last_exc
+    return LLMResponse(content="", model=model)
 
 
 def _generate_openai(

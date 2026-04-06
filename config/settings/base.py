@@ -289,9 +289,9 @@ DEFAULT_LLM_MODEL = env("DEFAULT_LLM_MODEL", default="gpt-4o-mini")
 # Override individual tasks via env vars, or change the tier defaults.
 # Tier: premium (creative writing) | workhorse (reasoning) | fast (classification)
 # DEV: Using free OpenRouter models. Switch to paid models for production.
-LLM_MODEL_PREMIUM = env("LLM_MODEL_PREMIUM", default="stepfun/step-3.5-flash:free")
-LLM_MODEL_WORKHORSE = env("LLM_MODEL_WORKHORSE", default="stepfun/step-3.5-flash:free")
-LLM_MODEL_FAST = env("LLM_MODEL_FAST", default="stepfun/step-3.5-flash:free")
+LLM_MODEL_PREMIUM = env("LLM_MODEL_PREMIUM", default="qwen/qwen-2.5-7b-instruct:free")
+LLM_MODEL_WORKHORSE = env("LLM_MODEL_WORKHORSE", default="qwen/qwen-2.5-7b-instruct:free")
+LLM_MODEL_FAST = env("LLM_MODEL_FAST", default="google/gemma-3-1b-it:free")
 
 AGENT_MODELS = {
     # Create Agent — user-facing content, needs top creative quality
