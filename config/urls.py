@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
-from django.urls import include, path
+from django.urls import include, path, re_path
 
 admin.site.site_header = "KOVA AI ADMIN"
 admin.site.site_title = "Kova AI"
@@ -70,4 +70,12 @@ if settings.DEBUG:
     urlpatterns += [
         # path("__debug__/", include("debug_toolbar.urls")),
         path("__reload__/", include("django_browser_reload.urls")),
+    ]
+else:
+    # Production: serve user-uploaded / AI-generated media files.
+    # When R2 is configured, media URLs are absolute (https://...) and skip this route.
+    # This only catches relative /media/... URLs (local FileSystemStorage fallback).
+    from django.views.static import serve as static_serve
+    urlpatterns += [
+        re_path(r"^media/(?P<path>.*)$", static_serve, {"document_root": settings.MEDIA_ROOT}),
     ]

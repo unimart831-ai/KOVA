@@ -598,9 +598,10 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
             "tiktok": "tiktok", "tik tok": "tiktok",
         }
 
-        # Determine initial status based on auto-approve setting
-        auto_approve = getattr(user.profile, "auto_approve_posts", False)
-        initial_status = Post.Status.APPROVED if auto_approve else Post.Status.PENDING_APPROVAL
+        # Always start as pending_approval so posts appear in the review queue.
+        # auto_approve_posts controls whether the strategist can auto-schedule,
+        # but the user should always see and approve generated content first.
+        initial_status = Post.Status.PENDING_APPROVAL
 
         for pd in post_dicts:
             raw_platform = pd.get("platform", "")
@@ -1137,8 +1138,7 @@ Generate exactly {n} variants labeled {', '.join(VARIANT_LABELS[:n])}.
             raise ValueError("LLM returned no variants")
 
         created_posts = []
-        auto_approve = getattr(user.profile, "auto_approve_posts", False)
-        initial_status = Post.Status.APPROVED if auto_approve else Post.Status.PENDING_APPROVAL
+        initial_status = Post.Status.PENDING_APPROVAL
 
         for i, vd in enumerate(variant_dicts[:n]):
             label = vd.get("label", VARIANT_LABELS[i] if i < len(VARIANT_LABELS) else str(i + 1))
