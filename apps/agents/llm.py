@@ -159,11 +159,18 @@ def _repair_truncated_json(text: str) -> str:
             if stack and stack[-1] == char:
                 stack.pop()
 
-    if not stack:
+    if not stack and not in_string:
         return text
 
     # Remove any trailing incomplete key-value pair
     result = text.rstrip()
+
+    # If we're inside an unterminated string, close it
+    if in_string:
+        # Remove trailing partial word/content back to last clean break
+        result = result.rstrip()
+        result += '"'
+
     if result.endswith(','):
         result = result[:-1]
 

@@ -550,7 +550,7 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                 model=get_model_for_task("create.generate"),
                 json_mode=True,
                 temperature=0.7 if attempt == 0 else 0.3,  # lower temp on retries for cleaner JSON
-                max_tokens=4096,
+                max_tokens=8192,
             )
 
             # Guard against empty LLM response
@@ -965,7 +965,7 @@ Respond with a JSON object. No markdown code fences.
             model=get_model_for_task("create.repurpose"),
             json_mode=True,
             temperature=0.7,
-            max_tokens=4096,
+            max_tokens=8192,
         )
 
         _, post_dicts = parse_posts(llm_response.content)
@@ -1128,7 +1128,7 @@ Generate exactly {n} variants labeled {', '.join(VARIANT_LABELS[:n])}.
             model=get_model_for_task("create.generate"),
             json_mode=True,
             temperature=0.85,  # Higher for maximum diversity
-            max_tokens=4096,
+            max_tokens=8192,
         )
 
         data = parse_llm_json(llm_response.content)
