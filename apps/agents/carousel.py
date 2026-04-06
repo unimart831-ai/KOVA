@@ -293,8 +293,7 @@ def generate_carousel(
             buffer.seek(0)
 
             filename = f"carousel_{uuid.uuid4().hex[:8]}_s{idx + 1}.png"
-            filepath = f"post_media/carousels/{filename}"
-
+            filepath = f"carousels/{filename}"
             attachment = MediaAttachment(
                 post=post,
                 file_type="image",

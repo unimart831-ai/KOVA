@@ -511,8 +511,7 @@ def generate_branded_graphic(
 
         # Create MediaAttachment
         filename = f"graphic_{uuid.uuid4().hex[:12]}.png"
-        filepath = f"post_media/graphics/{filename}"
-
+        filepath = f"graphics/{filename}"
         attachment = MediaAttachment(
             post=post,
             file_type="image",

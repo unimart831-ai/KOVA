@@ -171,8 +171,7 @@ def generate_post_image(post, image_prompt: str) -> str | None:
     try:
         # Save to Django storage via MediaAttachment
         filename = f"ai_{uuid.uuid4().hex[:12]}.jpg"
-        filepath = f"post_media/ai/{filename}"
-
+        filepath = f"ai/{filename}"
         attachment = MediaAttachment(
             post=post,
             file_type="image",

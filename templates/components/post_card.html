@@ -72,7 +72,8 @@ Usage: {% include "components/post_card.html" with post=post %}
     {% if post.media_urls %}
       <div class="mb-3 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700">
         <img src="{{ post.media_urls.0 }}" alt="AI-generated image" loading="lazy"
-             class="w-full h-36 object-cover bg-gray-100 dark:bg-gray-800">
+             class="w-full h-36 object-cover bg-gray-100 dark:bg-gray-800"
+             onerror="this.parentElement.style.display='none'">
       </div>
     {% endif %}
 
