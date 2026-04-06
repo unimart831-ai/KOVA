@@ -233,8 +233,13 @@ class FacebookProvider(BaseProvider):
         try:
             with httpx.Client(timeout=HTTP_TIMEOUT) as client:
                 if media_urls and len(media_urls) == 1:
-                    # Single photo post
-                    payload["url"] = media_urls[0]
+                    # Single photo post — validate URL is publicly accessible
+                    image_url = media_urls[0]
+                    if "localhost" in image_url or "127.0.0.1" in image_url:
+                        logger.error("Facebook publish blocked: localhost image URL %s", image_url)
+                        return PublishResult(success=False, error="Image URL is not publicly accessible (localhost)")
+                    payload["url"] = image_url
+                    logger.info("Facebook photo post to page %s with image: %s", page_id, image_url)
                     resp = client.post(f"{FB_API_BASE}/{page_id}/photos", data=payload)
                 elif media_urls and len(media_urls) > 1:
                     # Multi-photo post: upload each, then combine

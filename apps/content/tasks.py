@@ -49,7 +49,7 @@ def add_utm_tracking(content: str, platform: str, post_id: str) -> str:
     return _URL_RE.sub(replace_url, content)
 
 
-@shared_task(name="content.generate_from_seed")
+@shared_task(name="content.generate_from_seed", soft_time_limit=270, time_limit=300)
 def generate_from_seed(seed_id: str):
     """
     Run the Create Agent on a ContentSeed.
@@ -64,7 +64,16 @@ def generate_from_seed(seed_id: str):
         logger.error("ContentSeed %s not found", seed_id)
         return {"error": "Seed not found"}
 
-    posts = run_create_agent(seed)
+    try:
+        posts = run_create_agent(seed)
+    except Exception as exc:
+        logger.error("generate_from_seed failed for seed %s: %s", seed_id, exc, exc_info=True)
+        seed.refresh_from_db()
+        if seed.status not in (ContentSeed.SeedStatus.COMPLETED, ContentSeed.SeedStatus.FAILED):
+            seed.status = ContentSeed.SeedStatus.FAILED
+            seed.error_message = f"Generation failed: {exc}"
+            seed.save(update_fields=["status", "error_message", "updated_at"])
+        return {"error": str(exc)}
 
     # Tag all new posts with Content DNA and engagement prediction (batched = 2 LLM calls instead of 2N)
     from apps.agents.analyst_agent import batch_extract_content_dna, batch_predict_engagement
@@ -262,7 +271,7 @@ def publish_post(self, post_id: str):
             return {"error": "Media required"}
 
         # Collect all media URLs: AI-generated (media_urls) + user uploads (attachments).
-        # Platform APIs need absolute URLs; FileField.url may be relative.
+        # Platform APIs need absolute, publicly-accessible URLs.
         absolute_media_urls = None
         raw_urls = list(post.media_urls or [])
         # Append user-uploaded attachments (take priority if they exist)
@@ -270,21 +279,30 @@ def publish_post(self, post_id: str):
             post.attachments.order_by("order").values_list("file", flat=True)
         )
         if attachment_urls:
-            from django.conf import settings as _s
-            storage_url = getattr(_s, "MEDIA_URL", "/media/")
-            raw_urls = [
-                f"{storage_url}{f}" if not f.startswith(("http://", "https://")) else f
-                for f in attachment_urls
-            ] + raw_urls  # uploaded first, then AI-generated
+            from django.core.files.storage import default_storage
+            # Use the storage backend to generate proper URLs (handles R2/S3 correctly)
+            resolved = []
+            for f in attachment_urls:
+                try:
+                    resolved.append(default_storage.url(f))
+                except Exception:
+                    resolved.append(f)
+            raw_urls = resolved + raw_urls  # uploaded first, then AI-generated
         if raw_urls:
             from django.conf import settings
-            site_url = getattr(settings, "SITE_URL", "http://localhost:8000").rstrip("/")
+            site_url = getattr(settings, "SITE_URL", "").rstrip("/")
             absolute_media_urls = []
             for url in raw_urls:
                 if url.startswith(("http://", "https://")):
                     absolute_media_urls.append(url)
-                else:
+                elif site_url and not site_url.startswith("http://localhost"):
                     absolute_media_urls.append(f"{site_url}{url}")
+                else:
+                    # Skip URLs that would resolve to localhost — Facebook can't reach them
+                    logger.warning("Skipping non-public media URL: %s", url)
+            # If all URLs were skipped (localhost), clear the list
+            if not absolute_media_urls:
+                absolute_media_urls = None
 
         result = provider.publish_post(
             access_token=account.access_token,

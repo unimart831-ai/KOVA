@@ -160,6 +160,37 @@ def parse_llm_json(text: str) -> dict:
     except json.JSONDecodeError:
         pass
 
+    # Stage 5: Try to trim to the last complete object in a "posts" array.
+    # Handles cases where the LLM truncated mid-post — salvage what we can.
+    try:
+        posts_match = re.search(r'"posts"\s*:\s*\[', cleaned)
+        if posts_match:
+            # Find all complete post objects {...} inside the array
+            arr_start = posts_match.end() - 1  # the '['
+            depth = 0
+            last_complete = arr_start
+            i = arr_start
+            while i < len(cleaned):
+                ch = cleaned[i]
+                if ch == '{':
+                    depth += 1
+                elif ch == '}':
+                    depth -= 1
+                    if depth == 0:
+                        last_complete = i + 1
+                i += 1
+            if last_complete > arr_start + 1:
+                # Build a valid JSON with the complete posts we found
+                salvaged = cleaned[:posts_match.start()] + '"posts": ' + cleaned[arr_start:last_complete] + ']}'
+                # Ensure it starts with {
+                brace = salvaged.find('{')
+                if brace >= 0:
+                    salvaged = salvaged[brace:]
+                salvaged = re.sub(r',\s*([}\]])', r'\1', salvaged)
+                return json.loads(salvaged)
+    except (json.JSONDecodeError, IndexError):
+        pass
+
     # Final: the raw text from the LLM (before our modifications)
     raise json.JSONDecodeError(
         f"Could not parse LLM JSON after cleanup. First 200 chars: {text[:200]}",
@@ -199,9 +230,20 @@ def _repair_truncated_json(text: str) -> str:
 
     # If we're inside an unterminated string, close it
     if in_string:
-        # Remove trailing partial word/content back to last clean break
+        # Strip back to the last comma or colon outside a partial value
+        # to avoid broken key-value pairs
         result = result.rstrip()
-        result += '"'
+        # Remove trailing partial content that might have unescaped chars
+        last_quote = result.rfind('"')
+        if last_quote > 0:
+            # Check if content between last quote and end is sensible
+            after_quote = result[last_quote + 1:]
+            if len(after_quote) > 0 and not after_quote.strip().startswith((',', '}', ']', ':')):
+                result = result[:last_quote + 1]
+            else:
+                result += '"'
+        else:
+            result += '"'
 
     if result.endswith(','):
         result = result[:-1]
@@ -225,7 +267,7 @@ def get_llm_client():
 
 def _get_openai_client():
     from openai import OpenAI
-    return OpenAI(api_key=settings.OPENAI_API_KEY)
+    return OpenAI(api_key=settings.OPENAI_API_KEY, timeout=90.0)
 
 
 def _get_openrouter_client():
@@ -233,12 +275,13 @@ def _get_openrouter_client():
     return OpenAI(
         api_key=getattr(settings, "OPENROUTER_API_KEY", ""),
         base_url="https://openrouter.ai/api/v1",
+        timeout=90.0,
     )
 
 
 def _get_anthropic_client():
     from anthropic import Anthropic
-    return Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    return Anthropic(api_key=settings.ANTHROPIC_API_KEY, timeout=90.0)
 
 
 def generate(
