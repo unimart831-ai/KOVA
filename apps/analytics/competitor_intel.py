@@ -209,7 +209,7 @@ def analyze_competitor(user, competitor):
         response = generate(
             prompt=prompt,
             system=system_prompt,
-            model=get_model_for_task("research.trends"),
+            model=get_model_for_task("research.trends", user=user),
             json_mode=True,
             temperature=0.5,
             max_tokens=3000,
@@ -387,7 +387,7 @@ def generate_landscape_report(user):
     response = generate(
         prompt=prompt,
         system=system_prompt,
-        model=get_model_for_task("analyst.performance"),
+        model=get_model_for_task("analyst.performance", user=user),
         json_mode=True,
         temperature=0.4,
         max_tokens=2000,

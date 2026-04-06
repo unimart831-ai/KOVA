@@ -16,19 +16,51 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
-def get_model_for_task(task: str) -> str:
+def _get_llm_config():
+    """Load LLMConfig from DB (cached). Returns None if table doesn't exist yet."""
+    try:
+        from apps.agents.models import LLMConfig
+        return LLMConfig.load()
+    except Exception:
+        return None
+
+
+def _get_user_plan(user) -> str:
+    """Safely extract plan tier from a user object."""
+    if user is None:
+        return None
+    try:
+        return user.profile.plan
+    except Exception:
+        return None
+
+
+def get_model_for_task(task: str, plan: str = None, user=None) -> str:
     """
     Resolve the best LLM model for a specific agent task.
 
-    Uses AGENT_MODELS config from settings for tiered routing.
-    Falls back to DEFAULT_LLM_MODEL if the task isn't mapped.
+    Checks DB-backed LLMConfig first, then falls back to settings.AGENT_MODELS.
+    When *plan* or *user* is provided, uses plan-specific tier models if configured.
 
     Args:
         task: Dot-notation task key, e.g. "create.generate", "engage.reply"
+        plan: Optional plan tier, e.g. "starter", "growth", "pro", "agency"
+        user: Optional user object — plan is extracted from user.profile.plan
 
     Returns:
         Model identifier string for the configured provider.
     """
+    if plan is None and user is not None:
+        plan = _get_user_plan(user)
+
+    config = _get_llm_config()
+    if config and config.pk:
+        task_models = config.get_task_models(plan=plan)
+        model = task_models.get(task)
+        if model:
+            return model
+        return config.default_model
+
     agent_models = getattr(settings, "AGENT_MODELS", {})
     return agent_models.get(task, getattr(settings, "DEFAULT_LLM_MODEL", "gpt-4o-mini"))
 
@@ -236,16 +268,36 @@ def generate(
     Returns:
         LLMResponse with content, token counts, and timing.
     """
-    provider = getattr(settings, "DEFAULT_LLM_PROVIDER", "openai")
-    model = model or getattr(settings, "DEFAULT_LLM_MODEL", "gpt-4o-mini")
+    # Load runtime config from DB (cached), fall back to settings
+    config = _get_llm_config()
+
+    if config and config.pk:
+        provider = config.default_provider
+        model = model or config.default_model
+    else:
+        provider = getattr(settings, "DEFAULT_LLM_PROVIDER", "openai")
+        model = model or getattr(settings, "DEFAULT_LLM_MODEL", "gpt-4o-mini")
 
     # Fallback models for free-tier OpenRouter when primary returns empty
-    _FREE_FALLBACKS = [
-        "stepfun/step-3.5-flash:free",
-        "nvidia/nemotron-3-super-120b-a12b:free",
-        "qwen/qwen3.6-plus:free",
+    if config and config.pk and config.free_fallback_models:
+        _FREE_FALLBACKS = config.free_fallback_models
+    else:
+        _FREE_FALLBACKS = [
+            "stepfun/step-3.5-flash:free",
+            "nvidia/nemotron-3-super-120b-a12b:free",
+            "qwen/qwen3.6-plus:free",
         "minimax/minimax-m2.5:free",
     ]
+
+    # Paid escalation model — used as last resort when all free models fail.
+    if config and config.pk:
+        _PAID_FALLBACK = config.paid_fallback_model if config.paid_fallback_enabled else ""
+        _PAID_FALLBACK_PROVIDER = config.paid_fallback_provider
+    else:
+        _PAID_FALLBACK = getattr(settings, "LLM_PAID_FALLBACK", "gpt-4o-mini")
+        _PAID_FALLBACK_PROVIDER = "openai"
+
+    _MAX_MODELS = (config.max_retries if config and config.pk else 3)
 
     models_to_try = [model]
     if provider == "openrouter" and model.endswith(":free"):
@@ -253,22 +305,39 @@ def generate(
         for fb in _FREE_FALLBACKS:
             if fb != model and fb not in models_to_try:
                 models_to_try.append(fb)
-                if len(models_to_try) >= 3:
+                if len(models_to_try) >= _MAX_MODELS:
                     break
+
+    # Track which provider each model should use
+    model_providers = {m: provider for m in models_to_try}
+
+    # Append paid fallback as last resort
+    if _PAID_FALLBACK:
+        has_api_key = (
+            (_PAID_FALLBACK_PROVIDER == "openai" and getattr(settings, "OPENAI_API_KEY", ""))
+            or (_PAID_FALLBACK_PROVIDER == "anthropic" and getattr(settings, "ANTHROPIC_API_KEY", ""))
+            or (_PAID_FALLBACK_PROVIDER == "openrouter" and getattr(settings, "OPENROUTER_API_KEY", ""))
+        )
+        if has_api_key and _PAID_FALLBACK not in models_to_try:
+            models_to_try.append(_PAID_FALLBACK)
+            model_providers[_PAID_FALLBACK] = _PAID_FALLBACK_PROVIDER
 
     last_exc = None
     for attempt, try_model in enumerate(models_to_try):
         start = time.monotonic()
         try:
-            if provider == "anthropic":
+            use_provider = model_providers.get(try_model, provider)
+            if use_provider == "anthropic":
                 resp = _generate_anthropic(prompt, system, try_model, temperature, max_tokens)
-            elif provider == "openrouter":
+            elif use_provider == "openrouter":
                 resp = _generate_openrouter(prompt, system, try_model, temperature, max_tokens, json_mode)
             else:
                 resp = _generate_openai(prompt, system, try_model, temperature, max_tokens, json_mode)
 
             # Guard against empty responses from free models
             if resp.content and resp.content.strip():
+                if use_provider != provider:
+                    logger.info("Paid fallback used: %s (original: %s/%s)", try_model, provider, model)
                 return resp
 
             logger.warning(
@@ -284,7 +353,7 @@ def generate(
             duration = int((time.monotonic() - start) * 1000)
             logger.error(
                 "LLM call failed (%s/%s) after %dms (attempt %d/%d): %s",
-                provider, try_model, duration, attempt + 1, len(models_to_try), exc,
+                model_providers.get(try_model, provider), try_model, duration, attempt + 1, len(models_to_try), exc,
             )
             last_exc = exc
             if attempt < len(models_to_try) - 1:

@@ -727,6 +727,103 @@ def delete_media(request, post_id, attachment_id):
 
 
 @login_required
+@require_POST
+def clear_ai_media(request, post_id):
+    """Remove AI-generated images from a post (clear media_urls)."""
+    post = get_object_or_404(Post.objects.select_related("user", "social_account"), id=post_id)
+    if not can_edit_post(request.user, post):
+        raise Http404
+
+    post.media_urls = []
+    if not post.attachments.exists():
+        post.media_status = Post.MediaStatus.NONE
+    post.save(update_fields=["media_urls", "media_status", "updated_at"])
+
+    if request.headers.get("HX-Request"):
+        return render(request, "components/post_card.html", {"post": post})
+    return redirect("content:edit", post_id=post.id)
+
+
+@login_required
+@require_POST
+def card_upload_media(request, post_id):
+    """Upload an image from the post card. Returns the updated card."""
+    from io import BytesIO
+
+    from PIL import Image
+
+    from apps.content.models import MediaAttachment
+
+    post = get_object_or_404(Post.objects.select_related("user", "social_account", "seed"), id=post_id)
+    if not can_edit_post(request.user, post):
+        raise Http404
+
+    uploaded = request.FILES.get("file")
+    if not uploaded:
+        return render(request, "components/post_card.html", {"post": post})
+
+    # Validate size
+    if uploaded.size > 10 * 1024 * 1024:
+        messages.error(request, "File too large (max 10MB).")
+        return render(request, "components/post_card.html", {"post": post})
+
+    # Validate content type
+    allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+    if uploaded.content_type not in allowed_types:
+        messages.error(request, "Unsupported file type.")
+        return render(request, "components/post_card.html", {"post": post})
+
+    # Validate via PIL magic bytes
+    try:
+        img = Image.open(uploaded)
+        img.verify()
+        actual_format = img.format
+        if actual_format not in ("JPEG", "PNG", "GIF", "WEBP"):
+            messages.error(request, "Invalid image file.")
+            return render(request, "components/post_card.html", {"post": post})
+    except Exception:
+        messages.error(request, "Invalid or corrupted image.")
+        return render(request, "components/post_card.html", {"post": post})
+
+    # Strip EXIF for privacy
+    uploaded.seek(0)
+    if actual_format in ("JPEG", "PNG", "WEBP"):
+        try:
+            img = Image.open(uploaded)
+            clean = BytesIO()
+            clean_img = Image.new(img.mode, img.size)
+            clean_img.putdata(list(img.getdata()))
+            save_fmt = actual_format if actual_format != "JPEG" else "JPEG"
+            save_kwargs = {"format": save_fmt}
+            if save_fmt == "JPEG":
+                save_kwargs["quality"] = 95
+            clean_img.save(clean, **save_kwargs)
+            clean.seek(0)
+            from django.core.files.uploadedfile import InMemoryUploadedFile
+            uploaded = InMemoryUploadedFile(
+                clean, "file", uploaded.name, uploaded.content_type,
+                clean.getbuffer().nbytes, uploaded.charset,
+            )
+        except Exception:
+            uploaded.seek(0)
+
+    file_type = "gif" if uploaded.content_type == "image/gif" else "image"
+    order = post.attachments.count()
+    MediaAttachment.objects.create(
+        post=post,
+        file=uploaded,
+        file_type=file_type,
+        alt_text="",
+        order=order,
+    )
+
+    post.media_status = Post.MediaStatus.UPLOADED
+    post.save(update_fields=["media_status", "updated_at"])
+
+    return render(request, "components/post_card.html", {"post": post})
+
+
+@login_required
 def post_preview(request, post_id):
     """HTMX partial: platform-specific visual preview of a post."""
     post = get_object_or_404(

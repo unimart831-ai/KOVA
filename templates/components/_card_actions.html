@@ -46,15 +46,21 @@
   </div>
 
   <script>
-    document.addEventListener('schedule-{{ post.id }}', function(e) {
-      var intent = e.detail.intent;
-      var values = {schedule_intent: intent};
-      if (intent === 'exact' && e.detail.datetime) values.exact_datetime = e.detail.datetime;
-      var tok = document.querySelector('[name=csrfmiddlewaretoken]');
-      if (tok) values.csrfmiddlewaretoken = tok.value;
-      else { var h = document.body.getAttribute('hx-headers'); if(h){try{values.csrfmiddlewaretoken=JSON.parse(h)['X-CSRFToken']}catch(x){}} }
-      htmx.ajax('POST', '{% url "content:approve" post.id %}', {target:'#post-{{ post.id }}', swap:'outerHTML', values:values});
-    });
+    (function() {
+      var key = '_ks_{{ post.id }}';
+      // Remove previous listener to prevent duplicates after HTMX swaps
+      if (window[key]) document.removeEventListener('schedule-{{ post.id }}', window[key]);
+      window[key] = function(e) {
+        var intent = e.detail.intent;
+        var values = {schedule_intent: intent};
+        if (intent === 'exact' && e.detail.datetime) values.exact_datetime = e.detail.datetime;
+        var tok = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (tok) values.csrfmiddlewaretoken = tok.value;
+        else { var h = document.body.getAttribute('hx-headers'); if(h){try{values.csrfmiddlewaretoken=JSON.parse(h)['X-CSRFToken']}catch(x){}} }
+        htmx.ajax('POST', '{% url "content:approve" post.id %}', {target:'#post-{{ post.id }}', swap:'outerHTML', values:values});
+      };
+      document.addEventListener('schedule-{{ post.id }}', window[key]);
+    })();
   </script>
 
 {% elif post.status == 'rejected' %}

@@ -170,7 +170,7 @@ def analyze_performance(user, days=7):
 
         prompt += "Analyze this data and provide insights in the specified JSON format."
 
-        response = generate(prompt=prompt, system=system_prompt, model=get_model_for_task("analyst.performance"), json_mode=True, temperature=0.3)
+        response = generate(prompt=prompt, system=system_prompt, model=get_model_for_task("analyst.performance", user=user), json_mode=True, temperature=0.3)
 
         try:
             insights = parse_llm_json(response.content)
@@ -251,7 +251,7 @@ def extract_content_dna(post):
 
     for attempt in range(2):
         try:
-            response = generate(prompt=prompt, system=system_prompt, model=get_model_for_task("analyst.content_dna"), json_mode=True, temperature=0.1, max_tokens=500)
+            response = generate(prompt=prompt, system=system_prompt, model=get_model_for_task("analyst.content_dna", user=post.user), json_mode=True, temperature=0.1, max_tokens=500)
             dna = parse_llm_json(response.content)
             post.content_dna = dna
             post.save(update_fields=["content_dna"])
@@ -324,7 +324,7 @@ def predict_engagement(post):
     )
 
     try:
-        response = generate(prompt=prompt, system=system_prompt, model=get_model_for_task("analyst.predict"), json_mode=True, temperature=0.2, max_tokens=200)
+        response = generate(prompt=prompt, system=system_prompt, model=get_model_for_task("analyst.predict", user=post.user), json_mode=True, temperature=0.2, max_tokens=200)
         result = parse_llm_json(response.content)
         score = float(result.get("score", 50))
         score = max(0, min(100, score))
@@ -335,6 +335,172 @@ def predict_engagement(post):
     except Exception as e:
         logger.warning("Engagement prediction failed for post %s: %s", post.id, e)
         return post.predicted_engagement_score or 50.0
+
+
+# ── Batched variants (reduce N calls → 1 call for multi-post operations) ─────
+
+def batch_extract_content_dna(posts):
+    """
+    Extract Content DNA for multiple posts in a single LLM call.
+    Falls back to per-post extraction if batch parse fails.
+    """
+    if not posts:
+        return []
+    if len(posts) == 1:
+        return [extract_content_dna(posts[0])]
+
+    system_prompt = (
+        "You are a content analyst. Extract structured attributes from each post below. "
+        "Respond with a JSON array — one object per post, in the same order. "
+        "Each object must have these keys:\n"
+        '- "format": one of [question, statement, story, list, thread, how_to, hot_take, announcement, behind_scenes]\n'
+        '- "tone": one of [inspirational, educational, humorous, provocative, professional, casual, urgent, empathetic]\n'
+        '- "topic": brief topic label (2-3 words)\n'
+        '- "has_cta": boolean\n- "has_stats": boolean\n- "has_question": boolean\n'
+        '- "has_emoji": boolean\n- "has_hashtags": boolean\n'
+        '- "length": one of [short, medium, long]\n'
+        '- "hook_type": one of [statistic, question, bold_claim, story_opener, curiosity_gap, none]\n'
+        '- "has_image": boolean\n- "image_source": one of [ai_generated, uploaded, none]\n'
+        '- "image_type": one of [photo, illustration, graphic, meme, infographic, carousel, none]\n'
+    )
+
+    post_descriptions = []
+    for i, post in enumerate(posts):
+        has_image = bool(post.media_urls) or post.attachments.exists()
+        image_source = "none"
+        if has_image:
+            image_source = "ai_generated" if post.media_status == "generated" else "uploaded"
+        post_descriptions.append(
+            f"--- Post {i + 1} ---\n"
+            f"Platform: {post.social_account.platform if post.social_account else 'unknown'}\n"
+            f"Content:\n{post.content_text}\n"
+            f"Has image: {has_image}\nImage source: {image_source}"
+        )
+
+    prompt = "\n\n".join(post_descriptions) + "\n\nExtract Content DNA for all posts. Return a JSON array."
+
+    for attempt in range(2):
+        try:
+            response = generate(
+                prompt=prompt, system=system_prompt,
+                model=get_model_for_task("analyst.content_dna", user=posts[0].user),
+                json_mode=True, temperature=0.1,
+                max_tokens=300 * len(posts),
+            )
+            results = parse_llm_json(response.content)
+
+            if isinstance(results, list) and len(results) == len(posts):
+                for post, dna in zip(posts, results):
+                    if isinstance(dna, dict):
+                        post.content_dna = dna
+                        post.save(update_fields=["content_dna"])
+                return results
+
+            # Length mismatch — fall through to per-post fallback
+            logger.warning("Batch DNA returned %d results for %d posts, falling back", len(results) if isinstance(results, list) else 0, len(posts))
+            break
+        except Exception as e:
+            if attempt == 0:
+                logger.info("Batch DNA attempt 1 failed, retrying: %s", e)
+                continue
+            logger.warning("Batch DNA failed after 2 attempts: %s", e)
+            break
+
+    # Fallback: per-post extraction
+    return [extract_content_dna(p) for p in posts]
+
+
+def batch_predict_engagement(posts):
+    """
+    Predict engagement scores for multiple posts in a single LLM call.
+    Falls back to per-post prediction if batch parse fails.
+    """
+    if not posts:
+        return []
+    if len(posts) == 1:
+        return [predict_engagement(posts[0])]
+
+    user = posts[0].user
+
+    # Get historical averages (shared across all posts from same user)
+    recent_metrics = PostMetric.objects.filter(
+        post__user=user,
+        post__status=Post.Status.PUBLISHED,
+    ).aggregate(
+        avg_likes=Avg("likes"),
+        avg_comments=Avg("comments"),
+        avg_shares=Avg("shares"),
+        avg_engagement=Avg("engagement_rate"),
+        post_count=Count("id"),
+    )
+
+    if not recent_metrics["post_count"] or recent_metrics["post_count"] < 3:
+        for post in posts:
+            score = post.predicted_engagement_score or 50.0
+            post.predicted_engagement_score = score
+        return [p.predicted_engagement_score for p in posts]
+
+    top_posts = (
+        Post.objects.filter(user=user, status=Post.Status.PUBLISHED)
+        .exclude(content_dna={})
+        .select_related("metrics")
+        .order_by("-metrics__engagement_rate")[:10]
+    )
+    top_dna = [{"dna": p.content_dna, "engagement_rate": p.metrics.engagement_rate}
+               for p in top_posts if hasattr(p, "metrics") and p.metrics]
+
+    system_prompt = (
+        "You are an engagement prediction model. Predict scores (0-100) for multiple posts. "
+        "Respond with a JSON array of objects, one per post in order: "
+        '[{"score": <number>, "reasoning": "<brief>"}, ...]'
+    )
+
+    post_descriptions = []
+    for i, post in enumerate(posts):
+        platform = post.social_account.platform if post.social_account else "unknown"
+        post_descriptions.append(
+            f"--- Post {i + 1} ---\n"
+            f"Platform: {platform}\n"
+            f"Content: {post.content_text[:200]}\n"
+            f"DNA: {json.dumps(post.content_dna, default=str)}"
+        )
+
+    prompt = (
+        f"Historical averages: {json.dumps(recent_metrics, default=str)}\n"
+        f"Top DNA patterns: {json.dumps(top_dna[:5], default=str)}\n\n"
+        + "\n\n".join(post_descriptions)
+        + "\n\nPredict engagement scores for all posts."
+    )
+
+    try:
+        response = generate(
+            prompt=prompt, system=system_prompt,
+            model=get_model_for_task("analyst.predict", user=posts[0].user),
+            json_mode=True, temperature=0.2,
+            max_tokens=150 * len(posts),
+        )
+        results = parse_llm_json(response.content)
+
+        if isinstance(results, list) and len(results) == len(posts):
+            scores = []
+            for post, pred in zip(posts, results):
+                if isinstance(pred, dict):
+                    score = max(0, min(100, float(pred.get("score", 50))))
+                    post.predicted_engagement_score = score
+                    post.ai_reasoning = pred.get("reasoning", post.ai_reasoning)
+                    post.save(update_fields=["predicted_engagement_score", "ai_reasoning"])
+                    scores.append(score)
+                else:
+                    scores.append(post.predicted_engagement_score or 50.0)
+            return scores
+
+        logger.warning("Batch predict returned %d results for %d posts, falling back",
+                       len(results) if isinstance(results, list) else 0, len(posts))
+    except Exception as e:
+        logger.warning("Batch engagement prediction failed: %s", e)
+
+    # Fallback: per-post prediction
+    return [predict_engagement(p) for p in posts]
 
 
 def get_content_dna_summary(user, days=30):
@@ -516,7 +682,7 @@ def evaluate_ab_test(ab_test):
         response = generate(
             prompt=prompt,
             system=system_prompt,
-            model=get_model_for_task("analyst.performance"),
+            model=get_model_for_task("analyst.performance", user=ab_test.user),
             json_mode=True,
             temperature=0.3,
         )

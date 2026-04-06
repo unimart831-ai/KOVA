@@ -547,7 +547,7 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
             llm_response: LLMResponse = generate(
                 prompt=prompt,
                 system=system,
-                model=get_model_for_task("create.generate"),
+                model=get_model_for_task("create.generate", user=user),
                 json_mode=True,
                 temperature=0.7 if attempt == 0 else 0.3,  # lower temp on retries for cleaner JSON
                 max_tokens=8192,
@@ -805,7 +805,7 @@ Respond with a JSON object. No markdown code fences.
         llm_response: LLMResponse = generate(
             prompt=prompt,
             system=system,
-            model=get_model_for_task("create.regenerate"),
+            model=get_model_for_task("create.regenerate", user=user),
             json_mode=True,
             temperature=0.8,  # Slightly higher for creative diversity
             max_tokens=2048,
@@ -963,7 +963,7 @@ Respond with a JSON object. No markdown code fences.
         llm_response: LLMResponse = generate(
             prompt=prompt,
             system=system,
-            model=get_model_for_task("create.repurpose"),
+            model=get_model_for_task("create.repurpose", user=user),
             json_mode=True,
             temperature=0.7,
             max_tokens=8192,
@@ -1127,7 +1127,7 @@ Generate exactly {n} variants labeled {', '.join(VARIANT_LABELS[:n])}.
         llm_response: LLMResponse = generate(
             prompt=prompt,
             system=system,
-            model=get_model_for_task("create.generate"),
+            model=get_model_for_task("create.generate", user=user),
             json_mode=True,
             temperature=0.85,  # Higher for maximum diversity
             max_tokens=8192,

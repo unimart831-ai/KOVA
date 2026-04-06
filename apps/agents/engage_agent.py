@@ -348,7 +348,7 @@ def analyze_interactions(user, batch_size=20):
         response = generate(
             prompt=prompt,
             system=system_prompt,
-            model=get_model_for_task("engage.analyze"),
+            model=get_model_for_task("engage.analyze", user=user),
             json_mode=True,
             temperature=0.1,
             max_tokens=1500,
@@ -446,16 +446,16 @@ def generate_replies(user, batch_size=10):
 
     try:
         total_generated = 0
+        batch_interactions = list(needs_reply)
 
-        for interaction in needs_reply:
-            try:
-                reply = _generate_single_reply(interaction, brand_voice, company)
-                if reply:
-                    interaction.ai_suggested_reply = reply
-                    interaction.save(update_fields=["ai_suggested_reply"])
-                    total_generated += 1
-            except Exception as e:
-                logger.warning("Reply gen failed for interaction %s: %s", interaction.id, e)
+        # Batch generate replies in a single LLM call instead of N individual calls
+        replies = _generate_replies_batch(batch_interactions, brand_voice, company)
+
+        for interaction, reply in zip(batch_interactions, replies):
+            if reply:
+                interaction.ai_suggested_reply = reply
+                interaction.save(update_fields=["ai_suggested_reply"])
+                total_generated += 1
 
         action.status = AgentAction.ActionStatus.COMPLETED
         action.output_data = {"replies_generated": total_generated}
@@ -481,6 +481,90 @@ def models_case_when_priority():
         default=Value(2),
         output_field=IntegerField(),
     )
+
+
+def _generate_replies_batch(interactions, brand_voice, company):
+    """
+    Generate replies for multiple interactions in a single LLM call.
+    Returns a list of reply strings (same order as interactions).
+    Falls back to per-interaction generation on parse failure.
+    """
+    if not interactions:
+        return []
+    if len(interactions) == 1:
+        try:
+            return [_generate_single_reply(interactions[0], brand_voice, company)]
+        except Exception as e:
+            logger.warning("Single reply gen failed: %s", e)
+            return [""]
+
+    reply_learning = _get_reply_edit_patterns(interactions[0].user)
+
+    system_prompt = (
+        f"You are the community manager for {company}. "
+        f"Your brand voice: {brand_voice}\n\n"
+        "RULES:\n"
+        "- Be genuine, not corporate. Sound human.\n"
+        "- Match the energy of each message.\n"
+        "- Keep replies concise — this is social media.\n"
+        "- If it's a question, answer directly. If praise, acknowledge.\n"
+        "- NEVER be defensive or dismissive.\n\n"
+        "Generate a reply for EACH interaction below. "
+        'Respond with a JSON array of objects: [{"reply": "..."}, ...] '
+        "One per interaction, in the same order."
+    )
+
+    interaction_descriptions = []
+    for i, interaction in enumerate(interactions):
+        platform = interaction.social_account.platform if interaction.social_account else "social media"
+        post_ctx = ""
+        if interaction.post:
+            post_ctx = f"\nOriginal post: \"{interaction.post.content_text[:150]}...\""
+        interaction_descriptions.append(
+            f"--- Interaction {i + 1} ({platform}) ---\n"
+            f"Type: {interaction.interaction_type} | Sentiment: {interaction.sentiment}\n"
+            f"From: {interaction.author_name}\n"
+            f"Message: \"{interaction.content}\""
+            f"{post_ctx}"
+        )
+
+    prompt = "\n\n".join(interaction_descriptions)
+    if reply_learning:
+        prompt += f"\n\n{reply_learning}"
+    prompt += "\n\nGenerate a reply for each interaction."
+
+    try:
+        response = generate(
+            prompt=prompt, system=system_prompt,
+            model=get_model_for_task("engage.reply", user=interactions[0].user),
+            json_mode=True, temperature=0.6,
+            max_tokens=250 * len(interactions),
+        )
+        results = parse_llm_json(response.content)
+
+        if isinstance(results, list) and len(results) == len(interactions):
+            replies = []
+            for r in results:
+                reply = r.get("reply", "").strip() if isinstance(r, dict) else str(r).strip()
+                if reply.startswith('"') and reply.endswith('"'):
+                    reply = reply[1:-1]
+                replies.append(reply)
+            return replies
+
+        logger.warning("Batch replies returned %d for %d interactions, falling back",
+                       len(results) if isinstance(results, list) else 0, len(interactions))
+    except Exception as e:
+        logger.warning("Batch reply generation failed: %s, falling back to per-interaction", e)
+
+    # Fallback: per-interaction
+    replies = []
+    for interaction in interactions:
+        try:
+            replies.append(_generate_single_reply(interaction, brand_voice, company))
+        except Exception as e:
+            logger.warning("Reply gen failed for interaction %s: %s", interaction.id, e)
+            replies.append("")
+    return replies
 
 
 def _generate_single_reply(interaction, brand_voice, company):
@@ -526,7 +610,7 @@ def _generate_single_reply(interaction, brand_voice, company):
     response = generate(
         prompt=prompt,
         system=system_prompt,
-        model=get_model_for_task("engage.reply"),
+        model=get_model_for_task("engage.reply", user=interaction.user),
         json_mode=False,
         temperature=0.6,
         max_tokens=300,

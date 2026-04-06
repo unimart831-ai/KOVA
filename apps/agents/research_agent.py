@@ -127,7 +127,7 @@ def discover_trends(user):
         response = generate(
             prompt=prompt,
             system=system_prompt,
-            model=get_model_for_task("research.trends"),
+            model=get_model_for_task("research.trends", user=user),
             json_mode=True,
             temperature=0.6,
             max_tokens=2000,
@@ -141,7 +141,7 @@ def discover_trends(user):
             retry_response = generate(
                 prompt=prompt + "\n\nCRITICAL: You MUST respond with a valid JSON object only. No prose, no markdown. Just the JSON.",
                 system=system_prompt,
-                model=get_model_for_task("research.trends"),
+                model=get_model_for_task("research.trends", user=user),
                 json_mode=True,
                 temperature=0.3,
                 max_tokens=2000,
@@ -224,7 +224,7 @@ def generate_content_angles(user, topic):
         response = generate(
             prompt=prompt,
             system=system_prompt,
-            model=get_model_for_task("research.angles"),
+            model=get_model_for_task("research.angles", user=user),
             json_mode=True,
             temperature=0.7,
             max_tokens=1500,

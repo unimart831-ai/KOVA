@@ -81,6 +81,10 @@
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(function () {});
     }
+    // Re-init Alpine components after HTMX swaps (fixes x-teleport, x-data, etc.)
+    document.body.addEventListener('htmx:load', function(evt) {
+      if (window.Alpine && evt.target) Alpine.initTree(evt.target);
+    });
   </script>
 </body>
 </html>

@@ -107,3 +107,153 @@ class AgentAction(models.Model):
             models.Index(fields=["user", "status", "-created_at"]),
             models.Index(fields=["agent_type", "status", "-created_at"]),
         ]
+
+
+class LLMConfig(models.Model):
+    """
+    Singleton model — stores LLM configuration that admins can change at runtime.
+
+    Overrides settings from base.py. The LLM layer reads from DB first,
+    falls back to settings/env vars if no DB row exists.
+    """
+
+    class Provider(models.TextChoices):
+        OPENAI = "openai", "OpenAI"
+        OPENROUTER = "openrouter", "OpenRouter"
+        ANTHROPIC = "anthropic", "Anthropic"
+
+    # ── Global defaults ──────────────────────────────────────────────
+    default_provider = models.CharField(
+        max_length=20, choices=Provider.choices, default=Provider.OPENROUTER,
+        help_text="Primary LLM provider.",
+    )
+    default_model = models.CharField(
+        max_length=120, default="qwen/qwen3.6-plus:free",
+        help_text="Default model when no task-specific model is set.",
+    )
+    paid_fallback_model = models.CharField(
+        max_length=120, blank=True, default="gpt-4o-mini",
+        help_text="Paid model to auto-escalate to when free models fail. Leave blank to disable.",
+    )
+    paid_fallback_provider = models.CharField(
+        max_length=20, choices=Provider.choices, default=Provider.OPENAI,
+        help_text="Provider for the paid fallback model.",
+    )
+
+    # ── Tier defaults ────────────────────────────────────────────────
+    model_premium = models.CharField(
+        max_length=120, default="qwen/qwen3.6-plus:free",
+        help_text="Premium tier — creative generation and user-facing text.",
+    )
+    model_workhorse = models.CharField(
+        max_length=120, default="qwen/qwen3.6-plus:free",
+        help_text="Workhorse tier — reasoning, research, strategy.",
+    )
+    model_fast = models.CharField(
+        max_length=120, default="stepfun/step-3.5-flash:free",
+        help_text="Fast tier — classification, DNA extraction, scoring.",
+    )
+
+    # ── Per-task overrides (JSON: {"task.key": "model-name"}) ────────
+    task_model_overrides = models.JSONField(
+        default=dict, blank=True,
+        help_text='Per-task model overrides. Keys like "create.generate", "engage.reply", etc.',
+    )
+
+    # ── Per-plan model routing ───────────────────────────────────────
+    # JSON: {"starter": {"premium": "...", "workhorse": "...", "fast": "..."}, ...}
+    plan_model_overrides = models.JSONField(
+        default=dict, blank=True,
+        help_text='Per-plan tier overrides. {"starter": {"premium": "model", "workhorse": "model", "fast": "model"}, ...}',
+    )
+
+    # ── Per-plan rate limits ─────────────────────────────────────────
+    # JSON: {"starter": {"max_calls_per_hour": 30, "max_tokens_per_day": 100000}, ...}
+    plan_rate_limits = models.JSONField(
+        default=dict, blank=True,
+        help_text='Per-plan rate limits. {"starter": {"max_calls_per_hour": 30, "max_tokens_per_day": 100000}, ...}',
+    )
+
+    # ── Free fallback chain ──────────────────────────────────────────
+    free_fallback_models = models.JSONField(
+        default=list, blank=True,
+        help_text="Ordered list of free model identifiers to try when the primary fails.",
+    )
+
+    # ── Controls ─────────────────────────────────────────────────────
+    max_retries = models.PositiveSmallIntegerField(
+        default=3,
+        help_text="Max model attempts before giving up (including fallbacks).",
+    )
+    paid_fallback_enabled = models.BooleanField(
+        default=True,
+        help_text="Whether to auto-escalate to paid model when free models fail.",
+    )
+
+    # ── Meta ─────────────────────────────────────────────────────────
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="+",
+    )
+
+    class Meta:
+        verbose_name = "LLM Configuration"
+        verbose_name_plural = "LLM Configuration"
+
+    def __str__(self):
+        return f"LLM Config (updated {self.updated_at})"
+
+    def save(self, *args, **kwargs):
+        # Enforce singleton: always use pk=1
+        self.pk = 1
+        super().save(*args, **kwargs)
+        # Clear cached config
+        LLMConfig._cached = None
+
+    @classmethod
+    def load(cls):
+        """Load the singleton config, with in-memory caching."""
+        if getattr(cls, "_cached", None) is not None:
+            return cls._cached
+        try:
+            obj = cls.objects.get(pk=1)
+        except cls.DoesNotExist:
+            obj = cls()  # Unsaved — returns defaults
+        cls._cached = obj
+        return obj
+
+    _cached = None
+
+    def get_task_models(self, plan=None):
+        """
+        Build the full AGENT_MODELS dict: tier defaults + per-task overrides.
+        Same structure as settings.AGENT_MODELS.
+
+        If *plan* is provided (e.g. "starter", "agency"), use plan-specific
+        tier models first, then fall back to global tiers.
+        """
+        # Resolve tier models: plan-specific overrides → global defaults
+        plan_overrides = (self.plan_model_overrides or {}).get(plan, {}) if plan else {}
+        premium = plan_overrides.get("premium") or self.model_premium
+        workhorse = plan_overrides.get("workhorse") or self.model_workhorse
+        fast = plan_overrides.get("fast") or self.model_fast
+
+        tier_mapping = {
+            "create.generate": premium,
+            "create.regenerate": premium,
+            "create.repurpose": premium,
+            "engage.analyze": fast,
+            "engage.reply": premium,
+            "analyst.performance": fast,
+            "analyst.content_dna": fast,
+            "analyst.predict": fast,
+            "research.trends": workhorse,
+            "research.angles": workhorse,
+            "adapt.schedule": fast,
+            "strategist.brief": workhorse,
+            "strategist.decide": workhorse,
+        }
+        # Apply per-task overrides (these override everything)
+        tier_mapping.update(self.task_model_overrides or {})
+        return tier_mapping

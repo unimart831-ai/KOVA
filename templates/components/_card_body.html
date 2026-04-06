@@ -12,12 +12,62 @@
   Preview on {% if post.social_account %}{{ post.social_account.get_platform_display }}{% elif post.platform %}{{ post.platform|title }}{% endif %}
 </button>
 
-{# ── AI-generated image thumbnail ── #}
+{# ── Media section — AI images, uploaded images, inline upload ── #}
 {% if post.media_urls %}
-  <div class="mb-3 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700">
+  <div class="mb-3 relative group rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700">
     <img src="{{ post.media_urls.0 }}" alt="AI-generated image" loading="lazy"
          class="w-full h-36 object-cover bg-gray-100 dark:bg-gray-800"
          onerror="this.parentElement.style.display='none'">
+    <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2 flex items-end justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+      <span class="text-[10px] text-white/80 font-medium">AI generated</span>
+      {% if post.status == 'pending_approval' or post.status == 'draft' %}
+      <button hx-post="{% url 'content:clear_ai_media' post.id %}"
+              hx-target="#post-{{ post.id }}"
+              hx-swap="outerHTML"
+              hx-confirm="Remove AI image?"
+              class="p-1 bg-black/50 hover:bg-red-600 text-white rounded-full transition-colors" title="Remove image">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+      </button>
+      {% endif %}
+    </div>
+  </div>
+{% elif post.attachments.exists %}
+  <div class="mb-3 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700 relative group">
+    <img src="{{ post.attachments.first.file.url }}" alt="Uploaded image" loading="lazy"
+         class="w-full h-36 object-cover bg-gray-100 dark:bg-gray-800">
+    <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      <span class="text-[10px] text-white/80 font-medium">📎 Uploaded</span>
+    </div>
+  </div>
+{% endif %}
+
+{# ── Inline image upload (for editable posts without uploaded media) ── #}
+{% if post.status == 'pending_approval' or post.status == 'draft' %}
+  <div class="mb-3" x-data="{ uploading: false }">
+    <label class="flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg cursor-pointer transition-all border border-dashed"
+           :class="uploading
+             ? 'text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700 opacity-50 pointer-events-none'
+             : 'text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700 hover:text-kova-600 dark:hover:text-kova-400 hover:border-kova-300 dark:hover:border-kova-700 hover:bg-kova-50/50 dark:hover:bg-kova-950/20'">
+      <template x-if="!uploading">
+        <span class="inline-flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          {% if post.has_media %}Replace image{% else %}Add image{% endif %}
+        </span>
+      </template>
+      <template x-if="uploading">
+        <span class="inline-flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+          Uploading…
+        </span>
+      </template>
+      <input type="file" name="file" accept="image/jpeg,image/png,image/gif,image/webp" class="hidden"
+             hx-post="{% url 'content:card_upload_media' post.id %}"
+             hx-target="#post-{{ post.id }}"
+             hx-swap="outerHTML"
+             hx-encoding="multipart/form-data"
+             @change="uploading = true"
+             hx-on::after-request="uploading = false">
+    </label>
   </div>
 {% endif %}
 

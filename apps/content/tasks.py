@@ -66,18 +66,18 @@ def generate_from_seed(seed_id: str):
 
     posts = run_create_agent(seed)
 
-    # Tag each new post with Content DNA and engagement prediction
-    from apps.agents.analyst_agent import extract_content_dna, predict_engagement
+    # Tag all new posts with Content DNA and engagement prediction (batched = 2 LLM calls instead of 2N)
+    from apps.agents.analyst_agent import batch_extract_content_dna, batch_predict_engagement
 
-    for post in posts:
-        try:
-            extract_content_dna(post)
-        except Exception as e:
-            logger.warning("Content DNA extraction failed for post %s: %s", post.id, e)
-        try:
-            predict_engagement(post)
-        except Exception as e:
-            logger.warning("Engagement prediction failed for post %s: %s", post.id, e)
+    try:
+        batch_extract_content_dna(posts)
+    except Exception as e:
+        logger.warning("Batch DNA extraction failed for seed %s: %s", seed_id, e)
+
+    try:
+        batch_predict_engagement(posts)
+    except Exception as e:
+        logger.warning("Batch engagement prediction failed for seed %s: %s", seed_id, e)
 
     # Auto-schedule if Adapt Agent is active and user has auto_approve on
     from apps.agents.adapt_agent import auto_schedule_post
@@ -261,14 +261,26 @@ def publish_post(self, post_id: str):
             )
             return {"error": "Media required"}
 
-        # Ensure media URLs are absolute — platform APIs need full URLs,
-        # but FileField.url returns relative paths with FileSystemStorage.
+        # Collect all media URLs: AI-generated (media_urls) + user uploads (attachments).
+        # Platform APIs need absolute URLs; FileField.url may be relative.
         absolute_media_urls = None
-        if post.media_urls:
+        raw_urls = list(post.media_urls or [])
+        # Append user-uploaded attachments (take priority if they exist)
+        attachment_urls = list(
+            post.attachments.order_by("order").values_list("file", flat=True)
+        )
+        if attachment_urls:
+            from django.conf import settings as _s
+            storage_url = getattr(_s, "MEDIA_URL", "/media/")
+            raw_urls = [
+                f"{storage_url}{f}" if not f.startswith(("http://", "https://")) else f
+                for f in attachment_urls
+            ] + raw_urls  # uploaded first, then AI-generated
+        if raw_urls:
             from django.conf import settings
             site_url = getattr(settings, "SITE_URL", "http://localhost:8000").rstrip("/")
             absolute_media_urls = []
-            for url in post.media_urls:
+            for url in raw_urls:
                 if url.startswith(("http://", "https://")):
                     absolute_media_urls.append(url)
                 else:

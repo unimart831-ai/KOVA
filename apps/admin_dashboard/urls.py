@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, content, emails, engage, help, logs, overview, partners, partials, platforms, system, teams, users
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, content, costs, emails, engage, help, llm, logs, overview, partners, partials, platforms, system, teams, users
 
 app_name = "admin_dashboard"
 
@@ -27,6 +27,14 @@ urlpatterns = [
     path("agents/log/", agents.agent_log, name="agent_log"),
     path("agents/tokens/", agents.token_economics, name="token_economics"),
 
+    # LLM Configuration
+    path("llm/", llm.llm_overview, name="llm_overview"),
+    path("llm/update/", llm.llm_update_config, name="llm_update_config"),
+    path("llm/task-model/", llm.llm_update_task_model, name="llm_update_task_model"),
+    path("llm/plan-models/", llm.llm_update_plan_models, name="llm_update_plan_models"),
+    path("llm/rate-limits/", llm.llm_update_rate_limits, name="llm_update_rate_limits"),
+    path("llm/apply-preset/", llm.llm_apply_preset, name="llm_apply_preset"),
+
     # Platforms
     path("platforms/", platforms.platform_overview, name="platform_overview"),
     path("platforms/accounts/", platforms.platform_accounts, name="platform_accounts"),
@@ -39,6 +47,10 @@ urlpatterns = [
     path("billing/subscriptions/action/", billing.subscription_action, name="subscription_action"),
     path("billing/bulk-grant/", billing.bulk_grant, name="bulk_grant"),
     path("billing/overrides/", billing.override_log, name="override_log"),
+
+    # Cost Economics
+    path("costs/", costs.cost_overview, name="cost_overview"),
+    path("costs/calculator/", costs.cost_calculator, name="cost_calculator"),
 
     # Engagement
     path("engage/", engage.engagement_overview, name="engagement_overview"),

@@ -210,7 +210,7 @@ def _generate_brief_with_llm(user, brief_data):
     response = generate(
         prompt=prompt,
         system=system_prompt,
-        model=get_model_for_task("strategist.brief"),
+        model=get_model_for_task("strategist.brief", user=user),
         json_mode=True,
         temperature=0.4,
         max_tokens=1500,

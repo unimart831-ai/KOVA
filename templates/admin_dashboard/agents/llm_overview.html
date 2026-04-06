@@ -1,0 +1,540 @@
+﻿{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+  Manage AI models, tiers, per-plan routing, fallbacks, rate limits, and per-task overrides. Changes take effect immediately.
+</p>
+{% endblock %}
+
+{% block content %}
+<!-- SECTION 1 - USAGE STATS -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats_24h.total|default:"0" }}</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">LLM Calls (24h)</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-2xl font-bold {% if stats_24h.failed > 0 %}text-red-600 dark:text-red-400{% else %}text-green-600 dark:text-green-400{% endif %}">{{ stats_24h.failed|default:"0" }}</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">Failed (24h)</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-2xl font-bold text-kova-600 dark:text-kova-400">{{ stats_24h.tokens|format_number }}</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">Tokens (24h)</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ paid_fallback_count_7d }}</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">Paid Fallbacks (7d)</p>
+  </div>
+</div>
+
+
+<!-- SECTION 2 - GLOBAL CONFIGURATION -->
+<form method="post" action="{% url 'admin_dashboard:llm_update_config' %}" class="mb-6">
+  {% csrf_token %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+      <div>
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Global Configuration</h2>
+        <p class="text-[10px] text-gray-400 mt-0.5">Default tiers used when no plan-specific models are set</p>
+      </div>
+    </div>
+    <div class="p-5 space-y-5">
+
+      <!-- Provider + Default Model -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Default Provider</label>
+          <select name="default_provider" class="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500">
+            <option value="openrouter" {% if config.default_provider == "openrouter" %}selected{% endif %}>OpenRouter</option>
+            <option value="openai" {% if config.default_provider == "openai" %}selected{% endif %}>OpenAI</option>
+            <option value="anthropic" {% if config.default_provider == "anthropic" %}selected{% endif %}>Anthropic</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Default Model</label>
+          <input type="text" name="default_model" value="{{ config.default_model }}"
+                 class="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500"
+                 placeholder="e.g. qwen/qwen3.6-plus:free">
+        </div>
+      </div>
+
+      <!-- Tier Models -->
+      <div>
+        <h3 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">Model Tiers (Global Defaults)</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span class="inline-block w-2 h-2 rounded-full bg-purple-500 mr-1"></span>Premium
+              <span class="text-[10px] text-gray-400">(creative, user-facing)</span>
+            </label>
+            <input type="text" name="model_premium" value="{{ config.model_premium }}"
+                   class="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500 font-mono text-xs">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span>Workhorse
+              <span class="text-[10px] text-gray-400">(reasoning, strategy)</span>
+            </label>
+            <input type="text" name="model_workhorse" value="{{ config.model_workhorse }}"
+                   class="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500 font-mono text-xs">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Fast
+              <span class="text-[10px] text-gray-400">(classification, scoring)</span>
+            </label>
+            <input type="text" name="model_fast" value="{{ config.model_fast }}"
+                   class="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500 font-mono text-xs">
+          </div>
+        </div>
+      </div>
+
+      <!-- Paid Fallback -->
+      <div class="border-t border-gray-200 dark:border-gray-800 pt-5">
+        <h3 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">Paid Fallback (Auto-Escalation)</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+          <div>
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Fallback Model</label>
+            <input type="text" name="paid_fallback_model" value="{{ config.paid_fallback_model }}"
+                   class="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500 font-mono text-xs"
+                   placeholder="e.g. gpt-4o-mini">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Fallback Provider</label>
+            <select name="paid_fallback_provider" class="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500">
+              <option value="openai" {% if config.paid_fallback_provider == "openai" %}selected{% endif %}>OpenAI</option>
+              <option value="openrouter" {% if config.paid_fallback_provider == "openrouter" %}selected{% endif %}>OpenRouter</option>
+              <option value="anthropic" {% if config.paid_fallback_provider == "anthropic" %}selected{% endif %}>Anthropic</option>
+            </select>
+          </div>
+          <div class="flex items-center space-x-3">
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" name="paid_fallback_enabled" class="sr-only peer" {% if config.paid_fallback_enabled %}checked{% endif %}>
+              <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-kova-300 dark:peer-focus:ring-kova-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:after:border-gray-600 peer-checked:bg-kova-600"></div>
+              <span class="ms-2 text-xs text-gray-500 dark:text-gray-400">Enabled</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Max Retries + Free Fallbacks -->
+      <div class="border-t border-gray-200 dark:border-gray-800 pt-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Max Model Retries</label>
+            <input type="number" name="max_retries" value="{{ config.max_retries }}" min="1" max="10"
+                   class="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500">
+            <p class="text-[10px] text-gray-400 mt-1">How many free models to try before paid fallback.</p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Free Fallback Chain</label>
+            <textarea name="free_fallback_models" rows="3"
+                      class="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500 font-mono text-xs"
+                      placeholder="One model per line">{% for m in config.free_fallback_models %}{{ m }}{% if not forloop.last %}
+{% endif %}{% endfor %}</textarea>
+            <p class="text-[10px] text-gray-400 mt-1">One model per line. Tried in order when primary fails.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="px-5 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800 rounded-b-xl flex justify-end">
+      <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg shadow-sm transition focus:outline-none focus:ring-2 focus:ring-kova-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+        Save Global Config
+      </button>
+    </div>
+  </div>
+</form>
+
+
+<!-- SECTION 3 - PER-PLAN MODEL ROUTING -->
+<form method="post" action="{% url 'admin_dashboard:llm_update_plan_models' %}" class="mb-6">
+  {% csrf_token %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Per-Plan Model Routing</h2>
+      <p class="text-[10px] text-gray-400 mt-0.5">
+        Set different AI models for each subscription plan. Leave blank to use the global tier defaults above.
+        Type any model identifier and the system picks it up immediately.
+      </p>
+    </div>
+    <div class="p-5">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-200 dark:border-gray-800">
+              <th class="text-left px-3 py-2 text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-36">Plan</th>
+              <th class="text-left px-3 py-2 text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <span class="inline-block w-2 h-2 rounded-full bg-purple-500 mr-1"></span>Premium (Creative)
+              </th>
+              <th class="text-left px-3 py-2 text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <span class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span>Workhorse (Reasoning)
+              </th>
+              <th class="text-left px-3 py-2 text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Fast (Classification)
+              </th>
+              <th class="text-center px-3 py-2 text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24">Preset</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+            {% for plan in plan_config %}
+            <tr class="{% if plan.has_overrides %}bg-kova-50/30 dark:bg-kova-950/20{% endif %}">
+              <td class="px-3 py-3">
+                <div>
+                  <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ plan.label }}</p>
+                  <p class="text-[10px] text-gray-400">${{ plan.price_usd }}/mo</p>
+                </div>
+              </td>
+              <td class="px-3 py-3">
+                <input type="text" name="{{ plan.code }}_premium" value="{{ plan.premium }}"
+                       placeholder="{{ config.model_premium }}"
+                       class="w-full text-xs font-mono rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500 {% if plan.premium %}ring-1 ring-purple-400 dark:ring-purple-600{% endif %}">
+              </td>
+              <td class="px-3 py-3">
+                <input type="text" name="{{ plan.code }}_workhorse" value="{{ plan.workhorse }}"
+                       placeholder="{{ config.model_workhorse }}"
+                       class="w-full text-xs font-mono rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500 {% if plan.workhorse %}ring-1 ring-blue-400 dark:ring-blue-600{% endif %}">
+              </td>
+              <td class="px-3 py-3">
+                <input type="text" name="{{ plan.code }}_fast" value="{{ plan.fast }}"
+                       placeholder="{{ config.model_fast }}"
+                       class="w-full text-xs font-mono rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500 {% if plan.fast %}ring-1 ring-green-400 dark:ring-green-600{% endif %}">
+              </td>
+              <td class="px-3 py-3 text-center">
+                <div class="flex flex-col gap-1">
+                  {% for key, preset in model_presets.items %}
+                  <form method="post" action="{% url 'admin_dashboard:llm_apply_preset' %}" class="inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="preset" value="{{ key }}">
+                    <input type="hidden" name="target" value="{{ plan.code }}">
+                    <button type="submit" class="w-full px-2 py-0.5 text-[9px] font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors truncate" title="{{ preset.description }}">
+                      {{ preset.label }}
+                    </button>
+                  </form>
+                  {% endfor %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="px-5 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800 rounded-b-xl flex items-center justify-between">
+      <p class="text-[10px] text-gray-400">
+        <strong>Resolution order:</strong> Per-task override &#8594; Plan-specific tier &#8594; Global tier default
+      </p>
+      <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg shadow-sm transition focus:outline-none focus:ring-2 focus:ring-kova-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+        Save Plan Models
+      </button>
+    </div>
+  </div>
+</form>
+
+
+<!-- SECTION 4 - RATE LIMITS PER PLAN -->
+<form method="post" action="{% url 'admin_dashboard:llm_update_rate_limits' %}" class="mb-6">
+  {% csrf_token %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Rate Limits per Plan</h2>
+      <p class="text-[10px] text-gray-400 mt-0.5">Control maximum AI usage per plan to prevent cost overruns</p>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200 dark:border-gray-800">
+            <th class="text-left px-5 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Plan</th>
+            <th class="text-left px-5 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Max Calls / Hour</th>
+            <th class="text-left px-5 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Max Tokens / Day</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for rl in rate_limits %}
+          <tr>
+            <td class="px-5 py-3">
+              <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ rl.label }}</span>
+              {% if rl.is_custom %}<span class="ml-1 text-[9px] text-kova-600 dark:text-kova-400 font-semibold">CUSTOM</span>{% endif %}
+            </td>
+            <td class="px-5 py-3">
+              <input type="number" name="{{ rl.code }}_max_calls" value="{{ rl.max_calls_per_hour }}" min="1" max="10000"
+                     class="w-32 text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500">
+            </td>
+            <td class="px-5 py-3">
+              <input type="number" name="{{ rl.code }}_max_tokens" value="{{ rl.max_tokens_per_day }}" min="1000" step="10000"
+                     class="w-40 text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500">
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="px-5 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800 rounded-b-xl flex justify-end">
+      <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg shadow-sm transition">
+        Save Rate Limits
+      </button>
+    </div>
+  </div>
+</form>
+
+
+<!-- SECTION 5 - PER-TASK MODEL ROUTING -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6">
+  <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Per-Task Model Overrides</h2>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Override the tier default for specific tasks. These override EVERYTHING including global and plan tiers. Leave blank to use tier defaults.</p>
+  </div>
+  <div class="divide-y divide-gray-200 dark:divide-gray-800">
+    {% for task in task_config %}
+    <div class="px-5 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div class="flex items-center space-x-3">
+        <span class="w-2 h-2 rounded-full {% if task.tier == 'premium' %}bg-purple-500{% elif task.tier == 'workhorse' %}bg-blue-500{% else %}bg-green-500{% endif %}"></span>
+        <div>
+          <p class="text-sm font-medium text-gray-900 dark:text-white">{{ task.label }}</p>
+          <p class="text-[10px] text-gray-400 font-mono">{{ task.key }} &middot; tier: {{ task.tier }}</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <form method="post" action="{% url 'admin_dashboard:llm_update_task_model' %}" class="flex items-center space-x-2">
+          {% csrf_token %}
+          <input type="hidden" name="task_key" value="{{ task.key }}">
+          <input type="hidden" name="action" value="set">
+          <input type="text" name="model_value" value="{% if task.is_override %}{{ task.current_model }}{% endif %}"
+                 placeholder="{{ task.current_model }}"
+                 class="w-64 text-xs rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500 font-mono {% if task.is_override %}ring-1 ring-amber-400 dark:ring-amber-600{% endif %}">
+          <button type="submit" class="px-2.5 py-1.5 text-xs font-medium text-kova-700 dark:text-kova-400 bg-kova-50 dark:bg-kova-950 hover:bg-kova-100 dark:hover:bg-kova-900 rounded-md transition">Set</button>
+        </form>
+        {% if task.is_override %}
+        <form method="post" action="{% url 'admin_dashboard:llm_update_task_model' %}">
+          {% csrf_token %}
+          <input type="hidden" name="task_key" value="{{ task.key }}">
+          <input type="hidden" name="action" value="clear">
+          <button type="submit" class="px-2 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-md transition" title="Clear override">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+
+<!-- SECTION 6 - MODEL HEALTH + USAGE -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+  <!-- Model Health -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Model Health (7d)</h2>
+    </div>
+    {% if model_health %}
+    <div class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for mh in model_health %}
+      <div class="px-5 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="w-2.5 h-2.5 rounded-full {% if mh.critical %}bg-red-500 animate-pulse{% elif mh.warning %}bg-amber-500{% else %}bg-emerald-500{% endif %}"></span>
+          <div>
+            <p class="text-xs font-mono text-gray-900 dark:text-white truncate max-w-[200px]">{{ mh.model }}</p>
+            <p class="text-[10px] text-gray-400">{{ mh.calls }} calls &middot; {{ mh.avg_ms }}ms avg</p>
+          </div>
+        </div>
+        <div class="text-right">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold
+            {% if mh.critical %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
+            {% elif mh.warning %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
+            {% else %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400{% endif %}">
+            {{ mh.failure_rate }}% fail
+          </span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="px-5 py-8 text-center text-xs text-gray-400">No LLM usage recorded in the last 7 days.</div>
+    {% endif %}
+  </div>
+
+  <!-- Model Usage Table -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Model Usage (7d)</h2>
+    </div>
+    {% if model_usage %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs">
+        <thead>
+          <tr class="border-b border-gray-200 dark:border-gray-800">
+            <th class="px-4 py-2 text-left text-gray-500 dark:text-gray-400 font-medium">Model</th>
+            <th class="px-3 py-2 text-right text-gray-500 dark:text-gray-400 font-medium">Calls</th>
+            <th class="px-3 py-2 text-right text-gray-500 dark:text-gray-400 font-medium">Success</th>
+            <th class="px-3 py-2 text-right text-gray-500 dark:text-gray-400 font-medium">Tokens</th>
+            <th class="px-3 py-2 text-right text-gray-500 dark:text-gray-400 font-medium">Avg ms</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800/50">
+          {% for row in model_usage %}
+          <tr>
+            <td class="px-4 py-2.5 font-mono text-gray-900 dark:text-white">{{ row.model_used|truncatechars:40 }}</td>
+            <td class="px-3 py-2.5 text-right text-gray-700 dark:text-gray-300">{{ row.calls }}</td>
+            <td class="px-3 py-2.5 text-right">
+              <span class="{% if row.failures == 0 %}text-green-600 dark:text-green-400{% elif row.failures > row.successes %}text-red-600 dark:text-red-400{% else %}text-yellow-600 dark:text-yellow-400{% endif %}">
+                {{ row.successes }}/{{ row.calls }}
+              </span>
+            </td>
+            <td class="px-3 py-2.5 text-right text-gray-700 dark:text-gray-300">{{ row.total_tokens|format_number }}</td>
+            <td class="px-3 py-2.5 text-right text-gray-700 dark:text-gray-300">{{ row.avg_duration|floatformat:0 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="px-5 py-8 text-center text-xs text-gray-400">No LLM usage recorded in the last 7 days.</div>
+    {% endif %}
+  </div>
+</div>
+
+
+<!-- SECTION 7 - TOKEN TREND CHART -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6">
+  <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Token Usage (30 days)</h2>
+  </div>
+  <div class="p-5">
+    <div class="h-56">
+      <canvas id="tokenChart"></canvas>
+    </div>
+  </div>
+</div>
+
+
+<!-- SECTION 8 - MODEL REFERENCE -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6">
+  <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Model Reference</h2>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Click any model name to copy it. Paste into any field above.</p>
+  </div>
+  <div class="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+    {% for provider_name, models in popular_models.items %}
+    <div>
+      <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ provider_name }}</h4>
+      <div class="space-y-1">
+        {% for model_info in models %}
+        <button type="button" onclick="navigator.clipboard.writeText('{{ model_info.0 }}'); this.classList.add('ring-2','ring-kova-500'); setTimeout(function(el){ el.classList.remove('ring-2','ring-kova-500'); }, 800, this)"
+                class="block w-full text-left px-2 py-1.5 rounded transition cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                title="Click to copy: {{ model_info.0 }}">
+          <p class="text-[11px] font-mono text-gray-700 dark:text-gray-300 break-all">{{ model_info.0 }}</p>
+          <p class="text-[9px] text-gray-400">{{ model_info.1 }}</p>
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+
+<!-- SECTION 9 - HOW MODEL RESOLUTION WORKS -->
+<div class="bg-kova-50/50 dark:bg-kova-950/20 border border-kova-200 dark:border-kova-900 rounded-xl p-5 mb-6">
+  <h3 class="text-xs font-semibold text-kova-700 dark:text-kova-300 uppercase tracking-wider mb-3">How Model Resolution Works</h3>
+  <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 text-[11px] text-gray-600 dark:text-gray-400">
+    <div class="flex items-start gap-2">
+      <span class="flex-shrink-0 w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center mt-0.5">1</span>
+      <div>
+        <p class="font-semibold text-gray-900 dark:text-gray-200">Per-Task Override</p>
+        <p>If a specific task (e.g. "create.generate") has a model override set, that model is used regardless of plan.</p>
+      </div>
+    </div>
+    <div class="flex items-start gap-2">
+      <span class="flex-shrink-0 w-5 h-5 rounded-full bg-purple-500 text-white text-[10px] font-bold flex items-center justify-center mt-0.5">2</span>
+      <div>
+        <p class="font-semibold text-gray-900 dark:text-gray-200">Plan-Specific Tier</p>
+        <p>If the user's plan (e.g. "agency") has models configured, use that plan's tier (premium/workhorse/fast).</p>
+      </div>
+    </div>
+    <div class="flex items-start gap-2">
+      <span class="flex-shrink-0 w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center mt-0.5">3</span>
+      <div>
+        <p class="font-semibold text-gray-900 dark:text-gray-200">Global Tier Default</p>
+        <p>Fall back to the global tier settings (Premium, Workhorse, Fast models configured above).</p>
+      </div>
+    </div>
+    <div class="flex items-start gap-2">
+      <span class="flex-shrink-0 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center mt-0.5">4</span>
+      <div>
+        <p class="font-semibold text-gray-900 dark:text-gray-200">Fallback Chain</p>
+        <p>If the chosen model fails, try free fallback chain, then paid fallback (if enabled).</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% if config.updated_by %}
+<p class="text-[10px] text-gray-400 text-center mb-4">
+  Last updated by {{ config.updated_by.email }} on {{ config.updated_at|date:"M d, Y H:i" }}
+</p>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  var rawData = '{{ daily_tokens|escapejs }}';
+  var data = [];
+  try { data = JSON.parse(rawData); } catch(e) {}
+  if (!data.length) return;
+
+  var ctx = document.getElementById('tokenChart');
+  if (!ctx) return;
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.map(function(d) { return d.date.slice(5); }),
+      datasets: [
+        {
+          label: 'Tokens',
+          data: data.map(function(d) { return d.tokens; }),
+          backgroundColor: 'rgba(220, 38, 38, 0.15)',
+          borderColor: 'rgb(220, 38, 38)',
+          borderWidth: 1,
+          borderRadius: 4,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Calls',
+          data: data.map(function(d) { return d.calls; }),
+          type: 'line',
+          borderColor: 'rgb(99, 102, 241)',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 2,
+          tension: 0.3,
+          yAxisID: 'y1',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: { legend: { display: true, position: 'top', labels: { usePointStyle: true, boxWidth: 6, font: { size: 10 } } } },
+      scales: {
+        y: { position: 'left', title: { display: true, text: 'Tokens', font: { size: 10 } }, ticks: { font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+        y1: { position: 'right', title: { display: true, text: 'Calls', font: { size: 10 } }, ticks: { font: { size: 10 } }, grid: { display: false } },
+        x: { ticks: { font: { size: 9 }, maxRotation: 45, minRotation: 0 }, grid: { display: false } },
+      }
+    }
+  });
+})();
+</script>
+{% endblock %}

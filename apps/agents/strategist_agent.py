@@ -363,7 +363,7 @@ def _make_strategic_decisions(user, inputs):
     response = generate(
         prompt=prompt,
         system=system_prompt,
-        model=get_model_for_task("strategist.decide"),
+        model=get_model_for_task("strategist.decide", user=user),
         json_mode=True,
         temperature=0.5,
         max_tokens=2500,
@@ -377,7 +377,7 @@ def _make_strategic_decisions(user, inputs):
         retry_response = generate(
             prompt=prompt + "\n\nCRITICAL: You MUST respond with a valid JSON object only. No prose, no markdown. Just the JSON.",
             system=system_prompt,
-            model=get_model_for_task("strategist.decide"),
+            model=get_model_for_task("strategist.decide", user=user),
             json_mode=True,
             temperature=0.3,
             max_tokens=2500,

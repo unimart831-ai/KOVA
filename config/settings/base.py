@@ -292,6 +292,9 @@ ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 OPENROUTER_API_KEY = env("OPENROUTER_API_KEY", default="")
 DEFAULT_LLM_PROVIDER = env("DEFAULT_LLM_PROVIDER", default="openai")  # openai | anthropic | openrouter
 DEFAULT_LLM_MODEL = env("DEFAULT_LLM_MODEL", default="gpt-4o-mini")
+# Paid fallback — auto-escalate to this model when all free models fail.
+# Routes through OpenAI directly (not OpenRouter). Set to "" to disable.
+LLM_PAID_FALLBACK = env("LLM_PAID_FALLBACK", default="gpt-4o-mini")
 
 # Tiered model routing — right model for each task.
 # Override individual tasks via env vars, or change the tier defaults.
