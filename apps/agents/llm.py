@@ -234,10 +234,10 @@ def generate(
 
     # Fallback models for free-tier OpenRouter when primary returns empty
     _FREE_FALLBACKS = [
-        "google/gemma-3-1b-it:free",
-        "meta-llama/llama-3.2-3b-instruct:free",
-        "qwen/qwen-2.5-7b-instruct:free",
-        "mistralai/mistral-7b-instruct:free",
+        "stepfun/step-3.5-flash:free",
+        "nvidia/nemotron-3-super-120b-a12b:free",
+        "qwen/qwen3.6-plus:free",
+        "minimax/minimax-m2.5:free",
     ]
 
     models_to_try = [model]
@@ -332,12 +332,10 @@ def _generate_openai(
     )
 
 
-# Models known NOT to support response_format on OpenRouter
-_NO_JSON_MODE_MODELS = {
-    "google/gemma-3-1b-it:free",
-    "meta-llama/llama-3.2-3b-instruct:free",
-    "mistralai/mistral-7b-instruct:free",
-}
+# Free models on OpenRouter are routed through various providers, and
+# response_format support depends on the provider — not just the model.
+# Safest: skip the API param for all free models, use prompt injection.
+_NO_JSON_MODE_MODELS: set[str] = set()  # unused now; keeping for reference
 
 
 def _generate_openrouter(
@@ -349,9 +347,11 @@ def _generate_openrouter(
     start = time.monotonic()
 
     messages = []
-    # For models that don't support response_format, inject JSON instruction
-    # into the system prompt instead.
-    use_json_param = json_mode and model not in _NO_JSON_MODE_MODELS
+    # Free models on OpenRouter go through rotating providers — some reject
+    # response_format entirely (400 error).  Always use prompt injection for
+    # free-tier models; only send the API param for paid models.
+    is_free = model.endswith(":free")
+    use_json_param = json_mode and not is_free
     json_instruction = ""
     if json_mode and not use_json_param:
         json_instruction = (

@@ -289,9 +289,9 @@ DEFAULT_LLM_MODEL = env("DEFAULT_LLM_MODEL", default="gpt-4o-mini")
 # Override individual tasks via env vars, or change the tier defaults.
 # Tier: premium (creative writing) | workhorse (reasoning) | fast (classification)
 # DEV: Using free OpenRouter models. Switch to paid models for production.
-LLM_MODEL_PREMIUM = env("LLM_MODEL_PREMIUM", default="qwen/qwen-2.5-7b-instruct:free")
-LLM_MODEL_WORKHORSE = env("LLM_MODEL_WORKHORSE", default="qwen/qwen-2.5-7b-instruct:free")
-LLM_MODEL_FAST = env("LLM_MODEL_FAST", default="google/gemma-3-1b-it:free")
+LLM_MODEL_PREMIUM = env("LLM_MODEL_PREMIUM", default="qwen/qwen3.6-plus:free")
+LLM_MODEL_WORKHORSE = env("LLM_MODEL_WORKHORSE", default="qwen/qwen3.6-plus:free")
+LLM_MODEL_FAST = env("LLM_MODEL_FAST", default="stepfun/step-3.5-flash:free")
 
 AGENT_MODELS = {
     # Create Agent — user-facing content, needs top creative quality
@@ -324,10 +324,10 @@ DEFAULT_TOKEN_COST = (0.0, 0.0)  # fallback for unrecognized models
 
 MODEL_TOKEN_COSTS = {
     # ── Free OpenRouter models (dev) ──────────────────────────────────
+    "qwen/qwen3.6-plus:free":              (0.0, 0.0),
     "stepfun/step-3.5-flash:free":          (0.0, 0.0),
-    "google/gemma-3-1b-it:free":            (0.0, 0.0),
-    "meta-llama/llama-3.2-3b-instruct:free":(0.0, 0.0),
-    "qwen/qwen-2.5-7b-instruct:free":      (0.0, 0.0),
+    "nvidia/nemotron-3-super-120b-a12b:free":(0.0, 0.0),
+    "minimax/minimax-m2.5:free":           (0.0, 0.0),
     "mistralai/mistral-7b-instruct:free":   (0.0, 0.0),
 
     # ── OpenAI ────────────────────────────────────────────────────────
