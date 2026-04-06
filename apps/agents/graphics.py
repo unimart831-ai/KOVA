@@ -94,15 +94,28 @@ def _get_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
         except (OSError, IOError):
             continue
 
-    # Fallback to default bitmap font
-    logger.debug("No TrueType fonts found, using default bitmap font")
-    return ImageFont.load_default()
+    # Fallback: Pillow 10.1+ load_default supports size param for scalable rendering
+    logger.warning("No TrueType fonts found — using Pillow default font at size %d. "
+                    "Install dejavu or liberation fonts for better results.", size)
+    try:
+        return ImageFont.load_default(size=size)
+    except TypeError:
+        # Pillow < 10.1 doesn't support size param
+        return ImageFont.load_default()
 
 
 def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
-    """Convert '#FF5733' to (255, 87, 51)."""
-    hex_color = hex_color.lstrip("#")
-    return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
+    """Convert '#FF5733' to (255, 87, 51). Returns white on invalid input."""
+    try:
+        hex_color = hex_color.strip().lstrip("#")
+        if len(hex_color) == 3:
+            hex_color = "".join(c * 2 for c in hex_color)
+        if len(hex_color) != 6:
+            raise ValueError(f"Invalid hex color length: {hex_color}")
+        return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
+    except (ValueError, AttributeError):
+        logger.warning("Invalid hex color '%s', falling back to white", hex_color)
+        return (255, 255, 255)
 
 
 def _get_brand_palette(profile) -> dict:
@@ -506,7 +519,7 @@ def generate_branded_graphic(
 
         # Save to bytes
         buffer = BytesIO()
-        img.save(buffer, format="PNG", quality=95)
+        img.save(buffer, format="PNG", compress_level=6)
         buffer.seek(0)
 
         # Create MediaAttachment

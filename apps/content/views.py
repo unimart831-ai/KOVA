@@ -5,20 +5,36 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
+from django_ratelimit.decorators import ratelimit
 
 from apps.content.forms import ContentSeedForm, PostEditForm
 from apps.content.models import ContentSeed, Post
 from apps.content.tasks import generate_from_seed
 from apps.teams.permissions import can_approve_post, can_edit_post, get_teammate_ids
+from apps.utils import fire_task
 
 
 @login_required
 def content_studio(request):
     """Content creation studio — compose seeds and review AI-generated posts."""
-    seed_groups, ungrouped, total_pending = _get_studio_posts(request.user)
+    seed_groups, ungrouped, total_pending = _get_studio_posts(
+        request.user,
+        status_filter=request.GET.get("status"),
+        platform_filter=request.GET.get("platform"),
+        search_query=request.GET.get("q"),
+    )
 
-    # Recent seeds for processing status
+    # Recent seeds for processing status — auto-fail any stuck longer than 5 min
+    from datetime import timedelta
+    from django.utils import timezone as tz
+
+    stale_cutoff = tz.now() - timedelta(minutes=5)
+    request.user.content_seeds.filter(
+        status__in=["new", "processing"],
+        updated_at__lt=stale_cutoff,
+    ).update(status="failed", error_message="Generation timed out. Please try again.")
+
     active_seeds = request.user.content_seeds.filter(
         status__in=["new", "processing"]
     )[:10]
@@ -43,17 +59,29 @@ def content_studio(request):
         "connected_platforms": json.dumps(connected_platforms),
         "total_pending": total_pending,
         "seed_suggestions": seed_suggestions,
+        "current_status": request.GET.get("status", ""),
+        "current_platform": request.GET.get("platform", ""),
+        "current_search": request.GET.get("q", ""),
         "page_title": "Content Studio",
     })
 
 
-def _get_studio_posts(user):
+def _get_studio_posts(user, status_filter=None, platform_filter=None, search_query=None):
     """Return (seed_groups, ungrouped, total_pending) for the studio."""
     visible_user_ids = get_teammate_ids(user)
+
+    default_statuses = ["draft", "pending_approval", "rejected"]
+    filter_statuses = [status_filter] if status_filter and status_filter in dict(Post.Status.choices) else default_statuses
+
     posts = Post.objects.filter(
         user_id__in=visible_user_ids,
-        status__in=["draft", "pending_approval", "rejected"]
+        status__in=filter_statuses,
     ).select_related("social_account", "seed", "user").order_by("-created_at")
+
+    if platform_filter:
+        posts = posts.filter(platform=platform_filter)
+    if search_query:
+        posts = posts.filter(content_text__icontains=search_query)
 
     seed_groups = []
     grouped = defaultdict(list)
@@ -84,7 +112,12 @@ def _get_studio_posts(user):
 @login_required
 def studio_posts(request):
     """HTMX partial: return just the posts-to-review section."""
-    seed_groups, ungrouped, total_pending = _get_studio_posts(request.user)
+    seed_groups, ungrouped, total_pending = _get_studio_posts(
+        request.user,
+        status_filter=request.GET.get("status"),
+        platform_filter=request.GET.get("platform"),
+        search_query=request.GET.get("q"),
+    )
     return render(request, "content/_studio_posts.html", {
         "seed_groups": seed_groups,
         "ungrouped_posts": ungrouped,
@@ -93,6 +126,7 @@ def studio_posts(request):
 
 
 @login_required
+@ratelimit(key="user", rate="10/m", block=True)
 def submit_seed(request):
     """Handle content seed submission (the 'Drop your idea here' form)."""
     if request.method != "POST":
@@ -106,8 +140,7 @@ def submit_seed(request):
         seed.user = request.user
         seed.save()
 
-        # Fire the Create Agent async (runs sync in dev via CELERY_TASK_ALWAYS_EAGER)
-        generate_from_seed.delay(str(seed.id))
+        fire_task(generate_from_seed, str(seed.id))
 
         if is_htmx:
             # Return the processing spinner card that polls for status
@@ -140,8 +173,19 @@ def dismiss_failed_seeds(request):
 @login_required
 def seed_status(request, seed_id):
     """HTMX endpoint: poll seed processing status."""
+    from datetime import timedelta
+    from django.utils import timezone as tz
+
     seed = get_object_or_404(ContentSeed, id=seed_id, user=request.user)
-    posts = seed.posts.select_related("social_account").all()
+
+    # Auto-fail seeds stuck in processing for over 5 minutes
+    if seed.status in ("new", "processing"):
+        if seed.updated_at < tz.now() - timedelta(minutes=5):
+            seed.status = "failed"
+            seed.error_message = "Generation timed out. Please try again."
+            seed.save(update_fields=["status", "error_message", "updated_at"])
+
+    posts = seed.posts.select_related("social_account", "user", "brand").all()
     response = render(request, "content/_seed_status.html", {
         "seed": seed,
         "posts": posts,
@@ -344,7 +388,7 @@ def approve_post(request, post_id):
     # If "post_now" — fire the publish task immediately
     if intent == "post_now":
         from apps.content.tasks import publish_post
-        publish_post.delay(str(post.id))
+        fire_task(publish_post, str(post.id))
 
     return render(request, "components/post_card.html", {"post": post})
 
@@ -409,7 +453,7 @@ def batch_approve(request, seed_id):
         # If "post_now" — fire publish tasks
         if intent == "post_now":
             from apps.content.tasks import publish_post
-            publish_post.delay(str(post.id))
+            fire_task(publish_post, str(post.id))
 
     post_count = posts.count()
     messages.success(request, f"All {post_count} posts approved and scheduled!")
@@ -429,9 +473,24 @@ def reject_post(request, post_id):
 
 
 @login_required
+@require_POST
+def delete_post(request, post_id):
+    """Soft-delete a post (HTMX). Removes it from the studio."""
+    post = get_object_or_404(Post.objects.select_related("user"), id=post_id)
+    if not can_edit_post(request.user, post):
+        raise Http404
+    # Only allow deleting non-published posts
+    if post.status in (Post.Status.PUBLISHED, Post.Status.PUBLISHING):
+        return HttpResponse("Cannot delete a published post", status=400)
+    post.soft_delete()
+    # Return empty response to remove the card from the DOM
+    return HttpResponse("")
+
+
+@login_required
 def regenerate_post(request, post_id):
-    """Regenerate content for a single post via HTMX."""
-    from apps.agents.create_agent import regenerate_single_post
+    """Kick off async regeneration and return a polling card."""
+    from apps.content.tasks import regenerate_post_async
 
     post = get_object_or_404(Post.objects.select_related("social_account", "user"), id=post_id)
     if not can_edit_post(request.user, post):
@@ -448,12 +507,33 @@ def regenerate_post(request, post_id):
     ):
         return render(request, "components/post_card.html", {"post": post})
 
-    try:
-        post = regenerate_single_post(post)
-    except Exception:
-        pass  # Post returned as-is; agent logged the error
+    # Stash the old content_text so we can detect when regeneration completes
+    request.session[f"regen_{post.id}"] = post.content_text[:100]
 
-    return render(request, "components/post_card.html", {"post": post})
+    # Fire async
+    fire_task(regenerate_post_async, str(post.id))
+
+    # Return a card with a spinner that polls for completion
+    return render(request, "components/_post_regenerating.html", {"post": post})
+
+
+@login_required
+def regenerate_status(request, post_id):
+    """HTMX polling endpoint: returns updated post card once regeneration is done."""
+    post = get_object_or_404(Post.objects.select_related("social_account", "user"), id=post_id)
+    if not can_edit_post(request.user, post):
+        raise Http404
+
+    old_snippet = request.session.get(f"regen_{post.id}", "")
+    current_snippet = post.content_text[:100]
+
+    # If the content changed, regeneration is done
+    if old_snippet and current_snippet != old_snippet:
+        request.session.pop(f"regen_{post.id}", None)
+        return render(request, "components/post_card.html", {"post": post})
+
+    # Still regenerating — return the spinner card again (keeps polling)
+    return render(request, "components/_post_regenerating.html", {"post": post})
 
 
 @login_required
@@ -465,13 +545,41 @@ def edit_post(request, post_id):
     if request.method == "POST":
         form = PostEditForm(request.POST, instance=post)
         if form.is_valid():
+            old_content = post.content_text
             post = form.save(commit=False)
-            post.status = Post.Status.DRAFT
-            post.save(update_fields=["content_text", "status", "updated_at"])
+
+            # Only reset to DRAFT if the actual content changed
+            content_changed = post.content_text != old_content
+            if content_changed and post.status in (
+                Post.Status.PENDING_APPROVAL,
+                Post.Status.APPROVED,
+                Post.Status.SCHEDULED,
+            ):
+                post.status = Post.Status.DRAFT
+
+            # Rejected posts get promoted to PENDING_APPROVAL after editing
+            if content_changed and post.status == Post.Status.REJECTED:
+                post.status = Post.Status.PENDING_APPROVAL
+
+            update_fields = ["content_text", "updated_at"]
+            if content_changed:
+                update_fields.append("status")
+            post.save(update_fields=update_fields)
 
             # Intelligence: track edit feedback for agent learning
-            from apps.agents.memory import record_edit_feedback
-            record_edit_feedback(post)
+            if content_changed:
+                from apps.agents.memory import record_edit_feedback
+                from apps.content.models import PostVersion
+                record_edit_feedback(post)
+                # Save version snapshot
+                last_ver = post.versions.order_by("-version_number").values_list("version_number", flat=True).first()
+                PostVersion.objects.create(
+                    post=post,
+                    version_number=(last_ver or 0) + 1,
+                    content_text=post.content_text,
+                    source="user_edit",
+                    edited_by=request.user,
+                )
 
             messages.success(request, "Post updated.")
             return redirect("content:studio")
@@ -488,6 +596,10 @@ def edit_post(request, post_id):
 @login_required
 def upload_media(request, post_id):
     """Upload an image to a post."""
+    from io import BytesIO
+
+    from PIL import Image
+
     from apps.content.models import MediaAttachment
 
     post = get_object_or_404(Post.objects.select_related("user"), id=post_id)
@@ -502,6 +614,40 @@ def upload_media(request, post_id):
         allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
         if uploaded.content_type not in allowed_types:
             return HttpResponse("Unsupported file type", status=400)
+
+        # Validate actual file content via magic bytes (not just Content-Type header)
+        try:
+            img = Image.open(uploaded)
+            img.verify()  # checks file integrity without loading full image
+            actual_format = img.format  # JPEG, PNG, GIF, WEBP
+            if actual_format not in ("JPEG", "PNG", "GIF", "WEBP"):
+                return HttpResponse("Invalid image file", status=400)
+        except Exception:
+            return HttpResponse("Invalid or corrupted image file", status=400)
+
+        # Strip EXIF data (GPS, camera info) for privacy — re-save clean image
+        uploaded.seek(0)
+        if actual_format in ("JPEG", "PNG", "WEBP"):
+            try:
+                img = Image.open(uploaded)
+                clean = BytesIO()
+                # Re-save without EXIF by creating a new image from pixel data
+                clean_img = Image.new(img.mode, img.size)
+                clean_img.putdata(list(img.getdata()))
+                save_fmt = actual_format if actual_format != "JPEG" else "JPEG"
+                save_kwargs = {"format": save_fmt}
+                if save_fmt == "JPEG":
+                    save_kwargs["quality"] = 95
+                clean_img.save(clean, **save_kwargs)
+                clean.seek(0)
+                # Replace the uploaded file content with the clean version
+                from django.core.files.uploadedfile import InMemoryUploadedFile
+                uploaded = InMemoryUploadedFile(
+                    clean, "file", uploaded.name, uploaded.content_type,
+                    clean.getbuffer().nbytes, uploaded.charset,
+                )
+            except Exception:
+                uploaded.seek(0)  # fallback to original if stripping fails
 
         file_type = "image"
         if uploaded.content_type == "image/gif":
@@ -522,6 +668,62 @@ def upload_media(request, post_id):
         return render(request, "content/_media_item.html", {"attachment": attachment})
 
     return HttpResponse(status=405)
+
+
+@login_required
+@require_POST
+def retry_image(request, post_id):
+    """Retry AI image generation for a post that failed."""
+    post = get_object_or_404(Post.objects.select_related("user", "social_account"), id=post_id)
+    if not can_edit_post(request.user, post):
+        raise Http404
+    if post.media_status != Post.MediaStatus.FAILED:
+        return HttpResponse("Post image did not fail", status=400)
+
+    prompt = post.media_prompt or ""
+    if not prompt.strip():
+        messages.error(request, "No image prompt available to retry.")
+        return redirect("content:edit", post_id=post.id)
+
+    post.media_status = Post.MediaStatus.PENDING
+    post.save(update_fields=["media_status", "updated_at"])
+
+    # Re-run image generation via Celery
+    from apps.content.tasks import retry_image_generation
+    fire_task(retry_image_generation, str(post.id))
+
+    if request.headers.get("HX-Request"):
+        return HttpResponse(
+            '<span class="text-[10px] font-medium px-2 py-0.5 rounded-md '
+            'bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400">'
+            '⏳ Retrying…</span>'
+        )
+    messages.info(request, "Retrying image generation…")
+    return redirect("content:edit", post_id=post.id)
+
+
+@login_required
+@require_http_methods(["POST", "DELETE"])
+def delete_media(request, post_id, attachment_id):
+    """Delete a media attachment from a post via HTMX."""
+    from apps.content.models import MediaAttachment
+
+    post = get_object_or_404(Post.objects.select_related("user"), id=post_id)
+    if not can_edit_post(request.user, post):
+        raise Http404
+    attachment = get_object_or_404(MediaAttachment, id=attachment_id, post=post)
+
+    # Delete the file from storage and the DB record
+    if attachment.file:
+        attachment.file.delete(save=False)
+    attachment.delete()
+
+    # Update media_status if no attachments remain
+    if not post.attachments.exists() and not post.media_urls:
+        post.media_status = Post.MediaStatus.NONE
+        post.save(update_fields=["media_status", "updated_at"])
+
+    return HttpResponse("")  # empty response removes the element via hx-swap
 
 
 @login_required
@@ -557,7 +759,7 @@ def post_detail(request, post_id):
         from apps.notifications.models import Notification
         notifications = Notification.objects.filter(
             related_post=post,
-        ).order_by("-created_at")[:10]
+        ).select_related("related_post").order_by("-created_at")[:10]
     except Exception:
         pass
 
@@ -632,7 +834,7 @@ def ab_test_create(request):
         )
 
         # Fire async generation
-        generate_ab_test_variants.delay(str(ab_test.id))
+        fire_task(generate_ab_test_variants, str(ab_test.id))
 
         messages.success(request, f"A/B test created! Generating {variant_count} variants...")
         return redirect("content:ab_test_detail", test_id=ab_test.id)
@@ -654,8 +856,7 @@ def ab_test_detail(request, test_id):
     )
 
     variants = (
-        ab_test.variants.select_related("social_account")
-        .prefetch_related("metrics")
+        ab_test.variants.select_related("social_account", "metrics")
         .order_by("variant_label")
     )
 

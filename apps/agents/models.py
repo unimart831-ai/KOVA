@@ -102,6 +102,8 @@ class AgentAction(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-
-    def __str__(self):
-        return f"{self.get_agent_type_display()}: {self.action_type} ({self.status})"
+        indexes = [
+            models.Index(fields=["user", "agent_type", "-created_at"]),
+            models.Index(fields=["user", "status", "-created_at"]),
+            models.Index(fields=["agent_type", "status", "-created_at"]),
+        ]

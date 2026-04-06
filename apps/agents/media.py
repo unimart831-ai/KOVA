@@ -158,14 +158,31 @@ def generate_post_image(post, image_prompt: str) -> str | None:
     if not image_prompt or not image_prompt.strip():
         return None
 
-    platform = post.social_account.platform
+    # Store prompt for retry capability
+    if not post.media_prompt:
+        post.media_prompt = image_prompt
+        post.save(update_fields=["media_prompt", "updated_at"])
+
+    platform = post.platform or (post.social_account.platform if post.social_account else "twitter")
     width, height = PLATFORM_IMAGE_SIZES.get(platform, DEFAULT_SIZE)
 
     image_bytes = _fetch_image_with_fallback(image_prompt, width, height)
     if not image_bytes:
         logger.warning("All image providers failed for post %s", post.id)
         post.media_status = "failed"
-        post.save(update_fields=["media_status", "updated_at"])
+        post.media_prompt = image_prompt
+        post.save(update_fields=["media_status", "media_prompt", "updated_at"])
+        # Notify user so failure isn't silent
+        try:
+            from apps.notifications.models import Notification
+            Notification.create_for_user(
+                user=post.user,
+                notification_type=Notification.NotificationType.SYSTEM,
+                message="Image generation failed for your post. You can retry or upload an image manually.",
+                related_post=post,
+            )
+        except Exception:
+            pass  # notification is best-effort
         return None
 
     try:

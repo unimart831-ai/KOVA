@@ -10,7 +10,7 @@ from django.db.models.functions import TruncHour
 from django.shortcuts import render
 from django.utils import timezone
 
-from apps.admin_dashboard.decorators import staff_required
+from apps.admin_dashboard.decorators import staff_required, superuser_required
 from apps.agents.models import AgentAction
 from apps.content.models import ContentSeed, Post
 from apps.platforms.models import SocialAccount
@@ -77,7 +77,7 @@ def _check_celery_beat():
         return {"status": "unknown", "enabled_tasks": 0, "last_tick": None}
 
 
-@staff_required
+@superuser_required
 def system_health(request):
     """System health dashboard — infrastructure status, tasks, errors, DB stats."""
     now = timezone.now()
@@ -288,7 +288,7 @@ def system_health(request):
     return render(request, "admin_dashboard/system/health.html", context)
 
 
-@staff_required
+@superuser_required
 def error_log(request):
     """Searchable error log — failed agent actions, posts, seeds."""
     qs = AgentAction.objects.filter(status="failed").select_related("user")

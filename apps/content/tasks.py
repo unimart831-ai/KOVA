@@ -97,6 +97,80 @@ def generate_from_seed(seed_id: str):
     }
 
 
+@shared_task(name="content.regenerate_post_async")
+def regenerate_post_async(post_id: str):
+    """
+    Regenerate a single post asynchronously via the Create Agent.
+    Updates the post in-place and sends a notification on completion or failure.
+    """
+    from apps.content.models import Post
+    from apps.agents.create_agent import regenerate_single_post
+    from apps.notifications.models import Notification
+
+    try:
+        post = Post.objects.select_related("social_account", "user", "seed").get(pk=post_id)
+    except Post.DoesNotExist:
+        logger.error("Post %s not found for regeneration", post_id)
+        return {"error": "Post not found"}
+
+    try:
+        post = regenerate_single_post(post)
+        # Save version snapshot
+        from apps.content.models import PostVersion
+        last_ver = post.versions.order_by("-version_number").values_list("version_number", flat=True).first()
+        PostVersion.objects.create(
+            post=post,
+            version_number=(last_ver or 0) + 1,
+            content_text=post.content_text,
+            source="regeneration",
+        )
+        Notification.create_for_user(
+            post.user, "agent_action",
+            f"Post regenerated for {post.platform or 'unknown'}: {post.content_text[:80]}…",
+            related_post=post,
+        )
+        return {"success": True, "post_id": str(post.id)}
+    except Exception as exc:
+        logger.exception("Regeneration failed for post %s", post_id)
+        Notification.create_for_user(
+            post.user, "system",
+            f"Regeneration failed for your {post.platform or 'unknown'} post. The original content was kept.",
+            related_post=post,
+        )
+        return {"error": str(exc)}
+
+
+@shared_task(name="content.retry_image_generation")
+def retry_image_generation(post_id: str):
+    """Retry AI image generation for a post using its stored media_prompt."""
+    from apps.content.models import Post
+    try:
+        post = Post.objects.select_related("user", "social_account").get(id=post_id)
+    except Post.DoesNotExist:
+        return {"error": "Post not found"}
+
+    prompt = post.media_prompt or ""
+    if not prompt.strip():
+        post.media_status = "failed"
+        post.save(update_fields=["media_status", "updated_at"])
+        return {"error": "No image prompt to retry"}
+
+    try:
+        from apps.agents.visual_strategy import apply_visual_strategy
+        result = apply_visual_strategy(post, {
+            "strategy": "ai_photo",
+            "image_prompt": prompt,
+        })
+        if result:
+            return {"status": "success", "url": result}
+        return {"status": "failed"}
+    except Exception as exc:
+        logger.exception("Retry image generation failed for post %s: %s", post_id, exc)
+        post.media_status = "failed"
+        post.save(update_fields=["media_status", "updated_at"])
+        return {"error": str(exc)}
+
+
 @shared_task(name="content.publish_post", bind=True, max_retries=3)
 def publish_post(self, post_id: str):
     """
@@ -187,10 +261,23 @@ def publish_post(self, post_id: str):
             )
             return {"error": "Media required"}
 
+        # Ensure media URLs are absolute — platform APIs need full URLs,
+        # but FileField.url returns relative paths with FileSystemStorage.
+        absolute_media_urls = None
+        if post.media_urls:
+            from django.conf import settings
+            site_url = getattr(settings, "SITE_URL", "http://localhost:8000").rstrip("/")
+            absolute_media_urls = []
+            for url in post.media_urls:
+                if url.startswith(("http://", "https://")):
+                    absolute_media_urls.append(url)
+                else:
+                    absolute_media_urls.append(f"{site_url}{url}")
+
         result = provider.publish_post(
             access_token=account.access_token,
             content=publish_content,
-            media_urls=post.media_urls or None,
+            media_urls=absolute_media_urls,
             **publish_kwargs,
         )
     except Exception as exc:

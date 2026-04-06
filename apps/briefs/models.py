@@ -21,6 +21,10 @@ class DailyBrief(models.Model):
     class Meta:
         unique_together = ["user", "date"]
         ordering = ["-date"]
+        indexes = [
+            models.Index(fields=["user", "-date"]),
+            models.Index(fields=["user", "is_read", "-date"]),
+        ]
 
     def __str__(self):
         return f"Brief: {self.user} - {self.date}"

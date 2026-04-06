@@ -26,7 +26,7 @@ def notification_bell(request):
 @login_required
 def notification_dropdown(request):
     """HTMX partial: dropdown with recent notifications."""
-    notifications = Notification.objects.filter(user=request.user)[:10]
+    notifications = Notification.objects.filter(user=request.user).select_related("related_post")[:10]
     Notification.mark_all_read(request.user)
     return render(request, "notifications/_dropdown.html", {
         "notifications": notifications,

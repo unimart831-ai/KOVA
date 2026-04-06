@@ -15,7 +15,7 @@ from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from apps.admin_dashboard.decorators import staff_required
+from apps.admin_dashboard.decorators import senior_staff_required, staff_required
 from apps.partners.models import (
     Commission,
     MilestoneAward,
@@ -171,7 +171,7 @@ def application_list(request):
     return render(request, "admin_dashboard/partners/applications.html", context)
 
 
-@staff_required
+@senior_staff_required
 @require_POST
 def application_action(request):
     """Approve or reject a single application from the admin dashboard."""

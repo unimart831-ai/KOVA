@@ -9,7 +9,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 
-from apps.admin_dashboard.decorators import staff_required
+from apps.admin_dashboard.decorators import staff_required, superuser_required
 from apps.agents.models import AgentAction
 from apps.billing.models import BillingEvent, MpesaPayment
 from apps.content.models import ContentSeed, Post
@@ -203,9 +203,9 @@ def activity_log(request):
     return render(request, "admin_dashboard/logs/activity.html", context)
 
 
-@staff_required
+@superuser_required
 def log_export_csv(request):
-    """Export activity log as CSV."""
+    """Export activity log as CSV. Requires superuser."""
     category = request.GET.get("category", "")
     days = request.GET.get("days", "30")
     try:

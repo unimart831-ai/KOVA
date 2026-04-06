@@ -54,6 +54,9 @@ if _R2_BUCKET:
     STORAGES = {
         "default": {
             "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+            "OPTIONS": {
+                "addressing_style": "path",  # R2 requires path-style addressing
+            },
         },
         "staticfiles": {
             "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
@@ -68,13 +71,14 @@ if _R2_BUCKET:
     AWS_DEFAULT_ACL = None
     AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
     AWS_QUERYSTRING_AUTH = False  # Public URLs for media (images served to platforms)
+    AWS_LOCATION = "media"  # All uploads go under media/ prefix in the bucket
     # If custom domain set for R2 bucket (optional)
     _R2_CUSTOM_DOMAIN = env("AWS_S3_CUSTOM_DOMAIN", default="")  # noqa: F405
     if _R2_CUSTOM_DOMAIN:
         AWS_S3_CUSTOM_DOMAIN = _R2_CUSTOM_DOMAIN
-        MEDIA_URL = f"https://{_R2_CUSTOM_DOMAIN}/"
+        MEDIA_URL = f"https://{_R2_CUSTOM_DOMAIN}/media/"
     else:
-        MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{_R2_BUCKET}/"
+        MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{_R2_BUCKET}/media/"
 else:
     STORAGES = {
         "default": {
@@ -120,7 +124,15 @@ if RESEND_API_KEY:
     EMAIL_HOST_USER = "resend"
     EMAIL_HOST_PASSWORD = RESEND_API_KEY
 else:
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    # Silently discard emails rather than dumping HTML to stderr logs.
+    # Set RESEND_API_KEY in Railway env vars to enable real delivery.
+    EMAIL_BACKEND = "django.core.mail.backends.filebased.EmailBackend"
+    EMAIL_FILE_PATH = "/tmp/kova-emails"
+    import logging as _logging
+    _logging.getLogger(__name__).warning(
+        "RESEND_API_KEY not set — emails will be written to %s instead of sent",
+        EMAIL_FILE_PATH,
+    )
 
 # Enable email verification once Resend is configured
 ACCOUNT_EMAIL_VERIFICATION = "optional" if RESEND_API_KEY else "none"

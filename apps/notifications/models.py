@@ -36,9 +36,10 @@ class Notification(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-
-    def __str__(self):
-        return f"[{self.get_notification_type_display()}] {self.message[:60]}"
+        indexes = [
+            models.Index(fields=["user", "is_read", "-created_at"]),
+            models.Index(fields=["user", "notification_type", "-created_at"]),
+        ]
 
     @classmethod
     def create_for_user(cls, user, notification_type, message, related_post=None):

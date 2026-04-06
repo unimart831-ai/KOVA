@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.accounts.models import User, UserProfile
-from apps.admin_dashboard.decorators import staff_required
+from apps.admin_dashboard.decorators import senior_staff_required, staff_required, superuser_required
 from apps.billing.models import PLAN_LIMITS, BillingEvent, MpesaPayment, SubscriptionOverride
 
 
@@ -293,10 +293,10 @@ def subscription_management(request):
     return render(request, "admin_dashboard/billing/subscriptions.html", context)
 
 
-@staff_required
+@senior_staff_required
 @require_POST
 def subscription_action(request):
-    """Handle individual subscription actions: plan change, trial extend, status change, comp access."""
+    """Handle individual subscription actions: plan change, trial extend, status change, comp access. Requires senior staff."""
     user = get_object_or_404(User, pk=request.POST.get("user_id"))
     action = request.POST.get("action", "")
     reason = request.POST.get("reason", "").strip()
@@ -400,9 +400,9 @@ def subscription_action(request):
 
 # ─── Bulk Grant ──────────────────────────────────────────────────────────────
 
-@staff_required
+@superuser_required
 def bulk_grant(request):
-    """Bulk grant plan access — for partnerships, promotions, etc."""
+    """Bulk grant plan access — for partnerships, promotions, etc. Requires superuser."""
     if request.method == "POST":
         step = request.POST.get("step", "preview")
 

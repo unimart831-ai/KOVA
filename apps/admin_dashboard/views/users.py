@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.accounts.models import User, UserProfile
-from apps.admin_dashboard.decorators import staff_required
+from apps.admin_dashboard.decorators import senior_staff_required, staff_required, superuser_required
 
 
 @staff_required
@@ -183,10 +183,10 @@ def user_detail(request, pk):
     return render(request, "admin_dashboard/users/detail.html", context)
 
 
-@staff_required
+@senior_staff_required
 @require_POST
 def user_change_plan(request, pk):
-    """Change a user's plan tier."""
+    """Change a user's plan tier. Requires senior staff (superuser)."""
     user = get_object_or_404(User, pk=pk)
     new_plan = request.POST.get("plan", "")
     if new_plan in dict(UserProfile.PlanTier.choices):
@@ -195,10 +195,10 @@ def user_change_plan(request, pk):
     return redirect("admin_dashboard:user_detail", pk=pk)
 
 
-@staff_required
+@superuser_required
 @require_POST
 def user_toggle_staff(request, pk):
-    """Toggle staff status."""
+    """Toggle staff status. Requires superuser."""
     user = get_object_or_404(User, pk=pk)
     if user != request.user:  # Can't demote yourself
         user.is_staff = not user.is_staff
@@ -206,9 +206,9 @@ def user_toggle_staff(request, pk):
     return redirect("admin_dashboard:user_detail", pk=pk)
 
 
-@staff_required
+@superuser_required
 def user_export_csv(request):
-    """Export all users as CSV."""
+    """Export all users as CSV. Requires superuser."""
     response = HttpResponse(content_type="text/csv")
     response["Content-Disposition"] = 'attachment; filename="kova_users.csv"'
     writer = csv.writer(response)

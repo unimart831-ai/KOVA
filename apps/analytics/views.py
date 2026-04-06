@@ -1,6 +1,8 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
+
+from apps.utils import fire_task
 from django.db.models import Avg, Count, Q, Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -27,7 +29,7 @@ def insights(request):
     metrics = PostMetric.objects.filter(
         post__user=request.user,
         post__status="published",
-    ).select_related("post__social_account")
+    ).select_related("post__social_account", "post__user", "post__seed")
 
     if platform:
         metrics = metrics.filter(post__social_account__platform=platform)
@@ -147,7 +149,7 @@ def competitor_add(request):
 
         # Trigger initial analysis
         from apps.analytics.tasks import analyze_competitor_task
-        analyze_competitor_task.delay(str(request.user.id), str(competitor.id))
+        fire_task(analyze_competitor_task, str(request.user.id), str(competitor.id))
 
         return redirect("analytics:competitor_detail", pk=competitor.pk)
 
@@ -193,7 +195,7 @@ def competitor_analyze(request, pk):
     )
 
     from apps.analytics.tasks import analyze_competitor_task
-    analyze_competitor_task.delay(str(request.user.id), str(competitor.id))
+    fire_task(analyze_competitor_task, str(request.user.id), str(competitor.id))
 
     messages.info(request, f"Analyzing {competitor.name}... This takes a moment.")
     return redirect("analytics:competitor_detail", pk=pk)
@@ -272,7 +274,7 @@ def insight_action(request, pk):
                 insight.save(update_fields=["is_acted_on"])
 
                 from apps.content.tasks import generate_from_seed
-                generate_from_seed.delay(str(seed.id))
+                fire_task(generate_from_seed, str(seed.id))
 
                 return render(request, "analytics/_insight_acted.html", {
                     "insight": insight,
@@ -293,7 +295,7 @@ def revenue_dashboard(request):
     from decimal import Decimal
 
     conversions = Conversion.objects.filter(user=request.user).select_related(
-        "post", "social_account",
+        "post__social_account", "social_account",
     ).order_by("-created_at")
 
     # Aggregate stats

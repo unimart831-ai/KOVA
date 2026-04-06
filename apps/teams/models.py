@@ -4,8 +4,10 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
+from apps.accounts.soft_delete import SoftDeleteMixin
 
-class Team(models.Model):
+
+class Team(SoftDeleteMixin, models.Model):
     """A team workspace where multiple users collaborate."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -13,7 +15,7 @@ class Team(models.Model):
     slug = models.SlugField(max_length=255, unique=True)
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="owned_teams",
     )
     created_at = models.DateTimeField(auto_now_add=True)

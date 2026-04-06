@@ -9,6 +9,7 @@ from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from django_ratelimit.decorators import ratelimit
 
 from apps.billing.models import PLAN_LIMITS, get_plan_limits
 from apps.billing.services import (
@@ -128,6 +129,7 @@ def portal(request):
 
 
 @csrf_exempt
+@ratelimit(key="ip", rate="30/m", block=True)
 @require_POST
 def stripe_webhook(request):
     """Stripe webhook endpoint. Verifies signature, routes to handler."""
@@ -281,6 +283,7 @@ def mpesa_success(request):
 
 
 @csrf_exempt
+@ratelimit(key="ip", rate="30/m", block=True)
 @require_POST
 def mpesa_webhook(request):
     """

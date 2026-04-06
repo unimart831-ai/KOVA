@@ -24,8 +24,12 @@ urlpatterns = [
     path("<uuid:post_id>/edit/", views.edit_post, name="edit"),
     path("<uuid:post_id>/approve/", views.approve_post, name="approve"),
     path("<uuid:post_id>/reject/", views.reject_post, name="reject"),
+    path("<uuid:post_id>/delete/", views.delete_post, name="delete_post"),
     path("<uuid:post_id>/regenerate/", views.regenerate_post, name="regenerate"),
+    path("<uuid:post_id>/regenerate/status/", views.regenerate_status, name="regenerate_status"),
     path("<uuid:post_id>/preview/", views.post_preview, name="preview"),
     path("<uuid:post_id>/upload/", views.upload_media, name="upload_media"),
+    path("<uuid:post_id>/retry-image/", views.retry_image, name="retry_image"),
+    path("<uuid:post_id>/media/<uuid:attachment_id>/delete/", views.delete_media, name="delete_media"),
     path("<uuid:post_id>/", views.post_detail, name="post_detail"),
 ]

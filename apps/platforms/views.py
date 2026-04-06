@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django_ratelimit.decorators import ratelimit
 
 from apps.platforms.models import SocialAccount
 from apps.platforms.providers.registry import get_provider
@@ -93,6 +94,7 @@ def platform_list(request):
 
 
 @login_required
+@ratelimit(key="user", rate="10/m", block=True)
 def connect_platform(request, platform):
     """Start OAuth flow for a platform."""
     provider = get_provider(platform)
@@ -148,6 +150,7 @@ def connect_platform(request, platform):
 
 
 @login_required
+@ratelimit(key="user", rate="10/m", block=True)
 def oauth_callback(request, platform):
     """Handle OAuth callback from a platform."""
     provider = get_provider(platform)
@@ -230,7 +233,7 @@ def oauth_callback(request, platform):
 
 @login_required
 def disconnect_platform(request, pk):
-    """Disconnect and remove a social account."""
+    """Disconnect a social account — soft-deactivate to preserve linked content."""
     if request.method != "POST":
         return redirect("platforms:list")
 
@@ -238,7 +241,12 @@ def disconnect_platform(request, pk):
     platform_display = account.get_platform_display()
     username = account.username
 
-    account.delete()
+    # Soft-deactivate: clear tokens but keep the record so Posts/Interactions survive
+    account.access_token = ""
+    account.refresh_token = ""
+    account.is_active = False
+    account.last_error = "Disconnected by user"
+    account.save(update_fields=["access_token", "refresh_token", "is_active", "last_error", "updated_at"])
 
     messages.success(request, f"Disconnected {platform_display} — @{username}")
     return redirect("platforms:list")

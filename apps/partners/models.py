@@ -208,7 +208,8 @@ class Referral(models.Model):
     )
     referred_user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
         related_name="referred_by",
     )
     referral_code_used = models.CharField(max_length=30)

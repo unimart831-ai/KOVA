@@ -1,0 +1,24 @@
+{# Regeneration-in-progress card — polls until the post content changes. #}
+<div id="post-{{ post.id }}"
+     hx-get="{% url 'content:regenerate_status' post.id %}"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML"
+     class="bg-white dark:bg-gray-900 rounded-xl border border-kova-200 dark:border-kova-800 shadow-sm overflow-hidden">
+
+  <div class="h-1 bg-gradient-to-r from-kova-400 via-kova-500 to-kova-400 animate-pulse"></div>
+
+  <div class="p-4 flex items-center gap-3">
+    <div class="animate-spin rounded-full h-5 w-5 border-2 border-kova-500 border-t-transparent shrink-0" aria-hidden="true"></div>
+    <div class="min-w-0">
+      <p class="text-sm font-medium text-gray-900 dark:text-white">Regenerating post&hellip;</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+        {% if post.social_account %}
+          {{ post.social_account.get_platform_display }}
+        {% elif post.platform %}
+          {{ post.platform|title }}
+        {% endif %}
+        &middot; {{ post.content_text|truncatewords:12 }}
+      </p>
+    </div>
+  </div>
+</div>

@@ -54,6 +54,10 @@ class SocialAccount(models.Model):
     class Meta:
         unique_together = ["user", "platform", "platform_user_id"]
         ordering = ["platform", "username"]
+        indexes = [
+            models.Index(fields=["user", "is_active", "-last_synced_at"]),
+            models.Index(fields=["is_active", "token_expires_at"]),
+        ]
 
     def __str__(self):
         type_label = f" ({self.get_account_type_display()})" if self.account_type != "personal" else ""

@@ -227,7 +227,14 @@ def generate_carousel(
     if not slides:
         return []
 
-    platform = post.social_account.platform if post.social_account else "instagram"
+    # Filter out empty slides and cap at 10 to prevent runaway generation
+    slides = [s for s in slides if s.get("content", "").strip()]
+    if not slides:
+        logger.warning("Carousel slides all empty for post %s", post.id)
+        return []
+    slides = slides[:10]
+
+    platform = post.platform or (post.social_account.platform if post.social_account else "instagram")
     width, height = CANVAS_SIZES.get(platform, DEFAULT_CANVAS)
 
     # Use square for carousel-native platforms
@@ -289,7 +296,7 @@ def generate_carousel(
         # Save all slides as MediaAttachments
         for idx, img in enumerate(slide_images):
             buffer = BytesIO()
-            img.save(buffer, format="PNG", quality=95)
+            img.save(buffer, format="PNG", compress_level=6)
             buffer.seek(0)
 
             filename = f"carousel_{uuid.uuid4().hex[:8]}_s{idx + 1}.png"

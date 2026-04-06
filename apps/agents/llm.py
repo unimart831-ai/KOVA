@@ -325,6 +325,8 @@ def _generate_openai(
     response = client.chat.completions.create(**kwargs)
     duration = int((time.monotonic() - start) * 1000)
 
+    if not response.choices:
+        raise ValueError("LLM returned no choices")
     choice = response.choices[0]
     usage = response.usage
 
@@ -383,6 +385,8 @@ def _generate_openrouter(
     response = client.chat.completions.create(**kwargs)
     duration = int((time.monotonic() - start) * 1000)
 
+    if not response.choices:
+        raise ValueError("LLM returned no choices")
     choice = response.choices[0]
     usage = response.usage
 

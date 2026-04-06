@@ -1,0 +1,51 @@
+{# Post card header — platform accent bar + status badges #}
+
+{# ── Top bar: Platform color accent ── #}
+<div class="h-1 {% if post.social_account.platform == 'twitter' %}bg-sky-400{% elif post.social_account.platform == 'linkedin' %}bg-blue-600{% elif post.social_account.platform == 'instagram' %}bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400{% elif post.social_account.platform == 'tiktok' %}bg-gray-900{% elif post.social_account.platform == 'facebook' %}bg-blue-500{% elif post.social_account.platform == 'youtube' %}bg-red-600{% elif post.social_account.platform == 'pinterest' %}bg-red-500{% elif post.social_account.platform == 'threads' %}bg-gray-900 dark:bg-white{% elif post.social_account.platform == 'bluesky' %}bg-sky-500{% else %}bg-gray-300{% endif %}"></div>
+
+<div class="flex items-center justify-between mb-3">
+  <div class="flex items-center gap-2">
+    {% if post.social_account %}
+    <span class="flex-shrink-0 inline-flex items-center justify-center w-5 h-5" aria-hidden="true">
+      {% include "components/platform_icon.html" %}
+    </span>
+    {% endif %}
+    <div class="flex items-center gap-1.5">
+      {% if post.social_account %}
+        <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{ post.social_account.get_platform_display }}</span>
+        {% if post.social_account.platform == 'facebook' and post.social_account.metadata.pages %}
+          <span class="text-[9px] text-gray-400 dark:text-gray-500">· {{ post.social_account.metadata.pages.0.name }}</span>
+        {% elif post.social_account.platform == 'linkedin' %}
+          <span class="text-[9px] text-gray-400 dark:text-gray-500">· {{ post.social_account.display_name|default:post.social_account.username }}</span>
+        {% elif post.social_account.platform == 'tiktok' %}
+          <span class="text-[9px] text-gray-400 dark:text-gray-500">· @{{ post.social_account.username }}</span>
+        {% endif %}
+      {% elif post.platform %}
+        <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{ post.platform|title }}</span>
+      {% endif %}
+      {% if post.generated_by_agent %}
+        <span class="text-[9px] bg-kova-50 text-kova-600 dark:bg-kova-950 dark:text-kova-300 px-1.5 py-0.5 rounded-md font-semibold tracking-wide">AI</span>
+      {% endif %}
+      {% if post.media_status == 'generated' %}
+        <span class="text-[9px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 px-1.5 py-0.5 rounded-md font-medium">🖼️ AI image</span>
+      {% elif post.media_status == 'uploaded' %}
+        <span class="text-[9px] bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 px-1.5 py-0.5 rounded-md font-medium">📎 Uploaded</span>
+      {% elif post.media_status == 'pending' %}
+        <span class="text-[9px] bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400 px-1.5 py-0.5 rounded-md font-medium">⏳ Generating…</span>
+      {% elif post.media_status == 'failed' %}
+        <span class="text-[9px] bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400 px-1.5 py-0.5 rounded-md font-medium">⚠ Image failed</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="flex items-center gap-2">
+    {% if post.predicted_engagement_score %}
+      <div class="flex items-center gap-1 px-2 py-0.5 rounded-md {% if post.predicted_engagement_score >= 70 %}bg-green-50 dark:bg-green-950/50{% elif post.predicted_engagement_score >= 40 %}bg-yellow-50 dark:bg-yellow-950/50{% else %}bg-gray-50 dark:bg-gray-800{% endif %}">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="{% if post.predicted_engagement_score >= 70 %}text-green-500{% elif post.predicted_engagement_score >= 40 %}text-yellow-500{% else %}text-gray-400{% endif %}"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        <span class="text-[11px] font-bold tabular-nums {% if post.predicted_engagement_score >= 70 %}text-green-600{% elif post.predicted_engagement_score >= 40 %}text-yellow-600{% else %}text-gray-400{% endif %}">{{ post.predicted_engagement_score|floatformat:0 }}</span>
+      </div>
+    {% endif %}
+    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold {% if post.status == 'published' %}bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300{% elif post.status == 'scheduled' or post.status == 'approved' %}bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300{% elif post.status == 'pending_approval' %}bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300{% elif post.status == 'failed' %}bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300{% elif post.status == 'rejected' %}bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-300{% else %}bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-300{% endif %}">
+      {{ post.get_status_display }}
+    </span>
+  </div>
+</div>

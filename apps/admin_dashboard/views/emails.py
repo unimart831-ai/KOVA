@@ -13,7 +13,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from apps.admin_dashboard.decorators import staff_required
+from apps.admin_dashboard.decorators import senior_staff_required, staff_required
 from apps.emails.models import EmailLog
 
 
@@ -191,10 +191,10 @@ def send_test_email(request):
     return JsonResponse({"ok": True, "message": f"Test email sent to {request.user.email}"})
 
 
-@staff_required
+@senior_staff_required
 @require_POST
 def send_broadcast(request):
-    """Send a feature announcement or promotional email to all active users."""
+    """Send a feature announcement or promotional email to all active users. Requires senior staff."""
     from apps.accounts.models import UserProfile
     from apps.emails.tasks import send_feature_announcement_email
 

@@ -47,7 +47,7 @@ class Competitor(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
-        "accounts.User", on_delete=models.CASCADE, related_name="competitors"
+        "accounts.User", on_delete=models.SET_NULL, null=True, related_name="competitors"
     )
     name = models.CharField(max_length=255, help_text="Competitor brand/business name")
     website = models.URLField(blank=True)
@@ -127,10 +127,10 @@ class CompetitorAnalysis(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     competitor = models.ForeignKey(
-        Competitor, on_delete=models.CASCADE, related_name="analyses"
+        Competitor, on_delete=models.SET_NULL, null=True, related_name="analyses"
     )
     user = models.ForeignKey(
-        "accounts.User", on_delete=models.CASCADE, related_name="competitor_analyses"
+        "accounts.User", on_delete=models.SET_NULL, null=True, related_name="competitor_analyses"
     )
     analysis_type = models.CharField(
         max_length=20, choices=AnalysisType.choices, default=AnalysisType.FULL
@@ -224,6 +224,10 @@ class CompetitorInsight(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "is_acted_on", "-created_at"]),
+            models.Index(fields=["user", "priority", "-created_at"]),
+        ]
 
     def __str__(self):
         return f"[{self.insight_type}] {self.title}"
@@ -276,6 +280,11 @@ class Conversion(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["utm_campaign", "-created_at"]),
+            models.Index(fields=["user", "conversion_type", "-created_at"]),
+        ]
 
     def __str__(self):
         amt = f" ${self.revenue}" if self.revenue else ""

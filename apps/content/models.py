@@ -2,6 +2,8 @@ import uuid
 from django.conf import settings
 from django.db import models
 
+from apps.accounts.soft_delete import SoftDeleteMixin
+
 
 class ContentSeed(models.Model):
     """A raw idea dropped by the user — the starting point for the Create Agent."""
@@ -32,12 +34,16 @@ class ContentSeed(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "status", "-created_at"]),
+            models.Index(fields=["user", "-created_at"]),
+        ]
 
     def __str__(self):
         return f"Seed: {self.idea[:60]}"
 
 
-class Post(models.Model):
+class Post(SoftDeleteMixin, models.Model):
     """A social media post — draft, scheduled, or published."""
 
     class Status(models.TextChoices):
@@ -76,7 +82,11 @@ class Post(models.Model):
         ContentSeed, on_delete=models.SET_NULL, null=True, blank=True, related_name="posts",
     )
     social_account = models.ForeignKey(
-        "platforms.SocialAccount", on_delete=models.CASCADE, related_name="posts"
+        "platforms.SocialAccount", on_delete=models.SET_NULL, null=True, blank=True, related_name="posts",
+    )
+    platform = models.CharField(
+        max_length=20, blank=True, db_index=True,
+        help_text="Denormalized platform name — preserved when social_account is disconnected.",
     )
     content_text = models.TextField()
     content_type = models.CharField(max_length=20, choices=ContentType.choices, default=ContentType.ORIGINAL)
@@ -84,6 +94,10 @@ class Post(models.Model):
 
     # Media
     media_urls = models.JSONField(default=list, blank=True)
+    media_prompt = models.TextField(
+        blank=True,
+        help_text="AI image prompt used for generation. Stored for retry capability.",
+    )
     media_status = models.CharField(
         max_length=20,
         choices=MediaStatus.choices,
@@ -138,6 +152,13 @@ class Post(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "status", "-created_at"]),
+            models.Index(fields=["social_account", "status", "-scheduled_at"]),
+            models.Index(fields=["user", "-scheduled_at"]),
+            models.Index(fields=["user", "media_status"]),
+            models.Index(fields=["seed", "status"]),
+        ]
 
     def __str__(self):
         return f"{self.get_status_display()} — {self.content_text[:60]}"
@@ -150,8 +171,8 @@ class Post(models.Model):
     @property
     def needs_media(self):
         """True if this post's platform requires media and none is attached."""
-        platform = self.social_account.platform if self.social_account else ""
-        return platform in self.MEDIA_REQUIRED_PLATFORMS and not self.has_media
+        plat = self.platform or (self.social_account.platform if self.social_account else "")
+        return plat in self.MEDIA_REQUIRED_PLATFORMS and not self.has_media
 
     @property
     def media_warning(self):
@@ -159,8 +180,11 @@ class Post(models.Model):
         if self.media_status == self.MediaStatus.FAILED:
             return "Image generation failed. Upload an image or retry."
         if self.needs_media:
-            platform = self.social_account.get_platform_display() if self.social_account else "This platform"
-            return f"{platform} requires an image. Upload one before approving."
+            if self.social_account:
+                platform_name = self.social_account.get_platform_display()
+            else:
+                platform_name = (self.platform or "This platform").title()
+            return f"{platform_name} requires an image. Upload one before approving."
         return ""
 
 
@@ -183,7 +207,11 @@ class ABTest(models.Model):
         ContentSeed, on_delete=models.SET_NULL, null=True, blank=True, related_name="ab_tests",
     )
     social_account = models.ForeignKey(
-        "platforms.SocialAccount", on_delete=models.CASCADE, related_name="ab_tests",
+        "platforms.SocialAccount", on_delete=models.SET_NULL, null=True, blank=True, related_name="ab_tests",
+    )
+    platform = models.CharField(
+        max_length=20, blank=True, db_index=True,
+        help_text="Denormalized platform name — preserved when social_account is disconnected.",
     )
     variant_count = models.PositiveSmallIntegerField(default=3)
     status = models.CharField(
@@ -235,3 +263,28 @@ class MediaAttachment(models.Model):
 
     def __str__(self):
         return f"Media for {self.post_id} ({self.file_type})"
+
+
+class PostVersion(models.Model):
+    """Immutable snapshot of a post's content, created on each edit or regeneration."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="versions")
+    version_number = models.PositiveIntegerField()
+    content_text = models.TextField()
+    source = models.CharField(
+        max_length=20,
+        choices=[("user_edit", "User Edit"), ("regeneration", "AI Regeneration"), ("creation", "Created")],
+        default="user_edit",
+    )
+    edited_by = models.ForeignKey(
+        "accounts.User", on_delete=models.SET_NULL, null=True, blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-version_number"]
+        unique_together = [("post", "version_number")]
+
+    def __str__(self):
+        return f"v{self.version_number} of {self.post_id}"

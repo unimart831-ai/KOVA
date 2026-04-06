@@ -21,7 +21,13 @@ class Interaction(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="interactions")
-    social_account = models.ForeignKey("platforms.SocialAccount", on_delete=models.CASCADE, related_name="interactions")
+    social_account = models.ForeignKey(
+        "platforms.SocialAccount", on_delete=models.SET_NULL, null=True, blank=True, related_name="interactions",
+    )
+    platform = models.CharField(
+        max_length=20, blank=True, db_index=True,
+        help_text="Denormalized platform name — preserved when social_account is disconnected.",
+    )
     post = models.ForeignKey("content.Post", on_delete=models.SET_NULL, null=True, blank=True, related_name="interactions")
     interaction_type = models.CharField(max_length=20, choices=InteractionType.choices)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW, db_index=True)
@@ -40,9 +46,11 @@ class Interaction(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-
-    def __str__(self):
-        return f"{self.get_interaction_type_display()} from {self.author_name}"
+        indexes = [
+            models.Index(fields=["user", "status", "-created_at"]),
+            models.Index(fields=["social_account", "-created_at"]),
+            models.Index(fields=["user", "sentiment", "-created_at"]),
+        ]
 
 
 class Superfan(models.Model):

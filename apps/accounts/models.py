@@ -2,8 +2,11 @@ import uuid
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from apps.accounts.soft_delete import SoftDeleteMixin, SoftDeleteUserManager
+from apps.platforms.encryption import EncryptedTokenField
 
-class User(AbstractUser):
+
+class User(SoftDeleteMixin, AbstractUser):
     """Custom user model for Kova Agent."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -13,6 +16,9 @@ class User(AbstractUser):
     onboarding_completed = models.BooleanField(default=False)
     daily_brief_time = models.TimeField(default="09:00:00")
     avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
+
+    # Override the default SoftDeleteManager with UserManager-compatible version
+    objects = SoftDeleteUserManager()
 
     # allauth uses email as login
     USERNAME_FIELD = "email"
@@ -156,11 +162,10 @@ class UserProfile(models.Model):
         default="none",
     )
     # Stripe fields (kept for future international billing)
-    stripe_customer_id = models.CharField(max_length=255, blank=True)
+    stripe_customer_id = EncryptedTokenField(blank=True)
     stripe_subscription_id = models.CharField(max_length=255, blank=True)
     # M-Pesa fields
-    mpesa_phone = models.CharField(
-        max_length=15,
+    mpesa_phone = EncryptedTokenField(
         blank=True,
         help_text="Kenyan phone number for M-Pesa payments (254XXXXXXXXX)",
     )
@@ -190,6 +195,12 @@ class UserProfile(models.Model):
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["subscription_status", "plan"]),
+            models.Index(fields=["payment_provider", "subscription_status"]),
+        ]
 
     def __str__(self):
         return f"Profile: {self.user}"
