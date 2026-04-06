@@ -1,0 +1,62 @@
+<div data-item-id="{{ item.pk }}"
+     class="relative group rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+     id="item-{{ item.pk }}">
+  <!-- Image -->
+  <img src="{{ item.image_url }}" alt="{{ item.caption|default:'Queue photo' }}"
+       class="w-full aspect-square object-cover">
+
+  <!-- Drag handle -->
+  <div class="drag-handle absolute top-1 left-1 w-6 h-6 rounded bg-black/40 flex items-center justify-center cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity">
+    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
+    </svg>
+  </div>
+
+  <!-- Order badge -->
+  <div class="absolute top-1 right-1 w-5 h-5 rounded-full bg-kova-600 text-white text-[10px] font-bold flex items-center justify-center">
+    {{ item.order|add:1 }}
+  </div>
+
+  <!-- Hover actions -->
+  <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end opacity-0 group-hover:opacity-100">
+    <div class="w-full p-2 flex gap-1">
+      <!-- Edit caption -->
+      <button @click="$refs['caption_{{ item.pk }}'].classList.toggle('hidden')"
+              class="flex-1 px-1.5 py-1 text-[10px] font-medium bg-white rounded hover:bg-gray-100 text-gray-700 truncate">
+        ✏️ {{ item.caption|truncatechars:15|default:"Add caption" }}
+      </button>
+      <!-- Delete -->
+      <form method="post" action="{% url 'media_queue:item_delete' item_id=item.pk %}"
+            hx-post="{% url 'media_queue:item_delete' item_id=item.pk %}"
+            hx-target="#item-{{ item.pk }}"
+            hx-swap="outerHTML"
+            hx-confirm="Remove this photo from the queue?">
+        {% csrf_token %}
+        <button class="px-1.5 py-1 text-[10px] bg-red-500 text-white rounded hover:bg-red-600">🗑</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scheduled time -->
+  {% if item.scheduled_for %}
+  <div class="absolute bottom-0 left-0 right-0 px-2 py-1 bg-gradient-to-t from-black/60 to-transparent group-hover:hidden">
+    <p class="text-[10px] text-white">{{ item.scheduled_for|date:"D M j · g:iA" }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Caption edit (hidden by default) -->
+  <div x-ref="caption_{{ item.pk }}" class="hidden absolute inset-0 bg-black/70 p-2 flex flex-col justify-center">
+    <form method="post" action="{% url 'media_queue:item_edit' item_id=item.pk %}"
+          hx-post="{% url 'media_queue:item_edit' item_id=item.pk %}"
+          hx-target="#item-{{ item.pk }}"
+          hx-swap="outerHTML">
+      {% csrf_token %}
+      <textarea name="caption" rows="3"
+                class="w-full text-xs rounded border-gray-600 bg-gray-800 text-white placeholder-gray-400 resize-none"
+                placeholder="Optional caption...">{{ item.caption }}</textarea>
+      <button type="submit" class="mt-1 w-full px-2 py-1 text-xs bg-kova-600 text-white rounded hover:bg-kova-700 font-medium">
+        Save
+      </button>
+    </form>
+  </div>
+</div>

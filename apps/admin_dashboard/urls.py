@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, content, costs, emails, engage, help, llm, logs, overview, partners, partials, platforms, system, teams, users
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, content, costs, emails, engage, help, llm, logs, media_queue, overview, partners, partials, platforms, system, teams, users
 
 app_name = "admin_dashboard"
 
@@ -103,4 +103,10 @@ urlpatterns = [
     path("help/", help.help_overview, name="help_overview"),
     path("help/articles/", help.help_article_views, name="help_article_views"),
     path("help/log/", help.help_view_log, name="help_view_log"),
+
+    # Media Queue
+    path("media-queue/", media_queue.media_queue_overview, name="media_queue_overview"),
+    path("media-queue/<uuid:pk>/", media_queue.media_queue_detail, name="media_queue_detail"),
+    path("media-queue/<uuid:pk>/toggle/", media_queue.media_queue_toggle, name="media_queue_toggle"),
+    path("media-queue/process-now/", media_queue.media_queue_process_now, name="media_queue_process_now"),
 ]

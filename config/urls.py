@@ -60,6 +60,7 @@ urlpatterns = [
     path("emails/", include("apps.emails.urls")),
     path("help/", include("apps.help.urls")),
     path("teams/", include("apps.teams.urls")),
+    path("media-queue/", include("apps.media_queue.urls")),
     path("dashboard/", include("apps.admin_dashboard.urls")),
     path("api/v1/", include("apps.api.urls")),
 ]

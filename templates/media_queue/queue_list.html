@@ -1,0 +1,97 @@
+{% extends "layouts/app.html" %}
+{% block title %}Media Queue — Kova Agent{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-8">
+
+  <!-- Header -->
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Media Queue</h1>
+    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      Upload your photos, set a rhythm, and Kova publishes them on schedule.
+    </p>
+  </div>
+
+  <!-- Active Queues -->
+  {% if queues %}
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {% for queue in queues %}
+    <a href="{% url 'media_queue:detail' queue_id=queue.pk %}"
+       class="block p-5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-kova-400 dark:hover:border-kova-500 transition-colors group">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center
+                      {% if queue.platform == 'instagram' %}bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400
+                      {% elif queue.platform == 'facebook' %}bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400
+                      {% elif queue.platform == 'twitter' %}bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400
+                      {% elif queue.platform == 'linkedin' %}bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400
+                      {% elif queue.platform == 'tiktok' %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300
+                      {% else %}bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400{% endif %}">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+          <span class="font-semibold text-gray-900 dark:text-white text-sm">{{ queue.name|default:queue.social_account.get_platform_display }}</span>
+        </div>
+        {% if queue.is_active %}
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Active</span>
+        {% else %}
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">Paused</span>
+        {% endif %}
+      </div>
+      <div class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+        <span>📷 {{ queue.queued_count }} queued</span>
+        <span>✅ {{ queue.published_count }} published</span>
+      </div>
+      {% if queue.next_item and queue.next_item.scheduled_for %}
+      <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">
+        Next: {{ queue.next_item.scheduled_for|date:"D, M j · g:iA" }}
+      </p>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Add New Queue -->
+  {% if available_accounts %}
+  <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Create a queue</h2>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Pick a connected platform to start a photo queue.</p>
+    <div class="flex flex-wrap gap-3">
+      {% for account in available_accounts %}
+      <form method="post" action="{% url 'media_queue:create' %}">
+        {% csrf_token %}
+        <input type="hidden" name="social_account_id" value="{{ account.pk }}">
+        <button type="submit"
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <span class="w-5 h-5 rounded flex items-center justify-center text-xs
+                        {% if account.platform == 'instagram' %}bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400
+                        {% elif account.platform == 'facebook' %}bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400
+                        {% elif account.platform == 'twitter' %}bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400
+                        {% elif account.platform == 'linkedin' %}bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400
+                        {% else %}bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400{% endif %}">
+            📷
+          </span>
+          {{ account.get_platform_display }}
+          {% if account.username %}<span class="text-gray-400">@{{ account.username }}</span>{% endif %}
+        </button>
+      </form>
+      {% endfor %}
+    </div>
+  </div>
+  {% elif not queues %}
+  <div class="text-center py-12">
+    <svg class="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+    </svg>
+    <h3 class="mt-3 text-sm font-medium text-gray-900 dark:text-white">No queues yet</h3>
+    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      Connect a social platform first, then create a photo queue.
+    </p>
+    <a href="{% url 'platforms:list' %}" class="mt-4 inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-kova-600 text-white hover:bg-kova-700 transition-colors">
+      Connect Platform
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

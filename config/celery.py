@@ -48,6 +48,16 @@ app.conf.task_routes = {
     "agents.measure_agent_outcomes": {"queue": "low"},
     "analyze-all-competitors": {"queue": "low"},
     "billing.check_mpesa_subscriptions": {"queue": "low"},
+    # Media Queue — publish user photos on schedule
+    "media_queue.process_queues": {"queue": "critical"},
+}
+
+# ── Periodic beat schedule ───────────────────────────────────────────────────
+app.conf.beat_schedule = {
+    "process-media-queues-every-5-min": {
+        "task": "media_queue.process_queues",
+        "schedule": 300.0,  # every 5 minutes
+    },
 }
 
 # Auto-discover tasks in all installed apps (looks for tasks.py in each app)

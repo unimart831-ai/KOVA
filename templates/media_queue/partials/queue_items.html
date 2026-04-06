@@ -1,0 +1,7 @@
+{% for item in queued_items %}
+{% include "media_queue/partials/queue_item_card.html" with item=item queue=queue %}
+{% empty %}
+<div class="col-span-full text-center py-8">
+  <p class="text-sm text-gray-400 dark:text-gray-500">No photos in queue. Upload some above!</p>
+</div>
+{% endfor %}
