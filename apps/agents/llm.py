@@ -283,9 +283,14 @@ def generate(
             if attempt < len(models_to_try) - 1:
                 time.sleep(min(2 ** attempt, 4))
 
-    # All attempts exhausted — return empty or re-raise
+    # All attempts exhausted — return empty LLMResponse so the caller's
+    # own retry loop can handle it (create_agent checks for empty content).
+    # Raising here would bypass the caller's retry/error-message logic.
     if last_exc:
-        raise last_exc
+        logger.error(
+            "All %d LLM model attempts failed. Last error: %s",
+            len(models_to_try), last_exc,
+        )
     return LLMResponse(content="", model=model)
 
 
@@ -327,6 +332,14 @@ def _generate_openai(
     )
 
 
+# Models known NOT to support response_format on OpenRouter
+_NO_JSON_MODE_MODELS = {
+    "google/gemma-3-1b-it:free",
+    "meta-llama/llama-3.2-3b-instruct:free",
+    "mistralai/mistral-7b-instruct:free",
+}
+
+
 def _generate_openrouter(
     prompt: str, system: str, model: str,
     temperature: float, max_tokens: int, json_mode: bool,
@@ -336,8 +349,19 @@ def _generate_openrouter(
     start = time.monotonic()
 
     messages = []
+    # For models that don't support response_format, inject JSON instruction
+    # into the system prompt instead.
+    use_json_param = json_mode and model not in _NO_JSON_MODE_MODELS
+    json_instruction = ""
+    if json_mode and not use_json_param:
+        json_instruction = (
+            "\n\nIMPORTANT: You MUST respond with valid JSON only. "
+            "No markdown fences, no prose, no explanation. Just the raw JSON object."
+        )
     if system:
-        messages.append({"role": "system", "content": system})
+        messages.append({"role": "system", "content": system + json_instruction})
+    elif json_instruction:
+        messages.append({"role": "system", "content": json_instruction.strip()})
     messages.append({"role": "user", "content": prompt})
 
     kwargs = {
@@ -346,7 +370,7 @@ def _generate_openrouter(
         "temperature": temperature,
         "max_tokens": max_tokens,
     }
-    if json_mode:
+    if use_json_param:
         kwargs["response_format"] = {"type": "json_object"}
 
     response = client.chat.completions.create(**kwargs)
