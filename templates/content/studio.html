@@ -24,9 +24,52 @@
         {% csrf_token %}
         <div>
           <label for="idea-input" class="label">What do you want to post about?</label>
-          <textarea id="idea-input" name="idea" rows="4" required
-                    placeholder="e.g. How small teams are using AI for marketing without losing their voice…"
-                    class="input text-base min-h-[120px] resize-y"></textarea>
+          <div class="relative">
+            <textarea id="idea-input" name="idea" rows="4" required
+                      x-ref="ideaInput"
+                      placeholder="e.g. How small teams are using AI for marketing without losing their voice…"
+                      class="input text-base min-h-[120px] resize-y pr-14"></textarea>
+            {# ── Voice memo button (overlaid on textarea) ── #}
+            <div class="absolute right-2 bottom-2" x-data="voiceRecorder()" @voice-transcribed.window="$refs.ideaInput.value = $event.detail.text; $refs.ideaInput.dispatchEvent(new Event('input'))">
+              {# Idle state — mic button #}
+              <button type="button"
+                      x-show="state === 'idle'"
+                      @click="startRecording()"
+                      class="group/mic flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-kova-50 dark:hover:bg-kova-950 border border-gray-200 dark:border-gray-700 hover:border-kova-300 dark:hover:border-kova-700 transition-all"
+                      title="Record a voice memo">
+                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover/mic:text-kova-600 dark:group-hover/mic:text-kova-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                </svg>
+                <span class="text-[10px] font-medium text-gray-400 dark:text-gray-500 hidden sm:inline">Voice</span>
+              </button>
+
+              {# Recording state — pulsing red dot + timer #}
+              <div x-show="state === 'recording'" x-cloak
+                   class="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-800 animate-pulse">
+                <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+                <span class="text-xs font-semibold text-red-700 dark:text-red-400 tabular-nums" x-text="recordingTime"></span>
+                <button type="button" @click="stopRecording()"
+                        class="ml-1 px-2 py-0.5 text-[10px] font-bold text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/60 hover:bg-red-200 dark:hover:bg-red-900 rounded transition-colors">
+                  STOP
+                </button>
+              </div>
+
+              {# Transcribing state — spinner #}
+              <div x-show="state === 'transcribing'" x-cloak
+                   class="flex items-center gap-2 px-3 py-2 rounded-lg bg-kova-50 dark:bg-kova-950/40 border border-kova-300 dark:border-kova-800">
+                <svg class="w-4 h-4 text-kova-600 dark:text-kova-400 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                <span class="text-xs font-medium text-kova-700 dark:text-kova-300">Transcribing…</span>
+              </div>
+
+              {# Error state #}
+              <div x-show="state === 'error'" x-cloak
+                   class="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-800">
+                <span class="text-xs text-red-600 dark:text-red-400" x-text="errorMsg"></span>
+                <button type="button" @click="state = 'idle'"
+                        class="text-[10px] text-red-500 hover:text-red-700 underline">Dismiss</button>
+              </div>
+            </div>
+          </div>
         </div>
         <div x-show="showNotes" x-cloak class="space-y-2">
           <label for="notes-input" class="label">Extra context <span class="text-gray-400 font-normal">(optional)</span></label>
@@ -208,6 +251,116 @@ function seedForm() {
         this.selectedPlatforms.splice(idx, 1);
       } else {
         this.selectedPlatforms.push(platform);
+      }
+    }
+  }
+}
+
+function voiceRecorder() {
+  return {
+    state: 'idle',       // idle | recording | transcribing | error
+    errorMsg: '',
+    recordingTime: '0:00',
+    _mediaRecorder: null,
+    _audioChunks: [],
+    _timerInterval: null,
+    _startedAt: null,
+
+    async startRecording() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        // Pick a supported MIME type
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : MediaRecorder.isTypeSupported('audio/webm')
+            ? 'audio/webm'
+            : 'audio/ogg';
+
+        this._audioChunks = [];
+        this._mediaRecorder = new MediaRecorder(stream, { mimeType });
+
+        this._mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) this._audioChunks.push(e.data);
+        };
+
+        this._mediaRecorder.onstop = () => {
+          stream.getTracks().forEach(t => t.stop());
+          this._sendAudio();
+        };
+
+        this._mediaRecorder.start(250); // collect in 250ms chunks
+        this.state = 'recording';
+        this._startedAt = Date.now();
+        this._startTimer();
+
+      } catch (err) {
+        if (err.name === 'NotAllowedError') {
+          this.errorMsg = 'Microphone access denied. Please allow mic access in your browser.';
+        } else {
+          this.errorMsg = 'Could not start recording: ' + err.message;
+        }
+        this.state = 'error';
+      }
+    },
+
+    stopRecording() {
+      if (this._mediaRecorder && this._mediaRecorder.state === 'recording') {
+        this._mediaRecorder.stop();
+      }
+      this._stopTimer();
+    },
+
+    async _sendAudio() {
+      this.state = 'transcribing';
+
+      const blob = new Blob(this._audioChunks, { type: this._mediaRecorder.mimeType });
+      const formData = new FormData();
+      formData.append('audio', blob, 'voice-memo.webm');
+      formData.append('mode', 'transcribe');
+
+      try {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const resp = await fetch('{% url "content:voice_to_seed" %}', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrfToken },
+          body: formData,
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok || data.error) {
+          this.errorMsg = data.error || 'Transcription failed.';
+          this.state = 'error';
+          return;
+        }
+
+        // Dispatch event — the textarea picks it up via @voice-transcribed
+        window.dispatchEvent(new CustomEvent('voice-transcribed', {
+          detail: { text: data.text, duration: data.duration }
+        }));
+        this.state = 'idle';
+
+      } catch (err) {
+        this.errorMsg = 'Network error: ' + err.message;
+        this.state = 'error';
+      }
+    },
+
+    _startTimer() {
+      this.recordingTime = '0:00';
+      this._timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - this._startedAt) / 1000);
+        const m = Math.floor(elapsed / 60);
+        const s = String(elapsed % 60).padStart(2, '0');
+        this.recordingTime = m + ':' + s;
+      }, 500);
+    },
+
+    _stopTimer() {
+      if (this._timerInterval) {
+        clearInterval(this._timerInterval);
+        this._timerInterval = null;
       }
     }
   }

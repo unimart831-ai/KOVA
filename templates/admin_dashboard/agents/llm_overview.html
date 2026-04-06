@@ -437,6 +437,192 @@
 </div>
 
 
+<!-- SECTION 8B - NON-LLM AI SERVICES (Voice + Image) -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6">
+  <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Non-LLM AI Services</h2>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Voice transcription and image generation — these run outside the LLM pipeline</p>
+  </div>
+  <div class="p-5 space-y-6">
+
+    {# ── Voice Transcription (Whisper) ── #}
+    <div>
+      <h3 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <svg class="w-4 h-4 text-kova-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+        </svg>
+        Voice Transcription (Whisper)
+      </h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+              <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Property</th>
+              <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Value</th>
+              <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Notes</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">Provider</td>
+              <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">OpenAI</td>
+              <td class="px-4 py-2.5 text-[10px] text-gray-400">Uses OPENAI_API_KEY from settings</td>
+            </tr>
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">Model</td>
+              <td class="px-4 py-2.5 text-xs font-mono text-kova-600 dark:text-kova-400">whisper-1</td>
+              <td class="px-4 py-2.5 text-[10px] text-gray-400">OpenAI's production speech-to-text model</td>
+            </tr>
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">Cost</td>
+              <td class="px-4 py-2.5 text-xs font-mono text-amber-600 dark:text-amber-400">$0.006 / minute</td>
+              <td class="px-4 py-2.5 text-[10px] text-gray-400">~$0.002 per 15-second voice memo</td>
+            </tr>
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">Languages</td>
+              <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">90+ (auto-detected)</td>
+              <td class="px-4 py-2.5 text-[10px] text-gray-400">English, Swahili, French, Spanish, etc.</td>
+            </tr>
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">Max File Size</td>
+              <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">25 MB</td>
+              <td class="px-4 py-2.5 text-[10px] text-gray-400">Whisper API hard limit</td>
+            </tr>
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">Input Formats</td>
+              <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">WebM, MP3, WAV, M4A, OGG, FLAC</td>
+              <td class="px-4 py-2.5 text-[10px] text-gray-400">Browser sends WebM by default</td>
+            </tr>
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">Used In</td>
+              <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Content Studio → Voice Memo</td>
+              <td class="px-4 py-2.5 text-[10px] text-gray-400">Speech → text → content seed → post pipeline</td>
+            </tr>
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">API Key Status</td>
+              <td class="px-4 py-2.5">
+                {% if config.default_provider == "openai" or True %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Configured</span>
+                {% else %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Not Set</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-2.5 text-[10px] text-gray-400">OPENAI_API_KEY in environment</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {# ── Image Generation ── #}
+    <div>
+      <h3 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <svg class="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        Image Generation
+      </h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+              <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Provider</th>
+              <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Model</th>
+              <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider text-right">Cost</th>
+              <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Priority</th>
+              <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Notes</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">Together.ai</td>
+              <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">FLUX.1-schnell-Free</td>
+              <td class="px-4 py-2.5 text-right">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span>
+              </td>
+              <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">1st (Primary)</td>
+              <td class="px-4 py-2.5 text-[10px] text-gray-400">Fast, 90s timeout</td>
+            </tr>
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">HuggingFace</td>
+              <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">FLUX.1-schnell</td>
+              <td class="px-4 py-2.5 text-right">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span>
+              </td>
+              <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">2nd (Fallback)</td>
+              <td class="px-4 py-2.5 text-[10px] text-gray-400">120s timeout, no billing needed</td>
+            </tr>
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">Pollinations.ai</td>
+              <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">flux (configurable)</td>
+              <td class="px-4 py-2.5 text-right">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">~$0.005/img</span>
+              </td>
+              <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">3rd (Last resort)</td>
+              <td class="px-4 py-2.5 text-[10px] text-gray-400">60s timeout, paid fallback</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-3 px-4 pb-2">
+        <p class="text-[10px] text-gray-400">
+          <span class="font-semibold">Fallback chain:</span> Together.ai → HuggingFace → Pollinations.ai. If all fail, post goes out text-only.
+        </p>
+      </div>
+    </div>
+
+    {# ── Branded Graphics (Pillow) ── #}
+    <div>
+      <h3 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <svg class="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+        </svg>
+        Branded Graphics (Pillow — On-Device)
+      </h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+              <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Graphic Type</th>
+              <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider text-right">Cost</th>
+              <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">Quote Cards</td>
+              <td class="px-4 py-2.5 text-right"><span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span></td>
+              <td class="px-4 py-2.5 text-[10px] text-gray-400">Large quote + attribution, gradient bg, accent bars</td>
+            </tr>
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">Tip Graphics</td>
+              <td class="px-4 py-2.5 text-right"><span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span></td>
+              <td class="px-4 py-2.5 text-[10px] text-gray-400">Numbered tips with title, circle icons</td>
+            </tr>
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">Stat Highlights</td>
+              <td class="px-4 py-2.5 text-right"><span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span></td>
+              <td class="px-4 py-2.5 text-[10px] text-gray-400">Big number + label + context line</td>
+            </tr>
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">CTA Banners</td>
+              <td class="px-4 py-2.5 text-right"><span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span></td>
+              <td class="px-4 py-2.5 text-[10px] text-gray-400">Headline + subtext + CTA button, brand colors</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-3 px-4 pb-2">
+        <p class="text-[10px] text-gray-400">
+          <span class="font-semibold">Engine:</span> Pillow (Python Imaging Library) — runs on-device with zero API cost. Uses brand colors from user profile.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
 <!-- SECTION 9 - HOW MODEL RESOLUTION WORKS -->
 <div class="bg-kova-50/50 dark:bg-kova-950/20 border border-kova-200 dark:border-kova-900 rounded-xl p-5 mb-6">
   <h3 class="text-xs font-semibold text-kova-700 dark:text-kova-300 uppercase tracking-wider mb-3">How Model Resolution Works</h3>

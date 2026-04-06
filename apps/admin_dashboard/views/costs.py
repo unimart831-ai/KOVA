@@ -53,12 +53,47 @@ MODEL_PRICING = {
     "deepseek-r1": {"input": 0.55, "output": 2.19, "label": "DeepSeek R1"},
 }
 
+# ── Non-LLM AI service pricing ──────────────────────────────────────
+NON_LLM_PRICING = {
+    "whisper-1": {
+        "label": "OpenAI Whisper (Voice Memo)",
+        "cost_per_minute": 0.006,
+        "avg_memo_seconds": 20,
+        "provider": "OpenAI",
+    },
+    "image_together": {
+        "label": "Together.ai FLUX.1-schnell",
+        "cost_per_image": 0.00,
+        "provider": "Together.ai",
+        "priority": 1,
+    },
+    "image_huggingface": {
+        "label": "HuggingFace FLUX.1-schnell",
+        "cost_per_image": 0.00,
+        "provider": "HuggingFace",
+        "priority": 2,
+    },
+    "image_pollinations": {
+        "label": "Pollinations.ai Flux",
+        "cost_per_image": 0.005,
+        "provider": "Pollinations.ai",
+        "priority": 3,
+    },
+    "graphics_pillow": {
+        "label": "Branded Graphics (Pillow)",
+        "cost_per_image": 0.00,
+        "provider": "On-device (Pillow)",
+        "types": ["Quote Cards", "Tip Graphics", "Stat Highlights", "CTA Banners"],
+    },
+}
+
 # Default per-plan token estimates (from cost analysis doc)
+# voice_memos = estimated monthly voice memo recordings per user
 PLAN_TOKEN_ESTIMATES = {
-    "starter": {"input": 55_000, "output": 50_000, "images": 5},
-    "growth": {"input": 260_000, "output": 220_000, "images": 50},
-    "pro": {"input": 1_100_000, "output": 900_000, "images": 200},
-    "agency": {"input": 2_200_000, "output": 1_800_000, "images": 500},
+    "starter": {"input": 55_000, "output": 50_000, "images": 5, "voice_memos": 5},
+    "growth": {"input": 260_000, "output": 220_000, "images": 50, "voice_memos": 20},
+    "pro": {"input": 1_100_000, "output": 900_000, "images": 200, "voice_memos": 50},
+    "agency": {"input": 2_200_000, "output": 1_800_000, "images": 500, "voice_memos": 100},
 }
 
 # Infrastructure base costs (USD/month)
@@ -268,12 +303,21 @@ def cost_overview(request):
             plan_total_cost += c
 
         avg_cost_per_user = plan_total_cost / active_count if active_count else 0
-        # Image cost estimate
+        # Image cost estimate (paid fallback only — primary providers are free)
         est = PLAN_TOKEN_ESTIMATES.get(plan_code, {})
         image_cost = est.get("images", 0) * INFRA_COSTS["image_cost_paid"] if plan_code != "starter" else 0
+
+        # Voice cost estimate (Whisper @ $0.006/min, avg ~20s memo)
+        whisper = NON_LLM_PRICING["whisper-1"]
+        voice_cost = (
+            est.get("voice_memos", 0)
+            * (whisper["avg_memo_seconds"] / 60)
+            * whisper["cost_per_minute"]
+        )
+
         infra_per_user = _calculate_infra_cost_per_user(total_active_users) if total_active_users > 0 else 2.0
 
-        total_cost_per_user = avg_cost_per_user + image_cost + infra_per_user
+        total_cost_per_user = avg_cost_per_user + image_cost + voice_cost + infra_per_user
         margin = ((price_usd - total_cost_per_user) / price_usd * 100) if price_usd > 0 else 0
         profit = price_usd - total_cost_per_user
 
@@ -292,6 +336,7 @@ def cost_overview(request):
             "avg_output_tokens": round(avg_output),
             "llm_cost": round(avg_cost_per_user, 4),
             "image_cost": round(image_cost, 4),
+            "voice_cost": round(voice_cost, 4),
             "infra_cost": round(infra_per_user, 4),
             "total_cost": round(total_cost_per_user, 4),
             "profit": round(profit, 4),
@@ -414,6 +459,7 @@ def cost_overview(request):
         # Config
         "config": config,
         "model_pricing_json": {k: v for k, v in MODEL_PRICING.items()},
+        "non_llm_pricing": NON_LLM_PRICING,
         "plan_limits": PLAN_LIMITS,
         "infra_costs": INFRA_COSTS,
         "plan_token_estimates_json": PLAN_TOKEN_ESTIMATES,
@@ -462,6 +508,7 @@ def cost_calculator(request):
     fast_input = _float("fast_input_price", 0.26)
     fast_output = _float("fast_output_price", 0.38)
     image_cost_per = _float("image_cost", 0.005)
+    voice_cost_per_min = _float("voice_cost_per_min", 0.006)
     hosting_cost = _float("hosting_cost", 20.0)
 
     results = []
@@ -497,8 +544,10 @@ def cost_calculator(request):
 
         images = est.get("images", 0)
         img_cost = images * (0 if plan_code == "starter" else image_cost_per)
+        voice_memos = est.get("voice_memos", 0)
+        voice_cost = voice_memos * (20 / 60) * voice_cost_per_min  # 20s avg memo
         infra = hosting_cost / total_users if total_users > 0 else 0
-        cost_per_user = llm_cost_per_user + img_cost + infra
+        cost_per_user = llm_cost_per_user + img_cost + voice_cost + infra
         total_plan_cost = cost_per_user * user_count
 
         total_revenue += revenue
@@ -513,6 +562,7 @@ def cost_calculator(request):
             "revenue": round(revenue, 2),
             "llm_cost": round(llm_cost_per_user, 4),
             "image_cost": round(img_cost, 4),
+            "voice_cost": round(voice_cost, 4),
             "infra_cost": round(infra, 4),
             "total_cost_per_user": round(cost_per_user, 4),
             "total_cost": round(total_plan_cost, 2),

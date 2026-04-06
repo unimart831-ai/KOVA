@@ -3,7 +3,7 @@ from collections import defaultdict
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST, require_http_methods
 from django_ratelimit.decorators import ratelimit
@@ -157,6 +157,63 @@ def submit_seed(request):
 
     messages.error(request, "Please enter your content idea.")
     return redirect("content:studio")
+
+
+@login_required
+@require_POST
+@ratelimit(key="user", rate="10/m", block=True)
+def voice_to_seed(request):
+    """
+    Accept a voice memo recording, transcribe with Whisper, return text.
+
+    Two modes:
+    - mode=transcribe (default): Returns {"text": "..."} JSON for the user to review
+    - mode=submit: Transcribes AND creates a ContentSeed (full pipeline)
+    """
+    from apps.content.voice import transcribe_audio
+
+    audio_file = request.FILES.get("audio")
+    if not audio_file:
+        return JsonResponse({"error": "No audio file provided."}, status=400)
+
+    content_type = audio_file.content_type or "audio/webm"
+    result = transcribe_audio(audio_file, content_type)
+
+    if "error" in result:
+        return JsonResponse({"error": result["error"]}, status=422)
+
+    text = result["text"]
+    mode = request.POST.get("mode", "transcribe")
+
+    if mode == "submit":
+        # Create seed directly from transcription
+        target_platforms = request.POST.get("target_platforms", "[]")
+        try:
+            platforms_list = json.loads(target_platforms) if target_platforms else []
+        except (json.JSONDecodeError, TypeError):
+            platforms_list = []
+
+        seed = ContentSeed.objects.create(
+            user=request.user,
+            idea=text,
+            notes=request.POST.get("notes", ""),
+            target_platforms=platforms_list,
+        )
+        fire_task(generate_from_seed, str(seed.id))
+
+        return JsonResponse({
+            "text": text,
+            "duration": result.get("duration", 0),
+            "seed_id": str(seed.id),
+            "submitted": True,
+        })
+
+    # Default: transcribe only — let user review before submitting
+    return JsonResponse({
+        "text": text,
+        "duration": result.get("duration", 0),
+        "submitted": False,
+    })
 
 
 @login_required

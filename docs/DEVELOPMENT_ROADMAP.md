@@ -6,7 +6,7 @@
 #
 # This document is the SINGLE SOURCE OF TRUTH for building Kova Agent.
 # Every decision, every sprint, every feature traces back to here.
-# Last Updated: April 5, 2026
+# Last Updated: April 6, 2026
 # ============================================================================
 
 
@@ -814,7 +814,7 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 - [x] Team features: invite members, roles, approval workflows — Team model, invitations, roles (admin/editor/viewer)
 - [ ] Hashtag research + suggestions
 - [ ] Re-queue evergreen content
-- [ ] Voice memo input (speech-to-text → content seed)
+- [x] Voice memo input (speech-to-text → content seed) — OpenAI Whisper, browser MediaRecorder, Alpine.js voice recorder in studio
 - [x] AI image generation for posts — Multi-provider: HuggingFace → Together.ai → Pollinations.ai
 
 ## 8.4 FUTURE (Phase 4+)
@@ -857,8 +857,10 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 | Phase 3 | Sprint 9 | ✅ Complete | Engage Agent, Unified Inbox, Superfan Detection |
 | Phase 3 | Sprint 10 | ✅ Complete | Strategist Orchestration, Full Pipeline |
 | Phase 3 | Sprint 11 | ✅ Complete | Team Features, Help Center, Admin Dashboard, API, Email System |
-| Phase 3 | Sprint 12 | 🔄 In Progress | Production Hardening (security, monitoring, load testing) |
-| Phase 4 | Post-Launch  | ⏳ Not Started | Agency, White-label, API, Mobile PWA |
+| Phase 3 | Sprint 12 | ✅ Complete | Production Hardening (security, perf optimization, caching, token encryption) |
+| Phase 4 | Sprint 13 | ✅ Complete | Agency Multi-Brand, Revenue Attribution, Mobile PWA, API Docs |
+| Phase 4 | Voice Memo | ✅ Complete | Voice Memo input (Whisper transcription → content seed) |
+| Phase 6 | Post-Phase 5 | ⏳ Deferred | White-label UI, Agent Marketplace, Open-source, Video AI |
 | Phase 5 | Post-Launch  | ⏳ Not Started | WhatsApp Intelligence, Meme Engine, Status Studio |
 
 ## CELERY BEAT SCHEDULE (Current — 9 tasks)
@@ -1074,7 +1076,7 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
   - Celery Beat: `send-weekly-reports-all` weekly on Monday 8AM
   - See docs/EMAIL_SYSTEM_GUIDE.md for complete reference
 
-### Sprint 12 (Week 23-24): Polish + Scale 🔄 IN PROGRESS
+### Sprint 12 (Week 23-24): Polish + Scale ✅ COMPLETE
 - [x] Sentry error monitoring + alerting — Django + Celery integrations, release tracking
 - [x] CSP security headers (django-csp) — script/style/img/font/connect/frame policies
 - [x] Authentication rate limiting — allauth built-in: login, signup, password reset
@@ -1087,20 +1089,30 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 - [x] LinkedIn Company Pages — Organization auth scopes, page selection UI, org-level publishing
 - [x] Instagram Creator Guide — In-app instructions for converting personal → Creator account
 - [x] Platform Capability Badges — Account type badges on connected accounts, FB/IG limitations documented in UI
-- [ ] Performance optimization (query optimization, caching)
-- [ ] Onboarding improvements based on user feedback
-- [ ] Help docs / knowledge base
-- [ ] OAuth token encryption (django-fernet-fields-v2) — planned migration
+- [x] Performance optimization — DB indexes on all hot queries (content, analytics, billing, agents), Redis caching on insights (5-min TTL), select_related on Celery tasks
+- [x] Onboarding improvements — OnboardingMiddleware enforces step-by-step completion, signals auto-setup on signup
+- [x] Help docs / knowledge base — 18 articles across 5 categories, public /learn/ section, usage analytics tracking
+- [x] OAuth token encryption — django-fernet-fields-v2 with EncryptedCharField on access_token/refresh_token
+- [x] LLM optimization — Batched calls (13→3 per seed), paid auto-fallback, LLMConfig singleton, admin dashboard
+- [x] Cost economics dashboard — /dashboard/costs/ with per-plan unit economics, model pricing, scenario calculator
+- [x] Per-plan LLM model routing — Plan-aware model resolution, per-task overrides, admin UI, rate limits
 
-## ─── PHASE 4: Moat — "Unbeatable" (Weeks 25+) ───
-- Agency multi-brand management
-- White-label client dashboards/reports
-- Revenue attribution engine
-- Custom agent skills / marketplace
-- Public API + developer docs
-- Mobile PWA
-- Open-source self-hosted edition
-- Advanced AI features (voice memo input, AI video generation)
+## ─── PHASE 4: Moat — "Unbeatable" (Weeks 25-32) — MOSTLY COMPLETE ───
+
+### Sprint 13 (Week 25-28): Agency + Platform ✅ COMPLETE
+- [x] Agency multi-brand management — Brand model per team, role-based access (owner/admin/editor/viewer), plan-based team limits
+- [x] Revenue attribution engine — Conversion model (click/lead/sale/custom), UTM tracking, API endpoint, analytics dashboard
+- [x] Public API v1 — 10 endpoints (platforms, seeds, posts, analytics, agents, conversions), token + session auth
+- [x] API documentation — docs/API_REFERENCE.md (auth, pagination, errors, all endpoints with examples)
+- [x] Mobile PWA — manifest.json, service worker (cache-first + offline fallback), installable on iOS/Android
+- DELIVERABLE: ✅ Agency-ready platform. Multi-brand, revenue tracking, API, mobile app.
+
+### Phase 4 — Deferred Items (Not blocking launch)
+- [ ] White-label client dashboards — Custom domains work, but report UI not brandable per client yet
+- [ ] Interactive API docs — No Swagger/OpenAPI UI (drf-spectacular), hand-written docs only
+- [ ] Custom agent skills / marketplace — Agents are hard-coded, no plugin/skill architecture
+- [ ] Open-source self-hosted edition — Docker infra exists, needs licensing + packaging
+- [ ] Advanced AI features (voice memo, video generation) — Image generation works, no audio/video yet
 
 ## ─── PHASE 5: WhatsApp Intelligence — "Own the Most Important Channel" (Post-Launch) ───
 

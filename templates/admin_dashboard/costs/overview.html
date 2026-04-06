@@ -109,6 +109,7 @@
           <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Avg Calls</th>
           <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">LLM Cost</th>
           <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Image</th>
+          <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Voice</th>
           <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Infra</th>
           <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Total Cost</th>
           <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Profit/User</th>
@@ -126,6 +127,7 @@
           <td class="px-4 py-3 text-right text-gray-600 dark:text-gray-400">{{ p.avg_calls }}</td>
           <td class="px-4 py-3 text-right font-mono text-gray-600 dark:text-gray-400">${{ p.llm_cost|floatformat:4 }}</td>
           <td class="px-4 py-3 text-right font-mono text-gray-600 dark:text-gray-400">${{ p.image_cost|floatformat:4 }}</td>
+          <td class="px-4 py-3 text-right font-mono text-gray-600 dark:text-gray-400">${{ p.voice_cost|floatformat:4 }}</td>
           <td class="px-4 py-3 text-right font-mono text-gray-600 dark:text-gray-400">${{ p.infra_cost|floatformat:4 }}</td>
           <td class="px-4 py-3 text-right font-mono font-semibold text-gray-900 dark:text-white">${{ p.total_cost|floatformat:4 }}</td>
           <td class="px-4 py-3 text-right font-mono font-semibold {% if p.profit >= 0 %}text-emerald-600 dark:text-emerald-400{% else %}text-red-600 dark:text-red-400{% endif %}">${{ p.profit|floatformat:4 }}</td>
@@ -347,6 +349,12 @@
             <span class="text-[10px] text-gray-400">Per AI image</span>
           </div>
           <div class="grid grid-cols-3 gap-2 items-center">
+            <label class="text-xs text-gray-600 dark:text-gray-400">Voice ($/min)</label>
+            <input type="number" x-model.number="voice_cost_per_min" min="0" step="0.001" placeholder="Cost"
+                   class="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+            <span class="text-[10px] text-gray-400">Whisper per minute</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2 items-center">
             <label class="text-xs text-gray-600 dark:text-gray-400">Hosting ($/mo)</label>
             <input type="number" x-model.number="hosting_cost" min="0" step="1" placeholder="Monthly"
                    class="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
@@ -405,6 +413,7 @@
               <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-500 uppercase text-right">Revenue</th>
               <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-500 uppercase text-right">LLM/User</th>
               <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-500 uppercase text-right">Image/User</th>
+              <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-500 uppercase text-right">Voice/User</th>
               <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-500 uppercase text-right">Infra/User</th>
               <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-500 uppercase text-right">Total Cost</th>
               <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-500 uppercase text-right">Profit/User</th>
@@ -419,6 +428,7 @@
                 <td class="px-4 py-2.5 text-right text-gray-600 dark:text-gray-400" x-text="'$' + r.revenue"></td>
                 <td class="px-4 py-2.5 text-right font-mono text-gray-600 dark:text-gray-400" x-text="'$' + r.llm_cost"></td>
                 <td class="px-4 py-2.5 text-right font-mono text-gray-600 dark:text-gray-400" x-text="'$' + r.image_cost"></td>
+                <td class="px-4 py-2.5 text-right font-mono text-gray-600 dark:text-gray-400" x-text="'$' + (r.voice_cost || '0.00')"></td>
                 <td class="px-4 py-2.5 text-right font-mono text-gray-600 dark:text-gray-400" x-text="'$' + r.infra_cost"></td>
                 <td class="px-4 py-2.5 text-right font-mono font-semibold text-gray-900 dark:text-white" x-text="'$' + r.total_cost"></td>
                 <td class="px-4 py-2.5 text-right font-mono font-semibold" :class="r.profit_per_user >= 0 ? 'text-emerald-600' : 'text-red-600'" x-text="'$' + r.profit_per_user"></td>
@@ -457,7 +467,108 @@
 
 
 <!-- ══════════════════════════════════════════════════════════════════════
-     SECTION 7 — MODEL PRICING REFERENCE
+     SECTION 7 — NON-LLM AI SERVICES PRICING
+     ══════════════════════════════════════════════════════════════════════ -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6 overflow-hidden">
+  <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Non-LLM AI Services Pricing</h2>
+    <p class="text-[10px] text-gray-400 mt-0.5">Voice transcription, image generation, and branded graphics — separate from token-based LLM costs</p>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase">Service</th>
+          <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase">Provider</th>
+          <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase">Model</th>
+          <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase text-right">Unit Cost</th>
+          <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase text-right">Est. 100 Users/Mo</th>
+          <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase">Notes</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {# Voice #}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 bg-kova-50/30 dark:bg-kova-950/10">
+          <td class="px-4 py-2.5" rowspan="1">
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-kova-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+              </svg>
+              <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Voice Transcription</span>
+            </div>
+          </td>
+          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">OpenAI</td>
+          <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">whisper-1</td>
+          <td class="px-4 py-2.5 text-right">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">$0.006/min</span>
+          </td>
+          <td class="px-4 py-2.5 text-right font-mono text-xs text-gray-600 dark:text-gray-400">~$3.00</td>
+          <td class="px-4 py-2.5 text-[10px] text-gray-400">~20s avg memo × 25 memos/user/mo</td>
+        </tr>
+        {# Images - Together #}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-2.5" rowspan="3">
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              <span class="text-xs font-medium text-gray-700 dark:text-gray-300">AI Image Gen</span>
+            </div>
+          </td>
+          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Together.ai <span class="text-[9px] text-kova-500 font-semibold">(PRIMARY)</span></td>
+          <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">FLUX.1-schnell-Free</td>
+          <td class="px-4 py-2.5 text-right">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span>
+          </td>
+          <td class="px-4 py-2.5 text-right font-mono text-xs text-emerald-600 dark:text-emerald-400">$0.00</td>
+          <td class="px-4 py-2.5 text-[10px] text-gray-400">1st in fallback chain</td>
+        </tr>
+        {# Images - HuggingFace #}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">HuggingFace</td>
+          <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">FLUX.1-schnell</td>
+          <td class="px-4 py-2.5 text-right">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span>
+          </td>
+          <td class="px-4 py-2.5 text-right font-mono text-xs text-emerald-600 dark:text-emerald-400">$0.00</td>
+          <td class="px-4 py-2.5 text-[10px] text-gray-400">2nd fallback, 120s timeout</td>
+        </tr>
+        {# Images - Pollinations #}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Pollinations.ai</td>
+          <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">flux</td>
+          <td class="px-4 py-2.5 text-right">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">~$0.005/img</span>
+          </td>
+          <td class="px-4 py-2.5 text-right font-mono text-xs text-gray-600 dark:text-gray-400">~$3.75</td>
+          <td class="px-4 py-2.5 text-[10px] text-gray-400">3rd fallback (paid), last resort</td>
+        </tr>
+        {# Graphics - Pillow #}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 bg-emerald-50/30 dark:bg-emerald-950/10">
+          <td class="px-4 py-2.5">
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+              </svg>
+              <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Branded Graphics</span>
+            </div>
+          </td>
+          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">On-device (Pillow)</td>
+          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Quote · Tip · Stat · CTA</td>
+          <td class="px-4 py-2.5 text-right">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span>
+          </td>
+          <td class="px-4 py-2.5 text-right font-mono text-xs text-emerald-600 dark:text-emerald-400">$0.00</td>
+          <td class="px-4 py-2.5 text-[10px] text-gray-400">Python Pillow — no API, no cost</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     SECTION 8 — MODEL PRICING REFERENCE
      ══════════════════════════════════════════════════════════════════════ -->
 <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6 overflow-hidden">
   <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
@@ -578,6 +689,7 @@ function costCalculator() {
     fast_input_price: 0.26,
     fast_output_price: 0.38,
     image_cost: 0.005,
+    voice_cost_per_min: 0.006,
     hosting_cost: 20,
     // State
     calculating: false,
@@ -589,17 +701,17 @@ function costCalculator() {
         this.premium_input_price = 0; this.premium_output_price = 0;
         this.workhorse_input_price = 0; this.workhorse_output_price = 0;
         this.fast_input_price = 0; this.fast_output_price = 0;
-        this.image_cost = 0;
+        this.image_cost = 0; this.voice_cost_per_min = 0.006;
       } else if (name === 'budget') {
         this.premium_input_price = 0.50; this.premium_output_price = 3.00;
         this.workhorse_input_price = 0.26; this.workhorse_output_price = 0.38;
         this.fast_input_price = 0.26; this.fast_output_price = 0.38;
-        this.image_cost = 0.005;
+        this.image_cost = 0.005; this.voice_cost_per_min = 0.006;
       } else if (name === 'premium') {
         this.premium_input_price = 3.00; this.premium_output_price = 15.00;
         this.workhorse_input_price = 0.50; this.workhorse_output_price = 3.00;
         this.fast_input_price = 0.26; this.fast_output_price = 0.38;
-        this.image_cost = 0.04;
+        this.image_cost = 0.04; this.voice_cost_per_min = 0.006;
       }
       this.runEstimate();
     },
@@ -623,6 +735,7 @@ function costCalculator() {
       body.append('fast_input_price', self.fast_input_price || 0);
       body.append('fast_output_price', self.fast_output_price || 0);
       body.append('image_cost', self.image_cost || 0);
+      body.append('voice_cost_per_min', self.voice_cost_per_min || 0);
       body.append('hosting_cost', self.hosting_cost || 0);
 
       fetch('{% url "admin_dashboard:cost_calculator" %}', {
