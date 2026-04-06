@@ -538,18 +538,18 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
         system = build_system_prompt(user)
         prompt = build_generation_prompt(seed, platforms)
 
-        # Call LLM (with one retry on parse failure)
+        # Call LLM (with two retries on parse failure)
         batch_strategy = ""
         post_dicts = []
         last_error = None
 
-        for attempt in range(2):
+        for attempt in range(3):
             llm_response: LLMResponse = generate(
                 prompt=prompt,
                 system=system,
                 model=get_model_for_task("create.generate"),
                 json_mode=True,
-                temperature=0.7,
+                temperature=0.7 if attempt == 0 else 0.3,  # lower temp on retries for cleaner JSON
                 max_tokens=4096,
             )
 

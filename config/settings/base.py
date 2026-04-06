@@ -164,7 +164,7 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_BEAT_SCHEDULE = {
     "check-and-publish-due-posts": {
         "task": "content.check_and_publish_due_posts",
-        "schedule": 60.0,  # every 60 seconds
+        "schedule": 300.0,  # every 5 minutes
     },
     "fetch-all-recent-metrics": {
         "task": "content.fetch_all_recent_metrics",

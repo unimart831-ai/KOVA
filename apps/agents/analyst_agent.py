@@ -249,15 +249,19 @@ def extract_content_dna(post):
         "Extract the Content DNA attributes."
     )
 
-    try:
-        response = generate(prompt=prompt, system=system_prompt, model=get_model_for_task("analyst.content_dna"), json_mode=True, temperature=0.1, max_tokens=500)
-        dna = parse_llm_json(response.content)
-        post.content_dna = dna
-        post.save(update_fields=["content_dna"])
-        return dna
-    except Exception as e:
-        logger.warning("Content DNA extraction failed for post %s: %s", post.id, e)
-        return {}
+    for attempt in range(2):
+        try:
+            response = generate(prompt=prompt, system=system_prompt, model=get_model_for_task("analyst.content_dna"), json_mode=True, temperature=0.1, max_tokens=500)
+            dna = parse_llm_json(response.content)
+            post.content_dna = dna
+            post.save(update_fields=["content_dna"])
+            return dna
+        except Exception as e:
+            if attempt == 0:
+                logger.info("Content DNA extraction attempt 1 failed for post %s, retrying: %s", post.id, e)
+                continue
+            logger.warning("Content DNA extraction failed for post %s after 2 attempts: %s", post.id, e)
+            return {}
 
 
 def predict_engagement(post):

@@ -136,12 +136,26 @@ def discover_trends(user):
         try:
             result = parse_llm_json(response.content)
         except (json.JSONDecodeError, ValueError):
-            logger.warning("Research Agent LLM returned non-JSON, wrapping")
-            result = {
-                "trending_topics": [],
-                "opportunity_briefs": [],
-                "raw_analysis": response.content,
-            }
+            # Retry once with a stricter JSON instruction
+            logger.warning("Research Agent: first attempt returned non-JSON, retrying")
+            retry_response = generate(
+                prompt=prompt + "\n\nCRITICAL: You MUST respond with a valid JSON object only. No prose, no markdown. Just the JSON.",
+                system=system_prompt,
+                model=get_model_for_task("research.trends"),
+                json_mode=True,
+                temperature=0.3,
+                max_tokens=2000,
+            )
+            response = retry_response  # use for token tracking below
+            try:
+                result = parse_llm_json(retry_response.content)
+            except (json.JSONDecodeError, ValueError):
+                logger.warning("Research Agent: retry also returned non-JSON, using fallback")
+                result = {
+                    "trending_topics": [],
+                    "opportunity_briefs": [],
+                    "raw_analysis": retry_response.content,
+                }
 
         action.status = AgentAction.ActionStatus.COMPLETED
         action.output_data = result

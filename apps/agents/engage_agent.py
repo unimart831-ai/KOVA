@@ -24,6 +24,7 @@ from apps.agents.llm import generate, get_model_for_task, parse_llm_json
 from apps.agents.models import AgentAction, AgentConfig
 from apps.engage.models import Interaction, Superfan
 from apps.platforms.models import SocialAccount
+from apps.platforms.providers.base import PlatformAuthError
 from apps.platforms.providers.registry import get_provider
 
 logger = logging.getLogger(__name__)
@@ -163,6 +164,15 @@ def _fetch_post_comments(user, account, provider):
                     platform_interaction_id=ext_id,
                 )
                 new_count += 1
+
+        except PlatformAuthError as e:
+            # Token expired or permissions missing — mark account and stop all retries
+            logger.error(
+                "Auth error for %s account %s — marking for reauth: %s",
+                account.platform, account.id, e,
+            )
+            account.mark_error(str(e))
+            break  # stop trying other posts on this account
 
         except Exception as e:
             logger.warning(

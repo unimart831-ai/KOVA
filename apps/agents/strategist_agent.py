@@ -372,13 +372,26 @@ def _make_strategic_decisions(user, inputs):
     try:
         result = parse_llm_json(response.content)
     except (json.JSONDecodeError, ValueError):
-        logger.warning("Strategist LLM returned non-JSON")
-        result = {
-            "content_plan": [],
-            "recommendations": [],
-            "engagement_insights": "",
-            "alerts": [],
-        }
+        # Retry once with a stricter JSON instruction
+        logger.warning("Strategist: first attempt returned non-JSON, retrying")
+        retry_response = generate(
+            prompt=prompt + "\n\nCRITICAL: You MUST respond with a valid JSON object only. No prose, no markdown. Just the JSON.",
+            system=system_prompt,
+            model=get_model_for_task("strategist.decide"),
+            json_mode=True,
+            temperature=0.3,
+            max_tokens=2500,
+        )
+        try:
+            result = parse_llm_json(retry_response.content)
+        except (json.JSONDecodeError, ValueError):
+            logger.warning("Strategist: retry also returned non-JSON, using fallback")
+            result = {
+                "content_plan": [],
+                "recommendations": [],
+                "engagement_insights": "",
+                "alerts": [],
+            }
 
     return result
 

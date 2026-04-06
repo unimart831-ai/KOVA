@@ -39,6 +39,19 @@ STRATEGY_TO_GRAPHIC = {
     "cta_banner": GraphicType.CTA_BANNER,
 }
 
+# Normalize common LLM aliases to canonical strategy names
+STRATEGY_ALIASES = {
+    "photo": "ai_photo",
+    "image": "ai_photo",
+    "picture": "ai_photo",
+    "quote": "quote_card",
+    "tips": "tip_graphic",
+    "stat": "stat_highlight",
+    "stats": "stat_highlight",
+    "cta": "cta_banner",
+    "banner": "cta_banner",
+}
+
 
 def apply_visual_strategy(post, visual_data: dict) -> str | None:
     """
@@ -63,6 +76,7 @@ def apply_visual_strategy(post, visual_data: dict) -> str | None:
         URL of generated media (or first slide URL for carousels), or None.
     """
     strategy = visual_data.get("strategy", "ai_photo")
+    strategy = STRATEGY_ALIASES.get(strategy, strategy)  # normalize LLM aliases
 
     if strategy == "none":
         logger.debug("Visual strategy is 'none' for post %s — skipping", post.id)

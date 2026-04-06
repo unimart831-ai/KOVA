@@ -77,6 +77,9 @@ if _R2_BUCKET:
         MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{_R2_BUCKET}/"
 else:
     STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
         "staticfiles": {
             "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
         },

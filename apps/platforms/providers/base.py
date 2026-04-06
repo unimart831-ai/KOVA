@@ -19,6 +19,15 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
+class PlatformAuthError(Exception):
+    """Raised when a platform API returns an authentication/permission error.
+
+    This signals that the stored access token is expired, revoked, or missing
+    required permissions. The caller should mark the account for
+    re-authentication rather than retrying.
+    """
+
+
 @dataclass
 class OAuthResult:
     """Result of an OAuth callback."""

@@ -53,7 +53,7 @@ import httpx
 from django.conf import settings
 
 from apps.platforms.providers.base import (
-    BaseProvider, OAuthResult, PostMetrics, PublishResult,
+    BaseProvider, OAuthResult, PlatformAuthError, PostMetrics, PublishResult,
 )
 from apps.platforms.providers.registry import register_provider
 
@@ -418,7 +418,11 @@ class FacebookProvider(BaseProvider):
                     for c in resp.json().get("data", [])
                 ]
         except httpx.HTTPStatusError as e:
-            logger.error("Facebook get comments failed: %s", e.response.text)
+            error_body = e.response.text
+            logger.error("Facebook get comments failed: %s", error_body)
+            # Detect token/permission errors — caller should mark account for reauth
+            if e.response.status_code == 400 and ("OAuthException" in error_body or "code\":190" in error_body or "permission" in error_body.lower()):
+                raise PlatformAuthError(f"Facebook token/permission error: {error_body[:300]}") from e
             return []
 
     def reply_to_comment(self, access_token: str, comment_id: str,
@@ -904,7 +908,10 @@ class InstagramProvider(BaseProvider):
                     for c in resp.json().get("data", [])
                 ]
         except httpx.HTTPStatusError as e:
-            logger.error("Instagram get comments failed: %s", e.response.text)
+            error_body = e.response.text
+            logger.error("Instagram get comments failed: %s", error_body)
+            if e.response.status_code == 400 and ("OAuthException" in error_body or "code\":190" in error_body or "permission" in error_body.lower()):
+                raise PlatformAuthError(f"Instagram token/permission error: {error_body[:300]}") from e
             return []
 
     def reply_to_comment(self, access_token: str, comment_id: str,

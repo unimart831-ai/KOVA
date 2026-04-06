@@ -50,7 +50,8 @@ def parse_llm_json(text: str) -> dict:
     Parse JSON from LLM output, handling common quirks.
 
     Handles: markdown fences, trailing commas, smart quotes,
-    embedded JSON in prose, unescaped newlines in strings.
+    embedded JSON in prose, unescaped newlines in strings,
+    truncated JSON, control characters.
 
     Raises json.JSONDecodeError if all repair attempts fail.
     """
@@ -59,32 +60,48 @@ def parse_llm_json(text: str) -> dict:
 
     cleaned = text.strip().lstrip("\ufeff")
 
-    # Strip markdown code fences
-    if cleaned.startswith("```"):
-        lines = cleaned.split("\n")
-        lines = [l for l in lines if not l.strip().startswith("```")]
-        cleaned = "\n".join(lines).strip()
+    # Remove control characters (except newlines and tabs)
+    cleaned = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', cleaned)
+
+    # Strip markdown code fences (```json ... ``` or ``` ... ```)
+    cleaned = re.sub(r'^```(?:json)?\s*\n?', '', cleaned, flags=re.MULTILINE)
+    cleaned = re.sub(r'\n?```\s*$', '', cleaned, flags=re.MULTILINE)
+    cleaned = cleaned.strip()
 
     # If text doesn't start with { or [, extract JSON from prose
     if not cleaned.startswith(("{", "[")):
-        start = cleaned.find("{")
-        end = cleaned.rfind("}")
-        if start != -1 and end != -1:
-            cleaned = cleaned[start:end + 1]
+        # Try to find a JSON object
+        obj_start = cleaned.find("{")
+        obj_end = cleaned.rfind("}")
+        # Try to find a JSON array
+        arr_start = cleaned.find("[")
+        arr_end = cleaned.rfind("]")
+
+        if obj_start != -1 and obj_end > obj_start:
+            if arr_start != -1 and arr_start < obj_start and arr_end > obj_end:
+                cleaned = cleaned[arr_start:arr_end + 1]
+            else:
+                cleaned = cleaned[obj_start:obj_end + 1]
+        elif arr_start != -1 and arr_end > arr_start:
+            cleaned = cleaned[arr_start:arr_end + 1]
 
     # Replace smart/curly quotes
     cleaned = cleaned.replace("\u201c", '"').replace("\u201d", '"')
     cleaned = cleaned.replace("\u2018", "'").replace("\u2019", "'")
+    # Replace other unicode dashes/hyphens that break JSON
+    cleaned = cleaned.replace("\u2013", "-").replace("\u2014", "-")
+    cleaned = cleaned.replace("\u2026", "...")
 
     # Fix trailing commas before } or ]
     cleaned = re.sub(r',\s*([}\]])', r'\1', cleaned)
 
+    # Stage 1: Direct parse
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError:
         pass
 
-    # Last resort: fix unescaped newlines inside JSON string values
+    # Stage 2: Fix unescaped newlines inside JSON string values
     try:
         fixed = re.sub(
             r'(?<=": ")(.*?)(?="[,\s*}])',
@@ -96,11 +113,65 @@ def parse_llm_json(text: str) -> dict:
     except json.JSONDecodeError:
         pass
 
-    # Final attempt: the raw text from the LLM (before our modifications)
+    # Stage 3: Fix single quotes used as JSON delimiters
+    try:
+        single_q_fixed = cleaned.replace("'", '"')
+        return json.loads(single_q_fixed)
+    except json.JSONDecodeError:
+        pass
+
+    # Stage 4: Try to repair truncated JSON (close open brackets/braces)
+    try:
+        repaired = _repair_truncated_json(cleaned)
+        if repaired != cleaned:
+            return json.loads(repaired)
+    except json.JSONDecodeError:
+        pass
+
+    # Final: the raw text from the LLM (before our modifications)
     raise json.JSONDecodeError(
         f"Could not parse LLM JSON after cleanup. First 200 chars: {text[:200]}",
         doc=text, pos=0,
     )
+
+
+def _repair_truncated_json(text: str) -> str:
+    """Attempt to close truncated JSON by matching open brackets/braces."""
+    in_string = False
+    escape_next = False
+    stack = []
+
+    for char in text:
+        if escape_next:
+            escape_next = False
+            continue
+        if char == '\\' and in_string:
+            escape_next = True
+            continue
+        if char == '"' and not escape_next:
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if char in ('{', '['):
+            stack.append('}' if char == '{' else ']')
+        elif char in ('}', ']'):
+            if stack and stack[-1] == char:
+                stack.pop()
+
+    if not stack:
+        return text
+
+    # Remove any trailing incomplete key-value pair
+    result = text.rstrip()
+    if result.endswith(','):
+        result = result[:-1]
+
+    # Close all open structures
+    for closer in reversed(stack):
+        result += closer
+
+    return result
 
 
 def get_llm_client():
