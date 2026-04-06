@@ -5,6 +5,9 @@ providers = ["python", "node"]
 [variables]
 DJANGO_SETTINGS_MODULE = "config.settings.production"
 
+[phases.setup]
+aptPkgs = ["fonts-dejavu-core"]
+
 [phases.build]
 cmds = [
     "...",

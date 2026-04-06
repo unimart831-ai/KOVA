@@ -409,12 +409,23 @@ def fetch_post_metrics(post_id: str):
         return {"error": f"No provider for {account.platform}"}
 
     try:
-        # For Facebook/Instagram, use page token
+        # For Facebook/Instagram, use page token — the user-level token
+        # does NOT have pages_read_engagement permission.
         token = account.access_token
         if account.platform in ("facebook", "instagram"):
             pages = (account.metadata or {}).get("pages", [])
-            if pages:
-                token = pages[0].get("access_token", account.access_token)
+            page_token = pages[0].get("access_token") if pages else None
+            if not page_token:
+                logger.warning(
+                    "No page access token for %s account %s (user %s) — "
+                    "skipping metrics fetch. User needs to reconnect.",
+                    account.platform, account.id, account.user_id,
+                )
+                return {
+                    "error": f"No page token for {account.platform} — reconnect required",
+                    "post_id": post_id,
+                }
+            token = page_token
 
         metrics_data = provider.get_post_metrics(
             access_token=token,

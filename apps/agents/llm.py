@@ -100,6 +100,14 @@ def parse_llm_json(text: str) -> dict:
     cleaned = re.sub(r'\n?```\s*$', '', cleaned, flags=re.MULTILINE)
     cleaned = cleaned.strip()
 
+    # Strip common LLM reasoning preamble before the actual JSON.
+    # Free models (e.g. stepfun/step-3.5-flash) sometimes emit "thinking"
+    # text like "We need to output JSON..." before the object.
+    if not cleaned.startswith(("{", "[")):
+        # Look for <think>...</think> blocks and remove them
+        cleaned = re.sub(r'<think>.*?</think>\s*', '', cleaned, flags=re.DOTALL)
+        cleaned = cleaned.strip()
+
     # If text doesn't start with { or [, extract JSON from prose
     if not cleaned.startswith(("{", "[")):
         # Try to find a JSON object
@@ -476,14 +484,23 @@ def _generate_openrouter(
     json_instruction = ""
     if json_mode and not use_json_param:
         json_instruction = (
-            "\n\nIMPORTANT: You MUST respond with valid JSON only. "
-            "No markdown fences, no prose, no explanation. Just the raw JSON object."
+            "\n\nCRITICAL FORMATTING RULE: Your ENTIRE response must be a single, "
+            "valid JSON object. Do NOT include any thinking, reasoning, explanation, "
+            "or commentary before or after the JSON. Do NOT wrap in markdown code "
+            "fences. Start your response with '{' and end with '}'."
         )
     if system:
         messages.append({"role": "system", "content": system + json_instruction})
     elif json_instruction:
         messages.append({"role": "system", "content": json_instruction.strip()})
-    messages.append({"role": "user", "content": prompt})
+    user_content = prompt
+    if json_mode and is_free:
+        # Prefix-force: add an assistant-priming message so the model
+        # continues from '{' instead of generating reasoning text first.
+        messages.append({"role": "user", "content": user_content})
+        messages.append({"role": "assistant", "content": "{"})
+    else:
+        messages.append({"role": "user", "content": user_content})
 
     kwargs = {
         "model": model,
@@ -502,8 +519,13 @@ def _generate_openrouter(
     choice = response.choices[0]
     usage = response.usage
 
+    content = choice.message.content or ""
+    # If we used assistant-priming with '{', prepend it to the response
+    if json_mode and is_free and not content.lstrip().startswith("{"):
+        content = "{" + content
+
     return LLMResponse(
-        content=choice.message.content or "",
+        content=content,
         model=response.model,
         input_tokens=usage.prompt_tokens if usage else 0,
         output_tokens=usage.completion_tokens if usage else 0,
