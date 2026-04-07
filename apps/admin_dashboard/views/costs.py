@@ -22,7 +22,7 @@ from django.utils import timezone
 from apps.accounts.models import UserProfile
 from apps.admin_dashboard.decorators import superuser_required
 from apps.agents.models import AgentAction, LLMConfig
-from apps.billing.models import PLAN_LIMITS, MpesaPayment
+from apps.billing.models import MpesaPayment, get_all_plan_limits
 
 
 # ── Model pricing (USD per 1M tokens) ───────────────────────────────────
@@ -271,7 +271,7 @@ def cost_overview(request):
     total_monthly_cost = 0.0
 
     for plan_code, plan_label in UserProfile.PlanTier.choices:
-        limits = PLAN_LIMITS.get(plan_code, {})
+        limits = get_all_plan_limits().get(plan_code, {})
         price_usd = float(limits.get("price_usd", 0))
         price_kes = limits.get("price_kes", 0)
         active_count = UserProfile.objects.filter(
@@ -375,7 +375,7 @@ def cost_overview(request):
             user_cost += c
 
         plan = u["user__profile__plan"] or "starter"
-        revenue = float(PLAN_LIMITS.get(plan, {}).get("price_usd", 0))
+        revenue = float(get_all_plan_limits().get(plan, {}).get("price_usd", 0))
         top_user_rows.append({
             "email": u["user__email"] or "—",
             "company": u["user__profile__company_name"] or "—",
@@ -462,7 +462,7 @@ def cost_overview(request):
         "config": config,
         "model_pricing_json": {k: v for k, v in MODEL_PRICING.items()},
         "non_llm_pricing": NON_LLM_PRICING,
-        "plan_limits": PLAN_LIMITS,
+        "plan_limits": get_all_plan_limits(),
         "infra_costs": INFRA_COSTS,
         "plan_token_estimates_json": PLAN_TOKEN_ESTIMATES,
     }
@@ -523,7 +523,7 @@ def cost_calculator(request):
     ]:
         if user_count <= 0:
             continue
-        limits = PLAN_LIMITS.get(plan_code, {})
+        limits = get_all_plan_limits().get(plan_code, {})
         est = PLAN_TOKEN_ESTIMATES.get(plan_code, {})
         price_usd = float(limits.get("price_usd", 0))
         revenue = price_usd * user_count
