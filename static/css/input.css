@@ -46,7 +46,8 @@
   .btn-sm {
     @apply px-3 py-1.5 text-xs;
   }
-  .input {
+  .input,
+  .input-field {
     @apply block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm placeholder-gray-400 focus:border-kova-500 focus:ring-1 focus:ring-kova-500 focus:outline-none dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500;
   }
   .label {

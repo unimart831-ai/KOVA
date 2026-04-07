@@ -1,5 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
+from django.db.models import Sum
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.views.decorators.http import require_POST

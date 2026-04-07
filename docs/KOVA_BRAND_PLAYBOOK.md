@@ -11,13 +11,23 @@
 
 1. [Brand Identity Foundation](#1-brand-identity-foundation)
 2. [Brand Voice Definition](#2-brand-voice-definition)
-3. [Platform Account Setup — All 6 Platforms](#3-platform-account-setup)
+3. [Platform Account Setup — All 9 Platforms](#3-platform-account-setup)
 4. [Content Strategy & Pillars](#4-content-strategy--pillars)
 5. [Engagement & Growth Playbook](#5-engagement--growth-playbook)
 6. [Kova System Configuration](#6-kova-system-configuration)
 7. [Visual Identity & Assets](#7-visual-identity--assets)
 8. [Launch Calendar — First 30 Days](#8-launch-calendar--first-30-days)
 9. [KPIs & Growth Targets](#9-kpis--growth-targets)
+10. [Competitor Setup & Tracking](#10-competitor-setup--tracking)
+11. [Agent Configuration & Custom Instructions](#11-agent-configuration--custom-instructions)
+12. [Visual Strategy & Graphics System](#12-visual-strategy--graphics-system)
+13. [Media Queue Strategy](#13-media-queue-strategy)
+14. [Content Seeding Guide](#14-content-seeding-guide)
+15. [Billing, Plans & Payment Setup](#15-billing-plans--payment-setup)
+16. [Industry Playbook & Cold Start](#16-industry-playbook--cold-start)
+17. [Teams & Multi-Brand Management](#17-teams--multi-brand-management)
+18. [Email Briefs & Reports](#18-email-briefs--reports)
+19. [Notifications & Preferences](#19-notifications--preferences)
 
 ---
 
@@ -146,6 +156,9 @@ Never use these — they're generic, overused, or off-brand:
 | **Facebook** | Page | Kova Agent | Community building, MSME audience, longer posts, events |
 | **TikTok** | Business Account | @kovaagent | Short-form video, product demos, AI education, Gen-Z founders |
 | **YouTube** | Brand Channel | Kova Agent | Tutorials, product walkthroughs, founder vlogs, long-form |
+| **Pinterest** | Business Account | @kovaagent | Evergreen content, visual search, SEO-driven traffic |
+| **Threads** | Personal/Brand | @kovaagent | Casual conversation, real-time commentary, community |
+| **Bluesky** | Brand Account | @kovaagent.bsky.social | Tech/media community, substance-first, early-adopter audience |
 
 > **Important**: Create NEW dedicated accounts for Kova. Do not mix with personal accounts.
 > Then connect each account to Kova Agent's platform so Kova manages its own brand.
@@ -427,6 +440,142 @@ Built for Africa, by Africa.
 
 ---
 
+### 3.7 Pinterest (Business Account)
+
+**Setup steps:**
+1. Go to pinterest.com → Sign up with Kova's business email → Select "Create a business account"
+2. Claim your website for rich pins
+3. Create initial boards based on content pillars
+4. Connect to Kova Agent via Pinterest OAuth
+
+**Profile fields:**
+
+| Field | Value |
+|-------|-------|
+| **Display name** | Kova Agent |
+| **Username** | @kovaagent |
+| **About** | 6 AI agents run your social media 24/7. Built in Nairobi for African businesses. Starting at $1/month. |
+| **Website** | [your production URL] |
+| **Profile picture** | Logo (square) |
+| **Country** | Kenya |
+
+**Kova account_type to select:** `Business`
+
+**Initial boards to create:**
+
+| Board | Description | Purpose |
+|-------|-------------|---------|
+| **AI Social Media Tips** | Data-backed tips on growing your social media with AI | Evergreen SEO traffic |
+| **Product Features** | Visual breakdowns of Kova's 6 agents and how they work | Discovery by potential users |
+| **Social Media Templates** | Carousel templates, post frameworks, content calendars | High saves, shareability |
+| **African Tech & Startup Life** | Building AI in Nairobi — the journey, the team, the mission | Community, brand storytelling |
+| **Content Strategy Guides** | Step-by-step guides for social media strategy | Long-tail search traffic |
+
+**Content focus for Pinterest:**
+- Evergreen how-to content (saves drive long-term traffic)
+- Infographic pins: "The Autonomy Loop Explained", "6 Agents Visual Guide"
+- List-format pins: "10 Ways AI Saves You Time on Social Media"
+- Seasonal content 45 days early (plan ahead for business events, holidays)
+- Step-by-step product guides as single-pin vertical images
+- Comparison pins (Kova vs manual, AI vs human social management)
+
+**Pinterest-specific voice adjustments:**
+- SEO-first: write pin descriptions like you're writing for Google. Include searchable keywords naturally
+- Descriptive, not clever. "How to automate your social media with AI agents" beats "The future of hustle"
+- No hashtags in descriptions (Pinterest search doesn't use them the same way)
+- Longer pin descriptions perform better — 200-300 characters with natural keywords
+- Evergreen > trending. A pin about "how to grow on Instagram" has a 2-year shelf life
+- Think "visual search engine" not "social feed" — people come to Pinterest with intent
+
+**Posting frequency:** 3-5 pins/week. Consistency matters more than volume.
+
+---
+
+### 3.8 Threads
+
+**Setup steps:**
+1. Log into Threads via Instagram (requires Instagram account)
+2. Set up Threads profile (imports from Instagram but can be customized)
+3. Connect to Kova Agent via Threads OAuth
+
+**Profile fields:**
+
+| Field | Value |
+|-------|-------|
+| **Name** | Kova Agent |
+| **Username** | @kovaagent (inherits from Instagram) |
+| **Bio** | Building the AI team every African business deserves. 6 agents. 9 platforms. $1/mo. |
+| **Link** | [your production URL] |
+| **Profile picture** | Same as Instagram |
+
+**Kova account_type to select:** `Business`
+
+**Content focus for Threads:**
+- Casual, conversational takes on AI + social media
+- Real-time commentary on tech/startup news
+- Micro-threads: 3-5 connected posts building an argument or story
+- "Hot take:" or "Unpopular opinion:" style openers (but actually insightful)
+- Behind-the-scenes of building Kova — raw, unfiltered
+- Ask-the-audience questions that invite genuine replies
+- Quick win celebrations: "Just shipped [feature]"
+- Relatable founder moments: "The moment when your AI agent writes better copy than you..."
+
+**Threads-specific voice adjustments:**
+- Most conversational platform after TikTok. Drop all formality
+- Warmer than X/Twitter — less combative, more community-oriented
+- Text-first but images boost engagement when used
+- Don't cross-post identical X content — Threads audience can tell and doesn't appreciate it
+- Genuine questions > engagement bait. "What's the hardest part of social media for your business?" not "Like if you agree"
+- Micro-threads (3-5 posts) perform well — tell a short story, build to a point
+- Reply to others genuinely — Threads algorithm rewards interaction
+
+**Posting frequency:** 5-7/week. Frequent posting rewarded by algorithm.
+
+---
+
+### 3.9 Bluesky
+
+**Setup steps:**
+1. Go to bsky.app → Sign up with Kova's email
+2. Set up profile
+3. Optionally: Set up a custom domain handle (e.g., kovaagent.com instead of @kovaagent.bsky.social)
+4. Connect to Kova Agent via Bluesky AT Protocol auth
+
+**Profile fields:**
+
+| Field | Value |
+|-------|-------|
+| **Display name** | Kova Agent |
+| **Handle** | @kovaagent.bsky.social (or @kovaagent.com if custom domain) |
+| **Bio** | 6 AI agents. 9 platforms. $1/mo. Building autonomous social intelligence in Nairobi. |
+| **Avatar** | Logo (square) |
+| **Banner** | Brand banner |
+
+**Kova account_type to select:** `Business`
+
+**Content focus for Bluesky:**
+- Sharp, substantive observations about AI, tech, social media — brevity matters (300 char limit)
+- Genuine hot takes with reasoning — not just provocation
+- Build-in-public posts: "Working on X, here's what I'm learning"
+- Thread format for deeper thoughts (post + replies to self)
+- Community engagement: quote-post with added value, respond to interesting skeets
+- Technical insights that the early-adopter/developer audience appreciates
+- Cultural commentary on the social media industry
+
+**Bluesky-specific voice adjustments:**
+- 300-character limit — every word must earn its place. Sharper than X
+- Anti-algorithm community ethos — people engage with what they genuinely enjoy, not what's optimized for engagement
+- Substance over clout. This audience detects and rejects engagement bait instantly
+- No explicit "follow/like" asks — strong opinions and genuine questions naturally drive replies
+- Tech-literate audience: you can use developer language, reference APIs, discuss architecture
+- Community building matters: engage with others' posts, boost interesting conversations
+- Quote-posts with added value are the primary amplification mechanism (not retweets/reposts)
+- Early-adopter crowd values authenticity and original thinking over polish
+
+**Posting frequency:** 4-6/week. Quality-focused — this audience penalizes low-effort content.
+
+---
+
 ## 4. CONTENT STRATEGY & PILLARS
 
 ### The 5 Content Pillars
@@ -497,17 +646,17 @@ Every post Kova publishes should map to one of these pillars:
 
 ### Content Formats by Platform
 
-| Format | LinkedIn | X | Instagram | Facebook | TikTok | YouTube |
-|--------|----------|---|-----------|----------|--------|---------|
-| Text posts | ✅ Primary | ✅ Primary | Caption support | ✅ Primary | ❌ | ❌ |
-| Threads | ❌ | ✅ Heavy use | ❌ | ❌ | ❌ | ❌ |
-| Carousels | ✅ PDFs | ❌ | ✅ Heavy use | ✅ | ❌ | ❌ |
-| Images | ✅ | ✅ | ✅ | ✅ | ❌ | Thumbnails |
-| Short video (<60s) | ✅ | ✅ Clips | ✅ Reels | ✅ Reels | ✅ Primary | ✅ Shorts |
-| Long video (3-20min) | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ Primary |
-| Stories | ❌ | ❌ | ✅ Daily | ✅ Daily | ❌ | ❌ |
-| Polls | ✅ | ✅ | ✅ Stories | ✅ | ❌ | Community |
-| Articles/Newsletter | ✅ | ❌ | ❌ | Notes | ❌ | ❌ |
+| Format | LinkedIn | X | Instagram | Facebook | TikTok | YouTube | Pinterest | Threads | Bluesky |
+|--------|----------|---|-----------|----------|--------|---------|-----------|---------|---------|
+| Text posts | ✅ Primary | ✅ Primary | Caption support | ✅ Primary | ❌ | ❌ | Pin descriptions | ✅ Primary | ✅ Primary |
+| Threads | ❌ | ✅ Heavy use | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Micro-threads | ✅ Skeet threads |
+| Carousels | ✅ PDFs | ❌ | ✅ Heavy use | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Images | ✅ | ✅ | ✅ | ✅ | ❌ | Thumbnails | ✅ Primary | ✅ Boost | ✅ |
+| Short video (<60s) | ✅ | ✅ Clips | ✅ Reels | ✅ Reels | ✅ Primary | ✅ Shorts | ✅ Idea Pins | ❌ | ❌ |
+| Long video (3-20min) | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ Primary | ❌ | ❌ | ❌ |
+| Stories | ❌ | ❌ | ✅ Daily | ✅ Daily | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Polls | ✅ | ✅ | ✅ Stories | ✅ | ❌ | Community | ❌ | ❌ | ❌ |
+| Articles/Newsletter | ✅ | ❌ | ❌ | Notes | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 ---
 
@@ -521,6 +670,9 @@ Every post Kova publishes should map to one of these pillars:
 | **Facebook** | 3-4 | Tue-Thu 9-11 AM, 1-3 PM | Less is more on FB |
 | **TikTok** | 5-7 | Mon-Sat 7-9 AM, 12-3 PM, 7-11 PM | Consistency > quality initially |
 | **YouTube** | 1-2 (Long) + 3-4 Shorts | Thu-Sat for long-form | Shorts daily OK |
+| **Pinterest** | 3-5 | Sat-Sun 8-11 PM, Fri 3 PM | Weekend evenings peak |
+| **Threads** | 5-7 | Mon-Fri 8-10 AM, 7-9 PM | Frequent posting rewarded |
+| **Bluesky** | 4-6 | Mon-Fri 9-11 AM, 5-7 PM | Quality > volume |
 
 ---
 
@@ -856,13 +1008,13 @@ Create these highlight categories:
 
 ### Month 1 Targets
 
-| Metric | LinkedIn | X | Instagram | Facebook | TikTok | YouTube |
-|--------|----------|---|-----------|----------|--------|---------|
-| **Followers** | 500 | 1,000 | 500 | 300 | 500 | 100 subs |
-| **Posts published** | 15 | 30+ | 20 | 12 | 20 | 6 |
-| **Avg engagement rate** | 3%+ | 2%+ | 4%+ | 2%+ | 5%+ | — |
-| **Profile visits** | 200+ | 500+ | 300+ | 150+ | 300+ | — |
-| **Website clicks** | 50+ | 100+ | 50+ | 30+ | 50+ | 30+ |
+| Metric | LinkedIn | X | Instagram | Facebook | TikTok | YouTube | Pinterest | Threads | Bluesky |
+|--------|----------|---|-----------|----------|--------|---------|-----------|---------|---------|
+| **Followers** | 500 | 1,000 | 500 | 300 | 500 | 100 subs | 200 | 300 | 200 |
+| **Posts published** | 15 | 30+ | 20 | 12 | 20 | 6 | 15 | 20 | 16 |
+| **Avg engagement rate** | 3%+ | 2%+ | 4%+ | 2%+ | 5%+ | — | 1%+ | 3%+ | 3%+ |
+| **Profile visits** | 200+ | 500+ | 300+ | 150+ | 300+ | — | 100+ | 150+ | 100+ |
+| **Website clicks** | 50+ | 100+ | 50+ | 30+ | 50+ | 30+ | 40+ | 20+ | 20+ |
 
 ### Month 3 Targets
 
@@ -904,6 +1056,9 @@ Social Media Followers → Website Visit → Signup → Trial → Paid
 - [ ] Create Kova Agent Facebook Page
 - [ ] Create Kova Agent TikTok Business account
 - [ ] Create Kova Agent YouTube channel
+- [ ] Create Kova Agent Pinterest Business account
+- [ ] Create Kova Agent Threads account (via Instagram)
+- [ ] Create Kova Agent Bluesky account
 
 ### Phase 2: Brand Assets (Day 1-2)
 - [ ] Design/finalize Kova logo (square + horizontal)
@@ -926,6 +1081,9 @@ Social Media Followers → Website Visit → Signup → Trial → Paid
 - [ ] Connect Facebook Page via Kova OAuth
 - [ ] Connect TikTok via Kova OAuth
 - [ ] Connect YouTube via Kova OAuth
+- [ ] Connect Pinterest via Kova Pinterest OAuth
+- [ ] Connect Threads via Kova Threads OAuth
+- [ ] Connect Bluesky via Kova AT Protocol auth
 - [ ] Configure brand voice + tone attributes in Kova (copy from Section 6)
 - [ ] Configure brand voice examples in Kova (copy from Section 6)
 - [ ] Configure target audience in Kova (copy from Section 6)
@@ -946,6 +1104,938 @@ Social Media Followers → Website Visit → Signup → Trial → Paid
 - [ ] Engage with 50+ accounts per platform daily for first week
 - [ ] Monitor and adjust based on early engagement data
 - [ ] After 2 weeks: Enable auto-approve if AI quality is good
+
+---
+
+## 10. COMPETITOR SETUP & TRACKING
+
+> Kova's Research Agent analyzes competitor social media strategies and feeds insights
+> back to the Create and Strategist agents. Adding competitors is what turns Kova from
+> a content tool into a competitive intelligence system. This is set up via the
+> **Analytics → Competitor Intelligence** dashboard.
+
+### Why This Matters
+
+Without competitors configured, Kova's Research Agent operates in a vacuum — finding general trends but missing the specific landscape YOUR brand operates in. With competitors added, it:
+- Identifies content gaps your competitors aren't covering (opportunities for you)
+- Detects their posting patterns, peak times, and content formats
+- Flags when a competitor shifts strategy (new platform, new tone, new audience)
+- Generates content ideas specifically designed to differentiate you from them
+- Provides threat-level assessments so you know where to focus
+
+### How Many Competitors to Track
+
+| Plan | Competitor Slots | Recommendation |
+|------|-----------------|----------------|
+| **Starter (KES 99)** | Not available | — |
+| **Kazi (KES 500)** | Up to 3 | Start here |
+| **Pro (KES 2,500)** | Up to 5 | Ideal for most businesses |
+| **Business (KES 10,000)** | Up to 10 | For competitive industries |
+
+> For Kova's own brand, track 5 competitors (we're on the Pro tier equivalent).
+
+### Competitor Selection Strategy
+
+Pick competitors across three tiers:
+
+**Tier 1 — Direct Competitors (2-3)**
+These are platforms doing roughly the same thing Kova does. The ones people will compare you to.
+
+**Tier 2 — Adjacent Competitors (1-2)**
+Platforms that solve part of the same problem but differently. They overlap with Kova on one or two capabilities.
+
+**Tier 3 — Aspirational / Category Leaders (1)**
+The big player in the broader space. You're not competing directly today, but their moves shape market expectations.
+
+### Kova Agent's Own Competitor Profile
+
+Here are the competitors to add for Kova's brand account in the Competitor Intelligence dashboard:
+
+---
+
+#### Competitor 1: Buffer
+
+| Field | Value |
+|-------|-------|
+| **Name** | Buffer |
+| **Tier** | Direct Competitor |
+| **Website** | https://buffer.com |
+| **Industry** | Social Media Management |
+| **Notes** | Scheduling-focused tool. Simple, clean UI. Missing: AI content creation, engagement automation, learning loop. Big in SMB space globally. Free tier attracts comparison shoppers. Weak in Africa — no M-Pesa, no local pricing. |
+| **Twitter/X handle** | @buffer |
+| **Instagram handle** | @buffer |
+| **Facebook handle** | buffer |
+| **LinkedIn handle** | buffer |
+| **TikTok handle** | @buffer |
+| **YouTube handle** | @buffer |
+| **Threads handle** | @buffer |
+
+**What to watch:**
+- Their content strategy (heavy educational blog + social)
+- How they position against AI-native tools
+- Pricing changes in emerging markets
+- Any AI feature announcements
+
+**Our differentiation:**
+> Buffer schedules. Kova thinks. Buffer needs you to create content, decide when to post, and write replies. Kova's 6 agents handle the entire loop autonomously. Buffer is a bicycle. Kova is an autopilot.
+
+---
+
+#### Competitor 2: Hootsuite
+
+| Field | Value |
+|-------|-------|
+| **Name** | Hootsuite |
+| **Tier** | Direct Competitor |
+| **Website** | https://hootsuite.com |
+| **Industry** | Social Media Management |
+| **Notes** | Enterprise-focused dashboard. Expensive ($99+/month). Feature-heavy but complex. Added AI writing (OwlyWriter) but it's bolt-on, not autonomous. Losing SMB market to simpler tools. Zero Africa presence. |
+| **Twitter/X handle** | @hootsuite |
+| **Instagram handle** | @hootsuite |
+| **Facebook handle** | hootsuite |
+| **LinkedIn handle** | hootsuite |
+| **TikTok handle** | @hootsuite |
+| **YouTube handle** | @hootsuite |
+| **Threads handle** | |
+
+**What to watch:**
+- Their AI strategy (OwlyWriter evolution)
+- Enterprise vs SMB positioning shifts
+- Pricing — they keep raising it, which is good for us
+- Partnership announcements with African companies (unlikely but monitor)
+
+**Our differentiation:**
+> Hootsuite gives you a cockpit with 200 buttons. Kova gives you an autopilot that flies the plane. They charge $99/month for a dashboard. We charge $1/month for a team. Their AI writes when asked. Ours works when you sleep.
+
+---
+
+#### Competitor 3: Later
+
+| Field | Value |
+|-------|-------|
+| **Name** | Later |
+| **Tier** | Direct Competitor |
+| **Website** | https://later.com |
+| **Industry** | Social Media Management |
+| **Notes** | Visual-first scheduler. Strong Instagram focus. Owned by Mavrck (influencer platform). Good at link-in-bio. Recently added AI caption writing. Weak: single-platform strength, no engagement automation, no learning loop. Not in Africa. |
+| **Twitter/X handle** | @latermedia |
+| **Instagram handle** | @latermedia |
+| **Facebook handle** | latermedia |
+| **LinkedIn handle** | latermedia |
+| **TikTok handle** | @latermedia |
+| **YouTube handle** | @latermedia |
+| **Threads handle** | |
+
+**What to watch:**
+- Their visual/Instagram-first content approach (learn from their IG strategy)
+- AI caption feature development
+- Link-in-bio product evolution
+- Creator/influencer market positioning
+
+**Our differentiation:**
+> Later is an Instagram scheduler that added other platforms. Kova is a 9-platform AI team built from day one for multi-platform autonomy. Later helps you post. Kova helps you win.
+
+---
+
+#### Competitor 4: Jasper AI
+
+| Field | Value |
+|-------|-------|
+| **Name** | Jasper AI |
+| **Tier** | Adjacent Competitor |
+| **Website** | https://jasper.ai |
+| **Industry** | AI Content Generation |
+| **Notes** | AI writing tool for marketing teams. Strong at long-form content and brand voice. NOT a social media management tool — no scheduling, no publishing, no engagement. Expensive ($49+/month). Enterprise-focused. Massive funding ($125M+). We overlap on AI content creation but differ on everything else. |
+| **Twitter/X handle** | @heyjasperai |
+| **Instagram handle** | @heyjasperai |
+| **Facebook handle** | heyjasperai |
+| **LinkedIn handle** | jasper-ai |
+| **TikTok handle** | @heyjasperai |
+| **YouTube handle** | @JasperAI |
+| **Threads handle** | |
+
+**What to watch:**
+- Their brand voice / brand memory features (they were early here)
+- Enterprise marketing AI positioning
+- Any move into social media management or scheduling
+- How they handle "AI replacing writers" narrative
+
+**Our differentiation:**
+> Jasper writes. Kova runs. Jasper gives you a talented writer who waits for instructions. Kova gives you 6 agents — researcher, writer, analyst, scheduler, community manager, strategist — working as an autonomous team. Jasper is one piece of the puzzle. Kova is the whole picture.
+
+---
+
+#### Competitor 5: Sprout Social
+
+| Field | Value |
+|-------|-------|
+| **Name** | Sprout Social |
+| **Tier** | Aspirational / Category Leader |
+| **Website** | https://sproutsocial.com |
+| **Industry** | Social Media Management & Analytics |
+| **Notes** | Enterprise leader. Public company ($SPT). Deep analytics, social listening, team collaboration. Very expensive ($249+/month per seat). Best-in-class reporting. Recently added AI features. Their moves signal where the market is heading. Zero relevance in African SMB space but they define "professional social media management." |
+| **Twitter/X handle** | @sproutsocial |
+| **Instagram handle** | @sproutsocial |
+| **Facebook handle** | SproutSocialInc |
+| **LinkedIn handle** | sprout-social-inc |
+| **TikTok handle** | @sproutsocial |
+| **YouTube handle** | @sproutsocial |
+| **Threads handle** | |
+
+**What to watch:**
+- Their AI/ML product roadmap (they have the resources to build serious AI)
+- Social listening features (we could learn from their approach)
+- Analytics depth (benchmark our analytics against theirs)
+- Enterprise pricing moves (any downmarket push threatens us long-term)
+- Acquisitions in the AI space
+
+**Our differentiation:**
+> Sprout Social is the $249/month enterprise command center. Kova is the $1/month autonomous AI team. They built the best dashboard for humans to manage social media. We're building the system that manages social media FOR humans. Different philosophy, different market, different era.
+
+---
+
+### Adding Competitors in Kova — Step by Step
+
+1. Go to **Analytics** → **Competitor Intelligence** in the sidebar
+2. Click **"Add Competitor"**
+3. Fill in each field from the tables above:
+   - **Name** — exact brand name
+   - **Website** — their main URL
+   - **Industry** — their primary category
+   - **Notes** — paste the "Notes" field from above (the AI uses this for context)
+   - **Social handles** — fill in all platform handles (the Research Agent will pull public data from these)
+4. Click **Save**
+5. Repeat for all 5 competitors
+
+### After Adding Competitors
+
+Once competitors are configured:
+- [ ] The **Research Agent** will analyze their public social profiles on its next cycle
+- [ ] Initial analysis takes 24-48 hours to complete across all competitors
+- [ ] **Competitor Insights** will start appearing in your Analytics dashboard
+- [ ] The **Strategist Agent** will factor competitor data into weekly strategy recommendations
+- [ ] The **Create Agent** will use competitor gap analysis to suggest differentiated content
+- [ ] Review the **Threat Level** assigned by the AI and adjust if needed
+
+### Competitor Tracking Cadence
+
+| Activity | Frequency | Who Does It |
+|----------|-----------|-------------|
+| Automated social profile analysis | Every strategy cycle (8 hours) | Research Agent |
+| Competitor insight generation | Weekly | Research Agent + Strategist Agent |
+| Threat level reassessment | Monthly | Strategist Agent |
+| Manual competitor list review | Quarterly | You (CEO) — add/remove/update competitors |
+| Deep competitive positioning update | Quarterly | You + Strategist Agent output |
+
+### Content Response Playbook
+
+When the Research Agent surfaces a competitor insight, here's how to respond in content:
+
+**Competitor launches a feature Kova already has:**
+> Make a "We shipped this [X weeks/months] ago" post. Build-in-public receipt. Don't name them — let the audience connect the dots.
+
+**Competitor raises prices:**
+> Post a pricing comparison. "$1/month. That's it. That's the post."
+
+**Competitor gets negative press:**
+> Don't pile on. Instead, post about Kova's values — transparency, fair pricing, building for Africa. Let the contrast speak.
+
+**Competitor launches something Kova doesn't have:**
+> If it's valuable: add to Kova's roadmap, post about it as a build-in-public item ("This is a great idea. Shipping our version next week.")
+> If it's noise: ignore. Not every feature deserves a response.
+
+**Competitor ignores Africa:**
+> This is your recurring content angle. "While [category] tools charge [$X/month] and don't accept M-Pesa, we built for the 44 million African businesses that need this."
+
+---
+
+## 11. AGENT CONFIGURATION & CUSTOM INSTRUCTIONS
+
+> Each of Kova's 6 agents has a `custom_instructions` field that gets injected directly into the
+> agent's LLM prompt. This is the **single most powerful tuning lever** in the entire system.
+> Configure these via **Agents** in the dashboard → click each agent → edit instructions.
+
+### Agent Activation State
+
+Not all agents are available on every plan. Here's the recommended initial configuration for Kova:
+
+| Agent | Role | Plan Required | Active from Day 1? |
+|-------|------|---------------|---------------------|
+| 🔍 **Research Agent** | Finds trends, competitors, and content angles | Growth+ | ✅ Yes |
+| ✍️ **Create Agent** | Drafts posts in your brand voice | All plans | ✅ Yes |
+| 📊 **Analyst Agent** | Tracks performance and detects Content DNA patterns | All plans | ✅ Yes |
+| 🔄 **Adapt Agent** | Tailors content per platform, schedules optimal times | Growth+ | ✅ Yes |
+| 💬 **Engage Agent** | Responds to comments, flags conversations | Pro+ | ✅ Yes (with auto-engage ON) |
+| 🧠 **Strategist Agent** | Orchestrates all agents, generates your Daily Brief | Pro+ | ✅ Yes |
+
+### Custom Instructions — What to Paste for Each Agent
+
+#### 🔍 Research Agent
+
+```
+Focus areas for research:
+- African SaaS and tech startup news (TechCrunch Africa, Disrupt Africa, TechCabal)
+- AI-for-SMB trends and tools — what's being shipped in the autonomous agent space
+- Social media algorithm changes across all 9 platforms
+- M-Pesa/mobile payments innovation in East Africa
+- Competitor moves: Buffer, Hootsuite, Later, Jasper AI, Sprout Social
+
+Geographic priority: Kenya → Nigeria → South Africa → Ghana → Global
+
+When finding content angles, prioritize:
+1. Data-backed insights over opinions
+2. "First in Africa" or "built for Africa" angles
+3. Pricing comparison opportunities ($1 vs $500 narrative)
+4. Build-in-public content that shows real metrics
+5. Content that positions Kova as a category creator, not a category competitor
+
+Avoid: Generic "Top 10 social media tips" angles. Find unique angles.
+```
+
+#### ✍️ Create Agent
+
+```
+You are writing for Kova Agent's own brand accounts. Kova is Africa's first
+Autonomous Social Intelligence platform.
+
+Mandatory rules:
+- NEVER use: revolutionize, cutting-edge, leverage, synergy, world-class, game-changer, empower, seamless
+- ALWAYS lead with insight or outcome, never with feature name
+- Use specific numbers: "6 agents, 9 platforms, $1/month" not "multiple agents"
+- Short sentences for punchy claims. Active voice always
+- Swahili/Sheng drops only when natural: "Kazi mode 🔥" is good, "Karibu to our platform" is cringe
+- Max 3 emojis per post. Max 5 hashtags per post
+- Every post must map to one of 5 pillars: Product, Build-in-Public, Intelligence, Africa/Mission, Community
+
+Content DNA priority: Analyze what's working and create more of it. If threads outperform
+single posts, write more threads. If comparison content gets saves, create more comparisons.
+```
+
+#### 📊 Analyst Agent
+
+```
+Track and analyze these metrics with highest priority:
+- Engagement rate by platform (are we above platform average?)
+- Content pillar performance (which pillar drives the most engagement?)
+- Format performance (threads vs single posts, carousels vs images, reels vs static)
+- Best-performing topics and hooks
+- Follower growth rate week-over-week
+- Website click-through from social
+
+When extracting Content DNA, focus on:
+- Hook patterns that get above-average engagement
+- Posting times that outperform (EAT timezone)
+- Content length sweet spots per platform
+- Which emojis, if any, correlate with higher engagement
+- Comparison: organic reach vs engagement-driven reach
+
+Flag to strategist when:
+- Engagement rate drops below platform average for 3+ consecutive posts
+- A single post significantly outperforms (3x+ average) — extract why
+- A platform shows declining reach trend over 7 days
+```
+
+#### 🔄 Adapt Agent
+
+```
+Platform adaptation priorities (in this order):
+1. LinkedIn — professional tone, insight-led, thought leadership format
+2. X/Twitter — punchy, build-in-public, thread-ready
+3. Instagram — visual-first, carousel-friendly, strong hooks for reels
+4. Facebook — warm, community-oriented, longer storytelling
+5. TikTok — ultra-casual, hook in 1.5 seconds, trending audio compatible
+6. YouTube — SEO-optimized titles, watch-time-friendly structure
+7. Threads — conversational, warm, micro-thread format
+8. Pinterest — SEO-rich, evergreen, descriptive pin titles
+9. Bluesky — sharp, substantive, 300-char max, substance over engagement bait
+
+When scheduling:
+- Respect the 7 posts/week limit across all platforms
+- Stagger posts across platforms (don't publish to all 9 simultaneously)
+- Prioritize platforms 1-3 when hitting the weekly post limit
+- Kenya/EAT timezone for optimal posting times
+```
+
+#### 💬 Engage Agent
+
+```
+Engagement personality: Kova is the smartest, friendliest person at a tech meetup.
+
+Response rules:
+- Auto-reply to positive/supportive comments ONLY
+- NEVER auto-reply to: complaints, questions requiring product knowledge, criticism, ambiguous sentiment
+- Flag for manual review: questions about pricing, features, bugs, partnerships
+
+Response templates for Kova's own accounts:
+- Positive feedback → genuine thanks + relevant follow-up ("Thanks! Have you tried [feature]?")
+- Feature suggestions → appreciation + transparency ("Great idea! Adding to our roadmap 🔥")
+- "What is Kova?" → concise pitch (6 agents, 9 platforms, $1/month, link)
+
+Tone: warm, brief, genuine. Never corporate. Never salesy in replies.
+Max response length: 2-3 sentences.
+```
+
+#### 🧠 Strategist Agent
+
+```
+Strategic priorities for Kova Agent (April-June 2026):
+1. Build brand awareness — we're new, most people don't know we exist
+2. Grow to 10,000 total followers across all platforms by Month 3
+3. Drive signups through social → website funnel
+4. Establish "Autonomous Social Intelligence" as a category in people's minds
+5. Build-in-public narrative — show real metrics, real progress, real honesty
+
+Weekly strategy brief should include:
+- What worked last week (top 3 posts and why)
+- What underperformed and what to change
+- Recommended content mix for next week (pillar distribution)
+- Competitor activity summary (any moves from Buffer, Hootsuite, Later, Jasper, Sprout)
+- Trending opportunities to capitalize on
+- Platform-specific recommendations (double down or pull back on each)
+
+Monthly strategy shift:
+- Month 1: 70% awareness, 30% conversion
+- Month 2: 50% awareness, 30% engagement, 20% conversion
+- Month 3: 30% awareness, 30% engagement, 40% conversion
+```
+
+### Agent Config JSON (Advanced)
+
+The `config` JSONField on each agent allows advanced tuning. These are optional:
+
+| Agent | Config Key | Example Value | What It Does |
+|-------|-----------|---------------|--------------|
+| Research | `max_trends_per_cycle` | `5` | Limits trend results per research cycle |
+| Create | `preferred_frameworks` | `["hook_value_cta", "pas"]` | Prioritizes specific content frameworks |
+| Analyst | `min_posts_for_dna` | `10` | Waits for N posts before extracting Content DNA |
+| Adapt | `platform_time_overrides` | `{"twitter": "08:00"}` | Override auto-calculated posting times |
+| Engage | `response_delay_minutes` | `5` | Minimum delay before auto-responding |
+| Strategist | `brief_sections` | `["wins", "trends", "plan"]` | Customize Daily Brief sections |
+
+---
+
+## 12. VISUAL STRATEGY & GRAPHICS SYSTEM
+
+> Kova's graphics engine generates branded visuals for every post. The system reads your
+> `visual_style`, `brand_colors`, and `brand_logo_url` to produce consistent, on-brand imagery.
+
+### Visual Style Selection
+
+Select in **Onboarding → Step 2 → Visual Style** (or Settings → Brand):
+
+| Option | Description | Best For |
+|--------|-------------|----------|
+| `photography` | Photography / Real Photos | Product brands, lifestyle, food |
+| `illustration` | Illustrations / Drawn Art | Creative brands, education |
+| `flat_design` | Flat Design / Minimal | SaaS, tech, clean brands |
+| `3d_render` | 3D Renders | Premium/innovative products |
+| `collage` | Collage / Mixed Media | Creative agencies, fashion |
+| `abstract` | Abstract / Artistic | Art, music, experimental brands |
+| `corporate` | Corporate / Clean | Professional services, B2B |
+| `vibrant` | Vibrant / Colorful | Youth brands, entertainment |
+| `dark_moody` | Dark / Moody | Luxury, nightlife, premium |
+| **`auto`** | **Let AI Decide** | **When AI should pick per post** |
+
+**For Kova Agent, select: `vibrant`**
+
+Why: Kova's brand is high-energy, tech-forward, and African-vibrant. Not corporate-clean (too boring), not dark-moody (too serious). Vibrant matches our personality — bold, colorful, attention-grabbing in feeds.
+
+### Brand Colors — Field Order Matters
+
+The graphics engine reads `brand_colors` as an **ordered list**. The position determines the role:
+
+| Position | Role | What It Affects | Kova's Value |
+|----------|------|-----------------|--------------|
+| `brand_colors[0]` | **Primary** | Background top / main gradient | `#1E293B` (Slate 800) |
+| `brand_colors[1]` | **Accent** | Accent bars, numbers, buttons, CTA backgrounds | `#F59E0B` (Amber 500) |
+| `brand_colors[2]` | **Secondary** | Background bottom / gradient end | `#0F172A` (Slate 900) |
+
+**Paste into Kova Onboarding → Step 2 → Brand Colors:**
+```json
+["#1E293B", "#F59E0B", "#0F172A"]
+```
+
+> The graphics engine defaults to a coral-on-navy scheme if no brand colors are set. Always set these.
+
+### Brand Logo URL
+
+Once your logo is hosted (e.g., on your production server or a CDN), paste the public URL into:
+**Settings → Brand → Brand Logo URL**
+
+The logo is overlaid on:
+- Carousel closing slides
+- CTA banners
+- Video thumbnails (when generated)
+
+### Visual Strategy Types
+
+The AI decides which visual type to use per post. Here's what each produces:
+
+| Type | What It Generates | Best For |
+|------|-------------------|----------|
+| `ai_photo` | AI-generated photo via FLUX.1 | Product visuals, lifestyle imagery, illustrations |
+| `quote_card` | Branded quote card — gradient bg + accent bars + large text | Thought leadership, brand voice showcase |
+| `tip_graphic` | Numbered list graphic — title + tips with accent icons | "5 Ways to..." content, educational posts |
+| `stat_highlight` | Big number + context — accent-colored stat with label | Milestone celebrations, data-driven posts |
+| `cta_banner` | Promotional banner — headline + subtext + CTA button | Sign-up pushes, feature announcements |
+| `carousel` | Multi-slide carousel (2-10 slides) | Instagram/LinkedIn breakdowns, step-by-step guides |
+
+### Canvas Sizes (Auto-Selected Per Platform)
+
+| Platform | Dimensions | Aspect Ratio |
+|----------|-----------|--------------|
+| Twitter/X | 1200 × 675 | 16:9 |
+| LinkedIn | 1200 × 627 | ~1.91:1 |
+| Instagram | 1080 × 1080 | 1:1 |
+| Facebook | 1200 × 630 | ~1.91:1 |
+| TikTok | 1080 × 1920 | 9:16 |
+| Pinterest | 1000 × 1500 | 2:3 |
+| Threads | 1080 × 1080 | 1:1 |
+| Bluesky | 1200 × 675 | 16:9 |
+| YouTube | 1280 × 720 | 16:9 |
+
+---
+
+## 13. MEDIA QUEUE STRATEGY
+
+> Media Queues let you batch-upload photos and have Kova publish them on a rhythm — daily
+> or weekly, at specific time slots. Think of it as a photo drip feed. Set up via
+> **Media Queue** in the sidebar.
+
+### When to Use Media Queues
+
+- **Product photo series**: Upload 20 product photos, publish 1/day at peak time
+- **Behind-the-scenes series**: Team photos, office shots, event photos dripped over weeks
+- **User-generated content**: Batch customer photos/screenshots, auto-publish on schedule
+- **Seasonal campaigns**: Pre-load holiday/event content to publish automatically
+- **Platform-specific visual content**: Pinterest pins, Instagram posts that need consistent cadence
+
+### Kova's Own Media Queue Setup
+
+#### Queue 1: Product Screenshots
+
+| Field | Value |
+|-------|-------|
+| **Name** | Product Screenshots |
+| **Social Account** | Instagram (@kovaagent) |
+| **Rhythm Type** | Daily |
+| **Time Slots** | `["11:00", "18:00"]` (EAT) |
+| **Active Days** | `[0, 1, 2, 3, 4]` (Mon-Fri) |
+| **Posts Per Slot** | 1 |
+| **Notify When Low** | 5 |
+| **Timezone** | Africa/Nairobi |
+
+#### Queue 2: Build-in-Public Photos
+
+| Field | Value |
+|-------|-------|
+| **Name** | Build in Public |
+| **Social Account** | X/Twitter (@KovaAgent) |
+| **Rhythm Type** | Weekly |
+| **Time Slots** | `[{"day": 4, "time": "14:00"}]` (Friday 2 PM EAT) |
+| **Posts Per Slot** | 1 |
+| **Notify When Low** | 3 |
+| **Timezone** | Africa/Nairobi |
+
+### Queue Items
+
+Each item in a queue has:
+- **Image** — The photo to publish (cropped version auto-generated per platform)
+- **Caption** — Optional text. If blank, the Create Agent generates a caption based on the image
+- **Order** — Drag to reorder. Lower numbers publish first
+
+### Queue Statuses
+
+| Status | Meaning |
+|--------|---------|
+| `queued` | Waiting in line to be published |
+| `publishing` | Currently being sent to the platform |
+| `published` | Successfully posted — linked to a Post for analytics |
+| `failed` | Publishing failed — check error_message |
+| `skipped` | Manually skipped or deactivated |
+
+---
+
+## 14. CONTENT SEEDING GUIDE
+
+> Content Seeds are the raw ideas you feed into Kova's Create Agent. A seed becomes
+> multiple platform-specific posts. The better your seeds, the better the AI output.
+
+### Anatomy of a Good Seed
+
+| Field | Purpose | Example |
+|-------|---------|---------|
+| **Idea** (required) | The core topic, angle, or content direction | "Compare Kova's pricing ($1/mo) to a freelance social media manager ($500/mo) — break down what each gives you" |
+| **Notes** (optional) | Extra context/instructions the AI uses | "Use actual KES numbers. Mention M-Pesa. Make it a carousel for IG and a thread for X. Tone: confident, not arrogant." |
+| **Target Platforms** (optional) | Restrict to specific platforms | `["instagram", "twitter", "linkedin"]` — if empty, generates for ALL connected platforms |
+
+### Seed Strategy — What to Submit and When
+
+**Seed Cadence:**
+- Submit **3-5 seeds per week** to keep the content pipeline full
+- Front-load seeds early in the week (Monday/Tuesday) so the AI has time to generate and you have time to review
+- Save "evergreen" seeds for slow news weeks
+- Submit "reactive" seeds immediately when something timely happens (competitor news, algorithm change, trending topic)
+
+**Seed Types for Different Pillars:**
+
+| Pillar | Seed Example | Notes Field |
+|--------|-------------|-------------|
+| **Product** | "Show the Daily Brief feature — what a user sees when they wake up" | "Screen recording style description. Focus on time saved." |
+| **Build in Public** | "Week 3 metrics: posts published, engagement rate, follower growth" | "Use real numbers. Be honest about what's not working too." |
+| **Intelligence** | "Instagram Reels algorithm changes in 2026 — what businesses should do differently" | "Data-backed. Don't be generic. Reference specific changes." |
+| **Mission** | "Why we built Kova in Nairobi instead of moving to Silicon Valley" | "Personal founder story angle. Mention the ecosystem, the talent, the market." |
+| **Community** | "What's the one social media task you hate most?" | "Keep it simple. Engagement-focused. Good for all platforms." |
+
+### Using Target Platforms Strategically
+
+| Scenario | Target Platforms | Why |
+|----------|-----------------|-----|
+| Technical deep dive | `["twitter", "linkedin"]` | Too technical for TikTok/IG |
+| Visual product demo | `["instagram", "tiktok", "pinterest"]` | Visual-first platforms |
+| Casual hot take | `["twitter", "threads", "bluesky"]` | Text-first, conversational platforms |
+| Long-form educational | `["linkedin", "facebook", "youtube"]` | Platforms that reward depth |
+| Everything (default) | `[]` (empty) | Let the Adapt Agent optimize per platform |
+
+### Batch Strategy and AI Generation
+
+The `batch_strategy` field is AI-generated — the Create Agent writes a content strategy for each seed before generating posts. This includes:
+- Angle and hook approach per platform
+- Content framework to use (Hook→Value→CTA, PAS, Story→Lesson, etc.)
+- Visual strategy recommendation per platform
+- Predicted engagement drivers
+
+> You don't fill in `batch_strategy` — the AI does. But reviewing it after generation helps you understand the AI's reasoning and give better seeds next time.
+
+---
+
+## 15. BILLING, PLANS & PAYMENT SETUP
+
+### Plan Tiers & Feature Matrix
+
+| Feature | Jipange (Starter) | Kazi (Growth) | Biashara (Pro) | Wakala (Agency) |
+|---------|-------------------|---------------|----------------|-----------------|
+| **Price (KES/month)** | 299 | 999 | 1,999 | 2,999 |
+| **Price (USD/month)** | $2 | $7 | $14 | $21 |
+| **Trial** | 14 days free | 14 days free | 14 days free | 14 days free |
+| **Social accounts** | 1 | 3 | 10 | 25 |
+| **Posts/month** | 15 | 60 | 150 | Unlimited |
+| **Content seeds/month** | 5 | 30 | 60 | Unlimited |
+| **Agents enabled** | Create, Analyst | +Research, Adapt | +Engage, Strategist | All 6 |
+| **Daily Brief** | ✅ | ✅ | ✅ | ✅ |
+| **Email Brief** | ❌ | ✅ | ✅ | ✅ |
+| **Engagement Agent** | ❌ | ✅ | ✅ | ✅ |
+| **Competitor tracking** | ❌ | ✅ | ✅ | ✅ |
+| **AI image generation** | ❌ | 50/month | 100/month | Unlimited |
+| **Auto-approve posts** | ❌ | ❌ | ✅ | ✅ |
+| **A/B testing** | ❌ | ✅ | ✅ | ✅ |
+| **Team members** | — | — | 5 | 25 |
+
+### Recommended Plan for Kova's Own Brand
+
+**Select: Biashara (Pro)** — KES 1,999/month
+
+Why:
+- All 6 agents active (need Engage Agent and Strategist for full autonomy)
+- 10 social accounts (covers all 9 platforms + 1 spare)
+- 150 posts/month (enough for 9 platforms)
+- 100 AI images/month
+- Auto-approve capability (enable after 2-week review period)
+- Competitor tracking (Section 10)
+- 5 team seats (for future team expansion)
+
+### Payment Configuration
+
+#### Option A: M-Pesa (Recommended for Kenyan billing)
+
+| Field | Value |
+|-------|-------|
+| **Payment Provider** | Select "M-Pesa" in Settings → Billing |
+| **M-Pesa Phone** | `254XXXXXXXXX` (your Safaricom number — must be 254 format, no +, no 0) |
+| **How it works** | Kova sends an STK Push to your phone → enter M-Pesa PIN → auto-confirmed |
+
+> Phone number format: `254712345678` (not `+254712345678`, not `0712345678`)
+
+#### Option B: Stripe (For USD billing / international cards)
+
+| Field | Value |
+|-------|-------|
+| **Payment Provider** | Select "Stripe" in Settings → Billing |
+| **How it works** | Redirects to Stripe Checkout → enter card → auto-confirmed |
+
+### Plan Selection Steps
+
+1. Go to **Settings** → **Billing** (or complete during onboarding Step 3)
+2. Select your plan tier
+3. Choose payment provider (M-Pesa or Stripe)
+4. If M-Pesa: enter phone number in `254XXXXXXXXX` format
+5. Confirm payment
+6. Your trial starts immediately — payment charged after 14 days
+
+---
+
+## 16. INDUSTRY PLAYBOOK & COLD START
+
+> When you select your industry during onboarding, Kova loads a pre-built **industry playbook**
+> that gives your agents a head start — seed suggestions, content DNA presets, optimal posting
+> times, and a weekly content calendar. This matters most for the first 15 posts before
+> Content DNA has real data to learn from.
+
+### Available Industry Playbooks
+
+| Industry Code | Playbook Name | Matched By |
+|---------------|---------------|------------|
+| `food_restaurant` | Food & Restaurant | Keywords: restaurant, food, cafe, kitchen, catering, bakery, chef |
+| `fashion_beauty` | Fashion & Beauty | Keywords: fashion, clothing, beauty, salon, makeup, style, boutique |
+| `real_estate` | Real Estate | Industry = `real_estate`; Keywords: property, realtor, housing, rental |
+| **`saas`** | **Tech & SaaS** | **Industry = `saas`; Keywords: tech, software, startup, app, developer, platform** |
+| `consulting`/`agency` | Professional Services | Keywords: consulting, agency, legal, accounting, coaching, training |
+
+### Kova's Industry Selection
+
+**Select: `saas` (SaaS / Software)** in Onboarding → Step 1 → Industry
+
+This loads the **Tech & SaaS playbook** which includes:
+
+**Content DNA Presets:**
+- Winning formats: threads, comparisons, build-in-public updates, data posts
+- Winning tones: confident, witty, educational
+- Winning hooks: "Here's what we learned...", "X vs Y: the real difference", "We shipped..."
+- Best content types per platform (thread format for X, carousels for IG, articles for LinkedIn)
+
+**7 Pre-Built Seed Suggestions:**
+The playbook auto-offers 7 seed ideas tailored to SaaS companies. Accept, customize, or replace them.
+
+**Weekly Content Calendar Template:**
+- Monday: Product/feature content
+- Tuesday: Industry insights
+- Wednesday: Customer-focused content
+- Thursday: Behind-the-scenes / build-in-public
+- Friday: Community engagement / lighter content
+- Saturday: Educational / how-to content
+- Sunday: Week ahead preview / planning content
+
+**Posting Strategy:**
+- Platform priority auto-suggestion (LinkedIn + X first for SaaS)
+- Frequency recommendations by platform
+- Key insight from playbook data
+
+### After 15 Published Posts
+
+Once Content DNA has analyzed 15+ published posts with real engagement data, the playbook influence fades and your actual performance data drives decisions. The system transitions from "industry best practices" to "your audience's actual preferences."
+
+---
+
+## 17. TEAMS & MULTI-BRAND MANAGEMENT
+
+> The Teams feature is for **Agency plan** users managing multiple client brands.
+> Each brand gets its own voice, pillars, audience, and connected accounts.
+> Not needed for Kova's own single-brand setup, but documented here for when Kova
+> offers agency services or manages demo brands.
+
+### When to Use Teams
+
+- Managing social media for multiple clients
+- Running different brands under one business
+- Having team members with different access levels
+- Separating brand voices so content doesn't bleed across clients
+
+### Team Structure
+
+```
+Team (e.g., "Kova Agency")
+  ├── Brand 1 (e.g., "Client: Unimart")
+  │     ├── Brand voice, pillars, audience, goals
+  │     ├── Connected social accounts
+  │     └── Content seeds → Posts
+  ├── Brand 2 (e.g., "Client: Nairobi Coffee Co")
+  │     └── ... same structure
+  └── Team Members
+        ├── Owner (full access)
+        ├── Admin (manage members + all brand ops)
+        ├── Editor (create + edit content)
+        └── Viewer (read-only dashboard access)
+```
+
+### Brand Fields (Mirror of UserProfile)
+
+Each Brand in a Team has its own:
+
+| Field | Purpose | Same As |
+|-------|---------|---------|
+| `name` | Client/brand name | `company_name` on UserProfile |
+| `brand_voice` | Tone and style description | Same field |
+| `brand_voice_examples` | Sample posts for voice training | Same field |
+| `industry` | Industry category | Same field |
+| `website_url` | Brand website | Same field |
+| `target_audience` | Audience description | Same field |
+| `content_pillars` | Content themes | Same field |
+| `goals` | Social media goals | Same field |
+| `logo` | Brand logo image | Similar to `brand_logo_url` |
+
+### Team Member Roles & Permissions
+
+| Permission | Owner | Admin | Editor | Viewer |
+|-----------|-------|-------|--------|--------|
+| Manage team settings | ✅ | ❌ | ❌ | ❌ |
+| Invite/remove members | ✅ | ✅ | ❌ | ❌ |
+| Change member roles | ✅ | ✅ | ❌ | ❌ |
+| Create/edit brands | ✅ | ✅ | ❌ | ❌ |
+| Create content seeds | ✅ | ✅ | ✅ | ❌ |
+| Create/edit posts | ✅ | ✅ | ✅ | ❌ |
+| Approve posts | ✅ | ✅ | ❌ | ❌ |
+| View dashboard/analytics | ✅ | ✅ | ✅ | ✅ |
+
+### Inviting Team Members
+
+1. Go to **Teams** → your team → **Members**
+2. Click **Invite Member**
+3. Enter their email + select role (Owner/Admin/Editor/Viewer)
+4. They receive an email with an invitation link (expires after set period)
+5. They accept → create account (if new) → join team
+
+---
+
+## 18. EMAIL BRIEFS & REPORTS
+
+> Kova sends automated emails for account activity, billing, and — on Growth+ plans —
+> your Daily Brief and Weekly Report via email.
+
+### Email Types & What Triggers Them
+
+| Email Type | Trigger | Plan Required |
+|-----------|---------|---------------|
+| **Welcome** | Account creation | All |
+| **Daily Brief** | Daily at your `daily_brief_time` | Growth+ (email delivery) |
+| **Weekly Report** | Every Monday morning | Growth+ |
+| **Posts Generated** | When AI finishes creating content from a seed | All (in-app) |
+| **Post Published** | When a post goes live | All (in-app) |
+| **Publish Failed** | When a post fails to publish | All (in-app) |
+| **Payment Confirmation** | Successful payment (M-Pesa or Stripe) | All |
+| **Payment Failed** | Payment attempt failed | All |
+| **Payment Reminder** | Upcoming payment | All |
+| **Trial Ending** | Trial expires soon | All |
+| **Plan Changed** | Upgrade/downgrade | All |
+| **Usage Warning** | Approaching plan limits (posts, seeds, images) | All |
+| **Team Invitation** | Invited to a team | Agency |
+| **Feature Announcement** | New feature shipped | All |
+
+### Daily Brief Configuration
+
+| Field | Where to Set | Kova's Value |
+|-------|-------------|--------------|
+| `daily_brief_time` | Settings → Preferences (or Onboarding Step 3) | `09:00` (9 AM EAT) |
+| Email delivery | Automatic if plan = Growth+ | ✅ Enabled (Pro plan) |
+| In-app delivery | Always available | ✅ Always on |
+
+**What the Daily Brief contains:**
+- Content suggestions for the day (AI-generated seeds)
+- Trending topics in your niche (from Research Agent)
+- Performance summary from yesterday (from Analyst Agent)
+- Posts pending approval (queue for your review)
+- Strategist recommendations (what to focus on today)
+
+### Weekly Report
+
+Sent every Monday. Contains:
+- Posts published last week (count + top performers)
+- Engagement metrics summary (likes, comments, shares, saves)
+- Follower growth across all platforms
+- Content DNA insights (what patterns are emerging)
+- Competitor activity summary
+- Recommended strategy adjustments for the coming week
+
+---
+
+## 19. NOTIFICATIONS & PREFERENCES
+
+### In-App Notification Types
+
+| Type | What It Means | When It Fires |
+|------|--------------|---------------|
+| `post_published` | A scheduled post went live | Every successful publish |
+| `publish_failed` | A post failed to publish | API error, token expired, etc. |
+| `posts_generated` | AI finished creating posts from a seed | After seed processing completes |
+| `agent_action` | An agent did something notable | Strategy update, Content DNA milestone, etc. |
+| `system` | System-level notification | Maintenance, plan changes, feature announcements |
+
+### Social Account Type Selection
+
+When connecting a social account to Kova, you'll be asked to select the **account type**. This affects how analytics are interpreted and which API features are used:
+
+| Account Type | When to Select | Platforms |
+|-------------|----------------|-----------|
+| **Personal** | Your personal profile (not recommended for brands) | Any |
+| **Business** | Business/company account | Instagram, TikTok, Pinterest |
+| **Creator** | Creator/influencer account | Instagram, TikTok |
+| **Page** | Facebook Page or LinkedIn Company Page | Facebook, LinkedIn |
+| **Organization** | Organization/nonprofit | LinkedIn |
+
+**For Kova's accounts, select:**
+- LinkedIn → `Page` (Company Page)
+- Facebook → `Page`
+- Instagram → `Business`
+- X/Twitter → `Business`
+- TikTok → `Business`
+- YouTube → `Business`
+- Pinterest → `Business`
+- Threads → `Business`
+- Bluesky → `Business`
+
+### Platform Priority Configuration
+
+Set in **Settings → Brand → Platform Priority** (or Onboarding Step 2):
+
+This tells agents which platforms matter most. Affects content generation order, scheduling priority when hitting post limits, and strategy recommendations.
+
+**Kova's Platform Priority:**
+```json
+{
+  "linkedin": 1,
+  "twitter": 2,
+  "instagram": 3,
+  "facebook": 4,
+  "tiktok": 5,
+  "youtube": 6,
+  "threads": 7,
+  "pinterest": 8,
+  "bluesky": 9
+}
+```
+
+> LinkedIn and X are prioritized because they're Kova's primary B2B and build-in-public channels. Instagram is third for visual reach. Adjust based on where your audience actually engages most — Content DNA will tell you after 2-4 weeks.
+
+### Profile & Account Fields Checklist
+
+These fields should all be set in **Settings** or during **Onboarding**:
+
+| Field | Where | Kova's Value | Status |
+|-------|-------|-------------|--------|
+| `avatar` | Settings → Profile | Kova logo | - [ ] Set |
+| `full_name` | Settings → Profile | Kova Agent | - [ ] Set |
+| `timezone` | Settings → Profile | Africa/Nairobi | - [ ] Set |
+| `daily_brief_time` | Settings → Preferences | 09:00 | - [ ] Set |
+| `company_name` | Onboarding Step 1 | Kova Agent | - [ ] Set |
+| `website_url` | Onboarding Step 1 | [production URL] | - [ ] Set |
+| `industry` | Onboarding Step 1 | saas | - [ ] Set |
+| `key_offerings` | Onboarding Step 1 | (See Section 6) | - [ ] Set |
+| `content_language` | Onboarding Step 1 | en (English) | - [ ] Set |
+| `brand_voice` | Onboarding Step 2 | (See Section 6) | - [ ] Set |
+| `brand_voice_examples` | Onboarding Step 2 | (See Section 6) | - [ ] Set |
+| `tone_attributes` | Onboarding Step 2 | confident, bold, witty, educational, approachable | - [ ] Set |
+| `target_audience` | Onboarding Step 2 | (See Section 6) | - [ ] Set |
+| `content_pillars` | Onboarding Step 2 | (See Section 6) | - [ ] Set |
+| `brand_restrictions` | Onboarding Step 2 | (See Section 6) | - [ ] Set |
+| `visual_style` | Onboarding Step 2 | vibrant | - [ ] Set |
+| `brand_colors` | Onboarding Step 2 | ["#1E293B", "#F59E0B", "#0F172A"] | - [ ] Set |
+| `brand_logo_url` | Settings → Brand | [hosted logo URL] | - [ ] Set |
+| `platform_priority` | Onboarding Step 2 | (See above) | - [ ] Set |
+| `posting_frequency` | Onboarding Step 3 | 7 | - [ ] Set |
+| `auto_approve_posts` | Onboarding Step 3 | OFF (enable after 2 weeks) | - [ ] Set |
+| `auto_engage` | Onboarding Step 3 | ON | - [ ] Set |
+| `plan` | Billing | pro (Biashara) | - [ ] Set |
+| `payment_provider` | Billing | mpesa or stripe | - [ ] Set |
+| `mpesa_phone` | Billing | 254XXXXXXXXX | - [ ] Set (if M-Pesa) |
 
 ---
 
