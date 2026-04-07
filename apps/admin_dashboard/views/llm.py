@@ -460,10 +460,10 @@ def _get_strategy_phases():
             "fast": "stepfun/step-3.5-flash:free",
             "fallback": "deepseek/deepseek-v3.2",
             "costs": {
-                "starter": {"ai": 0.05, "revenue": 0.70, "margin": 92.9},
-                "growth": {"ai": 0.23, "revenue": 3.52, "margin": 93.5},
-                "pro": {"ai": 0.90, "revenue": 10.56, "margin": 91.5},
-                "agency": {"ai": 2.25, "revenue": 24.65, "margin": 90.9},
+                "starter": {"ai": 0.05, "revenue": 2.10, "margin": 97.6},
+                "growth": {"ai": 0.23, "revenue": 7.03, "margin": 96.7},
+                "pro": {"ai": 0.90, "revenue": 14.08, "margin": 93.6},
+                "agency": {"ai": 2.25, "revenue": 21.12, "margin": 89.3},
             },
         },
         {
@@ -477,10 +477,10 @@ def _get_strategy_phases():
             "workhorse": "deepseek/deepseek-v3.2",
             "fast": "deepseek/deepseek-v3.2",
             "costs": {
-                "starter": {"ai": 0.05, "revenue": 0.70, "margin": 92.9},
-                "growth": {"ai": 0.24, "revenue": 3.52, "margin": 93.2},
-                "pro": {"ai": 2.66, "revenue": 10.56, "margin": 74.8},
-                "agency": {"ai": 6.66, "revenue": 24.65, "margin": 73.0},
+                "starter": {"ai": 0.05, "revenue": 2.10, "margin": 97.6},
+                "growth": {"ai": 0.24, "revenue": 7.03, "margin": 96.6},
+                "pro": {"ai": 2.66, "revenue": 14.08, "margin": 81.1},
+                "agency": {"ai": 6.66, "revenue": 21.12, "margin": 68.5},
             },
         },
         {
@@ -494,10 +494,10 @@ def _get_strategy_phases():
             "workhorse": "deepseek/deepseek-v3.2",
             "fast": "stepfun/step-3.5-flash",
             "costs": {
-                "starter": {"ai": 0.03, "revenue": 0.70, "margin": 95.7},
-                "growth": {"ai": 0.15, "revenue": 3.52, "margin": 95.7},
-                "pro": {"ai": 1.80, "revenue": 10.56, "margin": 83.0},
-                "agency": {"ai": 4.50, "revenue": 24.65, "margin": 81.7},
+                "starter": {"ai": 0.03, "revenue": 2.10, "margin": 98.6},
+                "growth": {"ai": 0.15, "revenue": 7.03, "margin": 97.9},
+                "pro": {"ai": 1.80, "revenue": 14.08, "margin": 87.2},
+                "agency": {"ai": 4.50, "revenue": 21.12, "margin": 78.7},
             },
         },
     ]

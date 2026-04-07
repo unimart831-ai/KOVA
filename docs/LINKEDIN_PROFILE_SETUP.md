@@ -132,7 +132,7 @@ Your job? Wake up, review your Daily Brief, approve content, and go run your bus
 THE NUMBERS THAT MATTER:
 
 → 9 platforms managed (Facebook, Instagram, X, LinkedIn, TikTok, YouTube, Pinterest, Threads, Bluesky)
-→ Starting at KES 99/month ($1) — cheaper than a cup of chai
+→ Starting at KES 299/month ($2) — cheaper than a cup of chai
 → M-Pesa payments built in from day one
 → 94% gross margins — this is a real business, not a science project
 → 6 AI agents × 9 scheduled tasks running for every user, 24/7
@@ -227,7 +227,7 @@ TECH STACK:
 Python/Django 5.1 · PostgreSQL · Celery + Redis · HTMX + Alpine.js · Tailwind CSS · OpenRouter (Gemini, GPT-4o, Claude, DeepSeek) · Railway · Sentry
 
 BUSINESS MODEL:
-4-tier subscription: Jipange (KES 99/$1) → Kazi (KES 500/$5) → Biashara (KES 1,500/$15) → Wakala (KES 3,500/$29)
+4-tier subscription: Jipange (KES 299/$2) → Kazi (KES 999/$7) → Biashara (KES 1,999/$14) → Wakala (KES 2,999/$21)
 94% gross margins · 10:1 CLV:CAC target · M-Pesa native payments
 
 MARKET:

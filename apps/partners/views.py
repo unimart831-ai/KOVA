@@ -75,10 +75,10 @@ def partners_landing(request):
     """Main Growth Partners Program landing page."""
     context = {
         "commission_tiers": [
-            {"range": "1–25 clients", "rate": "15%", "example": "KES 1,875/mo"},
-            {"range": "26–75 clients", "rate": "20%", "example": "KES 7,500/mo"},
-            {"range": "76–150 clients", "rate": "25%", "example": "KES 18,750/mo"},
-            {"range": "150+ clients", "rate": "30%", "example": "KES 30,000/mo"},
+            {"range": "1–25 clients", "rate": "15%", "example": "KES 3,748/mo"},
+            {"range": "26–75 clients", "rate": "20%", "example": "KES 14,985/mo"},
+            {"range": "76–150 clients", "rate": "25%", "example": "KES 37,463/mo"},
+            {"range": "150+ clients", "rate": "30%", "example": "KES 59,940/mo"},
         ],
         "milestones": [
             {"clients": m[0], "bonus": f"KES {m[1]:,}", "label": m[2], "extras": m[3]}

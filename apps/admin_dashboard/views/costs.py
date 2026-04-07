@@ -92,7 +92,7 @@ NON_LLM_PRICING = {
 # Default per-plan token estimates (from cost analysis doc)
 # voice_memos = estimated monthly voice memo recordings per user
 PLAN_TOKEN_ESTIMATES = {
-    "starter": {"input": 55_000, "output": 50_000, "images": 5, "voice_memos": 5},
+    "starter": {"input": 40_000, "output": 35_000, "images": 5, "voice_memos": 5},
     "growth": {"input": 260_000, "output": 220_000, "images": 50, "voice_memos": 20},
     "pro": {"input": 1_100_000, "output": 900_000, "images": 200, "voice_memos": 50},
     "agency": {"input": 2_200_000, "output": 1_800_000, "images": 500, "voice_memos": 100},
