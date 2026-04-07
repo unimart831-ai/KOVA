@@ -354,3 +354,236 @@ At 100 users, infra per user drops to $0.20 and margins improve 5-15% across all
 ---
 
 *This is a living document. Revisit every 3 months as the model landscape evolves rapidly.*
+
+---
+
+## 11. COST ECONOMICS DASHBOARD — HOW IT WORKS
+
+> **Location**: Admin Dashboard → Finance → Cost Economics
+> **Code**: `apps/admin_dashboard/views/costs.py`
+> **Template**: `templates/admin_dashboard/costs/overview.html`
+
+The Cost Economics dashboard is Kova's real-time financial intelligence center. It answers one question: **"Are we making money, and where?"**
+
+### 11.1 Dashboard Sections
+
+The dashboard has 6 sections, each serving a specific purpose:
+
+#### Section 1: Real-Time AI Cost Summary (Top Cards)
+Shows actual AI spend over 3 time windows:
+
+| Card | What It Shows | Why It Matters |
+|------|--------------|----------------|
+| **Cost (24h)** | Total USD spent on AI in the last 24 hours | Spot spikes immediately (e.g., a runaway prompt loop) |
+| **Cost (7d)** | Weekly spend | Trend indicator — is spend growing faster than users? |
+| **Cost (30d)** | Monthly spend | The real number — compare against revenue |
+| **Paid vs Free Calls** | How many LLM calls hit paid models vs free | If paid % is climbing, free models may be degrading |
+
+**How it calculates**: Every AI call logs an `AgentAction` record with `model_used`, `input_tokens`, and `output_tokens`. The dashboard multiplies these against the `MODEL_PRICING` table (defined in `costs.py`):
+
+```
+cost = (input_tokens / 1,000,000 × input_price) + (output_tokens / 1,000,000 × output_price)
+```
+
+If the model contains `:free` in its name or has $0 pricing, it's counted as a free call.
+
+#### Section 2: Daily Cost Trend Chart
+A 30-day line chart showing paid vs free AI cost per day. Helps you see:
+- Did a deployment change cause a cost spike?
+- Are costs growing linearly or exponentially with users?
+- What days have the highest usage? (scheduling optimization)
+
+#### Section 3: Per-Plan Unit Economics Table
+**The most important section.** For each plan (Starter, Growth, Pro, Agency), shows:
+
+| Column | Meaning |
+|--------|---------|
+| **Active Users** | Real count of paying users on that plan |
+| **Avg Calls/User** | How many AI calls each user makes per month |
+| **Avg Tokens/User** | Input + output tokens consumed per user |
+| **LLM Cost** | Actual AI cost per user (from real AgentAction data) |
+| **Image Cost** | Estimated image generation cost per user |
+| **Voice Cost** | Estimated Whisper transcription cost per user |
+| **Infra Cost** | Railway hosting cost ÷ total active users |
+| **Total Cost** | LLM + Image + Voice + Infra per user |
+| **Profit/User** | Plan price (USD) − Total cost per user |
+| **Margin %** | (Profit ÷ Price) × 100 |
+
+**Critical rule**: If any plan shows negative profit, that plan is losing money on every user. Action required immediately (reduce model quality for that tier or increase price).
+
+**Image cost logic**: Starter gets $0 image cost (free providers only). Growth/Pro/Agency estimated at $0.005/image using Pollinations.ai as paid fallback.
+
+**Voice cost logic**: OpenAI Whisper at $0.006/minute, with average memo length of 20 seconds:
+```
+voice_cost = voice_memos × (20 / 60) × $0.006
+```
+
+**Infrastructure cost scaling** (built into `_calculate_infra_cost_per_user()`):
+
+| Users | Railway Estimate | Per User |
+|-------|-----------------|----------|
+| 1-50 | $25/mo | $0.50 |
+| 51-100 | $30/mo | $0.30 |
+| 101-500 | $50/mo | $0.10 |
+| 501-1000 | $80/mo | $0.08 |
+| 1001-5000 | $200/mo | $0.04 |
+| 5000+ | $400/mo | $0.08 |
+
+#### Section 4: Top Consuming Users
+Lists the 15 users consuming the most tokens in the last 30 days. Shows:
+- Their email, company, and plan tier
+- Total AI cost attributed to them
+- Their plan revenue vs their cost
+- Whether they're **profitable or underwater**
+
+**Why this exists**: A single Agency user running bulk content could consume more AI than 50 Starter users. If one user costs more than they pay, you need to either upgrade their plan, add rate limits, or accept it as a growth investment.
+
+#### Section 5: Cost by Agent Type
+Breaks down AI costs by which agent is spending: Create, Engage, Analyst, Research, Adapt, Strategist. Shows calls, tokens, and cost per agent.
+
+**Common pattern**: Create agent dominates costs (40-60%) because it generates the most output tokens (full blog posts, social captions). If Engage or Analyst costs spike, something may be misfiring in batch jobs.
+
+#### Section 6: Scenario Cost Calculator
+An interactive "what-if" projector. You enter:
+
+**Left side — User Counts**:
+- How many users on each plan tier
+
+**Right side — Model Pricing** (USD per 1M tokens):
+- Premium Tier: input / output prices
+- Workhorse Tier: input / output prices
+- Fast Tier: input / output prices
+- Image, Voice, and Hosting costs
+
+Hit **Calculate** and it returns per-plan projections: revenue, cost breakdown, profit per user, and margins.
+
+### 11.2 The 3 Model Tiers Explained
+
+Kova doesn't use one AI model for everything. Tasks are grouped into 3 tiers based on what they need, and each tier can run a different model. This is configured in the `LLMConfig` singleton (`apps/agents/models.py`).
+
+#### Premium Tier — "The Copywriter"
+- **Purpose**: Creative, user-facing text that the customer will see and judge
+- **Tasks**: `create.generate`, `create.regenerate`, `create.repurpose`, `engage.reply`
+- **Quality requirement**: HIGH — this is the product output. Bad text = churn
+- **Token profile**: Heavy output (4K-8K tokens per call)
+- **Cost sensitivity**: Low — quality earns/retains revenue
+- **Recommended model**: Gemini 3 Flash ($0.50/$3.00) for Pro/Agency, DeepSeek V3.2 ($0.26/$0.38) for Starter/Growth
+
+#### Workhorse Tier — "The Strategist"
+- **Purpose**: Deep reasoning, research, and strategic analysis
+- **Tasks**: `research.trends`, `research.angles`, `strategist.brief`, `strategist.decide`
+- **Quality requirement**: MEDIUM-HIGH — needs strong reasoning but output is internal
+- **Token profile**: Moderate (1.5K-2.5K tokens output)
+- **Cost sensitivity**: Medium — user doesn't see raw output, it's synthesized
+- **Recommended model**: DeepSeek V3.2 ($0.26/$0.38) — 89th percentile reasoning at lowest cost
+
+#### Fast Tier — "The Analyst"
+- **Purpose**: Quick classification, scoring, data extraction
+- **Tasks**: `engage.analyze`, `analyst.content_dna`, `analyst.predict`, `analyst.performance`, `adapt.schedule`
+- **Quality requirement**: LOW-MEDIUM — simple structured JSON output
+- **Token profile**: Light (200-1.5K tokens output)
+- **Cost sensitivity**: HIGH — these run in bulk batches (hourly/daily), volume multiplies cost fast
+- **Recommended model**: Step 3.5 Flash ($0.10/$0.30) — fastest throughput (117 tok/s) at lowest price
+
+#### Token Distribution Across Tiers
+The calculator splits estimated tokens per plan as:
+- **40% Premium** — content generation is the bulk of output
+- **35% Workhorse** — research and strategy tasks
+- **25% Fast** — classification and analytics
+
+This split is based on observed production patterns. If your Create agent fires more than Research, the real split may be 50/25/25. The Top Consuming Users section shows actual data to validate these estimates.
+
+### 11.3 Scenario Presets
+
+The calculator has 5 preset buttons that load different model pricing scenarios:
+
+#### Phase 2 (Now) — Free Models
+```
+Premium:   $0 / $0          (Qwen 3.6 Plus free)
+Workhorse: $0 / $0          (Qwen 3.6 Plus free)
+Fast:      $0 / $0          (StepFun free)
+Images:    $0               (HuggingFace/Together.ai free)
+```
+**When to use**: Current state. 90%+ calls hit free models, paid fallback rare. Shows your floor cost (just infra + voice).
+
+#### Phase 3 — All DeepSeek
+```
+Premium:   $0.26 / $0.38    (DeepSeek V3.2)
+Workhorse: $0.26 / $0.38    (DeepSeek V3.2)
+Fast:      $0.26 / $0.38    (DeepSeek V3.2)
+Images:    $0.005           (Pollinations.ai)
+```
+**When to use**: After free model dependency is eliminated. All tiers on cheapest quality paid model. This is the "safe paid floor."
+
+#### Phase 4 — Optimized Routing
+```
+Premium:   $0.50 / $3.00    (Gemini 3 Flash)
+Workhorse: $0.26 / $0.38    (DeepSeek V3.2)
+Fast:      $0.10 / $0.30    (Step 3.5 Flash)
+Images:    $0.005
+```
+**When to use**: Mature state. Premium gets the best model, fast gets the cheapest model, workhorse in the middle. Maximizes quality-per-dollar.
+
+#### Free Only
+Same as Phase 2. All zeros. Shows infrastructure-only cost.
+
+#### Premium — Ceiling Test
+```
+Premium:   $3.00 / $15.00   (Claude Sonnet level)
+Workhorse: $0.50 / $3.00    (Gemini Flash level)
+Fast:      $0.26 / $0.38    (DeepSeek level)
+Images:    $0.04            (Expensive image gen)
+```
+**When to use**: Stress test. "What if we used the most expensive models?" Shows your worst-case cost ceiling. If margins are still positive here, your pricing is robust.
+
+### 11.4 Estimated Token Usage Per Plan
+
+These are the assumed monthly token volumes per user, per plan (defined in `PLAN_TOKEN_ESTIMATES`):
+
+| Plan | Input Tokens | Output Tokens | Images | Voice Memos |
+|------|-------------|--------------|--------|-------------|
+| **Starter** | 40,000 | 35,000 | 0 | 5 |
+| **Growth** | 260,000 | 220,000 | 50 | 20 |
+| **Pro** | 1,100,000 | 900,000 | 200 | 50 |
+| **Agency** | 2,200,000 | 1,800,000 | 500 | 100 |
+
+**Where these numbers come from**: Based on plan feature limits (max posts, max agents, max platforms) and estimated usage patterns from the COST_ANALYSIS.md doc. The Per-Plan Unit Economics section shows **actual** usage — check it regularly to see if estimates match reality. If actual Pro usage is 500K tokens but we estimated 1.1M, margins are better than projected.
+
+### 11.5 The Non-LLM Cost Components
+
+Not all AI costs are LLM tokens:
+
+| Service | Provider | Cost | Used For |
+|---------|----------|------|----------|
+| **Whisper** | OpenAI | $0.006/min | Voice memo transcription |
+| **FLUX.1-schnell** | Together.ai | Free | Image generation (primary) |
+| **FLUX.1-schnell** | HuggingFace | Free | Image generation (fallback 1) |
+| **Pollinations.ai** | Pollinations | $0.005/img | Image generation (fallback 2) |
+| **Pillow Graphics** | On-device | Free | Branded quote cards, stat graphics, CTA banners |
+| **Railway** | Railway.app | $20+/mo | Server hosting, DB, Redis |
+
+**Image generation priority chain**: Together.ai (free) → HuggingFace (free) → Pollinations ($0.005/img). The calculator uses $0.005 as worst-case, but in practice most images are generated for free.
+
+### 11.6 Reading the Numbers — Decision Framework
+
+Use this framework when reviewing Cost Economics:
+
+| Signal | Meaning | Action |
+|--------|---------|--------|
+| **Margin < 50% on any plan** | Plan is barely profitable | Raise price or downgrade model tier for that plan |
+| **Margin < 0% on any plan** | Losing money per user | Immediate: downgrade model or raise price |
+| **Paid calls > 20%** | Free models degrading | Check free model uptime, consider Phase 3 migration |
+| **One user > 3× avg cost** | Power user or abuse | Check if plan matches usage, consider rate limits |
+| **Agent cost spike** | Possible batch loop or prompt issue | Check Celery logs, look for repeated failures |
+| **Cost growing faster than revenue** | Unsustainable trajectory | Review token estimates, optimize prompts, adjust routing |
+| **Actual tokens << estimated tokens** | Users less active than projected | Good for margins, but may signal engagement problem |
+
+### 11.7 How Dynamic Pricing Connects
+
+The Cost Economics dashboard now uses `get_all_plan_limits()` instead of hardcoded `PLAN_LIMITS`. This means:
+
+1. When you change a plan price on the **Plan Pricing** page (Admin → Billing → Plan Pricing), the cost calculator automatically picks up the new price for margin calculations
+2. Revenue projections in the scenario calculator use live DB prices
+3. Per-plan unit economics reflect the actual prices you're charging, not the code defaults
+
+**The feedback loop**: Change prices on Plan Pricing → refresh Cost Economics → verify margins are still healthy → adjust if needed. No code changes, no redeployment.
