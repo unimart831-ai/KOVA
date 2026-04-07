@@ -1,0 +1,161 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+  {% if is_edit %}Update discount code settings{% else %}Create a new promotional discount code{% endif %}
+</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <form method="post" class="space-y-6">
+    {% csrf_token %}
+
+    <!-- Code -->
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Code Details</h3>
+
+      <div class="space-y-4">
+        {% if not is_edit %}
+        <div>
+          <label class="label">Code <span class="text-red-500">*</span></label>
+          <input type="text" name="code" value="{{ form.code|default:'' }}" required minlength="3" maxlength="30"
+                 class="input-field w-full font-mono uppercase" placeholder="e.g. LAUNCH50, PARTNER2026"
+                 pattern="[A-Za-z0-9_-]+" title="Letters, numbers, hyphens, underscores only">
+          <p class="text-[10px] text-gray-400 mt-1">Auto-uppercased. Letters, numbers, hyphens, underscores only.</p>
+        </div>
+        {% else %}
+        <div>
+          <label class="label">Code</label>
+          <p class="text-lg font-mono font-bold text-gray-900 dark:text-white">{{ code_obj.code }}</p>
+        </div>
+        {% endif %}
+
+        <div>
+          <label class="label">Description (internal)</label>
+          <input type="text" name="description" value="{% if is_edit %}{{ code_obj.description }}{% else %}{{ form.description|default:'' }}{% endif %}"
+                 class="input-field w-full" placeholder="e.g. Q2 partner promotion, Safaricom collab">
+        </div>
+      </div>
+    </div>
+
+    <!-- Discount -->
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Discount Amount</h3>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="label">Type <span class="text-red-500">*</span></label>
+          <select name="discount_type" required class="input-field w-full">
+            {% for val, label in discount_types %}
+            <option value="{{ val }}"
+              {% if is_edit and code_obj.discount_type == val %}selected{% endif %}
+              {% if not is_edit and form.discount_type == val %}selected{% endif %}
+            >{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="label">Value <span class="text-red-500">*</span></label>
+          <input type="number" name="discount_value" step="0.01" min="0.01" required
+                 value="{% if is_edit %}{{ code_obj.discount_value }}{% else %}{{ form.discount_value|default:'' }}{% endif %}"
+                 class="input-field w-full" placeholder="e.g. 20 for 20% or 500 for KES 500">
+          <p class="text-[10px] text-gray-400 mt-1">For percentage: 20 = 20% off. For fixed: the exact KES/USD amount off.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Restrictions -->
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Restrictions</h3>
+
+      <div class="space-y-4">
+        <div>
+          <label class="label">Applicable Plans</label>
+          <p class="text-[10px] text-gray-400 mb-2">Leave all unchecked to apply to every plan.</p>
+          <div class="flex flex-wrap gap-3">
+            {% for val, label in plan_choices %}
+            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+              <input type="checkbox" name="applicable_plans" value="{{ val }}"
+                     class="rounded border-gray-300 dark:border-gray-600 text-kova-600 focus:ring-kova-500"
+                     {% if is_edit and val in code_obj.applicable_plans %}checked{% endif %}
+                     {% if not is_edit and val in form.applicable_plans|default:'' %}checked{% endif %}>
+              {{ label }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="label">Max Total Uses</label>
+            <input type="number" name="max_uses" min="0"
+                   value="{% if is_edit %}{{ code_obj.max_uses }}{% else %}{{ form.max_uses|default:'0' }}{% endif %}"
+                   class="input-field w-full" placeholder="0 = unlimited">
+            <p class="text-[10px] text-gray-400 mt-1">0 = unlimited total redemptions.</p>
+          </div>
+          <div>
+            <label class="label">Max Uses Per User</label>
+            <input type="number" name="max_uses_per_user" min="1"
+                   value="{% if is_edit %}{{ code_obj.max_uses_per_user }}{% else %}{{ form.max_uses_per_user|default:'1' }}{% endif %}"
+                   class="input-field w-full" placeholder="1">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Validity Period -->
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Validity Period</h3>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="label">Valid From <span class="text-red-500">*</span></label>
+          <input type="datetime-local" name="valid_from" required
+                 value="{% if is_edit %}{{ code_obj.valid_from|date:'Y-m-d\TH:i' }}{% else %}{{ form.valid_from|default:'' }}{% endif %}"
+                 class="input-field w-full">
+        </div>
+        <div>
+          <label class="label">Valid Until <span class="text-red-500">*</span></label>
+          <input type="datetime-local" name="valid_until" required
+                 value="{% if is_edit %}{{ code_obj.valid_until|date:'Y-m-d\TH:i' }}{% else %}{{ form.valid_until|default:'' }}{% endif %}"
+                 class="input-field w-full">
+        </div>
+      </div>
+    </div>
+
+    {% if is_edit %}
+    <!-- Usage Stats (edit only) -->
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Usage Stats</h3>
+      <div class="grid grid-cols-3 gap-4 text-center">
+        <div>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ code_obj.current_uses }}</p>
+          <p class="text-xs text-gray-400">Times used</p>
+        </div>
+        <div>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{% if code_obj.max_uses == 0 %}∞{% else %}{{ code_obj.max_uses }}{% endif %}</p>
+          <p class="text-xs text-gray-400">Max uses</p>
+        </div>
+        <div>
+          <p class="text-2xl font-bold {% if code_obj.is_valid %}text-emerald-600{% else %}text-red-500{% endif %}">
+            {% if code_obj.is_valid %}Active{% elif code_obj.is_expired %}Expired{% else %}Inactive{% endif %}
+          </p>
+          <p class="text-xs text-gray-400">Status</p>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Submit -->
+    <div class="flex items-center justify-between">
+      <a href="{% url 'admin_dashboard:discount_list' %}" class="btn-ghost">← Back to Codes</a>
+      <button type="submit" class="btn-primary">
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        {% if is_edit %}Update Code{% else %}Create Code{% endif %}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

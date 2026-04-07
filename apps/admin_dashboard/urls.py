@@ -47,6 +47,12 @@ urlpatterns = [
     path("billing/subscriptions/action/", billing.subscription_action, name="subscription_action"),
     path("billing/bulk-grant/", billing.bulk_grant, name="bulk_grant"),
     path("billing/overrides/", billing.override_log, name="override_log"),
+    path("billing/pricing/", billing.plan_pricing, name="plan_pricing"),
+    path("billing/pricing/update/", billing.plan_pricing_update, name="plan_pricing_update"),
+    path("billing/discounts/", billing.discount_list, name="discount_list"),
+    path("billing/discounts/create/", billing.discount_create, name="discount_create"),
+    path("billing/discounts/<uuid:pk>/edit/", billing.discount_edit, name="discount_edit"),
+    path("billing/discounts/<uuid:pk>/toggle/", billing.discount_toggle, name="discount_toggle"),
 
     # Cost Economics
     path("costs/", costs.cost_overview, name="cost_overview"),

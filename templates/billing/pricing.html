@@ -157,6 +157,18 @@
           </div>
         </template>
 
+        {# Discount code #}
+        <template x-if="!isTrial">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Discount Code (optional)</label>
+            <input type="text" name="discount_code"
+                   placeholder="e.g. LAUNCH50"
+                   class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 font-mono uppercase text-sm"
+                   maxlength="30">
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Have a promo code? Enter it here.</p>
+          </div>
+        </template>
+
         <div class="flex gap-3">
           <button type="button" @click="showPhone = false" class="btn-secondary flex-1 justify-center">Cancel</button>
           <button type="submit" class="flex-1 justify-center inline-flex items-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors">

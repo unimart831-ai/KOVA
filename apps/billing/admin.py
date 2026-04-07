@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.billing.models import BillingEvent, MpesaPayment
+from apps.billing.models import BillingEvent, DiscountCode, DiscountRedemption, MpesaPayment, PlanPrice
 
 
 @admin.register(BillingEvent)
@@ -24,3 +24,24 @@ class MpesaPaymentAdmin(admin.ModelAdmin):
         "created_at", "completed_at",
     ]
     ordering = ["-created_at"]
+
+
+@admin.register(PlanPrice)
+class PlanPriceAdmin(admin.ModelAdmin):
+    list_display = ["tier", "price_kes", "price_usd", "is_active", "updated_by", "updated_at"]
+    list_filter = ["is_active", "tier"]
+
+
+@admin.register(DiscountCode)
+class DiscountCodeAdmin(admin.ModelAdmin):
+    list_display = ["code", "discount_type", "discount_value", "current_uses", "max_uses", "is_active", "valid_until"]
+    list_filter = ["is_active", "discount_type", "valid_until"]
+    search_fields = ["code", "description"]
+
+
+@admin.register(DiscountRedemption)
+class DiscountRedemptionAdmin(admin.ModelAdmin):
+    list_display = ["user", "discount_code", "plan_tier", "amount_saved", "currency", "redeemed_at"]
+    list_filter = ["currency", "redeemed_at"]
+    search_fields = ["user__email", "discount_code__code"]
+    readonly_fields = ["id", "discount_code", "user", "plan_tier", "original_amount", "discounted_amount", "amount_saved", "currency", "redeemed_at"]

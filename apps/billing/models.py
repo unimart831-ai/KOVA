@@ -1,7 +1,9 @@
 import uuid
 
 from django.conf import settings
+from django.core.cache import cache
 from django.db import models
+from django.utils import timezone
 
 
 class BillingEvent(models.Model):
@@ -174,9 +176,43 @@ PLAN_LIMITS = {
 }
 
 
+def _get_db_prices():
+    """Load DB price overrides with caching (5 min TTL)."""
+    cached = cache.get("plan_price_overrides")
+    if cached is not None:
+        return cached
+    try:
+        overrides = {
+            p.tier: {"price_kes": p.price_kes, "price_usd": p.price_usd}
+            for p in PlanPrice.objects.filter(is_active=True)
+        }
+    except Exception:
+        overrides = {}
+    cache.set("plan_price_overrides", overrides, 300)
+    return overrides
+
+
 def get_plan_limits(plan_tier):
-    """Get the limits for a plan tier. Defaults to starter if unknown."""
-    return PLAN_LIMITS.get(plan_tier, PLAN_LIMITS["starter"])
+    """Get the limits for a plan tier. DB prices override hardcoded ones."""
+    base = PLAN_LIMITS.get(plan_tier, PLAN_LIMITS["starter"]).copy()
+    overrides = _get_db_prices()
+    if plan_tier in overrides:
+        base["price_kes"] = overrides[plan_tier]["price_kes"]
+        base["price_usd"] = overrides[plan_tier]["price_usd"]
+    return base
+
+
+def get_all_plan_limits():
+    """Get all plans with DB price overrides applied."""
+    overrides = _get_db_prices()
+    result = {}
+    for tier, plan in PLAN_LIMITS.items():
+        p = plan.copy()
+        if tier in overrides:
+            p["price_kes"] = overrides[tier]["price_kes"]
+            p["price_usd"] = overrides[tier]["price_usd"]
+        result[tier] = p
+    return result
 
 
 class SubscriptionOverride(models.Model):
@@ -229,3 +265,192 @@ class SubscriptionOverride(models.Model):
 
     def __str__(self):
         return f"{self.get_action_display()} → {self.user} by {self.admin}"
+
+
+# ─── Dynamic Pricing ────────────────────────────────────────────────────────
+
+class PlanPrice(models.Model):
+    """Admin-managed plan prices. Overrides PLAN_LIMITS when active."""
+
+    TIER_CHOICES = [
+        ("starter", "Jipange / Starter"),
+        ("growth", "Kazi / Growth"),
+        ("pro", "Biashara / Pro"),
+        ("agency", "Wakala / Agency"),
+    ]
+
+    tier = models.CharField(max_length=20, choices=TIER_CHOICES, unique=True)
+    price_kes = models.PositiveIntegerField(help_text="Monthly price in KES")
+    price_usd = models.PositiveIntegerField(help_text="Monthly price in USD")
+    is_active = models.BooleanField(
+        default=True,
+        help_text="When inactive, falls back to hardcoded PLAN_LIMITS price",
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="+",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Plan Price"
+        verbose_name_plural = "Plan Prices"
+
+    def __str__(self):
+        return f"{self.get_tier_display()} — KES {self.price_kes} / ${self.price_usd}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        cache.delete("plan_price_overrides")
+
+
+# ─── Discount Codes ─────────────────────────────────────────────────────────
+
+class DiscountCode(models.Model):
+    """Promotional discount codes for subscriptions."""
+
+    class DiscountType(models.TextChoices):
+        PERCENTAGE = "percentage", "Percentage"
+        FIXED_KES = "fixed_kes", "Fixed Amount (KES)"
+        FIXED_USD = "fixed_usd", "Fixed Amount (USD)"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    code = models.CharField(
+        max_length=30, unique=True, db_index=True,
+        help_text="Unique code (auto-uppercased)",
+    )
+    description = models.CharField(max_length=200, blank=True, help_text="Internal admin note")
+
+    # Discount amount
+    discount_type = models.CharField(max_length=20, choices=DiscountType.choices)
+    discount_value = models.DecimalField(
+        max_digits=10, decimal_places=2,
+        help_text="Percentage (e.g. 20 for 20%) or fixed amount",
+    )
+
+    # Restrictions
+    applicable_plans = models.JSONField(
+        default=list, blank=True,
+        help_text='Plan tiers this applies to. Empty list = all plans. e.g. ["growth","pro"]',
+    )
+    max_uses = models.PositiveIntegerField(
+        default=0, help_text="Total max redemptions. 0 = unlimited.",
+    )
+    max_uses_per_user = models.PositiveIntegerField(
+        default=1, help_text="Max redemptions per user.",
+    )
+    current_uses = models.PositiveIntegerField(default=0, editable=False)
+
+    # Validity
+    valid_from = models.DateTimeField(help_text="When the code becomes active")
+    valid_until = models.DateTimeField(help_text="When the code expires")
+    is_active = models.BooleanField(default=True)
+
+    # Metadata
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="+",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["code"]),
+            models.Index(fields=["is_active", "valid_from", "valid_until"]),
+        ]
+
+    def __str__(self):
+        return f"{self.code} ({self.get_discount_type_display()}: {self.discount_value})"
+
+    def save(self, *args, **kwargs):
+        self.code = self.code.upper().strip()
+        super().save(*args, **kwargs)
+
+    @property
+    def is_valid(self):
+        """Check if the code is currently usable."""
+        now = timezone.now()
+        if not self.is_active:
+            return False
+        if now < self.valid_from or now > self.valid_until:
+            return False
+        if self.max_uses > 0 and self.current_uses >= self.max_uses:
+            return False
+        return True
+
+    @property
+    def is_expired(self):
+        return timezone.now() > self.valid_until
+
+    def can_user_use(self, user):
+        """Check if a specific user can use this code."""
+        if not self.is_valid:
+            return False
+        user_uses = self.redemptions.filter(user=user).count()
+        return user_uses < self.max_uses_per_user
+
+    def applies_to_plan(self, plan_tier):
+        """Check if this discount applies to a given plan."""
+        if not self.applicable_plans:
+            return True
+        return plan_tier in self.applicable_plans
+
+    def calculate_discount(self, original_kes, original_usd):
+        """Return (discounted_kes, discounted_usd, saved_kes, saved_usd)."""
+        if self.discount_type == self.DiscountType.PERCENTAGE:
+            pct = self.discount_value / 100
+            saved_kes = int(original_kes * pct)
+            saved_usd = int(original_usd * pct)
+        elif self.discount_type == self.DiscountType.FIXED_KES:
+            saved_kes = min(int(self.discount_value), original_kes)
+            saved_usd = 0
+        elif self.discount_type == self.DiscountType.FIXED_USD:
+            saved_kes = 0
+            saved_usd = min(int(self.discount_value), original_usd)
+        else:
+            saved_kes, saved_usd = 0, 0
+
+        return (
+            max(0, original_kes - saved_kes),
+            max(0, original_usd - saved_usd),
+            saved_kes,
+            saved_usd,
+        )
+
+
+class DiscountRedemption(models.Model):
+    """Records each discount code usage."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    discount_code = models.ForeignKey(
+        DiscountCode,
+        on_delete=models.PROTECT,
+        related_name="redemptions",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="discount_redemptions",
+    )
+    plan_tier = models.CharField(max_length=20)
+    original_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    discounted_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    amount_saved = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default="KES")
+    redeemed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-redeemed_at"]
+        indexes = [
+            models.Index(fields=["discount_code", "user"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user} used {self.discount_code.code} — saved {self.currency} {self.amount_saved}"

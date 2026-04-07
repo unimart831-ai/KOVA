@@ -26,7 +26,7 @@ from apps.billing.mpesa import format_phone_number, initiate_stk_push, parse_stk
 logger = logging.getLogger(__name__)
 
 
-def initiate_mpesa_checkout(user, plan_tier, phone_number):
+def initiate_mpesa_checkout(user, plan_tier, phone_number, discount=None):
     """
     Start an M-Pesa STK Push payment for a subscription.
 
@@ -34,6 +34,7 @@ def initiate_mpesa_checkout(user, plan_tier, phone_number):
         user: Django User instance
         plan_tier: 'starter', 'growth', 'pro', or 'agency'
         phone_number: Customer's phone (any Kenyan format)
+        discount: Optional DiscountCode instance for price reduction
 
     Returns:
         MpesaPayment instance (status=pending)
@@ -44,6 +45,13 @@ def initiate_mpesa_checkout(user, plan_tier, phone_number):
     """
     limits = get_plan_limits(plan_tier)
     amount = limits["price_kes"]
+
+    # Apply discount if provided
+    discount_amount_saved = 0
+    if discount:
+        discounted_kes, _, saved_kes, _ = discount.calculate_discount(amount, limits["price_usd"])
+        discount_amount_saved = saved_kes
+        amount = discounted_kes
 
     # Validate and format phone
     formatted_phone = format_phone_number(phone_number)
@@ -76,6 +84,22 @@ def initiate_mpesa_checkout(user, plan_tier, phone_number):
         is_renewal=is_renewal,
         status=MpesaPayment.Status.PENDING,
     )
+
+    # Record discount redemption
+    if discount and discount_amount_saved > 0:
+        from apps.billing.models import DiscountRedemption
+        from django.db.models import F
+        DiscountRedemption.objects.create(
+            discount_code=discount,
+            user=user,
+            plan_tier=plan_tier,
+            original_amount=limits["price_kes"],
+            discounted_amount=amount,
+            amount_saved=discount_amount_saved,
+            currency="KES",
+        )
+        discount.current_uses = F("current_uses") + 1
+        discount.save(update_fields=["current_uses", "updated_at"])
 
     # Save phone to profile for future renewals
     profile = user.profile

@@ -11,7 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 
-from apps.billing.models import PLAN_LIMITS, get_plan_limits
+from apps.billing.models import PLAN_LIMITS, get_all_plan_limits, get_plan_limits
 from apps.billing.services import (
     create_checkout_session,
     create_portal_session,
@@ -47,7 +47,7 @@ def billing_overview(request):
         "page_title": "Billing & Plan",
         "profile": profile,
         "limits": limits,
-        "all_plans": PLAN_LIMITS,
+        "all_plans": get_all_plan_limits(),
         "recent_payments": recent_payments,
         "stripe_publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
     })
@@ -58,7 +58,7 @@ def pricing(request):
     """Standalone pricing page (for logged-in users upgrading)."""
     return render(request, "billing/pricing.html", {
         "page_title": "Choose Your Plan",
-        "all_plans": PLAN_LIMITS,
+        "all_plans": get_all_plan_limits(),
         "current_plan": request.user.profile.plan,
     })
 
@@ -161,10 +161,12 @@ def stripe_webhook(request):
 def mpesa_checkout(request):
     """Initiate M-Pesa STK Push payment for a plan."""
     from apps.billing.mpesa_services import activate_trial, initiate_mpesa_checkout
+    from apps.billing.models import DiscountCode, DiscountRedemption
 
     plan_tier = request.POST.get("plan")
     phone_number = request.POST.get("phone_number", "").strip()
     is_trial = request.POST.get("trial") == "1"
+    discount_code_str = request.POST.get("discount_code", "").strip().upper()
 
     if plan_tier not in PLAN_LIMITS:
         messages.error(request, "Invalid plan selected.")
@@ -193,9 +195,29 @@ def mpesa_checkout(request):
             messages.error(request, "Could not activate trial. Please try again.")
             return redirect("billing:pricing")
 
+    # Validate discount code if provided
+    discount_obj = None
+    if discount_code_str:
+        try:
+            discount_obj = DiscountCode.objects.get(code=discount_code_str)
+        except DiscountCode.DoesNotExist:
+            messages.error(request, f"Discount code '{discount_code_str}' not found.")
+            return redirect("billing:pricing")
+
+        if not discount_obj.can_user_use(request.user):
+            messages.error(request, "This discount code is no longer valid or you've already used it.")
+            return redirect("billing:pricing")
+
+        if not discount_obj.applies_to_plan(plan_tier):
+            messages.error(request, f"This discount code doesn't apply to the {plan_tier.title()} plan.")
+            return redirect("billing:pricing")
+
     # Paid subscription — initiate STK Push
     try:
-        payment = initiate_mpesa_checkout(request.user, plan_tier, formatted_phone)
+        payment = initiate_mpesa_checkout(
+            request.user, plan_tier, formatted_phone,
+            discount=discount_obj,
+        )
         # Store checkout_request_id in session for the waiting page
         request.session["mpesa_checkout_id"] = payment.checkout_request_id
         request.session["mpesa_plan"] = plan_tier

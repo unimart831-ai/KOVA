@@ -14,7 +14,9 @@ admin.site.index_title = "Administration"
 def landing_page(request):
     if request.user.is_authenticated:
         return redirect("brief:home")
-    return render(request, "pages/landing.html")
+    from apps.billing.models import get_all_plan_limits
+    all_plans = get_all_plan_limits()
+    return render(request, "pages/landing.html", {"all_plans": all_plans})
 
 
 def service_worker(request):

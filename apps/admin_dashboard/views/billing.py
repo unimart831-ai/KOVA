@@ -11,7 +11,7 @@ from django.views.decorators.http import require_POST
 
 from apps.accounts.models import User, UserProfile
 from apps.admin_dashboard.decorators import senior_staff_required, staff_required, superuser_required
-from apps.billing.models import PLAN_LIMITS, BillingEvent, MpesaPayment, SubscriptionOverride
+from apps.billing.models import PLAN_LIMITS, BillingEvent, DiscountCode, DiscountRedemption, MpesaPayment, PlanPrice, SubscriptionOverride, get_all_plan_limits
 
 
 @staff_required
@@ -23,11 +23,12 @@ def billing_overview(request):
     last_30d = now - timedelta(days=30)
 
     # ── Subscription breakdown by plan ───────────────────────────────
+    all_plans = get_all_plan_limits()
     plan_breakdown = []
     total_mrr_kes = Decimal("0")
     total_paying = 0
     for plan_code, plan_label in UserProfile.PlanTier.choices:
-        info = PLAN_LIMITS.get(plan_code, {})
+        info = all_plans.get(plan_code, {})
         count = UserProfile.objects.filter(plan=plan_code, subscription_status="active").count()
         price_kes = Decimal(str(info.get("price_kes", 0)))
         price_usd = Decimal(str(info.get("price_usd", 0)))
@@ -538,3 +539,272 @@ def override_log(request):
         "action_choices": SubscriptionOverride.ActionType.choices,
     }
     return render(request, "admin_dashboard/billing/overrides.html", context)
+
+
+# ─── Plan Pricing Management ────────────────────────────────────────────────
+
+@senior_staff_required
+def plan_pricing(request):
+    """Manage plan prices from the dashboard."""
+    from django.core.cache import cache
+
+    all_plans = get_all_plan_limits()
+    db_prices = {p.tier: p for p in PlanPrice.objects.all()}
+
+    plans = []
+    for tier, info in PLAN_LIMITS.items():
+        db = db_prices.get(tier)
+        plans.append({
+            "tier": tier,
+            "label": info["label"],
+            "default_kes": info["price_kes"],
+            "default_usd": info["price_usd"],
+            "current_kes": all_plans[tier]["price_kes"],
+            "current_usd": all_plans[tier]["price_usd"],
+            "has_override": db is not None and db.is_active,
+            "db_obj": db,
+        })
+
+    context = {
+        "page_title": "Plan Pricing",
+        "plans": plans,
+    }
+    return render(request, "admin_dashboard/billing/pricing.html", context)
+
+
+@senior_staff_required
+@require_POST
+def plan_pricing_update(request):
+    """Update a single plan's price."""
+    from django.core.cache import cache
+
+    tier = request.POST.get("tier", "")
+    if tier not in PLAN_LIMITS:
+        messages.error(request, "Invalid plan tier.")
+        return redirect("admin_dashboard:plan_pricing")
+
+    action = request.POST.get("action", "")
+
+    if action == "reset":
+        PlanPrice.objects.filter(tier=tier).delete()
+        cache.delete("plan_price_overrides")
+        messages.success(request, f"Price for {PLAN_LIMITS[tier]['label']} reset to default.")
+        return redirect("admin_dashboard:plan_pricing")
+
+    try:
+        price_kes = int(request.POST.get("price_kes", 0))
+        price_usd = int(request.POST.get("price_usd", 0))
+    except (ValueError, TypeError):
+        messages.error(request, "Prices must be valid numbers.")
+        return redirect("admin_dashboard:plan_pricing")
+
+    if price_kes < 0 or price_usd < 0:
+        messages.error(request, "Prices cannot be negative.")
+        return redirect("admin_dashboard:plan_pricing")
+
+    obj, created = PlanPrice.objects.update_or_create(
+        tier=tier,
+        defaults={
+            "price_kes": price_kes,
+            "price_usd": price_usd,
+            "is_active": True,
+            "updated_by": request.user,
+        },
+    )
+    cache.delete("plan_price_overrides")
+    messages.success(
+        request,
+        f"{'Created' if created else 'Updated'} price for {PLAN_LIMITS[tier]['label']}: "
+        f"KES {price_kes} / ${price_usd}",
+    )
+    return redirect("admin_dashboard:plan_pricing")
+
+
+# ─── Discount Code Management ───────────────────────────────────────────────
+
+@staff_required
+def discount_list(request):
+    """List and search discount codes."""
+    qs = DiscountCode.objects.all()
+
+    search = request.GET.get("q", "").strip()
+    if search:
+        qs = qs.filter(
+            Q(code__icontains=search) | Q(description__icontains=search)
+        )
+
+    status_filter = request.GET.get("status", "")
+    if status_filter == "active":
+        now = timezone.now()
+        qs = qs.filter(is_active=True, valid_from__lte=now, valid_until__gte=now)
+    elif status_filter == "expired":
+        qs = qs.filter(valid_until__lt=timezone.now())
+    elif status_filter == "inactive":
+        qs = qs.filter(is_active=False)
+
+    # Stats
+    now = timezone.now()
+    total_codes = DiscountCode.objects.count()
+    active_codes = DiscountCode.objects.filter(
+        is_active=True, valid_from__lte=now, valid_until__gte=now,
+    ).count()
+    total_redemptions = DiscountRedemption.objects.count()
+    total_savings_kes = DiscountRedemption.objects.filter(
+        currency="KES",
+    ).aggregate(t=Sum("amount_saved"))["t"] or 0
+
+    paginator = Paginator(qs, 30)
+    page = paginator.get_page(request.GET.get("page", 1))
+
+    context = {
+        "page_title": "Discount Codes",
+        "page_obj": page,
+        "search": search,
+        "current_status": status_filter,
+        "total_count": paginator.count,
+        "total_codes": total_codes,
+        "active_codes": active_codes,
+        "total_redemptions": total_redemptions,
+        "total_savings_kes": total_savings_kes,
+    }
+    return render(request, "admin_dashboard/billing/discounts.html", context)
+
+
+@senior_staff_required
+def discount_create(request):
+    """Create a new discount code."""
+    if request.method == "POST":
+        code = request.POST.get("code", "").strip().upper()
+        description = request.POST.get("description", "").strip()
+        discount_type = request.POST.get("discount_type", "")
+        discount_value = request.POST.get("discount_value", "")
+        applicable_plans = request.POST.getlist("applicable_plans")
+        max_uses = request.POST.get("max_uses", "0")
+        max_uses_per_user = request.POST.get("max_uses_per_user", "1")
+        valid_from = request.POST.get("valid_from", "")
+        valid_until = request.POST.get("valid_until", "")
+
+        errors = []
+        if not code or len(code) < 3:
+            errors.append("Code must be at least 3 characters.")
+        if DiscountCode.objects.filter(code=code).exists():
+            errors.append(f"Code '{code}' already exists.")
+        if discount_type not in dict(DiscountCode.DiscountType.choices):
+            errors.append("Invalid discount type.")
+        try:
+            discount_value = float(discount_value)
+            if discount_value <= 0:
+                errors.append("Discount value must be positive.")
+            if discount_type == "percentage" and discount_value > 100:
+                errors.append("Percentage cannot exceed 100%.")
+        except (ValueError, TypeError):
+            errors.append("Discount value must be a valid number.")
+            discount_value = 0
+        try:
+            max_uses = int(max_uses)
+            max_uses_per_user = int(max_uses_per_user)
+        except (ValueError, TypeError):
+            errors.append("Max uses must be valid numbers.")
+            max_uses, max_uses_per_user = 0, 1
+        if not valid_from or not valid_until:
+            errors.append("Start and end dates are required.")
+
+        if errors:
+            for e in errors:
+                messages.error(request, e)
+            context = {
+                "page_title": "Create Discount Code",
+                "plan_choices": UserProfile.PlanTier.choices,
+                "discount_types": DiscountCode.DiscountType.choices,
+                "form": request.POST,
+            }
+            return render(request, "admin_dashboard/billing/discount_form.html", context)
+
+        from django.utils.dateparse import parse_datetime
+        parsed_from = parse_datetime(valid_from) or timezone.datetime.fromisoformat(valid_from).replace(tzinfo=timezone.utc)
+        parsed_until = parse_datetime(valid_until) or timezone.datetime.fromisoformat(valid_until).replace(tzinfo=timezone.utc)
+
+        DiscountCode.objects.create(
+            code=code,
+            description=description,
+            discount_type=discount_type,
+            discount_value=discount_value,
+            applicable_plans=applicable_plans if applicable_plans else [],
+            max_uses=max_uses,
+            max_uses_per_user=max_uses_per_user,
+            valid_from=parsed_from,
+            valid_until=parsed_until,
+            created_by=request.user,
+        )
+        messages.success(request, f"Discount code '{code}' created successfully.")
+        return redirect("admin_dashboard:discount_list")
+
+    context = {
+        "page_title": "Create Discount Code",
+        "plan_choices": UserProfile.PlanTier.choices,
+        "discount_types": DiscountCode.DiscountType.choices,
+    }
+    return render(request, "admin_dashboard/billing/discount_form.html", context)
+
+
+@senior_staff_required
+def discount_edit(request, pk):
+    """Edit an existing discount code."""
+    code_obj = get_object_or_404(DiscountCode, pk=pk)
+
+    if request.method == "POST":
+        code_obj.description = request.POST.get("description", "").strip()
+        discount_type = request.POST.get("discount_type", "")
+        if discount_type in dict(DiscountCode.DiscountType.choices):
+            code_obj.discount_type = discount_type
+
+        try:
+            code_obj.discount_value = float(request.POST.get("discount_value", code_obj.discount_value))
+        except (ValueError, TypeError):
+            messages.error(request, "Invalid discount value.")
+            return redirect("admin_dashboard:discount_edit", pk=pk)
+
+        code_obj.applicable_plans = request.POST.getlist("applicable_plans") or []
+        try:
+            code_obj.max_uses = int(request.POST.get("max_uses", 0))
+            code_obj.max_uses_per_user = int(request.POST.get("max_uses_per_user", 1))
+        except (ValueError, TypeError):
+            pass
+
+        valid_from = request.POST.get("valid_from", "")
+        valid_until = request.POST.get("valid_until", "")
+        if valid_from:
+            from django.utils.dateparse import parse_datetime
+            parsed = parse_datetime(valid_from)
+            if parsed:
+                code_obj.valid_from = parsed
+        if valid_until:
+            from django.utils.dateparse import parse_datetime
+            parsed = parse_datetime(valid_until)
+            if parsed:
+                code_obj.valid_until = parsed
+
+        code_obj.save()
+        messages.success(request, f"Discount code '{code_obj.code}' updated.")
+        return redirect("admin_dashboard:discount_list")
+
+    context = {
+        "page_title": f"Edit Discount: {code_obj.code}",
+        "code_obj": code_obj,
+        "plan_choices": UserProfile.PlanTier.choices,
+        "discount_types": DiscountCode.DiscountType.choices,
+        "is_edit": True,
+    }
+    return render(request, "admin_dashboard/billing/discount_form.html", context)
+
+
+@senior_staff_required
+@require_POST
+def discount_toggle(request, pk):
+    """Toggle a discount code active/inactive."""
+    code_obj = get_object_or_404(DiscountCode, pk=pk)
+    code_obj.is_active = not code_obj.is_active
+    code_obj.save(update_fields=["is_active", "updated_at"])
+    status = "activated" if code_obj.is_active else "deactivated"
+    messages.success(request, f"Discount code '{code_obj.code}' {status}.")
+    return redirect("admin_dashboard:discount_list")
