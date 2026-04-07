@@ -1149,7 +1149,36 @@ The big player in the broader space. You're not competing directly today, but th
 
 ### Kova Agent's Own Competitor Profile
 
-Here are the competitors to add for Kova's brand account in the Competitor Intelligence dashboard:
+Here are the competitors to add for Kova's brand account in the Competitor Intelligence dashboard.
+
+> **How to use this section**: Each competitor below is formatted to match the exact fields in the
+> `Competitor` model (Analytics → Competitor Intelligence → Add Competitor). Copy the values directly
+> into the form. The **Notes** field is critical — the Research Agent reads it for context when
+> generating competitive insights.
+
+---
+
+### Competitive Landscape Matrix (April 2026)
+
+| | **Kova** | **Buffer** | **Hootsuite** | **Later** | **Jasper AI** | **Sprout Social** |
+|---|---|---|---|---|---|---|
+| **Category** | Autonomous Social Intelligence | Social Scheduler | Social Media Management | Visual Social Scheduler | AI Content Generation | Enterprise Social Suite |
+| **Entry Price** | $2/mo (KES 299) | Free (3 channels) | $199/mo/user | $18.75/mo | $59/mo/seat | $79/mo/seat |
+| **AI Content Creation** | Autonomous (6 agents) | AI Assistant (manual trigger) | OwlyGPT (manual) | AI captions (5 credits/mo free) | Full AI writing platform | Enhance Post by AI Assist |
+| **Auto-Scheduling** | AI-optimized per platform | Best time suggestions | Recommended times | Smart Scheduling (Growth+) | None | Optimal send times |
+| **Engagement Automation** | Auto-reply + sentiment | Community inbox | DM automations + auto-responses | Social inbox (Growth+) | None | Centralized inbox |
+| **Competitor Intelligence** | Built-in (Research Agent) | None | Benchmark 5-20 competitors | Benchmarking (Scale plan) | None | Competitor insights (Pro+) |
+| **Content Strategy** | AI Strategist + Daily Brief | None | None | Future Trends (Growth+) | Brand voice templates | None |
+| **Learning Loop** | Content DNA → prediction → optimization | None | None | None | Brand memory | None |
+| **Africa / M-Pesa** | Yes — built for Africa | No | No | No | No | No |
+| **Platforms Supported** | 9 | 11 | 10+ | 8 | 0 (writing only) | 10+ |
+| **Threat Level** | — | Medium | Medium | Low | Low | Low |
+
+### Key Competitive Insight
+
+**The gap nobody else fills**: Every competitor above requires a human in the loop — someone to think of what to write, decide when to post, read analytics, and adjust strategy. Kova's 6-agent loop (Research → Create → Predict → Schedule → Publish → Engage → Learn) is the only product that operates autonomously. This isn't a feature difference — it's a category difference.
+
+**Pricing moat**: At $2/mo entry, Kova is 10-100× cheaper than every competitor. Buffer's free tier is the only real price competitor, but it caps at 3 channels and 10 scheduled posts with zero intelligence. The $199-$399/mo enterprise tools (Hootsuite, Sprout) serve a different market entirely. Kova owns the "AI team for $2" lane — nobody else is in it.
 
 ---
 
@@ -1161,23 +1190,29 @@ Here are the competitors to add for Kova's brand account in the Competitor Intel
 | **Tier** | Direct Competitor |
 | **Website** | https://buffer.com |
 | **Industry** | Social Media Management |
-| **Notes** | Scheduling-focused tool. Simple, clean UI. Missing: AI content creation, engagement automation, learning loop. Big in SMB space globally. Free tier attracts comparison shoppers. Weak in Africa — no M-Pesa, no local pricing. |
+| **Threat Level** | Medium |
+| **Notes** | Scheduling-focused tool with clean, simple UI. Free tier (3 channels, 10 posts each) is their hook — massive top-of-funnel. Paid plans per-channel: Essentials $5/mo, Team $10/mo. Has AI Assistant but manual-trigger only — user must prompt it. No autonomous content creation, no engagement automation beyond community inbox, no learning loop, no competitor intelligence. Strong brand in global SMB space. Weak in Africa — no M-Pesa, no local pricing, no regional content. 11 platform integrations including Bluesky, Mastodon. Transparent company (public salaries, public metrics). Main threat: free tier attracts comparison shoppers who might never try Kova. |
 | **Twitter/X handle** | @buffer |
 | **Instagram handle** | @buffer |
-| **Facebook handle** | buffer |
-| **LinkedIn handle** | buffer |
-| **TikTok handle** | @buffer |
-| **YouTube handle** | @buffer |
+| **Facebook handle** | bufferapp |
+| **LinkedIn handle** | bufferapp |
+| **TikTok handle** | — |
+| **YouTube handle** | — |
 | **Threads handle** | @buffer |
 
-**What to watch:**
-- Their content strategy (heavy educational blog + social)
-- How they position against AI-native tools
-- Pricing changes in emerging markets
-- Any AI feature announcements
+**Pricing Breakdown (April 2026)**:
+- Free: 3 channels, 10 posts/channel, 100 ideas, basic analytics
+- Essentials: $5/mo/channel ($60/yr) — unlimited posts, advanced analytics, hashtag manager
+- Team: $10/mo/channel ($120/yr) — unlimited members, approval workflows, access levels
 
-**Our differentiation:**
-> Buffer schedules. Kova thinks. Buffer needs you to create content, decide when to post, and write replies. Kova's 6 agents handle the entire loop autonomously. Buffer is a bicycle. Kova is an autopilot.
+**What to watch**:
+- Their AI Assistant evolution — any move toward autonomous creation threatens the "but Buffer is free" narrative
+- Pricing changes in emerging markets (currently USD-only)
+- Content marketing strategy (heavy educational blog + social, very effective)
+- Integration with Bluesky/Mastodon — they're ahead on decentralized social
+
+**Our differentiation**:
+> Buffer schedules what YOU create. Kova creates, schedules, publishes, engages, and learns — autonomously. Buffer is a bicycle. Kova is an autopilot. And at $2/mo with M-Pesa, we serve the 44 million African businesses Buffer doesn't even see.
 
 ---
 
@@ -1189,23 +1224,30 @@ Here are the competitors to add for Kova's brand account in the Competitor Intel
 | **Tier** | Direct Competitor |
 | **Website** | https://hootsuite.com |
 | **Industry** | Social Media Management |
-| **Notes** | Enterprise-focused dashboard. Expensive ($99+/month). Feature-heavy but complex. Added AI writing (OwlyWriter) but it's bolt-on, not autonomous. Losing SMB market to simpler tools. Zero Africa presence. |
+| **Threat Level** | Medium |
+| **Notes** | Enterprise-focused dashboard. Expensive: Standard $199/mo/user, Advanced $399/mo/user, Enterprise custom. Feature-heavy but complex — steep learning curve. Has OwlyGPT AI assistant for captions, hashtags, and content ideas (manual trigger, not autonomous). Strong social listening with Blue Silk AI and Talkwalker integration. DM automations and auto-responses on all plans. Competitive benchmarking: 5 competitors (Standard), 20 competitors (Advanced+). Sentiment analysis included. Biggest strength is all-in-one dashboard for enterprise teams. Losing SMB market to simpler, cheaper tools. Zero Africa presence — no M-Pesa, no local pricing, no African market focus. Keeps raising prices, which is good for us. 3,800+ five-star reviews on G2. |
 | **Twitter/X handle** | @hootsuite |
 | **Instagram handle** | @hootsuite |
 | **Facebook handle** | hootsuite |
 | **LinkedIn handle** | hootsuite |
 | **TikTok handle** | @hootsuite |
-| **YouTube handle** | @hootsuite |
-| **Threads handle** | |
+| **YouTube handle** | hootsuite |
+| **Threads handle** | — |
 
-**What to watch:**
-- Their AI strategy (OwlyWriter evolution)
-- Enterprise vs SMB positioning shifts
-- Pricing — they keep raising it, which is good for us
-- Partnership announcements with African companies (unlikely but monitor)
+**Pricing Breakdown (April 2026)**:
+- Standard: $199/mo/user — 10 social accounts, unlimited posts, OwlyGPT AI, DM automations, 5 competitor benchmarks, 7-day social listening
+- Advanced: $399/mo/user — unlimited accounts, bulk scheduling (350 posts), 20 competitor benchmarks, 30-day listening, auto-route messages, advanced reporting
+- Enterprise: Custom — SSO, employee advocacy (Amplify), Talkwalker listening, generative AI chatbot, Salesforce integration
 
-**Our differentiation:**
-> Hootsuite gives you a cockpit with 200 buttons. Kova gives you an autopilot that flies the plane. They charge $99/month for a dashboard. We charge $1/month for a team. Their AI writes when asked. Ours works when you sleep.
+**What to watch**:
+- Their AI strategy (OwlyGPT + Blue Silk AI evolution) — if they move toward autonomous content, they have the engineering budget to execute
+- Enterprise vs SMB positioning shifts — any downmarket move is a signal
+- Pricing increases (they keep raising it, driving SMBs toward us)
+- Social listening depth (we could learn from their Talkwalker approach for future features)
+- Generative AI chatbot release (Enterprise only for now — watch for expansion)
+
+**Our differentiation**:
+> Hootsuite gives you a cockpit with 200 buttons for $199/month. Kova gives you an autonomous AI team for $2/month. They charge per seat — add 3 team members and you're at $597/month. We charge per business. Their AI writes when you ask. Ours works while you sleep. Different era.
 
 ---
 
@@ -1217,23 +1259,31 @@ Here are the competitors to add for Kova's brand account in the Competitor Intel
 | **Tier** | Direct Competitor |
 | **Website** | https://later.com |
 | **Industry** | Social Media Management |
-| **Notes** | Visual-first scheduler. Strong Instagram focus. Owned by Mavrck (influencer platform). Good at link-in-bio. Recently added AI caption writing. Weak: single-platform strength, no engagement automation, no learning loop. Not in Africa. |
-| **Twitter/X handle** | @latermedia |
+| **Threat Level** | Low |
+| **Notes** | Visual-first scheduler with influencer marketing platform (acquired Mavrck). Strong Instagram/TikTok focus. 8 platform integrations (Instagram, Facebook, Threads, Pinterest, TikTok, LinkedIn, YouTube, Snapchat). AI content tools limited to credit-based system (5 credits/mo on Starter). "Social Sets" model: 1 set = 1 of each platform. Smart Scheduling with "Future Trends" feature (Growth+) — AI suggests trending topics, but user still creates content manually. Added competitive benchmarking (Scale plan, up to 20 competitors) and Brand Health sentiment monitoring. No engagement automation beyond basic social inbox on Growth+. Influencer marketing is their true moat — Later + Mavely creator network. Not focused on Africa at all. No M-Pesa, no local pricing. Pricing: Starter $18.75/mo, Growth $37.50/mo, Scale $82.50/mo (annual). |
+| **Twitter/X handle** | — |
 | **Instagram handle** | @latermedia |
 | **Facebook handle** | latermedia |
-| **LinkedIn handle** | latermedia |
-| **TikTok handle** | @latermedia |
+| **LinkedIn handle** | latergram-me |
+| **TikTok handle** | @later.com |
 | **YouTube handle** | @latermedia |
-| **Threads handle** | |
+| **Threads handle** | @latermedia |
 
-**What to watch:**
-- Their visual/Instagram-first content approach (learn from their IG strategy)
-- AI caption feature development
-- Link-in-bio product evolution
-- Creator/influencer market positioning
+**Pricing Breakdown (April 2026)**:
+- Starter: $18.75/mo (annual) — 1 Social Set (8 profiles), 30 posts/profile, 5 AI credits, 3-month analytics, Link in Bio
+- Growth: $37.50/mo (annual) — 2 Social Sets, 180 posts/profile, 50 AI credits, Smart Scheduling + Future Trends, social inbox, approvals, 1-year analytics, UGC collection
+- Scale: $82.50/mo (annual) — 6 Social Sets, unlimited posts, 100 AI credits, competitive benchmarking (20 competitors), Brand Health monitoring, Brand Mentions, 2-year analytics, priority support
+- Add-ons: Extra Social Sets $11.25/mo, Extra users $3.75/mo, Extra AI credits $3.75/mo per 100
 
-**Our differentiation:**
-> Later is an Instagram scheduler that added other platforms. Kova is a 9-platform AI team built from day one for multi-platform autonomy. Later helps you post. Kova helps you win.
+**What to watch**:
+- Their "Future Trends" AI feature — it predicts trending content, similar to our Research Agent but manual
+- Competitive benchmarking (Scale plan) — watch how they present competitor data
+- Brand Health + Brand Mentions (new features, Scale only) — sentiment monitoring we should learn from
+- Influencer marketing integration (Later + Mavely) — unique angle we don't compete on
+- Visual-first approach to scheduling (their UI/UX for Instagram content is excellent)
+
+**Our differentiation**:
+> Later is an Instagram scheduler that added other platforms. Kova is a 9-platform AI team built from day one for multi-platform autonomy. Later gives you 5 AI credits per month on their cheapest plan. Kova gives you 6 autonomous agents that work 24/7. Later helps you post. Kova helps you win.
 
 ---
 
@@ -1245,23 +1295,31 @@ Here are the competitors to add for Kova's brand account in the Competitor Intel
 | **Tier** | Adjacent Competitor |
 | **Website** | https://jasper.ai |
 | **Industry** | AI Content Generation |
-| **Notes** | AI writing tool for marketing teams. Strong at long-form content and brand voice. NOT a social media management tool — no scheduling, no publishing, no engagement. Expensive ($49+/month). Enterprise-focused. Massive funding ($125M+). We overlap on AI content creation but differ on everything else. |
+| **Threat Level** | Low |
+| **Notes** | Enterprise AI writing platform for marketing teams. Strong at long-form, brand voice, multi-language (30+ languages). NOT a social media management tool — no scheduling, no publishing, no engagement, no analytics. Pro $59/mo/seat, Business custom. Has Jasper IQ: Brand Voice, Style Guide, Visual Guidelines, Knowledge Base, Audiences. New "Agents" feature for marketing workflows (optimization, personalization, research). AI Studio for no-code agent building (Business only). Canvas editor for teams. API + MCP access on Business. $125M+ funding, massive enterprise sales team. We overlap ONLY on AI content creation — they don't touch social publishing, engagement, or intelligence. Their enterprise focus means they'll never price for African SMBs. Main risk: if they add social publishing, they become a full competitor with serious AI advantage. |
 | **Twitter/X handle** | @heyjasperai |
 | **Instagram handle** | @heyjasperai |
 | **Facebook handle** | heyjasperai |
 | **LinkedIn handle** | jasper-ai |
 | **TikTok handle** | @heyjasperai |
 | **YouTube handle** | @JasperAI |
-| **Threads handle** | |
+| **Threads handle** | — |
 
-**What to watch:**
-- Their brand voice / brand memory features (they were early here)
-- Enterprise marketing AI positioning
-- Any move into social media management or scheduling
-- How they handle "AI replacing writers" narrative
+**Pricing Breakdown (April 2026)**:
+- Pro: $59/mo/seat ($69/mo monthly) — 1 seat, Canvas editor, essential agents, 2 Brand Voices, 5 Knowledge assets, 3 Audiences, browser extension, plagiarism checker, 30+ languages
+- Business: Custom pricing — unlimited seats, advanced agents, no-code AI Agent Builder, Jasper Grid (scaled content), unlimited Brand Voices/Knowledge/Audiences, API + MCP access, SSO, SCIM, admin controls, dedicated CSM
+- Free 7-day trial available on Pro
 
-**Our differentiation:**
-> Jasper writes. Kova runs. Jasper gives you a talented writer who waits for instructions. Kova gives you 6 agents — researcher, writer, analyst, scheduler, community manager, strategist — working as an autonomous team. Jasper is one piece of the puzzle. Kova is the whole picture.
+**What to watch**:
+- Their "Agents" feature evolution — they now have optimization, personalization, and research agents similar in concept to Kova's Research Agent
+- AI Studio (no-code agent builder) — if they let users build social publishing agents, it's a threat
+- Jasper Grid (scaled content execution) — this is their play for high-volume content
+- Any move into social media scheduling/publishing
+- Brand IQ depth (Voice + Style Guide + Visual Guidelines) — their brand customization is more advanced than ours currently
+- "State of AI in Marketing 2026" report — useful market intelligence
+
+**Our differentiation**:
+> Jasper writes. Kova runs. Jasper gives you a talented writer who waits for instructions at $59/seat. Kova gives you 6 agents — researcher, writer, analyst, scheduler, community manager, strategist — working as an autonomous team for $2/month. Jasper is one puzzle piece. Kova is the whole picture, and it places itself.
 
 ---
 
@@ -1273,24 +1331,68 @@ Here are the competitors to add for Kova's brand account in the Competitor Intel
 | **Tier** | Aspirational / Category Leader |
 | **Website** | https://sproutsocial.com |
 | **Industry** | Social Media Management & Analytics |
-| **Notes** | Enterprise leader. Public company ($SPT). Deep analytics, social listening, team collaboration. Very expensive ($249+/month per seat). Best-in-class reporting. Recently added AI features. Their moves signal where the market is heading. Zero relevance in African SMB space but they define "professional social media management." |
+| **Threat Level** | Low |
+| **Notes** | Enterprise category leader. Public company ($SPT). Deep analytics, social listening, team collaboration, CRM integrations. Most comprehensive feature set in the market. 4 plan tiers: Essentials $79/seat/mo (NEW — simplified publishing), Standard $199/seat/mo, Professional $299/seat/mo, Advanced $399/seat/mo, Enterprise custom. AI Assist for post enhancement and reply enhancement (Advanced+). Extensive competitor insights (Professional+). Sentiment analysis in Smart Inbox (Advanced+). Premium add-ons: Analytics, Listening, Employee Advocacy, Influencer Marketing, Professional Services. Integrations: Salesforce, Zendesk, HubSpot, Shopify. Use cases: social commerce, social customer care, brand awareness. Their moves signal where the market is heading. Zero relevance in African SMB space — they define "enterprise social" globally. New Essentials tier ($79) signals potential downmarket push. |
 | **Twitter/X handle** | @sproutsocial |
 | **Instagram handle** | @sproutsocial |
 | **Facebook handle** | SproutSocialInc |
 | **LinkedIn handle** | sprout-social-inc |
 | **TikTok handle** | @sproutsocial |
 | **YouTube handle** | @sproutsocial |
-| **Threads handle** | |
+| **Threads handle** | — |
 
-**What to watch:**
-- Their AI/ML product roadmap (they have the resources to build serious AI)
-- Social listening features (we could learn from their approach)
-- Analytics depth (benchmark our analytics against theirs)
-- Enterprise pricing moves (any downmarket push threatens us long-term)
-- Acquisitions in the AI space
+**Pricing Breakdown (April 2026)**:
+- Essentials (NEW): $79/seat/mo ($99 monthly) — 5 profiles, optimal send times, profile + post-level reporting, basic publishing
+- Standard: $199/seat/mo — 5 profiles, consolidated inbox, keyword monitoring, review management, unlimited AI alt text
+- Professional: $299/seat/mo — unlimited profiles, message tagging, competitor/tag/paid insights, Enhance Post by AI Assist
+- Advanced: $399/seat/mo — Enhance Reply by AI, sentiment in inbox + reviews, Sprout API, team productivity reports, Message Spike Alerts
+- Enterprise: Custom — white-glove onboarding, priority support, SSO
+- Add-ons: Premium Analytics, Listening, Employee Advocacy, Influencer Marketing (no Sprout plan required), Professional Services
 
-**Our differentiation:**
-> Sprout Social is the $249/month enterprise command center. Kova is the $1/month autonomous AI team. They built the best dashboard for humans to manage social media. We're building the system that manages social media FOR humans. Different philosophy, different market, different era.
+**What to watch**:
+- The new Essentials tier ($79/seat) — signals downmarket expansion. If they hit $29/seat, they're in our territory
+- AI Assist evolution — currently just "enhance" (rewrite/improve), watch for autonomous features
+- Influencer Marketing platform (acquired Tagger) — doesn't need a Sprout plan, standalone product
+- Social commerce features (Shopify integration) — future opportunity angle
+- Listening product depth and pricing — competitive intelligence is their strength
+- Acquisitions in the AI agent space — they have the budget to buy competitors
+
+**Our differentiation**:
+> Sprout Social is the $199-$399/month enterprise command center designed for teams of humans managing social media. Kova is the $2/month autonomous AI team designed to BE the social media team. They built the best dashboard for humans. We're building the system that works FOR humans. Different philosophy, different market, different era. And their new $79 "Essentials" tier still costs 40× more than Kova.
+
+---
+
+### Competitive Pricing Comparison
+
+| Tool | Cheapest Paid | Mid-Tier | Enterprise | Per-Seat? | Africa/M-Pesa |
+|------|--------------|----------|-----------|-----------|---------------|
+| **Kova** | **$2/mo** (KES 299) | **$7/mo** (KES 999) | **$21/mo** (KES 2,999) | No — per business | **Yes** |
+| **Buffer** | $5/mo/channel | $10/mo/channel | — | Per channel | No |
+| **Later** | $18.75/mo | $37.50/mo | $82.50/mo | Per Social Set | No |
+| **Jasper AI** | $59/mo/seat | Custom | Custom | Per seat | No |
+| **Hootsuite** | $199/mo/user | $399/mo/user | Custom | Per user | No |
+| **Sprout Social** | $79/mo/seat | $299/mo/seat | Custom | Per seat | No |
+
+**Price gap narrative**: A small business in Nairobi would pay KES 299/mo ($2) for Kova vs KES 25,726/mo ($199) for Hootsuite Standard. That's **100× more expensive** for a tool that still requires a human to create every post.
+
+### Content Angles for Competitive Positioning
+
+Use these in social content when the moment is right:
+
+**1. The Price Gap Post** (use monthly):
+> "Hootsuite: $199/month. Buffer Essentials: $60/year for ONE channel. Sprout Social: $199/month per seat. Kova: $2/month with M-Pesa. Same number of platforms. But only one has 6 AI agents that work while you sleep. 🤷‍♂️"
+
+**2. The Autonomy Angle** (use when competitors ship AI features):
+> "Everyone's adding 'AI features' to their social tools. Here's the difference: they added AI to help you work faster. We built AI to work FOR you. Your Kova agents research, create, schedule, publish, engage, and learn — on their own. That's not a feature. That's a team."
+
+**3. The Africa Angle** (use weekly):
+> "44 million businesses across Africa. Zero of the major social media tools accept M-Pesa. Zero price plans below $18/month. Zero understand that KES 299/month is the right price point. We built Kova for this market. Not as an afterthought — as the founding principle."
+
+**4. The Comparison Table Post** (use quarterly):
+> Build a visual side-by-side with just 3 rows: Price, AI Autonomy Level, African Market Support. The data speaks for itself.
+
+**5. The "Still Scheduling?" Post** (use when competitor raises prices):
+> "[Competitor] just raised prices to $[X]/month. For a scheduler. In 2026, you're still manually typing posts and clicking 'Schedule'? Your competitors have autonomous AI teams doing this 24/7. Upgrade the paradigm, not the plan."
 
 ---
 
