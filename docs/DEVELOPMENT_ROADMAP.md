@@ -6,7 +6,7 @@
 #
 # This document is the SINGLE SOURCE OF TRUTH for building Kova Agent.
 # Every decision, every sprint, every feature traces back to here.
-# Last Updated: April 6, 2026
+# Last Updated: April 7, 2026
 # ============================================================================
 
 
@@ -860,8 +860,9 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 | Phase 3 | Sprint 12 | ✅ Complete | Production Hardening (security, perf optimization, caching, token encryption) |
 | Phase 4 | Sprint 13 | ✅ Complete | Agency Multi-Brand, Revenue Attribution, Mobile PWA, API Docs |
 | Phase 4 | Voice Memo | ✅ Complete | Voice Memo input (Whisper transcription → content seed) |
-| Phase 6 | Post-Phase 5 | ⏳ Deferred | White-label UI, Agent Marketplace, Open-source, Video AI |
 | Phase 5 | Post-Launch  | ⏳ Not Started | WhatsApp Intelligence, Meme Engine, Status Studio |
+| Phase 6 | Post-Phase 5 | ⏳ Not Started | Kova Links, CTA System, Lead Inbox, Email Marketing, Superfan Workflows, Video AI, Revenue Attribution |
+| Phase 7 | Post-Phase 6 | ⏳ Deferred | White-label UI, Agent Marketplace, Open-source |
 
 ## CELERY BEAT SCHEDULE (Current — 9 tasks)
 | Task | Schedule | Source |
@@ -1112,7 +1113,7 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 - [ ] Interactive API docs — No Swagger/OpenAPI UI (drf-spectacular), hand-written docs only
 - [ ] Custom agent skills / marketplace — Agents are hard-coded, no plugin/skill architecture
 - [ ] Open-source self-hosted edition — Docker infra exists, needs licensing + packaging
-- [ ] Advanced AI features (voice memo, video generation) — Image generation works, no audio/video yet
+- ~~[ ] Advanced AI features (voice memo, video generation)~~ — Voice memo ✅ complete, Video AI → Phase 6 Sprint 6F
 
 ## ─── PHASE 5: WhatsApp Intelligence — "Own the Most Important Channel" (Post-Launch) ───
 
@@ -1186,6 +1187,493 @@ channel — they're all customer support tools. This is category creation.
 - Template management: store approved templates in DB, render with context vars
 - Deep link for Status: `whatsapp://send?text=...` or `https://wa.me/?text=...` with media
 - Celery Beat tasks: `discover-trending-memes` (every 2-4h), `process-whatsapp-messages` (real-time via webhook)
+
+
+## ─── PHASE 6: Conversion Loop — "Close the Gap" (Post-Phase 5) ───
+##
+## THE PROBLEM THIS PHASE SOLVES:
+## ─────────────────────────────
+## Kova currently owns Research → Create → Schedule → Publish → Engage.
+## But the value chain is: Content → Engagement → LEAD CAPTURE → NURTURE → SALE → LOYALTY.
+## We DROP the user at lead capture. They scramble with Linktree + Mailchimp + Typeform +
+## Google Analytics separately. An operating system doesn't have gaps in the middle.
+##
+## This phase closes the loop. After Phase 6, a business owner in Nairobi can go from
+## "I have a KES 299/month Kova account" to "my social media generates measurable leads
+## and revenue" — without leaving Kova. That's the operating system promise.
+##
+## ORIGIN: Expert consultation (April 2026) + MailerLite email-social integration analysis.
+## Expert's core insight: "Key success depends on having a form — a Call to Action.
+## Make sure content has a number, an email, or a link to click for more information.
+## Have a back end where leads can be viewed and responded to."
+##
+## PRIORITY RATIONALE (Impact × Feasibility):
+## P0 = Must build first. Unlocks everything else. Small-to-medium effort.
+## P1 = Build once P0 is live. Creates the "operating system" differentiation.
+## P2 = Build after P1. Deepens the moat. Loyalty + media intelligence.
+## P3 = Build after P2. Full-cycle revenue attribution + design intelligence.
+
+### Sprint 6A: Kova Links — Link-in-Bio + Landing Pages (P0) ⏳ NOT STARTED
+##
+## WHY THIS IS P0:
+## Every social media post that says "link in bio" sends traffic somewhere.
+## Right now, that somewhere is Linktree ($5-24/mo), a random website, or nowhere.
+## Kova builds the content, schedules it, publishes it — then loses control at the
+## most valuable moment: when someone actually wants to act. That's insane.
+## Kova Links = we own that moment. And Linktree becomes unnecessary.
+##
+
+- [ ] New Django app: `apps/links/`
+- [ ] **KovaPage model** — one landing page per user (upgradeable to multiple on higher plans)
+  - Fields: user, slug (unique URL), title, bio, avatar, theme (preset color schemes),
+    background_color, text_color, accent_color, custom_css (Pro+ plans only),
+    is_published, visit_count, created_at, updated_at
+  - URL pattern: `kovaagent.com/l/{slug}` or custom domain mapping (future)
+- [ ] **KovaLink model** — individual links on the landing page
+  - Fields: page (FK), title, url, icon (optional emoji/icon class), position (ordering),
+    click_count, is_active, link_type (choices: url, email, phone, whatsapp, form),
+    created_at, updated_at
+  - Ordering: drag-and-drop via Alpine.js sortable
+- [ ] **LinkClick model** — analytics per click
+  - Fields: link (FK), clicked_at, referrer, user_agent, ip_hash (privacy-safe),
+    country (GeoIP lookup), device_type (mobile/desktop/tablet), source_platform
+    (which social platform drove the click — from UTM or referrer header)
+- [ ] **KovaForm model** — embedded lead capture forms on landing pages
+  - Fields: page (FK), title, description, fields_config (JSONField — defines form fields),
+    submit_button_text, success_message, notification_email (where to send alerts),
+    is_active, submission_count
+  - Default fields_config: [{"name": "name", "type": "text", "required": true},
+    {"name": "email", "type": "email", "required": true},
+    {"name": "phone", "type": "tel", "required": false},
+    {"name": "message", "type": "textarea", "required": false}]
+- [ ] **FormSubmission model** — captured leads from forms
+  - Fields: form (FK), data (JSONField — submitted field values), source_platform,
+    source_post (FK to Post, nullable), utm_source, utm_medium, utm_campaign,
+    ip_hash, submitted_at, is_read, is_contacted
+- [ ] Landing page builder UI (HTMX-powered, live preview)
+  - Theme selector (5-8 preset themes matching Kova brand aesthetic)
+  - Link editor (add/remove/reorder/toggle links)
+  - Form builder (toggle form on/off, customize fields)
+  - Preview panel (mobile + desktop mockup)
+  - URL: `/links/edit/`
+- [ ] Public landing page renderer — `/l/{slug}/`
+  - Fast server-rendered page (no auth required, minimal assets, fast LCP)
+  - Mobile-optimized (most visitors come from social on phones)
+  - Link click tracking (async — don't block redirect)
+  - Form submission handler (HTMX — no page reload)
+  - SEO: og:title, og:description, og:image meta tags
+  - 2-3 max colors enforced (expert advice: "Content design should have 2 colours, maximum 3")
+- [ ] Kova Links analytics dashboard — `/links/analytics/`
+  - Total visits, click-through rate, top links, traffic by platform
+  - Form submissions list with read/unread status
+  - Time-series chart: visits + clicks over 30 days
+  - Source breakdown: which social platform drives most traffic
+- [ ] Plan limits: Free = 1 page, 5 links | Growth = 3 pages, 20 links, forms | Pro = unlimited, custom CSS, multiple forms
+- DELIVERABLE: Users have a Kova-hosted link-in-bio page with lead capture forms. No Linktree needed.
+- UNIQUENESS TEST: No competitor (Buffer, Hootsuite, Later, Sprout) has a built-in link-in-bio
+  with AI-integrated lead capture. Linktree doesn't create content. Kova does both.
+- **TECHNICAL NOTES:**
+  - Public pages: WhiteNoise-served, cached aggressively (1hr TTL), invalidated on edit
+  - Click tracking: fire-and-forget Celery task (don't slow down redirects)
+  - Form submissions: rate-limited (10/min per IP) to prevent spam
+  - GeoIP: django-geoip2 or ip-api.com free tier (1000 req/min)
+  - Drag-and-drop: Alpine.js + SortableJS (already used in media queue)
+  - Mobile-first: TailwindCSS responsive, no JS framework
+
+### Sprint 6B: Smart CTA System (P0) ⏳ NOT STARTED
+##
+## WHY THIS IS P0:
+## The expert was unambiguous: "Make sure the content has a number, an email, or a link
+## to click for more information." Currently, Kova's Create Agent generates content with
+## has_cta tracked in Content DNA, but there's no URL field, no phone field, no email field
+## on the Post model, and no auto-UTM generation. CTAs are words without links.
+##
+
+- [ ] **Post model additions** (migration in `apps/content/`):
+  - `cta_url` — CharField, nullable — the link attached to this post's CTA
+  - `cta_type` — CharField choices: none, link, phone, email, whatsapp, kova_link
+  - `cta_text` — CharField — the CTA copy (e.g., "Book a free consultation →")
+  - `utm_source` — auto-populated from platform name
+  - `utm_medium` — auto-populated as "social"
+  - `utm_campaign` — auto-populated from content seed or user-defined campaign
+  - `utm_content` — auto-populated from post ID (for A/B tracking)
+  - `full_tracked_url` — property that builds the complete UTM-tagged URL
+- [ ] **Auto-UTM generation** in Create Agent pipeline:
+  - When user has a Kova Link page → auto-set `cta_url` to their landing page
+  - When user provides a URL → auto-append UTM parameters
+  - UTM format: `?utm_source={platform}&utm_medium=social&utm_campaign={seed_slug}&utm_content={post_id}`
+  - Create Agent prompt update: "Include a CTA in every post. Reference the user's
+    preferred CTA type (link, phone, WhatsApp, email) from their profile settings."
+- [ ] **CTA preferences in UserProfile**:
+  - `default_cta_type` — what kind of CTA to include by default
+  - `default_cta_url` — default landing page or website URL
+  - `cta_phone` — business phone number for phone CTAs
+  - `cta_email` — business email for email CTAs
+  - `cta_whatsapp` — WhatsApp number for WhatsApp CTAs
+  - Settings UI: `/settings/cta/` — configure default CTA behavior
+- [ ] **CTA performance tracking**:
+  - Link `LinkClick` (from Sprint 6A) back to source Post via utm_content
+  - New analytics view: "Which CTAs convert best?" — by type, by platform, by content DNA
+  - Content DNA enhancement: track `cta_type` as a performance variable
+  - Adapt Agent update: factor CTA performance into content strategy recommendations
+- [ ] **Post editor CTA section**:
+  - In post approval/edit UI: CTA type selector, URL field, preview of tracked URL
+  - One-click "Use my Kova Link" button (auto-fills from user's landing page)
+  - UTM preview: show exactly what URL will be used
+- [ ] **Platform-specific CTA formatting**:
+  - Twitter: URL at end of tweet (counts toward character limit — budget for it)
+  - LinkedIn: URL in first comment (better for algorithm) — auto-generate comment
+  - Instagram: "Link in bio" text + auto-update Kova Link page with post-specific link
+  - Facebook: URL embedded in post or as link preview
+  - TikTok: "Link in bio" reference
+- DELIVERABLE: Every Kova post has a trackable CTA. Users can prove which posts drive traffic.
+- **TECHNICAL NOTES:**
+  - UTM generation: utility function in `apps/content/utils.py`
+  - URL shortening: not initially (adds complexity). Use full UTM URLs.
+  - LinkedIn first-comment: new field `first_comment` on Post model, auto-published after post
+  - Instagram link-in-bio: auto-update KovaLink with latest post's destination URL
+
+### Sprint 6C: Lead Inbox + CRM Lite (P1) ⏳ NOT STARTED
+##
+## WHY THIS IS P1:
+## The expert said: "Have a back end where leads can be viewed and responded to."
+## Once Kova Links captures leads (Sprint 6A) and CTAs drive traffic (Sprint 6B),
+## users need a place to SEE and ACT on those leads. Without this, form submissions
+## are just database rows nobody reads.
+##
+## This is NOT a full CRM. It's a "Lead Inbox" — think unified inbox but for leads,
+## not social comments. Enough to respond, tag, and track. Not Salesforce.
+##
+
+- [ ] New Django app: `apps/leads/`
+- [ ] **Lead model** — every person who submits a form, clicks a tracked link, or is captured from social
+  - Fields: user (FK — the Kova user who owns this lead), name, email, phone,
+    source_type (choices: form_submission, social_dm, social_comment, manual, api),
+    source_platform (which social platform or "kova_links"),
+    source_post (FK to Post, nullable — which post drove them),
+    source_form (FK to KovaForm, nullable),
+    status (choices: new, contacted, qualified, converted, lost),
+    priority (choices: high, medium, low — auto-scored),
+    tags (JSONField — user-defined labels like "interested in product X"),
+    notes (TextField — user's private notes on this lead),
+    metadata (JSONField — extra context from form or social),
+    first_seen_at, last_activity_at, converted_at (nullable)
+  - Unique constraint: (user, email) — prevents duplicate leads per user
+  - Auto-dedup: if same email submits multiple forms, merge into one Lead record
+- [ ] **LeadActivity model** — timeline of interactions with a lead
+  - Fields: lead (FK), activity_type (choices: form_submitted, email_sent, email_opened,
+    social_interaction, note_added, status_changed, phone_called, whatsapp_sent),
+    description, metadata (JSONField), created_at
+  - Auto-logged: form submissions, email sends, status changes
+  - Manual: user adds notes, logs phone calls
+- [ ] **Lead auto-scoring** (priority assignment):
+  - High: submitted form + clicked multiple links + from LinkedIn (professional intent)
+  - Medium: submitted form OR multiple link clicks
+  - Low: single link click, no form submission
+  - Score factors: source_platform, number of interactions, recency, form fields filled
+  - AI scoring (Pro+ plans): Analyst Agent evaluates lead quality from form data + social context
+- [ ] **Lead Inbox UI** — `/leads/`
+  - Inbox-style list view: new leads highlighted, sortable by date/status/priority/platform
+  - Filter: by status, priority, source platform, date range, tags
+  - Lead detail view: full profile + activity timeline + source post + linked social interactions
+  - Quick actions: change status, add note, send email (via Kova email system), tag
+  - Bulk actions: mark as contacted, change priority, export CSV
+- [ ] **Lead notifications**:
+  - In-app notification when new lead captured
+  - Email notification: "You got a new lead from Instagram!" (configurable frequency)
+  - Daily Brief integration: "You captured 5 new leads yesterday. 2 are high-priority from LinkedIn."
+  - Push notification (PWA): immediate alert for high-priority leads
+- [ ] **Superfan → Lead bridge**:
+  - When Engage Agent detects a Superfan (16+ interactions), auto-create a Lead record
+  - Source type: `social_comment`, platform preserved, interaction history linked
+  - Notification: "Your superfan @handle has engaged 20 times. They're now in your leads."
+  - This closes the gap: Engage Agent identifies gold → Lead Inbox lets you act on it
+- [ ] **Lead analytics dashboard** — `/leads/analytics/`
+  - Total leads by source (pie chart: forms, social DMs, superfan conversions)
+  - Lead-to-conversion funnel: new → contacted → qualified → converted (with drop-off rates)
+  - Leads by platform (which social platform generates the most leads)
+  - Leads by post (which content generates the most captures)
+  - Response time tracking: how fast does the user follow up on new leads
+- [ ] Plan limits: Free = view only (max 10 leads) | Growth = full inbox, 100 leads | Pro = unlimited, AI scoring, export
+- DELIVERABLE: Users see leads in one place, get notified, can respond and track conversion.
+- **TECHNICAL NOTES:**
+  - Dedup: on FormSubmission save, check for existing Lead with same email → merge
+  - Superfan bridge: signal on Superfan tier change → auto-create Lead
+  - Email from inbox: reuse EmailService with new `lead_followup` email type
+  - Export: CSV download via StreamingHttpResponse (no heavy libraries)
+
+### Sprint 6D: Email Marketing Engine (P1) ⏳ NOT STARTED
+##
+## WHY THIS IS P1:
+## The MailerLite article nails it: "You don't own your social media audience. You can wake
+## up one morning to find your Facebook deleted." Email is the only channel where users OWN
+## their audience. Kova currently has a transactional email system (receipts, briefs, team
+## invites). This sprint adds MARKETING email: campaigns, lists, sequences.
+##
+## THE UNIQUE KOVA ANGLE:
+## Nobody — not Mailchimp, not Buffer, not Hootsuite — has a system where the SAME AI that
+## writes your social posts ALSO writes your email campaigns, using the SAME brand voice,
+## the SAME Content DNA, the SAME learning loop. That's category-defining.
+## Social + Email from one AI brain = Kova's unfair advantage.
+##
+
+- [ ] Extend `apps/emails/` (don't create new app — email infra already exists)
+- [ ] **EmailSubscriber model** — the user's email audience
+  - Fields: user (FK — the Kova user who owns this subscriber), email, name,
+    source (choices: kova_form, manual_import, social_bio, api),
+    source_post (FK to Post, nullable — which post or form captured them),
+    status (choices: active, unsubscribed, bounced, complained),
+    tags (JSONField — segmentation labels),
+    engagement_score (0-100 — opens/clicks history),
+    subscribed_at, unsubscribed_at (nullable),
+    metadata (JSONField — extra context)
+  - Unique constraint: (user, email) — one subscriber per email per Kova user
+  - Auto-populate from Lead model: when a Lead has an email → auto-create subscriber (with consent flag)
+  - GDPR compliance: double opt-in flow, unsubscribe link in every email, data export/deletion
+- [ ] **EmailList model** — segmentation groups
+  - Fields: user (FK), name, description, filter_rules (JSONField — dynamic segment definitions),
+    subscriber_count (cached), is_smart (bool — auto-updating based on rules vs static list),
+    created_at, updated_at
+  - Smart lists: "All leads from Instagram", "Subscribers who opened last 3 emails",
+    "High-engagement superfans"
+  - Static lists: manual add/remove
+- [ ] **EmailCampaign model** — broadcast emails
+  - Fields: user (FK), name, subject, preview_text, html_content, text_content,
+    from_name, reply_to, target_list (FK to EmailList), status (choices: draft,
+    scheduled, sending, sent, cancelled), scheduled_at, sent_at, total_sent,
+    total_opened, total_clicked, total_bounced, total_unsubscribed,
+    ai_generated (bool — was content written by Create Agent),
+    source_post (FK to Post, nullable — repurposed from a social post),
+    created_at, updated_at
+  - A/B testing: `variant_of` (FK to self) + `variant_label` (A/B) + `variant_percentage` (50/50)
+- [ ] **EmailSequence model** — automated multi-step email flows
+  - Fields: user (FK), name, trigger_type (choices: form_submission, tag_added,
+    subscriber_added, lead_status_change, manual), is_active, created_at
+  - Steps: `EmailSequenceStep` — sequence (FK), step_number, delay_days,
+    delay_hours, subject, html_content, text_content, ai_generated
+  - Example sequences:
+    - Welcome sequence: Day 0 (welcome), Day 2 (introduce your story), Day 5 (best content roundup)
+    - Re-engagement: Day 0 (we miss you), Day 3 (best of what you missed), Day 7 (special offer)
+    - Lead nurture: Day 0 (thanks for reaching out), Day 1 (case study), Day 3 (book a call CTA)
+- [ ] **AI email content generation** (Create Agent extension):
+  - "Write an email campaign about [topic]" — same brand voice as social posts
+  - "Turn this LinkedIn post into a newsletter" — social-to-email repurposing
+  - "Write a 3-part welcome sequence" — AI generates full sequence from brand context
+  - Content DNA applied: same attributes that work in social (has_cta, tone, topic) used in emails
+  - Subject line A/B generation: Create Agent suggests 2-3 subject variants
+- [ ] **Campaign builder UI** — `/emails/campaigns/new/`
+  - Visual email editor (block-based, HTMX-powered, no WYSIWYG library dependency)
+  - Template gallery: 8-10 pre-built email templates (announcement, newsletter, product, personal)
+  - AI assist: "Generate email about..." button → Create Agent writes content
+  - Preview: desktop + mobile mockup (inline)
+  - Send test email, schedule, or send now
+  - A/B setup: toggle variant mode, auto-split audience
+- [ ] **Email analytics dashboard** — extends existing `/dashboard/emails/`
+  - Campaign performance: opens, clicks, bounces, unsubscribes per campaign
+  - Subscriber growth chart: new subscribers over time, by source
+  - Engagement heatmap: what time do subscribers open emails (feed back to send-time optimization)
+  - Top-performing emails: ranked by open rate, click rate
+  - Social↔Email cross-analytics: "Subscribers who also engage on LinkedIn convert 3× more"
+- [ ] **Social → Email integration** (the dynamic duo):
+  - Social post → Newsletter: one-click "Send this post as email" on any published post
+  - Email → Social: "Share in email" links in every campaign (social sharing buttons)
+  - Facebook Custom Audiences: export subscriber list → upload to FB Ads (manual CSV for now)
+  - Cross-platform retargeting: tag subscribers by which social platform they came from
+  - Daily Brief addition: "Your email campaign 'Spring Sale' had 42% open rate. Your LinkedIn
+    audience converts to subscribers 3× better than Twitter — consider more LinkedIn-to-email CTAs."
+- [ ] **Compliance & deliverability**:
+  - CAN-SPAM / GDPR: unsubscribe link in every email (auto-injected), physical address in footer
+  - Double opt-in: optional per list (configurable) — `confirmation_email` type added to EmailService
+  - Bounce handling: auto-deactivate emails after 3 consecutive bounces
+  - Spam scoring: basic content checks (all caps, spammy words, link-to-text ratio)
+  - Sending limits: rate-limited by plan (Free: 100/mo, Growth: 2,500/mo, Pro: 25,000/mo)
+  - Resend integration: use existing Resend SMTP + webhooks (already built for transactional)
+- [ ] Plan limits: Free = 100 emails/mo, 1 list, no sequences | Growth = 2,500/mo, 5 lists, 3 sequences |
+  Pro = 25,000/mo, unlimited lists, unlimited sequences, A/B testing, AI email generation
+- DELIVERABLE: Users can build email lists, send AI-written campaigns, and run automated sequences — all
+  from the same platform that manages their social media, using the same AI brain and brand voice.
+- UNIQUENESS TEST: No tool on the market has one AI that writes both social AND email content from
+  a unified brand voice + Content DNA. Mailchimp has AI but doesn't do social. Buffer does social
+  but has zero email. Kova is the first to unify both channels under one intelligence layer.
+- **TECHNICAL NOTES:**
+  - Email sending: Celery tasks, batched (not all at once), respect Resend rate limits
+  - Templates: Django template engine (same as transactional emails), extend `base_email.html`
+  - Unsubscribe: one-click header (`List-Unsubscribe-Post` RFC 8058) + footer link
+  - Subscriber import: CSV upload with field mapping UI (name, email, tags)
+  - Smart lists: filter_rules evaluated at send time (dynamic segment, not cached membership)
+
+### Sprint 6E: Superfan Workflows + Loyalty Engine (P2) ⏳ NOT STARTED
+##
+## WHY THIS IS P2:
+## The expert's 4th metric tier: "Loyalty — key metrics is shares and referrals to friends
+## and relatives." Kova's Engage Agent already identifies Superfans (16+ interactions).
+## But identification without action is waste. This sprint turns superfan DATA into
+## superfan RELATIONSHIPS — automated thank-yous, referral triggers, ambassador programs.
+##
+
+- [ ] **SuperfanWorkflow model** — automated actions triggered by superfan behavior
+  - Fields: user (FK), trigger_type (choices: tier_reached, interaction_count,
+    consecutive_days_engaged, shared_post, referred_friend),
+    action_type (choices: send_dm, send_email, add_tag, create_lead, notify_user),
+    trigger_config (JSONField — e.g., {"tier": "SUPERFAN", "interaction_count": 20}),
+    action_config (JSONField — e.g., {"dm_template": "Thanks for being amazing!"}),
+    is_active, times_triggered, created_at
+- [ ] **ReferralProgram model** — track shares and referrals
+  - Fields: user (FK), referral_code (unique), reward_description,
+    total_referrals, total_conversions, is_active
+  - Linked to: KovaLink (add referral link to landing page), Post (include referral CTA)
+- [ ] **ReferralTracking model** — individual referral events
+  - Fields: program (FK), referred_by_superfan (FK to Superfan, nullable),
+    referred_email, referred_name, status (clicked/signed_up/converted),
+    referral_url, created_at, converted_at
+- [ ] **Automated superfan actions**:
+  - Auto-DM when someone reaches SUPERFAN tier: "You're one of our biggest supporters! [custom message]"
+  - Auto-email: "Thank you for being a superfan — here's an exclusive [offer/content/preview]"
+  - Auto-tag in Lead Inbox: superfans auto-tagged as "champion" → prioritized lead
+  - Auto-notify user: "Congratulations! @handle just became a Superfan on Instagram"
+  - Auto-share request: "Your superfan @handle shared 5 posts this month — consider featuring them"
+- [ ] **Loyalty analytics dashboard** — `/engage/loyalty/`
+  - Superfan growth: new superfans per week/month
+  - Top advocates: ranked by shares, referrals, and interaction frequency
+  - Referral funnel: clicks → signups → conversions (with attribution)
+  - Share tracking: which content gets shared most, by which superfans
+  - Lifetime engagement value: estimated impact of each superfan on reach
+- [ ] **Engage Agent update**: factor loyalty signals into reply strategy
+  - Superfans get priority in reply queue (faster AI response)
+  - Reply tone for superfans: warmer, more personal, acknowledges history
+  - Strategy suggestion: "You have 12 superfans on Twitter. Consider a dedicated thank-you thread."
+- [ ] Plan limits: Free = view superfans only | Growth = basic workflows (3 triggers) |
+  Pro = unlimited workflows, referral program, ambassador dashboard
+- DELIVERABLE: Superfan identification leads to automated relationship-building and word-of-mouth growth.
+- **TECHNICAL NOTES:**
+  - DM sending: reuse platform provider `send_message()` methods (already exist for Twitter/IG)
+  - Referral links: append `?ref={code}` to KovaLink URLs, track in LinkClick model
+  - Workflow engine: simple Celery task triggered by Django signal on Superfan save/update
+
+### Sprint 6F: Video Intelligence + Content Design Rules (P2) ⏳ NOT STARTED
+##
+## WHY THIS IS P2:
+## Expert: "Video works best. Picture comes second. Story comes third. Plain text rarely attracts."
+## Also: "Content design should have 2 colours, maximum 3. Anything beyond this is chaotic."
+## Kova handles images. It doesn't touch video. And it has no color/design enforcement.
+##
+
+- [ ] **Video content support enhancements**:
+  - `Post.media_type` field: choices: none, image, video, carousel, story, reel, poll
+  - Video metadata: duration, aspect_ratio, has_captions, thumbnail_url on MediaAttachment
+  - Video-specific metrics: `view_count`, `avg_watch_time`, `completion_rate` on PostMetric
+  - Adapt Agent update: recommend video vs image vs text based on Content DNA performance data
+    (e.g., "Videos on your Instagram get 3× more engagement than images — prioritize video seeds")
+  - Create Agent update: when generating for video-first platforms (TikTok, YouTube, Reels),
+    output a video script with: hook (first 3 seconds), body, CTA, suggested B-roll, caption text
+- [ ] **AI video generation** (API-based, not local):
+  - Integration options: RunwayML Gen-3, Pika Labs, or HeyGen for talking-head videos
+  - Workflow: Create Agent writes script → Video API generates clip → user previews → approve → publish
+  - Cost tier: Premium model tier (expensive — Pro plan only, with per-video billing)
+  - MVP: 15-30 second clips, single aspect ratio (9:16 for Reels/TikTok/Shorts)
+  - Fallback: if video generation fails, auto-generate image post as backup
+- [ ] **Story/Reel templates**:
+  - Template library: 10-15 story/reel structures (before/after, tutorial, day-in-life, Q&A,
+    countdown, product showcase, testimonial)
+  - Create Agent selects template based on content seed + platform
+  - Output: structured story frames (slide 1: hook, slide 2: content, slide 3: CTA)
+- [ ] **Content design rules** (brand kit enforcement):
+  - UserProfile additions: `brand_colors` (JSONField — max 3 colors as hex values),
+    `brand_font` (choice of web-safe fonts), `brand_logo_url`
+  - Validation: reject color palette with 4+ colors in design prompts
+  - Image generation prompt: "Use ONLY these colors: {brand_colors}. Maximum 3 colors."
+  - Landing page (Kova Links): auto-apply brand colors to theme
+  - Email templates: auto-apply brand colors to header/CTA buttons
+  - Visual consistency score: Analyst Agent flags posts with off-brand colors
+- [ ] **Content format recommendations** (data-driven):
+  - New Content DNA attribute: `media_format` (video/image/carousel/text/story)
+  - Adapt Agent: track engagement by media_format per platform → recommend optimal format
+  - Daily Brief: "Your audience engages 2.5× more with video on TikTok. This week,
+    3 of 5 posts are text-only. Consider adding video content."
+  - Create Agent: auto-suggest media format at generation time
+- [ ] Plan limits: Free = image only | Growth = video scripts + story templates |
+  Pro = AI video generation (limited credits), brand kit enforcement
+- DELIVERABLE: Kova recommends and creates the right media format for each platform,
+  enforces brand design rules, and (on Pro plans) generates short-form video.
+- **TECHNICAL NOTES:**
+  - Video generation: API call from Create Agent, async Celery task, poll for completion
+  - Video storage: upload to user's connected platform directly (no Kova hosting needed)
+  - Brand colors: validated on save (max 3 colors, valid hex format)
+  - Story frames: JSON structure → rendered as carousel preview in post editor
+
+### Sprint 6G: Revenue Attribution + Payment Integration (P3) ⏳ NOT STARTED
+##
+## WHY THIS IS P3:
+## Expert's 3rd metric tier: "Selling — key metrics is no. of sales made from social media
+## i.e integrated with online payment systems or tracking of sales."
+## Kova has a Conversion model (click/lead/sale) with UTM tracking — good architecture.
+## But UTMs aren't auto-generated, and there's no direct payment system integration.
+## This sprint connects the dots: post → click → sale → revenue attributed to post.
+##
+
+- [ ] **Auto-UTM system activation** (builds on Sprint 6B infrastructure):
+  - Every published post auto-generates UTM parameters (no user action required)
+  - UTM stored on Post model and embedded in CTA URL
+  - Dashboard: "Revenue by Campaign" → shows which content seeds drive the most revenue
+- [ ] **Shopify integration** (webhook-based):
+  - User connects Shopify store via API key
+  - Webhook listener: `orders/create` → extract UTM from order referring URL
+  - Auto-create Conversion record: type=sale, revenue=order total, linked to Post via utm_content
+  - Dashboard: "This Instagram post generated 12 sales (KES 45,000)"
+- [ ] **M-Pesa integration** (for African e-commerce):
+  - M-Pesa STK push payment tracking (already have M-Pesa for billing — extend for commerce)
+  - Payment reference linking: include post_id in M-Pesa payment description
+  - Auto-create Conversion: type=sale, revenue=amount, platform=whatsapp/other
+  - Support: Daraja API (Safaricom) for payment confirmation webhooks
+- [ ] **Google Analytics 4 sync** (optional):
+  - GA4 Measurement Protocol: send Kova post events → GA4 for cross-platform attribution
+  - Import GA4 conversion events → Kova (sync UTM-tagged conversions back)
+  - Benefit: users who already have GA4 don't need to change their setup
+- [ ] **Multi-touch attribution** (Pro plan):
+  - Current: last-click only (whoever clicked last gets credit)
+  - Enhancement: track full journey (first touch, assists, last touch)
+  - Model: weighted attribution (40% first touch, 20% each assist, 40% last touch)
+  - Dashboard: "This person saw your Twitter thread → clicked LinkedIn post → bought from Instagram link"
+- [ ] **Revenue dashboard enhancement** — extends existing `/analytics/` attribution view:
+  - Revenue by platform (which social platform drives the most sales)
+  - Revenue by content type (videos sell more than text? Images more than threads?)
+  - Revenue by CTA type (link CTAs vs WhatsApp CTAs vs phone CTAs)
+  - ROI calculator: "You spent KES 299/month on Kova. Your social content generated KES 145,000 in tracked sales.
+    ROI: 48,400%." — THIS is the number that prevents churn.
+  - Weekly email: "Your weekly revenue attribution: 8 sales (KES 23,400) tracked to social media"
+- [ ] Plan limits: Free = basic UTM tracking | Growth = Shopify + M-Pesa + revenue dashboard |
+  Pro = GA4 sync, multi-touch attribution, ROI reporting, weekly revenue emails
+- DELIVERABLE: Users can prove exactly how much money their social media generates.
+  This is the #1 feature that justifies the subscription — when users see ROI, they never churn.
+- **TECHNICAL NOTES:**
+  - Shopify webhook: new endpoint in `apps/api/` with HMAC verification
+  - M-Pesa: extend existing `apps/billing/mpesa.py` Daraja integration
+  - GA4: Measurement Protocol v2 (server-side events, no client JS needed)
+  - Attribution: new `ConversionTouchpoint` model for multi-touch journey tracking
+
+### Phase 6 — Key Metrics (How We Know It's Working)
+| Metric | Target | How Measured |
+|--------|--------|-------------|
+| Kova Links adoption | 60%+ of active users create a landing page within 2 weeks | KovaPage created_at vs user signup date |
+| Form submission rate | 5%+ of landing page visitors submit a form | FormSubmission count / KovaPage visit_count |
+| Lead-to-contacted rate | 50%+ of leads contacted within 48 hours | Lead.status change timestamps |
+| Email subscriber growth | 20%+ month-over-month growth per active user | EmailSubscriber growth rate by user |
+| CTA click-through rate | 2%+ average across all posts with tracked CTAs | LinkClick count / Post impressions |
+| Revenue attribution | 30%+ of Pro users track at least 1 sale back to social | Conversion records with type=sale |
+| Churn reduction | 40% lower churn for users with active Kova Links + Email | Subscription cancellation rate segmented by feature usage |
+
+### Phase 6 — Technical Architecture Notes
+- **No new external services** for P0/P1: everything runs on existing stack (Django, Celery, Resend, PostgreSQL)
+- **Resend scales**: currently used for transactional email only. Resend supports marketing email
+  at same API/SMTP setup. No migration needed. Just higher volume.
+- **Database**: new models add ~8 tables. All have created_at indexes for time-series queries.
+  Estimated row growth: ~10K leads/mo, ~50K link clicks/mo, ~100K email events/mo at 1000 active users.
+- **Celery tasks**: 4 new periodic tasks:
+  - `process-form-submissions` (real-time via webhook or every 5 min batch)
+  - `send-email-campaigns` (on-demand, rate-limited per plan)
+  - `run-superfan-workflows` (every 30 min, after engage cycle)
+  - `sync-conversion-events` (every hour, from Shopify/GA4 webhooks)
+- **Plan enforcement**: extend existing `PlanEnforcementMiddleware` with new limits
 
 
 # ============================================================================
@@ -1478,22 +1966,30 @@ while you're on vacation — and your audience never notices."
 
 ## 17.2 Future Capabilities
 1. **Agent Marketplace**: Users create and share custom agent "skills" (e.g., "Real Estate Agent Pack" — knows how to create property listings across platforms)
-2. **Revenue Attribution Engine**: Connect Kova to Stripe/Shopify/GA to trace: social post → website visit → purchase. Prove ROI.
+2. ~~**Revenue Attribution Engine**~~ → MOVED TO PHASE 6 (Sprint 6G)
 3. **Content Mutation**: Post version A underperforms in 2 hours → system auto-generates version B with different hook, posts to remaining platforms
-4. **Voice/Video Input**: Record a 30-second video explanation → agents transform it into written posts, audiograms, video clips for every platform
+4. **Voice/Video Input**: Record a 30-second video explanation → agents transform it into written posts, audiograms, video clips for every platform (partially addressed in Phase 6 Sprint 6F)
 5. **Agency White-Label**: Agencies run Kova under their own brand for clients
 6. **Open-Source Core**: Release a self-hosted community edition to build developer community + funnel to paid cloud version
 7. **Mobile App**: PWA or native app for approve-on-the-go
 8. **Enterprise SSO + Compliance**: SOC 2, SSO, audit logs for enterprise clients
 9. **Predictive Audience Builder**: Agent suggests WHO to follow/engage with to grow optimally
 10. **Cross-Platform Narrative Engine**: Maintain a single narrative across platforms that unfolds over weeks (episodic content)
+11. ~~**Email Marketing**~~ → MOVED TO PHASE 6 (Sprint 6D)
+12. ~~**Lead Capture + CRM**~~ → MOVED TO PHASE 6 (Sprint 6C)
+13. ~~**Link-in-Bio / Landing Pages**~~ → MOVED TO PHASE 6 (Sprint 6A)
 
 ## 17.3 The Endgame
-Kova Agent becomes the default operating system for anyone's social media presence.
+Kova Agent becomes the default operating system for anyone's COMPLETE digital presence.
+Not just social media — social + email + lead capture + revenue tracking.
 Not a tool they use. Not an app they open. An invisible intelligence that operates
-on their behalf, growing their brand while they focus on their actual work.
+on their behalf — creating content, building audience, capturing leads, nurturing
+relationships, and driving measurable revenue — while they focus on their actual work.
 
-Creator economy + AI autonomy = Kova Agent.
+Phase 6 is the bridge from "content tool" to "operating system." Without it, users
+need 5 external tools to complete the value chain. With it, Kova IS the value chain.
+
+Creator economy + AI autonomy + closed-loop conversion = Kova Agent.
 
 
 # ============================================================================
