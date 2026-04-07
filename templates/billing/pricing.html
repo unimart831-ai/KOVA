@@ -62,9 +62,10 @@
         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {{ plan.agents_enabled|length }} AI agents</li>
         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Daily brief</li>
         {% if plan.ai_image_generation %}
-          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> AI image generation</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> AI images (Instagram, TikTok, Pinterest)</li>
         {% else %}
           <li class="flex items-center"><span class="text-gray-300 dark:text-gray-600 mr-2">✗</span> <span class="text-gray-400 dark:text-gray-500">AI image generation</span></li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> <span class="text-gray-600 dark:text-gray-400">Upload your own images</span></li>
         {% endif %}
         {% if plan.email_brief %}
           <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Email brief reports</li>

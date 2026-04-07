@@ -73,7 +73,7 @@
         </li>
         <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
           <svg class="w-4 h-4 {% if limits.ai_image_generation %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          AI image generation
+          {% if limits.ai_image_generation %}AI images (Instagram, TikTok, Pinterest){% else %}AI image generation (upload your own){% endif %}
         </li>
         <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
           <svg class="w-4 h-4 {% if limits.email_brief %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>

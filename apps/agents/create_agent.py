@@ -453,9 +453,9 @@ Respond with a JSON object. No markdown code fences. Structure:
       "angle": "Brief description of the specific angle chosen for this platform",
       "reasoning": "Why this angle, framework, and format will perform well here. What engagement pattern it targets.",
       "predicted_score": 72,
-      "image_prompt": "A vivid, specific description for AI image generation that matches the brand's visual identity. Describe: subject, composition, style/mood, colors (use brand colors if provided), and lighting. Make it platform-appropriate (square for Instagram, vertical for TikTok/Pinterest, landscape for Twitter/LinkedIn). Keep it under 200 words. NEVER include text/words in the image — text overlays are handled separately.",
+      "image_prompt": "ONLY for platforms that REQUIRE images (Instagram, TikTok, Pinterest): A vivid, specific description for AI image generation that matches the brand's visual identity. Describe: subject, composition, style/mood, colors (use brand colors if provided), and lighting. Make it platform-appropriate (square for Instagram, vertical for TikTok/Pinterest). Keep it under 200 words. NEVER include text/words in the image — text overlays are handled separately. For text-capable platforms (Twitter, LinkedIn, Facebook, Threads, Bluesky, YouTube): leave this as an EMPTY STRING.",
       "visual_strategy": {{
-        "strategy": "One of: ai_photo | quote_card | tip_graphic | stat_highlight | cta_banner | carousel | none. Pick the visual type that best complements this content and platform.",
+        "strategy": "One of: ai_photo | quote_card | tip_graphic | stat_highlight | cta_banner | carousel | none. IMPORTANT: For platforms that do NOT require images (Twitter, LinkedIn, Facebook, Threads, Bluesky, YouTube), DEFAULT to 'none' — text posts perform great on these platforms. Only use a visual strategy for these platforms if the content genuinely benefits from it (e.g. a stat_highlight for a data post). For image-required platforms (Instagram, TikTok, Pinterest), always pick an appropriate visual strategy.",
         "text": "For quote_card: the quote text. For tip_graphic: the title.",
         "attribution": "For quote_card: who said it (optional).",
         "tips": ["For tip_graphic: array of tip strings."],
@@ -629,11 +629,18 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
             )
 
             # Generate visual for the post (plan-gated with monthly limit)
+            # Images are only auto-generated for platforms that REQUIRE them
+            # (Instagram, TikTok, Pinterest). Other platforms get text-only posts
+            # by default — users can always upload their own images manually.
             image_prompt = pd.get("image_prompt", "")
             visual_strategy_data = pd.get("visual_strategy", {})
             has_visual_request = image_prompt or visual_strategy_data.get("strategy", "none") != "none"
 
-            if has_visual_request:
+            # Determine if this platform requires media
+            post_platform = post.social_account.platform if post.social_account else ""
+            platform_requires_media = post_platform in Post.MEDIA_REQUIRED_PLATFORMS
+
+            if has_visual_request and platform_requires_media:
                 from apps.billing.models import get_plan_limits
                 user_plan = getattr(getattr(seed.user, "profile", None), "plan", "starter")
                 plan_limits = get_plan_limits(user_plan)
