@@ -70,6 +70,7 @@ def _get_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
     Load a font at the given size. Uses system fonts with fallbacks.
     """
     # Try common system fonts in order of preference
+    # Includes Debian/Ubuntu paths (/usr/share/fonts/) and Nix paths (/nix/store/)
     font_candidates = [
         "arial.ttf", "Arial.ttf",
         "Helvetica.ttf",
@@ -87,6 +88,16 @@ def _get_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
             "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
         ] + font_candidates
+
+    # Also search Nix store for fonts (Railway/nixpacks deployment)
+    import glob
+    nix_dejavu = glob.glob("/nix/store/*/share/fonts/truetype/DejaVuSans*.ttf")
+    if nix_dejavu:
+        if bold:
+            bold_fonts = [f for f in nix_dejavu if "Bold" in f]
+            font_candidates = bold_fonts + font_candidates
+        regular_fonts = [f for f in nix_dejavu if "Bold" not in f]
+        font_candidates = regular_fonts + font_candidates
 
     for font_name in font_candidates:
         try:

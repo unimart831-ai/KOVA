@@ -60,8 +60,9 @@ def refresh_expiring_tokens():
             account.mark_error(f"Token refresh failed: {exc}")
             logger.error("Token refresh failed for %s: %s", account, exc)
 
-    logger.info(
-        "Token refresh complete: %d refreshed, %d failed, %d total",
-        refreshed, failed, accounts.count(),
-    )
+    if refreshed or failed:
+        logger.info(
+            "Token refresh complete: %d refreshed, %d failed",
+            refreshed, failed,
+        )
     return {"refreshed": refreshed, "failed": failed}

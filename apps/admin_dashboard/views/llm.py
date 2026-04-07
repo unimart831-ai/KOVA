@@ -42,39 +42,51 @@ PLAN_TIERS = [
 # ── Model presets for one-click configuration ────────────────────────────
 MODEL_PRESETS = {
     "free_only": {
-        "label": "Free Only (Zero Cost)",
-        "description": "All free OpenRouter models. $0/month AI cost.",
+        "label": "Phase 2 — Free (Current)",
+        "description": "Free models + DeepSeek V3.2 paid fallback. $0.005-$0.05/user/mo.",
         "premium": "qwen/qwen3.6-plus:free",
         "workhorse": "qwen/qwen3.6-plus:free",
         "fast": "stepfun/step-3.5-flash:free",
     },
     "budget_smart": {
-        "label": "Budget Smart (Recommended)",
-        "description": "Gemini Flash for creative, DeepSeek for reasoning. ~$0.20-$4.60/user/mo.",
+        "label": "Phase 3 — DeepSeek Primary",
+        "description": "DeepSeek V3.2 all tiers. 89th-percentile quality at $0.26/$0.38/1M. ~$0.05-$2.25/user/mo.",
+        "premium": "deepseek/deepseek-v3.2",
+        "workhorse": "deepseek/deepseek-v3.2",
+        "fast": "deepseek/deepseek-v3.2",
+    },
+    "quality_tiered": {
+        "label": "Phase 3 — Quality (Pro/Agency)",
+        "description": "Gemini Flash for creative (Pro/Agency), DeepSeek for rest. ~$2.66-$6.66/user/mo.",
         "premium": "google/gemini-3-flash-preview",
         "workhorse": "deepseek/deepseek-v3.2",
         "fast": "deepseek/deepseek-v3.2",
     },
-    "premium_quality": {
-        "label": "Premium Quality",
-        "description": "Claude/GPT for creative, Gemini for reasoning. ~$1-$20/user/mo.",
-        "premium": "claude-sonnet-4-20250514",
-        "workhorse": "google/gemini-3-flash-preview",
-        "fast": "deepseek/deepseek-v3.2",
+    "phase4_optimized": {
+        "label": "Phase 4 — Optimized",
+        "description": "Per-task routing: Gemini creative, DeepSeek reasoning, Step Flash bulk. ~$1.80-$4.50/user/mo.",
+        "premium": "google/gemini-3-flash-preview",
+        "workhorse": "deepseek/deepseek-v3.2",
+        "fast": "stepfun/step-3.5-flash",
     },
 }
 
 # ── Popular models for the quick-select UI ──────────────────────────────
 POPULAR_MODELS = {
     "Free (OpenRouter)": [
-        ("qwen/qwen3.6-plus:free", "Qwen 3.6 Plus — strong all-round"),
-        ("stepfun/step-3.5-flash:free", "StepFun Flash — fast classification"),
+        ("qwen/qwen3.6-plus:free", "Qwen 3.6 Plus — #1 ranked, strong all-round"),
         ("nvidia/nemotron-3-super-120b-a12b:free", "Nemotron 120B — powerful reasoning"),
         ("minimax/minimax-m2.5:free", "MiniMax M2.5 — balanced"),
-        ("mistralai/mistral-7b-instruct:free", "Mistral 7B — lightweight"),
+        ("stepfun/step-3.5-flash:free", "StepFun Flash — fast, frequent empty responses"),
+    ],
+    "Kova Recommended": [
+        ("deepseek/deepseek-v3.2", "DeepSeek V3.2 — $0.26/$0.38/1M · 89th% intel · BEST VALUE"),
+        ("google/gemini-3-flash-preview", "Gemini 3 Flash — $0.50/$3/1M · 94th% intel · 7.8% halluc"),
+        ("stepfun/step-3.5-flash", "Step 3.5 Flash — $0.10/$0.30/1M · 117 tok/s · bulk tasks"),
     ],
     "Google": [
         ("google/gemini-3-flash-preview", "Gemini 3 Flash — $0.50/$3 per 1M"),
+        ("google/gemini-3.1-flash-lite-preview", "Gemini 3.1 Flash Lite — $0.25/$1.50 per 1M"),
         ("google/gemini-2.5-flash-preview", "Gemini 2.5 Flash — $0.15/$0.60 per 1M"),
     ],
     "DeepSeek": [
@@ -84,7 +96,6 @@ POPULAR_MODELS = {
     "OpenAI": [
         ("gpt-4o-mini", "GPT-4o Mini — $0.15/$0.60 per 1M"),
         ("gpt-4o", "GPT-4o — $2.50/$10 per 1M"),
-        ("o3-mini", "o3-mini — $1.10/$4.40 per 1M"),
     ],
     "Anthropic": [
         ("claude-3-5-haiku-20241022", "Claude 3.5 Haiku — $0.80/$4 per 1M"),
@@ -241,6 +252,9 @@ def llm_overview(request):
         "model_presets": MODEL_PRESETS,
         "task_keys": TASK_KEYS,
         "plan_tiers": PLAN_TIERS,
+        # Strategy roadmap data
+        "strategy_phases": _get_strategy_phases(),
+        "model_benchmark": _get_model_benchmark(),
     })
 
 
@@ -430,3 +444,114 @@ def _get_tier_for_task(task_key):
     elif task_key in workhorse:
         return "workhorse"
     return "fast"
+
+
+def _get_strategy_phases():
+    """Return the 4-phase model strategy from AI_MODELS_STRATEGY.md."""
+    return [
+        {
+            "phase": 2,
+            "name": "Free Primary (Now)",
+            "when": "Now — Month 3",
+            "status": "active",
+            "description": "Free models + DeepSeek V3.2 paid fallback. Validate PMF first.",
+            "premium": "qwen/qwen3.6-plus:free",
+            "workhorse": "qwen/qwen3.6-plus:free",
+            "fast": "stepfun/step-3.5-flash:free",
+            "fallback": "deepseek/deepseek-v3.2",
+            "costs": {
+                "starter": {"ai": 0.05, "revenue": 0.70, "margin": 92.9},
+                "growth": {"ai": 0.23, "revenue": 3.52, "margin": 93.5},
+                "pro": {"ai": 0.90, "revenue": 10.56, "margin": 91.5},
+                "agency": {"ai": 2.25, "revenue": 24.65, "margin": 90.9},
+            },
+        },
+        {
+            "phase": 3,
+            "name": "Paid Quality (Month 3-6)",
+            "when": "After 50 paying users",
+            "status": "planned",
+            "description": "DeepSeek V3.2 as primary. Gemini 3 Flash for Pro/Agency creative content.",
+            "premium_low": "deepseek/deepseek-v3.2",
+            "premium_high": "google/gemini-3-flash-preview",
+            "workhorse": "deepseek/deepseek-v3.2",
+            "fast": "deepseek/deepseek-v3.2",
+            "costs": {
+                "starter": {"ai": 0.05, "revenue": 0.70, "margin": 92.9},
+                "growth": {"ai": 0.24, "revenue": 3.52, "margin": 93.2},
+                "pro": {"ai": 2.66, "revenue": 10.56, "margin": 74.8},
+                "agency": {"ai": 6.66, "revenue": 24.65, "margin": 73.0},
+            },
+        },
+        {
+            "phase": 4,
+            "name": "Optimized Routing (Month 6+)",
+            "when": "100+ users, per-task tuning",
+            "status": "planned",
+            "description": "Gemini creative, DeepSeek reasoning, Step Flash bulk analysis.",
+            "premium_low": "deepseek/deepseek-v3.2",
+            "premium_high": "google/gemini-3-flash-preview",
+            "workhorse": "deepseek/deepseek-v3.2",
+            "fast": "stepfun/step-3.5-flash",
+            "costs": {
+                "starter": {"ai": 0.03, "revenue": 0.70, "margin": 95.7},
+                "growth": {"ai": 0.15, "revenue": 3.52, "margin": 95.7},
+                "pro": {"ai": 1.80, "revenue": 10.56, "margin": 83.0},
+                "agency": {"ai": 4.50, "revenue": 24.65, "margin": 81.7},
+            },
+        },
+    ]
+
+
+def _get_model_benchmark():
+    """Return model comparison data from strategy research."""
+    return [
+        {
+            "model": "Qwen 3.6 Plus (free)",
+            "input": 0, "output": 0,
+            "context": "1M", "speed": "45 tok/s",
+            "uptime": "99.9%", "struct_err": "0.95%",
+            "intelligence": "#1 ranked", "hallucination": "N/A",
+            "verdict": "current-primary", "note": "Collects prompt data",
+        },
+        {
+            "model": "DeepSeek V3.2",
+            "input": 0.26, "output": 0.38,
+            "context": "164K", "speed": "76 tok/s",
+            "uptime": "Multi", "struct_err": "0.78%",
+            "intelligence": "89th %ile", "hallucination": "18.3%",
+            "verdict": "recommended", "note": "Best value — primary fallback",
+        },
+        {
+            "model": "Gemini 3 Flash",
+            "input": 0.50, "output": 3.00,
+            "context": "1M", "speed": "76 tok/s",
+            "uptime": "99.4%", "struct_err": "1.22%",
+            "intelligence": "94th %ile", "hallucination": "7.8%",
+            "verdict": "recommended", "note": "Pro/Agency creative tier",
+        },
+        {
+            "model": "Step 3.5 Flash",
+            "input": 0.10, "output": 0.30,
+            "context": "262K", "speed": "117 tok/s",
+            "uptime": "99.9%", "struct_err": "2.78%",
+            "intelligence": "82nd %ile", "hallucination": "14.8%",
+            "verdict": "recommended", "note": "Bulk classification tasks",
+        },
+        {
+            "model": "MiniMax M2.7",
+            "input": 0.30, "output": 1.20,
+            "context": "205K", "speed": "46 tok/s",
+            "uptime": "89.3%", "struct_err": "N/A",
+            "intelligence": "97th %ile", "hallucination": "65.6%",
+            "verdict": "rejected", "note": "65.6% hallucination — DISQUALIFIED",
+        },
+        {
+            "model": "gpt-4o-mini",
+            "input": 0.15, "output": 0.60,
+            "context": "128K", "speed": "varies",
+            "uptime": "99.9%", "struct_err": "low",
+            "intelligence": "Good", "hallucination": "Low",
+            "verdict": "replaced", "note": "Replaced by DeepSeek as fallback",
+        },
+    ]

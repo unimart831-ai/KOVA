@@ -370,8 +370,10 @@
               Calculating…
             </span>
           </button>
-          <button @click="applyPreset('free')" class="px-3 py-1.5 text-[10px] font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">Free Models</button>
-          <button @click="applyPreset('budget')" class="px-3 py-1.5 text-[10px] font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">Budget Smart</button>
+          <button @click="applyPreset('phase2')" class="px-3 py-1.5 text-[10px] font-semibold text-kova-700 bg-kova-100 dark:bg-kova-900/30 dark:text-kova-400 hover:bg-kova-200 dark:hover:bg-kova-800/40 rounded-lg transition-colors border border-kova-200 dark:border-kova-800">Phase 2 (Now)</button>
+          <button @click="applyPreset('phase3')" class="px-3 py-1.5 text-[10px] font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">Phase 3</button>
+          <button @click="applyPreset('phase4')" class="px-3 py-1.5 text-[10px] font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">Phase 4</button>
+          <button @click="applyPreset('free')" class="px-3 py-1.5 text-[10px] font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">Free Only</button>
           <button @click="applyPreset('premium')" class="px-3 py-1.5 text-[10px] font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">Premium</button>
         </div>
       </div>
@@ -697,17 +699,26 @@ function costCalculator() {
     summary: null,
 
     applyPreset: function(name) {
-      if (name === 'free') {
+      if (name === 'free' || name === 'phase2') {
+        // Phase 2 (Now): Free primary + DeepSeek V3.2 fallback (costs ~$0 for free models)
         this.premium_input_price = 0; this.premium_output_price = 0;
         this.workhorse_input_price = 0; this.workhorse_output_price = 0;
         this.fast_input_price = 0; this.fast_output_price = 0;
         this.image_cost = 0; this.voice_cost_per_min = 0.006;
-      } else if (name === 'budget') {
-        this.premium_input_price = 0.50; this.premium_output_price = 3.00;
+      } else if (name === 'phase3') {
+        // Phase 3 (Month 3-6): DeepSeek V3.2 primary all tiers
+        this.premium_input_price = 0.26; this.premium_output_price = 0.38;
         this.workhorse_input_price = 0.26; this.workhorse_output_price = 0.38;
         this.fast_input_price = 0.26; this.fast_output_price = 0.38;
         this.image_cost = 0.005; this.voice_cost_per_min = 0.006;
+      } else if (name === 'phase4') {
+        // Phase 4 (Month 6+): Gemini Flash premium, DeepSeek workhorse, Step Flash fast
+        this.premium_input_price = 0.50; this.premium_output_price = 3.00;
+        this.workhorse_input_price = 0.26; this.workhorse_output_price = 0.38;
+        this.fast_input_price = 0.10; this.fast_output_price = 0.30;
+        this.image_cost = 0.005; this.voice_cost_per_min = 0.006;
       } else if (name === 'premium') {
+        // Premium: Claude/GPT-level pricing (ceiling test)
         this.premium_input_price = 3.00; this.premium_output_price = 15.00;
         this.workhorse_input_price = 0.50; this.workhorse_output_price = 3.00;
         this.fast_input_price = 0.26; this.fast_output_price = 0.38;

@@ -31,13 +31,21 @@ from apps.billing.models import PLAN_LIMITS, MpesaPayment
 MODEL_PRICING = {
     # Free OpenRouter models
     "qwen/qwen3": {"input": 0.00, "output": 0.00, "label": "Qwen 3 (Free)"},
-    "stepfun/step": {"input": 0.00, "output": 0.00, "label": "StepFun (Free)"},
+    "stepfun/step-3.5-flash:free": {"input": 0.00, "output": 0.00, "label": "StepFun Flash (Free)"},
     "nvidia/nemotron": {"input": 0.00, "output": 0.00, "label": "Nemotron (Free)"},
     "minimax/minimax": {"input": 0.00, "output": 0.00, "label": "MiniMax (Free)"},
     "mistralai/mistral": {"input": 0.00, "output": 0.00, "label": "Mistral (Free)"},
     ":free": {"input": 0.00, "output": 0.00, "label": "Free Model"},
+    # Paid — Kova Recommended Stack
+    "deepseek-v3.2": {"input": 0.26, "output": 0.38, "label": "DeepSeek V3.2 ★ PRIMARY FALLBACK"},
+    "deepseek-v3": {"input": 0.26, "output": 0.38, "label": "DeepSeek V3"},
+    "deepseek-r1": {"input": 0.55, "output": 2.19, "label": "DeepSeek R1"},
+    "gemini-3-flash": {"input": 0.50, "output": 3.00, "label": "Gemini 3 Flash ★ PRO/AGENCY"},
+    "gemini-3.1-flash-lite": {"input": 0.25, "output": 1.50, "label": "Gemini 3.1 Flash Lite"},
+    "gemini-2.5-flash": {"input": 0.15, "output": 0.60, "label": "Gemini 2.5 Flash"},
+    "stepfun/step-3.5-flash": {"input": 0.10, "output": 0.30, "label": "Step 3.5 Flash ★ BULK TASKS"},
     # Paid — OpenAI
-    "gpt-4o-mini": {"input": 0.15, "output": 0.60, "label": "GPT-4o Mini"},
+    "gpt-4o-mini": {"input": 0.15, "output": 0.60, "label": "GPT-4o Mini (old fallback)"},
     "gpt-4o": {"input": 2.50, "output": 10.00, "label": "GPT-4o"},
     "gpt-4-turbo": {"input": 10.00, "output": 30.00, "label": "GPT-4 Turbo"},
     "o3-mini": {"input": 1.10, "output": 4.40, "label": "o3-mini"},
@@ -45,12 +53,6 @@ MODEL_PRICING = {
     "claude-3-5-haiku": {"input": 0.80, "output": 4.00, "label": "Claude 3.5 Haiku"},
     "claude-3-5-sonnet": {"input": 3.00, "output": 15.00, "label": "Claude 3.5 Sonnet"},
     "claude-sonnet-4": {"input": 3.00, "output": 15.00, "label": "Claude Sonnet 4"},
-    # Paid — Google
-    "gemini-3-flash": {"input": 0.50, "output": 3.00, "label": "Gemini 3 Flash"},
-    "gemini-2.5-flash": {"input": 0.15, "output": 0.60, "label": "Gemini 2.5 Flash"},
-    # Paid — DeepSeek
-    "deepseek-v3": {"input": 0.26, "output": 0.38, "label": "DeepSeek V3"},
-    "deepseek-r1": {"input": 0.55, "output": 2.19, "label": "DeepSeek R1"},
 }
 
 # ── Non-LLM AI service pricing ──────────────────────────────────────

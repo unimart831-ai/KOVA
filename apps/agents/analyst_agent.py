@@ -219,7 +219,8 @@ def extract_content_dna(post):
     """
     system_prompt = (
         "You are a content analyst. Extract structured attributes from this social media post. "
-        "Respond in JSON with these keys:\n"
+        "You MUST respond with ONLY a valid JSON object — no explanation, no commentary. "
+        "JSON keys:\n"
         '- "format": one of [question, statement, story, list, thread, how_to, hot_take, announcement, behind_scenes]\n'
         '- "tone": one of [inspirational, educational, humorous, provocative, professional, casual, urgent, empathetic]\n'
         '- "topic": brief topic label (2-3 words)\n'
@@ -308,7 +309,7 @@ def predict_engagement(post):
     system_prompt = (
         "You are an engagement prediction model. Based on historical performance data "
         "and the content attributes of a new post, predict its engagement score (0-100). "
-        "Respond with ONLY a JSON object: {\"score\": <number>, \"reasoning\": \"<brief explanation>\"}"
+        "Respond with ONLY a JSON object, no other text: {\"score\": <number>, \"reasoning\": \"<brief explanation>\"}"
     )
 
     top_dna = [{"dna": p.content_dna, "engagement_rate": p.metrics.engagement_rate}

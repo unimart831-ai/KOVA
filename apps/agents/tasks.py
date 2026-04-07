@@ -33,18 +33,23 @@ def run_daily_research():
     ).distinct()
 
     researched = 0
-    for user in users_with_research:
+    for idx, user in enumerate(users_with_research):
         try:
             plan = getattr(getattr(user, "profile", None), "plan", "starter")
             if "research" not in get_plan_limits(plan).get("agents_enabled", []):
                 continue
+            # Stagger between users to avoid OpenRouter rate limits (429s)
+            if idx > 0:
+                import time
+                time.sleep(5)
             result = discover_trends(user)
             if result.get("trending_topics"):
                 researched += 1
         except Exception as e:
             logger.error("Research Agent failed for %s: %s", user.email, e)
 
-    logger.info("Daily research complete: %d users researched", researched)
+    if researched:
+        logger.info("Daily research complete: %d users researched", researched)
     return researched
 
 
@@ -90,7 +95,8 @@ def run_engage_cycle():
         except Exception as e:
             logger.error("Engage cycle failed for %s: %s", user.email, e)
 
-    logger.info("Engage cycle complete: %d users checked, %d with new activity", checked, processed)
+    if processed:
+        logger.info("Engage cycle complete: %d users checked, %d with new activity", checked, processed)
     return processed
 
 
@@ -113,11 +119,15 @@ def run_strategy_cycle():
     ).distinct()
 
     processed = 0
-    for user in users_with_strategist:
+    for idx, user in enumerate(users_with_strategist):
         try:
             plan = getattr(getattr(user, "profile", None), "plan", "starter")
             if "strategist" not in get_plan_limits(plan).get("agents_enabled", []):
                 continue
+            # Stagger between users to avoid OpenRouter rate limits (429s)
+            if idx > 0:
+                import time
+                time.sleep(5)
             result = strategist_cycle(user)
             if result.get("status") == "completed":
                 processed += 1
@@ -130,7 +140,8 @@ def run_strategy_cycle():
         except Exception as e:
             logger.error("Strategy cycle failed for %s: %s", user.email, e)
 
-    logger.info("Strategy cycle complete: %d users processed", processed)
+    if processed:
+        logger.info("Strategy cycle complete: %d users processed", processed)
     return processed
 
 

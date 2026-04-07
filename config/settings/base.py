@@ -294,8 +294,10 @@ OPENROUTER_API_KEY = env("OPENROUTER_API_KEY", default="")
 DEFAULT_LLM_PROVIDER = env("DEFAULT_LLM_PROVIDER", default="openai")  # openai | anthropic | openrouter
 DEFAULT_LLM_MODEL = env("DEFAULT_LLM_MODEL", default="gpt-4o-mini")
 # Paid fallback — auto-escalate to this model when all free models fail.
-# Routes through OpenAI directly (not OpenRouter). Set to "" to disable.
-LLM_PAID_FALLBACK = env("LLM_PAID_FALLBACK", default="gpt-4o-mini")
+# DeepSeek V3.2 via OpenRouter: 89th-percentile intelligence, $0.26/$0.38 per 1M tokens.
+# 37% cheaper output than gpt-4o-mini, better reasoning. Set to "" to disable.
+LLM_PAID_FALLBACK = env("LLM_PAID_FALLBACK", default="deepseek/deepseek-v3.2")
+LLM_PAID_FALLBACK_PROVIDER = env("LLM_PAID_FALLBACK_PROVIDER", default="openrouter")
 
 # Tiered model routing — right model for each task.
 # Override individual tasks via env vars, or change the tier defaults.
@@ -359,7 +361,11 @@ MODEL_TOKEN_COSTS = {
     # ── OpenRouter paid models ────────────────────────────────────────
     "google/gemini-2.0-flash-001":    (0.0001, 0.0004),  # $0.10/$0.40 per 1M
     "google/gemini-2.5-pro-preview":  (0.00125, 0.01),
+    "google/gemini-3-flash-preview":  (0.0005, 0.003),   # $0.50/$3.00 per 1M
     "deepseek/deepseek-chat-v3-0324": (0.00014, 0.00028),
+    "deepseek/deepseek-v3.2":         (0.00026, 0.00038), # $0.26/$0.38 per 1M — primary paid fallback
+    "stepfun/step-3.5-flash":          (0.0001, 0.0003),  # $0.10/$0.30 per 1M
+    "minimax/minimax-m2.7":            (0.0003, 0.0012),  # $0.30/$1.20 per 1M
     "meta-llama/llama-3.3-70b-instruct": (0.00039, 0.00039),
 }
 

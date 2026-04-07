@@ -392,5 +392,6 @@ def generate_all_daily_briefs():
         except Exception as e:
             logger.error("Failed to generate brief for %s: %s", user.email, e)
 
-    logger.info("Daily brief run: generated %d briefs for %d eligible users", generated, eligible_count)
+    if generated:
+        logger.info("Daily brief run: generated %d briefs for %d eligible users", generated, eligible_count)
     return generated

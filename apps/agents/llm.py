@@ -108,6 +108,15 @@ def parse_llm_json(text: str) -> dict:
         cleaned = re.sub(r'<think>.*?</think>\s*', '', cleaned, flags=re.DOTALL)
         cleaned = cleaned.strip()
 
+    # Detect prose that describes JSON instead of containing it —
+    # e.g. "We need to output JSON with keys format, tone..."
+    # If no { or [ exists at all, fail fast with a clear message.
+    if not cleaned.startswith(("{", "[")) and "{" not in cleaned and "[" not in cleaned:
+        raise json.JSONDecodeError(
+            f"LLM returned prose instead of JSON. First 200 chars: {cleaned[:200]}",
+            doc=text, pos=0,
+        )
+
     # If text doesn't start with { or [, extract JSON from prose
     if not cleaned.startswith(("{", "[")):
         # Try to find a JSON object
@@ -334,10 +343,10 @@ def generate(
         _FREE_FALLBACKS = config.free_fallback_models
     else:
         _FREE_FALLBACKS = [
-            "stepfun/step-3.5-flash:free",
-            "nvidia/nemotron-3-super-120b-a12b:free",
             "qwen/qwen3.6-plus:free",
-        "minimax/minimax-m2.5:free",
+            "nvidia/nemotron-3-super-120b-a12b:free",
+            "minimax/minimax-m2.5:free",
+            "stepfun/step-3.5-flash:free",  # Demoted: frequent empty responses
     ]
 
     # Paid escalation model — used as last resort when all free models fail.
@@ -345,8 +354,8 @@ def generate(
         _PAID_FALLBACK = config.paid_fallback_model if config.paid_fallback_enabled else ""
         _PAID_FALLBACK_PROVIDER = config.paid_fallback_provider
     else:
-        _PAID_FALLBACK = getattr(settings, "LLM_PAID_FALLBACK", "gpt-4o-mini")
-        _PAID_FALLBACK_PROVIDER = "openai"
+        _PAID_FALLBACK = getattr(settings, "LLM_PAID_FALLBACK", "deepseek/deepseek-v3.2")
+        _PAID_FALLBACK_PROVIDER = getattr(settings, "LLM_PAID_FALLBACK_PROVIDER", "openrouter")
 
     _MAX_MODELS = (config.max_retries if config and config.pk else 3)
 
@@ -487,7 +496,8 @@ def _generate_openrouter(
             "\n\nCRITICAL FORMATTING RULE: Your ENTIRE response must be a single, "
             "valid JSON object. Do NOT include any thinking, reasoning, explanation, "
             "or commentary before or after the JSON. Do NOT wrap in markdown code "
-            "fences. Start your response with '{' and end with '}'."
+            "fences. Do NOT describe what the JSON should contain — output it directly. "
+            "Start your response with '{' and end with '}'."
         )
     if system:
         messages.append({"role": "system", "content": system + json_instruction})

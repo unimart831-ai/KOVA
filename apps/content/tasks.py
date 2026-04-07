@@ -389,6 +389,8 @@ def check_and_publish_due_posts():
 def fetch_post_metrics(post_id: str):
     """
     Fetch engagement metrics for a published post from its platform.
+    Includes circuit-breaker: skips accounts that recently failed with
+    permission errors to avoid hammering the API with known-bad tokens.
     """
     from apps.analytics.models import PostMetric
     from apps.content.models import Post
@@ -407,6 +409,24 @@ def fetch_post_metrics(post_id: str):
     provider = get_provider(account.platform)
     if not provider:
         return {"error": f"No provider for {account.platform}"}
+
+    # ── Circuit breaker: skip accounts with recent permission failures ────
+    # If this account's metadata has a metrics_permission_error timestamp
+    # within the last 6 hours, skip the API call entirely.
+    import datetime as _dt
+    meta = account.metadata or {}
+    perm_error_at = meta.get("metrics_permission_error_at")
+    if perm_error_at:
+        try:
+            error_time = _dt.datetime.fromisoformat(perm_error_at)
+            if timezone.now() - error_time < _dt.timedelta(hours=6):
+                return {
+                    "skipped": True,
+                    "reason": "Account has recent permission error — circuit breaker active",
+                    "post_id": post_id,
+                }
+        except (ValueError, TypeError):
+            pass  # Invalid timestamp, proceed normally
 
     try:
         # For Facebook/Instagram, use page token — the user-level token
@@ -432,8 +452,22 @@ def fetch_post_metrics(post_id: str):
             platform_post_id=post.platform_post_id,
         )
     except Exception as e:
-        logger.warning("Failed to fetch metrics for post %s: %s", post_id, e)
-        return {"error": str(e)}
+        error_str = str(e)
+        # Detect permission errors and activate circuit breaker
+        if "pages_read_engagement" in error_str or "OAuthException" in error_str:
+            meta = account.metadata or {}
+            meta["metrics_permission_error_at"] = timezone.now().isoformat()
+            account.metadata = meta
+            account.save(update_fields=["metadata", "updated_at"])
+            logger.warning(
+                "Circuit breaker activated for %s account %s — "
+                "permission error, will skip metrics for 6 hours. "
+                "User needs to reconnect with pages_read_engagement.",
+                account.platform, account.id,
+            )
+        else:
+            logger.warning("Failed to fetch metrics for post %s: %s", post_id, e)
+        return {"error": error_str}
 
     metric, _created = PostMetric.objects.update_or_create(
         post=post,
@@ -487,7 +521,8 @@ def fetch_all_recent_metrics():
         fetch_post_metrics.delay(str(post_id))
         count += 1
 
-    logger.info("Queued metrics fetch for %d recent posts", count)
+    if count:
+        logger.info("Queued metrics fetch for %d recent posts", count)
     return {"queued": count}
 
 

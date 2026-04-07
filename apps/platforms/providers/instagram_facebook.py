@@ -351,7 +351,11 @@ class FacebookProvider(BaseProvider):
                                    platform_post_id, e)
 
         except httpx.HTTPStatusError as e:
-            logger.error("Facebook metrics fetch failed: %s", e.response.text)
+            error_text = e.response.text
+            logger.error("Facebook metrics fetch failed: %s", error_text)
+            # Re-raise permission errors so the circuit breaker in tasks can catch them
+            if "pages_read_engagement" in error_text or "OAuthException" in error_text:
+                raise RuntimeError(f"Facebook permission error: {error_text[:300]}")
             return PostMetrics()
 
         return PostMetrics(
