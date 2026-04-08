@@ -28,6 +28,7 @@
 17. [Teams & Multi-Brand Management](#17-teams--multi-brand-management)
 18. [Email Briefs & Reports](#18-email-briefs--reports)
 19. [Notifications & Preferences](#19-notifications--preferences)
+20. [Conversion Loop — Kova Links, CTAs, Leads & Email Marketing](#20-conversion-loop--kova-links-ctas-leads--email-marketing)
 
 ---
 
@@ -1105,6 +1106,23 @@ Social Media Followers → Website Visit → Signup → Trial → Paid
 - [ ] Monitor and adjust based on early engagement data
 - [ ] After 2 weeks: Enable auto-approve if AI quality is good
 
+### Phase 6: Conversion Loop (Day 5+)
+- [ ] Create your first Kova Link page (Conversion → Kova Links → + New Page)
+- [ ] Set slug, bio, theme, and brand colors on the page
+- [ ] Add 3-5 links to the page (portfolio, booking, socials, etc.)
+- [ ] Add a Kova Form to the page (Growth+ plan — email capture or contact form)
+- [ ] Copy your public page URL (`/k/your-slug/`) into all social bio link fields
+- [ ] Configure CTA defaults (Settings → CTA Defaults at `/accounts/settings/cta/`)
+- [ ] Set default CTA type to `kova_link` and paste your Kova page URL
+- [ ] Add CTA to your next 3 posts — use "Kova Link" type with quick-fill
+- [ ] Check Lead Inbox for auto-created leads from form submissions
+- [ ] Tag your first leads and move them through the status funnel
+- [ ] Add at least one Email Subscriber manually or wait for form-created ones
+- [ ] Create your first Email List (e.g. "Newsletter")
+- [ ] Create a draft Email Campaign and target the list
+- [ ] Set up a welcome Email Sequence (trigger: Form Submission, 3 steps)
+- [ ] Review Lead Analytics and Email Dashboard after 1 week
+
 ---
 
 ## 10. COMPETITOR SETUP & TRACKING
@@ -2138,6 +2156,399 @@ These fields should all be set in **Settings** or during **Onboarding**:
 | `plan` | Billing | pro (Biashara) | - [ ] Set |
 | `payment_provider` | Billing | mpesa or stripe | - [ ] Set |
 | `mpesa_phone` | Billing | 254XXXXXXXXX | - [ ] Set (if M-Pesa) |
+| `default_cta_type` | Settings → CTA | kova_link | - [ ] Set |
+| `default_cta_url` | Settings → CTA | /k/kova/ | - [ ] Set |
+| `cta_phone` | Settings → CTA | +254XXXXXXXXX | - [ ] Set |
+| `cta_email` | Settings → CTA | hello@kovaagent.com | - [ ] Set |
+| `cta_whatsapp` | Settings → CTA | 254XXXXXXXXX | - [ ] Set |
+
+---
+
+---
+
+## 20. CONVERSION LOOP — KOVA LINKS, CTAs, LEADS & EMAIL MARKETING
+
+> Phase 6 closes the gap between social media reach and actual business results.
+> Every follower interaction now has a path: Post → Kova Link → Form → Lead → Email → Revenue.
+
+### 20.1 Kova Links (Link-in-Bio Pages)
+
+**Where:** Sidebar → Conversion → Kova Links → `/links/`
+
+Kova Links is a built-in link-in-bio page builder. Every Kova user gets a public landing page at `/k/<slug>/` — no external tools needed.
+
+#### Setup Steps for Kova's Own Brand
+
+1. **Create the page** — Go to `/links/create/`
+   - Title: `Kova Agent`
+   - Slug: `kova` → public URL becomes `/k/kova/`
+   - Bio: `AI-powered social media management for African businesses.`
+   - Theme: `dark` (matches Kova's brand)
+   - Primary Color: `#F59E0B` (amber — Kova's accent)
+   - Secondary Color: `#1E293B` (slate — Kova's background)
+   - Avatar: Upload the Kova logo
+
+2. **Add links** (Order determines position — lower number = higher on page):
+
+| Order | Title | URL | Type | Featured |
+|-------|-------|-----|------|----------|
+| 1 | Start Free Trial | [production URL]/billing/ | link | Yes |
+| 2 | See How It Works | [production URL]/learn/ | link | No |
+| 3 | Book a Demo | [Calendly or booking link] | link | Yes |
+| 4 | Follow on LinkedIn | [LinkedIn URL] | social | No |
+| 5 | Follow on X | [Twitter URL] | social | No |
+| 6 | Follow on Instagram | [Instagram URL] | social | No |
+
+3. **Add forms** (Growth+ plan):
+
+| Form | Type | Fields Enabled | Button Text | Success Message |
+|------|------|---------------|-------------|----------------|
+| Get Updates | `newsletter` | Name, Email | Join the waitlist | We'll keep you posted! |
+| Talk to Us | `contact` | Name, Email, Phone, Message | Send message | We'll reach out within 24 hours. |
+
+4. **Deploy the URL** — Copy `/k/kova/` into:
+   - Instagram bio link field
+   - X/Twitter bio link
+   - LinkedIn page website field
+   - TikTok bio link
+   - All other social profiles
+
+#### Plan Limits
+
+| Plan | Pages | Links/Page | Forms |
+|------|-------|-----------|-------|
+| Starter | 1 | 5 | No |
+| Growth | 3 | 20 | Yes |
+| Pro | 10 | 100 | Yes |
+| Agency | 50 | Unlimited | Yes |
+
+---
+
+### 20.2 Smart CTA System
+
+**Where:** Settings → CTA Defaults → `/accounts/settings/cta/` and Post Editor → CTA Section
+
+Every post can have a call-to-action with automatic UTM tracking. Set defaults once so every post is properly instrumented.
+
+#### Default CTA Configuration for Kova's Own Brand
+
+**Go to** `/accounts/settings/cta/` and set:
+
+| Field | Value |
+|-------|-------|
+| Default CTA Type | `kova_link` |
+| Default CTA URL | `https://[production-url]/k/kova/` |
+| CTA Phone | `+254XXXXXXXXX` |
+| CTA Email | `hello@kovaagent.com` |
+| CTA WhatsApp | `254XXXXXXXXX` |
+
+#### Using CTAs in Posts
+
+When editing any post:
+
+1. Scroll to the **Call-to-Action** section
+2. Select CTA Type → `Kova Link`
+3. Click the **quick-fill button** for your Kova page (auto-fills the URL)
+4. Set CTA Text — use action-oriented phrases:
+   - For awareness posts: `Try it free →`
+   - For educational posts: `Learn more in our guide →`
+   - For social proof posts: `Start your free trial →`
+   - For engagement posts: `Link in bio 👆`
+5. Set **First Comment** — Instagram doesn't allow links in captions, so put the CTA URL here:
+   - `🔗 Start your free trial: [URL]`
+
+#### UTM Tracking (Automatic)
+
+When a post is published, UTM fields auto-populate:
+- `utm_source` = the platform (e.g. `instagram`, `linkedin`)
+- `utm_medium` = `social`
+- `utm_campaign` = the post ID
+- `utm_content` = optional custom tag
+
+The `full_tracked_url` property appends all UTMs to the CTA URL. This means every click from every platform is trackable in your analytics.
+
+---
+
+### 20.3 Lead Inbox
+
+**Where:** Sidebar → Conversion → Lead Inbox → `/leads/`
+
+The Lead Inbox is Kova's built-in mini-CRM. Leads are auto-created from form submissions — no manual data entry.
+
+#### How Leads Arrive
+
+```
+Visitor fills Kova Form → Django signal fires → Lead auto-created
+                                                  → Priority auto-scored
+                                                  → Activity logged
+```
+
+The signal (`apps/leads/signals.py`) fires on every `FormSubmission` save and:
+- Creates a Lead (or updates if a lead with that email already exists)
+- Links to the source form and submission
+- Runs `compute_priority()` to auto-score
+- Logs a "form_submitted" activity on the lead's timeline
+
+#### Lead Status Funnel
+
+| Status | What it means | When to use it |
+|--------|--------------|----------------|
+| **New** | Just arrived | Default — haven't looked at them yet |
+| **Contacted** | You reached out | After first DM, email, or call |
+| **Qualified** | Real prospect | They responded positively, have budget/need |
+| **Converted** | Deal closed | They signed up, paid, or became a client |
+| **Lost** | Didn't work out | Went cold, chose competitor, bad fit |
+
+Move leads through statuses on the lead detail page. Each status change is logged on the activity timeline.
+
+#### Priority System
+
+Priority auto-calculates based on contact info quality:
+- **High** — Has email AND phone, or came through a form submission
+- **Medium** — Has email but no phone
+- **Low** — Missing key contact information
+
+#### Working with Leads — Kova's Own Workflow
+
+1. **Daily:** Check Lead Inbox for new leads (filter by Status = "New")
+2. **Triage:** Open each new lead → review source and contact info
+3. **Tag:** Add relevant tags:
+   - `trial-interest` — Came through trial CTA
+   - `demo-request` — Used contact form
+   - `newsletter` — Signed up for updates only
+   - `enterprise` — Mentioned company or team needs
+   - `nairobi` / `lagos` / `cape-town` — Geographic tags
+4. **Contact:** Move to "Contacted" → add note with what you sent
+5. **Qualify:** If they respond → move to "Qualified" → add note
+6. **Convert or Close:** Move to "Converted" (yay!) or "Lost" (learn from it)
+
+#### Lead Analytics
+
+**URL:** `/leads/analytics/`
+
+Shows:
+- Funnel metrics (how many leads at each stage)
+- Source breakdown (which forms/channels generate leads)
+- Priority distribution (health of your pipeline)
+
+#### Plan Limits
+
+| Plan | Max Leads | Can Edit Leads |
+|------|-----------|---------------|
+| Starter | 10 | View only |
+| Growth | 100 | Yes |
+| Pro | Unlimited | Yes |
+| Agency | Unlimited | Yes |
+
+---
+
+### 20.4 Email Marketing Engine
+
+**Where:** Sidebar → Conversion → Email Marketing → `/emails/marketing/`
+
+Kova's built-in email marketing system. Send campaigns, manage subscriber lists, and run automated drip sequences — all powered by the existing Resend email infrastructure.
+
+#### Core Concepts
+
+| Concept | What It Is | URL |
+|---------|-----------|-----|
+| **Subscriber** | An email contact (auto or manual) | `/emails/subscribers/` |
+| **List** | A group of subscribers (manual or smart) | `/emails/lists/` |
+| **Campaign** | A one-time email blast to a list | `/emails/campaigns/` |
+| **Sequence** | An automated drip email series | `/emails/sequences/` |
+| **Enrollment** | A subscriber's progress through a sequence | (via sequence detail page) |
+
+#### Kova's Own Email Setup
+
+**Step 1: Create initial subscribers**
+
+Subscribers auto-create from:
+- Kova Form submissions (source = `kova_form`)
+- Lead Inbox syncing (source = `lead_sync`)
+- Manual entry at `/emails/subscribers/add/` (source = `manual`)
+
+**Step 2: Create lists**
+
+Go to `/emails/lists/create/` and create:
+
+| List Name | Type | Purpose |
+|-----------|------|--------|
+| All Subscribers | Manual | Default list — add everyone | 
+| Trial Signups | Smart | Filter: `source = kova_form`, `min_engagement = 50` |
+| Hot Leads | Smart | Filter: `tags contains "enterprise"`, `min_engagement = 70` |
+| Newsletter | Manual | People who opted into updates only |
+
+**Smart lists** auto-populate from filter rules — no manual management needed. Set `filter_rules` JSON:
+```json
+{"tags": ["enterprise"], "min_engagement": 70}
+```
+or
+```json
+{"source": "kova_form", "min_engagement": 50}
+```
+
+**Step 3: Create your first campaign**
+
+Go to `/emails/campaigns/create/`:
+
+| Field | Kova's Value |
+|-------|--------------|
+| Name | April Launch Announcement |
+| Subject | Kova Agent is live — your AI social media team |
+| Preview Text | Manage all your social platforms with AI agents |
+| From Name | Kova Agent |
+| Reply To | hello@kovaagent.com |
+| Target List | All Subscribers |
+| HTML Content | (Your launch email HTML) |
+| Text Content | (Plain text fallback) |
+
+Campaign workflow: **Draft** → **Scheduled** → **Sending** → **Sent**
+
+Only Draft and Scheduled campaigns can be edited.
+
+**Step 4: Set up a welcome sequence**
+
+Go to `/emails/sequences/` (admin-created for now) and create:
+
+| | Subject | Delay | Purpose |
+|---|---------|-------|---------|
+| Step 1 | Welcome to Kova 🎉 | 0 days | Immediate welcome + what to expect |
+| Step 2 | 3 things to set up first | 2 days | Onboarding nudge — connect platforms, set voice |
+| Step 3 | Your first AI-generated post is ready | 5 days | Show value — highlight content creation |
+
+Trigger: `Form Submission` → fires when someone fills a Kova Form.
+
+Set `is_active = True` to start enrolling subscribers.
+
+#### Campaign Metrics
+
+After a campaign is sent, the detail page (`/emails/campaigns/<id>/`) shows:
+
+| Metric | What It Means |
+|--------|---------------|
+| Total Sent | How many emails were dispatched |
+| Opened (%) | How many recipients opened the email |
+| Clicked (%) | How many clicked a link inside |
+| Bounced | Delivery failures (bad email addresses) |
+| Unsubscribed | People who opted out |
+
+Goals:
+- **Open rate:** 25%+ (industry average is ~20%)
+- **Click rate:** 3%+ (industry average is ~2.5%)
+- **Bounce rate:** <2% (keep your list clean)
+
+#### Subscriber Engagement Score
+
+Every subscriber has an `engagement_score` (0-100):
+- **70-100** (Green) — Highly engaged, opens and clicks regularly
+- **40-69** (Amber) — Cooling off, might need re-engagement
+- **0-39** (Red) — At risk, consider a win-back campaign or removal
+
+Bounce handling: 3+ bounces auto-marks subscriber as "Bounced" (stops receiving emails).
+
+#### A/B Testing Campaigns
+
+1. Create Campaign A (the original)
+2. Create Campaign B → set `variant_of` to Campaign A, `variant_label` = "B"
+3. Send A to 50% of list, B to 50%
+4. Compare open rates and click rates on respective detail pages
+5. Send the winning version to the remaining list
+
+#### Plan Limits
+
+| Plan | Subscribers | Lists | Campaigns/Month | Sequences |
+|------|------------|-------|----------------|----------|
+| Starter | 50 | 1 | 2 | 0 |
+| Growth | 2,500 | 5 | 10 | 3 |
+| Pro | 25,000 | Unlimited | Unlimited | Unlimited |
+| Agency | Unlimited | Unlimited | Unlimited | Unlimited |
+
+---
+
+### 20.5 The Full Conversion Loop
+
+This is how all four Phase 6 systems chain together for Kova's own brand:
+
+```
+┌─────────────────────────────────────────────────┐
+│  1. CREATE POST                                  │
+│     Content → New Post → CTA = "Kova Link"       │
+│     UTM auto-fills → full_tracked_url built       │
+└──────────────────────┬──────────────────────────┘
+                       ▼
+┌─────────────────────────────────────────────────┐
+│  2. PUBLISH TO SOCIAL                            │
+│     Post goes to Instagram/LinkedIn/X/etc.        │
+│     Bio links point to /k/kova/                   │
+└──────────────────────┬──────────────────────────┘
+                       ▼
+┌─────────────────────────────────────────────────┐
+│  3. VISITOR LANDS ON KOVA PAGE                   │
+│     /k/kova/ → page view tracked                  │
+│     Sees links + form                             │
+└──────────────┬─────────────────┬────────────────┘
+               │                 │
+          Link Click         Form Submit
+               │                 │
+               ▼                 ▼
+┌──────────────────┐  ┌─────────────────────────┐
+│ Click tracked:    │  │ Lead auto-created:       │
+│ - referrer        │  │ - name, email, phone     │
+│ - device          │  │ - source = kova_form     │
+│ - UTM params      │  │ - priority auto-scored   │
+└──────────────────┘  │ - activity logged         │
+                      └────────────┬──────────────┘
+                                   ▼
+                      ┌─────────────────────────┐
+                      │ Email Subscriber created  │
+                      │ → Added to lists          │
+                      │ → Enrolled in sequences   │
+                      └────────────┬──────────────┘
+                                   ▼
+                      ┌─────────────────────────┐
+                      │ Nurture via Email:        │
+                      │ - Welcome sequence fires  │
+                      │ - Campaigns sent to list  │
+                      │ - Track opens/clicks      │
+                      └────────────┬──────────────┘
+                                   ▼
+                      ┌─────────────────────────┐
+                      │ Lead → Converted:         │
+                      │ - Signs up for trial      │
+                      │ - Upgrades to paid plan   │
+                      │ - Revenue tracked         │
+                      └─────────────────────────┘
+```
+
+### Conversion Loop Checklist for Kova's Own Brand
+
+- [ ] Kova Link page created at `/k/kova/` with links + forms
+- [ ] Public URL deployed to all 9 social platform bios
+- [ ] CTA defaults set to `kova_link` type with `/k/kova/` URL
+- [ ] All new posts use Kova Link CTA with auto-UTM
+- [ ] Lead Inbox monitored daily — new leads triaged within 24h
+- [ ] Tags applied consistently: `trial-interest`, `demo-request`, `newsletter`, `enterprise`
+- [ ] "All Subscribers" list created and growing
+- [ ] "Trial Signups" smart list configured with form source filter
+- [ ] Welcome sequence (3 steps) active and enrolling new subscribers
+- [ ] First campaign sent within 7 days of having 10+ subscribers
+- [ ] Campaign metrics reviewed weekly — target 25%+ open rate
+- [ ] Lead Analytics checked weekly — track funnel conversion rates
+
+### Key URLs — Quick Reference
+
+| Section | URL | Sidebar Location |
+|---------|-----|------------------|
+| Kova Links | `/links/` | Conversion → Kova Links |
+| Public page | `/k/<slug>/` | (public — no auth) |
+| CTA Settings | `/accounts/settings/cta/` | Settings → CTA Defaults |
+| Lead Inbox | `/leads/` | Conversion → Lead Inbox |
+| Lead Analytics | `/leads/analytics/` | (from Lead Inbox) |
+| Email Dashboard | `/emails/marketing/` | Conversion → Email Marketing |
+| Subscribers | `/emails/subscribers/` | (from Email Dashboard) |
+| Lists | `/emails/lists/` | (from Email Dashboard) |
+| Campaigns | `/emails/campaigns/` | (from Email Dashboard) |
+| Sequences | `/emails/sequences/` | (from Email Dashboard) |
 
 ---
 
