@@ -5,6 +5,7 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import include, path, re_path
+from django.views.generic.base import RedirectView
 
 from apps.links.views import public_page, public_form_submit, public_link_click
 
@@ -37,6 +38,8 @@ def health_check(request):
 
 
 urlpatterns = [
+    # Favicon — redirect to static icon to eliminate 404 noise
+    path("favicon.ico", RedirectView.as_view(url="/static/images/icon-192.png", permanent=True)),
     # Health check (before auth — no login required)
     path("health/", health_check, name="health"),
     # Landing

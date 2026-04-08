@@ -29,6 +29,10 @@ app.conf.task_queues = (
 app.conf.task_default_queue = "default"
 app.conf.task_default_routing_key = "default"
 
+# Worker tuning — prevent a single worker from prefetching too many tasks
+app.conf.worker_prefetch_multiplier = 1  # fetch one task at a time per worker process
+app.conf.task_acks_late = True  # ack after execution, not before (safer with retries)
+
 app.conf.task_routes = {
     # Critical — user-facing, time-sensitive
     "content.publish_post": {"queue": "critical"},
@@ -52,13 +56,8 @@ app.conf.task_routes = {
     "media_queue.process_queues": {"queue": "critical"},
 }
 
-# ── Periodic beat schedule ───────────────────────────────────────────────────
-app.conf.beat_schedule = {
-    "process-media-queues-every-5-min": {
-        "task": "media_queue.process_queues",
-        "schedule": 300.0,  # every 5 minutes
-    },
-}
+# NOTE: Beat schedule is defined in CELERY_BEAT_SCHEDULE in config/settings/base.py
+# Do NOT set app.conf.beat_schedule here — it would overwrite the settings dict.
 
 # Auto-discover tasks in all installed apps (looks for tasks.py in each app)
 app.autodiscover_tasks()

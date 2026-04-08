@@ -18,50 +18,53 @@ User = get_user_model()
 def run_daily_research():
     """
     Periodic task: Run the Research Agent for all active users.
-    Runs once daily (early morning) to prepare trend data before daily briefs.
+    Dispatches each user as a separate sub-task with staggered countdown
+    to avoid OpenRouter rate limits.
     """
     from apps.agents.models import AgentConfig
-    from apps.agents.research_agent import discover_trends
-
     from apps.billing.models import get_plan_limits
 
-    # Find users with active research agents who have completed onboarding or published posts
     users_with_research = User.objects.filter(
         Q(onboarding_completed=True) | Q(posts__status="published"),
         agent_configs__agent_type="research",
         agent_configs__is_active=True,
     ).distinct()
 
-    researched = 0
+    dispatched = 0
     for idx, user in enumerate(users_with_research):
-        try:
-            plan = getattr(getattr(user, "profile", None), "plan", "starter")
-            if "research" not in get_plan_limits(plan).get("agents_enabled", []):
-                continue
-            # Stagger between users to avoid OpenRouter rate limits (429s)
-            if idx > 0:
-                import time
-                time.sleep(5)
-            result = discover_trends(user)
-            if result.get("trending_topics"):
-                researched += 1
-        except Exception as e:
-            logger.error("Research Agent failed for %s: %s", user.email, e)
+        plan = getattr(getattr(user, "profile", None), "plan", "starter")
+        if "research" not in get_plan_limits(plan).get("agents_enabled", []):
+            continue
+        # Stagger by 5s per user to avoid OpenRouter rate limits (429s)
+        _run_research_for_user.apply_async(args=[user.pk], countdown=idx * 5)
+        dispatched += 1
 
-    if researched:
-        logger.info("Daily research complete: %d users researched", researched)
-    return researched
+    if dispatched:
+        logger.info("Daily research dispatched %d user tasks", dispatched)
+    return dispatched
+
+
+@shared_task(name="agents.run_research_for_user", max_retries=1, acks_late=True)
+def _run_research_for_user(user_id):
+    """Run the Research Agent for a single user (dispatched as sub-task)."""
+    from apps.agents.research_agent import discover_trends
+
+    user = User.objects.get(pk=user_id)
+    try:
+        result = discover_trends(user)
+        if result.get("trending_topics"):
+            logger.info("Research complete for %s: %d topics", user.email, len(result["trending_topics"]))
+    except Exception as e:
+        logger.error("Research Agent failed for %s: %s", user.email, e)
 
 
 @shared_task(name="agents.run_engage_cycle")
 def run_engage_cycle():
     """
     Periodic task: Run the Engage Agent cycle for all active users.
-    Fetches new interactions, analyzes sentiment, generates replies,
-    and auto-responds (for users who enabled it).
+    Dispatches each user as a separate sub-task for parallel execution.
     Runs every 30 minutes.
     """
-    from apps.agents.engage_agent import run_engage_cycle as engage_cycle
     from apps.agents.models import AgentConfig
     from apps.billing.models import get_plan_limits
 
@@ -71,33 +74,40 @@ def run_engage_cycle():
         agent_configs__is_active=True,
     ).distinct()
 
-    processed = 0
-    checked = 0
+    dispatched = 0
     for user in users_with_engage:
-        try:
-            plan = getattr(getattr(user, "profile", None), "plan", "starter")
-            if not get_plan_limits(plan).get("engagement_agent", False):
-                continue
-            checked += 1
-            result = engage_cycle(user)
-            if result.get("fetched", 0) > 0 or result.get("replies_generated", 0) > 0:
-                processed += 1
-                logger.info(
-                    "Engage cycle for %s: fetched=%d, analyzed=%d, replies=%d, auto_sent=%d",
-                    user.email, result["fetched"], result["analyzed"],
-                    result["replies_generated"], result["auto_sent"],
-                )
-            else:
-                logger.debug(
-                    "Engage cycle for %s: no new interactions (fetched=%d, analyzed=%d)",
-                    user.email, result.get("fetched", 0), result.get("analyzed", 0),
-                )
-        except Exception as e:
-            logger.error("Engage cycle failed for %s: %s", user.email, e)
+        plan = getattr(getattr(user, "profile", None), "plan", "starter")
+        if not get_plan_limits(plan).get("engagement_agent", False):
+            continue
+        _run_engage_for_user.delay(user.pk)
+        dispatched += 1
 
-    if processed:
-        logger.info("Engage cycle complete: %d users checked, %d with new activity", checked, processed)
-    return processed
+    if dispatched:
+        logger.info("Engage cycle dispatched %d user tasks", dispatched)
+    return dispatched
+
+
+@shared_task(name="agents.run_engage_for_user", max_retries=1, acks_late=True)
+def _run_engage_for_user(user_id):
+    """Run the engage cycle for a single user (dispatched as sub-task)."""
+    from apps.agents.engage_agent import run_engage_cycle as engage_cycle
+
+    user = User.objects.get(pk=user_id)
+    try:
+        result = engage_cycle(user)
+        if result.get("fetched", 0) > 0 or result.get("replies_generated", 0) > 0:
+            logger.info(
+                "Engage cycle for %s: fetched=%d, analyzed=%d, replies=%d, auto_sent=%d",
+                user.email, result["fetched"], result["analyzed"],
+                result["replies_generated"], result["auto_sent"],
+            )
+        else:
+            logger.debug(
+                "Engage cycle for %s: no new interactions (fetched=%d, analyzed=%d)",
+                user.email, result.get("fetched", 0), result.get("analyzed", 0),
+            )
+    except Exception as e:
+        logger.error("Engage cycle failed for %s: %s", user.email, e)
 
 
 @shared_task(name="agents.run_strategy_cycle")

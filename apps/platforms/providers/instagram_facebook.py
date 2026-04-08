@@ -324,31 +324,41 @@ class FacebookProvider(BaseProvider):
                 shares = data.get("shares", {}).get("count", 0)
 
                 # Step 2: Post insights (impressions, reach, clicks) — may fail
-                # on certain post types or API versions; don't lose basic data
-                try:
-                    insights_resp = client.get(
-                        f"{FB_API_BASE}/{platform_post_id}/insights",
-                        params={
-                            "metric": "post_impressions,post_impressions_unique,post_clicks",
-                            "access_token": access_token,
-                        },
-                    )
-                    insights_resp.raise_for_status()
-                    for insight in insights_resp.json().get("data", []):
-                        name = insight.get("name", "")
-                        val = insight.get("values", [{}])[0].get("value", 0)
-                        if name == "post_impressions":
-                            impressions = val if isinstance(val, int) else 0
-                        elif name == "post_impressions_unique":
-                            reach = val if isinstance(val, int) else 0
-                        elif name == "post_clicks":
-                            clicks = val if isinstance(val, int) else 0
-                except httpx.HTTPStatusError as e:
-                    logger.warning("Facebook post insights unavailable for %s: %s",
-                                   platform_post_id, e.response.text[:200])
-                except Exception as e:
-                    logger.warning("Facebook post insights error for %s: %s",
-                                   platform_post_id, e)
+                # on Reels, Stories, or shared posts. Try standard metrics first,
+                # then fall back to the subset that works for all post types.
+                _INSIGHT_METRIC_SETS = [
+                    "post_impressions,post_impressions_unique,post_clicks",
+                    "post_impressions,post_impressions_unique",  # clicks unsupported on some types
+                ]
+                insights_data = []
+                for metric_set in _INSIGHT_METRIC_SETS:
+                    try:
+                        insights_resp = client.get(
+                            f"{FB_API_BASE}/{platform_post_id}/insights",
+                            params={
+                                "metric": metric_set,
+                                "access_token": access_token,
+                            },
+                        )
+                        insights_resp.raise_for_status()
+                        insights_data = insights_resp.json().get("data", [])
+                        break  # success — stop trying
+                    except httpx.HTTPStatusError:
+                        continue  # try next metric set
+
+                for insight in insights_data:
+                    name = insight.get("name", "")
+                    val = insight.get("values", [{}])[0].get("value", 0)
+                    if name == "post_impressions":
+                        impressions = val if isinstance(val, int) else 0
+                    elif name == "post_impressions_unique":
+                        reach = val if isinstance(val, int) else 0
+                    elif name == "post_clicks":
+                        clicks = val if isinstance(val, int) else 0
+
+                if not insights_data:
+                    logger.debug("Insights unavailable for post %s (unsupported post type)",
+                                 platform_post_id)
 
         except httpx.HTTPStatusError as e:
             error_text = e.response.text

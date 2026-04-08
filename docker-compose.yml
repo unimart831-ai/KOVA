@@ -46,7 +46,7 @@ services:
   # ── Celery Worker (runs agent tasks) ────────────────────────────────────────
   celery_worker:
     build: .
-    command: celery -A config worker --loglevel=info
+    command: celery -A config worker --loglevel=info --concurrency=2 -Q critical,default,low
     volumes:
       - .:/app
     env_file:

@@ -163,6 +163,8 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
+# Reduce Redis writes: short-lived results auto-expire after 1 hour
+CELERY_RESULT_EXPIRES = 3600
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_BEAT_SCHEDULE = {
     "check-and-publish-due-posts": {
@@ -208,6 +210,10 @@ CELERY_BEAT_SCHEDULE = {
     "measure-agent-outcomes": {
         "task": "agents.measure_agent_outcomes",
         "schedule": 12 * 3600.0,  # every 12 hours — score past agent actions against outcomes
+    },
+    "process-media-queues-every-5-min": {
+        "task": "media_queue.process_queues",
+        "schedule": 300.0,  # every 5 minutes — publish queued media
     },
 }
 

@@ -138,9 +138,46 @@ else:
 ACCOUNT_EMAIL_VERIFICATION = "optional" if RESEND_API_KEY else "none"
 
 # ─── LOGGING ─────────────────────────────────────────────────────────────────
+import logging as _logging
+import re as _re
+
+
+class _TokenRedactFilter(_logging.Filter):
+    """Strip access_token, api_key, and secret values from all log records."""
+
+    _PATTERNS = [
+        _re.compile(r"(access_token=)[^\s&\"']+", _re.IGNORECASE),
+        _re.compile(r"(api_key=)[^\s&\"']+", _re.IGNORECASE),
+        _re.compile(r"(token=)[^\s&\"']+", _re.IGNORECASE),
+    ]
+
+    def filter(self, record):
+        if record.args:
+            record.msg, record.args = self._redact_msg(record.msg, record.args)
+        else:
+            if isinstance(record.msg, str):
+                for pat in self._PATTERNS:
+                    record.msg = pat.sub(r"\1[REDACTED]", record.msg)
+        return True
+
+    def _redact_msg(self, msg, args):
+        try:
+            formatted = msg % args if args else msg
+        except (TypeError, ValueError):
+            formatted = str(msg)
+        for pat in self._PATTERNS:
+            formatted = pat.sub(r"\1[REDACTED]", formatted)
+        return formatted, None
+
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "filters": {
+        "redact_tokens": {
+            "()": "config.settings.production._TokenRedactFilter",
+        },
+    },
     "formatters": {
         "verbose": {
             "format": "[{levelname}] {asctime} {name} {message}",
@@ -151,6 +188,7 @@ LOGGING = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "verbose",
+            "filters": ["redact_tokens"],
         },
     },
     "root": {
@@ -160,6 +198,9 @@ LOGGING = {
     "loggers": {
         "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
         "apps": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        # Suppress noisy httpx request logging that dumps full URLs with tokens
+        "httpx": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        "httpcore": {"handlers": ["console"], "level": "WARNING", "propagate": False},
     },
 }
 
