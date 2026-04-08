@@ -18,7 +18,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from apps.agents.analyst_agent import analyze_performance, get_content_dna_summary
-from apps.agents.llm import generate, get_model_for_task
+from apps.agents.llm import generate, get_model_for_task, parse_llm_json
 from apps.agents.models import AgentAction, AgentConfig
 from apps.agents.strategist_agent import get_engagement_report, run_strategy_cycle
 from apps.analytics.competitor_intel import get_competitor_context_for_brief
@@ -253,10 +253,10 @@ def generate_daily_brief(user):
         response = _generate_brief_with_llm(user, brief_data)
 
         try:
-            llm_result = json.loads(response.content)
-        except json.JSONDecodeError:
+            llm_result = parse_llm_json(response.content)
+        except (json.JSONDecodeError, ValueError):
             llm_result = {
-                "summary": response.content,
+                "summary": response.content[:1000] if "{" not in response.content[:5] else "Your daily brief is ready.",
                 "trending_topics": [],
                 "suggested_posts": [],
                 "performance_highlight": "",

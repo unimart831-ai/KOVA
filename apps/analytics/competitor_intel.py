@@ -97,6 +97,46 @@ def _build_competitor_context(competitor):
     }
 
 
+def _extract_partial_competitor_result(raw_content: str) -> dict:
+    """
+    Best-effort extraction of competitor analysis fields from broken/truncated JSON.
+    Tries to pull recognizable fields via regex so we don't lose the entire analysis.
+    """
+    import re
+
+    result = {
+        "summary": "",
+        "content_strategy": {},
+        "strengths": [],
+        "weaknesses": [],
+        "opportunities": [],
+        "threats": [],
+        "comparison": {},
+        "actionable_insights": [],
+        "threat_level": "medium",
+    }
+
+    def _extract_string(key):
+        m = re.search(rf'"{key}"\s*:\s*"((?:[^"\\]|\\.)*)"', raw_content, re.DOTALL)
+        return m.group(1).replace("\\n", "\n").replace('\\"', '"') if m else ""
+
+    def _extract_list(key):
+        m = re.search(rf'"{key}"\s*:\s*\[(.*?)\]', raw_content, re.DOTALL)
+        if not m:
+            return []
+        items = re.findall(r'"((?:[^"\\]|\\.)*)"', m.group(1))
+        return [i.replace("\\n", "\n").replace('\\"', '"') for i in items if i.strip()]
+
+    result["summary"] = _extract_string("summary") or raw_content[:500]
+    result["strengths"] = _extract_list("strengths")
+    result["weaknesses"] = _extract_list("weaknesses")
+    result["opportunities"] = _extract_list("opportunities")
+    result["threats"] = _extract_list("threats")
+    result["threat_level"] = _extract_string("threat_level") or "medium"
+
+    return result
+
+
 # ─── Full Analysis ───────────────────────────────────────────────────────────
 
 def analyze_competitor(user, competitor):
@@ -212,24 +252,15 @@ def analyze_competitor(user, competitor):
             model=get_model_for_task("research.trends", user=user),
             json_mode=True,
             temperature=0.5,
-            max_tokens=3000,
+            max_tokens=4500,
         )
 
         try:
             result = parse_llm_json(response.content)
         except (json.JSONDecodeError, ValueError):
             logger.warning("Competitor analysis LLM returned non-JSON for %s", competitor.name)
-            result = {
-                "summary": response.content[:500],
-                "content_strategy": {},
-                "strengths": [],
-                "weaknesses": [],
-                "opportunities": [],
-                "threats": [],
-                "comparison": {},
-                "actionable_insights": [],
-                "threat_level": "medium",
-            }
+            # Try to extract individual fields from partial/broken JSON
+            result = _extract_partial_competitor_result(response.content)
 
         # Save the analysis
         analysis = CompetitorAnalysis.objects.create(
