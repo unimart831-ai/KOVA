@@ -61,3 +61,36 @@ app.conf.task_routes = {
 
 # Auto-discover tasks in all installed apps (looks for tasks.py in each app)
 app.autodiscover_tasks()
+
+
+# ── Startup diagnostics ─────────────────────────────────────────────────────
+# Logs the active settings module + storage backend when the worker starts.
+# This is critical for debugging R2/S3 issues on Railway.
+from celery.signals import worker_ready  # noqa: E402
+
+
+@worker_ready.connect
+def _log_storage_backend(sender, **kwargs):
+    import logging
+
+    from django.conf import settings
+    from django.core.files.storage import default_storage
+
+    logger = logging.getLogger("celery.worker")
+    logger.info(
+        "DJANGO_SETTINGS_MODULE=%s | DEFAULT_STORAGE=%s",
+        os.environ.get("DJANGO_SETTINGS_MODULE", "<NOT SET>"),
+        default_storage.__class__.__name__,
+    )
+    bucket = getattr(settings, "AWS_STORAGE_BUCKET_NAME", None)
+    if bucket:
+        logger.info(
+            "R2 active: bucket=%s endpoint=%s",
+            bucket,
+            getattr(settings, "AWS_S3_ENDPOINT_URL", "<NOT SET>"),
+        )
+    else:
+        logger.warning(
+            "R2 NOT active — media files use local FileSystemStorage "
+            "(lost on every deploy)."
+        )

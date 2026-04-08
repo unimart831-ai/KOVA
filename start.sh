@@ -30,5 +30,19 @@ python manage.py migrate --noinput 2>&1 || echo "WARNING: migrate failed"
 echo "==> Creating superuser (if not exists)..."
 python manage.py create_superuser 2>&1
 
+echo "==> Checking storage backend..."
+python -c "
+import django; django.setup()
+from django.core.files.storage import default_storage
+print(f'    Storage backend: {default_storage.__class__.__name__}')
+from django.conf import settings
+bucket = getattr(settings, 'AWS_STORAGE_BUCKET_NAME', None)
+if bucket:
+    print(f'    R2 bucket: {bucket}')
+    print(f'    R2 endpoint: {getattr(settings, \"AWS_S3_ENDPOINT_URL\", \"<NOT SET>\")}')
+else:
+    print('    WARNING: R2 NOT configured — using local FileSystemStorage')
+" 2>&1
+
 echo "==> Starting gunicorn on port ${PORT:-8000}..."
 exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3 --timeout 120
