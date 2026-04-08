@@ -1,0 +1,190 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}{{ page.title }}{% endblock %}
+{% block page_subtitle %}
+<div class="flex items-center gap-3 mt-0.5">
+  <a href="/k/{{ page.slug }}/" target="_blank" class="text-sm text-kova-600 dark:text-kova-400 hover:underline">/k/{{ page.slug }}/ ↗</a>
+  {% if page.is_published %}
+  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">Live</span>
+  {% else %}
+  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">Draft</span>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+  {# ── Analytics cards ── #}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ page.total_views }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Total Views</p>
+    </div>
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-kova-600 dark:text-kova-400">{{ total_clicks_30d }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Clicks (30d)</p>
+    </div>
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ total_submissions_30d }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Submissions (30d)</p>
+    </div>
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ links|length }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Links</p>
+    </div>
+  </div>
+
+  {# ── Page actions ── #}
+  <div class="flex items-center justify-between">
+    <a href="{% url 'links:list' %}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">← All Pages</a>
+    <div class="flex gap-2">
+      <a href="{% url 'links:page_edit' page_id=page.pk %}" class="btn-secondary text-sm px-4 py-2">Edit Page</a>
+      <form method="post" action="{% url 'links:page_delete' page_id=page.pk %}" onsubmit="return confirm('Delete this page and all its links/forms?')">
+        {% csrf_token %}
+        <button type="submit" class="btn-secondary text-sm px-4 py-2 text-red-600 hover:text-red-700 dark:text-red-400">Delete</button>
+      </form>
+    </div>
+  </div>
+
+  {# ── Links section ── #}
+  <div class="card">
+    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+      <div>
+        <h3 class="font-semibold text-gray-900 dark:text-white">Links</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400">{{ links|length }}/{{ link_limit }} links used</p>
+      </div>
+      {% if can_add_link %}
+      <a href="{% url 'links:link_add' page_id=page.pk %}" class="btn-primary text-sm px-3 py-1.5">
+        <svg class="w-3.5 h-3.5 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Add Link
+      </a>
+      {% endif %}
+    </div>
+    {% if links %}
+    <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for link in links %}
+      <li class="px-6 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50">
+        <div class="flex items-center gap-3 min-w-0 flex-1">
+          <span class="text-xs text-gray-400 font-mono w-6 text-right">{{ link.order }}</span>
+          {% if link.is_featured %}
+          <span class="w-2 h-2 rounded-full bg-kova-500 flex-shrink-0"></span>
+          {% endif %}
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ link.title }}</p>
+            {% if link.url %}
+            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ link.url }}</p>
+            {% else %}
+            <p class="text-xs text-gray-400 italic">{{ link.get_link_type_display }}</p>
+            {% endif %}
+          </div>
+        </div>
+        <div class="flex items-center gap-4 flex-shrink-0 ml-4">
+          <span class="text-xs text-gray-500 dark:text-gray-400">{{ link.total_clicks }} click{{ link.total_clicks|pluralize }}</span>
+          <div class="flex gap-1">
+            <a href="{% url 'links:link_edit' page_id=page.pk link_id=link.pk %}" class="p-1 text-gray-400 hover:text-kova-600 dark:hover:text-kova-400" title="Edit">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            </a>
+            <form method="post" action="{% url 'links:link_delete' page_id=page.pk link_id=link.pk %}" class="inline">
+              {% csrf_token %}
+              <button type="submit" class="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400" title="Delete" onclick="return confirm('Delete this link?')">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </form>
+          </div>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+      No links yet. Add your first link above.
+    </div>
+    {% endif %}
+  </div>
+
+  {# ── Forms section ── #}
+  <div class="card">
+    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+      <div>
+        <h3 class="font-semibold text-gray-900 dark:text-white">Lead Capture Forms</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400">Collect leads directly from your page</p>
+      </div>
+      {% if can_use_forms %}
+      <a href="{% url 'links:form_add' page_id=page.pk %}" class="btn-primary text-sm px-3 py-1.5">
+        <svg class="w-3.5 h-3.5 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Add Form
+      </a>
+      {% else %}
+      <a href="{% url 'billing:pricing' %}" class="text-xs text-amber-600 dark:text-amber-400 hover:underline">Upgrade to Growth →</a>
+      {% endif %}
+    </div>
+    {% if forms_list %}
+    <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for f in forms_list %}
+      <li class="px-6 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50">
+        <div class="min-w-0">
+          <p class="text-sm font-medium text-gray-900 dark:text-white">{{ f.title }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ f.get_form_type_display }} · {{ f.total_submissions }} submission{{ f.total_submissions|pluralize }}</p>
+        </div>
+        <div class="flex gap-1 flex-shrink-0 ml-4">
+          {% if f.is_active %}
+          <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mr-2">Active</span>
+          {% else %}
+          <span class="text-[10px] text-gray-400 font-medium mr-2">Inactive</span>
+          {% endif %}
+          <a href="{% url 'links:form_edit' page_id=page.pk form_id=f.pk %}" class="p-1 text-gray-400 hover:text-kova-600 dark:hover:text-kova-400" title="Edit">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          </a>
+          <form method="post" action="{% url 'links:form_delete' page_id=page.pk form_id=f.pk %}" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400" title="Delete" onclick="return confirm('Delete this form and all submissions?')">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </form>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+      {% if can_use_forms %}
+      No forms yet. Add a lead capture form to start collecting leads.
+      {% else %}
+      Lead capture forms are available on Growth+ plans.
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  {# ── Recent submissions ── #}
+  {% if recent_submissions %}
+  <div class="card">
+    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+      <h3 class="font-semibold text-gray-900 dark:text-white">Recent Submissions</h3>
+      <a href="{% url 'links:submissions' %}" class="text-sm text-kova-600 dark:text-kova-400 hover:underline">View all →</a>
+    </div>
+    <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for sub in recent_submissions %}
+      <li class="px-6 py-3 flex items-center justify-between">
+        <div class="min-w-0">
+          <p class="text-sm font-medium text-gray-900 dark:text-white {% if not sub.is_read %}font-bold{% endif %}">
+            {{ sub.name|default:sub.email }}
+          </p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ sub.email }} · {{ sub.form.title }} · {{ sub.submitted_at|timesince }} ago</p>
+        </div>
+        {% if not sub.is_read %}
+        <span class="w-2 h-2 rounded-full bg-kova-500 flex-shrink-0"></span>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

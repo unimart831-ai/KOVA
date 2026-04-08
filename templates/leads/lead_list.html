@@ -1,0 +1,113 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Lead Inbox{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">{{ stats.new }} new · {{ stats.total }} total</p>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  {# Stats bar #}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="card px-4 py-3">
+      <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.total }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Total Leads</p>
+    </div>
+    <div class="card px-4 py-3">
+      <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ stats.new }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">New</p>
+    </div>
+    <div class="card px-4 py-3">
+      <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ stats.qualified }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Qualified</p>
+    </div>
+    <div class="card px-4 py-3">
+      <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ stats.converted }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Converted</p>
+    </div>
+  </div>
+
+  {# Actions + filters #}
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div class="flex flex-wrap items-center gap-2">
+      <form method="get" class="flex items-center gap-2">
+        <input type="text" name="q" value="{{ current_q }}" placeholder="Search leads…" class="input text-sm w-48">
+        <select name="status" class="input text-sm w-auto" onchange="this.form.submit()">
+          <option value="">All statuses</option>
+          <option value="new" {% if current_status == 'new' %}selected{% endif %}>New</option>
+          <option value="contacted" {% if current_status == 'contacted' %}selected{% endif %}>Contacted</option>
+          <option value="qualified" {% if current_status == 'qualified' %}selected{% endif %}>Qualified</option>
+          <option value="converted" {% if current_status == 'converted' %}selected{% endif %}>Converted</option>
+          <option value="lost" {% if current_status == 'lost' %}selected{% endif %}>Lost</option>
+        </select>
+        <select name="priority" class="input text-sm w-auto" onchange="this.form.submit()">
+          <option value="">All priorities</option>
+          <option value="high" {% if current_priority == 'high' %}selected{% endif %}>🔴 High</option>
+          <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>🟡 Medium</option>
+          <option value="low" {% if current_priority == 'low' %}selected{% endif %}>⚪ Low</option>
+        </select>
+      </form>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="{% url 'leads:analytics' %}" class="btn-secondary text-sm px-3 py-1.5">Analytics</a>
+      <a href="{% url 'leads:create' %}" class="btn-primary text-sm px-4 py-1.5">+ Add Lead</a>
+    </div>
+  </div>
+
+  {# Lead list #}
+  <div class="card">
+    {% if leads %}
+    <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for lead in leads %}
+      <li>
+        <a href="{% url 'leads:detail' lead_id=lead.pk %}" class="block px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold
+                {% if lead.priority == 'high' %}bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300
+                {% elif lead.priority == 'medium' %}bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300
+                {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+                {{ lead.name|default:lead.email|truncatechars:1|upper }}
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ lead.name|default:"(no name)" }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ lead.email }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0 ml-4">
+              <span class="text-[10px] px-2 py-0.5 rounded-full font-medium
+                {% if lead.status == 'new' %}bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300
+                {% elif lead.status == 'contacted' %}bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300
+                {% elif lead.status == 'qualified' %}bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300
+                {% elif lead.status == 'converted' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300
+                {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+                {{ lead.get_status_display }}
+              </span>
+              <span class="text-[10px] text-gray-400">{{ lead.first_seen_at|timesince }} ago</span>
+              {% if lead.activity_count %}
+              <span class="text-[10px] text-gray-400">{{ lead.activity_count }} activities</span>
+              {% endif %}
+            </div>
+          </div>
+          {% if lead.tags %}
+          <div class="flex gap-1 mt-2 ml-12">
+            {% for tag in lead.tags %}
+            <span class="text-[9px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">{{ tag }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="px-6 py-12 text-center">
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">No leads yet. Share your Kova Links page to start capturing leads!</p>
+      <a href="{% url 'leads:create' %}" class="btn-primary text-sm px-4 py-2">+ Add your first lead</a>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

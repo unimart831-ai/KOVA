@@ -1,0 +1,8 @@
+<span class="text-[10px] px-2 py-0.5 rounded-full font-medium
+  {% if lead.status == 'new' %}bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300
+  {% elif lead.status == 'contacted' %}bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300
+  {% elif lead.status == 'qualified' %}bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300
+  {% elif lead.status == 'converted' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300
+  {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+  {{ lead.get_status_display }}
+</span>

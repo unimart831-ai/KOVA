@@ -74,6 +74,8 @@ LOCAL_APPS = [
     "apps.teams",
     "apps.partners",
     "apps.media_queue",
+    "apps.links",
+    "apps.leads",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

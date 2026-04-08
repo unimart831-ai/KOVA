@@ -1,0 +1,102 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Email Marketing{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  {# Stats #}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="card px-4 py-3">
+      <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ subscriber_stats.active|default:0 }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Active Subscribers</p>
+    </div>
+    <div class="card px-4 py-3">
+      <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ campaign_stats.sent|default:0 }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Campaigns Sent</p>
+    </div>
+    <div class="card px-4 py-3">
+      <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ campaign_stats.total_sent_emails|default:0 }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Emails Sent</p>
+    </div>
+    <div class="card px-4 py-3">
+      <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ campaign_stats.total_opened_emails|default:0 }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Total Opens</p>
+    </div>
+  </div>
+
+  {# Quick actions #}
+  <div class="flex flex-wrap gap-3">
+    <a href="{% url 'emails:campaign_create' %}" class="btn-primary text-sm px-4 py-2">+ New Campaign</a>
+    <a href="{% url 'emails:subscribers' %}" class="btn-secondary text-sm px-4 py-2">Subscribers ({{ subscriber_stats.total|default:0 }})</a>
+    <a href="{% url 'emails:lists' %}" class="btn-secondary text-sm px-4 py-2">Lists ({{ list_count }})</a>
+    <a href="{% url 'emails:sequences' %}" class="btn-secondary text-sm px-4 py-2">Sequences</a>
+    <a href="{% url 'emails:campaigns' %}" class="btn-secondary text-sm px-4 py-2">All Campaigns</a>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    {# Recent campaigns #}
+    <div class="card">
+      <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Recent Campaigns</h3>
+        <a href="{% url 'emails:campaigns' %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">View all</a>
+      </div>
+      {% if recent_campaigns %}
+      <ul class="divide-y divide-gray-50 dark:divide-gray-800/50">
+        {% for c in recent_campaigns %}
+        <li>
+          <a href="{% url 'emails:campaign_detail' campaign_id=c.pk %}" class="block px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ c.name }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ c.subject }}</p>
+              </div>
+              <span class="text-[10px] px-2 py-0.5 rounded-full font-medium
+                {% if c.status == 'sent' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300
+                {% elif c.status == 'draft' %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400
+                {% elif c.status == 'scheduled' %}bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300
+                {% elif c.status == 'sending' %}bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300
+                {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+                {{ c.get_status_display }}
+              </span>
+            </div>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="px-5 py-8 text-center text-sm text-gray-400">No campaigns yet.</div>
+      {% endif %}
+    </div>
+
+    {# Active sequences #}
+    <div class="card">
+      <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Active Sequences</h3>
+        <a href="{% url 'emails:sequences' %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">View all</a>
+      </div>
+      {% if active_sequences %}
+      <ul class="divide-y divide-gray-50 dark:divide-gray-800/50">
+        {% for s in active_sequences %}
+        <li>
+          <a href="{% url 'emails:sequence_detail' sequence_id=s.pk %}" class="block px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ s.name }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ s.get_trigger_type_display }}</p>
+              </div>
+              <span class="text-xs text-gray-500">{{ s.enrollment_count }} enrolled</span>
+            </div>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="px-5 py-8 text-center text-sm text-gray-400">No active sequences.</div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

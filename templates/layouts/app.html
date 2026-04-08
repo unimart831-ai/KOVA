@@ -130,6 +130,34 @@
         {% if not request.plan_limits.competitor_tracking %}<span class="ml-auto text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">PRO</span>{% endif %}
       </a>
 
+      <p class="nav-section">Conversion</p>
+      <a href="{% url 'links:list' %}"
+         {% if '/links/' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/links/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/links/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+        </svg>
+        Kova Links
+      </a>
+
+      <a href="{% url 'leads:list' %}"
+         {% if '/leads/' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/leads/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/leads/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        Lead Inbox
+      </a>
+
+      <a href="{% url 'emails:dashboard' %}"
+         {% if '/emails/marketing' in request.path or '/emails/subscribers' in request.path or '/emails/lists' in request.path or '/emails/campaigns' in request.path or '/emails/sequences' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/emails/marketing' in request.path or '/emails/subscribers' in request.path or '/emails/lists' in request.path or '/emails/campaigns' in request.path or '/emails/sequences' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/emails/marketing' in request.path or '/emails/campaigns' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        Email Marketing
+      </a>
+
       <p class="nav-section">System</p>
       <a href="{% url 'platforms:list' %}"
          {% if '/platforms/' in request.path %}aria-current="page"{% endif %}

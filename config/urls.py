@@ -6,6 +6,8 @@ from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import include, path, re_path
 
+from apps.links.views import public_page, public_form_submit, public_link_click
+
 admin.site.site_header = "KOVA AI ADMIN"
 admin.site.site_title = "Kova AI"
 admin.site.index_title = "Administration"
@@ -43,6 +45,10 @@ urlpatterns = [
     path("learn/", include("apps.help.urls_public")),
     # Growth Partners (public + authenticated)
     path("partners/", include("apps.partners.urls")),
+    # Public Kova Link pages (no login required)
+    path("k/<slug:slug>/", public_page, name="public_page"),
+    path("k/<slug:slug>/click/<uuid:link_id>/", public_link_click, name="public_link_click"),
+    path("k/<slug:slug>/form/<uuid:form_id>/", public_form_submit, name="public_form_submit"),
     # PWA service worker (must be served from root scope)
     path("sw.js", service_worker, name="sw"),
     # Admin
@@ -63,6 +69,8 @@ urlpatterns = [
     path("help/", include("apps.help.urls")),
     path("teams/", include("apps.teams.urls")),
     path("media-queue/", include("apps.media_queue.urls")),
+    path("links/", include("apps.links.urls")),
+    path("leads/", include("apps.leads.urls")),
     path("dashboard/", include("apps.admin_dashboard.urls")),
     path("api/v1/", include("apps.api.urls")),
 ]

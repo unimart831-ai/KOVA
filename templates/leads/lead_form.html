@@ -1,0 +1,67 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+  <div class="card">
+    <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ page_title }}</h2>
+    </div>
+    <form method="post" class="px-6 py-5 space-y-5">
+      {% csrf_token %}
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="id_name" class="label">Name</label>
+          {{ form.name }}
+          {% if form.name.errors %}<p class="text-red-500 text-xs mt-1">{{ form.name.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label for="id_email" class="label">Email</label>
+          {{ form.email }}
+          {% if form.email.errors %}<p class="text-red-500 text-xs mt-1">{{ form.email.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="id_phone" class="label">Phone</label>
+          {{ form.phone }}
+        </div>
+        <div>
+          <label for="id_source_platform" class="label">Source Platform</label>
+          {{ form.source_platform }}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label for="id_source_type" class="label">Source</label>
+          {{ form.source_type }}
+        </div>
+        <div>
+          <label for="id_status" class="label">Status</label>
+          {{ form.status }}
+        </div>
+        <div>
+          <label for="id_priority" class="label">Priority</label>
+          {{ form.priority }}
+        </div>
+      </div>
+
+      <div>
+        <label for="id_notes" class="label">Notes</label>
+        {{ form.notes }}
+      </div>
+
+      <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+        <a href="{% url 'leads:list' %}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Cancel</a>
+        <button type="submit" class="btn-primary text-sm px-6 py-2">
+          {% if is_edit %}Save Changes{% else %}Add Lead{% endif %}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

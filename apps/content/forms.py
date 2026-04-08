@@ -39,10 +39,27 @@ class PostEditForm(forms.ModelForm):
 
     class Meta:
         model = Post
-        fields = ["content_text"]
+        fields = ["content_text", "cta_type", "cta_text", "cta_url", "first_comment"]
         widgets = {
             "content_text": forms.Textarea(attrs={
                 "rows": 8,
                 "class": "input",
+            }),
+            "cta_type": forms.Select(attrs={
+                "class": "input",
+                "x-model": "ctaType",
+            }),
+            "cta_text": forms.TextInput(attrs={
+                "class": "input",
+                "placeholder": "e.g. Book a free consultation →",
+            }),
+            "cta_url": forms.TextInput(attrs={
+                "class": "input",
+                "placeholder": "https://… or phone/email/WhatsApp",
+            }),
+            "first_comment": forms.Textarea(attrs={
+                "rows": 3,
+                "class": "input",
+                "placeholder": "First comment content (LinkedIn: put CTA link here)",
             }),
         }

@@ -192,6 +192,24 @@ class UserProfile(models.Model):
         default=False,
         help_text="If True, engage agent can respond to comments automatically.",
     )
+    # ── Default CTA settings (Sprint 6B) ──
+    default_cta_type = models.CharField(
+        max_length=20,
+        choices=[
+            ("none", "No CTA"),
+            ("link", "Link / URL"),
+            ("phone", "Phone Call"),
+            ("email", "Email"),
+            ("whatsapp", "WhatsApp"),
+            ("kova_link", "Kova Link Page"),
+        ],
+        default="none",
+        help_text="Default CTA type for new posts.",
+    )
+    default_cta_url = models.CharField(max_length=500, blank=True, help_text="Default CTA destination URL.")
+    cta_phone = models.CharField(max_length=20, blank=True, help_text="Phone number for phone CTAs.")
+    cta_email = models.EmailField(blank=True, help_text="Email address for email CTAs.")
+    cta_whatsapp = models.CharField(max_length=20, blank=True, help_text="WhatsApp number for WhatsApp CTAs.")
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

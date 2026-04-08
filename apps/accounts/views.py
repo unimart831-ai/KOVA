@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from apps.accounts.forms import (
     UserSettingsForm,
     BrandProfileForm,
+    CTASettingsForm,
     OnboardingStep1Form,
     OnboardingStep2Form,
     OnboardingStep3Form,
@@ -31,6 +32,28 @@ def settings_view(request):
         "user_form": user_form,
         "brand_form": brand_form,
         "page_title": "Settings",
+    })
+
+
+@login_required
+def cta_settings_view(request):
+    """CTA default settings for post generation."""
+    profile = request.user.profile
+    if request.method == "POST":
+        form = CTASettingsForm(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "CTA defaults saved.")
+            return redirect("accounts:cta_settings")
+    else:
+        form = CTASettingsForm(instance=profile)
+
+    kova_pages = request.user.kova_pages.filter(is_published=True).only("slug", "title")[:10]
+
+    return render(request, "accounts/cta_settings.html", {
+        "form": form,
+        "kova_pages": kova_pages,
+        "page_title": "CTA Settings",
     })
 
 

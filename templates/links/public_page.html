@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ page.seo_title|default:page.title }} — Kova</title>
+  <meta name="description" content="{{ page.seo_description|default:page.bio }}">
+
+  {# Open Graph #}
+  <meta property="og:title" content="{{ page.seo_title|default:page.title }}">
+  <meta property="og:description" content="{{ page.seo_description|default:page.bio }}">
+  {% if page.og_image_url %}<meta property="og:image" content="{{ page.og_image_url }}">{% endif %}
+  <meta property="og:type" content="profile">
+  <meta property="og:url" content="{{ request.build_absolute_uri }}">
+  <meta name="twitter:card" content="summary_large_image">
+
+  {# Tailwind CDN for public pages (no build step needed) #}
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            accent: '{{ page.accent_color }}',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: {{ page.background_color }};
+      color: {{ page.text_color }};
+    }
+    .kova-link-btn {
+      border: 2px solid {{ page.accent_color }};
+      transition: all 0.2s;
+    }
+    .kova-link-btn:hover {
+      background-color: {{ page.accent_color }};
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px {{ page.accent_color }}40;
+    }
+    .kova-link-btn.featured {
+      background-color: {{ page.accent_color }};
+      color: white;
+    }
+    .kova-link-btn.featured:hover {
+      opacity: 0.9;
+    }
+    {% if page.custom_css %}{{ page.custom_css }}{% endif %}
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center">
+
+  <div class="w-full max-w-lg mx-auto px-4 py-8 sm:py-12">
+
+    {# ── Profile header ── #}
+    <div class="text-center mb-8">
+      {% if page.avatar_url %}
+      <img src="{{ page.avatar_url }}" alt="{{ page.title }}"
+           class="w-24 h-24 rounded-full mx-auto mb-4 object-cover ring-4"
+           style="ring-color: {{ page.accent_color }}20"
+           loading="lazy">
+      {% else %}
+      <div class="w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl font-bold"
+           style="background-color: {{ page.accent_color }}20; color: {{ page.accent_color }}">
+        {{ page.title|truncatechars:1|upper }}
+      </div>
+      {% endif %}
+      <h1 class="text-2xl font-bold">{{ page.title }}</h1>
+      {% if page.bio %}
+      <p class="mt-2 text-sm opacity-75 max-w-sm mx-auto">{{ page.bio }}</p>
+      {% endif %}
+    </div>
+
+    {# ── Links ── #}
+    <div class="space-y-3 mb-8">
+      {% for link in links %}
+        {% if link.link_type == 'header' %}
+          <p class="text-xs font-semibold uppercase tracking-wider opacity-50 mt-6 mb-2 text-center">{{ link.title }}</p>
+        {% else %}
+          <a href="/k/{{ page.slug }}/click/{{ link.pk }}/"
+             class="kova-link-btn {% if link.is_featured %}featured{% endif %} block w-full py-3.5 px-6 rounded-xl text-center font-medium relative"
+             rel="noopener">
+            {% if link.icon %}
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-sm opacity-60">
+              {% if link.icon == 'instagram' %}📷{% elif link.icon == 'youtube' %}▶️{% elif link.icon == 'twitter' or link.icon == 'x' %}𝕏{% elif link.icon == 'facebook' %}📘{% elif link.icon == 'tiktok' %}🎵{% elif link.icon == 'linkedin' %}💼{% elif link.icon == 'whatsapp' %}💬{% elif link.icon == 'email' %}✉️{% elif link.icon == 'phone' %}📱{% elif link.icon == 'shop' or link.icon == 'store' %}🛍️{% elif link.icon == 'website' or link.icon == 'globe' %}🌐{% elif link.icon == 'spotify' %}🎧{% elif link.icon == 'pinterest' %}📌{% else %}🔗{% endif %}
+            </span>
+            {% endif %}
+            {{ link.title }}
+          </a>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    {# ── Lead capture form ── #}
+    {% if active_form %}
+    <div class="rounded-2xl p-6 mb-8" style="background-color: {{ page.accent_color }}08; border: 1px solid {{ page.accent_color }}20">
+      <h2 class="text-lg font-semibold text-center mb-1">{{ active_form.title }}</h2>
+      {% if active_form.description %}
+      <p class="text-sm opacity-75 text-center mb-4">{{ active_form.description }}</p>
+      {% endif %}
+
+      <div id="kova-form-container">
+        <form method="post"
+              action="/k/{{ page.slug }}/form/{{ active_form.pk }}/"
+              hx-post="/k/{{ page.slug }}/form/{{ active_form.pk }}/"
+              hx-target="#kova-form-container"
+              hx-swap="innerHTML"
+              class="space-y-4">
+          {% csrf_token %}
+          {% for field in form_instance %}
+          <div>
+            <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-1">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+            <p class="text-red-500 text-xs mt-1">{{ field.errors.0 }}</p>
+            {% endif %}
+          </div>
+          {% endfor %}
+          <button type="submit"
+                  class="w-full py-3 px-4 rounded-xl font-semibold text-white transition-all hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                  style="background-color: {{ page.accent_color }}">
+            {{ active_form.button_text }}
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── Footer ── #}
+    <div class="text-center mt-8 opacity-40">
+      <a href="/" class="text-xs hover:opacity-100 transition-opacity">
+        Powered by <strong>Kova Agent</strong>
+      </a>
+    </div>
+
+  </div>
+
+</body>
+</html>

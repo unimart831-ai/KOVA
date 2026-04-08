@@ -99,6 +99,27 @@ class BrandProfileForm(forms.ModelForm):
         return instance
 
 
+class CTASettingsForm(forms.ModelForm):
+    """Default CTA preferences for post generation."""
+
+    class Meta:
+        model = UserProfile
+        fields = [
+            "default_cta_type",
+            "default_cta_url",
+            "cta_phone",
+            "cta_email",
+            "cta_whatsapp",
+        ]
+        widgets = {
+            "default_cta_type": forms.Select(attrs={"class": "input", "x-model": "ctaType"}),
+            "default_cta_url": forms.TextInput(attrs={"class": "input", "placeholder": "https://yoursite.com or /k/your-page/"}),
+            "cta_phone": forms.TextInput(attrs={"class": "input", "placeholder": "+254712345678"}),
+            "cta_email": forms.EmailInput(attrs={"class": "input", "placeholder": "hello@yourbrand.com"}),
+            "cta_whatsapp": forms.TextInput(attrs={"class": "input", "placeholder": "254712345678"}),
+        }
+
+
 class OnboardingStep1Form(forms.ModelForm):
     """About you & brand basics."""
 

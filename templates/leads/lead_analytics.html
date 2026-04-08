@@ -1,0 +1,85 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Lead Analytics{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+  <div class="flex items-center justify-between">
+    <a href="{% url 'leads:list' %}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">← Lead Inbox</a>
+  </div>
+
+  {# Top metrics #}
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+    <div class="card px-5 py-4 text-center">
+      <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ total }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Total Leads</p>
+    </div>
+    <div class="card px-5 py-4 text-center">
+      <p class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{{ converted }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Converted</p>
+    </div>
+    <div class="card px-5 py-4 text-center">
+      <p class="text-3xl font-bold text-kova-600 dark:text-kova-400">{{ conversion_rate }}%</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Conversion Rate</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+
+    {# By status (funnel) #}
+    <div class="card">
+      <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">By Status</h3>
+      </div>
+      <div class="px-5 py-4 space-y-2">
+        {% for label, count in by_status.items %}
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{ label }}</span>
+          <span class="text-sm font-medium text-gray-900 dark:text-white">{{ count }}</span>
+        </div>
+        {% if total %}
+        <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5">
+          <div class="bg-kova-500 h-1.5 rounded-full" style="width: {% widthratio count total 100 %}%"></div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    {# By source #}
+    <div class="card">
+      <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">By Source</h3>
+      </div>
+      <div class="px-5 py-4 space-y-2">
+        {% for label, count in by_source.items %}
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{ label }}</span>
+          <span class="text-sm font-medium text-gray-900 dark:text-white">{{ count }}</span>
+        </div>
+        {% endfor %}
+        {% if not by_source %}
+        <p class="text-sm text-gray-400">No data yet</p>
+        {% endif %}
+      </div>
+    </div>
+
+    {# By priority #}
+    <div class="card">
+      <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">By Priority</h3>
+      </div>
+      <div class="px-5 py-4 space-y-2">
+        {% for label, count in by_priority.items %}
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{ label }}</span>
+          <span class="text-sm font-medium text-gray-900 dark:text-white">{{ count }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

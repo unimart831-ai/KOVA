@@ -1,0 +1,79 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}CTA Settings{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Default call-to-action for every post your agents create</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+
+  <div class="flex items-center gap-3 text-sm">
+    <a href="{% url 'accounts:settings' %}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Settings</a>
+    <span class="text-gray-300 dark:text-gray-600">›</span>
+    <span class="text-gray-900 dark:text-white font-medium">CTA Defaults</span>
+  </div>
+
+  <div class="card" x-data="{ ctaType: '{{ form.instance.default_cta_type|default:"none" }}' }">
+    <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Default CTA Preferences</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">These defaults auto-fill when agents create new posts. You can override per post.</p>
+    </div>
+    <form method="post" class="px-6 py-5 space-y-5">
+      {% csrf_token %}
+
+      <div>
+        <label for="id_default_cta_type" class="label">Default CTA Type</label>
+        {{ form.default_cta_type }}
+      </div>
+
+      <div x-show="ctaType === 'link' || ctaType === 'kova_link'" x-transition>
+        <label for="id_default_cta_url" class="label">Default URL</label>
+        {{ form.default_cta_url }}
+        {% if kova_pages %}
+        <div class="mt-1.5 flex flex-wrap gap-1.5">
+          <span class="text-[10px] text-gray-400">Your Kova Links:</span>
+          {% for kp in kova_pages %}
+          <button type="button" @click="document.getElementById('id_default_cta_url').value = '{{ request.scheme }}://{{ request.get_host }}/k/{{ kp.slug }}/'; ctaType = 'kova_link'; document.getElementById('id_default_cta_type').value = 'kova_link'"
+                  class="text-[10px] px-2 py-0.5 rounded-full bg-kova-50 text-kova-700 dark:bg-kova-950 dark:text-kova-300 hover:bg-kova-100 dark:hover:bg-kova-900 transition-colors cursor-pointer">
+            /k/{{ kp.slug }}/
+          </button>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <div x-show="ctaType === 'phone'" x-transition>
+        <label for="id_cta_phone" class="label">Phone Number</label>
+        {{ form.cta_phone }}
+      </div>
+
+      <div x-show="ctaType === 'email'" x-transition>
+        <label for="id_cta_email" class="label">Email Address</label>
+        {{ form.cta_email }}
+      </div>
+
+      <div x-show="ctaType === 'whatsapp'" x-transition>
+        <label for="id_cta_whatsapp" class="label">WhatsApp Number</label>
+        {{ form.cta_whatsapp }}
+        <p class="text-[10px] text-gray-400 mt-0.5">Include country code, e.g. 254712345678</p>
+      </div>
+
+      <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+        <a href="{% url 'accounts:settings' %}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">← Back to Settings</a>
+        <button type="submit" class="btn-primary text-sm px-6 py-2">Save CTA Defaults</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">How it works</p>
+    <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-1">
+      <li>• When agents create posts, your default CTA type and destination auto-fill</li>
+      <li>• UTM tracking parameters are added automatically for attribution</li>
+      <li>• You can override CTA per post in the edit screen</li>
+      <li>• For LinkedIn, the CTA link goes in the first comment for better reach</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

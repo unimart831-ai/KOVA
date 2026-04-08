@@ -146,6 +146,24 @@ class Post(SoftDeleteMixin, models.Model):
     platform_post_id = models.CharField(max_length=255, blank=True)
     platform_post_url = models.URLField(blank=True)
 
+    # ── Smart CTA System (Sprint 6B) ──
+    CTA_TYPE_CHOICES = [
+        ("none", "No CTA"),
+        ("link", "Link / URL"),
+        ("phone", "Phone Call"),
+        ("email", "Email"),
+        ("whatsapp", "WhatsApp"),
+        ("kova_link", "Kova Link Page"),
+    ]
+    cta_type = models.CharField(max_length=20, choices=CTA_TYPE_CHOICES, default="none")
+    cta_text = models.CharField(max_length=255, blank=True, help_text="CTA copy, e.g. 'Book a free consultation →'")
+    cta_url = models.CharField(max_length=500, blank=True, help_text="Destination URL or contact info for the CTA.")
+    utm_source = models.CharField(max_length=50, blank=True, help_text="Auto-populated from platform name.")
+    utm_medium = models.CharField(max_length=50, default="social", blank=True)
+    utm_campaign = models.CharField(max_length=100, blank=True, help_text="From seed or user campaign.")
+    utm_content = models.CharField(max_length=100, blank=True, help_text="Post ID for A/B tracking.")
+    first_comment = models.TextField(blank=True, help_text="For LinkedIn: CTA link goes in first comment instead of body.")
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -173,6 +191,38 @@ class Post(SoftDeleteMixin, models.Model):
         """True if this post's platform requires media and none is attached."""
         plat = self.platform or (self.social_account.platform if self.social_account else "")
         return plat in self.MEDIA_REQUIRED_PLATFORMS and not self.has_media
+
+    @property
+    def full_tracked_url(self):
+        """Builds the CTA URL with UTM parameters appended."""
+        if not self.cta_url or self.cta_type in ("none", "phone", "email", "whatsapp"):
+            return self.cta_url
+        from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
+        parsed = urlparse(self.cta_url)
+        params = parse_qs(parsed.query)
+        if self.utm_source:
+            params["utm_source"] = [self.utm_source]
+        if self.utm_medium:
+            params["utm_medium"] = [self.utm_medium]
+        if self.utm_campaign:
+            params["utm_campaign"] = [self.utm_campaign]
+        if self.utm_content:
+            params["utm_content"] = [self.utm_content]
+        flat = {k: v[0] for k, v in params.items()}
+        new_query = urlencode(flat)
+        return urlunparse(parsed._replace(query=new_query))
+
+    def populate_utm(self):
+        """Auto-fill UTM fields from post context."""
+        if not self.utm_source:
+            plat = self.platform or (self.social_account.platform if self.social_account else "")
+            self.utm_source = plat or "direct"
+        if not self.utm_medium:
+            self.utm_medium = "social"
+        if not self.utm_campaign and self.seed:
+            self.utm_campaign = str(self.seed.pk)[:8]
+        if not self.utm_content:
+            self.utm_content = str(self.pk)[:8]
 
     @property
     def media_warning(self):

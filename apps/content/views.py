@@ -621,6 +621,12 @@ def edit_post(request, post_id):
             update_fields = ["content_text", "updated_at"]
             if content_changed:
                 update_fields.append("status")
+            # CTA fields
+            update_fields.extend(["cta_type", "cta_text", "cta_url", "first_comment"])
+            # Auto-populate UTM when CTA is set
+            if post.cta_type != "none" and post.cta_url:
+                post.populate_utm()
+                update_fields.extend(["utm_source", "utm_medium", "utm_campaign", "utm_content"])
             post.save(update_fields=update_fields)
 
             # Intelligence: track edit feedback for agent learning
@@ -647,6 +653,7 @@ def edit_post(request, post_id):
         "post": post,
         "form": form,
         "page_title": "Edit Post",
+        "user_kova_pages": request.user.kova_pages.filter(is_published=True).only("slug", "title")[:10],
     })
 
 

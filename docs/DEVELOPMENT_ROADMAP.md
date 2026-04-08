@@ -862,7 +862,8 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 | Phase 4 | Voice Memo | ✅ Complete | Voice Memo input (Whisper transcription → content seed) |
 | Phase 5 | Post-Launch  | ⏳ Not Started | WhatsApp Intelligence, Meme Engine, Status Studio |
 | Phase 6 | Post-Phase 5 | ⏳ Not Started | Kova Links, CTA System, Lead Inbox, Email Marketing, Superfan Workflows, Video AI, Revenue Attribution |
-| Phase 7 | Post-Phase 6 | ⏳ Deferred | White-label UI, Agent Marketplace, Open-source |
+| Phase 7 | Post-Phase 6 | ⏳ Not Started | Commerce Pipeline, Revenue Prediction, Audience Genome, Kova Score, Network Intelligence, Strategic Foresight, Digital Business Passport |
+| Phase 8 | Post-Phase 7 | ⏳ Deferred | White-label UI, Agent Marketplace, Open-source |
 
 ## CELERY BEAT SCHEDULE (Current — 9 tasks)
 | Task | Schedule | Source |
@@ -1676,6 +1677,863 @@ channel — they're all customer support tools. This is category creation.
 - **Plan enforcement**: extend existing `PlanEnforcementMiddleware` with new limits
 
 
+## ─── PHASE 7: Business Intelligence OS — "See What Nobody Else Can See" (Post-Phase 6) ───
+##
+## THE CATEGORY SHIFT THIS PHASE CREATES:
+## ───────────────────────────────────────
+## After Phase 6, Kova is a Social Media Operating System — content, engagement, leads, email, revenue.
+## After Phase 7, Kova becomes a BUSINESS INTELLIGENCE OPERATING SYSTEM — it doesn't just help
+## businesses DO things (post, email, capture). It helps businesses KNOW things (predict, decide, evolve).
+##
+## Every tool in the market is an ACTION tool. None is a KNOWLEDGE tool.
+## Phase 7 makes Kova the first platform that turns social media data into business intelligence
+## that users cannot get anywhere else — not from Buffer, not from HubSpot, not from Google Analytics.
+##
+## MISSION: "Kova doesn't just run your social media. Kova tells you where your business should go next."
+##
+## RANKING: These 7 inventions are ordered by value addition to the BIOS mission.
+## Each builds on the data layer before it, creating compounding intelligence.
+##
+## Data dependency chain:
+## Sprint 7A (Commerce Pipeline) → 7B (Revenue Prediction) → 7C (Audience Genome)
+## → 7D (Kova Score) → 7E (Network Intelligence) → 7F (Strategic Foresight)
+## → 7G (Digital Business Passport)
+##
+## Each sprint generates data that the next sprint consumes. This ISN'T arbitrary ordering —
+## it's an intelligence pipeline where each layer makes the next layer smarter.
+
+### Sprint 7A: Autonomous Content-to-Commerce Pipeline ⏳ NOT STARTED
+## ──────────────────────────────────────────────────────
+## VALUE RANK: #1 — Highest Immediate Value
+## BIOS CONTRIBUTION: Closes the last human bottleneck. After this, content → money is fully autonomous.
+## PREREQUISITE: Phase 6 complete (Kova Links, CTA system, Lead Inbox, Email sequences)
+## GENERATES DATA FOR: Revenue Prediction (7B), Audience Genome (7C), Kova Score (7D)
+##
+## THE INVISIBLE PROBLEM:
+## Business owners miss 80% of buying signals buried in their social comments and DMs.
+## Someone comments "How much?" at 11pm. The owner sees it at 8am. The buyer already
+## found a competitor. Average social inquiry response time: 5+ hours. Purchase intent
+## decay: 50% lost after 30 minutes. The content works. The human-speed response kills it.
+##
+
+- [ ] **CommercialIntentDetector** — AI classifier in Engage Agent
+  - Input: incoming comments, DMs, mentions across all platforms
+  - Classification: COMMERCIAL (price inquiry, availability check, order request, location question,
+    delivery inquiry, booking request) vs NON-COMMERCIAL (praise, question, opinion, spam)
+  - Confidence scoring: 0-100 (auto-act above 85, flag for review 60-84, ignore below 60)
+  - Training: fine-tuned on Kova network data (across all users' commercial interactions)
+  - Multi-language: English, Swahili, Sheng detection + response in same language
+  - Context awareness: distinguish "How much?" (buying) from "How much effort?" (discussion)
+
+- [ ] **AutoCommerceResponse model** — auto-generated commercial replies
+  - Fields: interaction (FK), intent_type (choices: price_inquiry, availability_check,
+    booking_request, delivery_inquiry, bulk_order, custom_order, comparison_question),
+    confidence_score, auto_reply_text, product_info_attached (JSONField — catalog items),
+    follow_up_channel (choices: dm, email, whatsapp, kova_link),
+    lead_created (FK to Lead), sequence_triggered (FK to EmailSequence),
+    conversion_value_estimate (Decimal — AI-estimated deal value),
+    status (choices: auto_sent, pending_review, user_edited, cancelled), created_at
+
+- [ ] **Product/Service Catalog model** — user's offerings (used by commerce AI)
+  - Fields: user (FK), name, description, price, currency, price_range_min, price_range_max,
+    category, image_url, availability_status (in_stock/out_of_stock/made_to_order),
+    delivery_zones (JSONField — areas served), lead_time_days,
+    payment_methods (JSONField — M-Pesa, bank, card, cash), is_active
+  - Purpose: Engage Agent pulls from catalog to answer "How much?" accurately
+  - Import: manual entry or CSV upload (future: Shopify sync from Phase 6G)
+
+- [ ] **Commerce automation pipeline** (the full auto-flow):
+  ```
+  Comment/DM detected
+  → Intent classifier: COMMERCIAL (confidence: 92%, type: price_inquiry)
+  → Catalog lookup: match "wedding cake" → product "3-Tier Wedding Cake, KES 15,000-25,000"
+  → Auto-reply drafted: "Thanks for your interest! Our 3-tier wedding cakes start at KES 15,000.
+     I'll send you our full catalog and delivery info 🎂"
+  → Auto-DM: product link (Kova Link) + price sheet + WhatsApp CTA
+  → Lead auto-created: source=Instagram comment, interest="3-tier cake", value_est=KES 15,000
+  → Email sequence triggered: "Product inquiry" (3-part nurture)
+  → If M-Pesa active: payment link included in follow-up message
+  → Notification to owner: "High-intent lead captured. Est. value: KES 15,000. Nurture running."
+  ```
+
+- [ ] **Commerce settings UI** — `/settings/commerce/`
+  - Toggle commerce detection on/off per platform
+  - Set confidence threshold for auto-responses (default: 85)
+  - Manage product catalog (CRUD)
+  - Configure default follow-up channel (DM, email, WhatsApp)
+  - Review auto-responses before they fire (optional human-in-loop mode)
+  - Templates: customize auto-reply templates by intent type
+
+- [ ] **Commerce dashboard** — `/analytics/commerce/`
+  - Commercial intents detected this week/month
+  - Auto-response success rate (replied → lead created → converted)
+  - Response time comparison: AI response (seconds) vs manual response (hours)
+  - Revenue captured from auto-commerce (linked to Conversion model)
+  - Missed opportunities: commercial intents that weren't acted on
+  - Top products/services inquired about (demand intelligence)
+
+- [ ] **Daily Brief integration**:
+  - "While you slept, Kova detected 7 buying signals, auto-responded to 5,
+    created 3 high-intent leads, and started 2 nurture sequences.
+    Estimated pipeline value: KES 67,000."
+
+- [ ] Plan limits: Free = detection only (alerts, no auto-response) | Growth = auto-response,
+  10 catalog items, DM follow-up | Pro = full pipeline, unlimited catalog, email+WhatsApp
+  follow-up, AI deal value estimation
+- DELIVERABLE: Social engagement automatically triggers sales pipeline. Content literally sells itself.
+  The user wakes up to captured leads and running nurture sequences — not missed comments.
+- UNIQUENESS TEST: No social media tool auto-detects commercial intent in comments and triggers
+  a lead → nurture → payment pipeline. Hootsuite has auto-responses but they're template-based,
+  not intent-aware. Sprout has smart inbox but routes to humans. Kova is the first to close
+  the loop autonomously.
+- **TECHNICAL NOTES:**
+  - Intent classifier: LLM-based (Workhorse tier model), not traditional ML (no training data needed initially)
+  - Catalog matching: fuzzy text match on product names + LLM context (handles "that blue cake" → Birthday Cake - Blue Theme)
+  - Response time: target <60 seconds from comment to auto-reply (Celery task priority: HIGH)
+  - Rate limiting: max 50 auto-responses/hour per user (prevent spam-like behavior on platforms)
+  - Platform compliance: respect each platform's automation policies (Twitter: no auto-DM spam, etc.)
+
+### Sprint 7B: Revenue Prediction Engine — "Know Before You Post" ⏳ NOT STARTED
+## ──────────────────────────────────────────────────────────────────
+## VALUE RANK: #2 — Core Intelligence Layer
+## BIOS CONTRIBUTION: Turns content from a "hope-based activity" into an "investment with projected returns."
+## PREREQUISITE: Sprint 7A + Phase 6 revenue attribution data (minimum 90 days of conversion data per user)
+## GENERATES DATA FOR: Kova Score (7D), Strategic Foresight (7F)
+##
+## THE INVISIBLE PROBLEM:
+## Every business posts content and HOPES it leads to money. They see analytics AFTER the fact.
+## "That post got 500 likes." So what? Did it make money? Will the next one?
+## Nobody can answer: "If I create X content this month, how much revenue will it likely generate?"
+## Because nobody has the full data chain: content attributes → engagement → leads → revenue.
+## After Phase 6 + Sprint 7A, Kova does.
+##
+
+- [ ] **RevenuePrediction model** — per-post revenue forecast
+  - Fields: post (FK), predicted_revenue (Decimal), confidence_interval_low (Decimal),
+    confidence_interval_high (Decimal), prediction_factors (JSONField — what drove the prediction),
+    actual_revenue (Decimal, nullable — filled when conversions tracked),
+    prediction_accuracy (Float, nullable — actual vs predicted),
+    model_version (CharField — track prediction model iterations), created_at
+  - Populated: at post creation time (before publishing), updated when conversions roll in
+
+- [ ] **ContentRevenueProfile** — per-user revenue patterns learned from history
+  - Fields: user (FK), profile_data (JSONField — the learned patterns), data_points_count,
+    last_calculated_at, confidence_level (choices: low/medium/high — based on data volume)
+  - Profile structure:
+    ```json
+    {
+      "revenue_by_topic": {"wedding_cakes": 15200, "birthday_cakes": 8400, "tutorials": 1200},
+      "revenue_by_format": {"video": 12800, "image": 5600, "carousel": 3200, "text": 400},
+      "revenue_by_platform": {"instagram": 18400, "facebook": 5200, "whatsapp": 3600},
+      "revenue_by_cta_type": {"whatsapp": 14200, "link": 5800, "phone": 3200, "email": 1400},
+      "revenue_by_day": {"thursday": 5800, "tuesday": 4200, "monday": 3100},
+      "revenue_by_hour": {"9": 2400, "13": 3100, "18": 4800},
+      "avg_revenue_per_post": 2840,
+      "avg_leads_per_post": 1.8,
+      "avg_lead_to_conversion_rate": 0.23,
+      "avg_conversion_value": 12400,
+      "high_value_content_dna": {"format": "video", "tone": "educational", "has_cta": true, "topic": "wedding"}
+    }
+    ```
+  - Recalculated: weekly via Celery task (rolling 90-day window)
+
+- [ ] **MonthlyRevenueForecast model** — projected monthly revenue from content plan
+  - Fields: user (FK), month, year, projected_revenue, projected_leads, projected_conversions,
+    content_plan_summary (JSONField — what's planned), actual_revenue (filled end of month),
+    forecast_accuracy, created_at
+  - Generated: 1st of each month + updated weekly as content is published/tracked
+
+- [ ] **Prediction engine** (in Analyst Agent):
+  - Inputs: Content DNA attributes, platform, posting time, CTA type, media format,
+    historical performance for similar content, product catalog pricing
+  - Model: LLM-based pattern matching initially (no ML model training needed),
+    with rule-based adjustments from ContentRevenueProfile
+  - Output: revenue prediction + confidence interval + factors explanation
+  - Example: "This video post about wedding cakes on Instagram with WhatsApp CTA
+    is predicted to generate KES 8,000-15,000 in revenue (confidence: medium).
+    Factors: wedding content averages KES 12,400 revenue, video format +80% vs text,
+    Thursday posting +35%, WhatsApp CTA converts 3× better than link CTA."
+
+- [ ] **Revenue optimization suggestions**:
+  - Create Agent integration: "You're planning 8 posts this week. Projected revenue: KES 42,000.
+    Swap post #3 from text→video (+KES 4,200 projected). Change post #6 CTA from link→WhatsApp
+    (+KES 2,800 projected). Optimized projection: KES 49,000."
+  - Auto-optimize mode (Pro plan): AI automatically adjusts content plan to maximize projected revenue
+  - Content seed suggestions: "Based on revenue patterns, create more [topic] content with
+    [format] and [CTA type]. Projected uplift: KES X per month."
+
+- [ ] **Revenue prediction dashboard** — `/analytics/revenue-forecast/`
+  - Monthly forecast widget: "This month's projected revenue: KES 165,000 (82% of target)"
+  - Revenue by content category: which topics/formats generate the most money
+  - Prediction accuracy tracker: how good are our forecasts (improves over time)
+  - Content investment calculator: "If you create X more [type] posts, estimated additional revenue: KES Y"
+  - Historical: predicted vs actual revenue per month (builds trust in the system)
+
+- [ ] **Daily Brief integration**:
+  - "Your content plan this week projects KES 47,000 in revenue.
+    To hit your KES 65,000 target: publish 4 more video posts about [topic]
+    with WhatsApp CTAs. Estimated uplift: KES 18,000 (±5K)."
+  - "Post #42 (wedding cake tutorial) is tracking at KES 12,800 in attributed revenue—
+    your highest-performing post this month. Create Agent has generated 3 similar content
+    seeds for your approval."
+
+- [ ] Plan limits: Free = view past revenue data only | Growth = basic per-post predictions |
+  Pro = monthly forecasts, optimization suggestions, auto-optimize mode
+- DELIVERABLE: Content becomes a measurable investment. Users see projected returns BEFORE posting.
+  Monthly revenue forecasts replace guesswork with data-driven targets.
+- UNIQUENESS TEST: No social media tool predicts revenue per post. Analytics tools show
+  what happened. Ad platforms predict ROAS on paid campaigns. Nobody predicts organic content
+  revenue. Kova is the first because it has the only complete data chain: content DNA →
+  engagement → leads → conversions → revenue.
+- **TECHNICAL NOTES:**
+  - Minimum data requirement: 50+ posts with tracked conversions before predictions activate
+  - Cold start: until enough data, show industry benchmarks from Network Intelligence (7E)
+  - Accuracy tracking: prediction_accuracy stored per post, used to calibrate future predictions
+  - LLM cost: one prediction call per post (Workhorse tier), cached in RevenuePrediction model
+  - Recalibration: weekly Celery task recalculates ContentRevenueProfile, adjusts all active predictions
+
+### Sprint 7C: Audience Genome — "Know Your People Deeper Than They Know Themselves" ⏳ NOT STARTED
+## ──────────────────────────────────────────────────────────────────────────────────────────
+## VALUE RANK: #3 — Deepest Intelligence Layer
+## BIOS CONTRIBUTION: Transforms blind content creation into precision-targeted communication.
+## PREREQUISITE: Phase 6 data (leads, email engagement) + Sprint 7A (commerce signals)
+## GENERATES DATA FOR: Kova Score (7D — audience quality signal), Network Intelligence (7E),
+##                     Strategic Foresight (7F — trend detection from audience behavior shifts)
+##
+## THE INVISIBLE PROBLEM:
+## Businesses think they know their audience. They don't. They know demographics (25-34, female, Nairobi).
+## They have no idea: what makes their audience SAVE vs like (intent signal), when they're in
+## "buying mode" vs "browsing mode," which competitors they follow, what they complain about
+## to OTHER brands (unmet needs), or how their interests are SHIFTING over time.
+## Current analytics tools show WHAT happened. The Audience Genome shows WHO your people are,
+## what they WANT, and what they'll do NEXT.
+##
+
+- [ ] **AudienceGenome model** — living psychographic map per user
+  - Fields: user (FK), genome_data (JSONField — the full genome structure),
+    data_points_analyzed (Integer), confidence_level (low/medium/high),
+    last_calculated_at, version (Integer — track genome evolution)
+  - Genome structure (4 layers):
+    ```json
+    {
+      "behavioral_dna": {
+        "content_preferences": {
+          "video": {"engagement_multiplier": 3.2, "save_rate": 0.08, "share_rate": 0.04},
+          "image": {"engagement_multiplier": 1.8, "save_rate": 0.05, "share_rate": 0.02},
+          "text": {"engagement_multiplier": 0.6, "save_rate": 0.01, "share_rate": 0.01}
+        },
+        "topic_affinity": {
+          "wedding_cakes": {"score": 92, "trend": "rising", "revenue_correlation": 0.87},
+          "tutorials": {"score": 78, "trend": "stable", "revenue_correlation": 0.45},
+          "behind_the_scenes": {"score": 65, "trend": "declining", "revenue_correlation": 0.12}
+        },
+        "platform_behavior": {
+          "instagram": {"primary_action": "save", "peak_hours": [9, 13, 19], "avg_session": "browse_to_buy"},
+          "linkedin": {"primary_action": "comment", "peak_hours": [8, 12, 17], "avg_session": "professional"},
+          "tiktok": {"primary_action": "share", "peak_hours": [20, 21, 22], "avg_session": "entertainment"}
+        },
+        "engagement_triggers": ["educational_content", "price_transparency", "video_tutorials", "local_references"]
+      },
+      "interest_evolution": {
+        "rising": [{"topic": "delivery_service", "growth_rate": 230, "signal_source": "comments+dms"}],
+        "declining": [{"topic": "store_visit", "decline_rate": 40, "since": "2026-01"}],
+        "seasonal": [{"topic": "christmas_cakes", "peak_months": [11, 12], "avg_uplift": 180}],
+        "emerging": [{"topic": "vegan_options", "first_detected": "2026-03", "mentions": 23}]
+      },
+      "commercial_intent": {
+        "high_intent_signals": ["saves_product_posts", "clicks_pricing_links", "dms_about_availability"],
+        "conversion_segments": {
+          "hot": {"size_pct": 8, "avg_conversion_time_days": 3, "avg_order_value": 15000},
+          "warm": {"size_pct": 22, "avg_conversion_time_days": 14, "avg_order_value": 8000},
+          "cold": {"size_pct": 70, "avg_conversion_time_days": null, "avg_order_value": null}
+        },
+        "price_sensitivity": "medium",
+        "purchase_cycle_avg_days": 12
+      },
+      "relationship_depth": {
+        "passive_followers_pct": 65,
+        "active_engagers_pct": 22,
+        "advocates_pct": 8,
+        "customers_pct": 4,
+        "churning_pct": 1,
+        "churn_risk_indicators": ["engagement_drop_14d", "unfollow_after_promo_content"]
+      }
+    }
+    ```
+
+- [ ] **AudienceShift model** — detected changes in audience behavior
+  - Fields: user (FK), shift_type (choices: interest_rising, interest_declining,
+    behavior_change, sentiment_shift, demand_signal, churn_risk),
+    description, evidence (JSONField — supporting data points),
+    magnitude (low/medium/high), detected_at, is_acted_on,
+    suggested_action, suggested_content_seed (text)
+
+- [ ] **Genome computation engine** (new Celery task: `compute-audience-genome`, weekly):
+  - Aggregates: PostMetric data (engagement patterns by content type, time, topic),
+    Lead data (source, conversion rate, interests), Interaction data (comment sentiment,
+    DM topics, engagement frequency), Superfan data (advocate behavior patterns),
+    EmailSubscriber data (open/click patterns, segment behavior),
+    Conversion data (purchase patterns, values, triggers)
+  - LLM analysis layer: interprets raw data into human-readable genome narrative
+  - Change detection: compares current genome vs previous version, generates AudienceShift records
+
+- [ ] **Audience Genome dashboard** — `/analytics/audience/`
+  - Visual genome map: interactive display of all 4 layers
+  - Interest heatmap: which topics are hot/cold/rising/declining
+  - Segment breakdown: hot/warm/cold audience with conversion probabilities
+  - Behavior trends: how audience behavior is changing over time
+  - Demand signals: "Your audience is asking about [X] — consider building this into your offerings"
+  - Churn alerts: "15 superfans haven't engaged in 14 days. Risk of losing 40% within 7 days."
+
+- [ ] **Agent integrations** (genome feeds intelligence to ALL agents):
+  - **Create Agent**: "Write about [topic] because audience affinity score is 92 and rising.
+    Use video format (3.2× engagement multiplier). Include price transparency (engagement trigger)."
+  - **Adapt Agent**: "Schedule for 9am Instagram, 12pm LinkedIn (peak buying hours for your audience).
+    Avoid 3-5pm TikTok (your audience browses but doesn't buy during this window)."
+  - **Research Agent**: "Your audience's rising interest in 'delivery service' (230% growth in comments)
+    suggests content about delivery logistics would resonate. Here are trending angles."
+  - **Engage Agent**: "This commenter is in the 'hot' segment (8% of audience, 3-day avg conversion).
+    Prioritize response. Use commercial intent pipeline."
+  - **Strategist Agent**: "Audience genome shows 'behind the scenes' content declining in interest.
+    Reduce from 3/week to 1/week. Reallocate to 'tutorial' content (rising, high revenue correlation)."
+
+- [ ] **Product intelligence** (genome as business advisor):
+  - Demand detection: "Your audience mentioned 'delivery' in 67 comments and 12 DMs this month.
+    Consider adding delivery service — estimated demand: 200+ potential customers."
+  - Pricing insight: "Audience commercial_intent shows medium price sensitivity. Your competitors
+    charge KES 15K-25K. Your KES 8K pricing may signal lower quality. Test at KES 12K."
+  - New product suggestions: "Emerging interest in 'vegan options' (23 mentions since March).
+    No content about this yet. First-mover content opportunity."
+
+- [ ] Plan limits: Free = basic content preferences only | Growth = full 4-layer genome,
+  monthly audience shifts | Pro = weekly genome updates, demand signals, product intelligence,
+  agent genome integration
+- DELIVERABLE: Living psychographic intelligence that makes every agent smarter and gives users
+  business insights no survey, analytics tool, or focus group could provide — because it's
+  built from REAL behavior, not self-reported preferences.
+- UNIQUENESS TEST: Sprout Social has audience demographics. Hootsuite has basic sentiment.
+  Buffer has optimal posting times. NOBODY builds a multi-layer psychographic genome from
+  the combined data of content performance + lead behavior + email engagement + purchase patterns.
+  That data combination exists ONLY in Kova after Phase 6.
+- **TECHNICAL NOTES:**
+  - Computation cost: 1 LLM call per user per week (Workhorse tier), processes aggregated data
+  - Storage: genome_data is ~5-10KB JSON per user, acceptable for PostgreSQL JSONField
+  - Privacy: genome describes aggregate audience behavior, not individual people. No PII stored.
+  - Cold start: genome activates after 30+ published posts with engagement data
+  - Visualization: Chart.js heatmaps + Alpine.js interactive panels (existing stack)
+
+### Sprint 7D: Kova Score — Digital Brand Credit Score ⏳ NOT STARTED
+## ──────────────────────────────────────────────────────
+## VALUE RANK: #4 — Quantified Trust Layer
+## BIOS CONTRIBUTION: Turns invisible digital presence into a quantifiable, verifiable, bankable asset.
+## PREREQUISITE: Sprints 7A-7C (commerce data + revenue predictions + audience quality signals)
+## GENERATES DATA FOR: Network Intelligence (7E — benchmark scoring), Digital Business Passport (7G)
+##
+## THE INVISIBLE PROBLEM:
+## In Africa (and emerging markets), businesses struggle with TRUST. Follower counts are fake.
+## Engagement can be bought. There's no verified, standardized measure of digital brand health.
+## A customer can't tell if an Instagram bakery is legit. A bank can't value a business's
+## digital presence for a loan. A partner can't verify influence is real.
+## The infrastructure of digital trust doesn't exist. Kova builds it.
+##
+
+- [ ] **KovaScore model** — composite brand health score per user
+  - Fields: user (FK), score (Integer 0-1000), tier (choices: emerging 0-299,
+    growing 300-549, established 550-749, premium 750-899, elite 900-1000),
+    components (JSONField — individual signal scores), calculated_at,
+    score_trend (choices: rising, stable, declining), trend_magnitude (Float),
+    percentile_in_industry (Float — where they rank vs peers),
+    is_verified (Bool — passed Kova verification checks), verification_date
+  - Score components (weighted):
+    ```json
+    {
+      "content_consistency": {"score": 85, "weight": 0.15, "factors": "312 posts in 12 months, 92% weekly consistency"},
+      "audience_growth": {"score": 72, "weight": 0.15, "factors": "18% organic growth, no purchased followers detected"},
+      "engagement_depth": {"score": 88, "weight": 0.15, "factors": "4.2% engagement rate, high comment/save ratio"},
+      "sentiment_health": {"score": 76, "weight": 0.10, "factors": "82% positive sentiment, 12% neutral, 6% negative"},
+      "response_reliability": {"score": 91, "weight": 0.10, "factors": "12 min avg response time, 94% response rate"},
+      "lead_conversion": {"score": 68, "weight": 0.10, "factors": "23% lead-to-customer rate, up from 18% last quarter"},
+      "revenue_attribution": {"score": 82, "weight": 0.10, "factors": "KES 180K/month tracked social revenue, stable trend"},
+      "platform_diversity": {"score": 70, "weight": 0.05, "factors": "7/9 platforms active, not dependent on single channel"},
+      "content_quality": {"score": 80, "weight": 0.10, "factors": "Content DNA: high originality, strong CTA effectiveness"}
+    }
+    ```
+  - Recalculated: weekly via Celery task `compute-kova-scores`
+
+- [ ] **KovaScoreHistory model** — track score evolution over time
+  - Fields: user (FK), score, components_snapshot (JSONField), calculated_at
+  - Retained: monthly snapshots for long-term trend analysis (daily for current quarter)
+
+- [ ] **ScoreVerification model** — verification checks passed
+  - Fields: user (FK), check_type (choices: identity_confirmed, business_registered,
+    phone_verified, website_verified, social_accounts_authentic,
+    revenue_data_validated, content_original),
+    status (passed/failed/pending), verified_at, evidence (JSONField)
+  - Verified scores carry the "Kova Verified" badge (higher trust weight)
+
+- [ ] **Score computation engine** (Celery task: `compute-kova-scores`, weekly):
+  - Pulls from: PostMetric (consistency, engagement), AudienceGenome (growth patterns),
+    Interaction (response time, sentiment), Lead (conversion rate), Conversion (revenue),
+    Post (content quality via Content DNA), SocialAccount (platform diversity)
+  - Anti-gaming: detect and penalize purchased followers (sudden spikes without engagement),
+    fake engagement (like bursts without profile diversity), content plagiarism (via Content DNA uniqueness)
+  - Confidence rating: score reliability increases with account age and data volume
+
+- [ ] **Kova Score badge system** — embeddable trust badges
+  - Badge types: "Kova Verified — Score: 812", "Kova Established Business",
+    "Fast Responder", "Revenue Verified", "Top 10% in [Industry]"
+  - Embed code: HTML snippet for websites, email signatures
+  - Social proof: badge displays on user's Kova Link landing page
+  - WhatsApp Business: badge image for profile photo overlay
+  - Badge verification: public URL `kovaagent.com/verify/{user_slug}` shows live score + verification status
+
+- [ ] **Score insights dashboard** — `/analytics/kova-score/`
+  - Score overview: current score, tier, trend, industry percentile
+  - Component breakdown: radar chart (9 signals), with improvement suggestions per signal
+  - Score history: line chart over time (monthly trajectory)
+  - Improvement actions: "To increase your score from 720 to 800: improve response time
+    (currently 45 min, target: <20 min), increase video content ratio (currently 20%, target: 50%),
+    track revenue attribution for at least 5 more posts."
+  - Industry comparison: "Your score: 720 (Top 30% in Hospitality in Nairobi)"
+  - Badge manager: generate and copy embed codes
+
+- [ ] **External value channels** (future API integrations):
+  - Banking API: anonymized Kova Score data available to partner banks (with user consent)
+    for alternative credit assessment. Revenue share model: Kova earns per credit inquiry.
+  - Marketplace presence: Kova Score visible in user discovery / collaboration features
+  - Partnership matching: businesses can find collaborators filtered by score + industry + location
+
+- [ ] Plan limits: Free = view your score only | Growth = score + history + improvement suggestions +
+  basic badge | Pro = verified badge, industry benchmarks, embeddable badges, banking data sharing opt-in
+- DELIVERABLE: Every Kova business has a quantified, verified digital brand score. Scores build trust
+  with customers, unlock banking products, enable quality partnerships, and make digital presence
+  a measurable business asset.
+- UNIQUENESS TEST: No social media tool quantifies brand health into a single, verified score.
+  Klout tried (2008-2018) and failed — they only measured social influence, not business performance.
+  Kova Score is fundamentally different: it measures BUSINESS health (revenue, conversions, response time,
+  content quality) not vanity metrics (followers, likes). It's a business credit score, not an influence score.
+- **TECHNICAL NOTES:**
+  - Score computation: aggregation queries + 1 LLM call per user for narrative explanation (Workhorse tier)
+  - Anti-gaming: statistical anomaly detection (follower growth rate vs engagement rate correlation)
+  - Badge verification: public endpoint, no auth required, cached 1 hour, rate-limited
+  - Banking API: future development, requires data partnership agreements + GDPR/data protection compliance
+  - Storage: KovaScoreHistory grows ~52 rows/user/year (weekly). At 10K users = 520K rows/year — negligible
+
+### Sprint 7E: Network Intelligence — "See What No Individual Can See" ⏳ NOT STARTED
+## ──────────────────────────────────────────────────────────────────────
+## VALUE RANK: #5 — Aggregate Intelligence Layer
+## BIOS CONTRIBUTION: Individual analytics show YOUR data. Network Intelligence shows THE MARKET.
+## PREREQUISITE: Meaningful user base (500+ active users minimum for statistical significance)
+## GENERATES DATA FOR: Strategic Foresight (7F), Digital Business Passport (7G — industry benchmarks)
+##
+## THE INVISIBLE PROBLEM:
+## Every Kova user operates in isolation. They see THEIR analytics, THEIR audience, THEIR performance.
+## But Kova — as a PLATFORM — sees patterns across ALL users. That aggregate intelligence is
+## worth more than any individual account's data. No individual user can see market trends,
+## industry benchmarks, pricing intelligence, or collaboration opportunities. The platform can.
+## This is the "ant colony" invention — no individual ant understands the full picture,
+## but the colony makes intelligent decisions from aggregate behavior.
+##
+
+- [ ] **NetworkInsight model** — system-generated market intelligence
+  - Fields: insight_type (choices: industry_trend, pricing_intelligence, content_benchmark,
+    collaboration_opportunity, market_gap, seasonal_pattern, emerging_category),
+    industry (CharField — which industry this insight applies to),
+    region (CharField — geographic scope: city, country, global),
+    title, description, evidence (JSONField — anonymized supporting data),
+    magnitude (low/medium/high), confidence (Float 0-1),
+    affected_user_count (how many Kova users this is relevant to),
+    suggested_action, is_active, published_at, expires_at
+
+- [ ] **IndustryBenchmark model** — rolling benchmarks per industry per region
+  - Fields: industry, region, period (month/quarter), metrics (JSONField),
+    user_count_in_segment (minimum 50 for privacy), calculated_at
+  - Metrics structure:
+    ```json
+    {
+      "avg_engagement_rate": 3.8,
+      "top_10_pct_engagement_rate": 7.2,
+      "avg_posts_per_week": 5.2,
+      "avg_lead_conversion_rate": 0.18,
+      "avg_revenue_per_post": 2840,
+      "top_content_formats": ["video", "carousel", "image"],
+      "top_posting_days": ["thursday", "tuesday", "saturday"],
+      "avg_response_time_minutes": 34,
+      "avg_kova_score": 520,
+      "top_growing_topics": ["delivery", "sustainable_packaging", "AI_tools"],
+      "declining_topics": ["office_visits", "print_advertising"]
+    }
+    ```
+
+- [ ] **NetworkTrend model** — detected market-wide trends
+  - Fields: trend_name, description, industries_affected (JSONField — list),
+    regions_affected (JSONField), growth_rate_pct (weekly),
+    first_detected_at, current_velocity (accelerating/stable/decelerating),
+    content_adopter_count (how many Kova users are creating content about this),
+    content_gap_score (high demand but low content supply = opportunity),
+    suggested_content_angles (JSONField)
+
+- [ ] **Network computation engine** (Celery task: `compute-network-intelligence`, weekly):
+  - Data sources: anonymized aggregate PostMetric, Content DNA topics, Lead sources,
+    Conversion data (values only, no PII), AudienceGenome interest trends,
+    KovaScore distributions, product catalog categories
+  - Privacy architecture:
+    - NEVER expose individual user data
+    - Minimum segment size: 50 users (k-anonymity threshold)
+    - No user identifiers in any network insight
+    - Users can opt-out of contributing to network data
+    - All aggregation runs on anonymized views, not raw tables
+  - Intelligence generation:
+    - Trend detection: topic velocity across all Content DNA → rising/declining topics
+    - Benchmark calculation: percentile distributions per industry/region
+    - Market gap detection: high audience demand (comments, DMs) vs low content supply
+    - Seasonal patterns: year-over-year engagement patterns (requires 12+ months of network data)
+    - Complementary matching: audience overlap analysis for collaboration suggestions
+
+- [ ] **Network Intelligence surfaces** (how users see it):
+  - **Daily Brief section** — "Market Intelligence":
+    - "Content about 'AI automation' in legal services is getting 3× more engagement this week
+      across your industry. Consider creating content about this NOW."
+    - "Your engagement rate is 4.2%. Top 10% in your industry: 7.2%. Gap: more video content
+      and Thursday posting."
+  - **Dedicated dashboard** — `/analytics/market/`:
+    - Industry benchmarks: where you stand vs peers (anonymized percentile charts)
+    - Rising trends: topics gaining traction in your industry (with suggested content angles)
+    - Market gaps: high-demand topics with low content supply (first-mover opportunities)
+    - Pricing intelligence: "Businesses like yours with similar audiences charge KES 15K-25K
+      for this category. You're at KES 8K."
+    - Collaboration radar: "A photographer in your area with 28% audience overlap is gaining
+      traction with complementary content." (opt-in only, user chooses to be discoverable)
+  - **Create Agent integration**: content seeds enriched with network signals
+  - **Strategist Agent integration**: weekly strategy considers market context, not just user's own data
+
+- [ ] Plan limits: Free = basic industry benchmark (your engagement vs average) |
+  Growth = full benchmarks + rising trends + market gaps | Pro = pricing intelligence,
+  collaboration radar, real-time trend alerts, Create Agent market-aware generation
+- DELIVERABLE: Every Kova user gets market intelligence that was previously accessible only to
+  enterprises with research teams. The platform's collective intelligence benefits every individual user.
+- UNIQUENESS TEST: No social media tool provides anonymized cross-user market intelligence.
+  Sprout Social has industry report PDFs (annual, generic). Hootsuite has Social Trends reports
+  (yearly, high-level). Kova provides REAL-TIME, LOCALIZED, INDUSTRY-SPECIFIC intelligence
+  from ACTUAL business performance data — not surveys or estimates.
+- **TECHNICAL NOTES:**
+  - Privacy: all queries use anonymized aggregate views. Data minimization principle throughout.
+  - Minimum viable network: 500+ active users needed. Below this, show global benchmarks only.
+  - Computation: weekly batch job, ~30 minutes for 10K users (aggregate SQL queries + 1 LLM call per industry)
+  - Storage: ~100 NetworkInsight records per week, ~50 IndustryBenchmark records per month — lightweight
+  - Regional detection: from user timezone + lead location data (GeoIP) + profile settings
+
+### Sprint 7F: Strategic Foresight Engine — "See Tomorrow's Market Today" ⏳ NOT STARTED
+## ──────────────────────────────────────────────────────────────────────
+## VALUE RANK: #6 — Forward-Looking Advisory Layer
+## BIOS CONTRIBUTION: Transforms Kova from "reports what happened" to "advises what to do next."
+## PREREQUISITE: All Sprint 7A-7E data layers (commerce, revenue, genome, score, network)
+## GENERATES DATA FOR: Digital Business Passport (7G — trajectory indicators)
+##
+## THE INVISIBLE PROBLEM:
+## Small businesses are REACTIVE. They respond to trends after they peak. They adjust strategy
+## after losing customers. They change pricing after competitors move. They have zero foresight
+## capability — that's reserved for corporations with strategy consultants charging $500/hour.
+## Kova gives every KES 299/month user a strategy advisor powered by ALL available data.
+##
+
+- [ ] **StrategicForecast model** — forward-looking business intelligence
+  - Fields: user (FK), forecast_type (choices: revenue_forecast, trend_opportunity,
+    risk_alert, competitive_shift, audience_churn_risk, demand_signal,
+    collaboration_opportunity, pricing_recommendation, product_suggestion),
+    timeframe (choices: this_week, next_2_weeks, this_month, next_quarter),
+    title, description, evidence (JSONField — data backing the forecast),
+    confidence (Float 0-1), impact_estimate (CharField — "KES 48,000 potential" or "25% churn risk"),
+    suggested_actions (JSONField — list of recommended steps),
+    auto_generated_seeds (JSONField — content seed IDs created from this forecast),
+    status (choices: active, acted_on, expired, dismissed), created_at, expires_at
+
+- [ ] **ForesightEngine** (new module in Strategist Agent):
+  - Data inputs (combines ALL Phase 6 + 7 data):
+    - Content performance history (30/60/90 day windows)
+    - Revenue attribution + RevenuePrediction accuracy trends
+    - AudienceGenome shifts (interest_evolution layer)
+    - KovaScore trajectory + component trends
+    - NetworkInsight trends + industry benchmarks
+    - Competitor analysis data (from analytics app)
+    - Seasonal patterns from network data
+    - Commercial intent patterns from 7A
+  - Forecast types generated:
+
+  **Revenue Forecasts**:
+  - Monthly revenue projection with confidence intervals
+  - Content investment recommendations to hit revenue targets
+  - Risk-adjusted forecasting (accounts for seasonal dips, competitor moves)
+
+  **Opportunity Detection**:
+  - "Home delivery searches across your audience are up 230% MoM. 3 competitors haven't adapted.
+    OPPORTUNITY WINDOW: ~3 weeks. Auto-generated 5 content seeds about delivery options."
+  - "Emerging interest in vegan options (23 mentions, first detected March).
+    No competitor content about this in your market. First-mover advantage available."
+
+  **Risk Alerts**:
+  - "Your Instagram engagement dropped 18% over 14 days. In similar businesses, this pattern
+    preceded a 25% audience decline within 21 days. Cause: last 8 posts were text-only.
+    Your audience prefers video (3.2× engagement). Corrective action: switch to 60% video
+    for 2 weeks. Projected recovery: 14 days."
+  - "Your superfan @handle hasn't engaged in 16 days (previously daily). Churn risk: high.
+    Recommend: personalized re-engagement DM + exclusive content."
+
+  **Competitive Intelligence**:
+  - "Competitor [X] increased posting frequency by 40% this month. Their engagement is rising
+    on topics you're declining on. Consider: match their frequency on [topic] or differentiate
+    with [alternative angle]."
+
+  **Pricing & Product**:
+  - "Based on audience genome (medium price sensitivity) + network intelligence (industry avg KES 15K-25K)
+    + your current conversion rate: raising price from KES 8K to KES 12K is projected to increase
+    revenue 35% while decreasing conversion rate only 8%. Net positive: KES 18K/month."
+  - "Demand signal: 67 comments + 12 DMs about delivery this month. If you launch delivery,
+    estimated additional monthly revenue: KES 45K-80K (based on similar Kova businesses
+    who added delivery)."
+
+- [ ] **Daily Brief — Foresight section** (the centerpiece experience):
+  ```
+  📡 STRATEGIC FORESIGHT (next 2-4 weeks):
+
+  💰 REVENUE FORECAST:
+  • This month's projection: KES 165,000 (82% of your KES 200K target)
+  • To close the gap: 4 more video posts about wedding cakes + WhatsApp CTAs
+  • Estimated uplift: KES 48,000 (±15K). Content seeds ready for approval.
+
+  🔥 OPPORTUNITY WINDOW (estimated 3 weeks):
+  • "Home delivery" demand rising sharply in your audience (+230% MoM)
+  • 0 of your 5 tracked competitors are posting about this
+  • Auto-generated seeds: "We Now Deliver!" announcement + delivery zone map + FAQ post
+
+  ⚠️ RISK ALERT:
+  • Instagram engagement declining 18% (14-day trend). Historical pattern:
+    leads to 25% audience drop in 21 days. Root cause: text-heavy content.
+  • Auto-correction recommended: 60% video content for next 2 weeks.
+  • Projected recovery: within 14 days if action taken now.
+
+  🤝 COLLABORATION SIGNAL:
+  • Florist (Kova Score: 720, 28% audience overlap) gaining traction with wedding content.
+  • Cross-promotion projected reach: 3,400 new audience members.
+  • Auto-drafted collaboration proposal ready for review.
+
+  📈 PRICING INSIGHT:
+  • Your industry peers price at KES 15K-25K. You're at KES 8K.
+  • Test price increase to KES 12K: projected +35% revenue, -8% conversion rate. Net positive.
+  ```
+
+- [ ] **Auto-action on forecasts** (Pro plan):
+  - When opportunity detected: auto-generate content seeds for user approval
+  - When risk detected: auto-adjust content mix (more video, different topics)
+  - When pricing insight generated: create A/B test content with different price points
+  - When collaboration opportunity: draft outreach message for user review
+  - All auto-actions are suggestions — user approves, never fully autonomous for strategic decisions
+
+- [ ] **Foresight accuracy tracking**:
+  - Store forecast → compare with actual outcome after timeframe expires
+  - Track accuracy by forecast type (revenue forecasts most measurable)
+  - Use accuracy data to improve future forecasts (calibration loop)
+  - Show users: "Our revenue forecasts have been 82% accurate over the last 3 months"
+
+- [ ] Plan limits: Free = none (must be Growth+) | Growth = basic risk alerts + monthly revenue forecast
+  | Pro = full foresight (all forecast types), auto-generated seeds, collaboration matching,
+  pricing recommendations, product suggestions
+- DELIVERABLE: Every Kova user gets a strategic advisor that sees around corners. Not analytics
+  reports about yesterday — actionable foresight about tomorrow. This is the moment Kova
+  transitions from "social media tool" to "business intelligence operating system."
+- UNIQUENESS TEST: This is entirely new. No social media tool, no analytics platform, no
+  CRM generates forward-looking strategic advice from the combination of content performance +
+  audience behavior + commercial intent + revenue data + network intelligence + competitor data.
+  The closest analogy is a management consultant — Kova delivers that as a $7/month feature.
+- **TECHNICAL NOTES:**
+  - Computation: Strategist Agent extended with foresight module. 1 LLM call per user per day (Premium tier
+    model — this is the highest-value output, worth the cost). Results cached for Daily Brief.
+  - Data freshness: revenue predictions refreshed weekly, audience genome weekly, network insights weekly,
+    competitor data weekly. Foresight runs daily, combining latest available data.
+  - Confidence calibration: starts at low confidence, increases as historical accuracy proves out
+  - Auto-seed generation: Create Agent called inline when opportunity/risk detected (Workhorse tier)
+
+### Sprint 7G: Digital Business Passport — "Your Business Identity, Verified and Portable" ⏳ NOT STARTED
+## ────────────────────────────────────────────────────────────────────────────────────────
+## VALUE RANK: #7 — The Endgame Play
+## BIOS CONTRIBUTION: Makes Kova's data a financial + economic asset beyond the platform itself.
+## PREREQUISITE: All Sprint 7A-7F (needs full intelligence stack for a meaningful passport)
+## GENERATES: External revenue streams (banking partnerships, marketplace, government data partnerships)
+##
+## THE INVISIBLE PROBLEM:
+## In emerging markets, businesses have NO standardized digital identity. They exist on scattered
+## platforms with no verified track record. Banks can't assess them (thin credit files).
+## Customers can't verify they're legitimate (fraud rampant). Investors can't evaluate traction
+## without expensive due diligence. The trust infrastructure of digital commerce doesn't exist.
+## Kova builds it — because after Sprint 7A-7F, Kova has the ONLY verified, multi-signal
+## dataset of business performance that spans content → engagement → leads → revenue → reputation.
+##
+
+- [ ] **DigitalPassport model** — verified portable business identity
+  - Fields: user (FK), passport_slug (unique — public URL identifier),
+    display_name, business_description, industry, location_city, location_country,
+    kova_score (FK to KovaScore — live reference, always current),
+    verified_since (Date — when they first reached verified status),
+    active_platforms_count, total_posts, consistency_rate (Float),
+    audience_size_verified (Integer — engagement-validated, not raw followers),
+    avg_monthly_leads, avg_monthly_revenue_tracked (Decimal),
+    response_time_avg_minutes, content_quality_grade (A/B/C/D/F),
+    badges (JSONField — earned badges list), is_public (Bool — user controls visibility),
+    is_verified (Bool — passed all verification checks),
+    verification_level (choices: basic, standard, premium),
+    created_at, updated_at, last_verified_at
+
+- [ ] **PassportBadge model** — earned achievements
+  - Fields: badge_type (choices: consistent_creator, revenue_verified, fast_responder,
+    audience_growth, content_quality, multi_platform, community_builder,
+    industry_leader, rising_star, one_year_active),
+    earned_criteria (JSONField — what triggered this badge),
+    display_name, icon, description
+  - Auto-award: Celery task checks badge criteria weekly, awards new badges
+
+- [ ] **PassportVerificationLevel** — tiered verification depth
+  - Basic: email verified + 3+ months active + Kova Score 300+
+  - Standard: Basic + business registration document + phone verified + 6+ months active + Score 500+
+  - Premium: Standard + revenue data validated + physical address verified + 12+ months + Score 700+
+
+- [ ] **Public passport page** — `kovaagent.com/p/{passport_slug}`
+  - Public-facing page showing verified business identity
+  - Displays: business name, description, industry, location, Kova Score (live),
+    active since date, platform presence, badges earned, response time,
+    content consistency grade, audience engagement tier
+  - Does NOT show: revenue data, lead data, internal analytics (privacy-protected)
+  - Trust signals: "Verified by Kova — data backed by 12 months of tracked performance"
+  - QR code: for print materials, business cards, physical signage
+  - Responsive: optimized for mobile (most views will be phone-based)
+
+- [ ] **Passport sharing + embedding**:
+  - Embeddable widget: HTML snippet for websites/blogs (shows live Kova Score + badges)
+  - Email signature badge: compact image + link to public passport
+  - Social profile link: "Kova Verified Business" link for social bios
+  - WhatsApp Business: badge image overlay for profile photo
+  - Print-ready: PDF export of passport for offline use (business meetings, bank applications)
+
+- [ ] **External partnership infrastructure** (the revenue expansion):
+  - **Banking Data API** (future — requires legal framework):
+    - User consents to share anonymized Kova data with partner banks
+    - API endpoint: bank queries user's passport → receives: Kova Score, months active,
+      revenue attribution summary, consistency metrics, audience quality grade
+    - Use case: SMB loan application supplemented with Kova digital presence data
+    - Revenue model: per-inquiry fee from banks (estimated: $1-5 per credit check)
+    - Privacy: user grants per-bank consent, can revoke anytime, data minimized to credit-relevant signals
+  - **Kova Business Directory** (future):
+    - Opt-in directory of Kova-verified businesses, searchable by industry + location + score
+    - Consumer trust tool: "Find Kova Verified businesses in Nairobi"
+    - SEO: public passport pages rank for "[business name] + reviews/verified"
+    - Revenue model: free listing, featured placement on Pro plan
+  - **Government/NGO Data Partnerships** (future):
+    - Anonymized aggregate data: "15,000 active businesses in Nairobi registered on Kova,
+      3,200 in hospitality, average social revenue KES 85K/month"
+    - Use case: economic development reporting, SMB support program targeting
+    - Revenue model: data licensing for market intelligence reports
+
+- [ ] **Business transfer protocol** (future):
+  - When a business is sold, passport + Kova Score + Content DNA + lead pipeline transfers to new owner
+  - Transfer verification: both parties confirm in-app, Kova validates account continuity
+  - Passport note: "Business transferred on [date]. Previous track record preserved."
+  - Use case: makes digital-native businesses SELLABLE as verified assets
+
+- [ ] Plan limits: Free = none (Growth+ only) | Growth = basic passport (public page + basic badges) |
+  Pro = premium passport (all badges, embed, QR, PDF export, bank data sharing opt-in, directory listing)
+- DELIVERABLE: Every Kova business has a verified, portable digital identity that creates value
+  OUTSIDE the platform — in banking, partnerships, marketplace trust, and business transactions.
+  Kova transitions from a tool that helps business internally to infrastructure that represents
+  businesses externally. That's a platform play, not a SaaS play.
+- UNIQUENESS TEST: Nothing like this exists. Google Business Profile is basic and unverified.
+  LinkedIn company pages show self-reported data. Klout (RIP) measured vanity influence.
+  Kova's Digital Passport is backed by 12+ months of VERIFIED performance data across
+  content quality, audience behavior, lead conversion, and revenue attribution. It's not
+  a profile — it's a CREDIT REPORT for your digital business.
+- **TECHNICAL NOTES:**
+  - Public passport pages: server-rendered, cached (1hr), SEO-optimized (og: tags, structured data)
+  - QR codes: python-qrcode library, generated on demand, cached
+  - PDF export: WeasyPrint or xhtml2pdf (Django-compatible, no external service needed)
+  - Banking API: sensitive — requires legal counsel, data protection impact assessment, regulatory
+    compliance (Kenya Data Protection Act 2019, GDPR if serving EU). DO NOT build without legal review.
+  - Directory: simple Django ListView with filters, public pages already handle individual display
+
+### Phase 7 — The Intelligence Pipeline (Why This Order Matters)
+
+```
+Sprint 7A: Commerce Pipeline
+    ↓ Generates: commercial intent data, auto-conversion data, product demand signals
+Sprint 7B: Revenue Prediction
+    ↓ Consumes: conversion data. Generates: per-post revenue projections, content ROI patterns
+Sprint 7C: Audience Genome
+    ↓ Consumes: all engagement + conversion + email data. Generates: psychographic intelligence
+Sprint 7D: Kova Score
+    ↓ Consumes: all business signals. Generates: quantified trust, verifiable brand health
+Sprint 7E: Network Intelligence
+    ↓ Consumes: anonymized aggregate from all users. Generates: market intelligence, benchmarks
+Sprint 7F: Strategic Foresight
+    ↓ Consumes: ALL above layers. Generates: forward-looking business advice
+Sprint 7G: Digital Business Passport
+    ↓ Consumes: score + genome + foresight trajectory. Generates: EXTERNAL VALUE (banking, trust, portability)
+```
+
+Each sprint produces data that makes the next sprint more intelligent.
+Skipping ahead breaks the intelligence chain.
+
+### Phase 7 — Key Metrics (How We Know It's Working)
+| Metric | Target | How Measured |
+|--------|--------|-------------|
+| Commerce auto-response conversion rate | 15%+ of auto-responses lead to a sale | Conversion records from CommercialIntentDetector pipeline |
+| Revenue prediction accuracy | 80%+ within ±20% of actual revenue after 6 months of calibration | RevenuePrediction.prediction_accuracy rolling average |
+| Audience Genome activation rate | 70%+ of users with 30+ posts have an active genome | AudienceGenome count vs eligible user count |
+| Kova Score adoption | 50%+ of active users view their score monthly | Score dashboard page views / MAU |
+| Verified business passports | 30%+ of users active 6+ months achieve Standard verification | DigitalPassport.is_verified count |
+| Network Intelligence engagement | 60%+ of Growth/Pro users click on market insights in Daily Brief | NetworkInsight click-through tracking |
+| Foresight accuracy | 75%+ of acted-on forecasts achieve within 25% of projected outcome | StrategicForecast accuracy tracking (outcome vs prediction) |
+| External revenue (banking API) | First banking partnership signed within 6 months of 7G launch | Partnership agreement executed |
+| Churn impact | Users with active Kova Score have 50%+ lower churn than users without | Subscription churn rate segmented by feature usage |
+
+### Phase 7 — Revenue Model Evolution
+```
+BEFORE PHASE 7:
+  Revenue = SaaS subscriptions only ($2-$21/month per user)
+  Model: Linear (revenue grows with user count)
+
+AFTER PHASE 7:
+  Revenue = SaaS subscriptions
+           + Banking data licensing (per-inquiry fee from partner banks)
+           + Network Intelligence reports (sold to enterprises/governments)
+           + Marketplace commissions (collaborations facilitated by Kova)
+           + Featured directory placement (premium visibility for businesses)
+  Model: PLATFORM (revenue grows with user count × data value × external partnerships)
+```
+
+### Phase 7 — Technical Architecture Notes
+- **New Celery tasks** (5 additions):
+  - `detect-commercial-intent` — real-time, triggered by Engage Agent cycle (every 30 min)
+  - `compute-audience-genome` — weekly per user
+  - `compute-kova-scores` — weekly per user
+  - `compute-network-intelligence` — weekly, global aggregate
+  - `generate-strategic-forecasts` — daily per user (Growth+)
+- **Database growth**: Phase 7 adds ~12 new models, ~15 tables.
+  Estimated growth at 10K users: ~500K new rows/month (mostly RevenuePrediction, AudienceShift,
+  NetworkInsight, StrategicForecast records). PostgreSQL handles this comfortably.
+- **LLM cost per user per week** (Phase 7 additions):
+  - Commerce intent: ~5-10 calls (Workhorse tier) — triggered per commercial interaction
+  - Revenue prediction: 1 call per post (Workhorse)
+  - Audience genome: 1 call/week (Workhorse)
+  - Kova Score narrative: 1 call/week (Fast tier)
+  - Network intelligence: shared across users (1 call per industry per week, not per user)
+  - Strategic foresight: 1 call/day (Premium tier — highest-value output)
+  - Estimated total: ~15-25 LLM calls/user/week additional. At 10K users: ~200K calls/week.
+    Cost managed by model tier system (Workhorse for most, Premium only for foresight).
+- **Privacy framework** (critical for 7E-7G):
+  - All network intelligence: k-anonymity (minimum 50 users per segment)
+  - All external data sharing: explicit user opt-in with granular consent
+  - Banking data: data protection impact assessment required before development
+  - No PII in any aggregate or network model. Ever.
+  - Compliance: Kenya Data Protection Act 2019 + GDPR (if serving international users)
+
+
 # ============================================================================
 # 10. UI/UX PRINCIPLES & KEY SCREENS
 # ============================================================================
@@ -1961,35 +2819,56 @@ Step 3: Goals & Preferences — goals (multi-select), posting frequency (enforce
 # ============================================================================
 
 ## 17.1 The North Star (12-18 months out)
-"Kova Agent runs your complete social media presence autonomously for 30 days
-while you're on vacation — and your audience never notices."
+"Kova Agent runs your complete digital business presence autonomously —
+creating content, engaging community, capturing leads, nurturing relationships,
+predicting revenue, advising strategy, and building verified trust —
+while you focus on what you do best. Your business grows while you sleep."
 
-## 17.2 Future Capabilities
+## 17.2 Future Capabilities (Phase 8+)
 1. **Agent Marketplace**: Users create and share custom agent "skills" (e.g., "Real Estate Agent Pack" — knows how to create property listings across platforms)
 2. ~~**Revenue Attribution Engine**~~ → MOVED TO PHASE 6 (Sprint 6G)
 3. **Content Mutation**: Post version A underperforms in 2 hours → system auto-generates version B with different hook, posts to remaining platforms
-4. **Voice/Video Input**: Record a 30-second video explanation → agents transform it into written posts, audiograms, video clips for every platform (partially addressed in Phase 6 Sprint 6F)
+4. ~~**Voice/Video Input**~~ → Voice memo ✅ complete, Video AI → Phase 6 Sprint 6F
 5. **Agency White-Label**: Agencies run Kova under their own brand for clients
 6. **Open-Source Core**: Release a self-hosted community edition to build developer community + funnel to paid cloud version
-7. **Mobile App**: PWA or native app for approve-on-the-go
+7. **Mobile App**: PWA or native app for approve-on-the-go (PWA MVP ✅ complete in Phase 4)
 8. **Enterprise SSO + Compliance**: SOC 2, SSO, audit logs for enterprise clients
-9. **Predictive Audience Builder**: Agent suggests WHO to follow/engage with to grow optimally
+9. ~~**Predictive Audience Builder**~~ → MOVED TO PHASE 7 (Sprint 7C — Audience Genome)
 10. **Cross-Platform Narrative Engine**: Maintain a single narrative across platforms that unfolds over weeks (episodic content)
 11. ~~**Email Marketing**~~ → MOVED TO PHASE 6 (Sprint 6D)
 12. ~~**Lead Capture + CRM**~~ → MOVED TO PHASE 6 (Sprint 6C)
 13. ~~**Link-in-Bio / Landing Pages**~~ → MOVED TO PHASE 6 (Sprint 6A)
+14. ~~**Revenue Prediction**~~ → MOVED TO PHASE 7 (Sprint 7B)
+15. ~~**Digital Trust / Credit Scoring**~~ → MOVED TO PHASE 7 (Sprint 7D — Kova Score + Sprint 7G — Digital Passport)
 
-## 17.3 The Endgame
-Kova Agent becomes the default operating system for anyone's COMPLETE digital presence.
-Not just social media — social + email + lead capture + revenue tracking.
-Not a tool they use. Not an app they open. An invisible intelligence that operates
-on their behalf — creating content, building audience, capturing leads, nurturing
-relationships, and driving measurable revenue — while they focus on their actual work.
+## 17.3 The Evolution Arc
+```
+Phase 1-4:  CONTENT TOOL        → "AI helps you post better"
+Phase 5:    CHANNEL OWNER        → "AI owns the conversation on WhatsApp"
+Phase 6:    OPERATING SYSTEM     → "AI runs your entire marketing: content + leads + email + revenue"
+Phase 7:    INTELLIGENCE SYSTEM  → "AI tells your business where to go next"
+Phase 8+:   PLATFORM / ECOSYSTEM → "AI connects businesses, banks, and markets"
+```
 
-Phase 6 is the bridge from "content tool" to "operating system." Without it, users
-need 5 external tools to complete the value chain. With it, Kova IS the value chain.
+## 17.4 The Endgame
+Kova Agent becomes the BUSINESS INTELLIGENCE OPERATING SYSTEM for the creator and SMB economy.
 
-Creator economy + AI autonomy + closed-loop conversion = Kova Agent.
+Not a tool they use. Not an app they open. An invisible intelligence that:
+1. Creates and publishes content autonomously (Phase 1-4)
+2. Engages community and captures leads (Phase 3+6)
+3. Nurtures relationships via email and social (Phase 6)
+4. Detects buying signals and closes sales automatically (Phase 7A)
+5. Predicts revenue and advises on content investment (Phase 7B)
+6. Understands their audience deeper than any survey (Phase 7C)
+7. Quantifies their digital brand into a bankable score (Phase 7D)
+8. Shows them market intelligence only platforms can see (Phase 7E)
+9. Advises where their business should go next (Phase 7F)
+10. Represents their business with a verified digital identity (Phase 7G)
+
+The trust infrastructure of digital commerce in Africa doesn't exist.
+Kova builds it — one verified business at a time.
+
+Creator economy + AI autonomy + closed-loop conversion + business intelligence + digital trust = Kova Agent.
 
 
 # ============================================================================
