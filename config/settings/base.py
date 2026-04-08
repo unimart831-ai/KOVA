@@ -311,8 +311,8 @@ LLM_PAID_FALLBACK_PROVIDER = env("LLM_PAID_FALLBACK_PROVIDER", default="openrout
 # Override individual tasks via env vars, or change the tier defaults.
 # Tier: premium (creative writing) | workhorse (reasoning) | fast (classification)
 # DEV: Using free OpenRouter models. Switch to paid models for production.
-LLM_MODEL_PREMIUM = env("LLM_MODEL_PREMIUM", default="qwen/qwen3.6-plus:free")
-LLM_MODEL_WORKHORSE = env("LLM_MODEL_WORKHORSE", default="qwen/qwen3.6-plus:free")
+LLM_MODEL_PREMIUM = env("LLM_MODEL_PREMIUM", default="meta-llama/llama-4-maverick:free")
+LLM_MODEL_WORKHORSE = env("LLM_MODEL_WORKHORSE", default="meta-llama/llama-4-maverick:free")
 LLM_MODEL_FAST = env("LLM_MODEL_FAST", default="stepfun/step-3.5-flash:free")
 
 AGENT_MODELS = {

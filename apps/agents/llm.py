@@ -343,7 +343,7 @@ def generate(
         _FREE_FALLBACKS = config.free_fallback_models
     else:
         _FREE_FALLBACKS = [
-            "qwen/qwen3.6-plus:free",
+            "meta-llama/llama-4-maverick:free",
             "nvidia/nemotron-3-super-120b-a12b:free",
             "minimax/minimax-m2.5:free",
             "stepfun/step-3.5-flash:free",  # Demoted: frequent empty responses
