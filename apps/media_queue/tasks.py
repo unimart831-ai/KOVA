@@ -71,11 +71,11 @@ def process_media_queues():
                 order=0,
             )
 
-            # Also set media_urls so the publish pipeline picks it up
-            post.media_urls = [attachment.file.url]
+            # publish_post reads attachment bytes from storage directly,
+            # so we no longer need to set media_urls here.
             post.scheduled_at = now
             post.status = Post.Status.SCHEDULED
-            post.save(update_fields=["media_urls", "scheduled_at", "status", "updated_at"])
+            post.save(update_fields=["scheduled_at", "status", "updated_at"])
 
             # Trigger publish
             publish_post.delay(str(post.pk))

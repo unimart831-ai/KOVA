@@ -35,6 +35,12 @@ def brief_home(request):
     # Top superfans to acknowledge
     superfans = Superfan.objects.filter(user=request.user)[:5]
 
+    # Platform connection nudge — show if user has no active social accounts
+    from apps.platforms.models import SocialAccount
+    has_connected_platform = SocialAccount.objects.filter(
+        user=request.user, is_active=True
+    ).exists()
+
     return render(request, "briefs/home.html", {
         "brief": brief,
         "recent_briefs": recent_briefs,
@@ -42,5 +48,6 @@ def brief_home(request):
         "failed_count": failed_count,
         "scheduled_count": scheduled_count,
         "superfans": superfans,
+        "has_connected_platform": has_connected_platform,
         "page_title": "Daily Brief",
     })

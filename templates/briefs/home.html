@@ -8,6 +8,21 @@
 {% block content %}
 <div class="max-w-6xl mx-auto space-y-6">
 
+  {# ── Platform connection nudge (show if no social accounts connected) ── #}
+  {% if not has_connected_platform %}
+  <div class="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl flex items-start gap-3">
+    <span class="text-xl mt-0.5" aria-hidden="true">⚡</span>
+    <div class="flex-1">
+      <p class="text-sm font-medium text-amber-800 dark:text-amber-300">Connect a platform to activate your agents</p>
+      <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">Your 6 AI agents are ready, but they need a social media account to create, schedule, and analyze content.</p>
+      <a href="{% url 'platforms:list' %}" class="inline-flex items-center gap-1 mt-2 text-sm font-medium text-kova-600 dark:text-kova-400 hover:text-kova-800 dark:hover:text-kova-300">
+        Connect now
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
   {% if brief %}
     <div class="lg:grid lg:grid-cols-3 lg:gap-8 lg:items-start">
       <!-- Main column -->

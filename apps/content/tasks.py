@@ -15,6 +15,48 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
+# ── Media URL helpers ────────────────────────────────────────────────────
+
+def _public_url_for_file(file_name: str):
+    """
+    Generate a publicly accessible URL for a file in storage.
+
+    For S3/R2 backends: generates a pre-signed URL valid for 1 hour
+    (works even if the bucket or endpoint is not publicly accessible).
+    For other backends: uses SITE_URL + storage URL.
+    Returns None if no public URL can be constructed.
+    """
+    from django.core.files.storage import default_storage
+    from django.conf import settings
+
+    try:
+        # S3/R2: generate a pre-signed URL
+        try:
+            from storages.backends.s3boto3 import S3Boto3Storage
+            if isinstance(default_storage, S3Boto3Storage):
+                key = default_storage._normalize_name(
+                    default_storage._clean_name(file_name)
+                )
+                return default_storage.connection.meta.client.generate_presigned_url(
+                    "get_object",
+                    Params={"Bucket": default_storage.bucket_name, "Key": key},
+                    ExpiresIn=3600,
+                )
+        except ImportError:
+            pass
+
+        url = default_storage.url(file_name)
+        if url.startswith(("http://", "https://")):
+            return url
+
+        site_url = getattr(settings, "SITE_URL", "").rstrip("/")
+        if site_url and "localhost" not in site_url:
+            return f"{site_url}{url}"
+    except Exception as e:
+        logger.warning("Could not generate public URL for %s: %s", file_name, e)
+    return None
+
+
 # ── UTM Tracking ─────────────────────────────────────────────────────────
 # Appends UTM parameters to URLs in post content so we can attribute
 # website traffic back to specific posts, platforms, and campaigns.
@@ -270,44 +312,47 @@ def publish_post(self, post_id: str):
             )
             return {"error": "Media required"}
 
-        # Collect all media URLs: AI-generated (media_urls) + user uploads (attachments).
-        # Platform APIs need absolute, publicly-accessible URLs.
-        absolute_media_urls = None
-        raw_urls = list(post.media_urls or [])
-        # Append user-uploaded attachments (take priority if they exist)
-        attachment_urls = list(
-            post.attachments.order_by("order").values_list("file", flat=True)
+        # ── Collect media for publishing ──────────────────────────────
+        # Two forms:
+        #   media_files  – raw bytes read from storage (preferred: works
+        #                  with any backend, no public URL needed)
+        #   media_urls   – absolute URLs (AI-generated images or pre-signed
+        #                  storage URLs, used by APIs that *require* a URL,
+        #                  e.g. Instagram Container API)
+        import mimetypes
+        from django.core.files.storage import default_storage
+
+        media_files = []   # [(filename, bytes, content_type), ...]
+        media_urls_list = list(post.media_urls or [])  # AI-generated (already public)
+
+        for attachment in post.attachments.order_by("order"):
+            if not attachment.file:
+                continue
+            # Read the file bytes from storage (works with S3, R2, local FS)
+            try:
+                with default_storage.open(attachment.file.name, "rb") as fh:
+                    data = fh.read()
+                fname = attachment.file.name.rsplit("/", 1)[-1]
+                ctype = mimetypes.guess_type(fname)[0] or "image/jpeg"
+                media_files.append((fname, data, ctype))
+            except Exception as e:
+                logger.warning("Could not read attachment %s: %s", attachment.pk, e)
+
+            # Also build a public URL as fallback (needed by Instagram)
+            url = _public_url_for_file(attachment.file.name)
+            if url:
+                media_urls_list.insert(0, url)
+
+        absolute_media_urls = (
+            [u for u in media_urls_list if u.startswith(("http://", "https://"))]
+            or None
         )
-        if attachment_urls:
-            from django.core.files.storage import default_storage
-            # Use the storage backend to generate proper URLs (handles R2/S3 correctly)
-            resolved = []
-            for f in attachment_urls:
-                try:
-                    resolved.append(default_storage.url(f))
-                except Exception:
-                    resolved.append(f)
-            raw_urls = resolved + raw_urls  # uploaded first, then AI-generated
-        if raw_urls:
-            from django.conf import settings
-            site_url = getattr(settings, "SITE_URL", "").rstrip("/")
-            absolute_media_urls = []
-            for url in raw_urls:
-                if url.startswith(("http://", "https://")):
-                    absolute_media_urls.append(url)
-                elif site_url and not site_url.startswith("http://localhost"):
-                    absolute_media_urls.append(f"{site_url}{url}")
-                else:
-                    # Skip URLs that would resolve to localhost — Facebook can't reach them
-                    logger.warning("Skipping non-public media URL: %s", url)
-            # If all URLs were skipped (localhost), clear the list
-            if not absolute_media_urls:
-                absolute_media_urls = None
 
         result = provider.publish_post(
             access_token=account.access_token,
             content=publish_content,
             media_urls=absolute_media_urls,
+            media_files=media_files or None,
             **publish_kwargs,
         )
     except Exception as exc:

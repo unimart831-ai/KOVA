@@ -269,14 +269,78 @@ class TwitterProvider(BaseProvider):
             logger.error("Twitter media upload error: %s", e)
             return None
 
+    def _upload_media_bytes(self, access_token: str, media_bytes: bytes,
+                            content_type: str, filename: str = "image.jpg") -> Optional[str]:
+        """Upload media bytes directly to Twitter (skips URL download step).
+
+        Same INIT → APPEND → FINALIZE flow as _upload_media but starts with
+        bytes already in memory.
+        """
+        headers = {"Authorization": f"Bearer {access_token}"}
+        file_size = len(media_bytes)
+        media_category = "tweet_image" if "image" in content_type else "tweet_video"
+
+        try:
+            with httpx.Client(timeout=60) as client:
+                # INIT
+                init_resp = client.post(TWITTER_UPLOAD_URL, data={
+                    "command": "INIT",
+                    "total_bytes": str(file_size),
+                    "media_type": content_type,
+                    "media_category": media_category,
+                }, headers=headers)
+                init_resp.raise_for_status()
+                media_id = init_resp.json().get("media_id_string", "")
+                if not media_id:
+                    logger.error("Twitter media INIT: no media_id returned")
+                    return None
+
+                # APPEND (4 MB chunks)
+                chunk_size = 4 * 1024 * 1024
+                for segment, offset in enumerate(range(0, file_size, chunk_size)):
+                    chunk = media_bytes[offset:offset + chunk_size]
+                    client.post(TWITTER_UPLOAD_URL, data={
+                        "command": "APPEND",
+                        "media_id": media_id,
+                        "segment_index": str(segment),
+                    }, files={"media_data": ("chunk", chunk, content_type)},
+                        headers=headers).raise_for_status()
+
+                # FINALIZE
+                finalize_resp = client.post(TWITTER_UPLOAD_URL, data={
+                    "command": "FINALIZE",
+                    "media_id": media_id,
+                }, headers=headers)
+                finalize_resp.raise_for_status()
+
+                logger.info("Twitter media uploaded (direct): %s (%d bytes)", media_id, file_size)
+                return media_id
+
+        except httpx.HTTPStatusError as e:
+            logger.error("Twitter direct media upload failed: %s", e.response.text)
+            return None
+        except Exception as e:
+            logger.error("Twitter direct media upload error: %s", e)
+            return None
+
     def publish_post(self, access_token: str, content: str,
                      media_urls: Optional[list[str]] = None,
                      **kwargs) -> PublishResult:
         headers = {"Authorization": f"Bearer {access_token}"}
         payload = {"text": content}
+        media_files = kwargs.get("media_files")  # [(filename, bytes, ctype), ...]
 
         # Upload media and attach media_ids
-        if media_urls:
+        if media_files:
+            # Direct bytes upload (preferred — no public URL needed)
+            media_ids = []
+            for fname, data, ctype in media_files[:4]:
+                media_id = self._upload_media_bytes(access_token, data, ctype, fname)
+                if media_id:
+                    media_ids.append(media_id)
+            if media_ids:
+                payload["media"] = {"media_ids": media_ids}
+        elif media_urls:
             media_ids = []
             for url in media_urls[:4]:  # Twitter allows max 4 media per tweet
                 media_id = self._upload_media(access_token, url)

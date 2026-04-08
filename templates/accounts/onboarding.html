@@ -183,6 +183,39 @@
                 </div>
               </div>
 
+            {# ── CTA section (Step 3) — collapsible ── #}
+            {% elif field.name == 'default_cta_type' %}
+              <details class="group" {% if field.value and field.value != 'none' %}open{% endif %}>
+                <summary class="flex items-center justify-between cursor-pointer p-3 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-kova-300 dark:hover:border-kova-600 transition-colors">
+                  <div>
+                    <span class="text-sm font-medium text-gray-900 dark:text-white">Default call-to-action</span>
+                    <span class="text-xs text-gray-500 ml-2">(optional — added to your posts automatically)</span>
+                  </div>
+                  <svg class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </summary>
+                <div class="mt-3 space-y-3" x-data="{ ctaType: '{{ field.value|default:'none' }}' }">
+                  <div>
+                    <label class="label">CTA type</label>
+                    {{ field }}
+                  </div>
+                  <div x-show="ctaType === 'link' || ctaType === 'kova_link'" x-cloak>
+                    <label class="label">Destination URL</label>
+                    <input type="text" name="default_cta_url" value="{{ form.default_cta_url.value|default:'' }}"
+                           class="input" placeholder="https://yoursite.com">
+                  </div>
+                  <div x-show="ctaType === 'whatsapp'" x-cloak>
+                    <label class="label">WhatsApp number</label>
+                    <input type="text" name="cta_whatsapp" value="{{ form.cta_whatsapp.value|default:'' }}"
+                           class="input" placeholder="254712345678">
+                    <p class="text-xs text-gray-500 mt-1">International format without + (e.g. 254712345678)</p>
+                  </div>
+                </div>
+              </details>
+            {% elif field.name == 'default_cta_url' or field.name == 'cta_whatsapp' %}
+              {# Rendered inside the CTA details block above — skip default rendering #}
+
             {# ── Visual style selection (Step 2) — single-select grid ── #}
             {% elif field.name == 'visual_style' %}
               <div>

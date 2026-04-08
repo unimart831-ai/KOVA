@@ -344,26 +344,38 @@ def generate_daily_brief(user):
 def generate_all_daily_briefs():
     """
     Periodic task: Generate daily briefs for all users whose brief time has passed.
-    Runs every 15 minutes. Checks each user's daily_brief_time preference.
+    Runs every 15 minutes. Checks each user's daily_brief_time in THEIR timezone.
     """
-    now = timezone.now()
-    today = now.date()
-    current_time = now.time()
+    import zoneinfo
 
-    # Find users who need a brief:
-    # 1. Their preferred brief time has passed today (server UTC)
-    # 2. They don't have a brief for today yet
-    # 3. They've completed onboarding OR have published posts (active user)
-    users = list(
+    now_utc = timezone.now()
+
+    # Find users who MIGHT need a brief (haven't got one today, are active).
+    # We check the time condition per-user below because each user has their
+    # own timezone — we can't filter by a single UTC cutoff.
+    candidates = list(
         User.objects.filter(
             Q(onboarding_completed=True) | Q(posts__status="published"),
-            daily_brief_time__lte=current_time,
         )
         .exclude(
-            briefs__date=today,
+            briefs__date=now_utc.date(),
         )
         .distinct()
     )
+
+    # Filter to users whose preferred brief time has passed in their local tz
+    users = []
+    for user in candidates:
+        try:
+            user_tz = zoneinfo.ZoneInfo(user.timezone or "UTC")
+        except (KeyError, Exception):
+            user_tz = zoneinfo.ZoneInfo("UTC")
+        user_local_now = now_utc.astimezone(user_tz)
+        # Compare against the user's date (not UTC date) so day-boundary is correct
+        if user_local_now.time() >= user.daily_brief_time:
+            # Also check they don't already have a brief for THEIR local date
+            if not user.briefs.filter(date=user_local_now.date()).exists():
+                users.append(user)
 
     eligible_count = len(users)
     if not users:
@@ -371,16 +383,11 @@ def generate_all_daily_briefs():
         total_users = User.objects.count()
         onboarded = User.objects.filter(onboarding_completed=True).count()
         with_posts = User.objects.filter(posts__status="published").distinct().count()
-        time_match = User.objects.filter(
-            Q(onboarding_completed=True) | Q(posts__status="published"),
-            daily_brief_time__lte=current_time,
-        ).distinct().count()
-        already_briefed = User.objects.filter(briefs__date=today).count()
+        already_briefed = User.objects.filter(briefs__date=now_utc.date()).count()
         logger.debug(
             "Brief eligibility: %d total users, %d onboarded, %d with posts, "
-            "%d past brief time (%s UTC), %d already briefed today",
-            total_users, onboarded, with_posts, time_match,
-            current_time.strftime("%H:%M"), already_briefed,
+            "%d candidates checked, %d already briefed today (UTC)",
+            total_users, onboarded, with_posts, len(candidates), already_briefed,
         )
 
     generated = 0

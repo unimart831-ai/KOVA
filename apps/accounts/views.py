@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.http import JsonResponse
+from django.utils import timezone
 
 from apps.accounts.forms import (
     UserSettingsForm,
@@ -67,10 +68,32 @@ def onboarding_view(request):
     # Step 4 is a template-only step (connect platforms)
     if step == 4:
         if request.method == "POST":
-            # "Skip" or "I've connected" — complete onboarding
+            # ── Complete onboarding ──────────────────────────────────
             request.user.onboarding_completed = True
             request.user.save(update_fields=["onboarding_completed"])
-            messages.success(request, "Welcome to Kova Agent! Your agents are ready.")
+
+            # ── Auto-create all 6 agent configs ──────────────────────
+            from apps.agents.models import AgentConfig
+            for agent_type in AgentConfig.AgentType.values:
+                AgentConfig.objects.get_or_create(
+                    user=request.user,
+                    agent_type=agent_type,
+                    defaults={"is_active": True},
+                )
+
+            # ── Initialize 14-day trial ──────────────────────────────
+            from datetime import timedelta
+            profile = request.user.profile
+            if not profile.trial_ends_at:
+                profile.trial_ends_at = timezone.now() + timedelta(days=14)
+                profile.subscription_status = "trialing"
+                profile.save(update_fields=["trial_ends_at", "subscription_status"])
+
+            # ── Send welcome email (after onboarding, not at signup) ─
+            from apps.emails.tasks import send_welcome_email
+            send_welcome_email.delay(str(request.user.pk))
+
+            messages.success(request, "Welcome to Kova Agent! Your 6 AI agents are active and your 14-day trial has started.")
             return redirect("brief:home")
 
         from apps.platforms.models import SocialAccount

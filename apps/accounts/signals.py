@@ -9,7 +9,5 @@ def create_user_profile(sender, instance, created, **kwargs):
     """Automatically create a UserProfile when a new User is created."""
     if created:
         UserProfile.objects.create(user=instance)
-
-        # Send welcome email asynchronously
-        from apps.emails.tasks import send_welcome_email
-        send_welcome_email.delay(str(instance.pk))
+        # NOTE: Welcome email is sent after onboarding completes (in views.py),
+        # not here, so the user has their brand set up when they receive it.

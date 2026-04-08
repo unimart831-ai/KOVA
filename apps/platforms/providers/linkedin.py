@@ -168,6 +168,44 @@ class LinkedInProvider(BaseProvider):
             logger.info("LinkedIn image uploaded: %s", image_urn)
             return image_urn
 
+    def _upload_image_bytes(self, access_token: str, author_urn: str,
+                            filename: str, image_bytes: bytes,
+                            content_type: str = "image/jpeg") -> Optional[str]:
+        """Upload image bytes directly via the Images API (no URL download).
+
+        Same flow as _upload_image but skips the download step.
+        """
+        headers = self._rest_headers(access_token)
+
+        with httpx.Client(timeout=60) as client:
+            # 1. Initialize upload
+            init_resp = client.post(
+                f"{LINKEDIN_REST_BASE}/images?action=initializeUpload",
+                json={"initializeUploadRequest": {"owner": author_urn}},
+                headers=headers,
+            )
+            init_resp.raise_for_status()
+            value = init_resp.json().get("value", {})
+            upload_url = value.get("uploadUrl", "")
+            image_urn = value.get("image", "")
+
+            if not upload_url or not image_urn:
+                logger.error("LinkedIn image init: missing uploadUrl or image URN")
+                return None
+
+            # 2. PUT binary directly (skip download step)
+            client.put(
+                upload_url,
+                content=image_bytes,
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Content-Type": content_type,
+                },
+            ).raise_for_status()
+
+            logger.info("LinkedIn image uploaded (direct): %s (%d bytes)", image_urn, len(image_bytes))
+            return image_urn
+
     def _upload_video(self, access_token: str, author_urn: str,
                       video_url: str) -> Optional[str]:
         """Upload a video via the Videos API.
@@ -416,9 +454,15 @@ class LinkedInProvider(BaseProvider):
         # ── Determine post type ──────────────────────────────────────
         post_type = kwargs.get("post_type", "text")
         article_url = kwargs.get("article_url")
+        media_files = kwargs.get("media_files")  # [(filename, bytes, ctype), ...]
 
         if article_url:
             post_type = "article"
+        elif media_files:
+            if len(media_files) > 1:
+                post_type = "multi_image"
+            else:
+                post_type = "image"
         elif media_urls:
             first = media_urls[0].lower().split("?")[0]
             if first.endswith((".mp4", ".mov", ".avi", ".webm")):
@@ -432,7 +476,36 @@ class LinkedInProvider(BaseProvider):
         media_content = None
 
         try:
-            if post_type == "image" and media_urls:
+            if post_type == "image" and media_files:
+                urn = self._upload_image_bytes(
+                    access_token, author_urn, *media_files[0]
+                )
+                if not urn:
+                    return PublishResult(
+                        success=False, error="Image upload failed"
+                    )
+                media_content = {
+                    "media": {
+                        "title": kwargs.get("media_title", ""),
+                        "id": urn,
+                    }
+                }
+
+            elif post_type == "multi_image" and media_files:
+                images = []
+                for fname, data, ctype in media_files[:9]:
+                    urn = self._upload_image_bytes(
+                        access_token, author_urn, fname, data, ctype
+                    )
+                    if urn:
+                        images.append({"id": urn})
+                if not images:
+                    return PublishResult(
+                        success=False, error="All image uploads failed"
+                    )
+                media_content = {"multiImage": {"images": images}}
+
+            elif post_type == "image" and media_urls:
                 urn = self._upload_image(
                     access_token, author_urn, media_urls[0]
                 )

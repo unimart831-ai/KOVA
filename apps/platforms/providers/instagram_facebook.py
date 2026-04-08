@@ -214,11 +214,12 @@ class FacebookProvider(BaseProvider):
         """
         Publish to a Facebook Page.
         Required kwargs: page_id, page_access_token
-        Optional kwargs: scheduled_publish_time (Unix timestamp for scheduling)
+        Optional kwargs: scheduled_publish_time, media_files
         """
         page_id = kwargs.get("page_id", "")
         page_token = kwargs.get("page_access_token", access_token)
         scheduled_time = kwargs.get("scheduled_publish_time")
+        media_files = kwargs.get("media_files")  # [(filename, bytes, content_type), ...]
 
         if not page_id:
             return PublishResult(success=False, error="page_id is required for Facebook posting")
@@ -232,8 +233,33 @@ class FacebookProvider(BaseProvider):
 
         try:
             with httpx.Client(timeout=HTTP_TIMEOUT) as client:
-                if media_urls and len(media_urls) == 1:
-                    # Single photo post — validate URL is publicly accessible
+                # ── Direct file upload (preferred: no public URL needed) ──
+                if media_files and len(media_files) == 1:
+                    fname, data, ctype = media_files[0]
+                    logger.info("Facebook photo post to page %s (direct upload, %d bytes)", page_id, len(data))
+                    resp = client.post(
+                        f"{FB_API_BASE}/{page_id}/photos",
+                        data=payload,
+                        files={"source": (fname, data, ctype)},
+                    )
+                elif media_files and len(media_files) > 1:
+                    # Multi-photo: upload each directly, then combine
+                    photo_ids = []
+                    for fname, data, ctype in media_files:
+                        upload_resp = client.post(
+                            f"{FB_API_BASE}/{page_id}/photos",
+                            data={"published": "false", "access_token": page_token},
+                            files={"source": (fname, data, ctype)},
+                        )
+                        upload_resp.raise_for_status()
+                        photo_ids.append(upload_resp.json()["id"])
+                    multi_payload = {"message": content, "access_token": page_token}
+                    for i, pid in enumerate(photo_ids):
+                        multi_payload[f"attached_media[{i}]"] = f'{{"media_fbid":"{pid}"}}'
+                    resp = client.post(f"{FB_API_BASE}/{page_id}/feed", data=multi_payload)
+
+                # ── URL-based upload (fallback: AI-generated images) ──────
+                elif media_urls and len(media_urls) == 1:
                     image_url = media_urls[0]
                     if "localhost" in image_url or "127.0.0.1" in image_url:
                         logger.error("Facebook publish blocked: localhost image URL %s", image_url)
@@ -242,7 +268,6 @@ class FacebookProvider(BaseProvider):
                     logger.info("Facebook photo post to page %s with image: %s", page_id, image_url)
                     resp = client.post(f"{FB_API_BASE}/{page_id}/photos", data=payload)
                 elif media_urls and len(media_urls) > 1:
-                    # Multi-photo post: upload each, then combine
                     photo_ids = []
                     for url in media_urls:
                         upload_resp = client.post(f"{FB_API_BASE}/{page_id}/photos", data={
@@ -252,7 +277,6 @@ class FacebookProvider(BaseProvider):
                         })
                         upload_resp.raise_for_status()
                         photo_ids.append(upload_resp.json()["id"])
-                    # Create multi-photo post
                     multi_payload = {"message": content, "access_token": page_token}
                     for i, pid in enumerate(photo_ids):
                         multi_payload[f"attached_media[{i}]"] = f'{{"media_fbid":"{pid}"}}'
