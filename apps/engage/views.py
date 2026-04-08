@@ -67,9 +67,18 @@ def trigger_engage(request):
         result = run_engage_cycle(request.user)
         total = result["fetched"] + result["replies_generated"]
         if total > 0:
-            msg = f"Found {result['fetched']} new interactions, generated {result['replies_generated']} replies."
+            parts = []
+            if result["fetched"]:
+                parts.append(f"{result['fetched']} new interaction{'s' if result['fetched'] != 1 else ''}")
+            if result["analyzed"]:
+                parts.append(f"{result['analyzed']} analyzed")
+            if result["replies_generated"]:
+                parts.append(f"{result['replies_generated']} repl{'ies' if result['replies_generated'] != 1 else 'y'} generated")
+            if result["auto_sent"]:
+                parts.append(f"{result['auto_sent']} auto-sent")
+            msg = ", ".join(parts) + "."
         else:
-            msg = "No new interactions found."
+            msg = "No new comments found on your recent posts. Comments are checked on posts from the last 14 days."
         return HttpResponse(
             f'<div class="text-sm text-green-600 dark:text-green-400 px-4 py-2">{msg}</div>',
         )
@@ -124,18 +133,30 @@ def send_reply(request, pk):
 
         if interaction.interaction_type in ("comment", "reply"):
             # Reply to comment via provider
-            provider.reply_to_comment(
+            result = provider.reply_to_comment(
                 access_token=token,
                 comment_id=interaction.platform_interaction_id,
                 message=reply_text,
             )
+            if not result.get("success"):
+                error_msg = result.get("error", "Unknown error")[:200]
+                return HttpResponse(
+                    f'<div class="text-sm text-red-600 px-4 py-2">Reply failed: {error_msg}</div>',
+                    status=500,
+                )
         elif interaction.interaction_type == "dm":
             # Send DM via provider
-            provider.send_message(
+            result = provider.send_message(
                 access_token=token,
                 recipient_id=interaction.author_username or interaction.author_name,
                 message=reply_text,
             )
+            if isinstance(result, dict) and not result.get("success", True):
+                error_msg = result.get("error", "Unknown error")[:200]
+                return HttpResponse(
+                    f'<div class="text-sm text-red-600 px-4 py-2">DM failed: {error_msg}</div>',
+                    status=500,
+                )
         else:
             return HttpResponse(
                 '<div class="text-sm text-amber-600 px-4 py-2">Reply not supported for this interaction type.</div>',

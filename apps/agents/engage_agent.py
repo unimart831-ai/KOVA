@@ -96,6 +96,10 @@ def fetch_interactions(user):
     accounts = SocialAccount.objects.filter(user=user, is_active=True)
     total_new = 0
 
+    if not accounts.exists():
+        logger.info("Engage fetch: %s has no active social accounts", user.email)
+        return 0
+
     for account in accounts:
         provider = get_provider(account.platform)
         if not provider:
@@ -110,6 +114,8 @@ def fetch_interactions(user):
 
     if total_new > 0:
         logger.info("Fetched %d new interactions for %s", total_new, user.email)
+    else:
+        logger.info("Engage fetch: 0 new interactions for %s (all already tracked or no comments)", user.email)
 
     return total_new
 
@@ -124,8 +130,15 @@ def _fetch_post_comments(user, account, provider):
         social_account=account,
         status=Post.Status.PUBLISHED,
         platform_post_id__gt="",
-        published_at__gte=timezone.now() - timedelta(days=7),
-    ).order_by("-published_at")[:10]
+        published_at__gte=timezone.now() - timedelta(days=14),
+    ).order_by("-published_at")[:15]
+
+    if not recent_posts.exists():
+        logger.debug(
+            "Engage fetch: no recent published posts for %s on %s (%s)",
+            user.email, account.platform, account.username,
+        )
+        return 0
 
     # For Facebook/Instagram, use page token instead of user token
     token = account.access_token
@@ -139,6 +152,10 @@ def _fetch_post_comments(user, account, provider):
             comments = provider.get_comments(
                 access_token=token,
                 post_id=post.platform_post_id,
+            )
+            logger.debug(
+                "Engage fetch: %d comments on post %s (%s)",
+                len(comments), post.platform_post_id, account.platform,
             )
 
             for comment in comments:
