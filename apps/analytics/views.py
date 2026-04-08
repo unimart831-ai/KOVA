@@ -168,14 +168,14 @@ def competitor_detail(request, pk):
     analyses = competitor.analyses.order_by("-created_at")[:5]
     latest_analysis = analyses.first()
 
-    insights = CompetitorInsight.objects.filter(
+    insight_base = CompetitorInsight.objects.filter(
         user=request.user,
         competitor=competitor,
         is_dismissed=False,
-    ).order_by("-created_at")[:15]
+    ).order_by("-created_at")
 
-    active_insights = insights.filter(is_acted_on=False)
-    acted_insights = insights.filter(is_acted_on=True)
+    active_insights = insight_base.filter(is_acted_on=False)[:15]
+    acted_insights = insight_base.filter(is_acted_on=True)[:15]
 
     return render(request, "analytics/competitor_detail.html", {
         "page_title": f"Intel: {competitor.name}",

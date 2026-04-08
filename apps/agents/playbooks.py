@@ -411,22 +411,80 @@ def get_playbook_intelligence(user) -> str:
     return "\n".join(parts)
 
 
-def get_seed_suggestions(user) -> list[str]:
+def get_seed_suggestions(user) -> list[dict]:
     """
-    Return a list of content seed suggestions based on the user's industry playbook.
-    Used on the content seed page to help new users get started immediately.
+    Return dynamic content suggestions from AI agents, competitor insights,
+    and static playbooks (fallback).
+
+    Each suggestion is a dict: {"text": str, "source": "trend"|"competitor"|"playbook"}
     """
+    suggestions = []
+
     try:
         profile = user.profile
     except Exception:
         return []
 
-    playbook = get_playbook_for_industry(
-        industry=profile.industry,
-        company_name=profile.company_name,
-        brand_voice=profile.brand_voice,
-    )
-    if not playbook:
-        return []
+    # 1. Research Agent — latest trend discoveries
+    try:
+        from apps.agents.models import AgentAction
 
-    return playbook.get("seed_suggestions", [])
+        latest_research = (
+            AgentAction.objects.filter(
+                user=user,
+                agent_type="research",
+                action_type="discover_trends",
+                status="completed",
+            )
+            .order_by("-created_at")
+            .values_list("output_data", flat=True)
+            .first()
+        )
+
+        if latest_research and isinstance(latest_research, dict):
+            for topic in latest_research.get("trending_topics", [])[:4]:
+                angle = topic.get("suggested_angle", "")
+                if angle:
+                    suggestions.append({"text": angle, "source": "trend"})
+
+            for brief in latest_research.get("opportunity_briefs", [])[:2]:
+                title = brief.get("title", "")
+                if title:
+                    suggestions.append({"text": title, "source": "trend"})
+    except Exception:
+        pass
+
+    # 2. Competitor insights — unacted content gap ideas
+    try:
+        from apps.analytics.models import CompetitorInsight
+
+        gap_ideas = (
+            CompetitorInsight.objects.filter(
+                user=user,
+                is_acted_on=False,
+                is_dismissed=False,
+                suggested_content_idea__isnull=False,
+            )
+            .exclude(suggested_content_idea="")
+            .order_by("-created_at")
+            .values_list("suggested_content_idea", flat=True)[:3]
+        )
+
+        for idea in gap_ideas:
+            suggestions.append({"text": idea, "source": "competitor"})
+    except Exception:
+        pass
+
+    # 3. Fallback — static industry playbook if we have fewer than 4 dynamic suggestions
+    if len(suggestions) < 4:
+        playbook = get_playbook_for_industry(
+            industry=profile.industry,
+            company_name=profile.company_name,
+            brand_voice=profile.brand_voice,
+        )
+        if playbook:
+            remaining = 7 - len(suggestions)
+            for s in playbook.get("seed_suggestions", [])[:remaining]:
+                suggestions.append({"text": s, "source": "playbook"})
+
+    return suggestions
