@@ -157,6 +157,8 @@ def _fetch_post_comments(user, account, provider):
                 "Engage fetch: %d comments on post %s (%s)",
                 len(comments), post.platform_post_id, account.platform,
             )
+            # Successful API call — clear any previous error counter
+            account.clear_errors()
 
             for comment in comments:
                 ext_id = str(comment.get("id", ""))
@@ -183,12 +185,15 @@ def _fetch_post_comments(user, account, provider):
                 new_count += 1
 
         except PlatformAuthError as e:
-            # Token expired or permissions missing — mark account and stop all retries
+            # Token expired or permissions missing — record error (3-strike deactivation)
             logger.error(
-                "Auth error for %s account %s — marking for reauth: %s",
-                account.platform, account.id, e,
+                "Auth error for %s account %s — strike %d: %s",
+                account.platform, account.id,
+                (account.metadata or {}).get("consecutive_errors", 0) + 1, e,
             )
             account.mark_error(str(e))
+            if not account.is_active:
+                _notify_account_deactivated(user, account, str(e))
             break  # stop trying other posts on this account
 
         except Exception as e:
@@ -740,3 +745,22 @@ def run_engage_cycle(user):
         "replies_generated": replies,
         "auto_sent": auto_sent,
     }
+
+
+def _notify_account_deactivated(user, account, error_detail):
+    """Send a notification when an account is deactivated after repeated failures."""
+    try:
+        from apps.notifications.models import Notification
+
+        platform_name = account.get_platform_display()
+        Notification.create_for_user(
+            user=user,
+            notification_type=Notification.NotificationType.SYSTEM,
+            message=(
+                f"🔴 Your {platform_name} account (@{account.username}) was deactivated "
+                f"after repeated API errors. Please reconnect it in Platforms to restore "
+                f"publishing and engagement. Error: {error_detail[:200]}"
+            ),
+        )
+    except Exception:
+        logger.warning("Could not notify user about deactivated account %s", account)

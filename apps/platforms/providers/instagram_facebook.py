@@ -202,9 +202,34 @@ class FacebookProvider(BaseProvider):
         )
 
     def refresh_access_token(self, refresh_token: str) -> dict:
-        raise NotImplementedError(
-            "Facebook long-lived tokens last ~60 days. Re-authentication required after expiry."
-        )
+        """
+        Extend a Facebook long-lived token for another ~60 days.
+
+        Facebook doesn't use refresh tokens. Instead, you exchange a still-valid
+        long-lived user token for a new one via the same fb_exchange_token grant.
+        Must be called BEFORE the token expires.
+
+        The ``refresh_token`` parameter is actually the current access_token
+        (stored there by the refresh task for FB accounts).
+        """
+        current_token = refresh_token  # for FB, the task passes access_token here
+        if not current_token:
+            raise ValueError("No access token to extend")
+
+        with httpx.Client(timeout=HTTP_TIMEOUT) as client:
+            resp = client.get(FB_TOKEN_URL, params={
+                "grant_type": "fb_exchange_token",
+                "client_id": self.app_id,
+                "client_secret": self.app_secret,
+                "fb_exchange_token": current_token,
+            })
+            resp.raise_for_status()
+            data = resp.json()
+
+        return {
+            "access_token": data["access_token"],
+            "expires_in": data.get("expires_in", 5184000),  # default 60 days
+        }
 
     # ── Publishing ───────────────────────────────────────────────────────────
 

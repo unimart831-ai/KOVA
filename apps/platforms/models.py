@@ -78,11 +78,37 @@ class SocialAccount(models.Model):
         return not self.is_active or (self.is_token_expired and not self.refresh_token)
 
     def mark_error(self, error_message):
+        """
+        Record an API error. Deactivates on the 3rd consecutive error
+        to avoid killing accounts on transient failures.
+        """
+        meta = self.metadata or {}
+        consecutive = meta.get("consecutive_errors", 0) + 1
+        meta["consecutive_errors"] = consecutive
+        self.metadata = meta
         self.last_error = str(error_message)[:1000]
-        self.is_active = False
-        self.save(update_fields=["last_error", "is_active", "updated_at"])
+        fields = ["last_error", "metadata", "updated_at"]
+
+        if consecutive >= 3:
+            # 3 strikes — deactivate and notify
+            self.is_active = False
+            fields.append("is_active")
+
+        self.save(update_fields=fields)
+
+    def clear_errors(self):
+        """Reset error counter (call after any successful API call)."""
+        meta = self.metadata or {}
+        if meta.get("consecutive_errors"):
+            meta["consecutive_errors"] = 0
+            self.metadata = meta
+            self.last_error = ""
+            self.save(update_fields=["last_error", "metadata", "updated_at"])
 
     def mark_synced(self):
         self.last_synced_at = timezone.now()
         self.last_error = ""
-        self.save(update_fields=["last_synced_at", "last_error", "updated_at"])
+        meta = self.metadata or {}
+        meta["consecutive_errors"] = 0
+        self.metadata = meta
+        self.save(update_fields=["last_synced_at", "last_error", "metadata", "updated_at"])
