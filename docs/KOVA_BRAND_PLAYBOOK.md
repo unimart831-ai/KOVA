@@ -38,7 +38,7 @@
 
 **One-liner**: The AI team every African business deserves.
 
-**Category**: Autonomous Social Intelligence (we created this category — own it)
+**Category**: Business Intelligence Operating System (we created this category — own it)
 
 **What we are NOT**:
 - Not a scheduling tool (Buffer, Later)
@@ -71,7 +71,7 @@ If Kova Agent were a person, they'd be:
 1. **Every African business deserves an AI team** — not just the funded ones
 2. **Your time is your most valuable asset** — stop trading it for repetitive tasks
 3. **AI should work FOR you, not replace you** — you're the strategist, AI is the team
-4. **Price should never be the barrier** — KES 99/month proves technology can be accessible
+4. **Price should never be the barrier** — KES 299/month proves technology can be accessible
 5. **The best tool is the one that gets smarter** — not the one with the most features
 6. **Show, don't tell** — we ship publicly, share metrics, and prove claims with evidence
 7. **Africa doesn't need adapted tools, Africa needs built-for-Africa tools**
@@ -104,7 +104,7 @@ If Kova Agent were a person, they'd be:
 > "You didn't start your business to spend 3 hours a day writing captions. You started it because you saw a problem worth solving. Let the AI handle the captions. You handle the vision."
 
 **On competition:**
-> "Hootsuite gives you a dashboard. Buffer gives you a timer. Jasper gives you a writer. Kova gives you all six — Research, Create, Predict, Schedule, Engage, Learn — in one autonomous loop. For $1/month."
+> "Hootsuite gives you a dashboard. Buffer gives you a timer. Jasper gives you a writer. Kova gives you all six — Research, Create, Predict, Schedule, Engage, Learn — in one autonomous loop. For $2/month."
 
 **On Africa:**
 > "When we say 'built for Africa,' we don't mean 'adapted for Africa.' We mean: built in Nairobi, tested with Kenyan businesses, priced in KES, paid via M-Pesa, optimized for mobile, and designed for the entrepreneur running 5 things at once."
@@ -116,7 +116,7 @@ If Kova Agent were a person, they'd be:
 
 | Rule | Example |
 |------|---------|
-| Use numbers for impact | "6 agents, 9 platforms, $1/month" not "multiple agents, many platforms, affordable" |
+| Use numbers for impact | "6 agents, 9 platforms, $2/month" not "multiple agents, many platforms, affordable" |
 | Lead with the insight, not the feature | "After 30 days, Kova knows your audience better than you do" not "We have a Content DNA feature" |
 | Concrete > abstract | "Published 147 posts last week across 9 platforms" not "We help businesses scale their social presence" |
 | Short sentences for punchy claims | "Not a scheduler. Not a dashboard. An AI team." |
@@ -188,9 +188,9 @@ Never use these — they're generic, overused, or off-brand:
 
 **About section (2,000 chars max):**
 ```
-Kova Agent is Africa's first Autonomous Social Intelligence platform.
+Kova Agent is Africa's first Business Intelligence Operating System.
 
-6 AI agents work 24/7 as your social media team — researching trends, creating platform-native content, predicting engagement, scheduling at peak times, responding to your audience, and learning from every post.
+6 AI agents work 24/7 as your digital marketing team — researching trends, creating platform-native content, predicting engagement, scheduling at peak times, responding to your audience, and learning from every post.
 
 THE PROBLEM:
 44 million African MSMEs need social media to grow. But a social media manager costs $500+/month. International tools like Hootsuite cost $99/month and don't accept M-Pesa. Small businesses are left choosing between spending hours on social media or being invisible.
@@ -202,7 +202,8 @@ Kova Agent runs your entire social media operation for less than the cost of lun
 → 9 Platforms: Facebook, Instagram, X, LinkedIn, TikTok, YouTube, Pinterest, Threads, Bluesky
 → Content DNA: Our proprietary learning system that makes every post smarter than the last
 → Daily Brief: Wake up to insights, trends, and ready-to-approve content
-→ Starting at KES 99/month ($1)
+→ Starting at KES 299/month ($2)
+→ Kova Links, Lead Capture, Email Marketing — full conversion engine
 
 We don't just schedule posts. We run the loop:
 Research → Create → Predict → Schedule → Publish → Engage → Learn → Improve
@@ -220,7 +221,7 @@ Built in Nairobi. Priced for Africa. Powered by AI.
 - Industry insights on social media + AI trends
 - Customer success stories (once live)
 - Hiring and team growth updates
-- Thought leadership on Autonomous Social Intelligence
+- Thought leadership on Business Intelligence for African businesses
 
 ---
 
@@ -237,7 +238,7 @@ Built in Nairobi. Priced for Africa. Powered by AI.
 |-------|-------|
 | **Name** | Kova Agent |
 | **Handle** | @KovaAgent (check availability, fallback: @KovaAgentHQ, @KovaAgentAI) |
-| **Bio** | 6 AI agents. 9 platforms. Starting at $1/mo. Your social media runs itself ↓ [your URL] |
+| **Bio** | 6 AI agents. 9 platforms. Starting at $2/mo. Your social media runs itself ↓ [your URL] |
 | **Location** | Nairobi, Kenya 🇰🇪 |
 | **Website** | [your production URL] |
 | **Header** | Brand banner (same concept as LinkedIn) |
@@ -277,7 +278,7 @@ Built in Nairobi. Priced for Africa. Powered by AI.
 |-------|-------|
 | **Username** | @kovaagent |
 | **Name** | Kova Agent ⚡ AI Social Media Team |
-| **Bio** | 6 AI agents run your social media 24/7 🤖 \n 9 platforms · Starting at $1/mo \n Built in Nairobi 🇰🇪 for African businesses \n ↓ Start free |
+| **Bio** | 6 AI agents run your social media 24/7 🤖 \n 9 platforms · Starting at $2/mo \n Built in Nairobi 🇰🇪 for African businesses \n ↓ Start free |
 | **Link** | [your URL] (use Linktree or direct) |
 | **Category** | Software |
 | **Contact** | Business email |
@@ -315,7 +316,7 @@ Built in Nairobi. Priced for Africa. Powered by AI.
 | **Page name** | Kova Agent |
 | **Username** | @KovaAgent |
 | **Category** | Software Company |
-| **Bio** | Your social media runs itself. 6 AI agents. 9 platforms. From KES 99/month. Built in Nairobi for African businesses. |
+| **Bio** | Your business intelligence runs itself. 6 AI agents. 9 platforms. From KES 299/month. Built in Nairobi for African businesses. |
 | **About** | (Use same About text as LinkedIn, adapted for length) |
 | **Website** | [your production URL] |
 | **Location** | Nairobi, Kenya |
@@ -354,7 +355,7 @@ Built in Nairobi. Priced for Africa. Powered by AI.
 |-------|-------|
 | **Username** | @kovaagent |
 | **Name** | Kova Agent |
-| **Bio** | AI runs your socials for $1/mo 🤖 \n Built in Nairobi 🇰🇪 \n 6 agents · 9 platforms |
+| **Bio** | AI runs your socials for $2/mo 🤖 \n Built in Nairobi 🇰🇪 \n 6 agents · 9 platforms |
 | **Link** | [your URL] |
 | **Email** | Business email |
 
@@ -405,7 +406,7 @@ Built in Nairobi. Priced for Africa. Powered by AI.
 ```
 Kova Agent — Your social media runs itself. You stay in control.
 
-We're building Africa's first Autonomous Social Intelligence platform: 6 AI agents that research trends, create content, predict engagement, schedule posts, respond to your audience, and learn from every post.
+We're building Africa's first Business Intelligence Operating System: 6 AI agents that research trends, create content, predict engagement, schedule posts, respond to your audience, and learn from every post.
 
 On this channel:
 → Product walkthroughs and tutorials
@@ -413,7 +414,7 @@ On this channel:
 → Social media strategy breakdowns
 → The build-in-public journey
 
-9 platforms. Starting at KES 99/month ($1). M-Pesa payments.
+9 platforms. Starting at KES 299/month ($2). M-Pesa payments.
 Built for Africa, by Africa.
 
 🔗 Try Kova: [your URL]
@@ -455,7 +456,7 @@ Built for Africa, by Africa.
 |-------|-------|
 | **Display name** | Kova Agent |
 | **Username** | @kovaagent |
-| **About** | 6 AI agents run your social media 24/7. Built in Nairobi for African businesses. Starting at $1/month. |
+| **About** | 6 AI agents run your social media 24/7. Built in Nairobi for African businesses. Starting at $2/month. |
 | **Website** | [your production URL] |
 | **Profile picture** | Logo (square) |
 | **Country** | Kenya |
@@ -505,7 +506,7 @@ Built for Africa, by Africa.
 |-------|-------|
 | **Name** | Kova Agent |
 | **Username** | @kovaagent (inherits from Instagram) |
-| **Bio** | Building the AI team every African business deserves. 6 agents. 9 platforms. $1/mo. |
+| **Bio** | Building the AI team every African business deserves. 6 agents. 9 platforms. $2/mo. |
 | **Link** | [your production URL] |
 | **Profile picture** | Same as Instagram |
 
@@ -548,7 +549,7 @@ Built for Africa, by Africa.
 |-------|-------|
 | **Display name** | Kova Agent |
 | **Handle** | @kovaagent.bsky.social (or @kovaagent.com if custom domain) |
-| **Bio** | 6 AI agents. 9 platforms. $1/mo. Building autonomous social intelligence in Nairobi. |
+| **Bio** | 6 AI agents. 9 platforms. $2/mo. Building business intelligence in Nairobi. |
 | **Avatar** | Logo (square) |
 | **Banner** | Brand banner |
 
@@ -737,7 +738,7 @@ Every platform interaction should follow the **R.E.A.L. framework**:
 Kova's Engage Agent should have these response patterns for its OWN accounts:
 
 **When someone asks "What is Kova?":**
-> "6 AI agents that run your social media 24/7 — research trends, create content, predict engagement, schedule and publish, engage with your audience, and learn what works. Starting at $1/month. Built in Nairobi for African businesses. Check the link in bio! 🔥"
+> "6 AI agents that run your social media 24/7 — research trends, create content, predict engagement, schedule and publish, engage with your audience, and learn what works. Starting at $2/month. Built in Nairobi for African businesses. Check the link in bio! 🔥"
 
 **When someone says "This is like [competitor]":**
 > "[Competitor] does [one thing]. Kova runs the entire loop: Research → Create → Predict → Schedule → Publish → Engage → Learn. That's the difference between a tool and an AI team. Happy to show you a demo!"
@@ -749,7 +750,7 @@ Kova's Engage Agent should have these response patterns for its OWN accounts:
 > "ChatGPT writes when you ask. Kova works when you sleep. 6 agents running 24/7 — finding trends, creating platform-specific content, scheduling at optimal times, responding to comments, and learning from actual engagement data. It's a team with memory, not a chatbot."
 
 **When someone asks about pricing:**
-> "Starting at KES 99/month ($1). Kazi plan at KES 500 ($5) gets you 3 platforms, 50 posts/month, and all the AI agents. No credit card needed — M-Pesa works. 14-day free trial too."
+> "Starting at KES 299/month ($2). Kazi plan at KES 999 ($7) gets you 3 platforms, 60 posts/month, and engagement + competitor tracking. No credit card needed — M-Pesa works. 14-day free trial too."
 
 **When someone leaves positive feedback:**
 > "This made our day! 🙏 Appreciate the support. Building this for businesses exactly like yours — let us know how we can make it even better."
@@ -796,7 +797,7 @@ We're builders who ship, not talkers who announce.
 
 ```json
 [
-  "Your social media manager charges $500/month and still asks what to post on Monday. Kova's 6 AI agents already have your week planned before you finish your morning chai. Starting at KES 99/month. The math is simple.",
+  "Your social media manager charges $500/month and still asks what to post on Monday. Kova's 6 AI agents already have your week planned before you finish your morning chai. Starting at KES 299/month. The math is simple.",
   "Shipped this week: Full chunked media upload for Twitter/X. Images and video. INIT → APPEND → FINALIZE → async processing. Your AI-created content now publishes with media automatically. One of 9 platforms, more coming.",
   "44 million African MSMEs. Zero affordable AI social media tools. Until now. We built Kova Agent in Nairobi because the problem is here, the talent is here, and the market is here. Not adapting a Silicon Valley product — building what Africa actually needs.",
   "Stop calling it a social media tool. It's not. Buffer is a timer. Hootsuite is a dashboard. Kova is 6 AI agents running an autonomous loop: Research → Create → Predict → Schedule → Publish → Engage → Learn. Every cycle makes the next one smarter.",
@@ -827,11 +828,14 @@ For Kova's own accounts, use **English** as default. When creating content targe
 ### Key Offerings (Paste into Kova Onboarding → Step 1 → Key Products/Services)
 
 ```
-Autonomous Social Intelligence Platform
+Business Intelligence Operating System
 6 AI Agents (Research, Create, Analyst, Adapt, Engage, Strategist)
 Content DNA Learning System
 Daily Brief Dashboard
 9-Platform Social Media Management
+Kova Links & Lead Capture
+Email Marketing & Sequences
+Smart CTAs & Revenue Attribution
 M-Pesa Native Payments
 AI-Powered Engagement Automation
 ```
@@ -855,8 +859,8 @@ Value authenticity over polish. Building side hustles while managing primary wor
 Never use: revolutionize, cutting-edge, leverage, synergy, world-class, game-changer,
 empower, seamless, unlock your potential, we're excited to announce, stay tuned.
 
-Never compare Kova to a "social media tool" — always position as Autonomous Social
-Intelligence. Never use corporate jargon, hype language, or startup buzzwords without
+Never compare Kova to a "social media tool" — always position as a Business Intelligence
+Operating System. Never use corporate jargon, hype language, or startup buzzwords without
 substance. Never punch down at small businesses or solopreneurs. Never use forced/
 performative African references. Never promise specific ROI numbers or guaranteed results.
 Never use more than 3 emojis per post. Never use hashtags as sentences.
@@ -1145,10 +1149,10 @@ Without competitors configured, Kova's Research Agent operates in a vacuum — f
 
 | Plan | Competitor Slots | Recommendation |
 |------|-----------------|----------------|
-| **Starter (KES 99)** | Not available | — |
-| **Kazi (KES 500)** | Up to 3 | Start here |
-| **Pro (KES 2,500)** | Up to 5 | Ideal for most businesses |
-| **Business (KES 10,000)** | Up to 10 | For competitive industries |
+| **Starter (KES 299)** | Not available | — |
+| **Kazi (KES 999)** | Up to 3 | Start here |
+| **Pro (KES 1,999)** | Up to 5 | Ideal for most businesses |
+| **Agency (KES 2,999)** | Up to 10 | For competitive industries |
 
 > For Kova's own brand, track 5 competitors (we're on the Pro tier equivalent).
 
@@ -1180,7 +1184,7 @@ Here are the competitors to add for Kova's brand account in the Competitor Intel
 
 | | **Kova** | **Buffer** | **Hootsuite** | **Later** | **Jasper AI** | **Sprout Social** |
 |---|---|---|---|---|---|---|
-| **Category** | Autonomous Social Intelligence | Social Scheduler | Social Media Management | Visual Social Scheduler | AI Content Generation | Enterprise Social Suite |
+| **Category** | Business Intelligence Operating System | Social Scheduler | Social Media Management | Visual Social Scheduler | AI Content Generation | Enterprise Social Suite |
 | **Entry Price** | $2/mo (KES 299) | Free (3 channels) | $199/mo/user | $18.75/mo | $59/mo/seat | $79/mo/seat |
 | **AI Content Creation** | Autonomous (6 agents) | AI Assistant (manual trigger) | OwlyGPT (manual) | AI captions (5 credits/mo free) | Full AI writing platform | Enhance Post by AI Assist |
 | **Auto-Scheduling** | AI-optimized per platform | Best time suggestions | Recommended times | Smart Scheduling (Growth+) | None | Optimal send times |
@@ -1455,7 +1459,7 @@ When the Research Agent surfaces a competitor insight, here's how to respond in 
 > Make a "We shipped this [X weeks/months] ago" post. Build-in-public receipt. Don't name them — let the audience connect the dots.
 
 **Competitor raises prices:**
-> Post a pricing comparison. "$1/month. That's it. That's the post."
+> Post a pricing comparison. "$2/month. That's it. That's the post."
 
 **Competitor gets negative press:**
 > Don't pile on. Instead, post about Kova's values — transparency, fair pricing, building for Africa. Let the contrast speak.
@@ -1516,12 +1520,12 @@ Avoid: Generic "Top 10 social media tips" angles. Find unique angles.
 
 ```
 You are writing for Kova Agent's own brand accounts. Kova is Africa's first
-Autonomous Social Intelligence platform.
+Business Intelligence Operating System.
 
 Mandatory rules:
 - NEVER use: revolutionize, cutting-edge, leverage, synergy, world-class, game-changer, empower, seamless
 - ALWAYS lead with insight or outcome, never with feature name
-- Use specific numbers: "6 agents, 9 platforms, $1/month" not "multiple agents"
+- Use specific numbers: "6 agents, 9 platforms, $2/month" not "multiple agents"
 - Short sentences for punchy claims. Active voice always
 - Swahili/Sheng drops only when natural: "Kazi mode 🔥" is good, "Karibu to our platform" is cringe
 - Max 3 emojis per post. Max 5 hashtags per post
@@ -1589,7 +1593,7 @@ Response rules:
 Response templates for Kova's own accounts:
 - Positive feedback → genuine thanks + relevant follow-up ("Thanks! Have you tried [feature]?")
 - Feature suggestions → appreciation + transparency ("Great idea! Adding to our roadmap 🔥")
-- "What is Kova?" → concise pitch (6 agents, 9 platforms, $1/month, link)
+- "What is Kova?" → concise pitch (6 agents, 9 platforms, $2/month, link)
 
 Tone: warm, brief, genuine. Never corporate. Never salesy in replies.
 Max response length: 2-3 sentences.
@@ -1602,7 +1606,7 @@ Strategic priorities for Kova Agent (April-June 2026):
 1. Build brand awareness — we're new, most people don't know we exist
 2. Grow to 10,000 total followers across all platforms by Month 3
 3. Drive signups through social → website funnel
-4. Establish "Autonomous Social Intelligence" as a category in people's minds
+4. Establish "Business Intelligence Operating System" as a category in people's minds
 5. Build-in-public narrative — show real metrics, real progress, real honesty
 
 Weekly strategy brief should include:
@@ -1785,7 +1789,7 @@ Each item in a queue has:
 
 | Field | Purpose | Example |
 |-------|---------|---------|
-| **Idea** (required) | The core topic, angle, or content direction | "Compare Kova's pricing ($1/mo) to a freelance social media manager ($500/mo) — break down what each gives you" |
+| **Idea** (required) | The core topic, angle, or content direction | "Compare Kova's pricing ($2/mo) to a freelance social media manager ($500/mo) — break down what each gives you" |
 | **Notes** (optional) | Extra context/instructions the AI uses | "Use actual KES numbers. Mention M-Pesa. Make it a carousel for IG and a thread for X. Tone: confident, not arrogant." |
 | **Target Platforms** (optional) | Restrict to specific platforms | `["instagram", "twitter", "linkedin"]` — if empty, generates for ALL connected platforms |
 

@@ -333,10 +333,10 @@ Posts per week: [number]
 
 | Plan | Limit | Recommendation |
 |------|-------|---------------|
-| Starter (KES 99) | 10 posts/month | 2-3 per week |
-| Growth (KES 500) | 50 posts/month | 10-12 per week |
-| Pro (KES 1,500) | Unlimited | 12-15 per week |
-| Agency (KES 3,500) | Unlimited | Custom per client |
+| Starter (KES 299) | 15 posts/month | 3-4 per week |
+| Growth (KES 999) | 60 posts/month | 14-15 per week |
+| Pro (KES 1,999) | 150 posts/month | 12-15 per week |
+| Agency (KES 2,999) | Unlimited | Custom per client |
 
 ### Preferred Posting Times
 

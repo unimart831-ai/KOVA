@@ -1156,7 +1156,7 @@ Weekend: User-generated content repost
 
 ## Kova Plan Recommendation for Unimart
 
-### Now: Growth Plan (Kazi) — KES 500/month ($5)
+### Now: Growth Plan (Kazi) — KES 999/month ($7)
 
 | Feature | Why Unimart Needs It |
 |---------|---------------------|
@@ -1168,9 +1168,9 @@ Weekend: User-generated content repost
 | AI Image Generation | Product and brand visuals |
 | Email brief | Morning strategy delivered to your inbox |
 
-**Monthly cost: KES 500 ($5).** Less than one campus lunch run.
+**Monthly cost: KES 999 ($7).** Less than one campus lunch run.
 
-### When Expanding (3+ Campuses): Pro Plan (Biashara) — KES 1,500/month ($15)
+### When Expanding (3+ Campuses): Pro Plan (Biashara) — KES 1,999/month ($14)
 
 | Feature | Why Unimart Needs It |
 |---------|---------------------|
@@ -1182,7 +1182,7 @@ Weekend: User-generated content repost
 
 **The Strategist Agent is the game-changer.** It proactively creates content seeds based on trends, performance data, and marketplace events — without you submitting ideas.
 
-### When Scaling (10+ Campuses): Agency Plan (Wakala) — KES 3,500/month ($29)
+### When Scaling (10+ Campuses): Agency Plan (Wakala) — KES 2,999/month ($21)
 
 | Feature | Why Unimart Needs It |
 |---------|---------------------|
@@ -1361,7 +1361,7 @@ WEEKLY:    Submit 5-7 seeds → Review performance → Check superfan list
 MONTHLY:   Content DNA review → Adjust mix → Plan next month's campaigns
 SEMESTER:  Pre-build 20+ seeds for academic calendar moments
 
-YOUR PLAN:  Growth (KES 500/mo) → Pro at 3+ campuses → Agency at 10+ campuses
+YOUR PLAN:  Growth (KES 999/mo) → Pro at 3+ campuses → Agency at 10+ campuses
 PLATFORMS:  Twitter/X + Instagram + TikTok + LinkedIn
 AGENTS:     All 6 working 24/7
 

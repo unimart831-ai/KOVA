@@ -543,10 +543,10 @@ Line chart over 30 days:
 
 | Plan | Users | Revenue/mo (KES) | Revenue/mo (USD) | % of MRR |
 |------|-------|------------------|-------------------|----------|
-| Starter (KES 99) | [count] | [amount] | [amount] | [%] |
-| Growth (KES 500) | [count] | [amount] | [amount] | [%] |
-| Pro (KES 1,500) | [count] | [amount] | [amount] | [%] |
-| Agency (KES 3,500) | [count] | [amount] | [amount] | [%] |
+| Starter (KES 299) | [count] | [amount] | [amount] | [%] |
+| Growth (KES 999) | [count] | [amount] | [amount] | [%] |
+| Pro (KES 1,999) | [count] | [amount] | [amount] | [%] |
+| Agency (KES 2,999) | [count] | [amount] | [amount] | [%] |
 | **Trial** | [count] | 0 | 0 | — |
 | **Free/None** | [count] | 0 | 0 | — |
 | **TOTAL** | [count] | [amount] | [amount] | 100% |
@@ -685,7 +685,7 @@ Every significant event in one chronological stream:
 | Time | Category | User | Event | Details |
 |------|----------|------|-------|---------|
 | 2m ago | Agent | user@a.com | Create Agent: generated 3 posts | Seed: "Launch announcement" |
-| 5m ago | Billing | user@b.com | M-Pesa payment completed | KES 500, Growth plan |
+| 5m ago | Billing | user@b.com | M-Pesa payment completed | KES 999, Growth plan |
 | 8m ago | Content | user@a.com | Post published to Twitter | Post ID, URL |
 | 12m ago | Auth | new@user.com | New user registered | Via email |
 | 15m ago | Platform | user@c.com | Facebook token refreshed | Expires in 60d |

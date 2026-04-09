@@ -53,10 +53,10 @@ User clicks "Subscribe" on pricing page
 
 | Plan Tier (code) | Display Name | Price (KES/mo) | Price (USD/mo) | Trial |
 |---|---|---|---|---|
-| `starter` | Jipange / Starter | KES 99 | $1 | 14 days |
-| `growth` | Kazi / Growth | KES 500 | $5 | 14 days |
-| `pro` | Biashara / Pro | KES 1,500 | $15 | 14 days |
-| `agency` | Wakala / Agency | KES 3,500 | $29 | 14 days |
+| `starter` | Jipange / Starter | KES 299 | $2 | 14 days |
+| `growth` | Kazi / Growth | KES 999 | $7 | 14 days |
+| `pro` | Biashara / Pro | KES 1,999 | $14 | 14 days |
+| `agency` | Wakala / Agency | KES 2,999 | $21 | 14 days |
 
 ---
 
@@ -184,10 +184,10 @@ Copy the Price ID → save as `STRIPE_PRICE_AGENCY`
 After creating all 4 products, you should have **4 Price IDs**:
 
 ```
-STRIPE_PRICE_STARTER = price_1Abc...  (KES 99 or $1/mo)
-STRIPE_PRICE_GROWTH  = price_1Def...  (KES 500 or $5/mo)
-STRIPE_PRICE_PRO     = price_1Ghi...  (KES 1500 or $15/mo)
-STRIPE_PRICE_AGENCY  = price_1Jkl...  (KES 3500 or $29/mo)
+STRIPE_PRICE_STARTER = price_1Abc...  (KES 299 or $2/mo)
+STRIPE_PRICE_GROWTH  = price_1Def...  (KES 999 or $7/mo)
+STRIPE_PRICE_PRO     = price_1Ghi...  (KES 1999 or $14/mo)
+STRIPE_PRICE_AGENCY  = price_1Jkl...  (KES 2999 or $21/mo)
 ```
 
 ---
@@ -390,10 +390,10 @@ And in `apps/billing/services.py`, they map to plan tiers:
 
 ```python
 PLAN_PRICE_MAP = {
-    "starter": settings.STRIPE_PRICE_STARTER,   # → KES 99/mo
-    "growth":  settings.STRIPE_PRICE_GROWTH,     # → KES 500/mo
-    "pro":     settings.STRIPE_PRICE_PRO,        # → KES 1500/mo
-    "agency":  settings.STRIPE_PRICE_AGENCY,     # → KES 3500/mo
+    "starter": settings.STRIPE_PRICE_STARTER,   # → KES 299/mo
+    "growth":  settings.STRIPE_PRICE_GROWTH,     # → KES 999/mo
+    "pro":     settings.STRIPE_PRICE_PRO,        # → KES 1999/mo
+    "agency":  settings.STRIPE_PRICE_AGENCY,     # → KES 2999/mo
 }
 ```
 
@@ -514,7 +514,7 @@ STRIPE_PRICE_AGENCY=price_live_agency_price_id
 - [ ] Live webhook endpoint created with correct URL
 - [ ] Live webhook signing secret set in production environment
 - [ ] Customer Portal configured in live mode with all 4 products
-- [ ] Test a real transaction with a small amount (subscribe to Starter at KES 99)
+- [ ] Test a real transaction with a small amount (subscribe to Starter at KES 299)
 - [ ] Verify webhook events arrive and process correctly
 - [ ] Check BillingEvent records in Django admin
 - [ ] Verify plan enforcement works (connect limits, post limits)

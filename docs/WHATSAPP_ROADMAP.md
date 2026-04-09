@@ -492,10 +492,10 @@ WhatsApp charges per **conversation** (24-hour window), not per message.
 
 | Kova Plan | Monthly Price | WhatsApp Budget Allocation | Estimated Conversations |
 |-----------|--------------|---------------------------|------------------------|
-| Jipange (KES 99) | ~$0.70 | Not included | WhatsApp is Growth+ feature |
-| Kazi (KES 500) | ~$3.50 | ~$1.00 | ~20 marketing + free service |
-| Biashara (KES 1,500) | ~$10.50 | ~$3.00 | ~60 marketing + free service |
-| Wakala (KES 3,500) | ~$24.50 | ~$8.00 | ~160 marketing + free service |
+| Jipange (KES 299) | ~$2.00 | Not included | WhatsApp is Growth+ feature |
+| Kazi (KES 999) | ~$7.00 | ~$2.00 | ~40 marketing + free service |
+| Biashara (KES 1,999) | ~$14.00 | ~$4.00 | ~80 marketing + free service |
+| Wakala (KES 2,999) | ~$21.00 | ~$7.00 | ~140 marketing + free service |
 
 **Business model consideration:** WhatsApp conversations have a real marginal cost. Options:
 1. **Include a base allocation** per plan tier (above)
@@ -525,7 +525,7 @@ User-initiated conversations are free for the first 1,000/month. This means Kova
 | Meme intelligence (Kenya) | ❌ | ❌ | ❌ | ❌ | **✅ Research Agent** |
 | WhatsApp Flows + AI generation | ❌ | ❌ | ❌ | ❌ | **✅ Create Agent** |
 | AI image generation | ❌ | ❌ | ❌ | ❌ | **✅ HuggingFace FLUX** |
-| Kenya market pricing | $49+/mo | $79+/mo | Pay-per-msg | €49+/mo | **KES 500 (~$3.50)** |
+| Kenya market pricing | $49+/mo | $79+/mo | Pay-per-msg | €49+/mo | **KES 999 (~$7)** |
 
 ### The 3 Moats
 

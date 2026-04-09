@@ -190,10 +190,10 @@ response = client.chat.completions.create(
 
 | Plan | Posts/mo | AI Cost Est. | Image Cost Est. | Total AI Cost | Plan Revenue | Margin |
 |------|----------|-------------|----------------|---------------|-------------|--------|
-| **Jipange** (KES 99) | 15 | ~$0.05 | FREE (FLUX) | ~$0.05 | ~$0.70 | 93% |
-| **Kazi** (KES 500) | 60 | ~$0.25 | ~$0.18 (Nano Banana) | ~$0.43 | ~$3.50 | 88% |
-| **Biashara** (KES 1,500) | 200 | ~$0.85 | ~$0.60 (Nano Banana) | ~$1.45 | ~$10.50 | 86% |
-| **Wakala** (KES 3,500) | 500 | ~$2.50 | ~$2.50 (Nano Banana Pro) | ~$5.00 | ~$24.50 | 80% |
+| **Jipange** (KES 299) | 15 | ~$0.05 | FREE (FLUX) | ~$0.05 | ~$2.00 | 98% |
+| **Kazi** (KES 999) | 60 | ~$0.25 | ~$0.18 (Nano Banana) | ~$0.43 | ~$7.00 | 94% |
+| **Biashara** (KES 1,999) | 200 | ~$0.85 | ~$0.60 (Nano Banana) | ~$1.45 | ~$14.00 | 90% |
+| **Wakala** (KES 2,999) | 500 | ~$2.50 | ~$2.50 (Nano Banana Pro) | ~$5.00 | ~$21.00 | 76% |
 
 **Key insight:** Even with premium models (Claude Sonnet for content, Gemini Flash for reasoning, Gemini images), AI costs are **under $5/month** for the highest plan. Margins are excellent at every tier.
 
@@ -201,10 +201,10 @@ response = client.chat.completions.create(
 
 | Plan | Posts/mo | AI + Image Cost | Plan Revenue | Margin |
 |------|----------|----------------|-------------|--------|
-| **Jipange** | 15 | ~$0.02 | ~$0.70 | 97% |
-| **Kazi** | 60 | ~$0.10 | ~$3.50 | 97% |
-| **Biashara** | 200 | ~$0.35 | ~$10.50 | 97% |
-| **Wakala** | 500 | ~$1.00 | ~$24.50 | 96% |
+| **Jipange** | 15 | ~$0.02 | ~$2.00 | 99% |
+| **Kazi** | 60 | ~$0.10 | ~$7.00 | 99% |
+| **Biashara** | 200 | ~$0.35 | ~$14.00 | 98% |
+| **Wakala** | 500 | ~$1.00 | ~$21.00 | 95% |
 
 DeepSeek V3.2 across all tiers + FLUX free images = almost zero cost. Quality trade-off: content writing won't be as polished as Claude, but still GPT-5 class.
 
@@ -439,10 +439,10 @@ LLM_MODEL_FAST=deepseek/deepseek-v3.2
 
 | Plan | LLM Premium | Image Model | Quality Level |
 |------|-------------|-------------|---------------|
-| Jipange (KES 99) | Gemini 3 Flash | FLUX.1-schnell (free) | Good |
-| Kazi (KES 500) | Gemini 3 Flash | Gemini 2.5 Flash Image | Great |
-| Biashara (KES 1,500) | Claude Sonnet 4.6 | Gemini 2.5 Flash Image | Excellent |
-| Wakala (KES 3,500) | Claude Sonnet 4.6 | Gemini 3 Pro Image | Premium |
+| Jipange (KES 299) | Gemini 3 Flash | FLUX.1-schnell (free) | Good |
+| Kazi (KES 999) | Gemini 3 Flash | Gemini 2.5 Flash Image | Great |
+| Biashara (KES 1,999) | Claude Sonnet 4.6 | Gemini 2.5 Flash Image | Excellent |
+| Wakala (KES 2,999) | Claude Sonnet 4.6 | Gemini 3 Pro Image | Premium |
 
 This creates genuine value differentiation between tiers — higher plans get measurably better content and images.
 

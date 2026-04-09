@@ -1,7 +1,7 @@
 # ============================================================================
 # KOVA AGENT — DEVELOPMENT ROADMAP
 # ============================================================================
-# Autonomous Social Intelligence Platform
+# Business Intelligence Operating System
 # "Your social media runs itself. You stay in control."
 #
 # This document is the SINGLE SOURCE OF TRUTH for building Kova Agent.
@@ -42,7 +42,7 @@ Kova Agent
 "Your social media runs itself. You stay in control."
 
 ## 1.3 Category
-Autonomous Social Intelligence — a new category.
+Business Intelligence Operating System — a new category.
 NOT a social media scheduler. NOT a dashboard. NOT a content generator.
 Kova is a CREW of AI agents that operates your entire social media presence.
 

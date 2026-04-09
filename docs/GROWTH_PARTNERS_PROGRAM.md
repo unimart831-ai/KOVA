@@ -45,31 +45,31 @@ Your commission rate increases as you bring more active clients.
 
 | Active Clients | Commission Rate | Example Monthly Earning (Growth plan) |
 |---------------|----------------|---------------------------------------|
-| 1–25          | **15%**        | 25 clients × KES 500 × 15% = **KES 1,875/mo** |
-| 26–75         | **20%**        | 75 clients × KES 500 × 20% = **KES 7,500/mo** |
-| 76–150        | **25%**        | 150 clients × KES 500 × 25% = **KES 18,750/mo** |
-| 150+          | **30%**        | 200 clients × KES 500 × 30% = **KES 30,000/mo** |
+| 1–25          | **15%**        | 25 clients × KES 999 × 15% = **KES 3,746/mo** |
+| 26–75         | **20%**        | 75 clients × KES 999 × 20% = **KES 14,985/mo** |
+| 76–150        | **25%**        | 150 clients × KES 999 × 25% = **KES 37,463/mo** |
+| 150+          | **30%**        | 200 clients × KES 999 × 30% = **KES 59,940/mo** |
 
 ### Key Rules
 
 - **"Active" means paid for 2+ consecutive months.** A client who signs up but cancels after one month doesn't count toward your tier.
 - **Commission lasts 24 months per client.** After 24 months, that client's payments no longer generate commission for you (but they still count toward your tier).
 - **Your tier is recalculated monthly** based on current active client count.
-- **Mix of plans counts.** If you refer 10 Starter (KES 99), 30 Growth (KES 500), and 5 Pro (KES 1,500) clients, commission is calculated on each plan's revenue individually.
+- **Mix of plans counts.** If you refer 10 Starter (KES 299), 30 Growth (KES 999), and 5 Pro (KES 1,999) clients, commission is calculated on each plan's revenue individually.
 
 ### Real Money Examples
 
 **Scenario A — Side Hustle Partner (6 months in)**
 - 15 active clients: 8 Starter + 5 Growth + 2 Pro
-- Monthly: (8 × 99 × 15%) + (5 × 500 × 15%) + (2 × 1,500 × 15%) = **KES 943.80/mo**
+- Monthly: (8 × 299 × 15%) + (5 × 999 × 15%) + (2 × 1,999 × 15%) = **KES 1,706/mo**
 
 **Scenario B — Dedicated Partner (12 months in)**
 - 60 active clients: 20 Starter + 30 Growth + 10 Pro
-- Monthly: (20 × 99 × 20%) + (30 × 500 × 20%) + (10 × 1,500 × 20%) = **KES 6,396/mo**
+- Monthly: (20 × 299 × 20%) + (30 × 999 × 20%) + (10 × 1,999 × 20%) = **KES 11,172/mo**
 
 **Scenario C — Growth Machine (18 months in)**
 - 200 active clients: 50 Starter + 100 Growth + 40 Pro + 10 Agency
-- Monthly: (50 × 99 × 30%) + (100 × 500 × 30%) + (40 × 1,500 × 30%) + (10 × 3,500 × 30%) = **KES 40,485/mo**
+- Monthly: (50 × 299 × 30%) + (100 × 999 × 30%) + (40 × 1,999 × 30%) + (10 × 2,999 × 30%) = **KES 67,449/mo**
 
 ---
 
@@ -185,7 +185,7 @@ Every approved partner gets access to a real-time dashboard showing:
 A: No, but we do give you a free Pro account so you can speak authentically about the product.
 
 **Q: What if my referred client upgrades their plan?**
-A: Your commission automatically adjusts to the new plan amount. If they upgrade from Starter (KES 99) to Growth (KES 500), your next month's commission is based on KES 500.
+A: Your commission automatically adjusts to the new plan amount. If they upgrade from Starter (KES 299) to Growth (KES 999), your next month's commission is based on KES 999.
 
 **Q: What if a client downgrades or cancels?**
 A: Commission adjusts to the new plan. If they cancel, commission stops for that client — but they still count toward your milestone progress.

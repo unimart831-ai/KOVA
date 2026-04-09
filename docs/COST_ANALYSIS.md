@@ -1,5 +1,5 @@
 # Kova Agent — Cost & Unit Economics Analysis
-> Can we charge KES 99-3500 and not burn?
+> Can we charge KES 299-2999 and not burn?
 
 **Last updated:** April 1, 2026
 **Currency:** All costs in USD unless marked KES. Exchange rate: 1 USD ≈ 142 KES
@@ -31,19 +31,19 @@
 
 | Plan | Swahili Name | KES/mo | USD/mo | Platforms | Posts/mo | Seeds/mo | Agents |
 |------|-------------|--------|--------|-----------|----------|----------|--------|
-| **Starter** | Jipange | 99 | ~$0.70 | 1 | 10 | 5 | Create, Analyst (no images, no engage, no competitors) |
-| **Growth** | Kazi | 500 | ~$3.52 | 3 | 50 | 30 | + Research, Adapt, full access |
-| **Pro** | Biashara | 1,500 | ~$10.56 | 10 | Unlimited | Unlimited | + Engage, Strategist |
-| **Agency** | Wakala | 3,500 | ~$24.65 | 25 | Unlimited | Unlimited | All 6 agents |
+| **Starter** | Jipange | 299 | ~$2.00 | 1 | 15 | 5 | Create, Analyst (no images, no engage, no competitors) |
+| **Growth** | Kazi | 999 | ~$7.00 | 3 | 60 | 30 | + Research, Adapt, full access |
+| **Pro** | Biashara | 1,999 | ~$14.00 | 10 | 150 | 60 | + Engage, Strategist |
+| **Agency** | Wakala | 2,999 | ~$21.00 | 25 | Unlimited | Unlimited | All 6 agents |
 
 ### Annual Revenue Per User (if retained 12 months)
 
 | Plan | Monthly | Annual | LTV (assume 8-month avg retention) |
 |------|---------|--------|-----|
-| Starter | $0.70 | $8.40 | $5.60 |
-| Growth | $3.52 | $42.24 | $28.16 |
-| Pro | $10.56 | $126.72 | $84.48 |
-| Agency | $24.65 | $295.80 | $197.20 |
+| Starter | $2.00 | $24.00 | $16.00 |
+| Growth | $7.00 | $84.00 | $56.00 |
+| Pro | $14.00 | $168.00 | $112.00 |
+| Agency | $21.00 | $252.00 | $168.00 |
 
 ---
 
@@ -112,10 +112,10 @@ Measured from actual Kova prompts (system prompt + user content + response):
 
 | Plan | Revenue | LLM Cost (Best) | Remaining for Everything Else |
 |------|---------|-----------------|-------------------------------|
-| **Starter** ($0.70) | $0.70 | $0.94 | **-$0.24 (LOSS)** |
-| **Growth** ($3.52) | $3.52 | $3.42 | **$0.10 (3% margin)** |
-| **Pro** ($10.56) | $10.56 | $10.95 | **-$0.39 (LOSS)** |
-| **Agency** ($24.65) | $24.65 | $21.94 | **$2.71 (11% margin)** |
+| **Starter** ($2.00) | $2.00 | $0.94 | **$1.06 (53%)** |
+| **Growth** ($7.00) | $7.00 | $3.42 | **$3.58 (51%)** |
+| **Pro** ($14.00) | $14.00 | $10.95 | **$3.05 (22%)** |
+| **Agency** ($21.00) | $21.00 | $21.94 | **-$0.94 (LOSS)** |
 
 **Claude Sonnet 4.6 as the premium model burns through all revenue.** The $15/1M output tokens is the killer — content generation is output-heavy.
 
@@ -140,10 +140,10 @@ Measured from actual Kova prompts (system prompt + user content + response):
 
 | Plan | Premium Model | Total LLM Cost | Revenue | **Margin** |
 |------|--------------|----------------|---------|-----------|
-| **Starter** | Gemini 3 Flash | **$0.20** | $0.70 | **71%** ✅ |
-| **Growth** | Gemini 3 Flash | **$0.70** | $3.52 | **80%** ✅ |
-| **Pro** | Claude Sonnet 4.6 | **$10.43** | $10.56 | **1%** ❌ |
-| **Agency** | Claude Sonnet 4.6 | **$21.38** | $24.65 | **13%** ❌ |
+| **Starter** | Gemini 3 Flash | **$0.20** | $2.00 | **90%** ✅ |
+| **Growth** | Gemini 3 Flash | **$0.70** | $7.00 | **90%** ✅ |
+| **Pro** | Claude Sonnet 4.6 | **$10.43** | $14.00 | **26%** ✅ |
+| **Agency** | Claude Sonnet 4.6 | **$21.38** | $21.00 | **-2%** ❌ |
 
 Still doesn't work for Pro/Agency with Claude. The problem is clear: **Claude Sonnet's output pricing ($15/1M) is too expensive for high-volume plans.**
 
@@ -157,7 +157,7 @@ Still doesn't work for Pro/Agency with Claude. The problem is clear: **Claude So
 | **Image (Free)** | HuggingFace FLUX.1-schnell | FREE | Starter plan |
 | **Image (Paid)** | Gemini 2.5 Flash Image | ~$0.005/img | Growth+ plans |
 
-**Why not Claude?** Claude Sonnet 4.6 is the best creative writer, but at $15/1M output tokens, it's 5x more expensive than Gemini Flash ($3/1M). Gemini 3 Flash is ranked #3 in Marketing on OpenRouter — it's 80% of Claude's quality at 20% of the cost. For a KES 99-3500 product, this is the right trade-off.
+**Why not Claude?** Claude Sonnet 4.6 is the best creative writer, but at $15/1M output tokens, it's 5x more expensive than Gemini Flash ($3/1M). Gemini 3 Flash is ranked #3 in Marketing on OpenRouter — it's 80% of Claude's quality at 20% of the cost. For a KES 299-2999 product, this is the right trade-off.
 
 **When to upgrade to Claude:** When average revenue per user exceeds $15/month (i.e., most users are on Pro/Agency), introduce Claude as a premium content tier for Pro+ users only.
 
@@ -286,12 +286,12 @@ Infrastructure scales sub-linearly. At 100+ users it becomes negligible per user
 
 This is critical for Kenya. M-Pesa STK Push via Paybill has **zero transaction fees** for the merchant. Compare:
 
-| Provider | Transaction Fee | On KES 500 payment | On KES 3,500 payment |
-|----------|----------------|--------------------|--------------------|
+| Provider | Transaction Fee | On KES 999 payment | On KES 2,999 payment |
+|----------|----------------|--------------------|-----------------------|
 | **M-Pesa (Paybill)** | **0%** | **KES 0** | **KES 0** |
-| Stripe | 2.9% + $0.30 | ~KES 56 (11%) | ~KES 144 (4%) |
-| PayPal | 3.49% + KES 50 | ~KES 68 (14%) | ~KES 172 (5%) |
-| Flutterwave | 3.5% | ~KES 18 (4%) | ~KES 123 (4%) |
+| Stripe | 2.9% + $0.30 | ~KES 72 (7%) | ~KES 130 (4%) |
+| PayPal | 3.49% + KES 50 | ~KES 85 (9%) | ~KES 155 (5%) |
+| Flutterwave | 3.5% | ~KES 35 (4%) | ~KES 105 (4%) |
 
 **M-Pesa = 100% of payment collected.** This is a significant margin advantage in Kenya.
 
@@ -342,12 +342,12 @@ This is critical for Kenya. M-Pesa STK Push via Paybill has **zero transaction f
 | **WhatsApp (future)** | $0.00 | $1.18 | $5.90 | $16.70 |
 | | | | | |
 | **Total Cost (no WhatsApp)** | **$0.50** | **$1.25** | **$3.58** | **$7.75** |
-| **Revenue** | **$0.70** | **$3.52** | **$10.56** | **$24.65** |
-| **Gross Margin** | **29%** | **64%** | **66%** | **69%** |
-| **Gross Profit/User** | **$0.20** | **$2.27** | **$6.98** | **$16.90** |
+| **Revenue** | **$2.00** | **$7.00** | **$14.00** | **$21.00** |
+| **Gross Margin** | **75%** | **82%** | **74%** | **63%** |
+| **Gross Profit/User** | **$1.50** | **$5.75** | **$10.42** | **$13.25** |
 | | | | | |
 | **Total Cost (with WhatsApp)** | **$0.50** | **$2.43** | **$9.48** | **$24.45** |
-| **Gross Margin (with WA)** | **29%** | **31%** | **10%** | **1%** |
+| **Gross Margin (with WA)** | **75%** | **65%** | **32%** | **-16%** |
 
 ### 🚨 KEY INSIGHT: WhatsApp Marketing Messages Destroy Margins
 
@@ -468,7 +468,7 @@ If you want to pay yourself a modest salary:
 | **Pro** | Gemini 3 Flash | Gemini 2.5 Flash ($0.005) | Same quality, scale-efficient |
 | **Agency** | Claude Sonnet 4.6 | Gemini 2.5 Flash ($0.005) | Premium content for premium price |
 
-**Only Agency gets Claude.** At $24.65 revenue, we can absorb the ~$19 Claude cost and still make $5+ margin. For all other plans, Gemini Flash delivers 80% of the quality at 20% of the cost.
+**Only Agency gets Claude.** At $21.00 revenue, we can absorb the ~$19 Claude cost and still make $2+ margin. For all other plans, Gemini Flash delivers 80% of the quality at 20% of the cost.
 
 ### Strategy 2: Prompt Engineering to Reduce Tokens
 
@@ -508,11 +508,11 @@ Month 12:    Claude for all plans → Requires Growth price increase to KES 800
 
 ### Scenario A: "Power User" on Starter Plan
 
-A user on KES 99 plan maxes out at 15 posts/month with complex prompts.
+A user on KES 299 plan maxes out at 15 posts/month with complex prompts.
 
 | Metric | Value |
 |--------|-------|
-| Revenue | $0.70 |
+| Revenue | $2.00 |
 | LLM cost (max) | $0.30 |
 | Image cost | $0.00 |
 | Infra (shared) | $0.30 |
@@ -614,8 +614,8 @@ LLM_MODEL_PREMIUM_PRO=anthropic/claude-sonnet-4.6
 LLM_MODEL_PREMIUM_AGENCY=anthropic/claude-sonnet-4.6
 
 # Consider price increase:
-# Pro: KES 1,500 → KES 2,000 ($14.08)
-# Agency: KES 3,500 → KES 4,500 ($31.69)
+# Pro: KES 1,999 → KES 2,499 ($17.57)
+# Agency: KES 2,999 → KES 3,999 ($28.16)
 ```
 
 ---
@@ -633,7 +633,7 @@ LLM_MODEL_PREMIUM_AGENCY=anthropic/claude-sonnet-4.6
 
 ### The Bottom Line
 
-Kova's pricing works. Even at KES 99 ($0.70), the Starter plan is profitable because:
+Kova's pricing works. Even at KES 299 ($2.00), the Starter plan is profitable because:
 1. **Gemini 3 Flash is ridiculously good for the price** — #3 Marketing rank at $3/1M output tokens
 2. **DeepSeek V3.2 is nearly free** — $0.38/1M output tokens for GPT-5 class reasoning
 3. **M-Pesa has zero transaction fees** — 100% of every KES goes to Kova
@@ -660,8 +660,8 @@ Kova's pricing works. Even at KES 99 ($0.70), the Starter plan is profitable bec
 | **Total Fixed** | **33,840** | No salaried marketers |
 
 **Marketing model:** 10% referral commission per user per month (not salaries)
-- Jipange referral: KES 9.90/user/mo
-- Kazi referral: KES 50/user/mo
+- Jipange referral: KES 29.90/user/mo
+- Kazi referral: KES 99.90/user/mo
 
 This means marketing cost scales linearly with users instead of being a fixed expense.
 
@@ -682,21 +682,21 @@ This means marketing cost scales linearly with users instead of being a fixed ex
 
 ### Per-User Economics (Max Usage, Gemini Flash + DeepSeek)
 
-**Jipange (KES 99) — Capped:**
+**Jipange (KES 299) — Capped:**
 ```
-Revenue:                       KES   99.00
+Revenue:                       KES  299.00
 - AI (5 seeds × 1 platform):  KES  -25.00  (Create Agent + Analyst only, no images)
-- Referral (10%):              KES   -9.90
-= Contribution:                KES  +64.10
+- Referral (10%):              KES  -29.90
+= Contribution:                KES +244.10
 ```
 
-**Kazi (KES 500) — Full Access:**
+**Kazi (KES 999) — Full Access:**
 ```
-Revenue:                       KES  500.00
+Revenue:                       KES  999.00
 - AI (30 seeds × 3 platforms): KES -100.00  (All agents, images, competitors)
 - Image gen (30 images):       KES  -36.00
-- Referral (10%):              KES  -50.00
-= Contribution:                KES +314.00
+- Referral (10%):              KES  -99.90
+= Contribution:                KES +763.10
 ```
 
 ### Profit/Loss Table — 50/50 User Mix (All Referred, Max Usage)
@@ -761,7 +761,7 @@ The 50/50 split is conservative. In practice, your referral marketers earn KES 5
 1. **"Max usage" is worst case.** In practice, most users use 40-60% of their limits. Real margins will be higher.
 2. **Referral assumes 100% of users are referred.** Organic signups (SEO, word-of-mouth) have zero commission — pure profit per user.
 3. **AI costs will decrease over time.** Model prices drop ~30% annually. Gemini Flash was $7.50/1M in 2025, now $3/1M.
-4. **M-Pesa's zero fees are the hero.** Stripe would eat 2.9% + 30¢ ($0.34-$0.41) per transaction — at KES 99 ($0.70) that's a 49% fee. M-Pesa: 0%.
+4. **M-Pesa's zero fees are the hero.** Stripe would eat 2.9% + 30¢ ($0.34-$0.41) per transaction — at KES 299 ($2.00) that's a 17% fee. M-Pesa: 0%.
 5. **Railway scales with usage.** At 100 users you may only need $12/mo. The $20/mo is budgeted for 300+.
 
 ---

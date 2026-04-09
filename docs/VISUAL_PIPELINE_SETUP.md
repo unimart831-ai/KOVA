@@ -169,10 +169,10 @@ Every plan now includes AI image generation. Limits are enforced per calendar mo
 
 | Plan | Monthly Price | AI Images / Month | What Happens at Limit |
 |------|--------------|-------------------|----------------------|
-| **Starter** (Jipange) | KES 99 / $1 | **5** | Posts are created without images — text only |
-| **Growth** (Kazi) | KES 500 / $5 | **50** | Same — graceful degradation |
-| **Pro** (Biashara) | KES 1,500 / $15 | **Unlimited** | No limit |
-| **Agency** (Wakala) | KES 3,500 / $29 | **Unlimited** | No limit |
+| **Starter** (Jipange) | KES 299 / $2 | **5** | Posts are created without images — text only |
+| **Growth** (Kazi) | KES 999 / $7 | **50** | Same — graceful degradation |
+| **Pro** (Biashara) | KES 1,999 / $14 | **100** | High limit |
+| **Agency** (Wakala) | KES 2,999 / $21 | **Unlimited** | No limit |
 
 ### How Enforcement Works
 

@@ -153,7 +153,7 @@ FALLBACK 4:   deepseek/deepseek-v3.2 (paid — $0.26/$0.38)
 | Plan | Starter | Growth | Pro | Agency |
 |------|---------|--------|-----|--------|
 | Monthly AI cost | $0.05 | $0.23 | $0.90 | $2.25 |
-| Revenue | $0.70 | $3.52 | $10.56 | $24.65 |
+| Revenue | $2.00 | $7.00 | $14.00 | $21.00 |
 | **AI Margin** | **92.9%** | **93.5%** | **91.5%** | **90.9%** |
 
 **Reality**: 90%+ of calls use free models. Actual AI cost is ~$0.005-$0.23/user.
@@ -177,7 +177,7 @@ FALLBACK 4:   deepseek/deepseek-v3.2 (paid — $0.26/$0.38)
 - 0.78% structured output error — excellent JSON compliance for all agent tasks
 
 **Why Gemini 3 Flash for Pro/Agency Premium:**
-- Pro ($10.56/mo) and Agency ($24.65/mo) customers pay enough to absorb higher costs
+- Pro ($14.00/mo) and Agency ($21.00/mo) customers pay enough to absorb higher costs
 - 94th percentile intelligence + 7.8% hallucination = best content quality available
 - Creates a real quality differentiation between plans that justifies the price gap
 - Multimodal support enables future image/video analysis features
@@ -188,7 +188,7 @@ FALLBACK 4:   deepseek/deepseek-v3.2 (paid — $0.26/$0.38)
 | Premium model cost | $0.02 | $0.12 | $2.20 | $5.50 |
 | Fast+WH model cost | $0.03 | $0.12 | $0.46 | $1.16 |
 | **Total AI cost** | **$0.05** | **$0.24** | **$2.66** | **$6.66** |
-| Revenue | $0.70 | $3.52 | $10.56 | $24.65 |
+| Revenue | $2.00 | $7.00 | $14.00 | $21.00 |
 | **AI Margin** | **92.9%** | **93.2%** | **74.8%** | **73.0%** |
 
 ### Phase 4: Scale Optimization (Month 6+)
@@ -215,7 +215,7 @@ FALLBACK 4:   deepseek/deepseek-v3.2 (paid — $0.26/$0.38)
 | Plan | Starter | Growth | Pro | Agency |
 |------|---------|--------|-----|--------|
 | **Total AI cost** | **$0.03** | **$0.15** | **$1.80** | **$4.50** |
-| Revenue | $0.70 | $3.52 | $10.56 | $24.65 |
+| Revenue | $2.00 | $7.00 | $14.00 | $21.00 |
 | **AI Margin** | **95.7%** | **95.7%** | **83.0%** | **81.7%** |
 
 ---
@@ -250,10 +250,10 @@ FALLBACK 4:   deepseek/deepseek-v3.2 (paid — $0.26/$0.38)
 
 | | Starter | Growth | Pro | Agency |
 |---|---------|--------|-----|--------|
-| Revenue | $0.70 | $3.52 | $10.56 | $24.65 |
+| Revenue | $2.00 | $7.00 | $14.00 | $21.00 |
 | AI Cost | $0.05 | $0.24 | $2.66 | $6.66 |
 | Infra (at 50 users) | $0.40 | $0.40 | $0.40 | $0.40 |
-| **Net Margin** | **$0.25 (35.7%)** | **$2.88 (81.8%)** | **$7.50 (71.0%)** | **$17.59 (71.4%)** |
+| **Net Margin** | **$1.55 (77.5%)** | **$6.36 (90.9%)** | **$10.94 (78.1%)** | **$13.94 (66.4%)** |
 
 At 100 users, infra per user drops to $0.20 and margins improve 5-15% across all tiers.
 

@@ -1,4 +1,4 @@
-# Kova Agent — Funding Requirements & Fund Usage Plan
+# Kova — Funding Requirements & Fund Usage Plan
 
 ### Detailed Financial Blueprint for Investors, Grants, and Partners
 
@@ -6,7 +6,7 @@
 
 ---
 
-> This document provides a transparent, line-by-line breakdown of how Kova Agent will use every shilling raised — from seed capital through Series A readiness. It covers current operating costs, funding requirements by stage, detailed allocation tables, milestone-linked disbursements, and financial controls.
+> This document provides a transparent, line-by-line breakdown of how Kova will use every shilling raised — from seed capital through Series A readiness. It covers current operating costs, funding requirements by stage, detailed allocation tables, milestone-linked disbursements, and financial controls.
 
 ---
 
@@ -39,22 +39,39 @@
 
 Before asking for a single shilling, here's what exists today — built with sweat equity and minimal capital:
 
-### Product (100% Functional)
+### Product (100% Functional — Business Intelligence Operating System)
 
 | Component | Status | Value Created |
 |-----------|--------|--------------|
-| Django web application (8 app modules) | ✅ Live | Months of engineering effort |
-| 6 AI agents (Create, Analyst, Research, Adapt, Engage, Strategist) | ✅ Running | Core product IP |
-| 9 Celery Beat scheduled tasks (24/7 automation) | ✅ Running | Autonomous operation |
-| Facebook + Instagram publishing (real posts verified) | ✅ Live | Platform integration |
-| Content DNA learning system | ✅ Live | Competitive moat |
-| M-Pesa billing (STK Push, full flow) | ✅ Integrated | Revenue infrastructure |
-| Stripe billing (international) | ✅ Integrated | Global payments |
-| 4-tier plan system with middleware enforcement | ✅ Live | Monetization ready |
-| Daily Brief generation | ✅ Live | User retention feature |
-| Competitor intelligence system | ✅ Live | Premium feature |
-| PWA (installable on mobile) | ✅ Live | Mobile distribution |
+| Django web application (16 app modules) | ✅ Live | Full BIOS platform |
+| 6 AI agents (Create, Analyst, Research, Adapt, Engage, Strategist) | ✅ Running | Core product IP — autonomous intelligence loop |
+| 12+ Celery Beat scheduled tasks (24/7 automation) | ✅ Running | Continuous autonomous operation |
+| 9 social platform integrations (Twitter/X, LinkedIn, Instagram, Facebook, TikTok, YouTube, Pinterest, Threads, Bluesky) | ✅ Built | Complete platform coverage |
+| Facebook + Instagram publishing (real posts verified) | ✅ Live | Production-verified publishing |
+| Content DNA learning system | ✅ Live | Competitive moat — compounding intelligence |
+| A/B testing with auto-winner declaration | ✅ Live | Data-driven content optimization |
+| Smart CTAs (6 types + UTM auto-tracking) | ✅ Live | Measurable conversion from every post |
+| Kova Links — link-in-bio landing pages (5 themes, click tracking, SEO) | ✅ Live | Conversion touchpoint from social profiles |
+| Lead Capture Forms (5 types: contact, newsletter, waitlist, booking, custom) | ✅ Live | Turns followers into identifiable contacts |
+| Lead Management pipeline (CRM-light with scoring, tagging, activity timeline) | ✅ Live | Full lead-to-customer tracking |
+| Email Marketing system (subscribers, lists, campaigns, sequences) | ✅ Live | Lead nurturing without third-party tools |
+| Comprehensive email system — 20+ email types via Resend | ✅ Live | Authentication, billing, onboarding, reports, marketing |
+| M-Pesa billing (STK Push, auto-renewal, grace periods) | ✅ Integrated | Revenue infrastructure — Kenya |
+| Stripe billing (international, webhooks) | ✅ Integrated | Revenue infrastructure — global |
+| 4-tier plan system with middleware enforcement | ✅ Live | Monetization with feature gating |
+| Daily Brief generation with trend exploration | ✅ Live | User retention feature |
+| Engagement cycle (fetch → analyze → sentiment → reply → auto-send) | ✅ Live | Automated community management |
+| Superfan detection (Rising → Loyal → Superfan tiers) | ✅ Live | Relationship intelligence |
+| Competitor intelligence system | ✅ Live | Premium strategic feature |
+| Media Queue — rhythm-based photo publishing (daily/weekly) | ✅ Live | Photo content pipeline |
+| Growth Partner Program (commissions, milestones, profit share) | ✅ Live | Built-in distribution channel |
+| Teams & Multi-Brand (roles, permissions, brand voice per brand) | ✅ Live | Agency and enterprise feature |
+| Admin Dashboard (Celery status, LLM config, payments, user stats) | ✅ Live | System monitoring |
+| Legal pages (Privacy Policy, Terms, Cookies, Acceptable Use, DPA) | ✅ Live | Regulatory compliance |
+| 3-strike account resilience + auto token refresh + FB auto-extension | ✅ Live | Platform reliability |
+| R2 cloud storage (Cloudflare) for media | ✅ Live | Scalable media infrastructure |
 | Railway deployment (Web + Worker + Beat + Redis + PostgreSQL) | ✅ Live | Production infrastructure |
+| PWA (installable on mobile) | ✅ Live | Mobile distribution |
 | OAuth social login (Meta) | ✅ Live | User onboarding |
 | Provider abstraction for 9 platforms | ✅ Built | Scalable architecture |
 
@@ -64,13 +81,19 @@ If this product were built by an agency or outsourced team:
 
 | Item | Estimated Cost |
 |------|---------------|
-| Backend development (Django, Celery, 8 apps) | $25,000–$40,000 |
-| 6 AI agent system (prompts, orchestration, learning loop) | $15,000–$25,000 |
-| Platform integrations (OAuth, Graph API, publishing) | $8,000–$12,000 |
-| Billing system (M-Pesa + Stripe) | $5,000–$8,000 |
-| Frontend (templates, HTMX, Tailwind, PWA) | $8,000–$12,000 |
-| DevOps & deployment | $3,000–$5,000 |
-| **Total estimated build value** | **$64,000–$102,000** |
+| Backend development (Django, Celery, 16 app modules) | $40,000–$60,000 |
+| 6 AI agent system (prompts, orchestration, learning loop, outcome scoring) | $20,000–$30,000 |
+| 9 platform integrations (OAuth, APIs, publishing, token management) | $15,000–$25,000 |
+| Conversion engine (Kova Links, Lead Capture, CRM, Email Marketing) | $25,000–$40,000 |
+| Billing system (M-Pesa + Stripe + plan enforcement + auto-renewal) | $8,000–$12,000 |
+| Partner Program (applications, commissions, milestones, profit share) | $8,000–$12,000 |
+| Teams & Multi-Brand (roles, permissions, brand management) | $8,000–$12,000 |
+| Email system (20+ types, Resend, webhooks, subscriber management) | $8,000–$12,000 |
+| Frontend (templates, HTMX, Tailwind, PWA, legal pages) | $12,000–$18,000 |
+| Media system (queues, R2 storage, image generation) | $5,000–$8,000 |
+| Admin Dashboard + monitoring | $5,000–$8,000 |
+| DevOps & deployment (Railway, 4 services, CI/CD) | $5,000–$8,000 |
+| **Total estimated build value** | **$159,000–$245,000** |
 
 **This is already built. The investment ask is for growth, not building.**
 
@@ -87,15 +110,17 @@ If this product were built by an agency or outsourced team:
 | Railway Beat Service | $5 | 625 | Celery scheduler |
 | Railway Redis | $5 | 625 | Message broker |
 | Railway PostgreSQL | $5 | 625 | Database |
+| Cloudflare R2 | $0 | 0 | Free tier sufficient for now |
 | Domain & DNS | ~$1 | 125 | Annual, amortized |
-| OpenRouter API (LLM) | $2–$10 | 250–1,250 | Usage-based, currently low |
+| OpenRouter API (LLM) | $2–$10 | 250–1,250 | Free tier models + paid fallback |
+| Resend (Email) | $0 | 0 | Free tier for <3,000 emails/month |
 | M-Pesa API (sandbox) | $0 | 0 | Free in sandbox mode |
 | GitHub (free tier) | $0 | 0 | Source control |
 | **Total current monthly** | **$28–$36** | **KES 3,500–4,500** | |
 
 **Annual current operating cost: ~$400–$430**
 
-This is the power of modern infrastructure — a full production system with 4 services and a database running for less than KES 5,000/month.
+This is the power of modern infrastructure + free-tier AI models — a full BIOS with 16 modules, 6 agents, and 12+ tasks running for less than KES 5,000/month.
 
 ---
 
@@ -115,6 +140,7 @@ This is the power of modern infrastructure — a full production system with 4 s
 │  ► Validate PMF        ► Kenya market           ► Nigeria + SA          │
 │  ► Organic growth      ► Hire core team         ► Hire growth team      │
 │                        ► Marketing launch       ► Product expansion     │
+│                        ► Activate partners      ► Continental GTM       │
 │                                                                         │
 │  Timeline: Now         Timeline: Q2-Q3 2026     Timeline: Q1-Q2 2027   │
 │  Runway: 3 months      Runway: 12-18 months     Runway: 12 months      │
@@ -135,7 +161,7 @@ This is the power of modern infrastructure — a full production system with 4 s
 | Item | Amount (KES) | Amount (USD) | % | Purpose |
 |------|-------------|-------------|---|---------|
 | Infrastructure (Railway) | 90,000 | 720 | 18% | 3 months of production hosting |
-| LLM API credits (OpenRouter) | 75,000 | 600 | 15% | AI costs for first 50 users |
+| LLM API credits (OpenRouter) | 75,000 | 600 | 15% | AI costs for first 50 users (mostly free tier) |
 | M-Pesa production setup | 25,000 | 200 | 5% | Go-live fees, production API access |
 | Facebook App Review + Meta Business verification | 15,000 | 120 | 3% | Required for public OAuth access |
 | Marketing (data bundles, social ads) | 100,000 | 800 | 20% | WhatsApp campaigns, Facebook ads targeting SMEs |
@@ -151,8 +177,10 @@ This is the power of modern infrastructure — a full production system with 4 s
 | Active users | 50 | Completed onboarding + 1 week active |
 | Paying users | 15+ | Converted from trial to paid plan |
 | Posts published | 500+ | Total across all users |
+| Leads captured via Kova Forms | 100+ | Validates conversion engine |
 | Trial → Paid conversion | >10% | Paid users / total signups |
 | Daily Brief open rate | >50% | Users who read their brief daily |
+| Growth Partners activated | 10+ | Partner applications approved |
 | User feedback score | >7/10 | Post-trial survey |
 
 ---
@@ -167,10 +195,10 @@ This is the power of modern infrastructure — a full production system with 4 s
 
 | Consideration | Reasoning |
 |--------------|-----------|
-| **$150K minimum** | Covers 12 months of team (2 hires) + infrastructure + marketing. Lean but viable. |
-| **$300K ideal** | 18-month runway. Allows 3 hires + aggressive marketing + Nigeria/SA groundwork. |
-| **Why not more?** | We don't need $1M to prove Kenya PMF. African SaaS rounds are capital-efficient. Over-raising at pre-revenue creates valuation pressure. |
-| **Why not less?** | Below $100K, we can't hire — limiting growth to founder-only capacity. Marketing budget becomes too thin for meaningful traction. |
+| **$150K minimum** | Covers 12 months of team (2 hires) + infrastructure + marketing + partner program activation. Lean but viable. |
+| **$300K ideal** | 18-month runway. 3 hires + aggressive marketing + Nigeria/SA groundwork + partner scale. |
+| **Why not more?** | We don't need $1M to prove Kenya PMF. The product is fully built — $159-245K of sweat equity already invested. African SaaS rounds are capital-efficient. Over-raising at pre-revenue creates valuation pressure. |
+| **Why not less?** | Below $100K, we can't hire — limiting growth to founder-only capacity. Marketing budget becomes too thin for meaningful traction. Partner program needs activation capital. |
 
 ### High-Level Allocation ($200K Baseline)
 
@@ -183,7 +211,8 @@ This is the power of modern infrastructure — a full production system with 4 s
 │  └─────────────────────┘                                 │
 │                                                          │
 │  ┌─────────────────────┐  25%  = $50,000                 │
-│  │   MARKETING & GTM   │  Campaigns, partnerships, events│
+│  │   MARKETING & GTM   │  Campaigns, partnerships,       │
+│  │                     │  partner program, events         │
 │  └─────────────────────┘                                 │
 │                                                          │
 │  ┌─────────────────────┐  15%  = $30,000                 │
@@ -210,7 +239,7 @@ This is the power of modern infrastructure — a full production system with 4 s
 |----------|--------|---------|---------|
 | **Team** | | | |
 | → Backend/AI Engineer (1) | $36,000 | $3,000 | 12 months. Full-time. Django + LLM expertise. |
-| → Growth/Marketing Lead (1) | $30,000 | $2,500 | 12 months. Full-time. GTM execution. |
+| → Growth/Marketing Lead (1) | $30,000 | $2,500 | 12 months. Full-time. GTM + partner program execution. |
 | **Subtotal Team** | **$66,000** | **$5,500** | **44%** |
 | | | | |
 | **Marketing & User Acquisition** | | | |
@@ -218,39 +247,39 @@ This is the power of modern infrastructure — a full production system with 4 s
 | → WhatsApp campaigns (data + tools) | $3,600 | $300 | Direct outreach to MSME groups |
 | → Content marketing (blog, video, social) | $4,800 | $400 | SEO, thought leadership, case studies |
 | → Events & workshops (SME meetups) | $3,600 | $300 | Monthly in Nairobi, quarterly in Mombasa/Kisumu |
-| → Referral program rewards | $3,000 | $250 | "Invite a business, get 1 month free" |
+| → Growth Partner Program activation | $3,000 | $250 | Partner onboarding, commission payouts, materials |
+| → Referral program rewards | $2,400 | $200 | "Invite a business, get 1 month free" |
 | → Agency partnership onboarding | $2,400 | $200 | Co-branded materials, partner support |
-| → PR & media outreach | $2,400 | $200 | Tech publications, podcast features |
 | **Subtotal Marketing** | **$31,800** | **$2,650** | **21%** |
 | | | | |
 | **LLM & AI Costs** | | | |
-| → OpenRouter API credits | $18,000 | $1,500 | ~$0.40/user × 1,000 users at peak + buffer |
-| → Image generation API | $3,000 | $250 | Hugging Face / Together.ai |
-| → Model experimentation | $1,500 | $125 | Testing new models for quality/cost |
-| **Subtotal AI** | **$22,500** | **$1,875** | **15%** |
+| → OpenRouter API credits (free tier + fallback) | $15,000 | $1,250 | 3-tier model strategy, ~$0.25/user at scale |
+| → Image generation API | $3,000 | $250 | AI image generation for Pro/Agency users |
+| → Model experimentation | $1,500 | $125 | Testing new free models, optimizing prompts |
+| **Subtotal AI** | **$19,500** | **$1,625** | **13%** |
 | | | | |
 | **Infrastructure** | | | |
 | → Railway / Cloud hosting | $9,600 | $800 | Scale up as users grow |
 | → Domain, SSL, CDN | $1,200 | $100 | Production domain + Cloudflare |
 | → Monitoring (Sentry, uptime) | $1,800 | $150 | Error tracking, alerting |
-| → Email service (Resend) | $1,200 | $100 | Transactional + daily brief emails |
-| **Subtotal Infrastructure** | **$13,800** | **$1,150** | **9%** |
+| → Email service (Resend) | $1,200 | $100 | Transactional + marketing emails at scale |
+| → Cloudflare R2 storage | $600 | $50 | Media storage scaling |
+| **Subtotal Infrastructure** | **$14,400** | **$1,200** | **10%** |
 | | | | |
 | **Operations** | | | |
-| → Legal (company registration, terms, privacy) | $3,000 | — | One-time + annual |
+| → Legal (company registration, ODPC Kenya) | $3,500 | — | One-time + annual |
 | → Accounting & compliance | $2,400 | $200 | Monthly bookkeeping, tax filings |
 | → Coworking / office | $3,600 | $300 | Shared workspace in Nairobi |
 | → Software tools (GitHub, Figma, analytics) | $2,400 | $200 | Team productivity |
-| → Data protection registration (ODPC Kenya) | $500 | — | One-time |
 | → M-Pesa production fees | $1,200 | $100 | Transaction fees, API costs |
 | → Travel (partnership meetings) | $1,800 | $150 | Nairobi, Mombasa, Kisumu |
 | **Subtotal Operations** | **$14,900** | **$950** | **10%** |
 | | | | |
-| **Contingency** | **$1,000** | — | **1%** |
+| **Contingency** | **$3,400** | — | **2%** |
 | | | | |
-| **TOTAL** | **$150,000** | **~$12,125** | **100%** |
+| **TOTAL** | **$150,000** | **~$11,925** | **100%** |
 
-**Runway at $150K: ~12 months** (at $12,125/month burn + growing revenue offset)
+**Runway at $150K: ~12 months** (at $11,925/month burn + growing revenue offset)
 
 ---
 
@@ -261,9 +290,10 @@ Everything in Scenario A, plus:
 | Additional Allocation | Amount | Purpose |
 |----------------------|--------|---------|
 | 3rd hire: Designer/Frontend | $18,000 | 12 months, part-time → full-time. Mobile UX, marketing assets. |
-| Expanded marketing budget | $15,000 | Double digital ad spend. More events. |
+| Expanded marketing budget | $12,000 | Double digital ad spend. More events. Partner activation. |
 | Nigeria/SA market research | $5,000 | Payment integration research, user interviews. |
-| Extended contingency | $12,000 | 3-month safety net |
+| Partner program scale-up | $5,000 | Support 100+ active partners |
+| Extended contingency | $10,000 | 3-month safety net |
 | **Additional total** | **$50,000** | |
 
 **Runway at $200K: ~15 months**
@@ -276,10 +306,10 @@ Everything in Scenario B, plus:
 
 | Additional Allocation | Amount | Purpose |
 |----------------------|--------|---------|
-| 4th hire: Full-time AI Engineer | $36,000 | Dedicated to agent optimization, model fine-tuning |
+| 4th hire: Full-time AI Engineer | $36,000 | Agent optimization, model fine-tuning, Content DNA evolution |
 | Nigeria launch GTM | $20,000 | Paystack integration, Lagos marketing, local partnerships |
 | South Africa launch GTM | $15,000 | Ozow/SnapScan integration, Jo'burg marketing |
-| Platform expansion (Twitter, LinkedIn APIs) | $8,000 | API review fees, compliance, testing |
+| Platform API review fees | $8,000 | Twitter, LinkedIn, TikTok API compliance |
 | Extended runway buffer | $21,000 | Additional safety |
 | **Additional total** | **$100,000** | |
 
@@ -299,11 +329,12 @@ For investors who prefer milestone-based capital release:
 |-----|-----------|
 | First 2 hires (start immediately) | 60% |
 | Infrastructure scaling | 15% |
-| Initial marketing campaigns | 25% |
+| Initial marketing + partner activation | 25% |
 
 **Milestone to unlock Tranche 2:**
 - 100 active users
 - 30+ paying subscribers
+- 10+ Growth Partners activated
 - Trial → Paid conversion >8%
 - Target timeline: 3 months
 
@@ -313,20 +344,22 @@ For investors who prefer milestone-based capital release:
 
 | Use | Allocation |
 |-----|-----------|
-| Marketing scale-up | 40% |
-| LLM API credits (growing usage) | 25% |
+| Marketing scale-up | 35% |
+| LLM API credits (growing usage) | 20% |
 | 3rd hire | 20% |
+| Partner program expansion | 10% |
 | Operations | 15% |
 
 **Milestone to unlock Tranche 3:**
 - 500 active users
-- $2,000+ MRR
+- $3,000+ MRR
 - 3+ agency partnerships
+- 25+ active Growth Partners
 - Target timeline: 3 months after Tranche 2
 
 ### Tranche 3: 25% on revenue milestone ($37K–$75K)
 
-**Released when $2,000 MRR reached**
+**Released when $3,000 MRR reached**
 
 | Use | Allocation |
 |-----|-----------|
@@ -343,10 +376,10 @@ For investors who prefer milestone-based capital release:
 
 | # | Role | Start | Monthly Salary (KES) | Monthly (USD) | Why |
 |---|------|-------|---------------------|--------------|-----|
-| 1 | **Backend/AI Engineer** | Month 1 | 375,000 | $3,000 | Agent optimization, new platform integrations, API development |
-| 2 | **Growth Lead** | Month 1 | 312,500 | $2,500 | GTM execution, partnerships, community building, content marketing |
-| 3 | **Designer (part → full time)** | Month 3 | 187,500 | $1,500 | Mobile UX improvement, marketing assets, brand identity |
-| 4 | **AI Engineer** (if $300K) | Month 4 | 375,000 | $3,000 | Prompt engineering, model fine-tuning, Content DNA evolution |
+| 1 | **Backend/AI Engineer** | Month 1 | 375,000 | $3,000 | Agent optimization, new platform integrations, conversion engine enhancements |
+| 2 | **Growth Lead** | Month 1 | 312,500 | $2,500 | GTM execution, partner program management, community building |
+| 3 | **Designer (part → full time)** | Month 3 | 187,500 | $1,500 | Mobile UX, Kova Links themes, marketing assets, brand identity |
+| 4 | **AI Engineer** (if $300K) | Month 4 | 375,000 | $3,000 | Prompt engineering, model fine-tuning, email sequence optimization |
 
 ### Salary Rationale
 
@@ -363,7 +396,7 @@ Salaries are competitive for Nairobi's tech market — high enough to attract ta
 | Role | When | Monthly (USD) | Purpose |
 |------|------|--------------|---------|
 | Customer Success Lead | Month 13 | $2,000 | User onboarding, retention, support |
-| Platform Engineer | Month 14 | $3,000 | Twitter, LinkedIn, TikTok integrations |
+| Platform Engineer | Month 14 | $3,000 | Advanced platform integrations, API development |
 | Nigeria Country Lead | Month 15 | $2,500 | Local GTM, partnerships, market development |
 | South Africa Country Lead | Month 16 | $2,500 | Local GTM, partnerships |
 | Content Creator (in-house) | Month 15 | $1,500 | Kova's own social media, case studies, blog |
@@ -374,14 +407,16 @@ Salaries are competitive for Nairobi's tech market — high enough to attract ta
 
 ### Cost Progression as Users Grow
 
-| Users | Infrastructure | LLM/AI | Total Monthly | Revenue Offset |
-|-------|---------------|--------|--------------|---------------|
-| 0–50 | $30 | $20 | $50 | $50–$200 |
-| 50–200 | $50 | $80 | $130 | $400–$1,000 |
-| 200–500 | $100 | $200 | $300 | $1,000–$3,000 |
-| 500–1,000 | $200 | $400 | $600 | $3,000–$7,500 |
-| 1,000–5,000 | $500 | $2,000 | $2,500 | $7,500–$40,000 |
-| 5,000–10,000 | $1,200 | $4,000 | $5,200 | $40,000–$85,000 |
+| Users | Infrastructure | LLM/AI | Email | Total Monthly | Revenue Offset |
+|-------|---------------|--------|-------|--------------|---------------|
+| 0–50 | $30 | $10 | $0 | $40 | $50–$250 |
+| 50–200 | $50 | $50 | $5 | $105 | $400–$1,400 |
+| 200–500 | $100 | $125 | $15 | $240 | $1,400–$3,500 |
+| 500–1,000 | $200 | $250 | $30 | $480 | $3,500–$9,000 |
+| 1,000–5,000 | $500 | $1,250 | $100 | $1,850 | $9,000–$45,000 |
+| 5,000–10,000 | $1,200 | $2,500 | $250 | $3,950 | $45,000–$90,000 |
+
+*LLM costs reduced vs. original projections due to 3-tier free model strategy with paid fallback only when free models fail.*
 
 ### Migration Plan
 
@@ -412,25 +447,25 @@ Salaries are competitive for Nairobi's tech market — high enough to attract ta
 | **Facebook/Instagram Ads** | $7,200 | $600 | 400 | $18 |
 | **Google Ads (search)** | $4,800 | $400 | 200 | $24 |
 | **WhatsApp campaigns** | $3,600 | $300 | 150 | $24 |
+| **Growth Partner referrals** | $3,000 | $250 | 200 | $15 |
 | **Content marketing (SEO/blog)** | $4,800 | $400 | 100 | $48 (but compounds) |
 | **Events & workshops** | $3,600 | $300 | 80 | $45 |
-| **Referral program** | $3,000 | $250 | 120 | $25 |
+| **Referral program** | $2,400 | $200 | 120 | $20 |
 | **Agency partnerships** | $2,400 | $200 | 100 (via agencies) | $24 |
-| **PR/Media** | $2,400 | $200 | 50 | $48 (brand building) |
-| **Total** | **$31,800** | **$2,650** | **~1,200 signups** | **Blended: ~$26** |
+| **Total** | **$31,800** | **$2,650** | **~1,350 signups** | **Blended: ~$24** |
 
-At 30% trial → engagement and 15% trial → paid conversion: **~180 paying users from marketing alone**, supplemented by organic/word-of-mouth for remaining 820.
+At 30% trial → engagement and 15% trial → paid conversion: **~200 paying users from marketing alone**, supplemented by organic/word-of-mouth and partner referrals for remaining 800.
 
 ### Marketing Mix Evolution
 
 | Phase | Primary Channel | Budget Share |
 |-------|----------------|-------------|
-| Months 1-3 | WhatsApp groups + direct outreach | 40% |
-| Months 4-6 | Facebook/Instagram ads + content | 35% |
-| Months 7-9 | Referrals + agency partnerships | 30% |
-| Months 10-12 | SEO/content + PR + events | 35% |
+| Months 1-3 | WhatsApp groups + partner activation + direct outreach | 40% |
+| Months 4-6 | Facebook/Instagram ads + content + partner scaling | 35% |
+| Months 7-9 | Referrals + agency partnerships + partner network | 30% |
+| Months 10-12 | SEO/content + PR + events + established partner base | 35% |
 
-The mix shifts from high-touch (WhatsApp outreach) to scalable (content, referrals, partnerships) as we learn which channels convert best.
+The mix shifts from high-touch (WhatsApp outreach) to scalable (content, partners, referrals) as we learn which channels convert best. The Growth Partner Program becomes increasingly important as partners earn commissions and recruit more businesses.
 
 ---
 
@@ -438,19 +473,24 @@ The mix shifts from high-touch (WhatsApp outreach) to scalable (content, referra
 
 ### Cost Per User Breakdown
 
+We run a 3-tier free LLM strategy: Nvidia Nemotron 120B (premium), GPT-OSS 120B (workhorse), Nemotron Nano 30B (fast), with DeepSeek V3.2 as paid fallback only when free models fail.
+
 Each active Kova user generates these AI calls daily:
 
 | Agent Task | Calls/Day | Avg Tokens/Call | Daily Cost/User |
 |-----------|----------|----------------|----------------|
-| Create Agent (content generation) | 0.5 | 2,000 | $0.003 |
-| Analyst (DNA extraction) | 0.5 | 1,000 | $0.001 |
-| Analyst (engagement prediction) | 0.5 | 800 | $0.001 |
-| Engage Agent (analysis + replies) | 2.0 | 1,500 | $0.004 |
-| Research Agent | 0.08 (every 12h) | 3,000 | $0.001 |
-| Strategist | 0.12 (every 8h) | 4,000 | $0.002 |
-| Daily Brief compilation | 0.07 (once/day) | 3,000 | $0.001 |
-| **Total daily** | | | **~$0.013** |
-| **Total monthly** | | | **~$0.40** |
+| Create Agent (content generation) | 0.5 | 2,000 | $0.001* |
+| Analyst (DNA extraction) | 0.5 | 1,000 | $0.000* |
+| Analyst (engagement prediction) | 0.5 | 800 | $0.000* |
+| Engage Agent (analysis + replies) | 2.0 | 1,500 | $0.002* |
+| Research Agent | 0.08 (every 12h) | 3,000 | $0.000* |
+| Strategist | 0.12 (every 8h) | 4,000 | $0.001* |
+| Daily Brief compilation | 0.07 (once/day) | 3,000 | $0.000* |
+| **Total daily (free tier)** | | | **~$0.004** |
+| **Total monthly (free tier)** | | | **~$0.12** |
+| **With 20% paid fallback** | | | **~$0.25** |
+
+*\* Free tier models have zero per-token cost. Cost only incurred when falling back to paid model (DeepSeek V3.2 at $0.14/$0.28 per 1M tokens).*
 
 ### Model Cost Trends
 
@@ -458,23 +498,23 @@ Each active Kova user generates these AI calls daily:
 |--------|--------------------------|---------------------------|-------|
 | 2024 | $15.00 (GPT-4) | $45.00 | — |
 | 2025 | $2.50 (GPT-4o) | $10.00 | -83% |
-| 2026 (now) | $0.10 (Gemini Flash) | $0.40 | -96% from 2024 |
-| 2027 (projected) | $0.05 | $0.20 | -50% from now |
+| 2026 (now) | $0.00 (free tier) / $0.14 (fallback) | $0.00 / $0.28 | -99% from 2024 |
+| 2027 (projected) | More free models, lower fallback | Even cheaper | Improving |
 
-**Key insight:** Our per-user AI cost is shrinking every quarter. By 2027, the same workload may cost $0.20/user instead of $0.40. This is a **structural tailwind** — our margins expand automatically.
+**Key insight:** Our 3-tier free model strategy means baseline AI cost is near-zero. Paid fallback only triggers when free models fail. As free models improve, fallback frequency decreases. This is a **structural tailwind** — our margins expand automatically.
 
 ### Annual LLM Cost by User Scale
 
 | Users | Monthly AI Cost | Annual AI Cost | % of Revenue |
 |-------|----------------|---------------|-------------|
-| 50 | $20 | $240 | ~5% |
-| 200 | $80 | $960 | ~6% |
-| 500 | $200 | $2,400 | ~6% |
-| 1,000 | $400 | $4,800 | ~5% |
-| 5,000 | $2,000 | $24,000 | ~5% |
-| 10,000 | $4,000 | $48,000 | ~5% |
+| 50 | $13 | $150 | ~2% |
+| 200 | $50 | $600 | ~3% |
+| 500 | $125 | $1,500 | ~3% |
+| 1,000 | $250 | $3,000 | ~3% |
+| 5,000 | $1,250 | $15,000 | ~3% |
+| 10,000 | $2,500 | $30,000 | ~3% |
 
-AI costs remain a consistent ~5-6% of revenue across all scales. This is sustainable.
+AI costs remain ~3% of revenue across all scales (down from ~5-6% in our original projections, thanks to the free model strategy). This is highly sustainable.
 
 ---
 
@@ -484,22 +524,22 @@ AI costs remain a consistent ~5-6% of revenue across all scales. This is sustain
 
 | Month | Users | MRR | Monthly Burn | Net Burn | Cumulative Spend |
 |-------|-------|-----|-------------|----------|-----------------|
-| 1 | 10 | $50 | $8,000 | -$7,950 | $7,950 |
-| 2 | 25 | $150 | $9,000 | -$8,850 | $16,800 |
-| 3 | 50 | $350 | $10,000 | -$9,650 | $26,450 |
-| 4 | 80 | $560 | $11,500 | -$10,940 | $37,390 |
-| 5 | 120 | $900 | $12,000 | -$11,100 | $48,490 |
-| 6 | 180 | $1,350 | $12,500 | -$11,150 | $59,640 |
-| 7 | 250 | $1,900 | $12,500 | -$10,600 | $70,240 |
-| 8 | 350 | $2,800 | $13,000 | -$10,200 | $80,440 |
-| 9 | 450 | $3,600 | $13,000 | -$9,400 | $89,840 |
-| 10 | 600 | $4,800 | $13,500 | -$8,700 | $98,540 |
-| 11 | 800 | $6,400 | $13,500 | -$7,100 | $105,640 |
-| 12 | 1,000 | $7,500 | $14,000 | -$6,500 | $112,140 |
+| 1 | 10 | $70 | $8,000 | -$7,930 | $7,930 |
+| 2 | 25 | $175 | $9,000 | -$8,825 | $16,755 |
+| 3 | 50 | $400 | $10,000 | -$9,600 | $26,355 |
+| 4 | 80 | $640 | $11,500 | -$10,860 | $37,215 |
+| 5 | 120 | $1,000 | $12,000 | -$11,000 | $48,215 |
+| 6 | 180 | $1,500 | $12,500 | -$11,000 | $59,215 |
+| 7 | 250 | $2,100 | $12,500 | -$10,400 | $69,615 |
+| 8 | 350 | $3,000 | $13,000 | -$10,000 | $79,615 |
+| 9 | 450 | $4,000 | $13,000 | -$9,000 | $88,615 |
+| 10 | 600 | $5,200 | $13,500 | -$8,300 | $96,915 |
+| 11 | 800 | $7,000 | $13,500 | -$6,500 | $103,415 |
+| 12 | 1,000 | $8,500 | $14,000 | -$5,500 | $108,915 |
 
-**Year 1 total spend: ~$112,000**
-**Year 1 total revenue: ~$30,400**
-**Net cash required: ~$82,000** (covered by $150K raise with ~$38K buffer remaining)
+**Year 1 total spend: ~$109,000**
+**Year 1 total revenue: ~$33,600**
+**Net cash required: ~$75,000** (covered by $150K raise with ~$41K buffer remaining)
 
 ### The Revenue Crossover
 
@@ -530,9 +570,9 @@ $10K ┤                                     ╱
 
 | Scenario | Break-Even Users | Break-Even MRR | Expected Timeline |
 |----------|-----------------|----------------|-------------------|
-| Conservative (team of 3) | 1,800 | $14,000 | Month 15-18 |
-| Base case (team of 4) | 2,200 | $17,000 | Month 18-21 |
-| Aggressive (team of 5) | 2,800 | $22,000 | Month 21-24 |
+| Conservative (team of 3) | 1,600 | $14,000 | Month 15-18 |
+| Base case (team of 4) | 2,000 | $17,000 | Month 18-21 |
+| Aggressive (team of 5) | 2,500 | $22,000 | Month 21-24 |
 
 ### Break-Even Assumptions
 
@@ -540,14 +580,15 @@ $10K ┤                                     ╱
 |-----------|--------------------------|
 | Team (4 people) | $10,000 |
 | Infrastructure | $500 |
-| LLM/AI costs | $900 |
+| LLM/AI costs (free tier + fallback) | $500 |
+| Email (Resend) | $100 |
 | Marketing | $3,000 |
 | Operations | $1,500 |
-| **Total monthly burn** | **$15,900** |
+| **Total monthly burn** | **$15,600** |
 | **Required MRR** | **~$16,000** |
-| **Users needed** (at $8 ARPU) | **~2,000** |
+| **Users needed** (at $9 ARPU) | **~1,800** |
 
-After break-even, every new user contributes directly to profit. With 94%+ gross margins, the business becomes highly cash-generative quickly.
+After break-even, every new user contributes directly to profit. With 96%+ gross margins, the business becomes highly cash-generative quickly.
 
 ---
 
@@ -559,21 +600,21 @@ Grants accelerate growth without dilution. Here's how grant funding would be dep
 
 | Line Item | Amount | Deliverable |
 |-----------|--------|------------|
-| Platform costs for 500 MSMEs (6 months) | $12,000 | 500 businesses × $4/month average |
+| Platform costs for 500 MSMEs (6 months) | $12,000 | Full BIOS access — content, leads, email, analytics |
 | Onboarding workshops (10 sessions) | $5,000 | In-person training in Nairobi, Mombasa, Kisumu |
 | Impact measurement tools | $3,000 | Survey platforms, analytics dashboards |
 | Program coordinator (6 months) | $9,000 | Dedicated person managing the pilot |
 | Final impact report | $2,000 | Professional report for grant donor |
 | **Total** | **$31,000** | |
 
-**Measurable outcomes:** Social media posting frequency, engagement metrics, business revenue change, time saved, digital confidence score.
+**Measurable outcomes:** Posting frequency, engagement metrics, leads captured, email subscribers grown, business revenue change, time saved, digital confidence score.
 
 ### Women Entrepreneurs Program — $30,000–$50,000
 
 | Line Item | Amount | Deliverable |
 |-----------|--------|------------|
-| Platform costs for 300 women-owned SMEs (12 months) | $14,400 | Full-year access |
-| 12 monthly workshops | $12,000 | "AI-Powered Marketing for Women in Business" |
+| Platform costs for 300 women-owned SMEs (12 months) | $14,400 | Full-year BIOS access including conversion engine |
+| 12 monthly workshops | $12,000 | "AI-Powered Business Intelligence for Women in Business" |
 | Childcare support at workshops | $2,400 | Remove participation barriers |
 | Story collection & documentation | $3,000 | Video testimonials, written case studies |
 | Program management | $12,000 | Coordinator + travel |
@@ -596,17 +637,17 @@ Grants accelerate growth without dilution. Here's how grant funding would be dep
 ## Bridge Round: $500,000 — Regional Expansion
 
 **Timeline:** Q1–Q2 2027 (after proving Kenya PMF)
-**Trigger:** 1,000+ paying users, $5,000+ MRR, proven unit economics
+**Trigger:** 1,000+ paying users, $5,000+ MRR, proven unit economics, active partner network
 
 ### Allocation
 
 | Category | Amount | % | Purpose |
 |----------|--------|---|---------|
-| **Nigeria launch** | $100,000 | 20% | Paystack integration, Lagos GTM, local partnerships, 3-month campaign |
+| **Nigeria launch** | $100,000 | 20% | Paystack integration, Lagos GTM, local partnerships, partner program activation |
 | **South Africa launch** | $80,000 | 16% | Ozow/SnapScan integration, Jo'burg GTM |
 | **Team expansion** (5 new hires) | $180,000 | 36% | Country leads, platform engineer, customer success, content creator |
-| **Product development** | $60,000 | 12% | Twitter/LinkedIn integrations, team collaboration features, video content |
-| **Marketing at scale** | $50,000 | 10% | Multi-country campaigns, influencer partnerships |
+| **Product development** | $60,000 | 12% | WhatsApp integration, video content, agency white-label, advanced email sequences |
+| **Marketing at scale** | $50,000 | 10% | Multi-country campaigns, influencer partnerships, regional partner programs |
 | **Operations & contingency** | $30,000 | 6% | Legal per country, compliance, buffer |
 | **Total** | **$500,000** | **100%** | |
 
@@ -615,10 +656,11 @@ Grants accelerate growth without dilution. Here's how grant funding would be dep
 | Metric | Target |
 |--------|--------|
 | Total users (3 countries) | 10,000 |
-| MRR | $85,000 |
-| Revenue run rate | $1M ARR |
+| MRR | $90,000 |
+| Revenue run rate | $1.1M ARR |
 | Countries live | 3 (Kenya, Nigeria, South Africa) |
 | Agency partners | 50+ |
+| Growth Partners | 200+ |
 | Team size | 10-12 |
 
 ---
@@ -626,7 +668,7 @@ Grants accelerate growth without dilution. Here's how grant funding would be dep
 ## Series A Readiness: $2M–$5M
 
 **Timeline:** Q3–Q4 2027
-**Trigger:** $1M ARR, proven retention, multi-country traction
+**Trigger:** $1M ARR, proven retention, multi-country traction, active partner network
 
 We don't need Series A to survive — we'll be nearing break-even. Series A is for **acceleration**:
 
@@ -657,9 +699,9 @@ We don't need Series A to survive — we'll be nearing break-even. Series A is f
 
 | Trigger | Action |
 |---------|--------|
-| Runway drops below 6 months | Freeze non-essential hiring. Reduce marketing to organic only. |
+| Runway drops below 6 months | Freeze non-essential hiring. Reduce marketing to organic + partner referrals only. |
 | Runway drops below 4 months | Salary reduction (founder first). Initiate bridge fundraising. |
-| Revenue exceeds projections by 50%+ | Accelerate hiring plan. Increase marketing budget. |
+| Revenue exceeds projections by 50%+ | Accelerate hiring plan. Increase marketing + partner activation budget. |
 | Revenue misses projections by 30%+ | Root cause analysis within 2 weeks. Pivot GTM strategy. Reduce burn. |
 
 ---
@@ -670,9 +712,9 @@ We don't need Series A to survive — we'll be nearing break-even. Series A is f
 
 | Month | Users | MRR | Cumulative Revenue |
 |-------|-------|-----|--------------------|
-| 6 | 300 | $2,400 | $8,000 |
-| 12 | 2,000 | $16,000 | $60,000 |
-| 18 | 5,000 | $40,000 | $200,000 |
+| 6 | 300 | $2,700 | $10,000 |
+| 12 | 2,000 | $18,000 | $70,000 |
+| 18 | 5,000 | $45,000 | $230,000 |
 
 **Outcome:** Break-even by Month 12. Bridge round purely for acceleration. Strong Series A at $5M+.
 
@@ -680,9 +722,9 @@ We don't need Series A to survive — we'll be nearing break-even. Series A is f
 
 | Month | Users | MRR | Cumulative Revenue |
 |-------|-------|-----|--------------------|
-| 6 | 180 | $1,350 | $4,500 |
-| 12 | 1,000 | $7,500 | $30,000 |
-| 18 | 3,000 | $24,000 | $100,000 |
+| 6 | 180 | $1,500 | $5,000 |
+| 12 | 1,000 | $8,500 | $34,000 |
+| 18 | 3,000 | $27,000 | $115,000 |
 
 **Outcome:** Break-even by Month 18. Bridge round needed for regional expansion. Series A at $2M–$3M.
 
@@ -690,9 +732,9 @@ We don't need Series A to survive — we'll be nearing break-even. Series A is f
 
 | Month | Users | MRR | Cumulative Revenue |
 |-------|-------|-----|--------------------|
-| 6 | 80 | $500 | $1,500 |
-| 12 | 400 | $3,000 | $12,000 |
-| 18 | 800 | $6,000 | $30,000 |
+| 6 | 80 | $560 | $1,700 |
+| 12 | 400 | $3,200 | $13,000 |
+| 18 | 800 | $6,400 | $32,000 |
 
 **Outcome:** Runway extends to Month 18 on $150K (low burn, some revenue). Need to raise bridge or pivot GTM. Product stays viable — user unit economics still work.
 
@@ -700,12 +742,12 @@ We don't need Series A to survive — we'll be nearing break-even. Series A is f
 
 | Signal | Response |
 |--------|----------|
-| <50 users after 6 months | Likely GTM problem, not product. Shift: agency-first strategy (sell through agencies). |
-| <5% trial → paid conversion | Pricing or value demonstration problem. Test: lower entry price, improve onboarding. |
+| <50 users after 6 months | GTM problem, not product. Shift: agency-first strategy (sell through agencies via Wakala plan). Lean into Growth Partner Program. |
+| <5% trial → paid conversion | Value demonstration problem. Test: improve onboarding, show conversion engine value (leads captured, emails sent) within first 3 days. |
 | High churn (>15%/month) | Product-market fit issue. Deep user interviews. Feature/positioning pivot. |
-| LLM costs spike unexpectedly | Switch to open-source models (Llama, Mistral). Self-host if needed. |
+| LLM free models all fail | Switch to self-hosted open-source models (Llama, Mistral). Increase paid fallback budget. |
 
-**Even in the worst case, the core code, agents, and architecture retain value.** The question is GTM strategy, not product viability.
+**Even in the worst case, the core code, 16 modules, agents, and conversion engine retain value.** The question is GTM strategy, not product viability.
 
 ---
 
@@ -715,9 +757,9 @@ We don't need Series A to survive — we'll be nearing break-even. Series A is f
 
 | Scenario | Equity (est.) | Year 3 Valuation | Return Multiple |
 |----------|--------------|-------------------|----------------|
-| Optimistic | 5-8% | $30M (5x ARR of $6M) | 15x–24x |
-| Base case | 5-8% | $12M (2x ARR of $6M) | 6x–10x |
-| Conservative | 5-8% | $6M (1x ARR of $6M) | 3x–5x |
+| Optimistic | 5-8% | $36M (5x ARR of $7.2M) | 18x–29x |
+| Base case | 5-8% | $14M (2x ARR of $7.2M) | 7x–11x |
+| Conservative | 5-8% | $7M (1x ARR of $7.2M) | 3.5x–5.6x |
 
 ### For VC Funds ($150K–$300K at Seed)
 
@@ -725,7 +767,7 @@ We don't need Series A to survive — we'll be nearing break-even. Series A is f
 |---------------|----------|--------------------|-----------------------------|
 | Series A exit (secondary) | Year 2 | $5M–$10M | $750K–$1.5M (2.5x–5x) |
 | Series B exit | Year 3-4 | $20M–$50M | $3M–$7.5M (10x–25x) |
-| Acquisition (by Hootsuite, Buffer, African tech co.) | Year 3-5 | $10M–$30M | $1.5M–$4.5M (5x–15x) |
+| Acquisition (by Hootsuite, HubSpot, African tech co.) | Year 3-5 | $10M–$30M | $1.5M–$4.5M (5x–15x) |
 | IPO pathway (long term) | Year 5-7 | $100M+ | $15M+ (50x+) |
 
 ### Comparable Exits (African SaaS)
@@ -737,7 +779,7 @@ We don't need Series A to survive — we'll be nearing break-even. Series A is f
 | mPharma | Ghana | Health tech | $100M+ valuation | Started with $500K seed |
 | Andela | Nigeria | Talent | $1.5B valuation | Started with seed |
 
-**Kova sits in the SaaS + AI + Africa intersection — the fastest-growing segment in African tech.**
+**Kova sits in the SaaS + AI + Africa intersection — the fastest-growing segment in African tech. And unlike most African SaaS plays, Kova has a built-in distribution channel (Growth Partner Program) that reduces CAC as the network grows.**
 
 ---
 
@@ -757,22 +799,31 @@ We don't need Series A to survive — we'll be nearing break-even. Series A is f
 │  │                                                            │ │
 │  │   44%  ████████████████████░░░░░░░░░░░  Team (2-4 hires)  │ │
 │  │   21%  ██████████░░░░░░░░░░░░░░░░░░░░░  Marketing & GTM   │ │
-│  │   15%  ███████░░░░░░░░░░░░░░░░░░░░░░░░  LLM & AI costs    │ │
-│  │    9%  ████░░░░░░░░░░░░░░░░░░░░░░░░░░░  Infrastructure     │ │
+│  │   13%  ██████░░░░░░░░░░░░░░░░░░░░░░░░░  LLM & AI costs    │ │
+│  │   10%  █████░░░░░░░░░░░░░░░░░░░░░░░░░░  Infrastructure     │ │
 │  │   10%  █████░░░░░░░░░░░░░░░░░░░░░░░░░░  Operations         │ │
-│  │    1%  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Contingency        │ │
+│  │    2%  █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Contingency        │ │
 │  └────────────────────────────────────────────────────────────┘ │
 │                                                                 │
+│  WHAT'S ALREADY BUILT:                                          │
+│  ✓ 16 app modules (full Business Intelligence OS)               │
+│  ✓ 6 AI agents + 12+ automated tasks                           │
+│  ✓ Conversion engine (Kova Links + Leads + Email)               │
+│  ✓ Growth Partner Program (built-in distribution)               │
+│  ✓ Teams, M-Pesa, Stripe, 9 platforms, R2 storage              │
+│  ✓ Estimated build value: $159K–$245K                           │
+│                                                                 │
 │  WHAT INVESTORS GET:                                            │
-│  ✓ Live product (not a prototype)                               │
-│  ✓ 94%+ gross margins                                           │
+│  ✓ Live product (not a prototype) — 16 integrated modules       │
+│  ✓ 96%+ gross margins (3-tier free LLM strategy)                │
 │  ✓ $4.6B TAM with zero direct competitors                      │
-│  ✓ CLV:CAC >10:1                                                │
-│  ✓ Path to $1M ARR in 24 months                                │
+│  ✓ CLV:CAC >12:1                                                │
+│  ✓ Built-in growth via Partner Program                          │
+│  ✓ Path to $1.1M ARR in 24 months                              │
 │  ✓ Structural AI cost tailwind (margins improve over time)      │
 │                                                                 │
-│  BREAK-EVEN: ~2,000 users (~Month 15-18)                       │
-│  YEAR 3 TARGET: 50,000 users / $6M ARR                         │
+│  BREAK-EVEN: ~1,800 users (~Month 15-18)                       │
+│  YEAR 3 TARGET: 50,000 users / $7.2M ARR                       │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -781,13 +832,13 @@ We don't need Series A to survive — we'll be nearing break-even. Series A is f
 
 **Every shilling raised either acquires users or serves users.** There are no vanity expenditures. No expensive office. No unnecessary hires ahead of demand. We scale costs with revenue, not ambition.
 
-The product is built. The market is waiting. The capital is the fuel.
+The product is built — $159K-$245K worth of engineering. The market is waiting. The capital is the fuel.
 
 ---
 
 > *"We don't need money to build. We need money to grow."*
 >
-> **Kova Agent — Every shilling accounted for.**
+> **Kova — Every shilling accounted for.**
 
 ---
 

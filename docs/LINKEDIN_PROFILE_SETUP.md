@@ -43,7 +43,7 @@ Create a custom banner that communicates your mission at a glance. Here's what i
 - Bottom-right corner: `kovaagent.com` (or your production URL)
 
 **Option B — Personal Mission Banner:**
-- Text: **"Building Autonomous Social Intelligence for Africa"**
+- Text: **"Building Africa's Business Intelligence Operating System"**
 - Subtext: **"Founder & CEO @ Kova Agent"**
 - Background: Abstract tech pattern or Nairobi cityscape with dark overlay
 - Clean, minimal — let the words carry weight
@@ -67,13 +67,13 @@ Your headline is the single most important text on your profile. It appears in s
 **Recommended headline:**
 
 ```
-Building the AI team every African business deserves | Founder & CEO @ Kova Agent — Autonomous Social Intelligence | Django · AI Agents · Africa Tech
+Building the AI team every African business deserves | Founder & CEO @ Kova Agent — Business Intelligence Operating System | Django · AI Agents · Africa Tech
 ```
 
 **Why this works:**
 - **"Building the AI team every African business deserves"** — mission-first, creates curiosity, makes people want to learn more
 - **"Founder & CEO @ Kova Agent"** — establishes authority and role
-- **"Autonomous Social Intelligence"** — plants the category name (people will Google it)
+- **"Business Intelligence Operating System"** — plants the category name (people will Google it)
 - **"Django · AI Agents · Africa Tech"** — keyword-rich for search discovery
 
 **Alternative headlines (pick what resonates):**
@@ -83,7 +83,7 @@ Founder @ Kova Agent | 6 AI agents that run your social media while you sleep | 
 ```
 
 ```
-CEO @ Kova Agent — Your social media runs itself. You stay in control. | Building Africa's first Autonomous Social Intelligence platform
+CEO @ Kova Agent — Your social media runs itself. You stay in control. | Building Africa's first Business Intelligence Operating System
 ```
 
 ```
@@ -101,7 +101,7 @@ This is your founder story. It should answer: Who are you? What are you building
 ```
 Every African business deserves an AI team. That's not a tagline — it's the mission I wake up to every morning.
 
-I'm building Kova Agent — the first Autonomous Social Intelligence platform built for Africa, from Africa.
+I'm building Kova Agent — the first Business Intelligence Operating System built for Africa, from Africa.
 
 THE PROBLEM I COULDN'T IGNORE:
 
@@ -173,7 +173,7 @@ Pin 3-5 items that immediately build credibility:
 ### Item 1 — Kova Agent (Link)
 - **URL**: Your production URL (kovaagent-production.up.railway.app or custom domain)
 - **Title**: "Kova Agent — Your Social Media Runs Itself"
-- **Description**: "6 AI agents. 9 platforms. Starting at $1/month. Built for Africa."
+- **Description**: "6 AI agents. 9 platforms. Starting at $2/month. Built for Africa."
 
 ### Item 2 — Product Demo or Walkthrough (Create this)
 - Record a 2-3 minute Loom video walking through:
@@ -207,7 +207,7 @@ Pin 3-5 items that immediately build credibility:
 **Description**:
 
 ```
-Building Africa's first Autonomous Social Intelligence platform — 6 AI agents that research, create, schedule, publish, engage, and learn for businesses across 9 social platforms.
+Building Africa's first Business Intelligence Operating System — 6 AI agents that research, create, schedule, publish, engage, and learn for businesses across 9 social platforms.
 
 WHAT I'VE BUILT:
 
@@ -407,7 +407,7 @@ So I built Kova Agent.
 6 AI agents that research trends, create content, predict engagement,
 schedule posts at optimal times, respond to comments, and learn what works.
 
-9 platforms. Starting at KES 99/month ($1).
+9 platforms. Starting at KES 299/month ($2).
 Paid via M-Pesa. No credit card required.
 
 Your social media runs itself. You stay in control.
@@ -507,7 +507,7 @@ Live in production:
 → 9 platforms connected
 → 9 automated tasks running 24/7
 → Real posts publishing on real accounts
-→ KES 99/month ($1) entry price
+→ KES 299/month ($2) entry price
 
 Week 1 of building in public. The foundation is set.
 
@@ -534,13 +534,13 @@ Use these phrases consistently across your LinkedIn content:
 ### Taglines & One-Liners
 - "Your social media runs itself. You stay in control."
 - "Every African business deserves an AI team. We're building it."
-- "Not a scheduler. Not a dashboard. Autonomous Social Intelligence."
-- "6 AI agents. 9 platforms. 11 languages. Starting at $1/month."
+- "Not a scheduler. Not a dashboard. A Business Intelligence Operating System."
+- "6 AI agents. 9 platforms. 11 languages. Starting at $2/month."
 - "Built for Africa. Priced for Africa. Speaks Africa's languages."
 - "Your AI knows your tone, your language, your guardrails, and your products — from day one."
 
 ### Category Definition
-- Always say **"Autonomous Social Intelligence"** — never "social media tool" or "scheduling app"
+- Always say **"Business Intelligence Operating System"** — never "social media tool" or "scheduling app"
 - You're **creating a category**, not competing in one
 
 ### Differentiation Phrases
@@ -551,7 +551,7 @@ Use these phrases consistently across your LinkedIn content:
 
 ### Africa-First Messaging
 - "Built in Nairobi, for the baker in Kibera and the designer in Lagos"
-- "KES 99/month. Cheaper than a lunch. More powerful than a $500 agency."
+- "KES 299/month. Cheaper than a lunch. More powerful than a $500 agency."
 - "M-Pesa payments. No credit card required. No dollar conversion anxiety."
 - "The 44 million African businesses that can't afford Hootsuite — we built this for you."
 
@@ -574,9 +574,9 @@ Once your personal profile is set, create a Kova Agent Company Page:
 6. **Type**: Startup
 7. **About**:
 ```
-Kova Agent is Africa's first Autonomous Social Intelligence platform. 6 AI agents research trends, create platform-native content, predict engagement, schedule at optimal times, respond to your audience, and learn from every post — getting smarter with every cycle.
+Kova Agent is Africa's first Business Intelligence Operating System. 6 AI agents research trends, create platform-native content, predict engagement, schedule at optimal times, respond to your audience, and learn from every post — getting smarter with every cycle.
 
-9 platforms. Starting at KES 99/month ($1). M-Pesa payments. Built for Africa.
+9 platforms. Starting at KES 299/month ($2). M-Pesa payments. Built for Africa.
 
 We believe every African business deserves an AI-powered social media team — not just the ones that can afford $500/month agencies. Kova makes that possible.
 
