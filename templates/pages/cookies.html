@@ -1,0 +1,134 @@
+{% extends "layouts/marketing.html" %}
+{% block title %}Cookie Policy — Kova Agent{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+  <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2">Cookie Policy</h1>
+  <p class="text-sm text-gray-500 dark:text-gray-400 mb-10">Last updated: April 9, 2026</p>
+
+  <div class="prose prose-gray dark:prose-invert max-w-none space-y-8">
+
+    <!-- 1. What Are Cookies -->
+    <section>
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">1. What Are Cookies?</h2>
+      <p>Cookies are small text files stored on your device when you visit a website. They help sites remember your preferences, keep you signed in, and understand how you use the service. We also use similar technologies such as local storage and session storage.</p>
+    </section>
+
+    <!-- 2. Cookies We Use -->
+    <section>
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">2. Cookies We Use</h2>
+
+      <!-- Essential -->
+      <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-5 mt-4">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">Essential Cookies <span class="text-xs font-normal text-gray-500 dark:text-gray-400 ml-2">(Always active)</span></h3>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">Required for the Service to function. Cannot be disabled.</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                <th class="pb-2 pr-4">Cookie</th>
+                <th class="pb-2 pr-4">Purpose</th>
+                <th class="pb-2">Duration</th>
+              </tr>
+            </thead>
+            <tbody class="text-gray-700 dark:text-gray-300">
+              <tr class="border-b border-gray-100 dark:border-gray-800">
+                <td class="py-2 pr-4 font-mono text-xs">sessionid</td>
+                <td class="py-2 pr-4">Keeps you signed in to your account</td>
+                <td class="py-2">2 weeks</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-800">
+                <td class="py-2 pr-4 font-mono text-xs">csrftoken</td>
+                <td class="py-2 pr-4">Protects against cross-site request forgery attacks</td>
+                <td class="py-2">1 year</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-800">
+                <td class="py-2 pr-4 font-mono text-xs">messages</td>
+                <td class="py-2 pr-4">Displays one-time status messages (e.g., &ldquo;Post published&rdquo;)</td>
+                <td class="py-2">Session</td>
+              </tr>
+              <tr>
+                <td class="py-2 pr-4 font-mono text-xs">oauth_state_*</td>
+                <td class="py-2 pr-4">Secures the social platform connection flow</td>
+                <td class="py-2">Session</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Functional -->
+      <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-5 mt-4">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">Functional Cookies</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">Remember your preferences and personalization choices.</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                <th class="pb-2 pr-4">Cookie / Storage</th>
+                <th class="pb-2 pr-4">Purpose</th>
+                <th class="pb-2">Duration</th>
+              </tr>
+            </thead>
+            <tbody class="text-gray-700 dark:text-gray-300">
+              <tr class="border-b border-gray-100 dark:border-gray-800">
+                <td class="py-2 pr-4 font-mono text-xs">kova-theme</td>
+                <td class="py-2 pr-4">Remembers your light/dark mode preference</td>
+                <td class="py-2">Persistent (localStorage)</td>
+              </tr>
+              <tr>
+                <td class="py-2 pr-4 font-mono text-xs">ref</td>
+                <td class="py-2 pr-4">Tracks partner referral codes for attribution</td>
+                <td class="py-2">30 days</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Analytics -->
+      <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-5 mt-4">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">Analytics Cookies</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">Help us understand how visitors use the Service so we can improve it. Data is aggregated and anonymized where possible.</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400">Currently, Kova does not use third-party analytics cookies. If we add analytics tools in the future (e.g., privacy-focused analytics), we will update this policy and notify you.</p>
+      </div>
+    </section>
+
+    <!-- 3. Third-Party Cookies -->
+    <section>
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">3. Third-Party Cookies</h2>
+      <p>When you connect social media accounts through OAuth, the respective platform may set cookies during the authorization flow. These are governed by that platform&rsquo;s cookie policy:</p>
+      <ul class="list-disc pl-6 space-y-1 text-gray-700 dark:text-gray-300">
+        <li><a href="https://www.facebook.com/policies/cookies/" class="text-kova-600 hover:text-kova-700 dark:text-kova-400" target="_blank" rel="noopener noreferrer">Meta (Facebook/Instagram) Cookie Policy</a></li>
+        <li><a href="https://twitter.com/en/privacy" class="text-kova-600 hover:text-kova-700 dark:text-kova-400" target="_blank" rel="noopener noreferrer">X (Twitter) Privacy Policy</a></li>
+        <li><a href="https://www.linkedin.com/legal/cookie-policy" class="text-kova-600 hover:text-kova-700 dark:text-kova-400" target="_blank" rel="noopener noreferrer">LinkedIn Cookie Policy</a></li>
+      </ul>
+      <p>Payment processors (Stripe) may also set cookies when processing payments. See <a href="https://stripe.com/cookies-policy/legal" class="text-kova-600 hover:text-kova-700 dark:text-kova-400" target="_blank" rel="noopener noreferrer">Stripe&rsquo;s Cookie Policy</a>.</p>
+    </section>
+
+    <!-- 4. Managing Cookies -->
+    <section>
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">4. Managing Cookies</h2>
+      <p>You can control cookies through your browser settings:</p>
+      <ul class="list-disc pl-6 space-y-1 text-gray-700 dark:text-gray-300">
+        <li><strong>Block all cookies</strong> — most browsers allow this in privacy/security settings. Note that blocking essential cookies will prevent you from signing in.</li>
+        <li><strong>Delete cookies</strong> — clear existing cookies through your browser. You will be signed out and preferences will be reset.</li>
+        <li><strong>Private browsing</strong> — cookies set during private/incognito sessions are deleted when the window closes.</li>
+      </ul>
+    </section>
+
+    <!-- 5. Changes -->
+    <section>
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">5. Changes to This Policy</h2>
+      <p>We may update this Cookie Policy when we add new features or integrations. Changes will be reflected in the &ldquo;Last updated&rdquo; date above.</p>
+    </section>
+
+    <!-- 6. Contact -->
+    <section>
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">6. Contact</h2>
+      <p>Questions about cookies? Email us at <a href="mailto:privacy@kovaagent.com" class="text-kova-600 hover:text-kova-700 dark:text-kova-400">privacy@kovaagent.com</a>.</p>
+    </section>
+
+  </div>
+</div>
+{% endblock %}

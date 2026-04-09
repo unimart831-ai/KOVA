@@ -22,6 +22,13 @@ def landing_page(request):
     return render(request, "pages/landing.html", {"all_plans": all_plans})
 
 
+def legal_page(template):
+    """Return a view that renders a legal page template."""
+    def view(request):
+        return render(request, f"pages/{template}")
+    return view
+
+
 def service_worker(request):
     """Serve SW from root so it can control the full scope."""
     from django.contrib.staticfiles import finders
@@ -44,6 +51,12 @@ urlpatterns = [
     path("health/", health_check, name="health"),
     # Landing
     path("", landing_page, name="landing"),
+    # Legal pages
+    path("privacy/", legal_page("privacy.html"), name="privacy"),
+    path("terms/", legal_page("terms.html"), name="terms"),
+    path("cookies/", legal_page("cookies.html"), name="cookies"),
+    path("acceptable-use/", legal_page("acceptable_use.html"), name="acceptable_use"),
+    path("dpa/", legal_page("dpa.html"), name="dpa"),
     # Public help / learn section (no login required)
     path("learn/", include("apps.help.urls_public")),
     # Growth Partners (public + authenticated)

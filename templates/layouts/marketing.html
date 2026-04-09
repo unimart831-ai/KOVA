@@ -67,7 +67,9 @@
         <a href="{% url 'partners:landing' %}" class="hover:text-white transition-colors">Partners</a>
         <a href="{% url 'account_login' %}" class="hover:text-white transition-colors">Sign in</a>
         <a href="{% url 'account_signup' %}" class="hover:text-white transition-colors">Sign up</a>
-        <span class="text-gray-600">Terms & privacy — coming soon</span>
+        <a href="{% url 'privacy' %}" class="hover:text-white transition-colors">Privacy</a>
+        <a href="{% url 'terms' %}" class="hover:text-white transition-colors">Terms</a>
+        <a href="{% url 'cookies' %}" class="hover:text-white transition-colors">Cookies</a>
       </div>
       <p class="text-sm">&copy; {% now "Y" %} Kova Agent</p>
     </div>
