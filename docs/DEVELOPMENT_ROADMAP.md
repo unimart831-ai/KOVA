@@ -861,7 +861,7 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 | Phase 4 | Sprint 13 | ✅ Complete | Agency Multi-Brand, Revenue Attribution, Mobile PWA, API Docs |
 | Phase 4 | Voice Memo | ✅ Complete | Voice Memo input (Whisper transcription → content seed) |
 | Phase 5 | Post-Launch  | ⏳ Not Started | WhatsApp Intelligence, Meme Engine, Status Studio |
-| Phase 6 | Post-Phase 5 | ⏳ Not Started | Kova Links, CTA System, Lead Inbox, Email Marketing, Superfan Workflows, Video AI, Revenue Attribution |
+| Phase 6 | Post-Phase 5 | ⏳ Not Started | Kova Links, CTA System, Lead Inbox, Email Marketing, Superfan Workflows, Video AI, Revenue Attribution, **Stock-Aware Product Intelligence** |
 | Phase 7 | Post-Phase 6 | ⏳ Not Started | Commerce Pipeline, Revenue Prediction, Audience Genome, Kova Score, Network Intelligence, Strategic Foresight, Digital Business Passport |
 | Phase 8 | Post-Phase 7 | ⏳ Deferred | White-label UI, Agent Marketplace, Open-source |
 
@@ -1652,6 +1652,232 @@ channel — they're all customer support tools. This is category creation.
   - GA4: Measurement Protocol v2 (server-side events, no client JS needed)
   - Attribution: new `ConversionTouchpoint` model for multi-touch journey tracking
 
+### Sprint 6H: Stock-Aware Product Intelligence (P1) ⏳ NOT STARTED
+##
+## WHY THIS SPRINT EXISTS:
+## ───────────────────────
+## From our strategic analysis (April 2026): we don't build inventory management — that's Zoho.
+## We build STOCK-AWARE AI. The insight: Kova's agents create content in a vacuum. They don't
+## know what the business actually sells, what's in stock, what's running low, or what's
+## overstocked. This creates a broken loop:
+##
+##   Business promotes Product X on social → Customers want it → It's out of stock → Lost sale
+##   Business has 200 units of Product Y → Nobody promotes it → Dead inventory → Trapped cash
+##
+## Stock-Aware AI closes this loop. Every agent becomes product-intelligent:
+##   - Create Agent writes about what's IN STOCK, stops promoting what ISN'T
+##   - Analyst correlates engagement with actual product availability
+##   - Strategist recommends content shifts based on stock levels
+##   - Daily Brief warns about stock-content mismatches
+##
+## This is NOT inventory management. No barcode scanning. No POS. No supplier management.
+## This is INVENTORY AWARENESS for the AI — a simple product catalog that makes every agent smarter.
+##
+## UNIQUENESS TEST: Shopify has inventory. Buffer has social media. NOBODY connects them with AI.
+## "Stock-Aware Social Intelligence" is a new category. No tool adjusts content strategy based
+## on what the business actually has on shelves.
+##
+## ESTIMATED EFFORT: 2-3 weeks (lightweight data layer + agent prompt enrichment)
+## PREREQUISITE: Sprint 6C (Lead Inbox — contact/customer awareness)
+## GENERATES DATA FOR: Phase 7 Sprint 7A (Commerce Pipeline builds on this catalog)
+##
+
+## --- 6H.1: Product Catalog (The Foundation) ---
+
+- [ ] New Django app: `apps/products/`
+- [ ] **Product model** — the business's offerings
+  - Fields: user (FK), name, description (TextField, optional), category (CharField),
+    price (DecimalField), currency (CharField, default='KES'),
+    price_range_min (Decimal, nullable — for variable pricing like "KES 5,000-15,000"),
+    price_range_max (Decimal, nullable),
+    image (ImageField, optional — stored in R2),
+    stock_status (choices: in_stock, low_stock, out_of_stock, made_to_order, unlimited),
+    quantity (PositiveIntegerField, nullable — optional, for businesses that track exact numbers),
+    low_stock_threshold (PositiveIntegerField, default=5 — when to flag as "low stock"),
+    is_featured (BooleanField — user marks products to push harder in content),
+    is_active (BooleanField, default=True),
+    tags (JSONField — freeform tags like "bestseller", "new arrival", "seasonal"),
+    created_at, updated_at
+  - Constraints: unique_together = (user, name) — prevent duplicates
+  - Simple admin: no SKUs, no barcodes, no variants — just name-price-status-image
+  - Manager method: `Product.objects.in_stock(user)`, `Product.objects.low_stock(user)`,
+    `Product.objects.featured(user)`
+
+- [ ] **ProductCategory model** — user-defined categories for organizing products
+  - Fields: user (FK), name, description (optional), position (ordering), is_active
+  - Default categories created on first use: "Products", "Services"
+  - Purpose: agents can reference "your [category] items" in content
+
+- [ ] **StockUpdate model** — audit trail of stock changes
+  - Fields: product (FK), previous_status, new_status, previous_quantity (nullable),
+    new_quantity (nullable), reason (choices: manual_update, sale, restock, adjustment),
+    notes (optional), created_at
+  - Purpose: track when stock changed so agents can react ("Product X went from in_stock
+    to low_stock 2 hours ago — stop heavy promotion, create urgency content instead")
+
+- [ ] **Product import options** (multiple paths for easy onboarding):
+  - Manual entry: simple form at `/products/add/` — name, price, status, image. Done in 30 seconds.
+  - CSV upload: `/products/import/` — template CSV with columns: name, category, price, stock_status, quantity
+  - Bulk paste: textarea input — paste a list like "Blue sneakers, 5000, in stock\nRed sneakers, 4500, out of stock"
+  - Future: Shopify sync (Phase 7 Sprint 7A handles this), WooCommerce sync, Google Sheets import
+  - Minimum viable: a business should add their first 5 products in under 3 minutes
+
+- [ ] **Product management UI** — `/products/`
+  - Grid view: product cards with image, name, price, stock status badge (green/yellow/red)
+  - Quick edit: click stock badge → dropdown to change status (no page reload — HTMX)
+  - Quick quantity: click quantity → inline edit (for businesses that track exact numbers)
+  - Bulk actions: select multiple → "Mark out of stock", "Mark in stock", "Delete"
+  - Empty state: "Add your products so Kova's AI can create smarter content about what you sell"
+  - Search + filter: by category, stock status, featured status
+
+## --- 6H.2: Agent Stock Awareness (The Intelligence Layer) ---
+
+- [ ] **Product context injection** — every agent prompt gets enriched with product data
+  - `get_product_context(user)` utility function returns formatted product summary:
+    ```
+    BUSINESS PRODUCTS:
+    ─────────────────
+    IN STOCK (promote these):
+    • Blue Sneakers — KES 5,000 [FEATURED] [47 units]
+    • Running Shoes — KES 3,500 [12 units, LOW STOCK]
+    • Sports Socks — KES 500 [unlimited/made-to-order]
+
+    OUT OF STOCK (DO NOT promote):
+    • Red Sneakers — KES 4,500 [OUT OF STOCK]
+
+    FEATURED (push harder):
+    • Blue Sneakers — user wants extra promotion on this item
+    ```
+  - Injected into: Create Agent (seed → posts), Research Agent (trend relevance),
+    Strategist (content planning), Engage Agent (reply context)
+  - Token cost: ~200-500 extra input tokens per call. At $0.50/1M = negligible.
+
+- [ ] **Create Agent — stock-aware content generation**:
+  - When generating from a seed, Create Agent checks product catalog:
+    - Seed mentions a product name → check if in stock → include in content (or skip + warn)
+    - Auto-seed mode (Strategist): only suggests seeds for in-stock/featured products
+    - Low stock detection: "Running Shoes has 12 units left → Create scarcity/urgency content:
+      'Only a few left! Grab your pair before they're gone 🔥'"
+    - Overstock detection: featured products not getting enough content → auto-suggest more seeds
+    - Out-of-stock guard: if user manually creates a seed for an OOS product, soft warning:
+      "⚠️ Red Sneakers is currently out of stock. Generate content anyway? [Yes / Skip / Mark as restock reminder]"
+  - A/B testing: stock-aware posts tagged internally, performance compared vs generic posts
+
+- [ ] **Analyst Agent — product-performance correlation**:
+  - New analysis dimension: correlate engagement metrics with product mentions
+  - Content DNA extension: tag posts with referenced products (via NLP entity matching)
+  - Insights: "Posts about Blue Sneakers get 3.2× more saves than your average post.
+    It's your #1 revenue driver from social. Keep promoting it."
+  - Demand signal: "Your audience engaged 45× with shoe content but 0× with bag content this week.
+    Consider adjusting your product focus."
+
+- [ ] **Strategist Agent — stock-informed content planning**:
+  - Morning strategy cycle considers stock levels:
+    - "4 products in stock, 1 featured, 2 low stock → Plan: 2 posts about featured,
+      1 urgency post about low stock items, 1 general brand post"
+    - "Product Y marked out of stock yesterday → Remove scheduled post about Product Y,
+      replace with in-stock alternative"
+  - Weekly content recommendation: "This week, focus content on [Product X] — it's in stock,
+    it's featured, and engagement on similar content is trending up."
+
+- [ ] **Engage Agent — product-aware replies**:
+  - When a comment says "How much for the red ones?" → Engage Agent checks catalog:
+    - In stock: "The Red Sneakers are KES 4,500! DM us to order 🛒"
+    - Out of stock: "The Red Sneakers are currently sold out, but we'll restock soon!
+      Want us to notify you when they're back? 📩"
+    - Similar in stock: "The Red Sneakers are sold out — but check out our Blue Sneakers
+      at KES 5,000, same style! 👟"
+  - This DIRECTLY feeds into Phase 7 Sprint 7A's commerce pipeline (but simpler — no auto-DM
+    sequences yet, just smarter replies)
+
+- [ ] **Daily Brief — stock intelligence section**:
+  ```
+  📦 PRODUCT PULSE
+  ─────────────────
+  • 🟢 In Stock: 8 products
+  • 🟡 Low Stock: 2 products (Running Shoes: 12 left, White Tees: 3 left)
+  • 🔴 Out of Stock: 1 product (Red Sneakers)
+  • ⭐ Featured: Blue Sneakers (promoted in 4 posts this week, 890 engagements)
+
+  💡 STOCK-CONTENT MISMATCHES:
+  • White Tees has only 3 units but 2 scheduled posts — consider removing or adding urgency CTA
+  • Sports Socks has 0 posts this month but is a made-to-order item with strong margin — create content?
+
+  📈 PRODUCT DEMAND SIGNALS (from social engagement):
+  • "Delivery" mentioned 23 times in comments this week — audience wants delivery info in your content
+  • Blue Sneakers posts get 3.2× more saves than average — your audience WANTS this product
+  ```
+
+## --- 6H.3: Stock Notifications + Automation ---
+
+- [ ] **StockAlert model** — automated alerts when stock status changes
+  - Fields: product (FK), alert_type (choices: low_stock_warning, out_of_stock,
+    restocked, featured_no_content, overstock_no_promotion),
+    message, is_read, created_at
+  - Auto-generated by Celery task `check-stock-alerts` (daily, or on StockUpdate save signal)
+
+- [ ] **Auto-content triggers** (opt-in per user):
+  - Product goes OUT OF STOCK → pause any scheduled posts mentioning it + notify user
+  - Product RESTOCKED → auto-generate "Back in stock!" content seed for user approval
+  - Product marked FEATURED → Strategist prioritizes it in next content cycle
+  - Low stock threshold hit → generate urgency/scarcity content seed
+  - Automation toggle: `/settings/products/` — user controls which triggers are active
+
+- [ ] **Stock update channels** (multiple ways to update stock):
+  - Dashboard: click product → update status/quantity (primary method)
+  - Quick action: from Daily Brief notification → "Mark as restocked" button
+  - WhatsApp (Phase 5): "Update stock: Blue Sneakers 50" → parsed and updated
+  - Future API: Shopify webhook → auto-update stock levels (Phase 7 Sprint 7A)
+
+## --- 6H.4: Analytics + Plan Limits ---
+
+- [ ] **Product analytics dashboard** — `/analytics/products/`
+  - Table: all products with columns: Name, Stock Status, Posts Mentioning, Total Engagement,
+    Estimated Revenue (if revenue attribution active from 6G), Last Promoted
+  - Insight cards: "Top product by engagement", "Products never promoted",
+    "Biggest stock-content mismatch"
+  - Trend: engagement per product over time (which products are gaining/losing interest)
+
+- [ ] Plan limits:
+  ```
+  Starter:  5 products, manual stock status only (no quantity), stock alerts, basic agent awareness
+  Growth:   30 products, quantity tracking, CSV import, full agent awareness, auto-content triggers
+  Pro:      100 products, all features + product analytics dashboard + demand signals
+  Agency:   Unlimited products, all features + per-brand catalogs + bulk management
+  ```
+
+- [ ] **Onboarding integration** — add product setup to onboarding flow:
+  - After platform connection step: "What do you sell? Add a few products so Kova's AI
+    knows what to promote." (optional, skip-able)
+  - Quick add: 3 product slots with name + price + stock status. 60 seconds.
+  - Motivation: "Businesses with products added get 2.4× more relevant content from Kova's AI"
+
+- DELIVERABLE: Every Kova agent becomes product-intelligent. Content is automatically aligned with
+  what the business actually sells and stocks. The broken loop of "promote things you don't have"
+  and "ignore things you're overstocked on" is closed. This is not inventory management — it's
+  inventory AWARENESS for the AI.
+
+- UNIQUENESS TEST: "Kova's AI adjusts your entire content strategy based on what you have in stock."
+  → "...I've never seen that before." ✅ No social media tool does this. Shopify has inventory.
+  Buffer has scheduling. Nobody connects them with AI that autonomously shifts content based on stock.
+  This is Stock-Aware Social Intelligence — a new category.
+
+- **TECHNICAL NOTES:**
+  - **New app:** `apps/products/` — ~4 models, ~6 views, ~3 templates
+  - **Database:** ~4 new tables. Product table grows slowly (~5-100 products per user)
+  - **Token cost:** ~200-500 extra input tokens per agent call for product context injection.
+    At recommended stack pricing: $0.50/1M input = negligible. Expected increase: <$0.01/user/month.
+  - **Celery tasks:** 1 new periodic task: `check-stock-alerts` (daily)
+  - **No new external services.** No barcode scanners. No POS. No hardware. Pure software.
+  - **Migration path to Phase 7:** Sprint 7A's Product/Service Catalog model extends this Product
+    model with: delivery_zones, payment_methods, lead_time_days, availability_status refinements.
+    Sprint 7A's CommercialIntentDetector uses this catalog for product matching in DMs/comments.
+  - **Agent prompt cost analysis:**
+    - Average user: 20 products × ~25 tokens each = ~500 extra input tokens per call
+    - At ~100 calls/month (Growth): 50,000 extra input tokens/month
+    - Cost: 50,000 × ($0.50 / 1,000,000) = $0.025/month — essentially free
+  - **Performance:** product context cached in Redis (5-min TTL), not queried per agent call
+
 ### Phase 6 — Key Metrics (How We Know It's Working)
 | Metric | Target | How Measured |
 |--------|--------|-------------|
@@ -1661,27 +1887,35 @@ channel — they're all customer support tools. This is category creation.
 | Email subscriber growth | 20%+ month-over-month growth per active user | EmailSubscriber growth rate by user |
 | CTA click-through rate | 2%+ average across all posts with tracked CTAs | LinkClick count / Post impressions |
 | Revenue attribution | 30%+ of Pro users track at least 1 sale back to social | Conversion records with type=sale |
-| Churn reduction | 40% lower churn for users with active Kova Links + Email | Subscription cancellation rate segmented by feature usage |
+| Product catalog adoption | 50%+ of active users add at least 3 products within 1 week | Product count per user vs signup date |
+| Stock-content alignment | 90%+ of generated content references only in-stock products | Posts mentioning OOS products / total posts with product refs |
+| Stock mismatch reduction | 70%+ reduction in posts promoting out-of-stock items vs pre-6H baseline | Scheduled posts for OOS products detected and paused |
+| Churn reduction | 40% lower churn for users with active Kova Links + Email + Products | Subscription cancellation rate segmented by feature usage |
 
 ### Phase 6 — Technical Architecture Notes
 - **No new external services** for P0/P1: everything runs on existing stack (Django, Celery, Resend, PostgreSQL)
 - **Resend scales**: currently used for transactional email only. Resend supports marketing email
   at same API/SMTP setup. No migration needed. Just higher volume.
-- **Database**: new models add ~8 tables. All have created_at indexes for time-series queries.
+- **Database**: new models add ~12 tables (~8 from 6A-6G + ~4 from 6H). All have created_at indexes for time-series queries.
   Estimated row growth: ~10K leads/mo, ~50K link clicks/mo, ~100K email events/mo at 1000 active users.
-- **Celery tasks**: 4 new periodic tasks:
+  Product tables grow slowly (~5-100 products per user, infrequent updates).
+- **Celery tasks**: 5 new periodic tasks:
   - `process-form-submissions` (real-time via webhook or every 5 min batch)
   - `send-email-campaigns` (on-demand, rate-limited per plan)
   - `run-superfan-workflows` (every 30 min, after engage cycle)
   - `sync-conversion-events` (every hour, from Shopify/GA4 webhooks)
+  - `check-stock-alerts` (daily — detect low stock, OOS, content mismatches)
 - **Plan enforcement**: extend existing `PlanEnforcementMiddleware` with new limits
+- **New app (6H)**: `apps/products/` — lightweight product catalog. No external dependencies.
+  Agent prompt injection adds ~200-500 tokens per call, cached in Redis (5-min TTL).
 
 
 ## ─── PHASE 7: Business Intelligence OS — "See What Nobody Else Can See" (Post-Phase 6) ───
 ##
 ## THE CATEGORY SHIFT THIS PHASE CREATES:
 ## ───────────────────────────────────────
-## After Phase 6, Kova is a Social Media Operating System — content, engagement, leads, email, revenue.
+## After Phase 6, Kova is a Stock-Aware Social Media Operating System — content, engagement, leads,
+## email, revenue, AND product intelligence. Agents already know what the business sells and stocks.
 ## After Phase 7, Kova becomes a BUSINESS INTELLIGENCE OPERATING SYSTEM — it doesn't just help
 ## businesses DO things (post, email, capture). It helps businesses KNOW things (predict, decide, evolve).
 ##
@@ -1706,7 +1940,11 @@ channel — they're all customer support tools. This is category creation.
 ## ──────────────────────────────────────────────────────
 ## VALUE RANK: #1 — Highest Immediate Value
 ## BIOS CONTRIBUTION: Closes the last human bottleneck. After this, content → money is fully autonomous.
-## PREREQUISITE: Phase 6 complete (Kova Links, CTA system, Lead Inbox, Email sequences)
+## PREREQUISITE: Phase 6 complete (Kova Links, CTA system, Lead Inbox, Email sequences, Stock-Aware Product Intelligence)
+## BUILDS ON: Sprint 6H Product Catalog — extends the Product model with commerce fields
+##            (delivery_zones, payment_methods, lead_time_days) and connects it to the
+##            autonomous sales pipeline. 6H gives agents stock awareness. 7A gives agents
+##            the ability to SELL autonomously using that awareness.
 ## GENERATES DATA FOR: Revenue Prediction (7B), Audience Genome (7C), Kova Score (7D)
 ##
 ## THE INVISIBLE PROBLEM:
@@ -1734,13 +1972,13 @@ channel — they're all customer support tools. This is category creation.
     conversion_value_estimate (Decimal — AI-estimated deal value),
     status (choices: auto_sent, pending_review, user_edited, cancelled), created_at
 
-- [ ] **Product/Service Catalog model** — user's offerings (used by commerce AI)
-  - Fields: user (FK), name, description, price, currency, price_range_min, price_range_max,
-    category, image_url, availability_status (in_stock/out_of_stock/made_to_order),
+- [ ] **Product/Service Catalog model** — EXTENDS Sprint 6H's Product model with commerce fields
+  - Additional fields (added via migration on existing `apps/products/Product` model):
     delivery_zones (JSONField — areas served), lead_time_days,
-    payment_methods (JSONField — M-Pesa, bank, card, cash), is_active
-  - Purpose: Engage Agent pulls from catalog to answer "How much?" accurately
-  - Import: manual entry or CSV upload (future: Shopify sync from Phase 6G)
+    payment_methods (JSONField — M-Pesa, bank, card, cash)
+  - NOTE: Core fields (name, price, stock_status, quantity, category, image) already exist from 6H
+  - Purpose: Engage Agent pulls from catalog to answer "How much?" with delivery + payment details
+  - Import: manual entry or CSV upload (already from 6H), future: Shopify sync from Phase 6G
 
 - [ ] **Commerce automation pipeline** (the full auto-flow):
   ```
@@ -2843,11 +3081,11 @@ while you focus on what you do best. Your business grows while you sleep."
 
 ## 17.3 The Evolution Arc
 ```
-Phase 1-4:  CONTENT TOOL        → "AI helps you post better"
-Phase 5:    CHANNEL OWNER        → "AI owns the conversation on WhatsApp"
-Phase 6:    OPERATING SYSTEM     → "AI runs your entire marketing: content + leads + email + revenue"
-Phase 7:    INTELLIGENCE SYSTEM  → "AI tells your business where to go next"
-Phase 8+:   PLATFORM / ECOSYSTEM → "AI connects businesses, banks, and markets"
+Phase 1-4:  CONTENT TOOL              → "AI helps you post better"
+Phase 5:    CHANNEL OWNER             → "AI owns the conversation on WhatsApp"
+Phase 6:    STOCK-AWARE OPERATING SYSTEM → "AI runs your marketing AND knows what you sell"
+Phase 7:    INTELLIGENCE SYSTEM        → "AI tells your business where to go next"
+Phase 8+:   PLATFORM / ECOSYSTEM       → "AI connects businesses, banks, and markets"
 ```
 
 ## 17.4 The Endgame
@@ -2857,13 +3095,14 @@ Not a tool they use. Not an app they open. An invisible intelligence that:
 1. Creates and publishes content autonomously (Phase 1-4)
 2. Engages community and captures leads (Phase 3+6)
 3. Nurtures relationships via email and social (Phase 6)
-4. Detects buying signals and closes sales automatically (Phase 7A)
-5. Predicts revenue and advises on content investment (Phase 7B)
-6. Understands their audience deeper than any survey (Phase 7C)
-7. Quantifies their digital brand into a bankable score (Phase 7D)
-8. Shows them market intelligence only platforms can see (Phase 7E)
-9. Advises where their business should go next (Phase 7F)
-10. Represents their business with a verified digital identity (Phase 7G)
+4. Knows what you sell and aligns content to your actual stock (Phase 6 Sprint 6H)
+5. Detects buying signals and closes sales automatically (Phase 7A)
+6. Predicts revenue and advises on content investment (Phase 7B)
+7. Understands their audience deeper than any survey (Phase 7C)
+8. Quantifies their digital brand into a bankable score (Phase 7D)
+9. Shows them market intelligence only platforms can see (Phase 7E)
+10. Advises where their business should go next (Phase 7F)
+11. Represents their business with a verified digital identity (Phase 7G)
 
 The trust infrastructure of digital commerce in Africa doesn't exist.
 Kova builds it — one verified business at a time.
