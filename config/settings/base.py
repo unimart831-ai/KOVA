@@ -311,9 +311,10 @@ LLM_PAID_FALLBACK_PROVIDER = env("LLM_PAID_FALLBACK_PROVIDER", default="openrout
 # Override individual tasks via env vars, or change the tier defaults.
 # Tier: premium (creative writing) | workhorse (reasoning) | fast (classification)
 # DEV: Using free OpenRouter models. Switch to paid models for production.
-LLM_MODEL_PREMIUM = env("LLM_MODEL_PREMIUM", default="meta-llama/llama-4-maverick:free")
-LLM_MODEL_WORKHORSE = env("LLM_MODEL_WORKHORSE", default="meta-llama/llama-4-maverick:free")
-LLM_MODEL_FAST = env("LLM_MODEL_FAST", default="stepfun/step-3.5-flash:free")
+# Updated 2026-04-09: llama-4-maverick:free & stepfun/step-3.5-flash:free are dead (404).
+LLM_MODEL_PREMIUM = env("LLM_MODEL_PREMIUM", default="nvidia/nemotron-3-super-120b-a12b:free")
+LLM_MODEL_WORKHORSE = env("LLM_MODEL_WORKHORSE", default="openai/gpt-oss-120b:free")
+LLM_MODEL_FAST = env("LLM_MODEL_FAST", default="nvidia/nemotron-3-nano-30b-a3b:free")
 
 AGENT_MODELS = {
     # Create Agent — user-facing content, needs top creative quality
@@ -346,11 +347,16 @@ DEFAULT_TOKEN_COST = (0.0, 0.0)  # fallback for unrecognized models
 
 MODEL_TOKEN_COSTS = {
     # ── Free OpenRouter models (dev) ──────────────────────────────────
+    "nvidia/nemotron-3-super-120b-a12b:free":(0.0, 0.0),
+    "openai/gpt-oss-120b:free":             (0.0, 0.0),
+    "nvidia/nemotron-3-nano-30b-a3b:free":  (0.0, 0.0),
+    "minimax/minimax-m2.5:free":            (0.0, 0.0),
+    "z-ai/glm-4.5-air:free":               (0.0, 0.0),
+    "mistralai/mistral-7b-instruct:free":   (0.0, 0.0),
+    # Dead/deprecated — kept for historical cost lookups:
     "qwen/qwen3.6-plus:free":              (0.0, 0.0),
     "stepfun/step-3.5-flash:free":          (0.0, 0.0),
-    "nvidia/nemotron-3-super-120b-a12b:free":(0.0, 0.0),
-    "minimax/minimax-m2.5:free":           (0.0, 0.0),
-    "mistralai/mistral-7b-instruct:free":   (0.0, 0.0),
+    "meta-llama/llama-4-maverick:free":     (0.0, 0.0),
 
     # ── OpenAI ────────────────────────────────────────────────────────
     "gpt-4o-mini":          (0.00015, 0.0006),   # $0.15/$0.60 per 1M

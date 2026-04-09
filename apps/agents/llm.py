@@ -343,10 +343,10 @@ def generate(
         _FREE_FALLBACKS = config.free_fallback_models
     else:
         _FREE_FALLBACKS = [
-            "meta-llama/llama-4-maverick:free",
             "nvidia/nemotron-3-super-120b-a12b:free",
+            "openai/gpt-oss-120b:free",
             "minimax/minimax-m2.5:free",
-            "stepfun/step-3.5-flash:free",  # Demoted: frequent empty responses
+            "z-ai/glm-4.5-air:free",
     ]
 
     # Paid escalation model — used as last resort when all free models fail.
