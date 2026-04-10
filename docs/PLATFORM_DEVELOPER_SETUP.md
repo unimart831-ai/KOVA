@@ -1,21 +1,31 @@
 # ============================================================================
-# KOVA AGENT — PLATFORM DEVELOPER ACCOUNT SETUP
+# KOVA AGENT — PLATFORM DEVELOPER ACCOUNT SETUP (COMPLETE GUIDE)
 # ============================================================================
 # One-time setup guide for the platform owner (you).
-# This creates the OAuth "pipes" that let ALL your users connect platforms.
+# This creates the OAuth "pipes" that let ALL your KOVA users connect platforms.
 # Your clients never see any of this — they just click "Connect" and authorize.
 #
-# Last updated: April 2026 — 9 platforms (FB, IG, Twitter, LinkedIn, TikTok, YouTube, Pinterest, Threads, Bluesky)
+# Last updated: June 2026 — 9 platforms
+# Platforms: Facebook, Instagram, Twitter/X, LinkedIn, TikTok, YouTube,
+#            Pinterest, Threads, Bluesky
+#
+# KOVA Capabilities per platform:
+#   - Publish posts (text, images, video, carousels)
+#   - Fetch engagement metrics (likes, comments, shares, impressions)
+#   - Fetch and reply to comments
+#   - Token refresh / session management
 # ============================================================================
 
 
-# STEP 0: CREATE A KOVA BUSINESS EMAIL
-# ============================================================================
-# All developer accounts below will use this email.
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  STEP 0: CREATE A KOVA BUSINESS EMAIL                                  ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+#
+# All developer accounts below should use a SINGLE business email.
 # Keep it separate from your personal email.
 # ============================================================================
 
-Recommended: kovaagent.ai@gmail.com (or your-name@kovaagent.com)
+Recommended: kovaagents@gmail.com (or your-name@kovaagent.com)
 
 Quick options:
   - Gmail: https://accounts.google.com/signup (free, instant)
@@ -25,988 +35,1143 @@ Quick options:
 Save these credentials in a password manager (1Password, Bitwarden, etc.).
 
 
-# ============================================================================
-# STEP 1: FACEBOOK + INSTAGRAM + WHATSAPP (one Meta app)
-# ============================================================================
-# Priority: DO THIS FIRST — one Meta app unlocks Facebook Pages, Instagram,
-#           and WhatsApp. Meta now uses a USE-CASE-BASED app creation flow.
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  STEP 1: FACEBOOK + INSTAGRAM (One Meta App)                           ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+#
+# Priority: DO THIS FIRST — one Meta app unlocks Facebook Pages AND Instagram.
+# Meta now uses a USE-CASE-BASED app creation flow.
 # Time: ~20 minutes (+ up to 48 hours if identity verification is triggered)
+#
+# Graph API version: v25.0 (latest as of June 2026)
 # Docs: https://developers.facebook.com/docs/development
+#
+# KOVA uses:
+#   - Publish to Facebook Pages (text, photos, videos)
+#   - Publish to Instagram (single image, carousels, reels)
+#   - Read Page/IG insights (reach, impressions, engagement)
+#   - Fetch and reply to comments on both platforms
+#   - Long-lived tokens (60-day validity, auto-refreshed)
 # ============================================================================
 
 ## 1a. Create a Facebook Account & Register as Meta Developer
 
 1. Go to https://www.facebook.com/r.php
 2. Sign up with your Kova business email
-3. Use your real name (Facebook requires it, can get banned otherwise)
-4. Verify email + phone number when prompted
+3. Complete account setup — add a profile picture (Meta may flag faceless accounts)
+4. Go to https://developers.facebook.com/
+5. Click "Get Started" → follow the prompts to register as a developer
+6. Verify your email and accept the Platform Terms
 
-Then register as a developer:
+## 1b. Create a Meta App (Use-Case Flow)
 
-1. Go to https://developers.facebook.com/async/registration
-   (or visit https://developers.facebook.com/ and click "Get Started")
-2. Click Next to agree to Meta Platform Terms and Developer Policies
-3. Verify your phone number and email (confirmation code sent to both)
-4. Select your occupation (e.g., "Developer")
+1. Go to https://developers.facebook.com/apps/
+2. Click "Create App"
+3. Meta shows use cases — select the ones KOVA needs:
 
-Docs: https://developers.facebook.com/docs/development/register
+   USE CASES TO SELECT:
+   ┌─────────────────────────────────────────────────────────┐
+   │  ✅ Authenticate and request data from users with       │
+   │     Facebook Login                                      │
+   │  ✅ Access the pages API (for Facebook Page management)  │
+   │  ✅ Access the Instagram API (for IG publishing/metrics) │
+   └─────────────────────────────────────────────────────────┘
 
-## 1b. Create a Facebook Page
+4. App name: "KOVA Agent" (or your preferred name)
+5. App contact email: your Kova business email
+6. Business portfolio: select yours, or create one at
+   https://business.facebook.com/
+7. Click "Create App"
 
-Required before your app can manage Pages on behalf of users.
+## 1c. Configure Required Permissions
 
-1. Log into the new Facebook account
-2. Go to https://www.facebook.com/pages/create
-3. Page name: Kova Agent
-4. Category: Software or Technology
-5. Add a profile picture (Kova logo) and cover image
-6. Publish the page
+After app creation, go to: App Dashboard → Use Cases → Customize
 
-## 1c. Create the Developer App (Use-Case-Based)
+For each use case, add these permissions:
 
-Meta no longer uses "App type" (Business, Consumer, etc.).
-Apps are now created by selecting USE CASES that define what your app can do.
+FACEBOOK PAGES PERMISSIONS:
+  - pages_manage_metadata   — Manage Page settings
+  - pages_manage_posts      — Create, edit, delete Page posts
+  - pages_read_engagement   — Read Page likes, comments, shares
+  - pages_manage_engagement — Reply to comments, hide/delete comments
+  - read_insights            — Read Page analytics (reach, impressions)
 
-1. Go to https://developers.facebook.com/apps/creation/
-2. Enter app details:
-   - App name: Kova Agent
-   - Contact email: your Kova business email
-3. Click Next
+INSTAGRAM PERMISSIONS:
+  - instagram_content_publish  — Publish photos, carousels, reels
+  - instagram_manage_insights  — Read IG account analytics
+  - instagram_manage_comments  — Read/reply to IG comments
+  - instagram_manage_messages  — (Optional) IG DM access
 
-4. Select these USE CASES (you need all three for Kova):
+FACEBOOK LOGIN PERMISSIONS:
+  - email                    — User's email address
+  - public_profile           — User's name and profile picture
 
-   ┌─────────────────────────────────────────────────────────────┐
-   │ USE CASE                              │ WHAT IT UNLOCKS     │
-   ├─────────────────────────────────────────────────────────────┤
-   │ Manage everything on your Page        │ Facebook Pages API  │
-   │ Manage messaging & content on IG      │ Instagram API       │
-   │ Connect with customers through WA     │ WhatsApp Cloud API  │
-   └─────────────────────────────────────────────────────────────┘
+Full scopes string KOVA sends (configured in instagram_facebook.py):
+```
+email,public_profile,pages_manage_metadata,pages_manage_posts,
+pages_read_engagement,pages_manage_engagement,pages_messaging,
+read_insights,instagram_content_publish,instagram_manage_insights,
+instagram_manage_comments,instagram_manage_messages
+```
 
-   Note: Some use cases are incompatible with each other — greyed-out ones
-   can't be added. The three above are compatible.
-   Note: Facebook Login for Business and Webhooks may be auto-added.
-   Note: Use cases CANNOT be removed after creation — only new ones added.
+## 1d. Configure Facebook Login for Business (config_id Approach)
 
-5. Click Next
+Meta now uses "Login for Business" with a Login Configuration ID instead of
+old-style scope-based login. This is MORE RELIABLE for app review.
 
-6. Connect a Business Portfolio (or create one):
-   - Option A: Select an existing verified business portfolio
-   - Option B: Select an unverified business portfolio
-   - Option C: Create a business portfolio (enter your business info)
-   - Option D: "I don't want to connect a business portfolio yet"
-   Note: WhatsApp use case REQUIRES a business portfolio.
+1. Go to: App Dashboard → Facebook Login for Business
+2. Click "Create Configuration"
+3. Name it: "KOVA Platform Connect"
+4. Under Login Flow → select the use-case permissions listed in 1c above
+5. Save — you'll get a **Login Configuration ID** (numeric string)
+6. Set this as your FACEBOOK_LOGIN_CONFIG_ID env var (see Step 1j)
 
-7. Click Next → Review requirements → Click "Go to dashboard"
+If config_id is set, KOVA uses it for the OAuth flow automatically.
+If not set, KOVA falls back to scope-based login (still works for development).
 
-Docs: https://developers.facebook.com/docs/development/create-an-app
+## 1e. Get Your App Credentials
 
-## 1d. Customize Use Cases & Permissions
+1. Go to: App Dashboard → Settings → Basic
+2. Copy:
+   - **App ID** → this is your FACEBOOK_APP_ID
+   - **App Secret** → click "Show" → this is your FACEBOOK_APP_SECRET
+3. Under "App Domains" add: your production domain (e.g., kovaagent-production.up.railway.app)
 
-After creating the app, customize each use case from the App Dashboard.
+## 1f. Set OAuth Redirect URIs
 
-Go to: App Dashboard → Use Cases → click "Customize" on each use case.
+1. Go to: App Dashboard → Facebook Login for Business → Settings
+   (or Facebook Login → Settings if using legacy)
+2. Under "Valid OAuth Redirect URIs" add:
+   - https://YOUR_DOMAIN/platforms/facebook/callback/
+   - https://YOUR_DOMAIN/platforms/instagram/callback/
+   - http://localhost:8000/platforms/facebook/callback/    (for local dev)
+   - http://localhost:8000/platforms/instagram/callback/   (for local dev)
+3. Save Changes
 
-### For "Manage everything on your Page":
-Required permissions (auto-added, can't remove):
-  - business_management
-  - pages_manage_metadata
-  - public_profile
+## 1g. Add Test Users & App Roles (Before App Review)
 
-Add these optional permissions (click "Add" for each):
-  - pages_manage_posts          ← publish posts to Pages
-  - pages_read_engagement       ← read likes, comments, shares
-  - pages_read_user_content     ← read user posts on your Page
-  - pages_manage_engagement     ← respond to comments
-  - pages_messaging             ← Page inbox messaging
-  - read_insights               ← Page analytics
+Until your app passes App Review, only people with app roles can use it.
 
-Note: `pages_show_list` is deprecated as of Graph API v21.0+. Use
-`pages_manage_metadata` instead (auto-added in the use case above).
+1. Go to: App Dashboard → App Roles → Roles
+2. Click "Add People" for each role:
+   - **Admin**: your account (already added)
+   - **Developer**: any co-developer accounts
+   - **Tester**: any accounts you want to test with
+3. Each person must ACCEPT the invitation from their Facebook account
 
-Docs: https://developers.facebook.com/docs/pages-api/
+For Instagram testing:
+- The IG account must be a Professional account (Business or Creator)
+- The IG account must be connected to a Facebook Page
 
-### For "Manage messaging & content on Instagram":
-Required permissions (auto-added):
-  - public_profile
+## 1h. App Review (For Production / Public Use)
 
-Add these optional permissions:
-  - instagram_business_basic              ← business account data
-  - instagram_content_publish             ← publish posts
-  - instagram_business_content_publish    ← business content publishing
-  - instagram_manage_comments             ← moderate comments
-  - instagram_manage_insights             ← analytics
-  - instagram_manage_messages             ← DMs (if needed)
-  - pages_manage_metadata                 ← required for FB-linked IG accounts
-  - pages_read_engagement                 ← read Page engagement
+For public production use (non-test users), you need App Review:
 
-Note: `instagram_basic` is deprecated as of Graph API v21.0+. Use
-`instagram_business_basic` instead.
+1. Go to: App Dashboard → App Review → Permissions and Features
+2. For each permission in 1c, click "Request"
+3. You'll need to provide:
+   - Platform Policy compliance checklist
+   - A screen recording showing how your app uses each permission
+   - A detailed description of the use case
+4. Submit for review — typically takes 1-5 business days
 
-Instagram accounts must be Business or Creator type AND linked to a
-Facebook Page for the Facebook Login flow. Alternatively, use Instagram Login
-(Business Login for Instagram) which doesn't require a FB Page link.
+IMPORTANT: Until App Review is approved, only users with app roles can connect.
 
-Docs: https://developers.facebook.com/docs/instagram-platform/
+## 1i. Token Lifecycle
 
-### For "Connect with customers through WhatsApp":
-Required permissions (auto-added):
-  - whatsapp_business_messaging
-  - whatsapp_business_management
-  - public_profile
+- KOVA requests a short-lived token during OAuth → immediately exchanges it for
+  a long-lived token (60-day validity)
+- KOVA auto-refreshes long-lived tokens before expiry via `fb_exchange_token`
+- User's Page Access Token is derived from the User token and is long-lived
+- If a token expires, the user re-connects from KOVA's Platforms page
 
-Optional:
-  - business_management
-  - whatsapp_business_manage_events
+## 1j. Environment Variables (Railway / .env)
 
-Note: WhatsApp requires a verified Business Portfolio. You'll set up a
-WhatsApp Business Account and register a phone number in the App Dashboard.
-
-Docs: https://developers.facebook.com/docs/whatsapp/cloud-api/get-started
-
-## 1e. Get Your Credentials
-
-1. Go to App Dashboard → App Settings → Basic
-2. Copy the App ID → this is FACEBOOK_APP_ID
-3. Click "Show" next to App Secret → this is FACEBOOK_APP_SECRET
-
-These same credentials are used for Facebook Pages, Instagram, AND WhatsApp.
-
-## 1f. Get Your Login Configuration ID (FB_LOGIN_CONFIG_ID)
-
-Facebook Login for Business uses a **Login Configuration** that bundles all
-your permissions into a single config_id. This replaces the old scope-based
-approach.
-
-1. Go to App Dashboard → Use Cases
-2. Click "Customize" on any use case that has Facebook Login for Business
-3. Click on "Facebook Login for Business" → "Settings"
-4. Under "Configurations", you should see a default configuration
-   (or create one by clicking "Create Configuration")
-5. The Configuration ID is listed — copy this value → this is FB_LOGIN_CONFIG_ID
-6. Make sure ALL the permissions from your use cases are checked/enabled
-   in this configuration
-
-Example: FB_LOGIN_CONFIG_ID=123456789012345
-
-If you don't see a configuration, or you prefer the classic approach:
-- Leave FB_LOGIN_CONFIG_ID empty in your .env
-- Add "Facebook Login" (classic) as a product instead
-- The code will fall back to scope-based authentication automatically
-
-## 1g. Configure OAuth Redirect URIs
-
-Go to App Dashboard → Use Cases → find the use case with Facebook Login for
-Business → click "Customize" → find Facebook Login for Business → Settings.
-
-Under "Valid OAuth Redirect URIs", add ALL of these:
-
-  Production:
-    https://kovaagent-production.up.railway.app/platforms/callback/facebook/
-    https://kovaagent-production.up.railway.app/platforms/callback/instagram/
-
-  Local development:
-    http://localhost:8000/platforms/callback/facebook/
-    http://localhost:8000/platforms/callback/instagram/
-
-Important: URIs must match EXACTLY — including trailing slashes and protocol
-(https vs http). Mismatches cause "Redirect URI mismatch" errors.
-
-## 1h. App Roles (for testing in Development Mode)
-
-While your app is in Development Mode, only people with a role on the app
-(or on the connected business portfolio) can use OAuth.
-
-1. Go to App Dashboard → App Roles → Roles
-2. Click "Add People"
-3. Add yourself and any test users by their Facebook account
-
-You do NOT need App Review to test with users who have a role on your app.
-
-## 1h. WhatsApp-Specific Setup (if using WhatsApp)
-
-1. Go to App Dashboard → WhatsApp → Getting Started
-2. You'll get a temporary test phone number and access token
-3. To use your own number:
-   - Register a phone number under your WhatsApp Business Account
-   - The number must NOT be registered on WhatsApp consumer app
-4. Set Railway env vars (see 1i below)
-
-## 1i. Set Railway Environment Variables
-
-  FACEBOOK_APP_ID=123456789012345
-  FACEBOOK_APP_SECRET=abc123def456ghi789...
-
-  # WhatsApp (optional — only if using WhatsApp use case)
-  WHATSAPP_TOKEN=your_permanent_access_token
-  WHATSAPP_PHONE_NUMBER_ID=your_phone_number_id
-
-## 1j. Verify It Works
-
-1. Start your dev server (or go to production URL)
-2. Go to /platforms/ → Click "Connect" on Facebook
-3. Should redirect to Facebook → authorize → redirect back → Connected!
-4. Repeat for Instagram
-5. For WhatsApp: test sending a message via the WhatsApp Getting Started panel
-
-## 1k. App Review (When Ready for Public Launch)
-
-While in Development Mode, only people with roles on your app can use OAuth.
-For public access, submit each permission for App Review:
-
-1. Go to App Dashboard → App Review → Permissions and Features
-2. For each permission, provide:
-   - Screenshots showing how your app uses the permission
-   - A screencast (video walkthrough) demonstrating the user flow
-   - A clear description of why your app needs the permission
-3. Facebook reviews typically take 1-5 business days
-
-You also need to maintain data access — Meta may require periodic recertification.
-Docs: https://developers.facebook.com/docs/development/maintaining-data-access
+```
+FACEBOOK_APP_ID=your_app_id_here
+FACEBOOK_APP_SECRET=your_app_secret_here
+FACEBOOK_LOGIN_CONFIG_ID=your_config_id_here    # From step 1d (optional but recommended)
+```
 
 
-# ============================================================================
-# STEP 2: X (TWITTER)
-# ============================================================================
-# Priority: Second — fast setup, instant developer approval.
-# Time: ~10 minutes
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  STEP 2: TWITTER / X                                                   ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+#
+# X API v2 now uses pay-per-usage pricing (credit-based).
+# No more Free/Basic/Pro subscription tiers.
+# Purchase credits, deducted per API request.
+#
+# Docs: https://docs.x.com/x-api/getting-started/about-x-api
+# Auth: https://docs.x.com/resources/fundamentals/authentication/oauth-2-0
+#
+# KOVA uses:
+#   - Post tweets (text, images up to 4, video)
+#   - Post threads (multi-tweet chains)
+#   - Read tweet metrics (likes, retweets, replies, impressions)
+#   - Reply to mentions
+#   - OAuth 2.0 with PKCE (refresh tokens, 2-hour access tokens)
 # ============================================================================
 
-## 2a. Create a Twitter/X Account
+## 2a. Create an X Developer Account
 
-1. Go to https://x.com/i/flow/signup
-2. Sign up with your Kova business email
-3. Pick a handle: @KovaAgent (or @KovaAgentAI, etc.)
-4. Verify email + phone number
+1. Go to https://console.x.com/ (formerly developer.twitter.com)
+2. Sign in with your X account (create one at https://x.com if needed)
+3. Complete the developer application:
+   - Describe your use case: "Social media management platform that publishes
+     posts, reads analytics, and manages engagement on behalf of authorized users"
+   - Accept the Developer Agreement
+4. Your account will be reviewed — usually approved within minutes to hours
 
-## 2b. Apply for Developer Access
+## 2b. Purchase API Credits
 
-1. Go to https://developer.x.com/
-2. Sign in with the Kova X account
-3. Sign up for developer access
-4. Choose the Free tier (1,500 tweets/month — enough for testing)
-5. Use case description (paste this):
+X API v2 uses pay-per-usage pricing:
+- No monthly subscriptions — you buy credits, deducted per request
+- Same-resource requests within 24 hours are deduplicated (charged once)
+- Monitor usage in the Developer Console
 
-   Kova Agent is an AI-powered social media management platform.
-   We use the Twitter API to publish posts, read tweets, and track
-   engagement metrics on behalf of our users who authorize access
-   via OAuth 2.0 with PKCE. Users connect their own Twitter accounts
-   and control what gets published through an approval workflow.
+1. Go to: Console → Billing
+2. Purchase credits (start with $5-10 for testing)
 
-6. Accept terms
+## 2c. Create a Project & App
 
-## 2c. Create a Project and App
+1. In the Developer Console, go to Projects & Apps
+2. Click "Create Project":
+   - Project name: "KOVA Agent"
+   - Use case: "Making a social media management tool"
+3. Create an App within the project:
+   - App name: "KOVA Agent App"
 
-1. In the developer portal, create a new Project
-2. Project name: Kova Agent
-3. Create an App inside the project
-4. App name: Kova Agent
+## 2d. Configure OAuth 2.0
 
-## 2d. Configure User Authentication
-
-1. Go to App Settings → User authentication settings → Set up
-2. App permissions: Read and Write
-3. Type of app: Web App, Automated App or Bot
+1. Go to: Your App → Settings → User authentication settings → Edit
+2. Enable **OAuth 2.0**
+3. App type: **Web App** (this makes it a Confidential Client — MORE SECURE)
 4. Callback URI / Redirect URL:
-   https://kovaagent-production.up.railway.app/platforms/callback/twitter/
-5. Website URL:
-   https://kovaagent-production.up.railway.app
+   - https://YOUR_DOMAIN/platforms/twitter/callback/
+   - http://localhost:8000/platforms/twitter/callback/    (for local dev)
+5. Website URL: https://YOUR_DOMAIN
 
 ## 2e. Get Your Credentials
 
-1. Go to Keys and tokens
-2. Under OAuth 2.0 Client ID and Client Secret:
-   - Copy Client ID → TWITTER_CLIENT_ID
-   - Copy Client Secret → TWITTER_CLIENT_SECRET
-3. Save these — the secret is only shown once!
+1. Go to: Your App → Keys and Tokens
+2. You need:
+   - **Client ID** → TWITTER_CLIENT_ID
+   - **Client Secret** → TWITTER_CLIENT_SECRET (only for Confidential Clients)
+3. Also generate (for media upload via v1.1):
+   - **API Key** → TWITTER_API_KEY
+   - **API Key Secret** → TWITTER_API_SECRET
 
-## 2f. Set Railway Environment Variables
+NOTE: KOVA uses OAuth 2.0 with PKCE for user auth, but media upload still
+requires v1.1 endpoints which need API Key + Secret for signing.
 
-  TWITTER_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxx
-  TWITTER_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxx
+## 2f. Required Scopes
 
-## 2g. Verify It Works
+KOVA requests these scopes during OAuth (configured in twitter.py):
+```
+tweet.read tweet.write users.read offline.access like.write like.read
+```
 
-1. Go to Platforms page → Click "Connect" on X (Twitter)
-2. Should redirect to Twitter auth → authorize → connected
+Scope meanings:
+- tweet.read     — Read tweets and timelines
+- tweet.write    — Create tweets, retweets, replies
+- users.read     — Read user profile info
+- offline.access — Get refresh tokens (long-lived access)
+- like.write     — Like/unlike tweets
+- like.read      — Read liked tweets
+
+Optional scopes you could add for future features:
+- media.write     — Upload media
+- follows.read    — Read follower/following lists
+- follows.write   — Follow/unfollow users
+- dm.read/write   — Direct messages
+- bookmark.read/write — Bookmarks
+
+## 2g. Token Lifecycle
+
+- Access tokens expire after 2 hours
+- KOVA auto-refreshes using the refresh token (offline.access scope)
+- If refresh fails, user re-connects from KOVA's Platforms page
+
+## 2h. Environment Variables
+
+```
+TWITTER_CLIENT_ID=your_client_id
+TWITTER_CLIENT_SECRET=your_client_secret
+TWITTER_API_KEY=your_api_key
+TWITTER_API_SECRET=your_api_key_secret
+```
 
 
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  STEP 3: LINKEDIN                                                      ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+#
+# LinkedIn uses the Marketing Community Management API (Posts API).
+# The old ugcPosts API has been deprecated — KOVA uses the new Posts API.
+# API versioning: YYYYMM format (e.g., 202603)
+# Docs: https://learn.microsoft.com/en-us/linkedin/marketing/
+#
+# KOVA uses:
+#   - Publish posts (text, single image, multi-image up to 9, video, articles)
+#   - Read post metrics (likes, comments, shares, impressions)
+#   - Fetch and reply to comments
+#   - Post as Person OR Organization (Company Page)
+#   - OAuth 2.0 with refresh tokens
 # ============================================================================
-# STEP 3: LINKEDIN
-# ============================================================================
-# Priority: Third — requires a Company Page to create an app.
-# Time: ~15 minutes
-# ============================================================================
 
-## 3a. Create a LinkedIn Account
+## 3a. Create a LinkedIn Company Page (Recommended)
 
-1. Go to https://www.linkedin.com/signup
-2. Sign up with your Kova business email
-3. Use your real name (LinkedIn enforces real identity)
-4. Fill in basic profile details
-
-## 3b. Create a Company Page
-
-Required to create a LinkedIn developer app.
+A Company Page lets KOVA post on behalf of a brand, not just a personal profile.
 
 1. Go to https://www.linkedin.com/company/setup/new/
-2. Company name: Kova Agent
-3. Public URL: linkedin.com/company/kova-agent
-4. Industry: Technology, Information and Media
-5. Company size: 1-10
-6. Type: Privately Held
-7. Complete and publish the page
+2. Company name: "KOVA Agent" (or your brand)
+3. Choose: Company (Small business)
+4. Complete the page setup
 
-## 3c. Create the Developer App
+## 3b. Create a LinkedIn Developer App
 
-1. Go to https://www.linkedin.com/developers/
-2. Click "Create App"
-3. App name: Kova Agent
-4. LinkedIn Page: select the Kova Agent Company Page you just created
-5. App logo: upload the Kova logo
-6. Accept terms
+1. Go to https://www.linkedin.com/developers/apps/new
+2. Fill in:
+   - App name: "KOVA Agent"
+   - LinkedIn Page: select your Company Page from 3a
+   - App logo: upload your logo
+   - Legal agreement: accept
+3. Click "Create app"
 
-## 3d. Get Your Credentials
+## 3c. Request API Products
 
-1. Go to the Auth tab
-2. Copy Client ID → LINKEDIN_CLIENT_ID
-3. Copy Client Secret → LINKEDIN_CLIENT_SECRET
+After creating the app, you need to add Products:
 
-## 3e. Configure OAuth Redirect
+1. Go to: Your App → Products tab
+2. Request access to:
 
-Under Auth tab → OAuth 2.0 settings → Authorized redirect URLs:
+   ┌─────────────────────────────────────────────────────────────────┐
+   │  ✅ Share on LinkedIn                                           │
+   │     → Grants: w_member_social (post as member)                  │
+   │                                                                 │
+   │  ✅ Sign In with LinkedIn using OpenID Connect                  │
+   │     → Grants: openid, profile, email                            │
+   │                                                                 │
+   │  ✅ Advertising API (optional, for org posting)                  │
+   │     → Grants: w_organization_social, r_organization_social      │
+   │     → Lets KOVA post as your Company Page                       │
+   └─────────────────────────────────────────────────────────────────┘
 
-  https://kovaagent-production.up.railway.app/platforms/callback/linkedin/
+3. "Share on LinkedIn" is usually auto-approved
+4. "Advertising API" requires a short application explaining your use case
+   - Say: "Social media management tool that publishes branded content and
+     reads engagement analytics for Company Pages on behalf of authorized admins"
 
-## 3f. Request API Products
+## 3d. Verify Your Company Page
 
-Go to the Products tab and request:
-  - Share on LinkedIn (for publishing posts)
-  - Sign in with LinkedIn using OpenID Connect
+To post as an Organization, your LinkedIn developer app must be associated with
+a verified Company Page, and the authenticated user must have one of these
+Company Page roles:
+- ADMINISTRATOR
+- DIRECT_SPONSORED_CONTENT_POSTER
+- CONTENT_ADMIN
 
-These are usually approved instantly.
+## 3e. Configure OAuth 2.0
 
-## 3g. Set Railway Environment Variables
+1. Go to: Your App → Auth tab
+2. Under "OAuth 2.0 settings":
+   - Redirect URLs:
+     - https://YOUR_DOMAIN/platforms/linkedin/callback/
+     - http://localhost:8000/platforms/linkedin/callback/
+3. Note your:
+   - **Client ID** → LINKEDIN_CLIENT_ID
+   - **Client Secret** → LINKEDIN_CLIENT_SECRET
 
-  LINKEDIN_CLIENT_ID=xxxxxxxxxxxxxxxx
-  LINKEDIN_CLIENT_SECRET=xxxxxxxxxxxxxxxx
+## 3f. Required Scopes
 
-## 3h. Verify It Works
+KOVA requests these scopes (configured in linkedin.py):
 
-1. Go to Platforms page → Click "Connect" on LinkedIn
-2. Should redirect to LinkedIn auth → authorize → connected
+For personal posting:
+```
+openid profile w_member_social
+```
+
+For organization/Company Page posting:
+```
+openid profile w_member_social w_organization_social r_organization_social
+```
+
+Scope meanings:
+- openid              — OpenID Connect (required for Sign In with LinkedIn)
+- profile             — Read user's name, profile picture, headline
+- w_member_social     — Post, comment, like as a member
+- w_organization_social — Post, comment, like as an Organization
+- r_organization_social — Read Organization posts, comments, likes
+
+## 3g. LinkedIn API Versioning
+
+LinkedIn APIs use versioned headers. KOVA sends:
+```
+Linkedin-Version: 202603
+X-Restli-Protocol-Version: 2.0.0
+```
+
+## 3h. Content Types Supported
+
+| Post Type    | Supported | Notes                                    |
+|-------------|-----------|------------------------------------------|
+| Text only   | ✅        | Simple commentary post                    |
+| Single image| ✅        | Upload via Images API → Image URN         |
+| Multi-image | ✅        | Up to 9 images via MultiImage API         |
+| Video       | ✅        | Upload via Videos API (chunked upload)    |
+| Article/Link| ✅        | Custom thumbnail, title, description      |
+| Poll        | ✅        | Organic polls only                        |
+| Carousel    | ❌        | Sponsored only — not available for organic|
+| Document    | ✅        | PDF/slides via Documents API              |
+
+## 3i. Token Lifecycle
+
+- Access tokens expire after ~60 days
+- KOVA uses refresh tokens to auto-renew
+- LinkedIn refresh tokens are long-lived
+
+## 3j. Environment Variables
+
+```
+LINKEDIN_CLIENT_ID=your_client_id
+LINKEDIN_CLIENT_SECRET=your_client_secret
+```
 
 
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  STEP 4: TIKTOK                                                        ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+#
+# TikTok uses the Content Posting API for direct posting.
+# Supports both video AND photo posting (photos are a newer addition).
+# Docs: https://developers.tiktok.com/doc/content-posting-api-get-started/
+#
+# KOVA uses:
+#   - Direct post videos (PULL_FROM_URL or FILE_UPLOAD with chunked upload)
+#   - Direct post photos/carousels (up to 35 images via PULL_FROM_URL)
+#   - Query creator info (privacy levels, interaction settings)
+#   - Check publish status (async — polling via publish_id)
+#   - OAuth 2.0 with refresh tokens
+#
+# IMPORTANT: Content from unaudited apps is restricted to PRIVATE visibility.
+# You must pass TikTok's audit to post PUBLIC content.
 # ============================================================================
-# STEP 4: TIKTOK
-# ============================================================================
-# Priority: Fourth — slower approval process.
-# Time: ~10 minutes to submit, approval can take days.
-# ============================================================================
 
-## 4a. Create a TikTok Account
-
-1. Go to https://www.tiktok.com/signup
-2. Sign up with your Kova business email
-3. Set up a basic profile
-
-## 4b. Register as a Developer
+## 4a. Create a TikTok Developer Account
 
 1. Go to https://developers.tiktok.com/
-2. Sign in with the TikTok account
-3. Register as a developer (accept terms)
+2. Click "Log in" and sign in with your TikTok account
+3. Fill out the developer registration form
+4. Accept the Developer Terms of Service
 
-## 4c. Create an App
+## 4b. Create an App
 
-1. Click "Manage apps" → "Connect an app"
-2. Select: Configure for Web
-3. App name: Kova Agent
-4. Description: AI-powered social media management platform
-5. Set Redirect URI:
-   https://kovaagent-production.up.railway.app/platforms/callback/tiktok/
+1. Go to: Manage Apps → Create App (or "My Apps")
+2. Fill in:
+   - App name: "KOVA Agent"
+   - Description: "Social media management platform for automated content publishing"
+   - App icon: upload your logo
+   - Category: Social Media Management
 
-## 4d. Add Products
+## 4c. Add Required Products
 
-1. Add: Login Kit
-2. Add: Content Posting API
+In your app dashboard, add these products:
 
-## 4e. Get Your Credentials
+1. **Login Kit** — for OAuth authentication
+   - Scopes: user.info.basic
+2. **Content Posting API** — for publishing content
+   - Scopes: video.publish, video.list
+   - ✅ Enable "Direct Post" configuration (CRITICAL — without this, content
+     goes to user's inbox instead of posting directly)
 
-1. Copy Client Key → TIKTOK_CLIENT_KEY
-2. Copy Client Secret → TIKTOK_CLIENT_SECRET
+To enable Direct Post:
+1. Go to your app → Content Posting API settings
+2. Toggle ON "Direct Post"
+3. This allows KOVA to publish directly to a creator's profile
 
-## 4f. Set Railway Environment Variables
+## 4d. Configure OAuth
 
-  TIKTOK_CLIENT_KEY=xxxxxxxxxxxxxxxx
-  TIKTOK_CLIENT_SECRET=xxxxxxxxxxxxxxxx
+1. Go to: Your App → Configuration
+2. Add Redirect URIs:
+   - https://YOUR_DOMAIN/platforms/tiktok/callback/
+   - http://localhost:8000/platforms/tiktok/callback/
+3. Note your:
+   - **Client Key** → TIKTOK_CLIENT_KEY
+   - **Client Secret** → TIKTOK_CLIENT_SECRET
 
-## 4g. Verify It Works
+## 4e. Required Scopes
 
-1. Go to Platforms page → Click "Connect" on TikTok
-2. Should redirect to TikTok auth → authorize → connected
+KOVA requests (configured in tiktok.py):
+```
+user.info.basic,video.publish,video.list
+```
 
-Note: TikTok's developer review can take several business days.
-You may need to submit your app for review before OAuth works.
+Scope meanings:
+- user.info.basic — Read user's display name, avatar, username
+- video.publish   — Post videos and photos to user's TikTok
+- video.list      — List user's published videos and check post status
+
+## 4f. Domain/URL Verification (For PULL_FROM_URL)
+
+If KOVA uploads media via URL (PULL_FROM_URL method), TikTok requires
+domain verification:
+
+1. Go to: Your App → Content Posting API → Domain Verification
+2. Add your R2 public domain:
+   - pub-e0b58c475fab4dfbb1e598be12846447.r2.dev (or your custom domain)
+3. Verify via one of:
+   - DNS TXT record
+   - HTML file upload to root
+   - Meta tag in <head>
+
+## 4g. Submit App for Audit
+
+CRITICAL: Unaudited apps post content as PRIVATE (only creator can see it).
+
+1. Go to: Your App → Submit for Audit
+2. Required materials:
+   - Working demo URL or screen recording of your app
+   - Proof of compliance with TikTok's Terms of Service
+   - Description of how user content is managed
+3. Submit at: https://developers.tiktok.com/application/content-posting-api
+4. Audit review: typically 2-5 business days
+
+## 4h. Privacy Level Options
+
+When posting, KOVA can set these privacy levels:
+- PUBLIC_TO_EVERYONE  — visible to everyone (requires audit-approved app)
+- MUTUAL_FOLLOW_FRIENDS — only mutual followers
+- FOLLOWER_OF_CREATOR — only followers
+- SELF_ONLY — only the creator (private)
+
+## 4i. Content Types Supported
+
+| Post Type      | Method          | Notes                              |
+|---------------|----------------|------------------------------------|
+| Video (URL)   | PULL_FROM_URL  | Requires domain verification       |
+| Video (upload)| FILE_UPLOAD    | Chunked upload (10 MB per chunk)   |
+| Photo carousel| PULL_FROM_URL  | Up to 35 images, auto_add_music    |
+| Text only     | ❌             | Not supported — media required      |
+
+## 4j. Environment Variables
+
+```
+TIKTOK_CLIENT_KEY=your_client_key
+TIKTOK_CLIENT_SECRET=your_client_secret
+```
 
 
-# ============================================================================
-# STEP 5: YOUTUBE
-# ============================================================================
-# Priority: Fifth — requires Google Cloud project + API enablement.
-# Time: ~15 minutes
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  STEP 5: YOUTUBE                                                       ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+#
+# YouTube uses the YouTube Data API v3 via Google Cloud Console.
+# Default quota: 10,000 units/day (video upload = 100 units each).
 # Docs: https://developers.google.com/youtube/v3/getting-started
+#
+# KOVA uses:
+#   - Upload videos (resumable upload, supports Shorts)
+#   - Read video metrics (views, likes, comments)
+#   - Fetch and reply to comments
+#   - OAuth 2.0 with refresh tokens (Google OAuth)
+#
+# NOTE: YouTube API does NOT support text-only posts or image posts.
+#       All content must be video. For Shorts, video must be ≤60 seconds,
+#       vertical (9:16), and titled with #Shorts.
 # ============================================================================
 
 ## 5a. Create a Google Cloud Project
 
-If you already have a Google Cloud account (from any Google service), skip to step 2.
-
 1. Go to https://console.cloud.google.com/
-2. Sign in with the Kova business email (or create a Google account)
-3. Click "Select a project" (top bar) → "New Project"
-4. Project name: Kova Agent
-5. Organization: leave as "No organization" (or select yours)
-6. Click "Create"
+2. Click "Select a project" → "New Project"
+3. Name: "KOVA Agent"
+4. Organization: leave default or select yours
+5. Click "Create"
 
-## 5b. Enable the YouTube Data API v3
+## 5b. Enable YouTube Data API v3
 
-1. In Google Cloud Console, go to:
-   APIs & Services → Library
-   (or: https://console.cloud.google.com/apis/library)
+1. Go to: APIs & Services → Library
 2. Search for "YouTube Data API v3"
-3. Click it → Click "Enable"
+3. Click on it → click "Enable"
 
-## 5c. Create OAuth 2.0 Credentials
+## 5c. Configure OAuth Consent Screen
 
-1. Go to APIs & Services → Credentials
-   (or: https://console.cloud.google.com/apis/credentials)
+1. Go to: APIs & Services → OAuth consent screen
+2. User Type: "External" (so any Google account can authorize)
+3. Fill in:
+   - App name: "KOVA Agent"
+   - User support email: your Kova email
+   - App logo: upload your logo
+   - Authorized domains: add YOUR_DOMAIN
+   - Developer contact email: your Kova email
+4. Scopes: add:
+   - youtube.upload
+   - youtube.readonly
+   - youtube.force-ssl
+5. Test users: add your Google/YouTube account email
+6. Save and continue
+
+## 5d. Create OAuth 2.0 Credentials
+
+1. Go to: APIs & Services → Credentials
 2. Click "Create Credentials" → "OAuth client ID"
-3. If prompted, configure the OAuth consent screen first:
-   - User type: External
-   - App name: Kova Agent
-   - User support email: your Kova business email
-   - Developer contact: your Kova business email
-   - Scopes: add `youtube.upload`, `youtube.readonly`, `youtube.force-ssl`
-   - Save and continue (leave test users empty for now)
-4. Back to Create Credentials → OAuth client ID:
-   - Application type: Web application
-   - Name: Kova Agent
-   - Authorized redirect URIs:
-     https://kovaagent-production.up.railway.app/platforms/callback/youtube/
-   - Click "Create"
+3. Application type: "Web application"
+4. Name: "KOVA Agent OAuth"
+5. Authorized redirect URIs:
+   - https://YOUR_DOMAIN/platforms/youtube/callback/
+   - http://localhost:8000/platforms/youtube/callback/
+6. Click "Create"
+7. Copy:
+   - **Client ID** → YOUTUBE_CLIENT_ID
+   - **Client Secret** → YOUTUBE_CLIENT_SECRET
 
-## 5d. Get Your Credentials
+## 5e. Required Scopes
 
-1. A dialog shows your Client ID and Client Secret
-2. Copy Client ID → YOUTUBE_CLIENT_ID
-3. Copy Client Secret → YOUTUBE_CLIENT_SECRET
-4. Download the JSON file as backup (store in password manager)
+KOVA requests (configured in youtube.py):
+```
+https://www.googleapis.com/auth/youtube.upload
+https://www.googleapis.com/auth/youtube.readonly
+https://www.googleapis.com/auth/youtube.force-ssl
+```
 
-## 5e. Set Railway Environment Variables
+Scope meanings:
+- youtube.upload    — Upload videos to the user's channel
+- youtube.readonly  — Read channel info, video details, metrics
+- youtube.force-ssl — Read/write comments (requires SSL)
 
-  YOUTUBE_CLIENT_ID=xxxxxxxxxxxxxxxx.apps.googleusercontent.com
-  YOUTUBE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxx
+## 5f. Quota Management
 
-## 5f. Verify It Works
+YouTube Data API has a daily quota of 10,000 units (default):
 
-1. Go to Platforms page → Click "Connect" on YouTube
-2. Should redirect to Google OAuth → authorize → connected
+| Operation           | Cost (units) |
+|---------------------|-------------|
+| Read (list)         | 1           |
+| Write (update)      | 50          |
+| Search              | 100         |
+| Video upload        | 100         |
 
-Note: While in development mode, only test users you add in the
-OAuth consent screen can authorize. To go public, submit for Google
-verification (requires privacy policy URL + demo video).
+With 10,000 units/day you can:
+- Upload ~100 videos/day
+- Read ~10,000 video details/day
+- Or a mix of operations
 
-## 5g. YouTube API Quotas
+If you need more, apply for quota extension:
+https://support.google.com/youtube/contact/yt_api_form
 
-YouTube Data API v3 has a daily quota of 10,000 units.
-  - Video upload: 1,600 units per upload
-  - Read channel stats: 1 unit
-  - That means ~6 video uploads/day on the free default quota
-  - Request quota increase: https://console.cloud.google.com/apis/api/youtube.googleapis.com/quotas
+## 5g. Consent Screen Verification (For Production)
 
-For Kova's use case (scheduling uploads + reading metrics), the default
-quota is sufficient for early users. Monitor in Google Cloud Console.
+While in "Testing" mode, only test users (up to 100) can authorize.
+For production:
+
+1. Go to: OAuth consent screen
+2. Click "Publish App"
+3. Google will review your app — requires:
+   - Privacy policy URL
+   - Terms of service URL
+   - Demonstration of OAuth scope usage
+4. Review takes 1-4 weeks for sensitive scopes (youtube.upload is sensitive)
+
+## 5h. IMPORTANT: Service Account Limitation
+
+YouTube Data API does NOT support service accounts for user data access.
+You MUST use OAuth 2.0 with user consent. Service account requests will
+return a `NoLinkedYouTubeAccount` error.
+
+## 5i. Environment Variables
+
+```
+YOUTUBE_CLIENT_ID=your_client_id
+YOUTUBE_CLIENT_SECRET=your_client_secret
+```
 
 
-# ============================================================================
-# STEP 6: PINTEREST
-# ============================================================================
-# Priority: Sixth — straightforward OAuth setup.
-# Time: ~10 minutes
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  STEP 6: PINTEREST                                                     ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+#
+# Pinterest uses API v5 with an access tier system.
+# Start with Trial access, then upgrade to Standard for production.
 # Docs: https://developers.pinterest.com/docs/getting-started/set-up-app/
+#
+# KOVA uses:
+#   - Create Pins (image required — no text-only posts)
+#   - Read Pin analytics (impressions, saves, clicks — 30-day window)
+#   - Read boards list (auto-selects first board if none specified)
+#   - OAuth 2.0 with refresh tokens
+#
+# NOTE: Pinterest requires an IMAGE for every Pin. Text-only is not supported.
 # ============================================================================
 
 ## 6a. Create a Pinterest Business Account
 
 1. Go to https://www.pinterest.com/business/create/
-   (or convert existing account: https://www.pinterest.com/business/convert/)
-2. Sign up with Kova business email
-3. Business name: Kova Agent
-4. Website: https://kovaagent-production.up.railway.app
-5. Select industry: Technology
+   (or convert existing: https://help.pinterest.com/business/article/create-an-advertiser-account)
+2. Sign up with your Kova business email
+3. Complete business profile setup
+4. Verify your email address
 
 ## 6b. Register as a Pinterest Developer
 
 1. Go to https://developers.pinterest.com/
-2. Sign in with the Pinterest business account
-3. Accept developer terms
+2. Click through to accept the Developer Terms of Service
+3. Go to "My apps" → https://developers.pinterest.com/apps/
 
 ## 6c. Create an App
 
-1. Go to https://developers.pinterest.com/apps/
-2. Click "Create app"
-3. App name: Kova Agent
-4. Description: AI-powered social media management platform that creates
-   and publishes pins on behalf of users via OAuth 2.0
-5. Website URL: https://kovaagent-production.up.railway.app
+1. Click "Connect app" (or "Create app")
+2. Fill in the application form:
+   - App name: "KOVA Agent"
+   - Description: "Social media management tool for Pinterest content publishing and analytics"
+   - Website URL: https://YOUR_DOMAIN
+3. Submit for Trial access review
+4. Wait for approval email (reviewed each business day, usually 1-2 days)
 
-## 6d. Configure OAuth
+## 6d. Access Tiers
 
-1. In your app settings, go to "OAuth" section
-2. Add Redirect URI:
-   https://kovaagent-production.up.railway.app/platforms/callback/pinterest/
+Pinterest has an access tier system:
 
-## 6e. Get Your Credentials
+| Tier     | Rate Limit        | How to Get               |
+|----------|-------------------|--------------------------|
+| Trial    | 10 calls/min      | Auto after app approval  |
+| Standard | 1000 calls/min    | Apply after building app |
 
-1. In app settings, find:
-   - App ID → PINTEREST_APP_ID
-   - App Secret → PINTEREST_APP_SECRET
-2. Save these securely
+To upgrade to Standard:
+1. Go to: My apps → your app
+2. Click "Apply for Standard access"
+3. Provide:
+   - Working demo or screenshot of integration
+   - Description of how Pinterest API is used
+4. Review: 1-5 business days
 
-## 6f. Set Railway Environment Variables
+## 6e. Configure OAuth
 
-  PINTEREST_APP_ID=xxxxxxxxxxxxxxxx
-  PINTEREST_APP_SECRET=xxxxxxxxxxxxxxxx
+1. Go to: My apps → your app → "Manage"
+2. Navigate to the "Configure" tab
+3. Add Redirect URIs:
+   - https://YOUR_DOMAIN/platforms/pinterest/callback/
+   - http://localhost:8000/platforms/pinterest/callback/
+4. Note your:
+   - **App ID** → PINTEREST_APP_ID
+   - **App Secret** → PINTEREST_APP_SECRET
 
-## 6g. Pinterest API Access Levels
+IMPORTANT: Redirect URIs must be an EXACT match (including trailing slashes).
+Pinterest does not follow secondary redirects.
 
-Pinterest API v5 has access tiers:
-  - Trial: limited rate limits, sandbox only
-  - Standard: request at https://developers.pinterest.com/ → app → "Request access"
-  - Requires: app description, use case, privacy policy URL
+## 6f. Required Scopes
 
-Request Standard access once you have real users. Trial is fine for testing.
+KOVA requests (configured in pinterest.py):
+```
+boards:read,boards:write,pins:read,pins:write,user_accounts:read
+```
 
-## 6h. Verify It Works
+Scope meanings:
+- boards:read        — Read user's boards
+- boards:write       — Create/update boards
+- pins:read          — Read pins and pin analytics
+- pins:write         — Create/update/delete pins
+- user_accounts:read — Read user profile info
 
-1. Go to Platforms page → Click "Connect" on Pinterest
-2. Should redirect to Pinterest auth → authorize → connected
+## 6g. Quick Testing with Product Token
 
+Pinterest offers a 24-hour test token for quick API testing (no OAuth needed):
 
-# ============================================================================
-# STEP 7: THREADS
-# ============================================================================
-# Priority: Seventh — uses the same Meta app from Step 1 (shared credentials).
-# Time: ~5 minutes (if Meta app already exists)
-# Docs: https://developers.facebook.com/docs/threads
-# ============================================================================
+1. Go to: My apps → your app
+2. Look for "Generate token" or product token option
+3. Use it to test API calls before setting up full OAuth
 
-## 7a. Prerequisites
+## 6h. Environment Variables
 
-Threads uses the Meta Graph API with its own OAuth flow and scopes.
-It can use the SAME Meta App from Step 1, OR a separate "Threads App ID."
-
-Requirements:
-  - Meta Developer account (from Step 1)
-  - Instagram account linked to Threads (user must have Threads profile)
-  - Your Meta App from Step 1 (FACEBOOK_APP_ID / FACEBOOK_APP_SECRET)
-
-## 7b. Add Threads Use Case to Your Meta App
-
-1. Go to https://developers.facebook.com/apps/ → select your Kova app
-2. In the left sidebar, find "Use Cases" or "Add Product"
-3. Add the "Threads" product/use case
-4. Required permissions (scopes):
-   - threads_basic — Read Threads profile
-   - threads_content_publish — Create and publish Threads posts
-   - threads_manage_insights — Read Threads post metrics
-   - threads_manage_replies — Read and manage replies
-   - threads_read_replies — Read reply threads
-
-## 7c. Configure OAuth Redirect
-
-In App Settings or Threads product settings, add redirect URI:
-  https://kovaagent-production.up.railway.app/platforms/callback/threads/
-
-## 7d. Set Railway Environment Variables
-
-Threads falls back to FACEBOOK_APP_ID if THREADS_APP_ID is not set.
-You can use either approach:
-
-  # Option A: Use same Meta app credentials (recommended — simpler)
-  # No additional env vars needed — Threads provider falls back to
-  # FACEBOOK_APP_ID and FACEBOOK_APP_SECRET automatically.
-
-  # Option B: Separate Threads app (if you want isolation)
-  THREADS_APP_ID=xxxxxxxxxxxxxxxx
-  THREADS_APP_SECRET=xxxxxxxxxxxxxxxx
-
-## 7e. Important Notes
-
-  - Threads API has its own OAuth flow at https://threads.net/oauth/authorize
-    (NOT the same as Facebook/Instagram OAuth)
-  - Graph API base URL for Threads: https://graph.threads.net/v1.0
-  - Users must have an active Threads profile (just having Instagram isn't enough)
-  - Threads supports: text posts, image posts, carousel posts, replies
-  - Character limit: 500 characters per post
-  - Carousel: up to 20 images/videos per carousel
-  - Reply chains: post as reply to another Threads post (useful for threads)
-
-## 7f. Verify It Works
-
-1. Go to Platforms page → Click "Connect" on Threads
-2. Should redirect to Threads OAuth → authorize → connected
-3. Test: create a post, select Threads as platform, publish
+```
+PINTEREST_APP_ID=your_app_id
+PINTEREST_APP_SECRET=your_app_secret
+```
 
 
-# ============================================================================
-# STEP 8: BLUESKY
-# ============================================================================
-# Priority: Eighth — no app review needed. Simplest setup.
-# Time: ~3 minutes
-# Docs: https://docs.bsky.app/ (AT Protocol)
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  STEP 7: THREADS (Meta App — Separate Credentials from FB/IG)          ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+#
+# Threads API uses the Meta developer ecosystem but has its OWN OAuth flow
+# and its OWN app credentials (separate from Facebook/Instagram).
+#
+# Docs: https://developers.facebook.com/docs/threads/get-started
+#
+# KOVA uses:
+#   - Publish text posts, single images, carousels (up to 10 items)
+#   - Read post insights (likes, replies, reposts, quotes, views)
+#   - Fetch and reply to thread replies
+#   - Long-lived tokens (60-day validity, refreshable)
+#
+# NOTE: Threads has its own OAuth flow at threads.net domain, separate
+#       from Facebook/Instagram login flow.
 # ============================================================================
 
-## 8a. How Bluesky Authentication Works
+## 7a. Add Threads Use Case to Your Meta App
 
-Bluesky is DIFFERENT from all other platforms:
-  - Uses the AT Protocol (open, decentralized)
-  - NO OAuth flow — uses App Passwords instead
-  - NO developer account needed — no app review, no API keys
-  - Each USER creates their own app password when connecting
-  - Kova stores the handle + app password in SocialAccount credentials
+You have two options:
+A) Add the Threads use case to your existing KOVA Meta app (from Step 1)
+B) Create a separate Meta app with the Threads use case
 
-This means: YOU (the platform owner) don't need to register anything.
-Each Kova user connects their own Bluesky account using their handle +
-an app password they generate from Bluesky settings.
+For option A (recommended):
+1. Go to: https://developers.facebook.com/apps/YOUR_APP_ID/
+2. Go to: Use Cases → Add Use Case
+3. Select "Access the Threads API"
 
-## 8b. How Users Connect Bluesky in Kova
+For option B:
+1. Go to: https://developers.facebook.com/apps/
+2. Create App → select "Threads" use case
+3. Complete app setup
 
-When a user clicks "Connect" on Bluesky, Kova shows a form (not an OAuth redirect):
+IMPORTANT: When you add the Threads use case, Meta generates a SEPARATE set of
+credentials:
+- A **Threads App ID** + **Threads App Secret** (USE THESE for Threads)
+- These are DIFFERENT from your Facebook App ID/Secret!
 
-1. User enters their Bluesky handle (e.g., `username.bsky.social`)
-2. User creates an App Password in their Bluesky account:
-   - Go to https://bsky.app/settings/app-passwords
-   - Click "Add App Password"
-   - Name it: "Kova Agent"
-   - Copy the generated password
-3. User pastes the app password into the Kova form
-4. Kova validates by calling the AT Protocol auth endpoint
-5. If valid → account connected, tokens stored
+## 7b. Get Threads Credentials
 
-## 8c. No Environment Variables Needed
+1. Go to: App Dashboard → Settings → Basic
+2. Look for the **Threads App ID** and **Threads App Secret**
+   (check the Threads-specific section — NOT the general app section)
+3. Copy:
+   - **Threads App ID** → THREADS_APP_ID
+   - **Threads App Secret** → THREADS_APP_SECRET
 
-Bluesky requires NO platform-level credentials. Unlike other platforms
-where you need a Client ID/Secret for your app, Bluesky authentication
-is entirely user-level (handle + app password).
+## 7c. Configure Threads OAuth
 
-  # No Bluesky env vars needed!
-  # Each user provides their own credentials via the connect form.
+Threads uses its own OAuth authorization endpoints (NOT Facebook's):
 
-## 8d. AT Protocol Endpoints
+Authorization URL: https://threads.net/oauth/authorize
+Token Exchange URL: https://graph.threads.net/oauth/access_token
 
-Kova uses these AT Protocol endpoints:
+1. Go to: App Dashboard → Threads API → Settings
+2. Add Redirect URIs:
+   - https://YOUR_DOMAIN/platforms/threads/callback/
+   - http://localhost:8000/platforms/threads/callback/
 
-  Endpoint                                    | Purpose
-  --------------------------------------------|----------------------------------
-  POST /xrpc/com.atproto.server.createSession | Authenticate (get access token)
-  POST /xrpc/com.atproto.server.refreshSession| Refresh expired token
-  POST /xrpc/com.atproto.repo.createRecord    | Create a post (text + images)
-  POST /xrpc/com.atproto.repo.uploadBlob      | Upload image for post
-  GET /xrpc/app.bsky.feed.getAuthorFeed       | Get user's posts (for metrics)
-  GET /xrpc/app.bsky.actor.getProfile         | Get profile info
+## 7d. Required Scopes
 
-Default PDS (Personal Data Server): https://bsky.social
-If a user uses a custom PDS, they enter their full handle.
+KOVA requests (configured in threads.py):
+```
+threads_basic,threads_content_publish,threads_manage_insights,
+threads_manage_replies,threads_read_replies
+```
 
-## 8e. Bluesky Post Limits
+Scope meanings:
+- threads_basic            — Required for ALL Threads endpoints (profile, media)
+- threads_content_publish  — Create posts (text, images, carousels)
+- threads_manage_insights  — Read post analytics (views, likes, replies)
+- threads_manage_replies   — Reply to threads, hide/unhide replies
+- threads_read_replies     — Read thread replies and conversation threads
 
-  - Text: 300 characters per post (grapheme-based, not byte-based)
-  - Images: up to 4 per post (JPEG/PNG, max 1MB each after upload)
-  - Links: auto-detected, displayed as link cards
-  - Mentions: @handle.bsky.social format
-  - Hashtags: not natively supported yet (just plain text #tags)
-  - No video upload via API (as of March 2026)
+## 7e. Add Threads Testers (Before App Review)
 
-## 8f. Verify It Works
+Threads has its own tester role system:
 
-1. Create a Bluesky account at https://bsky.app/ (if testing)
-2. Generate an app password at https://bsky.app/settings/app-passwords
-3. Go to Platforms page → Click "Connect" on Bluesky
-4. Enter handle + app password in the form
-5. Should validate and connect immediately
+1. Go to: App Dashboard → App Roles → Roles
+2. Click "Add People" → select "Threads Tester"
+3. Enter the Threads username/profile of the tester
+4. The tester must ACCEPT the invitation:
+   - Go to: https://www.threads.net/settings/account
+   - Find "Website permissions" section
+   - Accept the pending invitation
 
+## 7f. Token Lifecycle
 
-# ============================================================================
-# RAILWAY ENVIRONMENT VARIABLES — FULL REFERENCE
-# ============================================================================
+- Threads tokens are separate from Facebook/Instagram tokens
+- Short-lived token: 1 hour validity
+- Long-lived token: 60 days (exchanged via `th_exchange_token`)
+- Refresh: long-lived tokens can be refreshed via `th_refresh_token` grant
+- PUBLIC profiles: tokens can be refreshed indefinitely
+- PRIVATE profiles: tokens cannot be extended — user must re-authorize
 
-Add all of these in Railway Dashboard → Your Service → Variables:
+## 7g. Publishing Flow
 
-  # Facebook + Instagram + WhatsApp (same Meta app)
-  FACEBOOK_APP_ID=
-  FACEBOOK_APP_SECRET=
+Threads publishing is a two-step process:
+1. Create a media container (with content, type, and media URLs)
+2. Wait for container status = FINISHED
+3. Publish the container
 
-  # WhatsApp (optional — only if using WhatsApp use case)
-  WHATSAPP_TOKEN=
-  WHATSAPP_PHONE_NUMBER_ID=
+KOVA handles this automatically. Container processing typically takes 1-5 seconds.
 
-  # X (Twitter)
-  TWITTER_CLIENT_ID=
-  TWITTER_CLIENT_SECRET=
+## 7h. App Review for Threads
 
-  # LinkedIn
-  LINKEDIN_CLIENT_ID=
-  LINKEDIN_CLIENT_SECRET=
+Same process as Facebook App Review:
+1. Go to: App Dashboard → App Review → Permissions
+2. Request each Threads permission
+3. Provide screen recordings and use case descriptions
+4. Submit for review
 
-  # TikTok
-  TIKTOK_CLIENT_KEY=
-  TIKTOK_CLIENT_SECRET=
+## 7i. Environment Variables
 
-  # YouTube (Google Cloud OAuth)
-  YOUTUBE_CLIENT_ID=
-  YOUTUBE_CLIENT_SECRET=
+```
+THREADS_APP_ID=your_threads_app_id
+THREADS_APP_SECRET=your_threads_app_secret
+```
 
-  # Pinterest
-  PINTEREST_APP_ID=
-  PINTEREST_APP_SECRET=
-
-  # Threads (optional — falls back to FACEBOOK_APP_ID/SECRET)
-  # THREADS_APP_ID=
-  # THREADS_APP_SECRET=
-
-  # Bluesky — NO env vars needed (user-level app passwords)
-
-Railway auto-redeploys after saving variables (~2 minutes).
-Platforms without credentials will show a grayed-out connect button.
-Bluesky always shows as connectable (no server credentials needed).
+NOTE: These are DIFFERENT from your FACEBOOK_APP_ID/FACEBOOK_APP_SECRET!
 
 
-# ============================================================================
-# CALLBACK URL QUICK REFERENCE
-# ============================================================================
-# Register these in each platform's developer portal.
-# ============================================================================
-
-  Platform   | Production Callback URL
-  -----------|-------------------------------------------------------------
-  Facebook   | https://kovaagent-production.up.railway.app/platforms/callback/facebook/
-  Instagram  | https://kovaagent-production.up.railway.app/platforms/callback/instagram/
-  Twitter/X  | https://kovaagent-production.up.railway.app/platforms/callback/twitter/
-  LinkedIn   | https://kovaagent-production.up.railway.app/platforms/callback/linkedin/
-  TikTok     | https://kovaagent-production.up.railway.app/platforms/callback/tiktok/
-  YouTube    | https://kovaagent-production.up.railway.app/platforms/callback/youtube/
-  Pinterest  | https://kovaagent-production.up.railway.app/platforms/callback/pinterest/
-  Threads    | https://kovaagent-production.up.railway.app/platforms/callback/threads/
-  Bluesky    | N/A — uses app password form, no OAuth redirect
-
-  For local development, replace domain with: http://localhost:8000
-
-
-# ============================================================================
-# CREDENTIAL STORAGE CHECKLIST
-# ============================================================================
-# Store ALL of these in a password manager (Bitwarden, 1Password, etc.)
-# NEVER commit credentials to git.
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  STEP 8: BLUESKY (AT Protocol — No Developer Account Required)         ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+#
+# Bluesky uses the AT Protocol — fundamentally different from other platforms.
+# NO DEVELOPER ACCOUNT, NO APP REGISTRATION, NO OAUTH needed.
+# Users connect via their Bluesky handle + an App Password.
+#
+# Docs: https://docs.bsky.app/docs/get-started
+# AT Protocol spec: https://atproto.com/specs
+#
+# KOVA uses:
+#   - Publish text posts (300 grapheme char limit)
+#   - Publish posts with images (up to 4 images)
+#   - Auto-parse rich text (URLs → links, @mentions, #hashtags → facets)
+#   - Read post metrics (likes, replies, reposts, quotes)
+#   - Fetch notification mentions
+#   - AT Protocol session management (accessJwt/refreshJwt)
+#
+# NOTE: Bluesky now supports OAuth (2026), but KOVA currently uses the
+#       simpler App Password approach. OAuth can be added later for
+#       enhanced security in a multi-user context.
 # ============================================================================
 
-  ☐ Kova business email address + password
-  ☐ Facebook account login (email + password)
-  ☐ Facebook App ID + App Secret (used for FB, IG, Threads, and WhatsApp)
-  ☐ WhatsApp permanent access token + phone number ID (if using WhatsApp)
-  ☐ Twitter/X account login (email + password)
-  ☐ Twitter Client ID + Client Secret
-  ☐ LinkedIn account login (email + password)
-  ☐ LinkedIn Client ID + Client Secret
-  ☐ TikTok account login (email + password)
-  ☐ TikTok Client Key + Client Secret
-  ☐ Google Cloud account login (email + password)
-  ☐ YouTube Client ID + Client Secret (Google Cloud OAuth)
-  ☐ Pinterest business account login (email + password)
-  ☐ Pinterest App ID + App Secret
-  ☐ Threads App ID + Secret (optional — can reuse Facebook App credentials)
-  ☐ Bluesky — no platform credentials needed (users provide their own)
-  ☐ Railway dashboard login
-  ☐ GitHub repo access
+## 8a. No Developer Setup Required!
+
+Key advantages of Bluesky's AT Protocol:
+- ✅ No developer portal registration
+- ✅ No app creation or review process
+- ✅ No OAuth redirect URLs to configure
+- ✅ No API keys, client IDs, or secrets needed
+- ✅ Works immediately — no waiting for approval
+- ✅ Fully decentralized — works with any AT Protocol PDS server
+- ✅ Free, no API quotas or rate limit purchases
+
+## 8b. Create a Bluesky Account (For Your Brand)
+
+1. Go to https://bsky.app/
+2. Click "Create Account"
+3. Choose your handle: @yourbrand.bsky.social
+4. Complete profile setup (avatar, display name, bio)
+
+Custom domain handle (optional):
+- You can set your handle to @yourdomain.com
+- Verify via DNS TXT record: _atproto.yourdomain.com → did=did:plc:xxxxx
+- This adds legitimacy to your brand
+
+## 8c. Generate an App Password
+
+App Passwords are separate from your login password and can be revoked
+independently without affecting your main account.
+
+1. Go to: https://bsky.app/settings/app-passwords
+2. Click "Add App Password"
+3. Name it: "KOVA Agent"
+4. Copy the generated password (you'll only see it once!)
+5. This is what the user enters when connecting Bluesky in KOVA
+
+## 8d. How Users Connect in KOVA
+
+When a KOVA user connects Bluesky:
+1. They enter their Bluesky handle (e.g., user.bsky.social)
+2. They enter their App Password (NOT their login password)
+3. KOVA creates a session: `com.atproto.server.createSession`
+4. KOVA stores: accessJwt (short-lived) + refreshJwt (long-lived)
+5. accessJwt used for API calls; refreshed via `com.atproto.server.refreshSession`
+
+## 8e. AT Protocol Key APIs
+
+API base: https://bsky.social/xrpc/
+(or user's custom PDS URL if they self-host)
+
+| Method | Purpose |
+|--------|---------|
+| com.atproto.server.createSession  | Login with handle + app password |
+| com.atproto.server.refreshSession | Refresh expired access token     |
+| com.atproto.repo.createRecord     | Create a post (or any record)    |
+| com.atproto.repo.uploadBlob       | Upload image/media blobs         |
+| app.bsky.feed.getPostThread       | Get post with replies            |
+| app.bsky.notification.listNotifications | Fetch mentions/replies   |
+
+## 8f. Content Capabilities
+
+| Feature        | Supported | Notes                                  |
+|---------------|-----------|----------------------------------------|
+| Text posts    | ✅        | Up to 300 graphemes                     |
+| Images        | ✅        | Up to 4 images per post                 |
+| Rich text     | ✅        | URLs, @mentions, #hashtags auto-linked  |
+| Video         | ❌        | Not yet supported by KOVA               |
+| Carousels     | ❌        | Not a native Bluesky concept            |
+
+## 8g. Bluesky OAuth (Future Enhancement)
+
+Bluesky now supports full OAuth 2.0 via the AT Protocol:
+- Requires: PKCE + PAR (Pushed Authorization Requests) + DPoP
+- Client metadata published as JSON at a public URL
+- More complex but more secure for multi-user SaaS platforms
+
+When KOVA is ready to upgrade:
+1. Host client metadata at: https://YOUR_DOMAIN/oauth/client-metadata.json
+2. Implement atproto OAuth flow (PKCE + PAR + DPoP)
+3. Required scope: "atproto" (plus optional "transition:generic")
+
+For now, App Passwords are perfectly adequate for KOVA.
+
+## 8h. Environment Variables
+
+No platform-level env vars needed. Each user provides:
+- Handle (e.g., user.bsky.social)
+- App Password (generated per-user from their Bluesky settings)
+
+These are stored securely in the user's PlatformAccount record in KOVA.
 
 
-# ============================================================================
-# COMMON ERRORS & FIXES
-# ============================================================================
-
-  Error                          | Cause & Fix
-  -------------------------------|-------------------------------------------
-  "Invalid App ID"               | FACEBOOK_APP_ID not set or wrong in Railway
-  "Redirect URI mismatch"        | Callback URL in dev portal doesn't exactly
-                                 | match (check trailing slash, https vs http)
-  "App not set up"               | Twitter: user auth not configured in app
-  "Unauthorized"                 | App in dev mode — add yourself via App Roles
-  "Invalid scope"                | Permission not added to the use case in
-                                 | App Dashboard → Use Cases → Customize
-  "This app is in development"   | Facebook: add user via App Roles → Roles
-  Login works but no Page found  | Facebook: user must be admin of a FB Page
-  Instagram not connecting       | Instagram account must be Business/Creator
-                                 | type AND linked to a Facebook Page (for
-                                 | FB Login flow). Or use Instagram Login.
-  "Use case not found"           | Use case wasn't selected during app creation.
-                                 | You can add compatible use cases later from
-                                 | App Dashboard, but can't remove existing ones.
-  "Business portfolio required"  | WhatsApp use case requires a connected
-                                 | business portfolio. Go to App Settings →
-                                 | Basic → connect one.
-  Max 15 apps reached            | You can have developer/admin role on max 15
-                                 | apps not connected to a verified business.
-                                 | Connect a verified business portfolio to
-                                 | existing apps, or remove unused ones.
-  YouTube "quotaExceeded"         | Daily API quota exceeded. Default is 10,000
-                                 | units/day. Request quota increase in Google
-                                 | Cloud Console → APIs → YouTube Data API v3.
-  YouTube "forbidden"             | YouTube Data API v3 not enabled in project,
-                                 | or OAuth consent screen not configured.
-  Pinterest "Insufficient scopes" | App needs Standard access tier. Apply at
-                                 | developers.pinterest.com → Manage → Access.
-  Pinterest 429 rate limit        | Trial tier: 10 calls/min. Standard: 1000/min.
-                                 | Implement backoff or request Standard access.
-  Threads "User not found"        | User hasn't set up a Threads profile yet.
-                                 | They must create one at threads.net first.
-  Threads token issues            | If reusing FB credentials, ensure Threads
-                                 | scopes are added to the FB app use case.
-  Bluesky "AuthenticationRequired"| App password is wrong or was revoked.
-                                 | User must generate a new one at
-                                 | bsky.app → Settings → App Passwords.
-  Bluesky "InvalidToken"          | Session expired. Re-authenticate with
-                                 | createSession endpoint. Sessions last ~2hrs.
-
-
-# ============================================================================
-# APP REVIEW (WHEN READY TO GO PUBLIC)
-# ============================================================================
-# While in Development Mode, only people with roles on your app (or on the
-# connected business portfolio) can use OAuth.
-# For public access, submit each app for review.
-# ============================================================================
-
-## Facebook / Instagram / WhatsApp App Review
-- Go to App Dashboard → App Review → Permissions and Features
-- Request each permission with screenshots + screencasts showing usage
-- Facebook reviews typically take 1-5 business days
-- Required for: any user who doesn't have a role on your app
-- You must also maintain data access — Meta may require periodic recertification
-  Docs: https://developers.facebook.com/docs/development/maintaining-data-access
-- WhatsApp requires business verification before you can message non-test users
-
-## Twitter App Review
-- Free tier has limited access; apply for Basic ($100/mo) or Pro for higher limits
-- Elevated access may require app review
-
-## LinkedIn App Review
-- Most products (Share on LinkedIn, Sign in) are auto-approved
-- Some products require manual review
-
-## TikTok App Review
-- Login Kit + Content Posting require review
-- Submit app description + demo video
-- Review takes 3-7 business days typically
-
-## YouTube App Review (Google OAuth Verification)
-- Google requires OAuth consent screen verification for apps with >100 users
-- Submit privacy policy URL, homepage URL, and authorized domains
-- If requesting sensitive scopes (youtube.upload), prepare a demo video
-- Verification can take 2-6 weeks (plan ahead)
-- While unverified, a "This app isn't verified" warning appears for users
-
-## Pinterest App Review
-- Trial access gives 10 API calls/min (enough for development)
-- Apply for Standard access when ready for production
-- Go to developers.pinterest.com → Your App → Manage → Request Standard Access
-- Provide app description and expected API usage
-- Review typically takes 1-2 weeks
-
-## Threads App Review
-- Uses the same Meta app as Facebook/Instagram — same review process
-- Ensure Threads-specific scopes are included in your permission requests
-- If your FB/IG app is already approved, Threads permissions may be auto-approved
-
-## Bluesky — No App Review Needed
-- Bluesky uses the AT Protocol — fully open, no app review required
-- Users authenticate with their own app passwords (generated in Bluesky settings)
-- No rate limit concerns for normal usage patterns
-- No platform credentials stored on your server
-
-Save App Review for when you have real users. For now, Development Mode
-with your own test accounts is sufficient.
-
-
-# ============================================================================
-# DEVELOPER RESOURCES
-# ============================================================================
-# Bookmark these — you'll reference them often.
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  ENVIRONMENT VARIABLES REFERENCE (All Platforms)                        ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+#
+# Add these to your Railway service variables or local .env file.
+# NEVER commit these to git — they should be in .gitignore.
 # ============================================================================
 
-## Meta (Facebook / Instagram / Threads / WhatsApp)
+```
+# --- Facebook / Instagram (Meta) ---
+FACEBOOK_APP_ID=
+FACEBOOK_APP_SECRET=
+FACEBOOK_LOGIN_CONFIG_ID=         # Optional: Login for Business config ID
 
-  Resource                        | URL
-  --------------------------------|-------------------------------------------
-  App Dashboard                   | https://developers.facebook.com/apps/
-  Graph API Explorer              | https://developers.facebook.com/tools/explorer/
-  Access Token Debugger           | https://developers.facebook.com/tools/debug/accesstoken/
-  Permissions Reference           | https://developers.facebook.com/docs/permissions
-  Graph API Reference             | https://developers.facebook.com/docs/graph-api/reference
-  Pages API Docs                  | https://developers.facebook.com/docs/pages-api/
-  Instagram Platform Docs         | https://developers.facebook.com/docs/instagram-platform/
-  Threads API Docs                | https://developers.facebook.com/docs/threads/
-  WhatsApp Cloud API Docs         | https://developers.facebook.com/docs/whatsapp/cloud-api/
-  Platform Status                 | https://metastatus.com/
-  Bug Reports                     | https://developers.facebook.com/support/bugs/
+# --- Twitter / X ---
+TWITTER_CLIENT_ID=
+TWITTER_CLIENT_SECRET=
+TWITTER_API_KEY=                  # v1.1 API key (for media upload)
+TWITTER_API_SECRET=               # v1.1 API secret (for media upload)
 
-## Google (YouTube)
+# --- LinkedIn ---
+LINKEDIN_CLIENT_ID=
+LINKEDIN_CLIENT_SECRET=
 
-  Resource                        | URL
-  --------------------------------|-------------------------------------------
-  Google Cloud Console            | https://console.cloud.google.com/
-  YouTube Data API v3 Docs        | https://developers.google.com/youtube/v3
-  OAuth 2.0 Playground            | https://developers.google.com/oauthplayground/
-  API Quota Calculator            | https://developers.google.com/youtube/v3/determine_quota_cost
-  YouTube API Status              | https://status.cloud.google.com/
+# --- TikTok ---
+TIKTOK_CLIENT_KEY=
+TIKTOK_CLIENT_SECRET=
 
-## Pinterest
+# --- YouTube (Google Cloud) ---
+YOUTUBE_CLIENT_ID=
+YOUTUBE_CLIENT_SECRET=
 
-  Resource                        | URL
-  --------------------------------|-------------------------------------------
-  Developer Portal                | https://developers.pinterest.com/
-  API v5 Reference                | https://developers.pinterest.com/docs/api/v5/
-  OAuth Guide                     | https://developers.pinterest.com/docs/getting-started/authentication/
-  Rate Limits                     | https://developers.pinterest.com/docs/getting-started/rate-limits/
+# --- Pinterest ---
+PINTEREST_APP_ID=
+PINTEREST_APP_SECRET=
 
-## Twitter / X
+# --- Threads (Meta — DIFFERENT credentials from FB/IG!) ---
+THREADS_APP_ID=
+THREADS_APP_SECRET=
 
-  Resource                        | URL
-  --------------------------------|-------------------------------------------
-  Developer Portal                | https://developer.x.com/
-  API v2 Reference                | https://developer.x.com/en/docs/twitter-api
-  OAuth 2.0 Guide                 | https://developer.x.com/en/docs/authentication/oauth-2-0
+# --- Bluesky ---
+# No platform-level vars — each user provides handle + app password
+```
 
-## LinkedIn
 
-  Resource                        | URL
-  --------------------------------|-------------------------------------------
-  Developer Portal                | https://developer.linkedin.com/
-  Marketing API Docs              | https://learn.microsoft.com/en-us/linkedin/marketing/
-  OAuth Guide                     | https://learn.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  PLATFORM CAPABILITIES MATRIX                                          ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
 
-## TikTok
+| Platform   | Text | Image | Multi-Image | Video | Carousel | Metrics | Comments | Reply |
+|------------|------|-------|-------------|-------|----------|---------|----------|-------|
+| Facebook   | ✅   | ✅    | ✅          | ✅    | ❌       | ✅      | ✅       | ✅    |
+| Instagram  | ❌   | ✅    | ✅          | ✅    | ✅       | ✅      | ✅       | ✅    |
+| Twitter/X  | ✅   | ✅    | ✅ (up to 4)| ✅    | ❌       | ✅      | ✅       | ✅    |
+| LinkedIn   | ✅   | ✅    | ✅ (up to 9)| ✅    | ❌*      | ✅      | ✅       | ✅    |
+| TikTok     | ❌   | ✅    | ✅ (up to 35)| ✅   | ✅       | 🔄**   | ❌       | ❌    |
+| YouTube    | ❌   | ❌    | ❌          | ✅    | ❌       | ✅      | ✅       | ✅    |
+| Pinterest  | ❌   | ✅    | ❌          | ❌    | ❌       | ✅      | ❌       | ❌    |
+| Threads    | ✅   | ✅    | ✅ (up to 10)| ❌   | ✅       | ✅      | ✅       | ❌    |
+| Bluesky    | ✅   | ✅    | ✅ (up to 4)| ❌    | ❌       | ✅      | ✅       | ❌    |
 
-  Resource                        | URL
-  --------------------------------|-------------------------------------------
-  Developer Portal                | https://developers.tiktok.com/
-  Content Posting API             | https://developers.tiktok.com/doc/content-posting-api-get-started
-  Login Kit                       | https://developers.tiktok.com/doc/login-kit-web
+Legend:
+  ❌* LinkedIn carousels are sponsored-only (not available for organic posts)
+  🔄** TikTok metrics use async polling via publish_id (status checks)
 
-## Bluesky (AT Protocol)
+Auth method summary:
+| Platform         | Auth Type                | Token Validity    | Auto-Refresh |
+|-----------------|--------------------------|-------------------|--------------|
+| Facebook/IG     | OAuth 2.0 + config_id    | 60 days           | ✅ Exchange   |
+| Twitter/X       | OAuth 2.0 + PKCE         | 2 hours           | ✅ Refresh    |
+| LinkedIn        | OAuth 2.0                | ~60 days          | ✅ Refresh    |
+| TikTok          | OAuth 2.0                | Varies            | ✅ Refresh    |
+| YouTube         | Google OAuth 2.0         | 1 hour            | ✅ Refresh    |
+| Pinterest       | OAuth 2.0                | Varies            | ✅ Refresh    |
+| Threads         | OAuth 2.0 (Meta)         | 60 days           | ✅ Exchange   |
+| Bluesky         | AT Protocol (App PW)     | Minutes (JWT)     | ✅ Session    |
 
-  Resource                        | URL
-  --------------------------------|-------------------------------------------
-  AT Protocol Docs                | https://atproto.com/
-  Bluesky API Reference           | https://docs.bsky.app/
-  Lexicon Reference               | https://atproto.com/specs/lexicon
-  App Passwords                   | https://bsky.app/settings/app-passwords
+
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  RECOMMENDED SETUP ORDER                                                ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+
+Priority order (based on user base, ROI, and ease of setup):
+
+1. 🔵 Facebook + Instagram (Step 1) — Highest ROI, one app covers both
+2. 🐦 Twitter/X (Step 2) — Fast setup, pay-per-use credits
+3. 💼 LinkedIn (Step 3) — B2B essential, straightforward
+4. 🌀 Threads (Step 7) — Uses same Meta ecosystem, growing fast
+5. 🦋 Bluesky (Step 8) — Zero setup, works immediately
+6. 📌 Pinterest (Step 6) — Niche but valuable for visual/e-commerce brands
+7. 🎵 TikTok (Step 4) — Requires audit for public posts, but massive reach
+8. 📺 YouTube (Step 5) — Video-only, Google Cloud + consent screen verification
+
+
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  TROUBLESHOOTING                                                        ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+
+## Token Expired / User Disconnected
+- Check Railway logs for "token expired" or "401" errors
+- User re-connects from KOVA's Platforms page (Settings → Platforms)
+- FB/IG/Threads: 60-day tokens, KOVA auto-refreshes before expiry
+- Twitter: 2-hour access tokens, refresh token auto-renews
+- YouTube: 1-hour tokens, refresh token auto-renews
+
+## "App Not Authorized" / Permission Denied
+- Check that all required scopes are enabled in the platform developer console
+- Meta: check that App Review is completed for each permission
+- TikTok: check that the audit is approved for public posting
+- YouTube: check that OAuth consent screen is published (not "Testing" mode)
+
+## Redirect URI Mismatch
+- Callback URL in developer app MUST exactly match what KOVA sends
+- Check for trailing slashes: /callback/ ≠ /callback
+- Check http vs https: production must use https
+- Check domain: must match your Railway/production domain exactly
+
+## Media Upload Failures
+- Ensure R2/storage URLs are publicly accessible
+- TikTok: domain must be verified for PULL_FROM_URL uploads
+- Pinterest: image is REQUIRED — text-only pins fail
+- YouTube: video is REQUIRED — text/image posts fail
+- Bluesky: images capped at 4 per post, text at 300 graphemes
+
+## Rate Limits
+| Platform         | Key Limits                                     |
+|-----------------|------------------------------------------------|
+| Facebook/IG     | ~200 calls/user/hour (Graph API)               |
+| Twitter/X       | Pay-per-usage (credit-based, no hard limit)    |
+| LinkedIn        | ~100-300 calls/day for posting endpoints        |
+| TikTok          | Varies — check app dashboard                   |
+| YouTube         | 10,000 quota units/day (default)               |
+| Pinterest       | 10/min (Trial) or 1000/min (Standard)          |
+| Threads         | Same as Meta Graph API limits                  |
+| Bluesky         | Generous — no hard purchase required            |
+
+## Missing Environment Variables
+- Platform shows "Configuration Error" → check Railway env vars
+- Missing vars = KOVA can't initiate OAuth for that platform
+- Bluesky exception: no platform-level env vars needed
+- Use Railway dashboard → Variables tab to add/edit
+
+## Common Mistakes
+1. Using Facebook App ID/Secret for Threads (they're different!)
+2. Forgetting to enable "Direct Post" on TikTok (content goes to inbox)
+3. Not adding test users/roles before App Review approval
+4. Using http:// redirect URI in production (must be https://)
+5. LinkedIn: not requesting "Advertising API" product for org posting
+6. YouTube: trying to use Service Account instead of OAuth 2.0
