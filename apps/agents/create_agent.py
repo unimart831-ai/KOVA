@@ -23,7 +23,6 @@ from datetime import datetime, timedelta, timezone
 from django.utils import timezone as dj_timezone
 
 from apps.agents.llm import generate, get_model_for_task, LLMResponse, parse_llm_json
-from apps.agents.media import generate_post_image
 from apps.agents.models import AgentAction, AgentConfig
 from apps.content.models import ContentSeed, Post
 from apps.platforms.models import SocialAccount
@@ -670,29 +669,20 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                         created_at__gte=month_start,
                     ).count()
                     if images_this_month < monthly_limit:
-                        # Use visual strategy system if available, fall back to ai_photo
-                        from apps.agents.visual_strategy import apply_visual_strategy, infer_visual_strategy
-                        if visual_strategy_data and visual_strategy_data.get("strategy"):
-                            # New format: LLM provided a full visual strategy
-                            if not visual_strategy_data.get("image_prompt") and image_prompt:
-                                visual_strategy_data["image_prompt"] = image_prompt
-                            apply_visual_strategy(post, visual_strategy_data)
-                        elif image_prompt:
-                            # Legacy format: just image_prompt — infer best strategy
-                            strategy = infer_visual_strategy(
-                                content_text,
-                                post.social_account.platform if post.social_account else "twitter",
+                        # Dispatch image generation as async Celery task
+                        # so the user sees posts immediately without waiting
+                        from apps.content.tasks import async_generate_image
+                        post.media_status = "processing"
+                        post.media_prompt = image_prompt
+                        post.save(update_fields=["media_status", "media_prompt", "updated_at"])
+                        try:
+                            async_generate_image.delay(
+                                str(post.id),
+                                image_prompt,
+                                visual_strategy_data if visual_strategy_data.get("strategy") else None,
                             )
-                            if strategy == "ai_photo":
-                                generate_post_image(post, image_prompt)
-                            else:
-                                # For non-photo strategies inferred from content, use the graphic engine
-                                apply_visual_strategy(post, {
-                                    "strategy": strategy,
-                                    "image_prompt": image_prompt,
-                                    "text": content_text[:300],
-                                    "headline": content_text.split("\n")[0][:120],
-                                })
+                        except Exception as img_exc:
+                            logger.warning("Failed to queue image gen for post %s: %s", post.id, img_exc)
                     else:
                         logger.info(
                             "Image limit reached for %s (%d/%d this month)",

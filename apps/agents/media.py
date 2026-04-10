@@ -70,7 +70,7 @@ def _fetch_together(prompt: str, width: int, height: int) -> bytes | None:
             "n": 1,
             "response_format": "b64_json",
         },
-        timeout=90,
+        timeout=30,
     )
     response.raise_for_status()
     data = response.json()
@@ -97,7 +97,7 @@ def _fetch_pollinations(prompt: str, width: int, height: int) -> bytes | None:
     }
     headers = {"Authorization": f"Bearer {api_key}"}
 
-    response = requests.get(url, params=params, headers=headers, timeout=60)
+    response = requests.get(url, params=params, headers=headers, timeout=30)
     response.raise_for_status()
 
     content_type = response.headers.get("content-type", "")
@@ -125,7 +125,7 @@ def _fetch_huggingface(prompt: str, width: int, height: int) -> bytes | None:
             "inputs": prompt,
             "parameters": {"width": width, "height": height},
         },
-        timeout=120,
+        timeout=45,
     )
     response.raise_for_status()
 

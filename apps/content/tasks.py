@@ -93,7 +93,72 @@ def add_utm_tracking(content: str, platform: str, post_id: str) -> str:
     return _URL_RE.sub(replace_url, content)
 
 
-@shared_task(name="content.generate_from_seed", soft_time_limit=270, time_limit=300)
+@shared_task(name="content.post_generate_analytics", soft_time_limit=120, time_limit=150)
+def post_generate_analytics(post_ids: list[str]):
+    """
+    Run Content DNA extraction + engagement prediction AFTER posts are created.
+    Runs as a background task so the user sees posts immediately.
+    """
+    from apps.content.models import Post
+    from apps.agents.analyst_agent import batch_extract_content_dna, batch_predict_engagement
+
+    posts = list(Post.objects.filter(pk__in=post_ids).select_related("social_account", "user"))
+    if not posts:
+        return
+
+    try:
+        batch_extract_content_dna(posts)
+    except Exception as e:
+        logger.warning("Async batch DNA extraction failed: %s", e)
+
+    try:
+        batch_predict_engagement(posts)
+    except Exception as e:
+        logger.warning("Async batch engagement prediction failed: %s", e)
+
+    return {"analyzed": len(posts)}
+
+
+@shared_task(name="content.async_generate_image", soft_time_limit=60, time_limit=90)
+def async_generate_image(post_id: str, image_prompt: str, visual_strategy_data: dict | None = None):
+    """
+    Generate an AI image for a post in the background.
+    Fires after post creation so the user sees text content immediately.
+    """
+    from apps.content.models import Post
+    from apps.agents.media import generate_post_image
+
+    try:
+        post = Post.objects.get(pk=post_id)
+    except Post.DoesNotExist:
+        logger.warning("Post %s not found for async image gen", post_id)
+        return
+
+    if visual_strategy_data and visual_strategy_data.get("strategy"):
+        from apps.agents.visual_strategy import apply_visual_strategy
+        if not visual_strategy_data.get("image_prompt") and image_prompt:
+            visual_strategy_data["image_prompt"] = image_prompt
+        apply_visual_strategy(post, visual_strategy_data)
+    else:
+        from apps.agents.visual_strategy import infer_visual_strategy, apply_visual_strategy
+        strategy = infer_visual_strategy(
+            post.content_text,
+            post.social_account.platform if post.social_account else "twitter",
+        )
+        if strategy == "ai_photo":
+            generate_post_image(post, image_prompt)
+        else:
+            apply_visual_strategy(post, {
+                "strategy": strategy,
+                "image_prompt": image_prompt,
+                "text": post.content_text[:300],
+                "headline": post.content_text.split("\n")[0][:120],
+            })
+
+    return {"post_id": str(post_id), "status": post.media_status}
+
+
+@shared_task(name="content.generate_from_seed", soft_time_limit=120, time_limit=150)
 def generate_from_seed(seed_id: str):
     """
     Run the Create Agent on a ContentSeed.
@@ -119,18 +184,13 @@ def generate_from_seed(seed_id: str):
             seed.save(update_fields=["status", "error_message", "updated_at"])
         return {"error": str(exc)}
 
-    # Tag all new posts with Content DNA and engagement prediction (batched = 2 LLM calls instead of 2N)
-    from apps.agents.analyst_agent import batch_extract_content_dna, batch_predict_engagement
-
+    # Fire off Content DNA + engagement prediction as separate async tasks
+    # so they don't block the user from seeing their generated posts.
+    post_ids = [str(p.id) for p in posts]
     try:
-        batch_extract_content_dna(posts)
+        post_generate_analytics.delay(post_ids)
     except Exception as e:
-        logger.warning("Batch DNA extraction failed for seed %s: %s", seed_id, e)
-
-    try:
-        batch_predict_engagement(posts)
-    except Exception as e:
-        logger.warning("Batch engagement prediction failed for seed %s: %s", seed_id, e)
+        logger.warning("Failed to queue post analytics for seed %s: %s", seed_id, e)
 
     # Auto-schedule if Adapt Agent is active and user has auto_approve on
     from apps.agents.adapt_agent import auto_schedule_post

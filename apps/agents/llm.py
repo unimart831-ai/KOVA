@@ -284,7 +284,7 @@ def get_llm_client():
 
 def _get_openai_client():
     from openai import OpenAI
-    return OpenAI(api_key=settings.OPENAI_API_KEY, timeout=90.0)
+    return OpenAI(api_key=settings.OPENAI_API_KEY, timeout=45.0)
 
 
 def _get_openrouter_client():
@@ -292,13 +292,13 @@ def _get_openrouter_client():
     return OpenAI(
         api_key=getattr(settings, "OPENROUTER_API_KEY", ""),
         base_url="https://openrouter.ai/api/v1",
-        timeout=90.0,
+        timeout=45.0,
     )
 
 
 def _get_anthropic_client():
     from anthropic import Anthropic
-    return Anthropic(api_key=settings.ANTHROPIC_API_KEY, timeout=90.0)
+    return Anthropic(api_key=settings.ANTHROPIC_API_KEY, timeout=45.0)
 
 
 def generate(
@@ -411,7 +411,7 @@ def generate(
             last_exc = None  # not an exception, just empty
             # Brief backoff before trying next model
             if attempt < len(models_to_try) - 1:
-                time.sleep(min(2 ** attempt, 4))
+                time.sleep(min(2 ** attempt, 2))
 
         except Exception as exc:
             duration = int((time.monotonic() - start) * 1000)
@@ -421,7 +421,7 @@ def generate(
             )
             last_exc = exc
             if attempt < len(models_to_try) - 1:
-                time.sleep(min(2 ** attempt, 4))
+                time.sleep(min(2 ** attempt, 2))
 
     # All attempts exhausted — return empty LLMResponse so the caller's
     # own retry loop can handle it (create_agent checks for empty content).
