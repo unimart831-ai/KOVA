@@ -23,9 +23,11 @@ def _public_url_for_file(file_name: str):
 
     Prefers the public URL from default_storage (uses AWS_S3_CUSTOM_DOMAIN
     when configured, giving a clean URL that any platform API can download).
-    Falls back to pre-signed URL only when the public URL isn't absolute.
+    Falls back to constructing the URL from R2 env vars directly (handles
+    cases where the Celery worker's default_storage differs from web).
     Returns None if no public URL can be constructed.
     """
+    import os
     from django.core.files.storage import default_storage
     from django.conf import settings
 
@@ -49,6 +51,20 @@ def _public_url_for_file(file_name: str):
                 )
         except ImportError:
             pass
+
+        # R2 fallback: construct URL from env vars directly (works even
+        # when default_storage is FileSystemStorage but R2 is configured)
+        custom_domain = (
+            getattr(settings, "AWS_S3_CUSTOM_DOMAIN", "")
+            or os.environ.get("AWS_S3_CUSTOM_DOMAIN", "")
+        )
+        if custom_domain:
+            location = (
+                getattr(settings, "AWS_LOCATION", "")
+                or os.environ.get("AWS_LOCATION", "media")
+            )
+            prefix = f"{location}/" if location else ""
+            return f"https://{custom_domain}/{prefix}{file_name}"
 
         # Last resort: SITE_URL + relative path
         site_url = getattr(settings, "SITE_URL", "").rstrip("/")
@@ -390,6 +406,9 @@ def publish_post(self, post_id: str):
         for attachment in post.attachments.order_by("order"):
             if not attachment.file:
                 continue
+            # Build the public URL first (needed for URL-based fallback)
+            url = _public_url_for_file(attachment.file.name)
+
             # Read the file bytes from storage (works with S3, R2, local FS)
             try:
                 with default_storage.open(attachment.file.name, "rb") as fh:
@@ -398,10 +417,24 @@ def publish_post(self, post_id: str):
                 ctype = mimetypes.guess_type(fname)[0] or "image/jpeg"
                 media_files.append((fname, data, ctype))
             except Exception as e:
-                logger.warning("Could not read attachment %s: %s", attachment.pk, e)
+                logger.warning("Could not read attachment %s from storage: %s", attachment.pk, e)
+                # Fallback: download from the public R2 URL
+                if url:
+                    try:
+                        import httpx
+                        dl_resp = httpx.get(url, timeout=30, follow_redirects=True)
+                        dl_resp.raise_for_status()
+                        fname = attachment.file.name.rsplit("/", 1)[-1]
+                        ctype = (
+                            dl_resp.headers.get("content-type", "").split(";")[0]
+                            or mimetypes.guess_type(fname)[0]
+                            or "image/jpeg"
+                        )
+                        media_files.append((fname, dl_resp.content, ctype))
+                        logger.info("Downloaded attachment %s via public URL (%d bytes)", attachment.pk, len(dl_resp.content))
+                    except Exception as dl_err:
+                        logger.warning("Could not download attachment %s from %s: %s", attachment.pk, url, dl_err)
 
-            # Also build a public URL as fallback (needed by Instagram)
-            url = _public_url_for_file(attachment.file.name)
             if url:
                 media_urls_list.insert(0, url)
 
