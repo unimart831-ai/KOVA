@@ -134,9 +134,19 @@ def _fetch_post_comments(user, account, provider):
     ).order_by("-published_at")[:15]
 
     if not recent_posts.exists():
-        logger.debug(
-            "Engage fetch: no recent published posts for %s on %s (%s)",
+        # Count to diagnose WHY no posts qualify for comment fetching
+        all_published = Post.objects.filter(
+            user=user, social_account=account, status=Post.Status.PUBLISHED,
+        ).count()
+        no_post_id = Post.objects.filter(
+            user=user, social_account=account, status=Post.Status.PUBLISHED,
+            platform_post_id="",
+        ).count()
+        logger.info(
+            "Engage fetch: no recent published posts for %s on %s/%s "
+            "(%d published total, %d missing platform_post_id)",
             user.email, account.platform, account.username,
+            all_published, no_post_id,
         )
         return 0
 
@@ -153,7 +163,7 @@ def _fetch_post_comments(user, account, provider):
                 access_token=token,
                 post_id=post.platform_post_id,
             )
-            logger.debug(
+            logger.info(
                 "Engage fetch: %d comments on post %s (%s)",
                 len(comments), post.platform_post_id, account.platform,
             )

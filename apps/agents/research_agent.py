@@ -6,12 +6,16 @@ Responsibilities:
   2. Generate content opportunity briefs (ideas backed by trending data)
   3. Monitor competitor-adjacent themes
   4. Feed trending data into the Daily Brief
+
+When TAVILY_API_KEY is set, uses real-time web search to ground trend
+discovery in actual current events instead of relying on LLM training data.
 """
 
 import json
 import logging
 from datetime import timedelta
 
+from django.conf import settings
 from django.utils import timezone
 
 from apps.agents.llm import generate, get_model_for_task, parse_llm_json
@@ -19,6 +23,72 @@ from apps.agents.models import AgentAction, AgentConfig
 from apps.content.models import Post
 
 logger = logging.getLogger(__name__)
+
+
+def _search_web_trends(industry, content_pillars, company=""):
+    """
+    Search the web for real-time trending topics using Tavily.
+
+    Returns a list of search result dicts, or empty list if Tavily is
+    not configured or the search fails.
+    """
+    api_key = getattr(settings, "TAVILY_API_KEY", "")
+    if not api_key:
+        return []
+
+    try:
+        from tavily import TavilyClient
+    except ImportError:
+        logger.info("tavily-python not installed — falling back to LLM-only trend discovery")
+        return []
+
+    client = TavilyClient(api_key=api_key)
+    results = []
+
+    # Build focused search queries from the user's context
+    queries = []
+    if industry:
+        queries.append(f"{industry} trending topics news this week")
+    for pillar in (content_pillars or [])[:3]:  # top 3 pillars to save quota
+        queries.append(f"{pillar} latest trends news")
+    if company:
+        queries.append(f"{company} industry news competitors")
+    if not queries:
+        queries = ["social media marketing trends this week"]
+
+    for query in queries[:3]:  # cap at 3 searches per cycle to save Tavily quota
+        try:
+            search = client.search(
+                query=query,
+                search_depth="basic",
+                max_results=5,
+                include_answer=True,
+            )
+            if search.get("answer"):
+                results.append({
+                    "query": query,
+                    "answer": search["answer"],
+                    "sources": [
+                        {"title": r.get("title", ""), "url": r.get("url", ""), "snippet": r.get("content", "")[:200]}
+                        for r in search.get("results", [])[:3]
+                    ],
+                })
+            elif search.get("results"):
+                results.append({
+                    "query": query,
+                    "answer": "",
+                    "sources": [
+                        {"title": r.get("title", ""), "url": r.get("url", ""), "snippet": r.get("content", "")[:200]}
+                        for r in search.get("results", [])[:3]
+                    ],
+                })
+        except Exception as e:
+            logger.warning("Tavily search failed for '%s': %s", query, e)
+
+    if results:
+        logger.info("Web search returned %d result sets for trend discovery", len(results))
+
+    return results
 
 
 def _get_user_context(user):
@@ -79,6 +149,33 @@ def discover_trends(user):
         if config and config.custom_instructions:
             custom_instructions = f"\nUser's custom research instructions: {config.custom_instructions}\n"
 
+        # ── Web search for real-time trend data ──────────────────────
+        web_results = _search_web_trends(
+            industry=ctx["industry"],
+            content_pillars=ctx["content_pillars"],
+            company=ctx["company"],
+        )
+        web_context = ""
+        if web_results:
+            web_context = (
+                "\n\n=== REAL-TIME WEB SEARCH RESULTS ===\n"
+                "Use these ACTUAL current news/trends as your primary source. "
+                "DO NOT make up trends — ground your suggestions in this real data.\n\n"
+            )
+            for wr in web_results:
+                web_context += f"Search: {wr['query']}\n"
+                if wr.get("answer"):
+                    web_context += f"Summary: {wr['answer']}\n"
+                for src in wr.get("sources", []):
+                    web_context += f"  - {src['title']}: {src['snippet']}\n"
+                web_context += "\n"
+        else:
+            web_context = (
+                "\n\nNOTE: No real-time web data available. Use your knowledge "
+                "of current trends as of your training data. Clearly mark any "
+                "trend you're less certain about with urgency: 'low'.\n"
+            )
+
         system_prompt = (
             "You are the Research Agent for a social media intelligence platform. "
             "Your job is to discover trending topics, emerging conversations, and content "
@@ -120,8 +217,9 @@ def discover_trends(user):
             f"Content language: {ctx['content_language']}\n\n"
             f"Recent content topics (to avoid repetition):\n"
             f"{json.dumps(ctx['recent_topics'], indent=2)}\n\n"
+            f"{web_context}\n"
             "Discover trending topics and content opportunities for this brand. "
-            "Be specific and actionable."
+            "Be specific and actionable. Ground your suggestions in the web search data above when available."
         )
 
         response = generate(

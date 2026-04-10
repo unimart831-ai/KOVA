@@ -242,9 +242,14 @@ def _generate_brief_with_llm(user, brief_data):
     return response
 
 
-def generate_daily_brief(user):
-    """Generate a daily brief for a single user. Called by the periodic task."""
-    today = timezone.now().date()
+def generate_daily_brief(user, *, user_date=None):
+    """Generate a daily brief for a single user. Called by the periodic task.
+
+    Args:
+        user_date: The date in the user's local timezone. Falls back to UTC
+                   date when not supplied (backward-compat).
+    """
+    today = user_date or timezone.now().date()
 
     # Don't regenerate if already exists
     if DailyBrief.objects.filter(user=user, date=today).exists():
@@ -400,26 +405,48 @@ def generate_all_daily_briefs():
             # Also check they don't already have a brief for THEIR local date
             if not user.briefs.filter(date=user_local_now.date()).exists():
                 users.append(user)
+            else:
+                logger.info(
+                    "Brief skip %s: already has brief for local date %s",
+                    user.email, user_local_now.date(),
+                )
+        else:
+            logger.info(
+                "Brief skip %s: local time %s < brief time %s (tz=%s)",
+                user.email, user_local_now.time().strftime("%H:%M"),
+                user.daily_brief_time.strftime("%H:%M"), user.timezone or "UTC",
+            )
 
     eligible_count = len(users)
     if not users:
-        # Diagnostic: log why no users matched
+        # Diagnostic: log why no users matched — INFO so it shows in production
         total_users = User.objects.count()
         onboarded = User.objects.filter(onboarding_completed=True).count()
         with_posts = User.objects.filter(posts__status="published").distinct().count()
         already_briefed = User.objects.filter(briefs__date=now_utc.date()).count()
-        logger.debug(
-            "Brief eligibility: %d total users, %d onboarded, %d with posts, "
-            "%d candidates checked, %d already briefed today (UTC)",
+        logger.info(
+            "Brief eligibility: %d total users, %d onboarded, %d with published posts, "
+            "%d candidates pre-time-filter, %d already briefed today (UTC). "
+            "No eligible users found.",
             total_users, onboarded, with_posts, len(candidates), already_briefed,
         )
 
     generated = 0
     for user in users:
         try:
-            brief = generate_daily_brief(user)
+            # Pass the user's local date so inner function uses the same date
+            import zoneinfo as _zi
+            try:
+                _utz = _zi.ZoneInfo(user.timezone or "UTC")
+            except (KeyError, Exception):
+                _utz = _zi.ZoneInfo("UTC")
+            user_date = now_utc.astimezone(_utz).date()
+
+            brief = generate_daily_brief(user, user_date=user_date)
             if brief:
                 generated += 1
+            else:
+                logger.info("Brief generation returned None for %s (date=%s)", user.email, user_date)
         except Exception as e:
             logger.error("Failed to generate brief for %s: %s", user.email, e)
 

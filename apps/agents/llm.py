@@ -367,6 +367,10 @@ def generate(
                 models_to_try.append(fb)
                 if len(models_to_try) >= _MAX_MODELS:
                     break
+    elif provider == "openrouter" and not model.endswith(":free"):
+        # Paid models: retry same model once before falling back to
+        # a different provider — transient errors (502/503) are common.
+        models_to_try.append(model)
 
     # Track which provider each model should use
     model_providers = {m: provider for m in models_to_try}

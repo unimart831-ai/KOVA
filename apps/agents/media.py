@@ -44,10 +44,17 @@ DEFAULT_SIZE = (1200, 675)
 # ─── PROVIDER IMPLEMENTATIONS ────────────────────────────────────────────────
 
 def _fetch_together(prompt: str, width: int, height: int) -> bytes | None:
-    """Together.ai — FLUX.1-schnell-Free (free, no billing required)."""
+    """Together.ai — FLUX.1-schnell (paid: $0.003/image, fast + reliable).
+
+    Model controlled by TOGETHER_IMAGE_MODEL setting:
+      - "black-forest-labs/FLUX.1-schnell"      — paid, $0.003/image (default)
+      - "black-forest-labs/FLUX.1-schnell-Free"  — free but rate-limited
+    """
     api_key = getattr(settings, "TOGETHER_API_KEY", "")
     if not api_key:
         return None
+
+    model = getattr(settings, "TOGETHER_IMAGE_MODEL", "black-forest-labs/FLUX.1-schnell")
 
     response = requests.post(
         "https://api.together.xyz/v1/images/generations",
@@ -56,7 +63,7 @@ def _fetch_together(prompt: str, width: int, height: int) -> bytes | None:
             "Content-Type": "application/json",
         },
         json={
-            "model": "black-forest-labs/FLUX.1-schnell-Free",
+            "model": model,
             "prompt": prompt,
             "width": width,
             "height": height,
@@ -134,10 +141,10 @@ def _fetch_huggingface(prompt: str, width: int, height: int) -> bytes | None:
     return response.content
 
 
-# Provider registry — tried in order (HuggingFace first: truly free, no deposit)
+# Provider registry — tried in order (Together first: most reliable when configured)
 PROVIDERS = [
-    ("huggingface", _fetch_huggingface),
     ("together", _fetch_together),
+    ("huggingface", _fetch_huggingface),
     ("pollinations", _fetch_pollinations),
 ]
 

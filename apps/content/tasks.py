@@ -21,16 +21,21 @@ def _public_url_for_file(file_name: str):
     """
     Generate a publicly accessible URL for a file in storage.
 
-    For S3/R2 backends: generates a pre-signed URL valid for 1 hour
-    (works even if the bucket or endpoint is not publicly accessible).
-    For other backends: uses SITE_URL + storage URL.
+    Prefers the public URL from default_storage (uses AWS_S3_CUSTOM_DOMAIN
+    when configured, giving a clean URL that any platform API can download).
+    Falls back to pre-signed URL only when the public URL isn't absolute.
     Returns None if no public URL can be constructed.
     """
     from django.core.files.storage import default_storage
     from django.conf import settings
 
     try:
-        # S3/R2: generate a pre-signed URL
+        # Prefer the public URL (uses custom domain like pub-xxx.r2.dev)
+        url = default_storage.url(file_name)
+        if url.startswith(("http://", "https://")):
+            return url
+
+        # S3/R2 fallback: generate a pre-signed URL (1 hour expiry)
         try:
             from storages.backends.s3boto3 import S3Boto3Storage
             if isinstance(default_storage, S3Boto3Storage):
@@ -45,10 +50,7 @@ def _public_url_for_file(file_name: str):
         except ImportError:
             pass
 
-        url = default_storage.url(file_name)
-        if url.startswith(("http://", "https://")):
-            return url
-
+        # Last resort: SITE_URL + relative path
         site_url = getattr(settings, "SITE_URL", "").rstrip("/")
         if site_url and "localhost" not in site_url:
             return f"{site_url}{url}"
@@ -410,11 +412,36 @@ def _fail_post(post, error_message: str):
 def check_and_publish_due_posts():
     """
     Periodic task: find all posts due for publishing and fire publish tasks.
-    Should be called by Celery Beat every minute.
+    Also auto-schedules approved posts that are missing a scheduled_at time.
+    Runs every 5 minutes via Celery Beat.
     """
+    from apps.agents.adapt_agent import auto_schedule_post
     from apps.content.models import Post
 
     now = timezone.now()
+
+    # ── Step 1: Auto-schedule approved posts missing scheduled_at ─────
+    # These are posts the user approved (or Strategist created) but never
+    # got a time assigned — e.g. auto_approve was just enabled, or the
+    # user approved from the dashboard without picking a time.
+    unscheduled = Post.objects.filter(
+        status=Post.Status.APPROVED,
+        scheduled_at__isnull=True,
+    ).select_related("social_account", "user", "user__profile")[:20]  # cap per cycle
+
+    auto_scheduled = 0
+    for post in unscheduled:
+        try:
+            result = auto_schedule_post(post)
+            if result:
+                auto_scheduled += 1
+        except Exception as e:
+            logger.warning("Auto-schedule failed for post %s: %s", post.pk, e)
+
+    if auto_scheduled:
+        logger.info("Auto-scheduled %d approved posts that were missing scheduled_at", auto_scheduled)
+
+    # ── Step 2: Dispatch posts whose scheduled_at has arrived ─────────
     due_posts = Post.objects.filter(
         status__in=[Post.Status.APPROVED, Post.Status.SCHEDULED],
         scheduled_at__lte=now,
@@ -427,7 +454,25 @@ def check_and_publish_due_posts():
 
     if count:
         logger.info("Dispatched %d posts for publishing", count)
-    return {"dispatched": count}
+    else:
+        # Diagnostic: log pipeline state so we can see why nothing publishes
+        total_approved = Post.objects.filter(status=Post.Status.APPROVED).count()
+        total_scheduled = Post.objects.filter(status=Post.Status.SCHEDULED).count()
+        no_schedule = Post.objects.filter(
+            status__in=[Post.Status.APPROVED, Post.Status.SCHEDULED],
+            scheduled_at__isnull=True,
+        ).count()
+        future = Post.objects.filter(
+            status__in=[Post.Status.APPROVED, Post.Status.SCHEDULED],
+            scheduled_at__gt=now,
+        ).count()
+        if total_approved or total_scheduled or no_schedule:
+            logger.info(
+                "Publish check: 0 due. %d approved, %d scheduled, "
+                "%d missing scheduled_at, %d scheduled for future.",
+                total_approved, total_scheduled, no_schedule, future,
+            )
+    return {"dispatched": count, "auto_scheduled": auto_scheduled}
 
 
 @shared_task(name="content.fetch_post_metrics")

@@ -102,7 +102,7 @@ def _run_engage_for_user(user_id):
                 result["replies_generated"], result["auto_sent"],
             )
         else:
-            logger.debug(
+            logger.info(
                 "Engage cycle for %s: no new interactions (fetched=%d, analyzed=%d)",
                 user.email, result.get("fetched", 0), result.get("analyzed", 0),
             )

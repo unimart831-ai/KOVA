@@ -308,20 +308,20 @@ ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 OPENROUTER_API_KEY = env("OPENROUTER_API_KEY", default="")
 DEFAULT_LLM_PROVIDER = env("DEFAULT_LLM_PROVIDER", default="openai")  # openai | anthropic | openrouter
 DEFAULT_LLM_MODEL = env("DEFAULT_LLM_MODEL", default="gpt-4o-mini")
-# Paid fallback — auto-escalate to this model when all free models fail.
-# DeepSeek V3.2 via OpenRouter: 89th-percentile intelligence, $0.26/$0.38 per 1M tokens.
-# 37% cheaper output than gpt-4o-mini, better reasoning. Set to "" to disable.
-LLM_PAID_FALLBACK = env("LLM_PAID_FALLBACK", default="deepseek/deepseek-v3.2")
+# Paid fallback — auto-escalate to a DIFFERENT provider when the primary model fails.
+# Gemini 2.0 Flash: $0.10/$0.40 per 1M tokens — fast, cheap, different provider for redundancy.
+LLM_PAID_FALLBACK = env("LLM_PAID_FALLBACK", default="google/gemini-2.0-flash-001")
 LLM_PAID_FALLBACK_PROVIDER = env("LLM_PAID_FALLBACK_PROVIDER", default="openrouter")
 
 # Tiered model routing — right model for each task.
 # Override individual tasks via env vars, or change the tier defaults.
 # Tier: premium (creative writing) | workhorse (reasoning) | fast (classification)
-# DEV: Using free OpenRouter models. Switch to paid models for production.
-# Updated 2026-04-09: llama-4-maverick:free & stepfun/step-3.5-flash:free are dead (404).
-LLM_MODEL_PREMIUM = env("LLM_MODEL_PREMIUM", default="nvidia/nemotron-3-super-120b-a12b:free")
-LLM_MODEL_WORKHORSE = env("LLM_MODEL_WORKHORSE", default="openai/gpt-oss-120b:free")
-LLM_MODEL_FAST = env("LLM_MODEL_FAST", default="nvidia/nemotron-3-nano-30b-a3b:free")
+# PRODUCTION: Using DeepSeek V3.2 — 89th-percentile intelligence, $0.26/$0.38 per 1M tokens.
+# Estimated cost: ~$0.001/call × ~15 calls/day/user ≈ $0.50/month per active user.
+# Updated 2026-04-10: Switched from unreliable free models to DeepSeek V3.2 paid.
+LLM_MODEL_PREMIUM = env("LLM_MODEL_PREMIUM", default="deepseek/deepseek-v3.2")
+LLM_MODEL_WORKHORSE = env("LLM_MODEL_WORKHORSE", default="deepseek/deepseek-v3.2")
+LLM_MODEL_FAST = env("LLM_MODEL_FAST", default="deepseek/deepseek-v3.2")
 
 AGENT_MODELS = {
     # Create Agent — user-facing content, needs top creative quality
@@ -394,9 +394,20 @@ MODEL_TOKEN_COSTS = {
 # Multi-provider with fallback: Hugging Face → Together.ai → Pollinations.ai
 AI_IMAGE_GENERATION_ENABLED = env.bool("AI_IMAGE_GENERATION_ENABLED", default=True)
 HF_TOKEN = env("HF_TOKEN", default="")                        # https://huggingface.co/settings/tokens — FLUX.1-schnell (free)
-TOGETHER_API_KEY = env("TOGETHER_API_KEY", default="")        # https://api.together.xyz — FLUX.1-schnell-Free (needs deposit)
+TOGETHER_API_KEY = env("TOGETHER_API_KEY", default="")        # https://api.together.xyz — sign up, add $5 credit
+TOGETHER_IMAGE_MODEL = env("TOGETHER_IMAGE_MODEL", default="black-forest-labs/FLUX.1-schnell")  # $0.003/image
 POLLINATIONS_API_KEY = env("POLLINATIONS_API_KEY", default="") # https://pollinations.ai — Flux Schnell
 AI_IMAGE_MODEL = env("AI_IMAGE_MODEL", default="flux")        # Pollinations model: flux | gptimage | zimage
+
+# ─── WEB SEARCH (Tavily — real-time trend data for Research Agent) ───────────
+# Free tier: 1000 searches/month — sign up at https://tavily.com
+# When configured, Research Agent uses real web data instead of LLM hallucinations.
+TAVILY_API_KEY = env("TAVILY_API_KEY", default="")
+
+# ─── WEB SEARCH (Tavily — real-time trend data for Research Agent) ───────────
+# Free tier: 1000 searches/month — sign up at https://tavily.com
+# When configured, Research Agent uses real web data instead of LLM hallucinations.
+TAVILY_API_KEY = env("TAVILY_API_KEY", default="")
 
 # ─── STRIPE (kept for future international billing) ─────────────────────────
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
