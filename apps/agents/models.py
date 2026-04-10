@@ -128,29 +128,29 @@ class LLMConfig(models.Model):
         help_text="Primary LLM provider.",
     )
     default_model = models.CharField(
-        max_length=120, default="qwen/qwen3.6-plus:free",
+        max_length=120, default="deepseek/deepseek-v3.2",
         help_text="Default model when no task-specific model is set.",
     )
     paid_fallback_model = models.CharField(
-        max_length=120, blank=True, default="gpt-4o-mini",
+        max_length=120, blank=True, default="google/gemini-2.0-flash-001",
         help_text="Paid model to auto-escalate to when free models fail. Leave blank to disable.",
     )
     paid_fallback_provider = models.CharField(
-        max_length=20, choices=Provider.choices, default=Provider.OPENAI,
+        max_length=20, choices=Provider.choices, default=Provider.OPENROUTER,
         help_text="Provider for the paid fallback model.",
     )
 
     # ── Tier defaults ────────────────────────────────────────────────
     model_premium = models.CharField(
-        max_length=120, default="qwen/qwen3.6-plus:free",
+        max_length=120, default="deepseek/deepseek-v3.2",
         help_text="Premium tier — creative generation and user-facing text.",
     )
     model_workhorse = models.CharField(
-        max_length=120, default="qwen/qwen3.6-plus:free",
+        max_length=120, default="deepseek/deepseek-v3.2",
         help_text="Workhorse tier — reasoning, research, strategy.",
     )
     model_fast = models.CharField(
-        max_length=120, default="stepfun/step-3.5-flash:free",
+        max_length=120, default="deepseek/deepseek-v3.2",
         help_text="Fast tier — classification, DNA extraction, scoring.",
     )
 
