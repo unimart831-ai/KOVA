@@ -370,7 +370,7 @@ def publish_post(self, post_id: str):
     # Publish
     try:
         # For Facebook/Instagram, pass page_id and page_access_token from stored metadata
-        publish_kwargs = {}
+        publish_kwargs = {"account": account}
         if account.platform in ("facebook", "instagram"):
             pages = (account.metadata or {}).get("pages", [])
             if pages:
