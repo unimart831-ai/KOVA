@@ -30,7 +30,7 @@ Validate token                       │ /v2/userinfo check
 Permissions required:
   openid, profile, w_member_social
 
-API version header: LinkedIn-Version: 202401
+API version header: LinkedIn-Version: 202603 (configurable via LINKEDIN_API_VERSION setting)
 
 Docs:
   https://learn.microsoft.com/en-us/linkedin/marketing/community-management/shares/posts-api
@@ -61,7 +61,7 @@ LINKEDIN_AUTH_URL = "https://www.linkedin.com/oauth/v2/authorization"
 LINKEDIN_TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken"
 LINKEDIN_USERINFO_URL = "https://api.linkedin.com/v2/userinfo"
 LINKEDIN_REST_BASE = "https://api.linkedin.com/rest"
-LINKEDIN_VERSION = "202401"
+LINKEDIN_VERSION = getattr(settings, "LINKEDIN_API_VERSION", "202603")
 LINKEDIN_SCOPES = "openid profile w_member_social"
 LINKEDIN_ORG_SCOPES = "openid profile w_member_social w_organization_social r_organization_social"
 
@@ -445,6 +445,20 @@ class LinkedInProvider(BaseProvider):
           article_url, article_title, article_description,
           article_thumbnail, media_title
         """
+        # Diagnostic: log token info to catch encryption/storage issues
+        token_len = len(access_token) if access_token else 0
+        token_prefix = access_token[:8] if token_len > 8 else "<short>"
+        logger.info(
+            "LinkedIn publish: token length=%d, prefix=%s..., version=%s",
+            token_len, token_prefix, LINKEDIN_VERSION,
+        )
+        if token_len < 20 or (access_token and access_token.startswith("gAAAAA")):
+            logger.error(
+                "LinkedIn token looks invalid (len=%d, starts with encrypted marker). "
+                "Possible encryption key mismatch — user should reconnect LinkedIn.",
+                token_len,
+            )
+
         author_urn = self._get_author_urn(access_token, **kwargs)
         if not author_urn:
             return PublishResult(
