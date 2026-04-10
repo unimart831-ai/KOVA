@@ -40,6 +40,18 @@ class SoftDeleteUserManager(SoftDeleteManager):
     def get_by_natural_key(self, username):
         return self.get(**{self.model.USERNAME_FIELD: username})
 
+    @classmethod
+    def normalize_email(cls, email):
+        """Normalize email by lowercasing the domain part (required by AbstractUser.clean)."""
+        email = email or ""
+        try:
+            email_name, domain_part = email.strip().rsplit("@", 1)
+        except ValueError:
+            pass
+        else:
+            email = email_name + "@" + domain_part.lower()
+        return email
+
     def create_user(self, username=None, email=None, password=None, **extra_fields):
         from django.contrib.auth.models import UserManager
         manager = UserManager()
