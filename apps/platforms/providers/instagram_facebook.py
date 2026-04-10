@@ -487,9 +487,13 @@ class FacebookProvider(BaseProvider):
                 ]
         except httpx.HTTPStatusError as e:
             error_body = e.response.text
-            logger.error("Facebook get comments failed: %s", error_body)
-            # Detect token/permission errors — caller should mark account for reauth
-            if e.response.status_code == 400 and ("OAuthException" in error_body or "code\":190" in error_body or "permission" in error_body.lower()):
+            logger.error("Facebook get comments failed for post %s: %s", post_id, error_body)
+            # "does not exist" = deleted/unavailable post — NOT an auth error
+            if "does not exist" in error_body:
+                logger.info("Post %s no longer exists on Facebook — skipping", post_id)
+                return []
+            # Detect genuine token/permission errors — caller should mark account for reauth
+            if e.response.status_code == 400 and ("OAuthException" in error_body or "code\":190" in error_body):
                 raise PlatformAuthError(f"Facebook token/permission error: {error_body[:300]}") from e
             return []
 
@@ -977,8 +981,11 @@ class InstagramProvider(BaseProvider):
                 ]
         except httpx.HTTPStatusError as e:
             error_body = e.response.text
-            logger.error("Instagram get comments failed: %s", error_body)
-            if e.response.status_code == 400 and ("OAuthException" in error_body or "code\":190" in error_body or "permission" in error_body.lower()):
+            logger.error("Instagram get comments failed for post %s: %s", post_id, error_body)
+            if "does not exist" in error_body:
+                logger.info("Post %s no longer exists on Instagram — skipping", post_id)
+                return []
+            if e.response.status_code == 400 and ("OAuthException" in error_body or "code\":190" in error_body):
                 raise PlatformAuthError(f"Instagram token/permission error: {error_body[:300]}") from e
             return []
 
