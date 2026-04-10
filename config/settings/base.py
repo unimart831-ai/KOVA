@@ -76,6 +76,8 @@ LOCAL_APPS = [
     "apps.media_queue",
     "apps.links",
     "apps.leads",
+    "apps.products",
+    "apps.api",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -214,6 +216,10 @@ CELERY_BEAT_SCHEDULE = {
     "process-media-queues-every-5-min": {
         "task": "media_queue.process_queues",
         "schedule": 300.0,  # every 5 minutes — publish queued media
+    },
+    "check-stock-alerts": {
+        "task": "check-stock-alerts",
+        "schedule": 24 * 3600.0,  # daily — scan products for stock issues
     },
 }
 

@@ -6,7 +6,7 @@
 #
 # This document is the SINGLE SOURCE OF TRUTH for building Kova Agent.
 # Every decision, every sprint, every feature traces back to here.
-# Last Updated: April 7, 2026
+# Last Updated: April 13, 2026
 # ============================================================================
 
 
@@ -861,7 +861,7 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 | Phase 4 | Sprint 13 | ✅ Complete | Agency Multi-Brand, Revenue Attribution, Mobile PWA, API Docs |
 | Phase 4 | Voice Memo | ✅ Complete | Voice Memo input (Whisper transcription → content seed) |
 | Phase 5 | Post-Launch  | ⏳ Not Started | WhatsApp Intelligence, Meme Engine, Status Studio |
-| Phase 6 | Post-Phase 5 | ⏳ Not Started | Kova Links, CTA System, Lead Inbox, Email Marketing, Superfan Workflows, Video AI, Revenue Attribution, **Stock-Aware Product Intelligence** |
+| Phase 6 | Post-Phase 5 | 🟡 In Progress | **6A ✅ 6B ✅ 6C ✅ 6D ✅ 6E ✅** 6F ⏳ 6G 🟡 6H ⏳ |
 | Phase 7 | Post-Phase 6 | ⏳ Not Started | Commerce Pipeline, Revenue Prediction, Audience Genome, Kova Score, Network Intelligence, Strategic Foresight, Digital Business Passport |
 | Phase 8 | Post-Phase 7 | ⏳ Deferred | White-label UI, Agent Marketplace, Open-source |
 
@@ -1214,7 +1214,7 @@ channel — they're all customer support tools. This is category creation.
 ## P2 = Build after P1. Deepens the moat. Loyalty + media intelligence.
 ## P3 = Build after P2. Full-cycle revenue attribution + design intelligence.
 
-### Sprint 6A: Kova Links — Link-in-Bio + Landing Pages (P0) ⏳ NOT STARTED
+### Sprint 6A: Kova Links — Link-in-Bio + Landing Pages (P0) ✅ COMPLETE
 ##
 ## WHY THIS IS P0:
 ## Every social media post that says "link in bio" sends traffic somewhere.
@@ -1281,7 +1281,7 @@ channel — they're all customer support tools. This is category creation.
   - Drag-and-drop: Alpine.js + SortableJS (already used in media queue)
   - Mobile-first: TailwindCSS responsive, no JS framework
 
-### Sprint 6B: Smart CTA System (P0) ⏳ NOT STARTED
+### Sprint 6B: Smart CTA System (P0) ✅ COMPLETE
 ##
 ## WHY THIS IS P0:
 ## The expert was unambiguous: "Make sure the content has a number, an email, or a link
@@ -1334,7 +1334,7 @@ channel — they're all customer support tools. This is category creation.
   - LinkedIn first-comment: new field `first_comment` on Post model, auto-published after post
   - Instagram link-in-bio: auto-update KovaLink with latest post's destination URL
 
-### Sprint 6C: Lead Inbox + CRM Lite (P1) ⏳ NOT STARTED
+### Sprint 6C: Lead Inbox + CRM Lite (P1) ✅ COMPLETE
 ##
 ## WHY THIS IS P1:
 ## The expert said: "Have a back end where leads can be viewed and responded to."
@@ -1403,7 +1403,7 @@ channel — they're all customer support tools. This is category creation.
   - Email from inbox: reuse EmailService with new `lead_followup` email type
   - Export: CSV download via StreamingHttpResponse (no heavy libraries)
 
-### Sprint 6D: Email Marketing Engine (P1) ⏳ NOT STARTED
+### Sprint 6D: Email Marketing Engine (P1) ✅ COMPLETE
 ##
 ## WHY THIS IS P1:
 ## The MailerLite article nails it: "You don't own your social media audience. You can wake
@@ -1503,7 +1503,7 @@ channel — they're all customer support tools. This is category creation.
   - Subscriber import: CSV upload with field mapping UI (name, email, tags)
   - Smart lists: filter_rules evaluated at send time (dynamic segment, not cached membership)
 
-### Sprint 6E: Superfan Workflows + Loyalty Engine (P2) ⏳ NOT STARTED
+### Sprint 6E: Superfan Workflows + Loyalty Engine (P2) ✅ COMPLETE
 ##
 ## WHY THIS IS P2:
 ## The expert's 4th metric tier: "Loyalty — key metrics is shares and referrals to friends
@@ -1602,7 +1602,9 @@ channel — they're all customer support tools. This is category creation.
   - Brand colors: validated on save (max 3 colors, valid hex format)
   - Story frames: JSON structure → rendered as carousel preview in post editor
 
-### Sprint 6G: Revenue Attribution + Payment Integration (P3) ⏳ NOT STARTED
+### Sprint 6G: Revenue Attribution + Payment Integration (P3) 🟡 PARTIALLY BUILT
+## NOTE: UTM infrastructure and Conversion model exist. Shopify/M-Pesa integrations and
+## multi-touch attribution not yet built.
 ##
 ## WHY THIS IS P3:
 ## Expert's 3rd metric tier: "Selling — key metrics is no. of sales made from social media

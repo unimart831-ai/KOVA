@@ -145,6 +145,14 @@ def _gather_brief_data(user):
         logger.warning("Competitor intel for brief failed: %s", e)
         competitor_intel = {}
 
+    # Product catalog intelligence
+    try:
+        from apps.products.utils import get_product_brief_data
+        product_data = get_product_brief_data(user)
+    except Exception as e:
+        logger.warning("Product data for brief failed: %s", e)
+        product_data = {}
+
     # Posts created this week
     week_stats = Post.objects.filter(
         user=user,
@@ -176,6 +184,7 @@ def _gather_brief_data(user):
         "trends": trends,
         "engagement": engagement,
         "competitor_intel": competitor_intel,
+        "product_catalog": product_data,
     }
 
 
@@ -199,6 +208,9 @@ def _generate_brief_with_llm(user, brief_data):
         '- "agent_summary": 1-2 sentences about what the AI agents did in the last 24 hours\n'
         '- "competitor_update": 1-2 sentences about competitor activity — new insights, '
         'content gaps to exploit, or threats to watch. Empty string if no competitor data.\n'
+        '- "product_update": 1-2 sentences about product catalog health — low stock warnings, '
+        'out-of-stock items to stop promoting, featured products to push, stock-content mismatches. '
+        'Empty string if no product data.\n'
     )
 
     prompt = (

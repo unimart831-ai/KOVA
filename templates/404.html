@@ -1,0 +1,21 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Page Not Found — Kova Agent</title>
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+</head>
+<body class="h-full bg-gray-50 dark:bg-gray-950">
+  <div class="flex min-h-full flex-col items-center justify-center px-6 py-24 text-center">
+    <p class="text-6xl font-bold text-kova-600 dark:text-kova-400">404</p>
+    <h1 class="mt-4 text-2xl font-semibold text-gray-900 dark:text-white">Page not found</h1>
+    <p class="mt-2 text-gray-500 dark:text-gray-400">Sorry, the page you're looking for doesn't exist or has been moved.</p>
+    <div class="mt-8 flex gap-4">
+      <a href="/" class="rounded-lg bg-kova-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-kova-700">Go home</a>
+      <a href="javascript:history.back()" class="rounded-lg border border-gray-300 dark:border-gray-600 px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">Go back</a>
+    </div>
+  </div>
+</body>
+</html>

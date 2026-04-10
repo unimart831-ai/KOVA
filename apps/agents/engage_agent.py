@@ -379,7 +379,8 @@ def analyze_interactions(user, batch_size=20):
         try:
             result = parse_llm_json(response.content)
             analyses = {a["id"]: a for a in result.get("analyses", [])}
-        except (json.JSONDecodeError, KeyError, ValueError):
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            logger.warning("Failed to parse interaction analysis for user %s: %s", user.email, e)
             analyses = {}
 
         analyzed = 0
@@ -522,6 +523,19 @@ def _generate_replies_batch(interactions, brand_voice, company):
 
     reply_learning = _get_reply_edit_patterns(interactions[0].user)
 
+    # Product catalog awareness for replies
+    from apps.products.utils import get_product_context
+    product_ctx = get_product_context(interactions[0].user)
+    product_instruction = ""
+    if product_ctx:
+        product_instruction = (
+            "\n\nPRODUCT AWARENESS:\n"
+            "When someone asks about products, prices, or availability, use this catalog:\n"
+            f"{product_ctx}\n"
+            "If a product is out of stock, suggest in-stock alternatives. "
+            "Never confirm availability for out-of-stock items.\n"
+        )
+
     system_prompt = (
         f"You are the community manager for {company}. "
         f"Your brand voice: {brand_voice}\n\n"
@@ -531,6 +545,7 @@ def _generate_replies_batch(interactions, brand_voice, company):
         "- Keep replies concise — this is social media.\n"
         "- If it's a question, answer directly. If praise, acknowledge.\n"
         "- NEVER be defensive or dismissive.\n\n"
+        f"{product_instruction}"
         "Generate a reply for EACH interaction below. "
         'Respond with a JSON array of objects: [{"reply": "..."}, ...] '
         "One per interaction, in the same order."
@@ -599,6 +614,17 @@ def _generate_single_reply(interaction, brand_voice, company):
     # Intelligence: learn from past reply edits
     reply_learning = _get_reply_edit_patterns(interaction.user)
 
+    # Product catalog awareness
+    from apps.products.utils import get_product_context
+    product_ctx = get_product_context(interaction.user)
+    product_instruction = ""
+    if product_ctx:
+        product_instruction = (
+            "\n\nPRODUCT AWARENESS:\n"
+            "If someone asks about products/prices/availability, reference this catalog:\n"
+            f"{product_ctx}\n"
+        )
+
     system_prompt = (
         f"You are the community manager for {company}. "
         f"Your brand voice: {brand_voice}\n\n"
@@ -611,6 +637,7 @@ def _generate_single_reply(interaction, brand_voice, company):
         "- If it's a complaint, empathize first, then offer help.\n"
         "- NEVER be defensive or dismissive.\n"
         "- Don't use corporate phrases like 'We appreciate your feedback' or 'Thanks for reaching out'.\n\n"
+        f"{product_instruction}"
         "Respond with ONLY the reply text. No JSON, no explanation — just the reply ready to send."
     )
 

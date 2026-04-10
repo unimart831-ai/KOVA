@@ -17,6 +17,7 @@ from apps.emails.models import (
     EmailSequence,
     EmailSubscriber,
 )
+from apps.billing.models import get_plan_limits
 
 
 # ────────────────────────────────────────────────────────────────────
@@ -54,6 +55,13 @@ def subscriber_list(request):
 @login_required
 def subscriber_add(request):
     """Add a subscriber manually."""
+    limits = get_plan_limits(request.user.plan_tier)
+    max_subs = limits.get("email_subscribers", 50)
+    current_count = EmailSubscriber.objects.filter(user=request.user).count()
+    if current_count >= max_subs:
+        messages.warning(request, f"Your plan allows up to {max_subs:,} subscribers. Upgrade for more.")
+        return redirect("billing:pricing")
+
     if request.method == "POST":
         form = EmailSubscriberForm(request.POST)
         if form.is_valid():
@@ -92,6 +100,13 @@ def list_index(request):
 @login_required
 def list_create(request):
     """Create an email list."""
+    limits = get_plan_limits(request.user.plan_tier)
+    max_lists = limits.get("email_lists", 1)
+    current_count = EmailList.objects.filter(user=request.user).count()
+    if current_count >= max_lists:
+        messages.warning(request, f"Your plan allows up to {max_lists} email list(s). Upgrade for more.")
+        return redirect("billing:pricing")
+
     if request.method == "POST":
         form = EmailListForm(request.POST)
         if form.is_valid():
@@ -179,6 +194,17 @@ def campaign_list(request):
 @login_required
 def campaign_create(request):
     """Create a new campaign."""
+    limits = get_plan_limits(request.user.plan_tier)
+    max_campaigns = limits.get("email_campaigns_per_month", 2)
+    current_month_count = EmailCampaign.objects.filter(
+        user=request.user,
+        created_at__month=timezone.now().month,
+        created_at__year=timezone.now().year,
+    ).count()
+    if current_month_count >= max_campaigns:
+        messages.warning(request, f"Your plan allows up to {max_campaigns} campaigns per month. Upgrade for more.")
+        return redirect("billing:pricing")
+
     if request.method == "POST":
         form = EmailCampaignForm(request.POST, user=request.user)
         if form.is_valid():

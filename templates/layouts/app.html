@@ -149,6 +149,15 @@
         Lead Inbox
       </a>
 
+      <a href="{% url 'products:list' %}"
+         {% if '/products/' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/products/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/products/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+        </svg>
+        Products
+      </a>
+
       <a href="{% url 'emails:dashboard' %}"
          {% if '/emails/marketing' in request.path or '/emails/subscribers' in request.path or '/emails/lists' in request.path or '/emails/campaigns' in request.path or '/emails/sequences' in request.path %}aria-current="page"{% endif %}
          class="{% if '/emails/marketing' in request.path or '/emails/subscribers' in request.path or '/emails/lists' in request.path or '/emails/campaigns' in request.path or '/emails/sequences' in request.path %}nav-link-active{% else %}nav-link{% endif %}">

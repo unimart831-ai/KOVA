@@ -58,8 +58,8 @@ def _get_performance_intelligence(user) -> str:
             parts.append("")
             parts.append("INSTRUCTION: Bias your content toward these winning attributes when they fit naturally.")
             parts.append("Don't force it — but all else being equal, prefer formats, tones, and hooks that have proven to work.")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Performance intelligence (DNA) unavailable for %s: %s", user.email, e)
 
     # 2. Top-performing posts — learn from actual wins
     try:
@@ -95,8 +95,8 @@ def _get_performance_intelligence(user) -> str:
                 parts.append(f"  Angle: {ex['angle'] or 'N/A'} | Framework: {ex['framework'] or 'N/A'}")
                 parts.append(f"  Content: \"{ex['preview']}...\"")
             parts.append("\nLearn from these. What made them work? Apply those patterns to new content.\n")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Performance intelligence (top posts) unavailable for %s: %s", user.email, e)
 
     # 3. Recent topics — avoid repetition
     try:
@@ -113,8 +113,8 @@ def _get_performance_intelligence(user) -> str:
             for angle in recent_angles[:10]:
                 parts.append(f"  - {angle}")
             parts.append("\nTake a FRESH angle. Don't repeat what was just posted.\n")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Performance intelligence (recent angles) unavailable for %s: %s", user.email, e)
 
     return "\n".join(parts)
 
@@ -379,6 +379,12 @@ def build_system_prompt(user) -> str:
             "When writing image_prompt descriptions, incorporate these brand visuals. "
             "Images should feel like they belong to THIS brand, not generic stock photos."
         )
+
+    # Product catalog — stock-aware content generation
+    from apps.products.utils import get_product_context
+    product_ctx = get_product_context(user)
+    if product_ctx:
+        parts.append(product_ctx)
 
     # Performance intelligence — the feedback loop
     intel = _get_performance_intelligence(user)

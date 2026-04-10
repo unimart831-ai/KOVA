@@ -1,0 +1,99 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="card p-6">
+    <form method="post" enctype="multipart/form-data" class="space-y-5">
+      {% csrf_token %}
+
+      <div>
+        <label for="id_name" class="label">Product Name *</label>
+        {{ form.name }}
+        {% if form.name.errors %}<p class="text-xs text-red-500 mt-1">{{ form.name.errors.0 }}</p>{% endif %}
+      </div>
+
+      <div>
+        <label for="id_description" class="label">Description</label>
+        {{ form.description }}
+      </div>
+
+      <div>
+        <label for="id_category" class="label">Category</label>
+        {{ form.category }}
+      </div>
+
+      <div class="grid grid-cols-3 gap-4">
+        <div>
+          <label for="id_price" class="label">Price</label>
+          {{ form.price }}
+        </div>
+        <div>
+          <label for="id_currency" class="label">Currency</label>
+          {{ form.currency }}
+        </div>
+        <div></div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label for="id_price_range_min" class="label">Price Range Min</label>
+          {{ form.price_range_min }}
+        </div>
+        <div>
+          <label for="id_price_range_max" class="label">Price Range Max</label>
+          {{ form.price_range_max }}
+        </div>
+      </div>
+
+      <div>
+        <label for="id_image" class="label">Product Image</label>
+        {{ form.image }}
+        {% if product.image %}
+        <p class="text-xs text-gray-500 mt-1">Current: {{ product.image.name }}</p>
+        {% endif %}
+      </div>
+
+      <hr class="border-gray-200 dark:border-gray-700">
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label for="id_stock_status" class="label">Stock Status</label>
+          {{ form.stock_status }}
+        </div>
+        <div>
+          <label for="id_quantity" class="label">Quantity</label>
+          {{ form.quantity }}
+        </div>
+      </div>
+
+      <div>
+        <label for="id_low_stock_threshold" class="label">Low Stock Threshold</label>
+        {{ form.low_stock_threshold }}
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Flag as "low stock" when quantity drops below this number.</p>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <label class="flex items-center gap-2 cursor-pointer">
+          {{ form.is_featured }}
+          <span class="text-sm text-gray-700 dark:text-gray-300">⭐ Featured — push harder in content</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          {{ form.is_active }}
+          <span class="text-sm text-gray-700 dark:text-gray-300">Active</span>
+        </label>
+      </div>
+
+      {% if form.non_field_errors %}
+      <div class="text-sm text-red-500">{{ form.non_field_errors.0 }}</div>
+      {% endif %}
+
+      <div class="flex items-center justify-between pt-2">
+        <a href="{% url 'products:list' %}" class="btn-secondary text-sm px-4 py-2">Cancel</a>
+        <button type="submit" class="btn-primary text-sm px-6 py-2">{{ submit_label }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
