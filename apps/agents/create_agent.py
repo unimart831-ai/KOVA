@@ -604,10 +604,15 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
             "tiktok": "tiktok", "tik tok": "tiktok",
         }
 
-        # Always start as pending_approval so posts appear in the review queue.
-        # auto_approve_posts controls whether the strategist can auto-schedule,
-        # but the user should always see and approve generated content first.
-        initial_status = Post.Status.PENDING_APPROVAL
+        # Respect user's auto_approve_posts preference:
+        # ON  → APPROVED (Adapt Agent will auto-schedule)
+        # OFF → PENDING_APPROVAL (user reviews in queue first)
+        profile = getattr(user, "profile", None)
+        initial_status = (
+            Post.Status.APPROVED
+            if profile and profile.auto_approve_posts
+            else Post.Status.PENDING_APPROVAL
+        )
 
         for pd in post_dicts:
             raw_platform = pd.get("platform", "")
@@ -1003,6 +1008,13 @@ Respond with a JSON object. No markdown code fences.
             if not account:
                 continue
 
+            # Respect user's auto_approve_posts preference
+            _profile = getattr(user, "profile", None)
+            _status = (
+                Post.Status.APPROVED
+                if _profile and _profile.auto_approve_posts
+                else Post.Status.PENDING_APPROVAL
+            )
             post = Post.objects.create(
                 user=user,
                 seed=source_post.seed,
@@ -1010,7 +1022,7 @@ Respond with a JSON object. No markdown code fences.
                 platform=account.platform,
                 content_text=pd.get("content_text", ""),
                 content_type="repurposed",
-                status=Post.Status.PENDING_APPROVAL,
+                status=_status,
                 generated_by_agent="create",
                 predicted_engagement_score=pd.get("predicted_score"),
                 ai_reasoning=pd.get("reasoning", ""),
@@ -1160,7 +1172,13 @@ Generate exactly {n} variants labeled {', '.join(VARIANT_LABELS[:n])}.
             raise ValueError("LLM returned no variants")
 
         created_posts = []
-        initial_status = Post.Status.PENDING_APPROVAL
+        # Respect user's auto_approve_posts preference
+        _profile = getattr(user, "profile", None)
+        initial_status = (
+            Post.Status.APPROVED
+            if _profile and _profile.auto_approve_posts
+            else Post.Status.PENDING_APPROVAL
+        )
 
         for i, vd in enumerate(variant_dicts[:n]):
             label = vd.get("label", VARIANT_LABELS[i] if i < len(VARIANT_LABELS) else str(i + 1))
