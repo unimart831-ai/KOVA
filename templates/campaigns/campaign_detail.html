@@ -1,0 +1,286 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}{{ campaign.name }}{% endblock %}
+{% block page_title %}
+<div class="flex items-start justify-between">
+  <div>
+    <h1 class="text-lg font-bold text-gray-900 dark:text-white">{{ campaign.name }}</h1>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+      <a href="{% url 'campaigns:list' %}" class="hover:text-kova-600 dark:hover:text-kova-400">Campaigns</a>
+      <span class="mx-1">/</span> {{ campaign.name }}
+    </p>
+  </div>
+  <div class="flex items-center gap-2">
+    {% if campaign.is_editable %}
+    <a href="{% url 'campaigns:edit' pk=campaign.pk %}" class="btn-secondary text-xs px-3 py-1.5">Edit</a>
+    {% endif %}
+    {# Status actions #}
+    {% if campaign.status == 'draft' %}
+    <form method="post" action="{% url 'campaigns:status' pk=campaign.pk %}">{% csrf_token %}<input type="hidden" name="status" value="pending_approval"><button class="btn-primary text-xs px-3 py-1.5">Submit for Approval</button></form>
+    {% elif campaign.status == 'pending_approval' %}
+    <form method="post" action="{% url 'campaigns:status' pk=campaign.pk %}">{% csrf_token %}<input type="hidden" name="status" value="approved"><button class="btn-primary text-xs px-3 py-1.5">Approve</button></form>
+    {% elif campaign.status == 'approved' %}
+    <form method="post" action="{% url 'campaigns:status' pk=campaign.pk %}">{% csrf_token %}<input type="hidden" name="status" value="active"><button class="btn-primary text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700">Launch Campaign</button></form>
+    {% elif campaign.status == 'active' %}
+    <form method="post" action="{% url 'campaigns:status' pk=campaign.pk %}">{% csrf_token %}<input type="hidden" name="status" value="paused"><button class="btn-secondary text-xs px-3 py-1.5">Pause</button></form>
+    <form method="post" action="{% url 'campaigns:status' pk=campaign.pk %}">{% csrf_token %}<input type="hidden" name="status" value="completed"><button class="btn-primary text-xs px-3 py-1.5">Complete</button></form>
+    {% elif campaign.status == 'paused' %}
+    <form method="post" action="{% url 'campaigns:status' pk=campaign.pk %}">{% csrf_token %}<input type="hidden" name="status" value="active"><button class="btn-primary text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700">Resume</button></form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+{# ── Status + Info Bar ───────────────────────────────────────────────── #}
+<div class="flex flex-wrap items-center gap-4 mb-6 text-xs">
+  <span class="inline-flex items-center px-2.5 py-1 rounded-full font-medium
+    {% if campaign.status == 'active' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
+    {% elif campaign.status == 'draft' %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300
+    {% elif campaign.status == 'pending_approval' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300
+    {% elif campaign.status == 'approved' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300
+    {% elif campaign.status == 'paused' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300
+    {% elif campaign.status == 'completed' %}bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300
+    {% else %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300{% endif %}">
+    {{ campaign.get_status_display }}
+  </span>
+  <span class="text-gray-400">{{ campaign.get_objective_display }}</span>
+  {% if campaign.start_date %}<span class="text-gray-400">{{ campaign.start_date|date:"M d" }} → {{ campaign.end_date|date:"M d, Y"|default:"Ongoing" }}</span>{% endif %}
+  {% if campaign.days_remaining is not None %}<span class="text-gray-500 dark:text-gray-400 font-medium">{{ campaign.days_remaining }} day{{ campaign.days_remaining|pluralize }} left</span>{% endif %}
+  {% if campaign.target_platforms %}<span class="text-gray-400">{% for p in campaign.target_platforms %}{{ p|title }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>{% endif %}
+  <span class="text-gray-300 dark:text-gray-600 ml-auto">UTM: <code class="text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">{{ campaign.utm_campaign_tag }}</code></span>
+</div>
+
+{# ── Performance Cards ───────────────────────────────────────────────── #}
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 text-center">
+    <p class="text-lg font-bold text-gray-900 dark:text-white">{{ metrics.total_posts }}</p>
+    <p class="text-[10px] text-gray-400">Posts</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 text-center">
+    <p class="text-lg font-bold text-green-600 dark:text-green-400">{{ metrics.published }}</p>
+    <p class="text-[10px] text-gray-400">Published</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 text-center">
+    <p class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ metrics.scheduled }}</p>
+    <p class="text-[10px] text-gray-400">Scheduled</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 text-center">
+    <p class="text-lg font-bold text-kova-600 dark:text-kova-400">{{ metrics.conversions }}</p>
+    <p class="text-[10px] text-gray-400">Conversions</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 text-center">
+    <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400">{{ metrics.leads }}</p>
+    <p class="text-[10px] text-gray-400">Leads</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 text-center">
+    <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400">{% if metrics.revenue %}{{ metrics.revenue|floatformat:0 }}{% else %}0{% endif %}</p>
+    <p class="text-[10px] text-gray-400">Revenue</p>
+  </div>
+</div>
+
+{# ── Email Metrics (if any) ──────────────────────────────────────────── #}
+{% if campaign_emails %}
+<div class="grid grid-cols-2 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 text-center">
+    <p class="text-lg font-bold text-gray-900 dark:text-white">{{ metrics.email_sent }}</p>
+    <p class="text-[10px] text-gray-400">Emails Sent</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 text-center">
+    <p class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ metrics.email_opened }}</p>
+    <p class="text-[10px] text-gray-400">Emails Opened</p>
+  </div>
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  {# ── Left column: Content ────────────────────────────────────────────── #}
+  <div class="lg:col-span-2 space-y-6">
+
+    {# Linked Content Seeds #}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Content ({{ campaign_seeds|length }})</h2>
+      </div>
+      <div class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for cs in campaign_seeds %}
+        <div class="px-5 py-3 flex items-start justify-between group">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-[10px] font-medium px-1.5 py-0.5 rounded
+                {% if cs.role == 'primary' %}bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-300
+                {% elif cs.role == 'supporting' %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300
+                {% else %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300{% endif %}">
+                {{ cs.get_role_display }}
+              </span>
+              <span class="text-[10px] text-gray-400">{{ cs.seed.posts.count }} post{{ cs.seed.posts.count|pluralize }}</span>
+            </div>
+            <p class="text-xs text-gray-900 dark:text-white">{{ cs.seed.idea|truncatechars:120 }}</p>
+            <div class="flex gap-2 mt-1">
+              {% for post in cs.seed.posts.all|slice:":5" %}
+              <span class="text-[10px] px-1 py-0.5 rounded
+                {% if post.status == 'published' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
+                {% elif post.status == 'scheduled' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300
+                {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+                {{ post.platform }} · {{ post.get_status_display }}
+              </span>
+              {% endfor %}
+            </div>
+          </div>
+          {% if campaign.is_editable %}
+          <form method="post" action="{% url 'campaigns:remove_seed' pk=campaign.pk seed_pk=cs.seed.pk %}">{% csrf_token %}
+            <button class="text-red-400 hover:text-red-600 text-xs opacity-0 group-hover:opacity-100 transition-opacity ml-3">Remove</button>
+          </form>
+          {% endif %}
+        </div>
+        {% empty %}
+        <div class="px-5 py-8 text-center text-xs text-gray-400">No content linked yet. Add content seeds below.</div>
+        {% endfor %}
+      </div>
+
+      {# Add content form #}
+      {% if available_seeds %}
+      <div class="px-5 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800">
+        <form method="post" action="{% url 'campaigns:add_seed' pk=campaign.pk %}" class="flex items-center gap-2">
+          {% csrf_token %}
+          <select name="seed_id" class="input text-xs flex-1">
+            <option value="">Add content…</option>
+            {% for seed in available_seeds %}
+            <option value="{{ seed.pk }}">{{ seed.idea|truncatechars:60 }} ({{ seed.created_at|date:"M d" }})</option>
+            {% endfor %}
+          </select>
+          <select name="role" class="input text-xs w-28">
+            <option value="primary">Primary</option>
+            <option value="supporting">Supporting</option>
+            <option value="follow_up">Follow-up</option>
+          </select>
+          <button type="submit" class="btn-primary text-xs px-3 py-1.5">Add</button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+    {# Linked Email Campaigns #}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Email Campaigns ({{ campaign_emails|length }})</h2>
+      </div>
+      <div class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for ce in campaign_emails %}
+        <div class="px-5 py-3 flex items-center justify-between group">
+          <div>
+            <div class="flex items-center gap-2 mb-0.5">
+              <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">{{ ce.get_role_display }}</span>
+              <span class="text-[10px] text-gray-400">{{ ce.email_campaign.get_status_display }}</span>
+            </div>
+            <p class="text-xs text-gray-900 dark:text-white">{{ ce.email_campaign.name }}</p>
+            <p class="text-[10px] text-gray-400">{{ ce.email_campaign.total_sent }} sent · {{ ce.email_campaign.total_opened }} opened</p>
+          </div>
+          {% if campaign.is_editable %}
+          <form method="post" action="{% url 'campaigns:remove_email' pk=campaign.pk email_pk=ce.email_campaign.pk %}">{% csrf_token %}
+            <button class="text-red-400 hover:text-red-600 text-xs opacity-0 group-hover:opacity-100 transition-opacity">Remove</button>
+          </form>
+          {% endif %}
+        </div>
+        {% empty %}
+        <div class="px-5 py-6 text-center text-xs text-gray-400">No email campaigns linked.</div>
+        {% endfor %}
+      </div>
+
+      {% if available_emails %}
+      <div class="px-5 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800">
+        <form method="post" action="{% url 'campaigns:add_email' pk=campaign.pk %}" class="flex items-center gap-2">
+          {% csrf_token %}
+          <select name="email_id" class="input text-xs flex-1">
+            <option value="">Link email campaign…</option>
+            {% for ec in available_emails %}
+            <option value="{{ ec.pk }}">{{ ec.name }} ({{ ec.get_status_display }})</option>
+            {% endfor %}
+          </select>
+          <select name="role" class="input text-xs w-32">
+            <option value="announcement">Announcement</option>
+            <option value="follow_up">Follow-up</option>
+            <option value="reminder">Reminder</option>
+          </select>
+          <button type="submit" class="btn-primary text-xs px-3 py-1.5">Link</button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Right column: Activity + Info ───────────────────────────────────── #}
+  <div class="space-y-6">
+
+    {# Campaign Info Card #}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 space-y-3">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Details</h3>
+      {% if campaign.description %}
+      <p class="text-xs text-gray-500 dark:text-gray-400">{{ campaign.description }}</p>
+      {% endif %}
+      {% if campaign.target_audience %}
+      <div>
+        <p class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Audience</p>
+        <p class="text-xs text-gray-700 dark:text-gray-300">{{ campaign.target_audience }}</p>
+      </div>
+      {% endif %}
+      {% if campaign.tags %}
+      <div class="flex flex-wrap gap-1">
+        {% for tag in campaign.tags %}
+        <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">{{ tag }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <p class="text-[10px] text-gray-400">Created {{ campaign.created_at|timesince }} ago</p>
+
+      {# Delete button for drafts #}
+      {% if campaign.status == 'draft' or campaign.status == 'cancelled' %}
+      <form method="post" action="{% url 'campaigns:delete' pk=campaign.pk %}" onsubmit="return confirm('Delete this campaign?')">
+        {% csrf_token %}
+        <button class="text-xs text-red-500 hover:text-red-700">Delete Campaign</button>
+      </form>
+      {% endif %}
+    </div>
+
+    {# Activity / Notes #}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Activity</h3>
+      </div>
+
+      {# Add note form #}
+      <div class="px-5 py-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
+        <form method="post" action="{% url 'campaigns:add_note' pk=campaign.pk %}" class="flex gap-2">
+          {% csrf_token %}
+          <input type="text" name="content" placeholder="Add a note…" class="input text-xs flex-1">
+          <button type="submit" class="btn-secondary text-xs px-3 py-1.5">Post</button>
+        </form>
+      </div>
+
+      <div class="divide-y divide-gray-100 dark:divide-gray-800 max-h-96 overflow-y-auto">
+        {% for note in notes %}
+        <div class="px-5 py-3">
+          <div class="flex items-center gap-2 mb-0.5">
+            <span class="text-[10px] font-medium
+              {% if note.note_type == 'status_change' %}text-blue-600 dark:text-blue-400
+              {% elif note.note_type == 'approval' %}text-green-600 dark:text-green-400
+              {% elif note.note_type == 'content_added' %}text-kova-600 dark:text-kova-400
+              {% else %}text-gray-500 dark:text-gray-400{% endif %}">
+              {{ note.get_note_type_display }}
+            </span>
+            <span class="text-[10px] text-gray-400">{{ note.user.full_name|default:note.user.email }}</span>
+          </div>
+          <p class="text-xs text-gray-700 dark:text-gray-300">{{ note.content }}</p>
+          <p class="text-[10px] text-gray-400 mt-0.5">{{ note.created_at|timesince }} ago</p>
+        </div>
+        {% empty %}
+        <div class="px-5 py-6 text-center text-xs text-gray-400">No activity yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

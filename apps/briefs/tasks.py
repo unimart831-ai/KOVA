@@ -153,6 +153,14 @@ def _gather_brief_data(user):
         logger.warning("Product data for brief failed: %s", e)
         product_data = {}
 
+    # Revenue attribution intelligence
+    try:
+        from apps.analytics.revenue import get_revenue_brief_data
+        revenue_data = get_revenue_brief_data(user, days=7)
+    except Exception as e:
+        logger.warning("Revenue data for brief failed: %s", e)
+        revenue_data = {}
+
     # Posts created this week
     week_stats = Post.objects.filter(
         user=user,
@@ -185,6 +193,7 @@ def _gather_brief_data(user):
         "engagement": engagement,
         "competitor_intel": competitor_intel,
         "product_catalog": product_data,
+        "revenue_attribution": revenue_data,
     }
 
 
@@ -211,6 +220,9 @@ def _generate_brief_with_llm(user, brief_data):
         '- "product_update": 1-2 sentences about product catalog health — low stock warnings, '
         'out-of-stock items to stop promoting, featured products to push, stock-content mismatches. '
         'Empty string if no product data.\n'
+        '- "revenue_update": 1-2 sentences about revenue attribution — sales tracked this week, '
+        'best-performing post by revenue, ROI trend, platforms driving the most sales. '
+        'Empty string if no revenue data.\n'
     )
 
     prompt = (

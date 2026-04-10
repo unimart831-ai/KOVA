@@ -88,6 +88,7 @@ urlpatterns = [
     path("links/", include("apps.links.urls")),
     path("leads/", include("apps.leads.urls")),
     path("products/", include("apps.products.urls")),
+    path("campaigns/", include("apps.campaigns.urls")),
     path("dashboard/", include("apps.admin_dashboard.urls")),
     path("api/v1/", include("apps.api.urls")),
 ]

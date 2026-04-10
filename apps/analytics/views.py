@@ -291,43 +291,91 @@ def insight_action(request, pk):
 
 @login_required
 def revenue_dashboard(request):
-    """Revenue attribution dashboard — shows conversions linked to posts."""
-    from decimal import Decimal
+    """Revenue attribution dashboard — enhanced with ROI, trends, funnel, product attribution."""
+    from apps.analytics.revenue import get_revenue_summary
+    from apps.analytics.models import ShopifyStore
 
-    conversions = Conversion.objects.filter(user=request.user).select_related(
-        "post__social_account", "social_account",
-    ).order_by("-created_at")
+    days = int(request.GET.get("days", 30))
+    if days not in (7, 14, 30, 90):
+        days = 30
 
-    # Aggregate stats
-    totals = conversions.aggregate(
-        total_revenue=Sum("revenue"),
-        total_conversions=Count("id"),
-        total_sales=Count("id", filter=Q(conversion_type="sale")),
-        total_leads=Count("id", filter=Q(conversion_type="lead")),
-        total_clicks=Count("id", filter=Q(conversion_type="click")),
-    )
+    summary = get_revenue_summary(request.user, days=days)
 
-    # Revenue by platform
-    platform_revenue = (
-        conversions
-        .filter(social_account__isnull=False)
-        .values("social_account__platform")
-        .annotate(revenue=Sum("revenue"), count=Count("id"))
-        .order_by("-revenue")
-    )
+    # Recent conversions for the feed
+    conversions = Conversion.objects.filter(
+        user=request.user,
+    ).select_related("post__social_account", "social_account", "product").order_by("-created_at")[:50]
 
-    # Top posts by revenue
-    top_posts = (
-        conversions
-        .filter(post__isnull=False)
-        .values("post__id", "post__content_text", "post__social_account__platform")
-        .annotate(revenue=Sum("revenue"), count=Count("id"))
-        .order_by("-revenue")[:10]
-    )
+    # Shopify stores
+    shopify_stores = ShopifyStore.objects.filter(user=request.user, is_active=True)
 
     return render(request, "analytics/revenue.html", {
-        "conversions": conversions[:50],
-        "totals": {k: v or (Decimal("0") if "revenue" in k else 0) for k, v in totals.items()},
-        "platform_revenue": platform_revenue,
-        "top_posts": top_posts,
+        "conversions": conversions,
+        "summary": summary,
+        "totals": summary["totals"],
+        "platform_revenue": summary["platform_revenue"],
+        "top_posts": summary["top_posts"],
+        "content_type_revenue": summary["content_type_revenue"],
+        "cta_type_revenue": summary["cta_type_revenue"],
+        "product_revenue": summary["product_revenue"],
+        "daily_trend": summary["daily_trend"],
+        "roi": summary["roi"],
+        "funnel": summary["funnel"],
+        "shopify_stores": shopify_stores,
+        "days": days,
     })
+
+
+@login_required
+def shopify_connect(request):
+    """Connect a Shopify store for revenue attribution."""
+    from apps.analytics.models import ShopifyStore
+
+    if request.method != "POST":
+        return redirect("analytics:revenue")
+
+    shop_domain = request.POST.get("shop_domain", "").strip().lower()
+    access_token = request.POST.get("access_token", "").strip()
+    webhook_secret = request.POST.get("webhook_secret", "").strip()
+
+    if not shop_domain or not access_token:
+        messages.error(request, "Shop domain and access token are required.")
+        return redirect("analytics:revenue")
+
+    # Normalize domain
+    if not shop_domain.endswith(".myshopify.com"):
+        shop_domain = f"{shop_domain}.myshopify.com"
+
+    store, created = ShopifyStore.objects.get_or_create(
+        user=request.user,
+        shop_domain=shop_domain,
+        defaults={
+            "access_token": access_token,
+            "webhook_secret": webhook_secret,
+            "is_active": True,
+        },
+    )
+    if not created:
+        store.access_token = access_token
+        store.webhook_secret = webhook_secret
+        store.is_active = True
+        store.save(update_fields=["access_token", "webhook_secret", "is_active", "updated_at"])
+
+    messages.success(request, f"Connected {shop_domain} for revenue tracking.")
+    return redirect("analytics:revenue")
+
+
+@login_required
+def shopify_disconnect(request, pk):
+    """Disconnect a Shopify store."""
+    from apps.analytics.models import ShopifyStore
+
+    if request.method != "POST":
+        return redirect("analytics:revenue")
+
+    store = get_object_or_404(ShopifyStore, pk=pk, user=request.user)
+    store.is_active = False
+    store.save(update_fields=["is_active", "updated_at"])
+
+    messages.success(request, f"Disconnected {store.shop_domain}.")
+    return redirect("analytics:revenue")

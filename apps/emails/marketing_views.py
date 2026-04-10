@@ -55,7 +55,7 @@ def subscriber_list(request):
 @login_required
 def subscriber_add(request):
     """Add a subscriber manually."""
-    limits = get_plan_limits(request.user.plan_tier)
+    limits = get_plan_limits(request.user.profile.plan)
     max_subs = limits.get("email_subscribers", 50)
     current_count = EmailSubscriber.objects.filter(user=request.user).count()
     if current_count >= max_subs:
@@ -100,7 +100,7 @@ def list_index(request):
 @login_required
 def list_create(request):
     """Create an email list."""
-    limits = get_plan_limits(request.user.plan_tier)
+    limits = get_plan_limits(request.user.profile.plan)
     max_lists = limits.get("email_lists", 1)
     current_count = EmailList.objects.filter(user=request.user).count()
     if current_count >= max_lists:
@@ -194,7 +194,7 @@ def campaign_list(request):
 @login_required
 def campaign_create(request):
     """Create a new campaign."""
-    limits = get_plan_limits(request.user.plan_tier)
+    limits = get_plan_limits(request.user.profile.plan)
     max_campaigns = limits.get("email_campaigns_per_month", 2)
     current_month_count = EmailCampaign.objects.filter(
         user=request.user,

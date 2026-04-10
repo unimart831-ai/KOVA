@@ -1,0 +1,126 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Campaigns{% endblock %}
+{% block page_title %}
+<div class="flex items-center justify-between">
+  <div>
+    <h1 class="text-lg font-bold text-gray-900 dark:text-white">Campaigns</h1>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Orchestrate content, email &amp; conversions across platforms</p>
+  </div>
+  {% if can_create %}
+  <a href="{% url 'campaigns:create' %}" class="btn-primary text-sm px-4 py-2">+ New Campaign</a>
+  {% else %}
+  <span class="text-xs text-gray-400">{{ max_campaigns }}/{{ max_campaigns }} campaigns (upgrade for more)</span>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+
+{# ── Stats ───────────────────────────────────────────────────────────── #}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+    <p class="text-xs text-gray-500 dark:text-gray-400">Total</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ stats.total }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+    <p class="text-xs text-gray-500 dark:text-gray-400">Active</p>
+    <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{{ stats.active }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+    <p class="text-xs text-gray-500 dark:text-gray-400">Drafts</p>
+    <p class="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{{ stats.draft }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+    <p class="text-xs text-gray-500 dark:text-gray-400">Completed</p>
+    <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{{ stats.completed }}</p>
+  </div>
+</div>
+
+{# ── Filters ─────────────────────────────────────────────────────────── #}
+<div class="flex flex-wrap items-center gap-3 mb-6">
+  <form method="get" class="flex items-center gap-2">
+    <input type="text" name="q" value="{{ current_q }}" placeholder="Search campaigns…" class="input text-xs w-44">
+    <select name="status" class="input text-xs w-36">
+      <option value="">All statuses</option>
+      {% for val, label in statuses %}
+      <option value="{{ val }}" {% if current_status == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="objective" class="input text-xs w-36">
+      <option value="">All objectives</option>
+      {% for val, label in objectives %}
+      <option value="{{ val }}" {% if current_objective == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn-primary text-xs px-3 py-1.5">Filter</button>
+    {% if current_status or current_objective or current_q %}
+    <a href="{% url 'campaigns:list' %}" class="text-xs text-gray-400 hover:text-gray-600">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+{# ── Campaign Grid ───────────────────────────────────────────────────── #}
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+  {% for c in page_obj %}
+  <a href="{% url 'campaigns:detail' pk=c.pk %}" class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 hover:border-kova-300 dark:hover:border-kova-700 transition-colors group">
+    <div class="flex items-start justify-between mb-3">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-kova-600 dark:group-hover:text-kova-400">{{ c.name }}</h3>
+      <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium
+        {% if c.status == 'active' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
+        {% elif c.status == 'draft' %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300
+        {% elif c.status == 'pending_approval' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300
+        {% elif c.status == 'approved' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300
+        {% elif c.status == 'paused' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300
+        {% elif c.status == 'completed' %}bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300
+        {% else %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300{% endif %}">
+        {{ c.get_status_display }}
+      </span>
+    </div>
+    {% if c.description %}
+    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{{ c.description|truncatechars:100 }}</p>
+    {% endif %}
+    <div class="flex items-center gap-3 text-[10px] text-gray-400">
+      <span class="inline-flex items-center px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">{{ c.get_objective_display }}</span>
+      <span>{{ c.seed_count }} content</span>
+      <span>{{ c.email_count }} email{{ c.email_count|pluralize }}</span>
+    </div>
+    {% if c.start_date or c.end_date %}
+    <div class="mt-2 text-[10px] text-gray-400">
+      {% if c.start_date %}{{ c.start_date|date:"M d" }}{% endif %}
+      {% if c.start_date and c.end_date %}→{% endif %}
+      {% if c.end_date %}{{ c.end_date|date:"M d, Y" }}{% endif %}
+    </div>
+    {% endif %}
+  </a>
+  {% empty %}
+  <div class="col-span-full bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-12 text-center">
+    <svg class="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
+    </svg>
+    <p class="text-sm font-medium text-gray-900 dark:text-white mb-1">No campaigns yet</p>
+    <p class="text-xs text-gray-400 mb-4">Create your first campaign to orchestrate content across platforms.</p>
+    {% if can_create %}
+    <a href="{% url 'campaigns:create' %}" class="btn-primary text-sm px-4 py-2">Create Campaign</a>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+{# Pagination #}
+{% if page_obj.has_other_pages %}
+<div class="mt-6 flex items-center justify-between">
+  <p class="text-xs text-gray-400">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</p>
+  <div class="flex gap-1">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_objective %}&objective={{ current_objective }}{% endif %}{% if current_q %}&q={{ current_q }}{% endif %}" class="px-3 py-1 text-xs rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700">Prev</a>
+    {% endif %}
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_objective %}&objective={{ current_objective }}{% endif %}{% if current_q %}&q={{ current_q }}{% endif %}" class="px-3 py-1 text-xs rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700">Next</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

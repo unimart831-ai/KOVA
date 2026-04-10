@@ -257,6 +257,11 @@ class Conversion(models.Model):
         "platforms.SocialAccount", on_delete=models.SET_NULL,
         null=True, blank=True, related_name="conversions",
     )
+    product = models.ForeignKey(
+        "products.Product", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="conversions",
+        help_text="Product associated with this conversion (from Sprint 6H catalog).",
+    )
 
     conversion_type = models.CharField(
         max_length=20, choices=ConversionType.choices, default=ConversionType.CLICK,
@@ -289,3 +294,154 @@ class Conversion(models.Model):
     def __str__(self):
         amt = f" ${self.revenue}" if self.revenue else ""
         return f"{self.get_conversion_type_display()}{amt} — {self.post_id or 'unattributed'}"
+
+
+# ─── Integration Stores ──────────────────────────────────────────────────────
+
+
+class ShopifyStore(models.Model):
+    """A user's connected Shopify store for revenue attribution."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE, related_name="shopify_stores",
+    )
+    shop_domain = models.CharField(
+        max_length=255, help_text="myshop.myshopify.com",
+    )
+    access_token = models.CharField(max_length=255)
+    webhook_secret = models.CharField(
+        max_length=255, blank=True,
+        help_text="HMAC secret for verifying Shopify webhook signatures.",
+    )
+    is_active = models.BooleanField(default=True)
+    orders_tracked = models.PositiveIntegerField(default=0)
+    total_revenue = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    last_order_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("user", "shop_domain")
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.shop_domain} ({self.user})"
+
+
+# ─── Multi-Touch Attribution ─────────────────────────────────────────────────
+
+
+class ConversionJourney(models.Model):
+    """
+    Tracks the full customer journey from first touch to final conversion.
+    Groups multiple touchpoints into a single journey leading to one conversion.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE, related_name="conversion_journeys",
+    )
+    conversion = models.OneToOneField(
+        Conversion, on_delete=models.CASCADE, related_name="journey",
+        null=True, blank=True,
+    )
+
+    # Visitor identity (cookie-based or email-based)
+    visitor_id = models.CharField(
+        max_length=255, db_index=True,
+        help_text="Anonymous visitor ID (cookie) or email for identified users.",
+    )
+
+    # Journey outcome
+    is_converted = models.BooleanField(default=False)
+    total_revenue = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    touchpoint_count = models.PositiveIntegerField(default=0)
+
+    # Timestamps
+    first_touch_at = models.DateTimeField(null=True, blank=True)
+    last_touch_at = models.DateTimeField(null=True, blank=True)
+    converted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "visitor_id"]),
+            models.Index(fields=["user", "is_converted", "-created_at"]),
+        ]
+
+    def __str__(self):
+        status = "Converted" if self.is_converted else "In progress"
+        return f"{self.visitor_id} — {status} ({self.touchpoint_count} touches)"
+
+    @property
+    def attributed_revenue(self):
+        """Revenue with weighted attribution across touchpoints."""
+        if not self.is_converted or not self.total_revenue:
+            return {}
+        touches = list(self.touchpoints.order_by("touched_at"))
+        if not touches:
+            return {}
+        count = len(touches)
+        weights = {}
+        if count == 1:
+            weights[touches[0].pk] = 1.0
+        elif count == 2:
+            weights[touches[0].pk] = 0.4
+            weights[touches[1].pk] = 0.6
+        else:
+            # 40% first, 40% last, 20% split among assists
+            weights[touches[0].pk] = 0.4
+            weights[touches[-1].pk] = 0.4
+            assist_weight = 0.2 / (count - 2)
+            for t in touches[1:-1]:
+                weights[t.pk] = assist_weight
+        return {
+            pk: float(self.total_revenue) * w
+            for pk, w in weights.items()
+        }
+
+
+class ConversionTouchpoint(models.Model):
+    """A single touchpoint in a customer's conversion journey."""
+
+    class TouchType(models.TextChoices):
+        POST_CLICK = "post_click", "Clicked Post Link"
+        PAGE_VIEW = "page_view", "Kova Page View"
+        LINK_CLICK = "link_click", "Kova Link Click"
+        FORM_SUBMIT = "form_submit", "Form Submission"
+        AD_CLICK = "ad_click", "Ad Click"
+        DIRECT = "direct", "Direct Visit"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    journey = models.ForeignKey(
+        ConversionJourney, on_delete=models.CASCADE, related_name="touchpoints",
+    )
+    post = models.ForeignKey(
+        "content.Post", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="touchpoints",
+    )
+    touch_type = models.CharField(max_length=20, choices=TouchType.choices)
+
+    # UTM data at time of touch
+    utm_source = models.CharField(max_length=255, blank=True)
+    utm_medium = models.CharField(max_length=255, blank=True)
+    utm_campaign = models.CharField(max_length=255, blank=True)
+    utm_content = models.CharField(max_length=255, blank=True)
+
+    # Context
+    referrer = models.URLField(blank=True)
+    landing_page = models.URLField(blank=True)
+    device_type = models.CharField(max_length=10, blank=True)
+
+    touched_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["touched_at"]
+        indexes = [
+            models.Index(fields=["journey", "touched_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.get_touch_type_display()} via {self.utm_source or 'direct'}"

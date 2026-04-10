@@ -475,6 +475,24 @@ def public_link_click(request, slug, link_id):
         utm_campaign=request.GET.get("utm_campaign", ""),
     )
 
+    # Record touchpoint for multi-touch attribution
+    try:
+        from apps.analytics.revenue import record_touchpoint
+        visitor_id = request.COOKIES.get("kova_vid") or request.META.get("REMOTE_ADDR", "unknown")
+        record_touchpoint(
+            user=page.user,
+            visitor_id=visitor_id,
+            touch_type="link_click",
+            utm_source=request.GET.get("utm_source", ""),
+            utm_medium=request.GET.get("utm_medium", ""),
+            utm_campaign=request.GET.get("utm_campaign", ""),
+            utm_content=request.GET.get("utm_content", ""),
+            referrer=request.META.get("HTTP_REFERER", ""),
+            device_type=device,
+        )
+    except Exception:
+        pass  # Non-critical — don't block the redirect
+
     # Increment counter
     KovaLink.objects.filter(pk=link.pk).update(
         total_clicks=models.F("total_clicks") + 1

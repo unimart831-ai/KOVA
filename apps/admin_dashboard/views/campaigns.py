@@ -1,0 +1,118 @@
+from datetime import timedelta
+
+from django.core.paginator import Paginator
+from django.db.models import Count, Q, Sum
+from django.shortcuts import render
+from django.utils import timezone
+
+from apps.admin_dashboard.decorators import staff_required
+from apps.campaigns.models import Campaign, CampaignNote, CampaignSeed
+
+
+@staff_required
+def campaigns_overview(request):
+    """Platform-wide campaign overview for admin."""
+    now = timezone.now()
+    week_ago = now - timedelta(days=7)
+
+    total = Campaign.objects.count()
+    status_breakdown = dict(
+        Campaign.objects.values_list("status").annotate(c=Count("id")).values_list("status", "c")
+    )
+    objective_breakdown = dict(
+        Campaign.objects.values_list("objective").annotate(c=Count("id")).values_list("objective", "c")
+    )
+
+    # Users running campaigns
+    users_with_campaigns = Campaign.objects.values("user").distinct().count()
+
+    # Active campaign details
+    active_campaigns = (
+        Campaign.objects
+        .select_related("user")
+        .filter(status=Campaign.Status.ACTIVE)
+        .annotate(
+            seed_count=Count("campaign_seeds", distinct=True),
+            email_count=Count("campaign_emails", distinct=True),
+        )
+        .order_by("-updated_at")[:20]
+    )
+
+    # Recent notes across all campaigns
+    recent_notes = (
+        CampaignNote.objects
+        .select_related("campaign", "user")
+        .order_by("-created_at")[:15]
+    )
+
+    # Top users by campaign count
+    top_users = list(
+        Campaign.objects
+        .values("user__email", "user__full_name", "user__id")
+        .annotate(
+            campaign_count=Count("id"),
+            active=Count("id", filter=Q(status="active")),
+        )
+        .order_by("-campaign_count")[:15]
+    )
+
+    # Campaigns created this week
+    created_this_week = Campaign.objects.filter(created_at__gte=week_ago).count()
+
+    return render(request, "admin_dashboard/campaigns/overview.html", {
+        "page_title": "Campaign Intelligence",
+        "total": total,
+        "status_breakdown": status_breakdown,
+        "objective_breakdown": objective_breakdown,
+        "users_with_campaigns": users_with_campaigns,
+        "active_campaigns": active_campaigns,
+        "recent_notes": recent_notes,
+        "top_users": top_users,
+        "created_this_week": created_this_week,
+        "statuses": Campaign.Status.choices,
+        "objectives": Campaign.Objective.choices,
+    })
+
+
+@staff_required
+def campaign_list_admin(request):
+    """Browse all campaigns across all users."""
+    qs = (
+        Campaign.objects
+        .select_related("user")
+        .annotate(
+            seed_count=Count("campaign_seeds", distinct=True),
+            email_count=Count("campaign_emails", distinct=True),
+        )
+        .order_by("-created_at")
+    )
+
+    status = request.GET.get("status")
+    if status and status in dict(Campaign.Status.choices):
+        qs = qs.filter(status=status)
+
+    objective = request.GET.get("objective")
+    if objective and objective in dict(Campaign.Objective.choices):
+        qs = qs.filter(objective=objective)
+
+    email = request.GET.get("email")
+    if email:
+        qs = qs.filter(user__email__icontains=email)
+
+    q = request.GET.get("q")
+    if q:
+        qs = qs.filter(Q(name__icontains=q) | Q(description__icontains=q))
+
+    paginator = Paginator(qs, 50)
+    page = paginator.get_page(request.GET.get("page", 1))
+
+    return render(request, "admin_dashboard/campaigns/campaign_list.html", {
+        "page_title": "All Campaigns",
+        "page_obj": page,
+        "current_status": status,
+        "current_objective": objective,
+        "current_email": email or "",
+        "current_q": q or "",
+        "statuses": Campaign.Status.choices,
+        "objectives": Campaign.Objective.choices,
+    })

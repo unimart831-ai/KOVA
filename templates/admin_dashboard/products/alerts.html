@@ -1,0 +1,94 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+  <a href="{% url 'admin_dashboard:products_overview' %}" class="hover:text-kova-600 dark:hover:text-kova-400">Products</a>
+  <span class="mx-1">/</span> Stock Alerts
+</p>
+{% endblock %}
+
+{% block content %}
+
+{# ── Filters ─────────────────────────────────────────────────────────── #}
+<div class="flex flex-wrap items-center gap-3 mb-6">
+  <form method="get" class="flex items-center gap-2">
+    <select name="type" class="input text-xs w-44">
+      <option value="">All alert types</option>
+      <option value="low_stock" {% if current_type == 'low_stock' %}selected{% endif %}>Low Stock</option>
+      <option value="out_of_stock" {% if current_type == 'out_of_stock' %}selected{% endif %}>Out of Stock</option>
+      <option value="restocked" {% if current_type == 'restocked' %}selected{% endif %}>Restocked</option>
+      <option value="featured_no_content" {% if current_type == 'featured_no_content' %}selected{% endif %}>Featured No Content</option>
+      <option value="overstock_no_promo" {% if current_type == 'overstock_no_promo' %}selected{% endif %}>Overstock No Promo</option>
+    </select>
+    <label class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+      <input type="checkbox" name="unread" value="1" {% if current_unread == '1' %}checked{% endif %} class="rounded border-gray-300 dark:border-gray-600 text-kova-600"> Unread only
+    </label>
+    <button type="submit" class="btn-primary text-xs px-3 py-1.5">Filter</button>
+    {% if current_type or current_unread %}
+    <a href="{% url 'admin_dashboard:admin_stock_alerts' %}" class="text-xs text-gray-400 hover:text-gray-600">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+{# ── Table ───────────────────────────────────────────────────────────── #}
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Product</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Message</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">Read</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">When</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for alert in page_obj %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 {% if not alert.is_read %}bg-kova-50/30 dark:bg-kova-900/10{% endif %}">
+          <td class="px-4 py-2.5">
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+              {% if alert.alert_type == 'out_of_stock' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
+              {% elif alert.alert_type == 'low_stock' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300
+              {% elif alert.alert_type == 'restocked' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
+              {% elif alert.alert_type == 'featured_no_content' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300
+              {% else %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300{% endif %}">
+              {{ alert.get_alert_type_display }}
+            </span>
+          </td>
+          <td class="px-4 py-2.5 text-xs font-medium text-gray-900 dark:text-white">{{ alert.product.name }}</td>
+          <td class="px-4 py-2.5">
+            <a href="{% url 'admin_dashboard:user_detail' alert.user.pk %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">{{ alert.user.email }}</a>
+          </td>
+          <td class="px-4 py-2.5 text-xs text-gray-500 dark:text-gray-400 max-w-xs truncate">{{ alert.message|truncatechars:80 }}</td>
+          <td class="px-4 py-2.5 text-center">
+            {% if alert.is_read %}<span class="text-green-500">✓</span>{% else %}<span class="w-2 h-2 rounded-full bg-kova-500 inline-block"></span>{% endif %}
+          </td>
+          <td class="px-4 py-2.5 text-right text-xs text-gray-400">{{ alert.created_at|timesince }} ago</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-4 py-12 text-center text-sm text-gray-400">No stock alerts found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# Pagination #}
+  {% if page_obj.has_other_pages %}
+  <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
+    <p class="text-xs text-gray-400">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} · {{ page_obj.paginator.count }} alerts</p>
+    <div class="flex gap-1">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_unread %}&unread={{ current_unread }}{% endif %}" class="px-3 py-1 text-xs rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700">Prev</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_unread %}&unread={{ current_unread }}{% endif %}" class="px-3 py-1 text-xs rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700">Next</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

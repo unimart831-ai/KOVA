@@ -1,0 +1,63 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+  <a href="{% url 'admin_dashboard:revenue_overview' %}" class="hover:text-kova-600 dark:hover:text-kova-400">Revenue</a>
+  <span class="mx-1">/</span> Shopify Stores
+</p>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Store Domain</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">Status</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Orders</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Revenue</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Last Order</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Connected</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">Action</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for store in stores %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-2.5 text-xs font-medium text-gray-900 dark:text-white">{{ store.shop_domain }}</td>
+          <td class="px-4 py-2.5">
+            <a href="{% url 'admin_dashboard:user_detail' store.user.pk %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">{{ store.user.email }}</a>
+          </td>
+          <td class="px-4 py-2.5 text-center">
+            {% if store.is_active %}
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Active</span>
+            {% else %}
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">Inactive</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-2.5 text-right text-xs text-gray-600 dark:text-gray-400">{{ store.orders_tracked }}</td>
+          <td class="px-4 py-2.5 text-right text-xs font-semibold text-emerald-600 dark:text-emerald-400">KES {{ store.total_revenue|floatformat:0 }}</td>
+          <td class="px-4 py-2.5 text-right text-xs text-gray-400">{% if store.last_order_at %}{{ store.last_order_at|timesince }} ago{% else %}—{% endif %}</td>
+          <td class="px-4 py-2.5 text-right text-xs text-gray-400">{{ store.created_at|date:"M d, Y" }}</td>
+          <td class="px-4 py-2.5 text-center">
+            <form method="post" action="{% url 'admin_dashboard:shopify_store_toggle' store.pk %}" class="inline">
+              {% csrf_token %}
+              <button type="submit" class="text-xs {% if store.is_active %}text-red-500 hover:text-red-700{% else %}text-green-500 hover:text-green-700{% endif %}">
+                {% if store.is_active %}Deactivate{% else %}Activate{% endif %}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="px-4 py-12 text-center text-sm text-gray-400">No Shopify stores connected by any user.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

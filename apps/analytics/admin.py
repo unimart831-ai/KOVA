@@ -5,7 +5,10 @@ from apps.analytics.models import (
     CompetitorAnalysis,
     CompetitorInsight,
     Conversion,
+    ConversionJourney,
+    ConversionTouchpoint,
     PostMetric,
+    ShopifyStore,
 )
 
 
@@ -41,7 +44,30 @@ class CompetitorInsightAdmin(admin.ModelAdmin):
 
 @admin.register(Conversion)
 class ConversionAdmin(admin.ModelAdmin):
-    list_display = ["user", "conversion_type", "revenue", "post", "utm_campaign", "created_at"]
+    list_display = ["user", "conversion_type", "revenue", "product", "post", "utm_campaign", "created_at"]
     list_filter = ["conversion_type"]
     search_fields = ["user__email", "utm_campaign", "event_name"]
     readonly_fields = ["created_at"]
+
+
+class ConversionTouchpointInline(admin.TabularInline):
+    model = ConversionTouchpoint
+    extra = 0
+    readonly_fields = ["touched_at"]
+
+
+@admin.register(ConversionJourney)
+class ConversionJourneyAdmin(admin.ModelAdmin):
+    list_display = ["visitor_id", "user", "is_converted", "touchpoint_count", "total_revenue", "created_at"]
+    list_filter = ["is_converted"]
+    search_fields = ["visitor_id", "user__email"]
+    readonly_fields = ["created_at"]
+    inlines = [ConversionTouchpointInline]
+
+
+@admin.register(ShopifyStore)
+class ShopifyStoreAdmin(admin.ModelAdmin):
+    list_display = ["shop_domain", "user", "is_active", "orders_tracked", "total_revenue", "last_order_at"]
+    list_filter = ["is_active"]
+    search_fields = ["shop_domain", "user__email"]
+    readonly_fields = ["created_at", "updated_at"]

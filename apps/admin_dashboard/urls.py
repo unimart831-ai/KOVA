@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, content, costs, emails, engage, help, llm, logs, media_queue, overview, partners, partials, platforms, system, teams, users
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, campaigns, content, costs, emails, engage, help, llm, logs, media_queue, overview, partners, partials, platforms, products, revenue, system, teams, users
 
 app_name = "admin_dashboard"
 
@@ -81,6 +81,13 @@ urlpatterns = [
     path("analytics/content-dna/", analytics.content_dna_analysis, name="content_dna_analysis"),
     path("analytics/competitors/", analytics.competitor_overview, name="competitor_overview"),
 
+    # Revenue Attribution
+    path("revenue/", revenue.revenue_overview, name="revenue_overview"),
+    path("revenue/conversions/", revenue.conversion_list, name="revenue_conversions"),
+    path("revenue/shopify/", revenue.shopify_stores_list, name="shopify_stores"),
+    path("revenue/shopify/<uuid:pk>/toggle/", revenue.shopify_store_toggle, name="shopify_store_toggle"),
+    path("revenue/journeys/", revenue.journey_list, name="revenue_journeys"),
+
     # Teams
     path("teams/", teams.teams_overview, name="teams_overview"),
     path("teams/list/", teams.team_list, name="team_list"),
@@ -115,4 +122,14 @@ urlpatterns = [
     path("media-queue/<uuid:pk>/", media_queue.media_queue_detail, name="media_queue_detail"),
     path("media-queue/<uuid:pk>/toggle/", media_queue.media_queue_toggle, name="media_queue_toggle"),
     path("media-queue/process-now/", media_queue.media_queue_process_now, name="media_queue_process_now"),
+
+    # Products / Stock Intelligence
+    path("products/", products.products_overview, name="products_overview"),
+    path("products/list/", products.product_list_admin, name="admin_product_list"),
+    path("products/alerts/", products.stock_alerts_admin, name="admin_stock_alerts"),
+    path("products/updates/", products.stock_updates_admin, name="admin_stock_updates"),
+
+    # Campaigns
+    path("campaigns/", campaigns.campaigns_overview, name="campaigns_overview"),
+    path("campaigns/list/", campaigns.campaign_list_admin, name="admin_campaign_list"),
 ]

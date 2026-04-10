@@ -77,6 +77,7 @@ LOCAL_APPS = [
     "apps.links",
     "apps.leads",
     "apps.products",
+    "apps.campaigns",
     "apps.api",
 ]
 

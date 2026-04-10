@@ -1,0 +1,97 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+  <a href="{% url 'admin_dashboard:revenue_overview' %}" class="hover:text-kova-600 dark:hover:text-kova-400">Revenue</a>
+  <span class="mx-1">/</span> All Conversions
+</p>
+{% endblock %}
+
+{% block content %}
+
+{# ── Filters ─────────────────────────────────────────────────────────── #}
+<div class="flex flex-wrap items-center gap-3 mb-6">
+  <form method="get" class="flex items-center gap-2">
+    <input type="text" name="email" value="{{ current_email }}" placeholder="Filter by email…"
+           class="input text-xs w-48">
+    <select name="type" class="input text-xs w-28">
+      <option value="">All types</option>
+      <option value="sale" {% if current_type == 'sale' %}selected{% endif %}>Sale</option>
+      <option value="lead" {% if current_type == 'lead' %}selected{% endif %}>Lead</option>
+      <option value="click" {% if current_type == 'click' %}selected{% endif %}>Click</option>
+      <option value="signup" {% if current_type == 'signup' %}selected{% endif %}>Signup</option>
+    </select>
+    <button type="submit" class="btn-primary text-xs px-3 py-1.5">Filter</button>
+    {% if current_type or current_email %}
+    <a href="{% url 'admin_dashboard:revenue_conversions' %}" class="text-xs text-gray-400 hover:text-gray-600">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+{# ── Table ───────────────────────────────────────────────────────────── #}
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Post / Event</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Product</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">UTM Campaign</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Revenue</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Date</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for c in page_obj %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-2.5">
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+              {% if c.conversion_type == 'sale' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
+              {% elif c.conversion_type == 'lead' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300
+              {% elif c.conversion_type == 'click' %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400
+              {% else %}bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300{% endif %}">
+              {{ c.get_conversion_type_display }}
+            </span>
+          </td>
+          <td class="px-4 py-2.5 text-xs">
+            <a href="{% url 'admin_dashboard:user_detail' c.user.pk %}" class="text-kova-600 dark:text-kova-400 hover:underline">{{ c.user.email }}</a>
+          </td>
+          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400 max-w-xs truncate">
+            {% if c.post %}{{ c.post.content_text|truncatechars:60 }}{% elif c.event_name %}{{ c.event_name }}{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">{{ c.product.name|default:"—" }}</td>
+          <td class="px-4 py-2.5 text-xs text-gray-400">{{ c.utm_campaign|default:"—" }}</td>
+          <td class="px-4 py-2.5 text-right text-xs font-semibold {% if c.revenue %}text-emerald-600 dark:text-emerald-400{% else %}text-gray-400{% endif %}">
+            {% if c.revenue %}KES {{ c.revenue|floatformat:0 }}{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-2.5 text-right text-xs text-gray-400">{{ c.created_at|date:"M d, H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="px-4 py-12 text-center text-sm text-gray-400">No conversions found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# Pagination #}
+  {% if page_obj.has_other_pages %}
+  <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
+    <p class="text-xs text-gray-400">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</p>
+    <div class="flex gap-1">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_email %}&email={{ current_email }}{% endif %}" class="px-3 py-1 text-xs rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700">Prev</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_email %}&email={{ current_email }}{% endif %}" class="px-3 py-1 text-xs rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700">Next</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

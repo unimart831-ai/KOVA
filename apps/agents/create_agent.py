@@ -634,6 +634,10 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                 ai_original_text=content_text,
             )
 
+            # Auto-populate UTM fields for revenue attribution
+            post.populate_utm()
+            post.save(update_fields=["utm_source", "utm_medium", "utm_campaign", "utm_content"])
+
             # Generate visual for the post (plan-gated with monthly limit)
             # Images are only auto-generated for platforms that REQUIRE them
             # (Instagram, TikTok, Pinterest). Other platforms get text-only posts
@@ -1013,6 +1017,9 @@ Respond with a JSON object. No markdown code fences.
                 ai_angle=pd.get("angle", ""),
                 ai_framework=pd.get("framework_used", ""),
             )
+            # Auto-populate UTM fields for revenue attribution
+            post.populate_utm()
+            post.save(update_fields=["utm_source", "utm_medium", "utm_campaign", "utm_content"])
             created_posts.append(post)
 
         action.status = AgentAction.ActionStatus.COMPLETED
@@ -1173,6 +1180,9 @@ Generate exactly {n} variants labeled {', '.join(VARIANT_LABELS[:n])}.
                 ai_angle=vd.get("angle", ""),
                 ai_framework=vd.get("framework_used", ""),
             )
+            # Auto-populate UTM fields for revenue attribution
+            post.populate_utm()
+            post.save(update_fields=["utm_source", "utm_medium", "utm_campaign", "utm_content"])
             created_posts.append(post)
 
         # Update test status

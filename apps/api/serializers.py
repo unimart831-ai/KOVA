@@ -99,7 +99,7 @@ class ConversionSerializer(serializers.ModelSerializer):
         model = Conversion
         fields = [
             "id", "conversion_type", "revenue", "event_name",
-            "post", "social_account",
+            "post", "social_account", "product",
             "utm_source", "utm_medium", "utm_campaign", "utm_content",
             "metadata", "created_at",
         ]

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.analytics import views
+from apps.analytics import views, webhooks
 
 app_name = "analytics"
 
@@ -16,4 +16,9 @@ urlpatterns = [
     path("insights/<uuid:pk>/action/", views.insight_action, name="insight_action"),
     # Revenue Attribution
     path("revenue/", views.revenue_dashboard, name="revenue"),
+    path("revenue/shopify/connect/", views.shopify_connect, name="shopify_connect"),
+    path("revenue/shopify/<uuid:pk>/disconnect/", views.shopify_disconnect, name="shopify_disconnect"),
+    # Webhooks (external — no auth)
+    path("webhooks/shopify/order/", webhooks.shopify_order_webhook, name="shopify_order_webhook"),
+    path("webhooks/mpesa/commerce/", webhooks.mpesa_commerce_callback, name="mpesa_commerce_callback"),
 ]
