@@ -31,10 +31,11 @@ _all_fernets = None  # list of (Fernet, key_hash) tuples
 def _build_fernets():
     """Build Fernet instances for all plausible encryption keys.
 
-    Different Railway processes (web vs worker) may resolve FERNET_KEYS
-    differently due to env-var timing or separate service configs.
-    We collect keys from every source so decryption succeeds regardless
-    of which process encrypted the value.
+    Railway runs web and worker as SEPARATE services that may resolve
+    SECRET_KEY differently (each gets a unique value unless explicitly
+    shared).  We collect keys from every source — including an explicit
+    FERNET_EXTRA_KEYS env var — so decryption succeeds regardless of
+    which process originally encrypted the value.
     """
     global _primary_fernet, _all_fernets
 
@@ -57,18 +58,27 @@ def _build_fernets():
     _add(os.environ.get("FIELD_ENCRYPTION_KEY", ""), "env.FIELD_ENCRYPTION_KEY")
     _add(os.environ.get("SECRET_KEY", ""), "env.SECRET_KEY")
 
+    # 4. FERNET_EXTRA_KEYS: comma-separated list of additional raw keys.
+    #    Use this to add the OTHER service's SECRET_KEY so tokens
+    #    encrypted by web can be decrypted by worker and vice-versa.
+    extra = os.environ.get("FERNET_EXTRA_KEYS", "")
+    for i, k in enumerate(extra.split(","), 1):
+        k = k.strip()
+        _add(k, f"env.FERNET_EXTRA_KEYS[{i}]")
+
     instances = []
     for raw_key, source in raw_keys:
         derived = derive_fernet_key(raw_key)
         key_hash = hashlib.sha256(
             derived if isinstance(derived, bytes) else derived.encode()
         ).hexdigest()[:12]
-        instances.append((Fernet(derived), key_hash, source))
+        raw_hash = hashlib.sha256(raw_key.encode()).hexdigest()[:12]
+        instances.append((Fernet(derived), key_hash, source, raw_hash))
 
     _all_fernets = instances
     _primary_fernet = instances[0] if instances else None
 
-    summary = [(h, s) for _, h, s in instances]
+    summary = [(h, s, rh) for _, h, s, rh in instances]
     logger.info(
         "Fernet initialised: %d key(s) %s — primary=%s",
         len(instances),
@@ -109,7 +119,7 @@ def decrypt_token(value):
         return value
 
     instances = _get_all()
-    for fernet, key_hash, source in instances:
+    for fernet, key_hash, source, raw_hash in instances:
         try:
             return fernet.decrypt(value.encode()).decode()
         except InvalidToken:
@@ -119,7 +129,7 @@ def decrypt_token(value):
 
     # All keys exhausted
     if value.startswith("gAAAAA"):
-        hashes = [h for _, h, _ in instances]
+        hashes = [h for _, h, _, _ in instances]
         logger.error(
             "ALL %d Fernet keys failed to decrypt (len=%d, prefix=%s, keys=%s). "
             "Token is unrecoverable — user must reconnect the platform.",
