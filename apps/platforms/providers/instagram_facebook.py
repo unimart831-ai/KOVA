@@ -361,11 +361,19 @@ class FacebookProvider(BaseProvider):
 
         try:
             with httpx.Client(timeout=HTTP_TIMEOUT) as client:
-                # Step 1: Basic engagement (likes, comments, shares) — always works
-                resp = client.get(f"{FB_API_BASE}/{platform_post_id}", params={
-                    "fields": "likes.summary(true),comments.summary(true),shares",
-                    "access_token": access_token,
-                })
+                # Step 1: Basic engagement (likes, comments, shares)
+                # Note: 'shares' field is unavailable on some post types;
+                # try with it first, fall back without it.
+                for _fields in (
+                    "likes.summary(true),comments.summary(true),shares",
+                    "likes.summary(true),comments.summary(true)",
+                ):
+                    resp = client.get(f"{FB_API_BASE}/{platform_post_id}", params={
+                        "fields": _fields,
+                        "access_token": access_token,
+                    })
+                    if resp.status_code == 200:
+                        break
                 resp.raise_for_status()
                 data = resp.json()
                 likes = data.get("likes", {}).get("summary", {}).get("total_count", 0)

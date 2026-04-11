@@ -380,6 +380,17 @@ def publish_post(self, post_id: str):
         # Add UTM tracking to any URLs in the content
         publish_content = add_utm_tracking(post.content_text, account.platform, str(post.id))
 
+        # ── Diagnostic: content audit at publish time ─────────────────
+        _db_len = len(post.content_text) if post.content_text else 0
+        _pub_len = len(publish_content) if publish_content else 0
+        logger.info(
+            "AUDIT [%s] post=%s db=%d pub=%d nl=%d",
+            account.platform, post.id, _db_len, _pub_len,
+            (publish_content or "").count("\n"),
+        )
+        logger.info("AUDIT first100=%s", (publish_content or "")[:100])
+        logger.info("AUDIT last80=%s", (publish_content or "")[-80:])
+
         # Safety: block publishing to platforms that require media if none attached
         if post.needs_media:
             _fail_post(post, f"{account.get_platform_display()} requires an image but none is attached.")
@@ -491,6 +502,16 @@ def publish_post(self, post_id: str):
             "platform_post_url", "updated_at",
         ])
         account.mark_synced()
+
+        logger.info(
+            "PUBLISH SUCCESS [%s] post=%s: platform_id=%s, "
+            "content_len=%d chars sent, url=%s",
+            account.platform, post.id,
+            result.platform_post_id,
+            len(publish_content or ""),
+            result.url,
+        )
+
         Notification.create_for_user(
             post.user, "post_published",
             f"Published to {account.get_platform_display()}: {post.content_text[:80]}...",
