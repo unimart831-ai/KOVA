@@ -62,8 +62,8 @@ LINKEDIN_TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken"
 LINKEDIN_USERINFO_URL = "https://api.linkedin.com/v2/userinfo"
 LINKEDIN_REST_BASE = "https://api.linkedin.com/rest"
 LINKEDIN_VERSION = getattr(settings, "LINKEDIN_API_VERSION", "202603")
-LINKEDIN_SCOPES = "openid profile w_member_social"
-LINKEDIN_ORG_SCOPES = "openid profile w_member_social w_organization_social r_organization_social"
+LINKEDIN_SCOPES = "openid profile r_member_social w_member_social"
+LINKEDIN_ORG_SCOPES = "openid profile r_member_social w_member_social r_organization_social w_organization_social"
 
 
 class LinkedInProvider(BaseProvider):
@@ -718,15 +718,13 @@ class LinkedInProvider(BaseProvider):
 
     def get_post_metrics(self, access_token: str,
                          platform_post_id: str) -> PostMetrics:
-        """Fetch engagement metrics for a post.
-        Tries socialMetadata first, falls back to socialActions."""
+        """Fetch engagement metrics for a post via socialMetadata."""
         headers = self._rest_headers(access_token)
         encoded = quote(platform_post_id, safe="")
         likes = comments = shares = 0
 
         try:
             with httpx.Client(timeout=30) as client:
-                # Try socialMetadata first (aggregate counts)
                 resp = client.get(
                     f"{LINKEDIN_REST_BASE}/socialMetadata/{encoded}",
                     headers=headers,
@@ -739,23 +737,6 @@ class LinkedInProvider(BaseProvider):
                     )
                     comments = data.get("totalCommentCount", 0)
                     shares = data.get("totalShareCount", 0)
-                    return PostMetrics(
-                        likes=likes, comments=comments, shares=shares
-                    )
-
-                # Fallback: socialActions (likesSummary/commentsSummary)
-                resp2 = client.get(
-                    f"{LINKEDIN_REST_BASE}/socialActions/{encoded}",
-                    headers=headers,
-                )
-                if resp2.status_code == 200:
-                    data = resp2.json()
-                    likes = data.get("likesSummary", {}).get(
-                        "totalLikes", 0
-                    )
-                    comments = data.get("commentsSummary", {}).get(
-                        "totalFirstLevelComments", 0
-                    )
         except Exception as e:
             logger.warning("LinkedIn metrics fetch failed: %s", e)
 
@@ -766,14 +747,28 @@ class LinkedInProvider(BaseProvider):
     def get_comments(self, access_token: str, post_id: str,
                      **kwargs) -> list:
         """Fetch comments on a post.
-        post_id: activity URN (urn:li:activity:123…)"""
+        post_id: share/activity URN (urn:li:share:123… or urn:li:activity:123…)"""
         encoded = quote(post_id, safe="")
+        headers = self._rest_headers(access_token)
+
+        # Try the Comments API (works with r_member_social scope)
         try:
             with httpx.Client(timeout=30) as client:
                 resp = client.get(
                     f"{LINKEDIN_REST_BASE}/socialActions/{encoded}/comments",
-                    headers=self._rest_headers(access_token),
+                    headers=headers,
                 )
+                if resp.status_code == 403:
+                    # socialActions is Partner-only in API v202603+.
+                    # Will resolve once user re-authenticates with
+                    # r_member_social scope.
+                    logger.info(
+                        "LinkedIn comments: socialActions requires partner "
+                        "access — skipping comments for %s. User should "
+                        "reconnect LinkedIn to grant r_member_social.",
+                        post_id[:40],
+                    )
+                    return []
                 resp.raise_for_status()
 
             result = []
@@ -796,7 +791,7 @@ class LinkedInProvider(BaseProvider):
                 })
             return result
         except httpx.HTTPStatusError as e:
-            logger.error("LinkedIn get_comments failed: %s", e.response.text)
+            logger.warning("LinkedIn get_comments failed: %s", e.response.text)
             return []
 
     def reply_to_comment(self, access_token: str, comment_id: str,

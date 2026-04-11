@@ -555,8 +555,16 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                 model=get_model_for_task("create.generate", user=user),
                 json_mode=True,
                 temperature=0.7 if attempt == 0 else 0.3,  # lower temp on retries for cleaner JSON
-                max_tokens=8192,
+                max_tokens=16384,
             )
+
+            # Detect token-limit truncation — LLM ran out of space mid-JSON
+            if llm_response.was_truncated:
+                logger.warning(
+                    "Create Agent: LLM response truncated (finish_reason=length, "
+                    "output_tokens=%d). Retrying with higher token budget.",
+                    llm_response.output_tokens,
+                )
 
             # Guard against empty LLM response
             if not llm_response.content or not llm_response.content.strip():
@@ -622,6 +630,7 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                 continue
 
             content_text = pd.get("content_text", "")
+
             post = Post.objects.create(
                 user=user,
                 seed=seed,
@@ -978,7 +987,7 @@ Respond with a JSON object. No markdown code fences.
             model=get_model_for_task("create.repurpose", user=user),
             json_mode=True,
             temperature=0.7,
-            max_tokens=8192,
+            max_tokens=16384,
         )
 
         _, post_dicts = parse_posts(llm_response.content)
@@ -1152,7 +1161,7 @@ Generate exactly {n} variants labeled {', '.join(VARIANT_LABELS[:n])}.
             model=get_model_for_task("create.generate", user=user),
             json_mode=True,
             temperature=0.85,  # Higher for maximum diversity
-            max_tokens=8192,
+            max_tokens=16384,
         )
 
         data = parse_llm_json(llm_response.content)

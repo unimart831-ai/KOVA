@@ -74,7 +74,13 @@ class LLMResponse:
     output_tokens: int = 0
     total_tokens: int = 0
     duration_ms: int = 0
+    finish_reason: str = ""  # 'stop' = complete, 'length' = truncated
     raw: dict = field(default_factory=dict)
+
+    @property
+    def was_truncated(self) -> bool:
+        """Return True if the response was cut off by the token limit."""
+        return self.finish_reason == "length"
 
 
 def parse_llm_json(text: str) -> dict:
@@ -462,6 +468,7 @@ def _generate_openai(
         raise ValueError("LLM returned no choices")
     choice = response.choices[0]
     usage = response.usage
+    finish = getattr(choice, "finish_reason", "") or ""
 
     return LLMResponse(
         content=choice.message.content or "",
@@ -470,6 +477,7 @@ def _generate_openai(
         output_tokens=usage.completion_tokens if usage else 0,
         total_tokens=usage.total_tokens if usage else 0,
         duration_ms=duration,
+        finish_reason=finish,
         raw=response.model_dump() if hasattr(response, "model_dump") else {},
     )
 
@@ -537,6 +545,7 @@ def _generate_openrouter(
     # If we used assistant-priming with '{', prepend it to the response
     if json_mode and is_free and not content.lstrip().startswith("{"):
         content = "{" + content
+    finish = getattr(choice, "finish_reason", "") or ""
 
     return LLMResponse(
         content=content,
@@ -545,6 +554,7 @@ def _generate_openrouter(
         output_tokens=usage.completion_tokens if usage else 0,
         total_tokens=usage.total_tokens if usage else 0,
         duration_ms=duration,
+        finish_reason=finish,
         raw=response.model_dump() if hasattr(response, "model_dump") else {},
     )
 
@@ -573,6 +583,10 @@ def _generate_anthropic(
         if hasattr(block, "text"):
             content += block.text
 
+    # Anthropic uses 'stop_reason' with values: 'end_turn', 'max_tokens', 'stop_sequence'
+    stop_reason = getattr(response, "stop_reason", "") or ""
+    finish = "length" if stop_reason == "max_tokens" else "stop"
+
     return LLMResponse(
         content=content,
         model=response.model,
@@ -580,5 +594,6 @@ def _generate_anthropic(
         output_tokens=response.usage.output_tokens,
         total_tokens=response.usage.input_tokens + response.usage.output_tokens,
         duration_ms=duration,
+        finish_reason=finish,
         raw=response.model_dump() if hasattr(response, "model_dump") else {},
     )
