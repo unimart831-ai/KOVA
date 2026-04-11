@@ -602,12 +602,21 @@ class LinkedInProvider(BaseProvider):
         commentary_len = len(content) if content else 0
         logger.info(
             "LinkedIn publish: commentary=%d chars, has_media=%s, "
-            "first_80=%r, last_40=%r",
+            "newlines=%d, first_80=%r, last_80=%r",
             commentary_len,
             bool(media_content),
+            (content or "").count("\n"),
             (content[:80] if content else ""),
-            (content[-40:] if content else ""),
+            (content[-80:] if content else ""),
         )
+
+        # Safety: warn if commentary exceeds LinkedIn's 3000-char limit
+        if commentary_len > 3000:
+            logger.warning(
+                "LinkedIn commentary exceeds 3000 chars (%d). "
+                "LinkedIn API may reject this post.",
+                commentary_len,
+            )
 
         try:
             with httpx.Client(timeout=30) as client:

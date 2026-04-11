@@ -32,6 +32,7 @@ from apps.agents.graphics import (
     _render_quote_card,
     _render_stat_highlight,
     _render_tip_graphic,
+    apply_logo_watermark,
 )
 from apps.content.models import MediaAttachment
 
@@ -295,6 +296,9 @@ def generate_carousel(
 
         # Save all slides as MediaAttachments
         for idx, img in enumerate(slide_images):
+            # Apply brand logo watermark to each slide
+            img = apply_logo_watermark(img, profile)
+
             buffer = BytesIO()
             img.save(buffer, format="PNG", compress_level=6)
             buffer.seek(0)

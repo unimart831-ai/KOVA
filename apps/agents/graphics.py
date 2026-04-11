@@ -22,6 +22,7 @@ import uuid
 from io import BytesIO
 from pathlib import Path
 
+import requests
 from django.core.files.base import ContentFile
 from PIL import Image, ImageDraw, ImageFont
 
@@ -167,6 +168,76 @@ def _add_accent_bar(draw: ImageDraw.Draw, width: int, height: int,
         draw.rectangle([0, 0, width, bar_height], fill=color)
     else:
         draw.rectangle([0, height - bar_height, width, height], fill=color)
+
+
+# ─── LOGO WATERMARK ──────────────────────────────────────────────────────────
+
+_logo_cache: dict[str, Image.Image | None] = {}
+
+
+def _fetch_logo(logo_url: str) -> Image.Image | None:
+    """Download and cache brand logo from URL. Returns RGBA Image or None."""
+    if not logo_url:
+        return None
+    if logo_url in _logo_cache:
+        return _logo_cache[logo_url]
+    try:
+        resp = requests.get(logo_url, timeout=10)
+        resp.raise_for_status()
+        if "image" not in resp.headers.get("content-type", ""):
+            _logo_cache[logo_url] = None
+            return None
+        logo = Image.open(BytesIO(resp.content)).convert("RGBA")
+        _logo_cache[logo_url] = logo
+        return logo
+    except Exception as exc:
+        logger.debug("Could not fetch brand logo from %s: %s", logo_url, exc)
+        _logo_cache[logo_url] = None
+        return None
+
+
+def apply_logo_watermark(img: Image.Image, profile) -> Image.Image:
+    """
+    Overlay the user's brand logo on the bottom-right of an image.
+    Semi-transparent, max 60px tall, with padding from edges.
+    """
+    logo_url = getattr(profile, "brand_logo_url", "") if profile else ""
+    if not logo_url:
+        return img
+
+    logo = _fetch_logo(logo_url)
+    if logo is None:
+        return img
+
+    # Scale logo: max height = 5% of canvas, max width = 15% of canvas
+    max_h = max(int(img.height * 0.05), 30)
+    max_w = max(int(img.width * 0.15), 80)
+    logo_w, logo_h = logo.size
+    scale = min(max_w / logo_w, max_h / logo_h, 1.0)
+    new_w = int(logo_w * scale)
+    new_h = int(logo_h * scale)
+    logo_resized = logo.resize((new_w, new_h), Image.LANCZOS)
+
+    # Apply semi-transparency (60% opacity)
+    if logo_resized.mode == "RGBA":
+        alpha = logo_resized.split()[3]
+        alpha = alpha.point(lambda p: int(p * 0.6))
+        logo_resized.putalpha(alpha)
+
+    # Position: bottom-right with padding
+    padding = int(min(img.width, img.height) * 0.03)
+    x = img.width - new_w - padding
+    y = img.height - new_h - padding
+
+    # Composite onto the image
+    if img.mode != "RGBA":
+        img = img.convert("RGBA")
+        img.paste(logo_resized, (x, y), logo_resized)
+        img = img.convert("RGB")
+    else:
+        img.paste(logo_resized, (x, y), logo_resized)
+
+    return img
 
 
 # ─── GRAPHIC GENERATORS ──────────────────────────────────────────────────────
@@ -527,6 +598,9 @@ def generate_branded_graphic(
             img = renderer(width, height, headline, subtext, cta_text, colors)
         else:
             return None
+
+        # Apply brand logo watermark
+        img = apply_logo_watermark(img, profile)
 
         # Save to bytes
         buffer = BytesIO()

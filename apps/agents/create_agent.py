@@ -498,6 +498,111 @@ def parse_posts(llm_content: str) -> tuple[str, list[dict]]:
     return batch_strategy, data.get("posts", [])
 
 
+# ─── Per-Platform Regeneration (Truncation Recovery) ─────────────────────────
+
+# Minimum content length (chars) per platform to accept as valid.
+# Anything below this is likely truncated from a multi-platform batch.
+_MIN_CONTENT_LENGTH = {
+    "linkedin": 200,
+    "facebook": 150,
+    "youtube": 150,
+    "tiktok": 100,
+    "instagram": 80,
+    "twitter": 30,
+    "threads": 30,
+    "bluesky": 30,
+    "pinterest": 30,
+}
+
+
+def _regenerate_single_platform(user, seed, platform_info, system_prompt):
+    """
+    Generate content for a SINGLE platform. Called as fallback when
+    multi-platform generation produces truncated content.
+
+    Returns a post dict or None on failure.
+    """
+    guide = PLATFORM_GUIDES.get(platform_info["platform"], {})
+    winning = "\n".join(f"    - {w}" for w in guide.get("winning_patterns", []))
+    formatting = guide.get("formatting_rules", "")
+    formatting_line = f"\n- **Formatting**: {formatting}" if formatting else ""
+
+    prompt = f"""## YOUR TASK
+
+Transform this idea into ONE high-performing post for {guide.get('name', platform_info['platform'].title())}.
+
+### THE IDEA
+{seed.idea}
+{f"### ADDITIONAL CONTEXT" + chr(10) + seed.notes if seed.notes else ""}
+
+### PLATFORM: {guide.get('name', platform_info['platform'].title())} (@{platform_info['username']})
+- **Character limit**: {guide.get('max_chars', 'N/A')}
+- **Psychology**: {guide.get('psychology', 'Adapt to norms')}
+- **What wins**:
+{winning}{formatting_line}
+- **CTA**: {guide.get('cta_style', 'Adapt to context')}
+
+### OUTPUT FORMAT
+Respond with a JSON object:
+{{
+  "platform": "{platform_info['platform']}",
+  "username": "@{platform_info['username']}",
+  "content_text": "The COMPLETE post text, ready to publish. Write the FULL post — do NOT cut it short.",
+  "content_type": "original",
+  "format": "text post",
+  "framework_used": "Hook → Value → CTA",
+  "angle": "Brief description of the angle",
+  "reasoning": "Why this will perform well (1 sentence)",
+  "predicted_score": 72,
+  "image_prompt": ""
+}}
+
+CRITICAL:
+- Write the COMPLETE post. Do not stop early or summarize.
+- Content must be READY TO PUBLISH — no placeholders.
+- For LinkedIn/Facebook: aim for 800-2000 characters of substantive content.
+"""
+
+    try:
+        response = generate(
+            prompt=prompt,
+            system=system_prompt,
+            model=get_model_for_task("create.generate", user=user),
+            json_mode=True,
+            temperature=0.7,
+            max_tokens=4096,
+        )
+
+        if not response.content or not response.content.strip():
+            return None
+
+        data = parse_llm_json(response.content)
+
+        # Handle both single object and wrapped {"posts": [...]} format
+        if "posts" in data and isinstance(data["posts"], list):
+            post_dict = data["posts"][0] if data["posts"] else None
+        elif "content_text" in data:
+            post_dict = data
+        else:
+            return None
+
+        if post_dict:
+            content = post_dict.get("content_text", "")
+            logger.info(
+                "Single-platform regen for %s: %d chars (finish=%s, tokens=%d/%d)",
+                platform_info["platform"], len(content),
+                response.finish_reason, response.input_tokens, response.output_tokens,
+            )
+        return post_dict
+
+    except Exception as e:
+        logger.error(
+            "Single-platform regen failed for %s: %s",
+            platform_info["platform"], e,
+        )
+        return None
+
+
 def run_create_agent(seed: ContentSeed) -> list[Post]:
     """
     Main entry point: take a ContentSeed and produce Post drafts.
@@ -550,6 +655,7 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
         batch_strategy = ""
         post_dicts = []
         last_error = None
+        was_truncated_at_all = False
 
         for attempt in range(3):
             llm_response: LLMResponse = generate(
@@ -561,11 +667,20 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                 max_tokens=16384,
             )
 
+            # Diagnostic logging for truncation investigation
+            logger.info(
+                "Create Agent attempt %d: finish=%s, tokens=%d/%d, content_len=%d",
+                attempt + 1, llm_response.finish_reason,
+                llm_response.input_tokens, llm_response.output_tokens,
+                len(llm_response.content or ""),
+            )
+
             # Detect token-limit truncation — LLM ran out of space mid-JSON
             if llm_response.was_truncated:
+                was_truncated_at_all = True
                 logger.warning(
                     "Create Agent: LLM response truncated (finish_reason=length, "
-                    "output_tokens=%d). Retrying with higher token budget.",
+                    "output_tokens=%d). Will use per-platform fallback.",
                     llm_response.output_tokens,
                 )
 
@@ -596,6 +711,80 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
 
         if last_error:
             raise json.JSONDecodeError(last_error, doc="", pos=0)
+
+        # ── Content-length validation & per-platform regeneration ─────────
+        # When the multi-platform batch was truncated the LLM may have
+        # produced short / cut-off content for some platforms. Detect those
+        # and regenerate individually so every platform gets a full post.
+        platform_map = {p["platform"]: p for p in platforms}
+        truncated_platforms = []
+
+        for pd in post_dicts:
+            plat = pd.get("platform", "").lower().strip()
+            content = pd.get("content_text", "")
+            min_len = _MIN_CONTENT_LENGTH.get(plat, 30)
+            if len(content) < min_len:
+                truncated_platforms.append(plat)
+                logger.warning(
+                    "Create Agent: %s content too short (%d chars, min %d) — "
+                    "queuing for single-platform regen",
+                    plat, len(content), min_len,
+                )
+            else:
+                logger.info(
+                    "Create Agent: %s content OK (%d chars)",
+                    plat, len(content),
+                )
+
+        # Also regenerate if the LLM was truncated but ALL platforms were
+        # parsed (the last platform is most likely to be incomplete)
+        if was_truncated_at_all and post_dicts:
+            last_plat = post_dicts[-1].get("platform", "").lower().strip()
+            if last_plat not in truncated_platforms:
+                content = post_dicts[-1].get("content_text", "")
+                min_len = _MIN_CONTENT_LENGTH.get(last_plat, 30)
+                # Use a higher bar for the last platform since it was likely mid-generation
+                if len(content) < min_len * 3:
+                    truncated_platforms.append(last_plat)
+                    logger.warning(
+                        "Create Agent: last platform %s likely truncated (%d chars, "
+                        "was_truncated=True) — queuing for regen",
+                        last_plat, len(content),
+                    )
+
+        # Check for platforms that are completely missing from the response
+        parsed_platforms = {pd.get("platform", "").lower().strip() for pd in post_dicts}
+        for p in platforms:
+            if p["platform"] not in parsed_platforms:
+                truncated_platforms.append(p["platform"])
+                logger.warning(
+                    "Create Agent: %s completely missing from LLM response — "
+                    "queuing for single-platform regen",
+                    p["platform"],
+                )
+
+        # Regenerate truncated / missing platforms one at a time
+        if truncated_platforms:
+            logger.info(
+                "Create Agent: Regenerating %d truncated platforms: %s",
+                len(truncated_platforms), truncated_platforms,
+            )
+            for plat in truncated_platforms:
+                pinfo = platform_map.get(plat)
+                if not pinfo:
+                    continue
+                new_pd = _regenerate_single_platform(user, seed, pinfo, system)
+                if not new_pd:
+                    continue
+                # Replace the truncated post dict or append the missing one
+                replaced = False
+                for i, existing in enumerate(post_dicts):
+                    if existing.get("platform", "").lower().strip() == plat:
+                        post_dicts[i] = new_pd
+                        replaced = True
+                        break
+                if not replaced:
+                    post_dicts.append(new_pd)
 
         # Save batch strategy on the seed
         seed.batch_strategy = batch_strategy
@@ -661,14 +850,27 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
 
             # Auto-populate UTM fields for revenue attribution
             post.populate_utm()
-            post.save(update_fields=["utm_source", "utm_medium", "utm_campaign", "utm_content"])
+
+            # Store visual strategy on the Post for analytics tracking
+            image_prompt = pd.get("image_prompt", "")
+            visual_strategy_data = pd.get("visual_strategy", {})
+            strategy_name = visual_strategy_data.get("strategy", "none") if visual_strategy_data else "none"
+            post.visual_strategy = strategy_name if strategy_name else "none"
+            post.visual_metadata = {
+                k: v for k, v in {
+                    "image_prompt": image_prompt,
+                    "strategy_data": visual_strategy_data,
+                }.items() if v
+            }
+            post.save(update_fields=[
+                "utm_source", "utm_medium", "utm_campaign", "utm_content",
+                "visual_strategy", "visual_metadata",
+            ])
 
             # Generate visual for the post (plan-gated with monthly limit)
             # Images are only auto-generated for platforms that REQUIRE them
             # (Instagram, TikTok, Pinterest). Other platforms get text-only posts
             # by default — users can always upload their own images manually.
-            image_prompt = pd.get("image_prompt", "")
-            visual_strategy_data = pd.get("visual_strategy", {})
             has_visual_request = image_prompt or visual_strategy_data.get("strategy", "none") != "none"
 
             # Determine if this platform requires media

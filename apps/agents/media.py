@@ -41,20 +41,84 @@ PLATFORM_IMAGE_SIZES = {
 DEFAULT_SIZE = (1200, 675)
 
 
+# ─── PLATFORM-SPECIFIC PROMPT ENGINEERING ─────────────────────────────────────
+
+PLATFORM_PROMPT_SUFFIX = {
+    "instagram": "vibrant, eye-catching, social media style, centered composition, high contrast",
+    "facebook":  "warm, relatable, community feel, lifestyle photography style",
+    "linkedin":  "professional, clean, corporate editorial, subtle tones, business context",
+    "tiktok":    "bold, energetic, vertical composition, youth-oriented, trending aesthetic",
+    "twitter":   "striking, minimal, high-impact single subject, editorial",
+    "pinterest": "aspirational, aesthetic, vertical layout, lifestyle inspiration",
+    "youtube":   "cinematic, wide-angle, thumbnail-friendly, bold colors",
+}
+
+VISUAL_STYLE_PREFIX = {
+    "photography":  "professional photography,",
+    "illustration": "digital illustration style,",
+    "flat_design":  "flat design, clean vectors,",
+    "3d_render":    "3D rendered,",
+    "collage":      "mixed media collage style,",
+    "abstract":     "abstract art style,",
+    "corporate":    "corporate professional stock photo style,",
+    "vibrant":      "vibrant colorful,",
+    "dark_moody":   "dark moody atmospheric,",
+    "auto":         "",
+}
+
+
+def _enhance_prompt(prompt: str, platform: str, profile=None) -> str:
+    """Inject visual_style prefix and platform-specific suffix into the image prompt."""
+    parts = []
+
+    # Prepend visual style from user profile
+    visual_style = getattr(profile, "visual_style", "auto") if profile else "auto"
+    style_prefix = VISUAL_STYLE_PREFIX.get(visual_style, "")
+    if style_prefix:
+        parts.append(style_prefix)
+
+    parts.append(prompt.strip())
+
+    # Append platform-specific aesthetics
+    suffix = PLATFORM_PROMPT_SUFFIX.get(platform, "")
+    if suffix:
+        parts.append(suffix)
+
+    return " ".join(parts)
+
+
+# ─── PER-TIER IMAGE MODEL ROUTING ────────────────────────────────────────────
+
+TIER_IMAGE_MODELS = {
+    "starter": "black-forest-labs/FLUX.1-schnell",
+    "growth":  "black-forest-labs/FLUX.1-dev",
+    "pro":     "black-forest-labs/FLUX.1-pro-1.1-ultra",
+    "agency":  "black-forest-labs/FLUX.1-pro-1.1-ultra",
+}
+
+
+def _get_image_model_for_tier(profile) -> str:
+    """Return the Together.ai model name based on user's plan tier."""
+    plan = getattr(profile, "plan", "starter") if profile else "starter"
+    return TIER_IMAGE_MODELS.get(plan, TIER_IMAGE_MODELS["starter"])
+
+
 # ─── PROVIDER IMPLEMENTATIONS ────────────────────────────────────────────────
 
-def _fetch_together(prompt: str, width: int, height: int) -> bytes | None:
-    """Together.ai — FLUX.1-schnell (paid: $0.003/image, fast + reliable).
+def _fetch_together(prompt: str, width: int, height: int, *, model_override: str = "") -> bytes | None:
+    """Together.ai — FLUX.1 (paid, tier-routed).
 
-    Model controlled by TOGETHER_IMAGE_MODEL setting:
-      - "black-forest-labs/FLUX.1-schnell"      — paid, $0.003/image (default)
-      - "black-forest-labs/FLUX.1-schnell-Free"  — free but rate-limited
+    Model controlled by model_override param or TOGETHER_IMAGE_MODEL setting:
+      - "black-forest-labs/FLUX.1-schnell"           — $0.003/image (Starter)
+      - "black-forest-labs/FLUX.1-dev"               — $0.01/image  (Growth)
+      - "black-forest-labs/FLUX.1-pro-1.1-ultra"     — $0.04/image  (Pro/Agency)
+      - "black-forest-labs/FLUX.1-schnell-Free"       — free but rate-limited
     """
     api_key = getattr(settings, "TOGETHER_API_KEY", "")
     if not api_key:
         return None
 
-    model = getattr(settings, "TOGETHER_IMAGE_MODEL", "black-forest-labs/FLUX.1-schnell")
+    model = model_override or getattr(settings, "TOGETHER_IMAGE_MODEL", "black-forest-labs/FLUX.1-schnell")
 
     response = requests.post(
         "https://api.together.xyz/v1/images/generations",
@@ -173,7 +237,14 @@ def generate_post_image(post, image_prompt: str) -> str | None:
     platform = post.platform or (post.social_account.platform if post.social_account else "twitter")
     width, height = PLATFORM_IMAGE_SIZES.get(platform, DEFAULT_SIZE)
 
-    image_bytes = _fetch_image_with_fallback(image_prompt, width, height)
+    # Enhance prompt with visual style + platform-specific aesthetics
+    profile = getattr(post.user, "profile", None)
+    enhanced_prompt = _enhance_prompt(image_prompt, platform, profile)
+
+    # Route to tier-appropriate image model
+    tier_model = _get_image_model_for_tier(profile)
+
+    image_bytes = _fetch_image_with_fallback(enhanced_prompt, width, height, model_override=tier_model)
     if not image_bytes:
         logger.warning("All image providers failed for post %s", post.id)
         post.media_status = "failed"
@@ -227,12 +298,15 @@ def generate_post_image(post, image_prompt: str) -> str | None:
 
 # ─── INTERNAL HELPERS ─────────────────────────────────────────────────────────
 
-def _fetch_image_with_fallback(prompt: str, width: int, height: int) -> bytes | None:
+def _fetch_image_with_fallback(prompt: str, width: int, height: int, *, model_override: str = "") -> bytes | None:
     """Try each provider in order, return first successful result."""
     for name, fetcher in PROVIDERS:
         try:
             logger.debug("Trying image provider: %s", name)
-            result = fetcher(prompt, width, height)
+            if name == "together" and model_override:
+                result = fetcher(prompt, width, height, model_override=model_override)
+            else:
+                result = fetcher(prompt, width, height)
             if result:
                 logger.info("Image generated via %s (%dx%d)", name, width, height)
                 return result

@@ -105,6 +105,26 @@ class Post(SoftDeleteMixin, models.Model):
         help_text="Tracks whether AI image generation succeeded, failed, or was skipped.",
     )
 
+    # Visual strategy tracking — enables analytics on which visual type performs best
+    VISUAL_STRATEGY_CHOICES = [
+        ("none", "No visual"),
+        ("ai_photo", "AI-generated photo"),
+        ("quote_card", "Quote card"),
+        ("tip_graphic", "Tip graphic"),
+        ("stat_highlight", "Stat highlight"),
+        ("cta_banner", "CTA banner"),
+        ("carousel", "Carousel"),
+        ("story_graphic", "Story graphic"),
+    ]
+    visual_strategy = models.CharField(
+        max_length=30, choices=VISUAL_STRATEGY_CHOICES, default="none", db_index=True,
+        help_text="Which visual strategy was used for this post. Stored for analytics.",
+    )
+    visual_metadata = models.JSONField(
+        default=dict, blank=True,
+        help_text='Visual generation details: {"image_prompt": "...", "template": "...", "model": "...", "provider": "..."}',
+    )
+
     # Scheduling
     scheduled_at = models.DateTimeField(null=True, blank=True, db_index=True)
     published_at = models.DateTimeField(null=True, blank=True, db_index=True)
