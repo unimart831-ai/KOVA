@@ -43,6 +43,13 @@
 
 {# ── Inline image upload (for editable posts without uploaded media) ── #}
 {% if post.status == 'pending_approval' or post.status == 'draft' %}
+  {% if post.media_status == 'pending' or post.media_status == 'processing' %}
+    {# Image is generating — show spinner instead of upload/generate buttons #}
+    <div class="mb-3 flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-medium rounded-lg border border-dashed border-kova-200 dark:border-kova-800 text-kova-500 dark:text-kova-400 bg-kova-50/30 dark:bg-kova-950/20">
+      <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+      Generating AI image…
+    </div>
+  {% else %}
   <div class="mb-3" x-data="{ uploading: false }">
     <label class="flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg cursor-pointer transition-all border border-dashed"
            :class="uploading
@@ -82,6 +89,7 @@
       </button>
     </div>
   {% endif %}
+  {% endif %}{# end pending/processing check #}
 {% endif %}
 
 {# ── AI Strategy insight (shown in grouped view) ── #}

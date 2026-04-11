@@ -897,7 +897,7 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                         # Dispatch image generation as async Celery task
                         # so the user sees posts immediately without waiting
                         from apps.content.tasks import async_generate_image
-                        post.media_status = "processing"
+                        post.media_status = Post.MediaStatus.PENDING
                         post.media_prompt = image_prompt
                         post.save(update_fields=["media_status", "media_prompt", "updated_at"])
                         try:
