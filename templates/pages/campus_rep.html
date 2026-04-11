@@ -1,0 +1,420 @@
+{% extends "layouts/marketing.html" %}
+
+{% block title %}Campus Rep Program — Earn While You Learn | Kova Agent{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<section class="relative overflow-hidden">
+  <div class="absolute inset-0 bg-gradient-to-br from-violet-50 via-white to-kova-50 dark:from-gray-950 dark:via-gray-950 dark:to-violet-950/20"></div>
+  <div class="orb w-80 h-80 bg-violet-400 -top-16 -right-16 animate-float"></div>
+  <div class="orb w-64 h-64 bg-kova-400 bottom-0 left-10 animate-float-delayed"></div>
+
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 text-center">
+    <div class="inline-flex items-center space-x-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur text-violet-700 dark:text-violet-300 text-sm font-medium px-4 py-1.5 rounded-full mb-6 border border-violet-200 dark:border-violet-800 shadow-sm reveal">
+      <span class="relative flex h-2 w-2">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
+      </span>
+      <span>Campus Rep Program</span>
+    </div>
+
+    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-[1.1] reveal reveal-delay-1">
+      Run social media for <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-kova-600 dark:from-violet-400 dark:to-kova-400">real businesses.</span><br>
+      <span class="text-2xl sm:text-3xl lg:text-4xl text-gray-400 dark:text-gray-500 font-semibold mt-2 block">Get paid. Get experience. Build your portfolio.</span>
+    </h1>
+    <p class="mt-6 max-w-2xl mx-auto text-lg text-gray-600 dark:text-gray-300 leading-relaxed reveal reveal-delay-2">
+      Kova Campus Reps help local businesses automate their social media using AI — and earn <strong>20% commission</strong> on every client they sign up. No experience required. We give you the tools, training, and support.
+    </p>
+
+    <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 reveal reveal-delay-3">
+      <a href="{% url 'partners:apply' %}" class="group inline-flex items-center px-8 py-3.5 text-lg font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-xl shadow-lg shadow-violet-200 dark:shadow-none transition-all">
+        Apply as a Campus Rep
+        <svg class="inline w-5 h-5 ml-1 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+        </svg>
+      </a>
+      <a href="#how-it-works" class="btn-secondary text-lg px-8 py-3.5">See how it works</a>
+    </div>
+  </div>
+</section>
+
+<!-- Quick Stats -->
+<section class="py-10 border-y border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/40">
+  <div class="max-w-5xl mx-auto px-4">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+      <div class="reveal">
+        <p class="text-2xl sm:text-3xl font-extrabold text-violet-600 dark:text-violet-400">20%</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Commission per client</p>
+      </div>
+      <div class="reveal reveal-delay-1">
+        <p class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">Free</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Your Kova account</p>
+      </div>
+      <div class="reveal reveal-delay-2">
+        <p class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">Zero</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Experience required</p>
+      </div>
+      <div class="reveal reveal-delay-3">
+        <p class="text-2xl sm:text-3xl font-extrabold text-violet-600 dark:text-violet-400">24 mo</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Recurring commission</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- What is a Campus Rep? -->
+<section class="py-20">
+  <div class="max-w-5xl mx-auto px-4">
+    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white text-center reveal">What is a Kova Campus Rep?</h2>
+    <p class="mt-4 text-center text-gray-600 dark:text-gray-400 max-w-2xl mx-auto reveal reveal-delay-1">
+      You become the go-to person for small businesses around your campus who need help with social media — except you have AI doing the heavy lifting.
+    </p>
+
+    <div class="mt-14 grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm reveal reveal-delay-1">
+        <div class="w-12 h-12 bg-violet-100 dark:bg-violet-950/40 rounded-xl flex items-center justify-center mb-4">
+          <svg class="w-6 h-6 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold text-lg text-gray-900 dark:text-white">Real Work Experience</h3>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Manage social media for actual businesses — not classroom simulations. Build a portfolio that employers respect.</p>
+      </div>
+      <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm reveal reveal-delay-2">
+        <div class="w-12 h-12 bg-kova-100 dark:bg-kova-950/40 rounded-xl flex items-center justify-center mb-4">
+          <svg class="w-6 h-6 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold text-lg text-gray-900 dark:text-white">Earn Real Money</h3>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">20% recurring commission for 24 months on every business you sign up. A client on the Growth plan = KES 200/month for you.</p>
+      </div>
+      <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm reveal reveal-delay-3">
+        <div class="w-12 h-12 bg-amber-100 dark:bg-amber-950/40 rounded-xl flex items-center justify-center mb-4">
+          <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold text-lg text-gray-900 dark:text-white">AI Does the Hard Work</h3>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">You don't write posts manually. Kova's AI agents create, schedule, and engage automatically. You focus on relationships.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How It Works -->
+<section id="how-it-works" class="py-20 bg-gray-50/50 dark:bg-gray-900/40">
+  <div class="max-w-5xl mx-auto px-4">
+    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white text-center reveal">How it works</h2>
+    <p class="mt-4 text-center text-gray-600 dark:text-gray-400 max-w-2xl mx-auto reveal reveal-delay-1">Four steps. No technical skills needed.</p>
+
+    <div class="mt-14 space-y-8">
+      <!-- Step 1 -->
+      <div class="flex flex-col md:flex-row items-start gap-6 reveal reveal-delay-1">
+        <div class="w-14 h-14 shrink-0 bg-violet-100 dark:bg-violet-950/40 rounded-2xl flex items-center justify-center">
+          <span class="text-2xl font-bold text-violet-600 dark:text-violet-400">1</span>
+        </div>
+        <div>
+          <h3 class="font-semibold text-lg text-gray-900 dark:text-white">Apply & Get Approved</h3>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Fill out a quick application. Tell us your university, what you study, and why you want to be a rep. We approve within 48 hours.</p>
+        </div>
+      </div>
+      <!-- Step 2 -->
+      <div class="flex flex-col md:flex-row items-start gap-6 reveal reveal-delay-2">
+        <div class="w-14 h-14 shrink-0 bg-blue-100 dark:bg-blue-950/40 rounded-2xl flex items-center justify-center">
+          <span class="text-2xl font-bold text-blue-600 dark:text-blue-400">2</span>
+        </div>
+        <div>
+          <h3 class="font-semibold text-lg text-gray-900 dark:text-white">Get Your Free Account + Training</h3>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">You get a free Kova Growth account (worth KES 999/mo) and a short training on how to pitch Kova to local businesses. Plus your unique referral link.</p>
+        </div>
+      </div>
+      <!-- Step 3 -->
+      <div class="flex flex-col md:flex-row items-start gap-6 reveal reveal-delay-3">
+        <div class="w-14 h-14 shrink-0 bg-emerald-100 dark:bg-emerald-950/40 rounded-2xl flex items-center justify-center">
+          <span class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">3</span>
+        </div>
+        <div>
+          <h3 class="font-semibold text-lg text-gray-900 dark:text-white">Sign Up Local Businesses</h3>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Walk into the shops, salons, restaurants, and small businesses around campus. Show them how Kova can run their social media automatically. When they sign up through your link — they're your client.</p>
+        </div>
+      </div>
+      <!-- Step 4 -->
+      <div class="flex flex-col md:flex-row items-start gap-6 reveal reveal-delay-3">
+        <div class="w-14 h-14 shrink-0 bg-amber-100 dark:bg-amber-950/40 rounded-2xl flex items-center justify-center">
+          <span class="text-2xl font-bold text-amber-600 dark:text-amber-400">4</span>
+        </div>
+        <div>
+          <h3 class="font-semibold text-lg text-gray-900 dark:text-white">Earn Every Month</h3>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Every month your client pays, you get 20%. It's recurring — not a one-time thing. Sign up 10 businesses on the Growth plan? That's KES 2,000/month in your pocket. For 24 months.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Earnings Calculator -->
+<section class="py-20">
+  <div class="max-w-4xl mx-auto px-4">
+    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white text-center reveal">How much can you earn?</h2>
+    <p class="mt-4 text-center text-gray-600 dark:text-gray-400 max-w-2xl mx-auto reveal reveal-delay-1">
+      Real numbers. No hype.
+    </p>
+
+    <div class="mt-12 overflow-x-auto reveal reveal-delay-2">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="border-b border-gray-200 dark:border-gray-700">
+            <th class="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Clients signed up</th>
+            <th class="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Their plan</th>
+            <th class="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Your monthly income</th>
+            <th class="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Over 24 months</th>
+          </tr>
+        </thead>
+        <tbody class="text-sm">
+          <tr class="border-b border-gray-100 dark:border-gray-800">
+            <td class="py-3 px-4 text-gray-700 dark:text-gray-300">5 businesses</td>
+            <td class="py-3 px-4 text-gray-500 dark:text-gray-400">Starter (KES 299)</td>
+            <td class="py-3 px-4 font-semibold text-violet-600 dark:text-violet-400">KES 299</td>
+            <td class="py-3 px-4 text-gray-500 dark:text-gray-400">KES 7,176</td>
+          </tr>
+          <tr class="border-b border-gray-100 dark:border-gray-800">
+            <td class="py-3 px-4 text-gray-700 dark:text-gray-300">10 businesses</td>
+            <td class="py-3 px-4 text-gray-500 dark:text-gray-400">Growth (KES 999)</td>
+            <td class="py-3 px-4 font-semibold text-violet-600 dark:text-violet-400">KES 1,998</td>
+            <td class="py-3 px-4 text-gray-500 dark:text-gray-400">KES 47,952</td>
+          </tr>
+          <tr class="border-b border-gray-100 dark:border-gray-800 bg-violet-50/50 dark:bg-violet-950/10">
+            <td class="py-3 px-4 text-gray-700 dark:text-gray-300 font-medium">20 businesses</td>
+            <td class="py-3 px-4 text-gray-500 dark:text-gray-400">Growth (KES 999)</td>
+            <td class="py-3 px-4 font-bold text-violet-600 dark:text-violet-400">KES 3,996</td>
+            <td class="py-3 px-4 font-semibold text-gray-900 dark:text-white">KES 95,904</td>
+          </tr>
+          <tr>
+            <td class="py-3 px-4 text-gray-700 dark:text-gray-300 font-medium">30 businesses</td>
+            <td class="py-3 px-4 text-gray-500 dark:text-gray-400">Mixed plans</td>
+            <td class="py-3 px-4 font-bold text-violet-600 dark:text-violet-400">KES 5,000+</td>
+            <td class="py-3 px-4 font-semibold text-gray-900 dark:text-white">KES 120,000+</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mt-4 text-center text-xs text-gray-400 dark:text-gray-500 reveal reveal-delay-3">
+      20% commission on all plans. Paid monthly via M-Pesa. Commission runs for 24 months per active client.
+    </p>
+  </div>
+</section>
+
+<!-- Who Is This For -->
+<section class="py-20 bg-gray-50/50 dark:bg-gray-900/40">
+  <div class="max-w-5xl mx-auto px-4">
+    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white text-center reveal">Who should apply?</h2>
+    <p class="mt-4 text-center text-gray-600 dark:text-gray-400 max-w-2xl mx-auto reveal reveal-delay-1">
+      You don't need to be a marketing major. You need hustle.
+    </p>
+
+    <div class="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="flex items-start gap-3 reveal reveal-delay-1">
+        <div class="w-8 h-8 shrink-0 bg-violet-100 dark:bg-violet-950/40 rounded-lg flex items-center justify-center">
+          <svg class="w-4 h-4 text-violet-600 dark:text-violet-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-gray-900 dark:text-white">Business & Marketing students</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Put theory into practice</p>
+        </div>
+      </div>
+      <div class="flex items-start gap-3 reveal reveal-delay-1">
+        <div class="w-8 h-8 shrink-0 bg-violet-100 dark:bg-violet-950/40 rounded-lg flex items-center justify-center">
+          <svg class="w-4 h-4 text-violet-600 dark:text-violet-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-gray-900 dark:text-white">CS & IT students</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Sell AI tools you understand</p>
+        </div>
+      </div>
+      <div class="flex items-start gap-3 reveal reveal-delay-2">
+        <div class="w-8 h-8 shrink-0 bg-violet-100 dark:bg-violet-950/40 rounded-lg flex items-center justify-center">
+          <svg class="w-4 h-4 text-violet-600 dark:text-violet-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-gray-900 dark:text-white">Entrepreneurship enthusiasts</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Learn sales + client management</p>
+        </div>
+      </div>
+      <div class="flex items-start gap-3 reveal reveal-delay-2">
+        <div class="w-8 h-8 shrink-0 bg-violet-100 dark:bg-violet-950/40 rounded-lg flex items-center justify-center">
+          <svg class="w-4 h-4 text-violet-600 dark:text-violet-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-gray-900 dark:text-white">Social media enthusiasts</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Turn scrolling into income</p>
+        </div>
+      </div>
+      <div class="flex items-start gap-3 reveal reveal-delay-3">
+        <div class="w-8 h-8 shrink-0 bg-violet-100 dark:bg-violet-950/40 rounded-lg flex items-center justify-center">
+          <svg class="w-4 h-4 text-violet-600 dark:text-violet-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-gray-900 dark:text-white">Student leaders & club officers</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">You already have the network</p>
+        </div>
+      </div>
+      <div class="flex items-start gap-3 reveal reveal-delay-3">
+        <div class="w-8 h-8 shrink-0 bg-violet-100 dark:bg-violet-950/40 rounded-lg flex items-center justify-center">
+          <svg class="w-4 h-4 text-violet-600 dark:text-violet-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-gray-900 dark:text-white">Anyone who needs side income</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Flexible hours, work on your schedule</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- What You Get -->
+<section class="py-20">
+  <div class="max-w-5xl mx-auto px-4">
+    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white text-center reveal">What you get as a Campus Rep</h2>
+
+    <div class="mt-14 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/20 dark:to-gray-900 rounded-2xl p-6 border border-violet-200 dark:border-violet-800 reveal reveal-delay-1">
+        <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <span class="text-lg">🎓</span> Free Kova Growth Account
+        </h3>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Worth KES 999/month. Manage your own personal brand or a side project. Full AI agent access.</p>
+      </div>
+      <div class="bg-gradient-to-br from-kova-50 to-white dark:from-kova-950/20 dark:to-gray-900 rounded-2xl p-6 border border-kova-200 dark:border-kova-800 reveal reveal-delay-1">
+        <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <span class="text-lg">💰</span> 20% Recurring Commission
+        </h3>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Every month your referral pays, you earn. Runs for 24 months per client. Paid via M-Pesa.</p>
+      </div>
+      <div class="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/20 dark:to-gray-900 rounded-2xl p-6 border border-blue-200 dark:border-blue-800 reveal reveal-delay-2">
+        <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <span class="text-lg">📚</span> Sales & Marketing Training
+        </h3>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Short course on pitching to small businesses, objection handling, and client onboarding. Skills you keep forever.</p>
+      </div>
+      <div class="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/20 dark:to-gray-900 rounded-2xl p-6 border border-amber-200 dark:border-amber-800 reveal reveal-delay-2">
+        <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <span class="text-lg">📜</span> Certificate & Reference Letter
+        </h3>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">After 3 months of active rep work, get an official certificate and a reference letter for your CV.</p>
+      </div>
+      <div class="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/20 dark:to-gray-900 rounded-2xl p-6 border border-emerald-200 dark:border-emerald-800 reveal reveal-delay-3">
+        <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <span class="text-lg">🏆</span> Leaderboard & Bonuses
+        </h3>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Top reps each month get bonus payouts. Campus with the most sign-ups wins prizes.</p>
+      </div>
+      <div class="bg-gradient-to-br from-rose-50 to-white dark:from-rose-950/20 dark:to-gray-900 rounded-2xl p-6 border border-rose-200 dark:border-rose-800 reveal reveal-delay-3">
+        <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <span class="text-lg">🚀</span> Path to Full Partnership
+        </h3>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Excel as a campus rep and graduate into our full Growth Partners program — up to 30% commission + profit sharing.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="py-20 bg-gray-50/50 dark:bg-gray-900/40">
+  <div class="max-w-3xl mx-auto px-4">
+    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white text-center reveal">Frequently asked questions</h2>
+
+    <div class="mt-12 space-y-6" x-data="{ open: null }">
+      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 reveal reveal-delay-1">
+        <button @click="open = open === 1 ? null : 1" class="w-full flex justify-between items-center p-5 text-left">
+          <span class="font-medium text-gray-900 dark:text-white text-sm">Do I need any technical skills?</span>
+          <svg :class="{'rotate-180': open === 1}" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div x-show="open === 1" x-collapse class="px-5 pb-5 text-sm text-gray-500 dark:text-gray-400">
+          No. Kova's AI handles the content creation and scheduling. You need to be able to talk to business owners and show them the platform — we'll train you on that.
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 reveal reveal-delay-1">
+        <button @click="open = open === 2 ? null : 2" class="w-full flex justify-between items-center p-5 text-left">
+          <span class="font-medium text-gray-900 dark:text-white text-sm">How do I get paid?</span>
+          <svg :class="{'rotate-180': open === 2}" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div x-show="open === 2" x-collapse class="px-5 pb-5 text-sm text-gray-500 dark:text-gray-400">
+          Via M-Pesa. Commissions are calculated monthly and paid out by the 15th of the following month. Minimum payout is KES 500.
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 reveal reveal-delay-2">
+        <button @click="open = open === 3 ? null : 3" class="w-full flex justify-between items-center p-5 text-left">
+          <span class="font-medium text-gray-900 dark:text-white text-sm">Can I be a rep from any university?</span>
+          <svg :class="{'rotate-180': open === 3}" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div x-show="open === 3" x-collapse class="px-5 pb-5 text-sm text-gray-500 dark:text-gray-400">
+          Yes. Any university, college, or polytechnic in Kenya. We're starting with Kenyan campuses and expanding from there.
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 reveal reveal-delay-2">
+        <button @click="open = open === 4 ? null : 4" class="w-full flex justify-between items-center p-5 text-left">
+          <span class="font-medium text-gray-900 dark:text-white text-sm">What if the business cancels?</span>
+          <svg :class="{'rotate-180': open === 4}" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div x-show="open === 4" x-collapse class="px-5 pb-5 text-sm text-gray-500 dark:text-gray-400">
+          You earn commission only while they're active. If they cancel and re-subscribe later, your commission resumes. That's why Kova focuses on making the product genuinely useful — happy clients stay.
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 reveal reveal-delay-3">
+        <button @click="open = open === 5 ? null : 5" class="w-full flex justify-between items-center p-5 text-left">
+          <span class="font-medium text-gray-900 dark:text-white text-sm">How many hours per week does this take?</span>
+          <svg :class="{'rotate-180': open === 5}" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div x-show="open === 5" x-collapse class="px-5 pb-5 text-sm text-gray-500 dark:text-gray-400">
+          Totally flexible. Most reps spend 5-10 hours per week — visiting a few businesses, following up with leads, and helping new clients get set up. You work around your class schedule.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Final CTA -->
+<section class="relative overflow-hidden py-24">
+  <div class="absolute inset-0 bg-gradient-to-br from-violet-600 to-kova-700"></div>
+  <div class="orb w-96 h-96 bg-white/10 -top-20 -right-20"></div>
+  <div class="orb w-64 h-64 bg-white/10 bottom-0 left-10"></div>
+
+  <div class="relative max-w-3xl mx-auto px-4 text-center">
+    <h2 class="text-3xl sm:text-4xl font-bold text-white reveal">
+      Your classmates are looking for jobs.<br>You're building a business.
+    </h2>
+    <p class="mt-4 text-lg text-white/80 reveal reveal-delay-1">
+      Apply today. Get approved in 48 hours. Start earning this week.
+    </p>
+    <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 reveal reveal-delay-2">
+      <a href="{% url 'partners:apply' %}" class="group inline-flex items-center px-8 py-3.5 text-lg font-semibold text-violet-700 bg-white hover:bg-gray-50 rounded-xl shadow-lg transition-all">
+        Apply as a Campus Rep
+        <svg class="inline w-5 h-5 ml-1 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+        </svg>
+      </a>
+    </div>
+    <p class="mt-6 text-sm text-white/60 reveal reveal-delay-3">
+      Open to students at any Kenyan university, college, or polytechnic.
+    </p>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const els = document.querySelectorAll('.reveal');
+  if (!els.length) return;
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('revealed'); io.unobserve(e.target); } });
+  }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+  els.forEach(el => io.observe(el));
+});
+</script>
+{% endblock %}

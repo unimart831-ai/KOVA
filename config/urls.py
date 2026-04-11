@@ -57,6 +57,8 @@ urlpatterns = [
     path("cookies/", legal_page("cookies.html"), name="cookies"),
     path("acceptable-use/", legal_page("acceptable_use.html"), name="acceptable_use"),
     path("dpa/", legal_page("dpa.html"), name="dpa"),
+    # Campus Rep program (public)
+    path("campus-rep/", legal_page("campus_rep.html"), name="campus_rep"),
     # Public help / learn section (no login required)
     path("learn/", include("apps.help.urls_public")),
     # Growth Partners (public + authenticated)
