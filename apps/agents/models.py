@@ -12,7 +12,7 @@ class AgentConfig(models.Model):
         ADAPT = "adapt", "Platform Adapter Agent"
         ENGAGE = "engage", "Engagement Agent"
         ANALYST = "analyst", "Analytics Agent"
-        STRATEGIST = "strategist", "Chief Strategist"
+        STRATEGIST = "strategist", "Chief Strategist & Growth Advisor"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="agent_configs")
@@ -58,7 +58,7 @@ class AgentConfig(models.Model):
             "adapt": "Tailors copy for each platform.",
             "engage": "Suggests replies and flags conversations.",
             "analyst": "Tracks performance and patterns.",
-            "strategist": "Orchestrates agents and your daily brief.",
+            "strategist": "Orchestrates agents, tracks audience growth, and drives your strategy.",
         }
         return roles.get(self.agent_type, "Runs automated tasks for you.")
 

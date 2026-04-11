@@ -1,5 +1,8 @@
 import uuid
+from datetime import timedelta
+
 from django.db import models
+from django.utils import timezone
 
 
 class PostMetric(models.Model):
@@ -445,3 +448,124 @@ class ConversionTouchpoint(models.Model):
 
     def __str__(self):
         return f"{self.get_touch_type_display()} via {self.utm_source or 'direct'}"
+
+
+# ─── Growth Intelligence ─────────────────────────────────────────────────────
+
+
+class GrowthSnapshot(models.Model):
+    """
+    Daily snapshot of audience metrics for a connected social account.
+    Used by the Strategist Agent to track follower growth velocity,
+    correlate content with audience growth, and identify growth patterns.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    social_account = models.ForeignKey(
+        "platforms.SocialAccount", on_delete=models.CASCADE, related_name="growth_snapshots",
+    )
+    user = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE, related_name="growth_snapshots",
+    )
+
+    # Core audience numbers
+    followers = models.PositiveIntegerField(default=0)
+    following = models.PositiveIntegerField(default=0)
+    posts_count = models.PositiveIntegerField(default=0, help_text="Total posts on the platform")
+
+    # Computed deltas (filled by tracking task comparing to previous snapshot)
+    followers_delta = models.IntegerField(
+        default=0, help_text="Change in followers since previous snapshot",
+    )
+    posts_delta = models.IntegerField(
+        default=0, help_text="Posts published since previous snapshot",
+    )
+
+    # Date for this snapshot (one per account per day)
+    snapshot_date = models.DateField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-snapshot_date"]
+        unique_together = ("social_account", "snapshot_date")
+        indexes = [
+            models.Index(fields=["user", "-snapshot_date"]),
+            models.Index(fields=["social_account", "-snapshot_date"]),
+        ]
+
+    def __str__(self):
+        delta = f"+{self.followers_delta}" if self.followers_delta >= 0 else str(self.followers_delta)
+        return f"{self.social_account} — {self.followers} followers ({delta}) on {self.snapshot_date}"
+
+    @classmethod
+    def get_growth_summary(cls, user, days=30):
+        """
+        Returns growth intelligence for the Strategist Agent.
+        Calculates per-platform growth velocity, trend direction, and top growth days.
+        """
+        cutoff = timezone.now().date() - timedelta(days=days)
+        snapshots = cls.objects.filter(
+            user=user, snapshot_date__gte=cutoff,
+        ).select_related("social_account").order_by("social_account", "snapshot_date")
+
+        if not snapshots.exists():
+            return None
+
+        # Group by platform
+        platforms = {}
+        for snap in snapshots:
+            name = snap.social_account.platform
+            if name not in platforms:
+                platforms[name] = []
+            platforms[name].append(snap)
+
+        summary = {}
+        for platform, snaps in platforms.items():
+            if len(snaps) < 2:
+                summary[platform] = {
+                    "current_followers": snaps[-1].followers if snaps else 0,
+                    "data_points": len(snaps),
+                    "status": "insufficient_data",
+                }
+                continue
+
+            first, last = snaps[0], snaps[-1]
+            total_delta = last.followers - first.followers
+            span_days = (last.snapshot_date - first.snapshot_date).days or 1
+            daily_velocity = round(total_delta / span_days, 1)
+
+            # Growth trend: compare first half vs second half
+            mid = len(snaps) // 2
+            first_half_delta = sum(s.followers_delta for s in snaps[:mid])
+            second_half_delta = sum(s.followers_delta for s in snaps[mid:])
+
+            if second_half_delta > first_half_delta * 1.2:
+                trend = "accelerating"
+            elif second_half_delta < first_half_delta * 0.8:
+                trend = "decelerating"
+            else:
+                trend = "steady"
+
+            # Best and worst days
+            best_day = max(snaps, key=lambda s: s.followers_delta)
+            worst_day = min(snaps, key=lambda s: s.followers_delta)
+
+            summary[platform] = {
+                "current_followers": last.followers,
+                "total_growth": total_delta,
+                "daily_velocity": daily_velocity,
+                "weekly_velocity": round(daily_velocity * 7, 1),
+                "trend": trend,
+                "best_day": {
+                    "date": str(best_day.snapshot_date),
+                    "delta": best_day.followers_delta,
+                },
+                "worst_day": {
+                    "date": str(worst_day.snapshot_date),
+                    "delta": worst_day.followers_delta,
+                },
+                "data_points": len(snaps),
+            }
+
+        return summary

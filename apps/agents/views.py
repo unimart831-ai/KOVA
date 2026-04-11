@@ -7,6 +7,7 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 
 from apps.agents.models import AgentAction, AgentConfig
+from apps.analytics.models import GrowthSnapshot
 
 
 _PIPELINE_ORDER = (
@@ -123,3 +124,94 @@ def agent_update_instructions(request, slug):
     agent.custom_instructions = request.POST.get("custom_instructions", "").strip()
     agent.save(update_fields=["custom_instructions", "updated_at"])
     return redirect("agents:detail", slug=slug)
+
+
+@login_required
+def strategist_dashboard(request):
+    """
+    Growth Advisor Dashboard — the Strategist Agent's command center.
+    Shows follower growth, content-to-growth correlation, revenue signals,
+    and recent strategy cycle outputs.
+    """
+    from datetime import timedelta as td
+
+    user = request.user
+
+    # Growth summary (30 days)
+    growth_summary = GrowthSnapshot.get_growth_summary(user, days=30)
+
+    # Recent snapshots for sparkline data (14 days per platform)
+    from collections import defaultdict
+    cutoff_14d = timezone.now().date() - td(days=14)
+    recent_snapshots = GrowthSnapshot.objects.filter(
+        user=user, snapshot_date__gte=cutoff_14d,
+    ).select_related("social_account").order_by("snapshot_date")
+
+    sparklines = defaultdict(list)
+    for snap in recent_snapshots:
+        sparklines[snap.social_account.platform].append({
+            "date": snap.snapshot_date.isoformat(),
+            "followers": snap.followers,
+            "delta": snap.followers_delta,
+        })
+
+    # Total followers across all platforms (latest snapshot per account)
+    from django.db.models import Max
+    latest_per_account = GrowthSnapshot.objects.filter(user=user).values(
+        "social_account"
+    ).annotate(latest=Max("snapshot_date"))
+
+    total_followers = 0
+    total_delta_7d = 0
+    for entry in latest_per_account:
+        snap = GrowthSnapshot.objects.filter(
+            social_account_id=entry["social_account"],
+            snapshot_date=entry["latest"],
+        ).first()
+        if snap:
+            total_followers += snap.followers
+
+    # 7-day total growth
+    week_ago = timezone.now().date() - td(days=7)
+    week_snapshots = GrowthSnapshot.objects.filter(
+        user=user, snapshot_date__gte=week_ago,
+    )
+    total_delta_7d = sum(s.followers_delta for s in week_snapshots)
+
+    # Latest strategy cycle output
+    latest_strategy = AgentAction.objects.filter(
+        user=user,
+        agent_type="strategist",
+        action_type="strategy_cycle",
+        status=AgentAction.ActionStatus.COMPLETED,
+    ).order_by("-created_at").first()
+
+    strategy_data = latest_strategy.output_data if latest_strategy else {}
+    growth_assessment = strategy_data.get("growth_assessment", {})
+
+    # Content-to-growth correlation (reuse strategist logic)
+    from apps.agents.strategist_agent import _get_content_growth_correlation, _get_revenue_signals
+    content_growth = _get_content_growth_correlation(user, days=30)
+    revenue_signals = _get_revenue_signals(user, days=30)
+
+    # Recent strategy cycles (last 5)
+    recent_cycles = AgentAction.objects.filter(
+        user=user,
+        agent_type="strategist",
+        action_type="strategy_cycle",
+        status=AgentAction.ActionStatus.COMPLETED,
+    ).order_by("-created_at")[:5]
+
+    return render(request, "agents/strategist_dashboard.html", {
+        "page_title": "Growth Advisor",
+        "growth_summary": growth_summary,
+        "sparklines": dict(sparklines),
+        "total_followers": total_followers,
+        "total_delta_7d": total_delta_7d,
+        "growth_assessment": growth_assessment,
+        "content_growth": content_growth,
+        "revenue_signals": revenue_signals,
+        "recent_cycles": recent_cycles,
+        "latest_strategy": latest_strategy,
+        "strategy_data": strategy_data,
+    })

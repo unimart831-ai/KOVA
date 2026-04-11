@@ -222,6 +222,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "check-stock-alerts",
         "schedule": 24 * 3600.0,  # daily — scan products for stock issues
     },
+    "track-audience-growth": {
+        "task": "agents.track_audience_growth",
+        "schedule": 24 * 3600.0,  # daily — snapshot follower counts for growth intelligence
+    },
 }
 
 # ─── AUTH ────────────────────────────────────────────────────────────────────

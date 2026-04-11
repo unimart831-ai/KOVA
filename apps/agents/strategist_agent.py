@@ -1,12 +1,20 @@
 """
-Chief Strategist Agent — Orchestration & Autonomous Pipeline.
+Chief Strategist & Growth Advisor Agent — Orchestration & Autonomous Pipeline.
 
-The brain of Kova. Coordinates all agents into a cohesive strategy:
+The brain of Kova. Coordinates all agents into a cohesive GROWTH strategy:
   1. Reviews Research Agent's latest trends → picks the best to act on
   2. Auto-creates ContentSeeds from trends → feeds to Create Agent
   3. Reviews Engage Agent data → identifies engagement patterns
-  4. Compiles strategic recommendations → feeds into Daily Brief
-  5. Adjusts content mix based on Analyst Agent's performance data
+  4. Tracks audience growth → correlates content types with follower growth
+  5. Monitors revenue signals → click attribution and conversion tracking
+  6. Compiles strategic recommendations → feeds into Daily Brief
+  7. Adjusts content mix based on what GROWS the audience, not just engagement
+
+Growth Intelligence:
+  - Follower velocity per platform (accelerating/decelerating/steady)
+  - Content-to-growth correlation (which content DNA drives follows)
+  - Revenue signals (clicks, conversions, UTM attribution)
+  - Growth assessment (AI diagnosis of what's working and what's not)
 
 Autonomy Levels (driven by user's auto_approve_posts setting):
   - Manual: Strategist suggests seeds + schedule. User approves everything.
@@ -17,6 +25,7 @@ Architecture:
   [Research Agent] ──→                                  ──→ [Create Agent]
   [Analyst Agent]  ──→  Chief Strategist (this file)   ──→ [Adapt Agent]
   [Engage Agent]   ──→                                  ──→ [Daily Brief]
+  [Growth Data]    ──→                                  ──→ [Dashboard]
 """
 
 import json
@@ -28,6 +37,7 @@ from django.utils import timezone
 from apps.agents.llm import generate, get_model_for_task, parse_llm_json
 from apps.agents.models import AgentAction, AgentConfig
 from apps.analytics.competitor_intel import get_competitor_context_for_strategist
+from apps.analytics.models import GrowthSnapshot, PostMetric
 from apps.content.models import ContentSeed, Post
 from apps.engage.models import Interaction
 from apps.platforms.models import SocialAccount
@@ -127,6 +137,11 @@ def _gather_strategy_inputs(user):
         logger.warning("Competitor intel failed for strategist: %s", e)
         competitor_intel = {}
 
+    # 8. Growth intelligence — follower velocity + content-to-growth correlation
+    growth_summary = GrowthSnapshot.get_growth_summary(user, days=30)
+    content_growth_correlation = _get_content_growth_correlation(user, days=30)
+    revenue_signals = _get_revenue_signals(user, days=30)
+
     return {
         "trends": trends,
         "performance": performance,
@@ -134,6 +149,11 @@ def _gather_strategy_inputs(user):
         "pipeline": pipeline,
         "platforms": platforms,
         "competitor_intel": competitor_intel,
+        "growth_intelligence": {
+            "growth_summary": growth_summary,
+            "content_growth_correlation": content_growth_correlation,
+            "revenue_signals": revenue_signals,
+        },
         "user_context": {
             "company": getattr(profile, "company_name", "") if profile else "",
             "industry": getattr(profile, "industry", "") if profile else "",
@@ -184,6 +204,140 @@ def _get_top_engagers(user, days=30):
     ]
 
 
+def _get_content_growth_correlation(user, days=30):
+    """
+    Find which content DNA attributes correlate with follower growth.
+    Compares content types published in a week vs. follower delta that week.
+    Returns the top content attributes that drive audience growth.
+    """
+    from collections import defaultdict
+    from datetime import date
+
+    cutoff = timezone.now() - timedelta(days=days)
+
+    # Get published posts with content_dna in the period
+    posts = Post.objects.filter(
+        user=user,
+        status=Post.Status.PUBLISHED,
+        published_at__gte=cutoff,
+        content_dna__isnull=False,
+    ).exclude(content_dna={}).select_related("social_account")
+
+    if not posts.exists():
+        return None
+
+    # Get follower growth snapshots in the same period
+    snapshots = GrowthSnapshot.objects.filter(
+        user=user, snapshot_date__gte=cutoff.date(),
+    ).order_by("snapshot_date")
+
+    if snapshots.count() < 3:
+        return None
+
+    # Build a daily growth map: date → total follower delta across platforms
+    daily_growth = {}
+    for snap in snapshots:
+        d = snap.snapshot_date
+        daily_growth[d] = daily_growth.get(d, 0) + snap.followers_delta
+
+    # For each content DNA attribute, calculate avg growth in the 3 days after publishing
+    attribute_growth = defaultdict(lambda: {"total_growth": 0, "post_count": 0})
+
+    for post in posts:
+        if not post.published_at:
+            continue
+        pub_date = post.published_at.date()
+        # Sum follower growth 1-3 days after this post
+        growth_after = sum(
+            daily_growth.get(pub_date + timedelta(days=d), 0)
+            for d in range(1, 4)
+        )
+
+        dna = post.content_dna or {}
+        for attr_key in ("format", "tone", "topic"):
+            val = dna.get(attr_key)
+            if val:
+                key = f"{attr_key}:{val}"
+                attribute_growth[key]["total_growth"] += growth_after
+                attribute_growth[key]["post_count"] += 1
+
+    if not attribute_growth:
+        return None
+
+    # Calculate avg growth per attribute and rank
+    ranked = []
+    for attr, data in attribute_growth.items():
+        if data["post_count"] >= 2:  # need at least 2 posts for signal
+            avg = round(data["total_growth"] / data["post_count"], 1)
+            ranked.append({
+                "attribute": attr,
+                "avg_growth_after_post": avg,
+                "post_count": data["post_count"],
+            })
+
+    ranked.sort(key=lambda x: x["avg_growth_after_post"], reverse=True)
+    return {
+        "growth_drivers": ranked[:5],
+        "growth_killers": [r for r in ranked if r["avg_growth_after_post"] < 0][:3],
+    }
+
+
+def _get_revenue_signals(user, days=30):
+    """
+    Aggregate click/conversion attribution from posts.
+    Uses PostMetric.clicks and Conversion model to show which platforms
+    and content types drive the most traffic and revenue.
+    """
+    from collections import defaultdict
+    from decimal import Decimal
+
+    from apps.analytics.models import Conversion
+
+    cutoff = timezone.now() - timedelta(days=days)
+
+    # Click data from PostMetric
+    posts_with_clicks = Post.objects.filter(
+        user=user,
+        status=Post.Status.PUBLISHED,
+        published_at__gte=cutoff,
+        metrics__clicks__gt=0,
+    ).select_related("metrics", "social_account")
+
+    platform_clicks = defaultdict(int)
+    top_click_posts = []
+
+    for post in posts_with_clicks[:50]:
+        clicks = post.metrics.clicks
+        platform = post.social_account.platform if post.social_account else "unknown"
+        platform_clicks[platform] += clicks
+        top_click_posts.append({
+            "platform": platform,
+            "clicks": clicks,
+            "content_preview": post.content_text[:60],
+            "published": str(post.published_at.date()) if post.published_at else "",
+        })
+
+    top_click_posts.sort(key=lambda x: x["clicks"], reverse=True)
+
+    # Revenue from Conversion model
+    conversions = Conversion.objects.filter(
+        user=user, created_at__gte=cutoff,
+    )
+    total_revenue = sum(c.revenue for c in conversions) if conversions.exists() else Decimal("0")
+    conversion_count = conversions.count()
+
+    if not platform_clicks and not conversion_count:
+        return None
+
+    return {
+        "total_clicks": sum(platform_clicks.values()),
+        "clicks_by_platform": dict(platform_clicks),
+        "top_click_posts": top_click_posts[:5],
+        "total_revenue": float(total_revenue),
+        "conversions": conversion_count,
+    }
+
+
 # ─── Strategic Decision Making ───────────────────────────────────────────────
 
 def run_strategy_cycle(user):
@@ -227,8 +381,10 @@ def run_strategy_cycle(user):
             "recommendations": decisions.get("recommendations", []),
             "content_plan": decisions.get("content_plan", []),
             "engagement_insights": decisions.get("engagement_insights", ""),
+            "growth_assessment": decisions.get("growth_assessment", {}),
             "alerts": decisions.get("alerts", []),
             "superfans": inputs["engagement"].get("top_engagers", []),
+            "growth_summary": inputs.get("growth_intelligence", {}).get("growth_summary"),
         }
 
         action.status = AgentAction.ActionStatus.COMPLETED
@@ -275,20 +431,24 @@ def _make_strategic_decisions(user, inputs):
     seeds_needed = max(0, target_posts - already_queued)
 
     system_prompt = (
-        "You are the Chief Strategist Agent for Kova, an AI social media platform.\n"
+        "You are the Chief Strategist & Growth Advisor for Kova, an AI social media platform.\n"
         f"Brand: {company}\n\n"
-        "You coordinate all other agents. Your job is to make strategic decisions based on:\n"
+        "You coordinate all other agents. Your job is to make GROWTH-DRIVEN strategic decisions based on:\n"
         "- Research Agent's trend data (what's happening in the market)\n"
         "- Analyst Agent's performance data (what content is working)\n"
         "- Engage Agent's interaction data (what the audience is saying)\n"
-        "- Content pipeline state (what's queued, pending, published)\n\n"
-        "THINK STRATEGICALLY:\n"
-        "- Don't just pick the hottest trend — pick trends that ALIGN with the brand.\n"
+        "- Content pipeline state (what's queued, pending, published)\n"
+        "- Growth Intelligence (follower velocity, content-to-growth correlation, revenue signals)\n\n"
+        "THINK STRATEGICALLY — GROWTH FIRST:\n"
+        "- Prioritize content that GROWS THE AUDIENCE, not just engages existing followers.\n"
+        "- Study the content-to-growth correlation: double down on content DNA that drives follows.\n"
+        "- Track growth velocity per platform — shift energy toward platforms gaining momentum.\n"
+        "- If a platform's growth is decelerating, diagnose why and recommend corrections.\n"
+        "- Don't just pick the hottest trend — pick trends that ALIGN with the brand AND drive growth.\n"
+        "- If certain content types drive clicks/revenue, call that out explicitly.\n"
         "- Consider content mix: don't suggest 3 promotional posts in a row.\n"
         "- If engagement sentiment is negative, address it in the strategy.\n"
-        "- If certain content types outperform, lean into them.\n"
         "- Use competitor intelligence to find content gaps they're missing.\n"
-        "- If competitors are weak in an area, suggest content that exploits that gap.\n"
         "- Flag any risks or issues that need human attention.\n\n"
         f"The user needs approximately {seeds_needed} new content ideas "
         f"(they have {already_queued} already queued, target is ~{target_posts}/day).\n"
@@ -297,7 +457,7 @@ def _make_strategic_decisions(user, inputs):
         '"content_plan": list of content seed objects to create, each with:\n'
         '  - "idea": the content seed idea (2-3 sentences, specific and actionable)\n'
         '  - "reasoning": why this idea right now (1 sentence)\n'
-        '  - "source": "trend" | "performance" | "engagement" | "gap" | "seasonal"\n'
+        '  - "source": "trend" | "performance" | "engagement" | "gap" | "seasonal" | "growth"\n'
         '  - "priority": "high" | "medium"\n'
         '  - "platforms": list of target platforms\n\n'
         '"recommendations": list of 2-4 strategic recommendations, each with:\n'
@@ -305,6 +465,11 @@ def _make_strategic_decisions(user, inputs):
         '  - "reasoning": why (1 sentence)\n'
         '  - "urgency": "now" | "this_week" | "ongoing"\n\n'
         '"engagement_insights": 1-2 sentences about engagement patterns and what they mean\n\n'
+        '"growth_assessment": your assessment of audience growth health. Include:\n'
+        '  - "status": "growing" | "stagnant" | "declining"\n'
+        '  - "velocity": brief description of growth speed\n'
+        '  - "best_platform": which platform is growing fastest and why\n'
+        '  - "action_items": 1-3 specific actions to accelerate growth\n\n'
         '"alerts": list of any warnings or issues (e.g., "Negative sentiment trending up — '
         'consider addressing customer complaints publicly"). Empty list if none.\n'
     )
@@ -336,6 +501,42 @@ def _make_strategic_decisions(user, inputs):
         f"Connected: {', '.join(inputs['platforms'])}\n\n"
         f"=== COMPETITOR INTELLIGENCE ===\n"
         f"{json.dumps(inputs.get('competitor_intel', {}), indent=2, default=str)[:1500]}\n\n"
+    )
+
+    # Growth intelligence section
+    gi = inputs.get("growth_intelligence", {})
+    growth_summary = gi.get("growth_summary")
+    content_growth = gi.get("content_growth_correlation")
+    revenue = gi.get("revenue_signals")
+
+    if growth_summary:
+        prompt += (
+            f"=== GROWTH INTELLIGENCE (Follower Velocity) ===\n"
+            f"{json.dumps(growth_summary, indent=2, default=str)}\n\n"
+        )
+
+    if content_growth:
+        prompt += (
+            f"=== CONTENT-TO-GROWTH CORRELATION ===\n"
+            f"Growth drivers (content types that grow followers):\n"
+            f"{json.dumps(content_growth.get('growth_drivers', []), indent=2, default=str)}\n"
+        )
+        killers = content_growth.get("growth_killers", [])
+        if killers:
+            prompt += f"Growth killers (content types that lose followers):\n{json.dumps(killers, indent=2, default=str)}\n"
+        prompt += "\n"
+
+    if revenue:
+        prompt += (
+            f"=== REVENUE SIGNALS ===\n"
+            f"Total clicks (30d): {revenue.get('total_clicks', 0)}\n"
+            f"Clicks by platform: {json.dumps(revenue.get('clicks_by_platform', {}))}\n"
+            f"Total revenue: ${revenue.get('total_revenue', 0):.2f}\n"
+            f"Conversions: {revenue.get('conversions', 0)}\n"
+            f"Top click posts: {json.dumps(revenue.get('top_click_posts', [])[:3], indent=2, default=str)}\n\n"
+        )
+
+    prompt += (
         f"=== USER GOALS ===\n"
         f"{json.dumps(inputs['user_context'].get('goals', []))}\n\n"
     )
@@ -366,7 +567,7 @@ def _make_strategic_decisions(user, inputs):
         model=get_model_for_task("strategist.decide", user=user),
         json_mode=True,
         temperature=0.5,
-        max_tokens=2500,
+        max_tokens=3500,
     )
 
     try:
@@ -380,7 +581,7 @@ def _make_strategic_decisions(user, inputs):
             model=get_model_for_task("strategist.decide", user=user),
             json_mode=True,
             temperature=0.3,
-            max_tokens=2500,
+            max_tokens=3500,
         )
         try:
             result = parse_llm_json(retry_response.content)
@@ -505,4 +706,5 @@ def get_engagement_report(user, days=7):
         "by_platform": platform_counts,
         "top_interactions": top_interactions,
         "superfans": _get_top_engagers(user, days),
+        "growth_summary": GrowthSnapshot.get_growth_summary(user, days=7),
     }

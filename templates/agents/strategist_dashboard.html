@@ -1,0 +1,323 @@
+{% extends "layouts/app.html" %}
+{% load humanize %}
+
+{% block page_title %}Growth Advisor{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Strategist Agent — audience growth intelligence</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+  {# ── Top-line Growth Metrics ─────────────────────────────────────────── #}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="card">
+      <div class="card-body p-4 text-center">
+        <p class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{{ total_followers|intcomma }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Total Followers</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body p-4 text-center">
+        <p class="text-2xl font-bold tabular-nums {% if total_delta_7d > 0 %}text-green-600 dark:text-green-400{% elif total_delta_7d < 0 %}text-red-600 dark:text-red-400{% else %}text-gray-900 dark:text-white{% endif %}">
+          {% if total_delta_7d > 0 %}+{% endif %}{{ total_delta_7d|intcomma }}
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">7-Day Growth</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body p-4 text-center">
+        <p class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
+          {% if revenue_signals %}{{ revenue_signals.total_clicks|intcomma }}{% else %}0{% endif %}
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Clicks (30d)</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body p-4 text-center">
+        <p class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
+          {% if revenue_signals %}${{ revenue_signals.total_revenue|floatformat:0|intcomma }}{% else %}$0{% endif %}
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Revenue (30d)</p>
+      </div>
+    </div>
+  </div>
+
+  {# ── Growth Assessment (from Strategist LLM) ───────────────────────── #}
+  {% if growth_assessment %}
+  <div class="card">
+    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+        <span class="text-lg">🧠</span> AI Growth Assessment
+      </h3>
+    </div>
+    <div class="card-body space-y-3">
+      <div class="flex items-center gap-3">
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
+          {% if growth_assessment.status == 'growing' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
+          {% elif growth_assessment.status == 'declining' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
+          {% else %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400{% endif %}">
+          {{ growth_assessment.status|default:"pending"|title }}
+        </span>
+        {% if growth_assessment.velocity %}
+        <span class="text-sm text-gray-600 dark:text-gray-300">{{ growth_assessment.velocity }}</span>
+        {% endif %}
+      </div>
+
+      {% if growth_assessment.best_platform %}
+      <p class="text-sm text-gray-700 dark:text-gray-300">
+        <strong>Best platform:</strong> {{ growth_assessment.best_platform }}
+      </p>
+      {% endif %}
+
+      {% if growth_assessment.action_items %}
+      <div>
+        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Action Items</p>
+        <ul class="space-y-1">
+          {% for item in growth_assessment.action_items %}
+          <li class="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <span class="text-kova-500 mt-0.5">→</span> {{ item }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Per-Platform Growth ────────────────────────────────────────────── #}
+  {% if growth_summary %}
+  <div class="card">
+    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+        <span class="text-lg">📈</span> Platform Growth (30 days)
+      </h3>
+    </div>
+    <div class="card-body">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for platform, data in growth_summary.items %}
+        <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium text-gray-900 dark:text-white capitalize">{{ platform }}</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+              {% if data.trend == 'accelerating' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
+              {% elif data.trend == 'decelerating' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
+              {% elif data.trend == 'steady' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+              {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+              {% if data.trend %}{{ data.trend|title }}{% elif data.status %}{{ data.status|title }}{% endif %}
+            </span>
+          </div>
+
+          <div class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
+            {{ data.current_followers|intcomma }}
+            <span class="text-sm font-normal
+              {% if data.total_growth > 0 %}text-green-600 dark:text-green-400
+              {% elif data.total_growth < 0 %}text-red-600 dark:text-red-400
+              {% else %}text-gray-400{% endif %}">
+              {% if data.total_growth %}
+                {% if data.total_growth > 0 %}+{% endif %}{{ data.total_growth|intcomma }}
+              {% endif %}
+            </span>
+          </div>
+
+          {% if data.daily_velocity is not None %}
+          <div class="grid grid-cols-2 gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <div>
+              <span class="block text-gray-900 dark:text-white font-medium tabular-nums">{{ data.daily_velocity }}/day</span>
+              Velocity
+            </div>
+            <div>
+              <span class="block text-gray-900 dark:text-white font-medium tabular-nums">{{ data.weekly_velocity }}/week</span>
+              Weekly
+            </div>
+          </div>
+          {% endif %}
+
+          {% if data.best_day %}
+          <div class="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800">
+            Best day: <span class="text-green-600 dark:text-green-400 font-medium">+{{ data.best_day.delta }}</span> on {{ data.best_day.date }}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="card">
+    <div class="card-body text-center py-12">
+      <div class="text-4xl mb-3">📊</div>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Growth data collecting</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-md mx-auto">
+        Follower snapshots are taken daily. Growth trends will appear here within 2-3 days of tracking.
+      </p>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Content-to-Growth Correlation ─────────────────────────────────── #}
+  {% if content_growth %}
+  <div class="card">
+    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+        <span class="text-lg">🔗</span> Content → Growth Correlation
+      </h3>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+        Which content types drive follower growth (avg followers gained 1-3 days after posting)
+      </p>
+    </div>
+    <div class="card-body">
+      {% if content_growth.growth_drivers %}
+      <div class="space-y-2">
+        <p class="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider">Growth Drivers</p>
+        {% for driver in content_growth.growth_drivers %}
+        <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+              {{ driver.attribute }}
+            </span>
+            <span class="text-xs text-gray-400">{{ driver.post_count }} posts</span>
+          </div>
+          <span class="text-sm font-medium tabular-nums {% if driver.avg_growth_after_post > 0 %}text-green-600 dark:text-green-400{% else %}text-gray-600{% endif %}">
+            {% if driver.avg_growth_after_post > 0 %}+{% endif %}{{ driver.avg_growth_after_post }} followers/post
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if content_growth.growth_killers %}
+      <div class="mt-4 space-y-2">
+        <p class="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wider">Growth Killers</p>
+        {% for killer in content_growth.growth_killers %}
+        <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400">
+            {{ killer.attribute }}
+          </span>
+          <span class="text-sm font-medium tabular-nums text-red-600 dark:text-red-400">
+            {{ killer.avg_growth_after_post }} followers/post
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Revenue Signals ────────────────────────────────────────────────── #}
+  {% if revenue_signals %}
+  <div class="card">
+    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+        <span class="text-lg">💰</span> Revenue Signals
+      </h3>
+    </div>
+    <div class="card-body">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+        <div class="text-center">
+          <p class="text-lg font-bold text-gray-900 dark:text-white tabular-nums">{{ revenue_signals.total_clicks|intcomma }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Total Clicks</p>
+        </div>
+        <div class="text-center">
+          <p class="text-lg font-bold text-gray-900 dark:text-white tabular-nums">${{ revenue_signals.total_revenue|floatformat:0|intcomma }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Revenue</p>
+        </div>
+        <div class="text-center">
+          <p class="text-lg font-bold text-gray-900 dark:text-white tabular-nums">{{ revenue_signals.conversions|intcomma }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Conversions</p>
+        </div>
+        <div class="text-center">
+          <p class="text-lg font-bold text-gray-900 dark:text-white tabular-nums">
+            {% if revenue_signals.conversions %}${{ revenue_signals.total_revenue|floatformat:0 }}{% else %}—{% endif %}
+          </p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Avg per Conversion</p>
+        </div>
+      </div>
+
+      {% if revenue_signals.clicks_by_platform %}
+      <div class="border-t border-gray-100 dark:border-gray-800 pt-4">
+        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Clicks by Platform</p>
+        <div class="flex flex-wrap gap-3">
+          {% for platform, clicks in revenue_signals.clicks_by_platform.items %}
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800">
+            <span class="text-sm capitalize font-medium text-gray-900 dark:text-white">{{ platform }}</span>
+            <span class="text-sm tabular-nums text-gray-500 dark:text-gray-400">{{ clicks|intcomma }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Recent Strategy Recommendations ───────────────────────────────── #}
+  {% if strategy_data.recommendations %}
+  <div class="card">
+    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+        <span class="text-lg">💡</span> Latest Recommendations
+      </h3>
+      {% if latest_strategy %}
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+        From strategy cycle on {{ latest_strategy.created_at|date:"M d, Y \a\t g:iA" }}
+      </p>
+      {% endif %}
+    </div>
+    <div class="card-body space-y-3">
+      {% for rec in strategy_data.recommendations %}
+      <div class="flex items-start gap-3 py-2 {% if not forloop.last %}border-b border-gray-100 dark:border-gray-800{% endif %}">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 mt-0.5
+          {% if rec.urgency == 'now' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
+          {% elif rec.urgency == 'this_week' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400
+          {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+          {{ rec.urgency|default:"ongoing" }}
+        </span>
+        <div>
+          <p class="text-sm text-gray-900 dark:text-white">{{ rec.action }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ rec.reasoning }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Recent Strategy Cycles ─────────────────────────────────────────── #}
+  {% if recent_cycles %}
+  <div class="card">
+    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+        <span class="text-lg">📋</span> Recent Strategy Cycles
+      </h3>
+    </div>
+    <div class="card-body">
+      <div class="space-y-2">
+        {% for cycle in recent_cycles %}
+        <div class="flex items-center justify-between py-2 {% if not forloop.last %}border-b border-gray-100 dark:border-gray-800{% endif %}">
+          <div>
+            <p class="text-sm text-gray-900 dark:text-white">{{ cycle.created_at|date:"M d, Y" }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              {{ cycle.output_data.seeds_created|default:0 }} seeds created ·
+              {{ cycle.output_data.recommendations|length|default:0 }} recommendations
+            </p>
+          </div>
+          {% if cycle.outcome_score is not None %}
+          <span class="text-sm font-medium tabular-nums
+            {% if cycle.outcome_score >= 70 %}text-green-600 dark:text-green-400
+            {% elif cycle.outcome_score >= 40 %}text-yellow-600 dark:text-yellow-400
+            {% else %}text-red-600 dark:text-red-400{% endif %}">
+            {{ cycle.outcome_score }}/100
+          </span>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
