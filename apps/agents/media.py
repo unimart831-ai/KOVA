@@ -90,10 +90,10 @@ def _enhance_prompt(prompt: str, platform: str, profile=None) -> str:
 # ─── PER-TIER IMAGE MODEL ROUTING ────────────────────────────────────────────
 
 TIER_IMAGE_MODELS = {
-    "starter": "black-forest-labs/FLUX.1-schnell",
-    "growth":  "black-forest-labs/FLUX.1-dev",
-    "pro":     "black-forest-labs/FLUX.1-pro-1.1-ultra",
-    "agency":  "black-forest-labs/FLUX.1-pro-1.1-ultra",
+    "starter": "black-forest-labs/FLUX.1-schnell",       # ~$0.003/img — fast, good quality
+    "growth":  "black-forest-labs/FLUX.1-krea-dev",      # ~$0.025/img — significantly better detail
+    "pro":     "black-forest-labs/FLUX.1.1-pro",         # $0.04/img  — best FLUX quality
+    "agency":  "black-forest-labs/FLUX.1.1-pro",         # $0.04/img  — best FLUX quality
 }
 
 
@@ -109,10 +109,9 @@ def _fetch_together(prompt: str, width: int, height: int, *, model_override: str
     """Together.ai — FLUX.1 (paid, tier-routed).
 
     Model controlled by model_override param or TOGETHER_IMAGE_MODEL setting:
-      - "black-forest-labs/FLUX.1-schnell"           — $0.003/image (Starter)
-      - "black-forest-labs/FLUX.1-dev"               — $0.01/image  (Growth)
-      - "black-forest-labs/FLUX.1-pro-1.1-ultra"     — $0.04/image  (Pro/Agency)
-      - "black-forest-labs/FLUX.1-schnell-Free"       — free but rate-limited
+      - "black-forest-labs/FLUX.1-schnell"           — ~$0.003/image (Starter)
+      - "black-forest-labs/FLUX.1-krea-dev"          — ~$0.025/image (Growth)
+      - "black-forest-labs/FLUX.1.1-pro"             — $0.04/image   (Pro/Agency)
     """
     api_key = getattr(settings, "TOGETHER_API_KEY", "")
     if not api_key:
