@@ -868,16 +868,18 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
             ])
 
             # Generate visual for the post (plan-gated with monthly limit)
-            # Images are only auto-generated for platforms that REQUIRE them
-            # (Instagram, TikTok, Pinterest). Other platforms get text-only posts
-            # by default — users can always upload their own images manually.
+            # Images are auto-generated for platforms that REQUIRE them
+            # (Instagram, TikTok, Pinterest). For text-first platforms
+            # (Facebook, LinkedIn, etc.), images are generated only if the
+            # user opted-in via the "Generate AI images" checkbox on the seed.
             has_visual_request = image_prompt or visual_strategy_data.get("strategy", "none") != "none"
 
             # Determine if this platform requires media
             post_platform = post.social_account.platform if post.social_account else ""
             platform_requires_media = post_platform in Post.MEDIA_REQUIRED_PLATFORMS
+            user_opted_in_images = getattr(seed, "generate_images", False)
 
-            if has_visual_request and platform_requires_media:
+            if has_visual_request and (platform_requires_media or user_opted_in_images):
                 from apps.billing.models import get_plan_limits
                 user_plan = getattr(getattr(seed.user, "profile", None), "plan", "starter")
                 plan_limits = get_plan_limits(user_plan)

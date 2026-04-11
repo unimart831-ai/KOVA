@@ -26,6 +26,10 @@ class ContentSeed(models.Model):
         default=list, blank=True,
         help_text='Platforms to generate for, e.g. ["twitter", "linkedin"]. Empty = all connected.',
     )
+    generate_images = models.BooleanField(
+        default=False,
+        help_text="When True, generate AI images for ALL platforms (not just visual-first ones like Instagram).",
+    )
     status = models.CharField(max_length=20, choices=SeedStatus.choices, default=SeedStatus.NEW, db_index=True)
     error_message = models.TextField(blank=True)
     batch_strategy = models.TextField(blank=True, help_text="AI-generated content strategy for this batch of posts.")

@@ -33,6 +33,7 @@ urlpatterns = [
     path("<uuid:post_id>/card-upload/", views.card_upload_media, name="card_upload_media"),
     path("<uuid:post_id>/clear-media/", views.clear_ai_media, name="clear_ai_media"),
     path("<uuid:post_id>/retry-image/", views.retry_image, name="retry_image"),
+    path("<uuid:post_id>/generate-image/", views.generate_image, name="generate_image"),
     path("<uuid:post_id>/media/<uuid:attachment_id>/delete/", views.delete_media, name="delete_media"),
     path("<uuid:post_id>/", views.post_detail, name="post_detail"),
 ]

@@ -8,7 +8,7 @@ class ContentSeedForm(forms.ModelForm):
 
     class Meta:
         model = ContentSeed
-        fields = ["idea", "notes", "target_platforms"]
+        fields = ["idea", "notes", "target_platforms", "generate_images"]
         widgets = {
             "idea": forms.Textarea(attrs={
                 "rows": 3,

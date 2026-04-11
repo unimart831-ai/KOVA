@@ -50,6 +50,12 @@ def content_studio(request):
     from apps.agents.playbooks import get_seed_suggestions
     seed_suggestions = get_seed_suggestions(request.user)
 
+    # Check if user's plan supports AI image generation
+    from apps.billing.models import get_plan_limits
+    user_plan = getattr(getattr(request.user, "profile", None), "plan", "starter")
+    plan_limits = get_plan_limits(user_plan)
+    can_generate_images = plan_limits.get("ai_image_generation", False)
+
     return render(request, "content/studio.html", {
         "seed_groups": seed_groups,
         "ungrouped_posts": ungrouped,
@@ -59,6 +65,7 @@ def content_studio(request):
         "connected_platforms": json.dumps(connected_platforms),
         "total_pending": total_pending,
         "seed_suggestions": seed_suggestions,
+        "can_generate_images": can_generate_images,
         "current_status": request.GET.get("status", ""),
         "current_platform": request.GET.get("platform", ""),
         "current_search": request.GET.get("q", ""),
@@ -763,6 +770,77 @@ def retry_image(request, post_id):
             '⏳ Retrying…</span>'
         )
     messages.info(request, "Retrying image generation…")
+    return redirect("content:edit", post_id=post.id)
+
+
+@login_required
+@require_POST
+def generate_image(request, post_id):
+    """Generate an AI image for a post that doesn't have one yet (opt-in for text-first platforms)."""
+    post = get_object_or_404(
+        Post.objects.select_related("user", "user__profile", "social_account"), id=post_id,
+    )
+    if not can_edit_post(request.user, post):
+        raise Http404
+
+    # Only allow for posts without images
+    if post.media_status in (Post.MediaStatus.GENERATED, Post.MediaStatus.PENDING):
+        if request.headers.get("HX-Request"):
+            return HttpResponse(
+                '<span class="text-[10px] font-medium px-2 py-0.5 rounded-md '
+                'bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400">'
+                'Image already exists or is generating</span>'
+            )
+        return redirect("content:edit", post_id=post.id)
+
+    # Check plan allows AI images
+    from apps.billing.models import get_plan_limits
+    user_plan = getattr(getattr(post.user, "profile", None), "plan", "starter")
+    plan_limits = get_plan_limits(user_plan)
+    if not plan_limits.get("ai_image_generation", False):
+        if request.headers.get("HX-Request"):
+            return HttpResponse(
+                '<span class="text-[10px] font-medium px-2 py-0.5 rounded-md '
+                'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400">'
+                'Upgrade your plan for AI images</span>',
+                status=403,
+            )
+        messages.error(request, "Your plan doesn't include AI image generation.")
+        return redirect("content:edit", post_id=post.id)
+
+    # Check monthly limit
+    from django.utils import timezone as tz
+    monthly_limit = plan_limits.get("ai_images_per_month", 5)
+    month_start = tz.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    images_this_month = Post.objects.filter(
+        user=post.user, media_status="generated", created_at__gte=month_start,
+    ).count()
+    if images_this_month >= monthly_limit:
+        if request.headers.get("HX-Request"):
+            return HttpResponse(
+                f'<span class="text-[10px] font-medium px-2 py-0.5 rounded-md '
+                f'bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400">'
+                f'Monthly limit reached ({images_this_month}/{monthly_limit})</span>'
+            )
+        messages.warning(request, f"Monthly image limit reached ({images_this_month}/{monthly_limit}).")
+        return redirect("content:edit", post_id=post.id)
+
+    # Use stored prompt or generate a basic one from content
+    prompt = post.media_prompt
+    if not prompt:
+        prompt = f"Social media image for: {post.content_text[:200]}"
+        post.media_prompt = prompt
+
+    post.media_status = Post.MediaStatus.PENDING
+    post.save(update_fields=["media_status", "media_prompt", "updated_at"])
+
+    from apps.content.tasks import async_generate_image
+    visual_strategy_data = post.visual_metadata.get("strategy_data") if post.visual_metadata else None
+    fire_task(async_generate_image, str(post.id), prompt, visual_strategy_data)
+
+    if request.headers.get("HX-Request"):
+        return render(request, "components/post_card.html", {"post": post})
+    messages.info(request, "Generating AI image…")
     return redirect("content:edit", post_id=post.id)
 
 
