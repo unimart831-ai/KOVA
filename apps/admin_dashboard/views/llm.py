@@ -14,6 +14,38 @@ from apps.agents.models import AgentAction, LLMConfig
 from apps.billing.models import PLAN_LIMITS
 
 
+# ── Image model catalog for the quick-select UI ─────────────────────────
+POPULAR_IMAGE_MODELS = {
+    "FLUX (Together.ai)": [
+        ("black-forest-labs/FLUX.1-schnell", "FLUX.1 Schnell — ~$0.003/img · fast, good quality"),
+        ("black-forest-labs/FLUX.1-krea-dev", "FLUX.1 Krea Dev — ~$0.025/img · better detail"),
+        ("black-forest-labs/FLUX.1.1-pro", "FLUX.1.1 Pro — $0.04/img · best FLUX quality"),
+        ("black-forest-labs/FLUX.1-kontext-pro", "FLUX.1 Kontext Pro — $0.04/img · image editing"),
+        ("black-forest-labs/FLUX.2-pro", "FLUX.2 Pro — latest generation"),
+        ("black-forest-labs/FLUX.2-dev", "FLUX.2 Dev — latest dev tier"),
+    ],
+    "Google Imagen (Together.ai)": [
+        ("google/imagen-4.0-fast", "Imagen 4.0 Fast — $0.02/img"),
+        ("google/imagen-4.0-preview", "Imagen 4.0 Preview — $0.04/img"),
+        ("google/imagen-4.0-ultra", "Imagen 4.0 Ultra — $0.06/img · highest quality"),
+    ],
+    "Other (Together.ai)": [
+        ("ByteDance-Seed/Seedream-4.0", "Seedream 4.0 — $0.03/img"),
+        ("ideogram/ideogram-3.0", "Ideogram 3.0 — $0.06/img · text in images"),
+        ("RunDiffusion/Juggernaut-pro-flux", "Juggernaut Pro — $0.005/img · budget"),
+        ("stabilityai/stable-diffusion-xl-base-1.0", "SDXL — $0.002/img · cheapest"),
+    ],
+}
+
+# Default image models per plan (mirrors TIER_IMAGE_MODELS in media.py)
+DEFAULT_IMAGE_PLAN_MODELS = {
+    "starter": {"model": "black-forest-labs/FLUX.1-schnell", "provider": "together", "price": "~$0.003"},
+    "growth":  {"model": "black-forest-labs/FLUX.1-krea-dev", "provider": "together", "price": "~$0.025"},
+    "pro":     {"model": "black-forest-labs/FLUX.1.1-pro", "provider": "together", "price": "$0.04"},
+    "agency":  {"model": "black-forest-labs/FLUX.1.1-pro", "provider": "together", "price": "$0.04"},
+}
+
+
 # ── All available task keys (for the per-task override UI) ───────────────
 TASK_KEYS = [
     ("create.generate", "Create → Generate posts"),
@@ -233,6 +265,22 @@ def llm_overview(request):
             "is_custom": bool(current),
         })
 
+    # Build per-plan image model config display
+    image_plan_models = config.image_plan_models if config.pk else {}
+    image_plan_display = []
+    for plan_code, plan_label in PLAN_TIERS:
+        plan_img = image_plan_models.get(plan_code, {})
+        defaults = DEFAULT_IMAGE_PLAN_MODELS.get(plan_code, {})
+        image_plan_display.append({
+            "code": plan_code,
+            "label": PLAN_LIMITS.get(plan_code, {}).get("label", plan_label),
+            "model": plan_img.get("model", ""),
+            "provider": plan_img.get("provider", ""),
+            "default_model": defaults.get("model", ""),
+            "default_price": defaults.get("price", ""),
+            "has_override": bool(plan_img.get("model")),
+        })
+
     return render(request, "admin_dashboard/agents/llm_overview.html", {
         "page_title": "LLM Configuration",
         "config": config,
@@ -252,6 +300,10 @@ def llm_overview(request):
         "model_presets": MODEL_PRESETS,
         "task_keys": TASK_KEYS,
         "plan_tiers": PLAN_TIERS,
+        # Image config
+        "popular_image_models": POPULAR_IMAGE_MODELS,
+        "image_plan_config": image_plan_display,
+        "default_image_plan_models": DEFAULT_IMAGE_PLAN_MODELS,
         # Strategy roadmap data
         "strategy_phases": _get_strategy_phases(),
         "model_benchmark": _get_model_benchmark(),
@@ -324,6 +376,61 @@ def llm_update_plan_models(request):
     config.save()
 
     messages.success(request, "Per-plan model routing updated. Changes take effect immediately.")
+    return redirect("admin_dashboard:llm_overview")
+
+
+# ── Image Generation Configuration ───────────────────────────────────────
+
+@superuser_required
+@require_POST
+def llm_update_image_config(request):
+    """Save global image generation configuration."""
+    config = LLMConfig.load()
+    if not config.pk:
+        config.pk = 1
+
+    config.image_default_provider = request.POST.get("image_default_provider", "").strip() or "together"
+    config.image_default_model = request.POST.get("image_default_model", "").strip() or config.image_default_model
+    config.image_enabled = request.POST.get("image_enabled") == "on"
+
+    # Fallback chain
+    chain_raw = request.POST.get("image_fallback_chain", "").strip()
+    if chain_raw:
+        config.image_fallback_chain = [p.strip() for p in chain_raw.split(",") if p.strip()]
+    else:
+        config.image_fallback_chain = ["together", "huggingface", "pollinations"]
+
+    config.updated_by = request.user
+    config.save()
+
+    messages.success(request, "Image generation config updated. Changes take effect immediately.")
+    return redirect("admin_dashboard:llm_overview")
+
+
+@superuser_required
+@require_POST
+def llm_update_image_plan_models(request):
+    """Save per-plan image model routing."""
+    config = LLMConfig.load()
+    if not config.pk:
+        config.pk = 1
+
+    plan_models = config.image_plan_models or {}
+
+    for plan_code, _ in PLAN_TIERS:
+        model = request.POST.get(f"img_{plan_code}_model", "").strip()
+        provider = request.POST.get(f"img_{plan_code}_provider", "").strip()
+
+        if model:
+            plan_models[plan_code] = {"model": model, "provider": provider or "together"}
+        elif plan_code in plan_models:
+            del plan_models[plan_code]
+
+    config.image_plan_models = plan_models
+    config.updated_by = request.user
+    config.save()
+
+    messages.success(request, "Per-plan image model routing updated. Changes take effect immediately.")
     return redirect("admin_dashboard:llm_overview")
 
 

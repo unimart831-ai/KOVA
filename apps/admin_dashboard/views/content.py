@@ -136,6 +136,10 @@ def post_list(request):
     if content_type:
         qs = qs.filter(content_type=content_type)
 
+    visual = request.GET.get("visual", "")
+    if visual:
+        qs = qs.filter(visual_strategy=visual)
+
     # ── Sort ─────────────────────────────────────────────────────────────
     sort = request.GET.get("sort", "-created_at")
     valid_sorts = {
@@ -159,10 +163,12 @@ def post_list(request):
         "current_platform": platform,
         "current_agent": agent,
         "current_type": content_type,
+        "current_visual": visual,
         "current_sort": sort,
         "total_count": paginator.count,
         "status_choices": Post.Status.choices,
         "type_choices": Post.ContentType.choices,
+        "visual_choices": Post.VISUAL_STRATEGY_CHOICES,
     }
     return render(request, "admin_dashboard/content/posts.html", context)
 

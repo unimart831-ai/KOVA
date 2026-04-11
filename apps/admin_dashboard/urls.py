@@ -34,6 +34,8 @@ urlpatterns = [
     path("llm/plan-models/", llm.llm_update_plan_models, name="llm_update_plan_models"),
     path("llm/rate-limits/", llm.llm_update_rate_limits, name="llm_update_rate_limits"),
     path("llm/apply-preset/", llm.llm_apply_preset, name="llm_apply_preset"),
+    path("llm/image-config/", llm.llm_update_image_config, name="llm_update_image_config"),
+    path("llm/image-plan-models/", llm.llm_update_image_plan_models, name="llm_update_image_plan_models"),
 
     # Platforms
     path("platforms/", platforms.platform_overview, name="platform_overview"),

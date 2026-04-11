@@ -190,6 +190,28 @@ class LLMConfig(models.Model):
         help_text="Whether to auto-escalate to paid model when free models fail.",
     )
 
+    # ── Image Generation Config ──────────────────────────────────────
+    image_default_provider = models.CharField(
+        max_length=30, default="together",
+        help_text="Primary image provider: together, huggingface, pollinations.",
+    )
+    image_default_model = models.CharField(
+        max_length=120, default="black-forest-labs/FLUX.1-schnell",
+        help_text="Default image model when no plan-specific model is configured.",
+    )
+    image_plan_models = models.JSONField(
+        default=dict, blank=True,
+        help_text='Per-plan image model routing. {"starter": {"model": "...", "provider": "together"}, ...}',
+    )
+    image_fallback_chain = models.JSONField(
+        default=list, blank=True,
+        help_text='Ordered fallback providers: ["together", "huggingface", "pollinations"]',
+    )
+    image_enabled = models.BooleanField(
+        default=True,
+        help_text="Global kill-switch for AI image generation.",
+    )
+
     # ── Meta ─────────────────────────────────────────────────────────
     updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.ForeignKey(
@@ -257,3 +279,17 @@ class LLMConfig(models.Model):
         # Apply per-task overrides (these override everything)
         tier_mapping.update(self.task_model_overrides or {})
         return tier_mapping
+
+    def get_image_model(self, plan=None):
+        """Return (model_id, provider) for the given plan.
+
+        Resolution: plan-specific override → global default → hardcoded fallback.
+        """
+        plan_cfg = (self.image_plan_models or {}).get(plan, {}) if plan else {}
+        model = plan_cfg.get("model") or self.image_default_model or "black-forest-labs/FLUX.1-schnell"
+        provider = plan_cfg.get("provider") or self.image_default_provider or "together"
+        return model, provider
+
+    def get_image_fallback_chain(self):
+        """Return ordered list of fallback providers."""
+        return self.image_fallback_chain or ["together", "huggingface", "pollinations"]

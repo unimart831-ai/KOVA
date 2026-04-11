@@ -98,8 +98,23 @@ TIER_IMAGE_MODELS = {
 
 
 def _get_image_model_for_tier(profile) -> str:
-    """Return the Together.ai model name based on user's plan tier."""
+    """Return the image model name based on user's plan tier.
+
+    Resolution order: DB config (LLMConfig singleton) → hardcoded TIER_IMAGE_MODELS.
+    """
     plan = getattr(profile, "plan", "starter") if profile else "starter"
+
+    # Try DB config first (runtime-adjustable from admin dashboard)
+    try:
+        from apps.agents.models import LLMConfig
+        config = LLMConfig.load()
+        if config.pk:
+            model, _provider = config.get_image_model(plan)
+            if model:
+                return model
+    except Exception:
+        pass  # DB not ready or migration pending — fall through
+
     return TIER_IMAGE_MODELS.get(plan, TIER_IMAGE_MODELS["starter"])
 
 
@@ -224,6 +239,16 @@ def generate_post_image(post, image_prompt: str) -> str | None:
     """
     if not getattr(settings, "AI_IMAGE_GENERATION_ENABLED", False):
         return None
+
+    # Check DB kill-switch (admin dashboard → Image Config → Enable toggle)
+    try:
+        from apps.agents.models import LLMConfig
+        config = LLMConfig.load()
+        if config.pk and not config.image_enabled:
+            logger.info("Image generation disabled via admin dashboard")
+            return None
+    except Exception:
+        pass
 
     if not image_prompt or not image_prompt.strip():
         return None

@@ -48,6 +48,15 @@
         {% endfor %}
       </select>
     </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Visual</label>
+      <select name="visual" class="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <option value="">All Visuals</option>
+        {% for value, label in visual_choices %}
+        <option value="{{ value }}" {% if current_visual == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors">Filter</button>
     <a href="{% url 'admin_dashboard:post_list' %}" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Reset</a>
   </div>
@@ -63,6 +72,7 @@
           <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
           <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Platform</th>
           <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Visual</th>
           <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
           <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
             <a href="?sort={% if current_sort == '-created_at' %}created_at{% else %}-created_at{% endif %}&q={{ search }}&status={{ current_status }}&platform={{ current_platform }}&type={{ current_type }}" class="hover:text-gray-900 dark:hover:text-white">
@@ -93,13 +103,25 @@
           </td>
           <td class="px-4 py-3 text-xs text-gray-600 dark:text-gray-400 capitalize">{{ post.content_type }}</td>
           <td class="px-4 py-3">
+            {% if post.visual_strategy and post.visual_strategy != 'none' %}
+            <span class="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+              {% if post.visual_strategy == 'carousel' %}📑 Carousel{% elif post.visual_strategy == 'quote_card' %}💬 Quote{% elif post.visual_strategy == 'tip_graphic' %}💡 Tips{% elif post.visual_strategy == 'stat_highlight' %}📊 Stat{% elif post.visual_strategy == 'cta_banner' %}🎯 CTA{% elif post.visual_strategy == 'ai_photo' %}🎨 Photo{% elif post.visual_strategy == 'story_graphic' %}📱 Story{% else %}{{ post.visual_strategy }}{% endif %}
+            </span>
+            {% endif %}
+            {% if post.media_status == 'generated' %}
+            <span class="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">🖼️</span>
+            {% elif post.media_status == 'failed' %}
+            <span class="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300">⚠</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
             <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {{ post.status|status_color }}">{{ post.get_status_display }}</span>
           </td>
           <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{{ post.created_at|timesince }} ago</td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="6" class="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">No posts found.</td>
+          <td colspan="7" class="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">No posts found.</td>
         </tr>
         {% endfor %}
       </tbody>
