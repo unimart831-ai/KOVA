@@ -62,8 +62,11 @@ LINKEDIN_TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken"
 LINKEDIN_USERINFO_URL = "https://api.linkedin.com/v2/userinfo"
 LINKEDIN_REST_BASE = "https://api.linkedin.com/rest"
 LINKEDIN_VERSION = getattr(settings, "LINKEDIN_API_VERSION", "202603")
-LINKEDIN_SCOPES = "openid profile r_member_social w_member_social"
-LINKEDIN_ORG_SCOPES = "openid profile r_member_social w_member_social r_organization_social w_organization_social"
+# r_member_social requires LinkedIn Partner Program approval.
+# Without it, socialActions (comments/reactions) returns 403 — handled gracefully.
+# Only request scopes the app actually has access to.
+LINKEDIN_SCOPES = "openid profile w_member_social"
+LINKEDIN_ORG_SCOPES = "openid profile w_member_social r_organization_social w_organization_social"
 
 
 class LinkedInProvider(BaseProvider):
