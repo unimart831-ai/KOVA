@@ -82,6 +82,11 @@ def _log_storage_backend(sender, **kwargs):
         os.environ.get("DJANGO_SETTINGS_MODULE", "<NOT SET>"),
         default_storage.__class__.__name__,
     )
+
+    # Log Fernet key diagnostics to detect web/worker key mismatch
+    from apps.platforms.encryption import _build_fernets
+    _build_fernets()
+
     bucket = getattr(settings, "AWS_STORAGE_BUCKET_NAME", None)
     if bucket:
         logger.info(

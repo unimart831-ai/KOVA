@@ -7,10 +7,15 @@ as base64-encoded Fernet tokens.
 
 Empty/None values pass through without encryption, so DB-level filters
 like `refresh_token__gt=""` continue to work correctly.
+
+Multi-key decryption: Railway may run web/worker as separate services with
+subtly different env resolution. To handle tokens encrypted by any process,
+we collect all plausible keys and try each during decryption.
 """
 
 import hashlib
 import logging
+import os
 
 from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
@@ -19,49 +24,108 @@ from fernet_fields.hkdf import derive_fernet_key
 
 logger = logging.getLogger(__name__)
 
-_fernet_instance = None
-_fernet_key_hash = None
+_primary_fernet = None
+_all_fernets = None  # list of (Fernet, key_hash) tuples
 
 
-def _get_fernet():
-    """Build a Fernet instance from the configured encryption key."""
-    global _fernet_instance, _fernet_key_hash
-    if _fernet_instance is None:
-        keys = getattr(settings, "FERNET_KEYS", [settings.SECRET_KEY])
-        raw_key = keys[0]
+def _build_fernets():
+    """Build Fernet instances for all plausible encryption keys.
+
+    Different Railway processes (web vs worker) may resolve FERNET_KEYS
+    differently due to env-var timing or separate service configs.
+    We collect keys from every source so decryption succeeds regardless
+    of which process encrypted the value.
+    """
+    global _primary_fernet, _all_fernets
+
+    seen_raw = set()
+    raw_keys = []
+
+    def _add(key, source):
+        if key and key not in seen_raw:
+            seen_raw.add(key)
+            raw_keys.append((key, source))
+
+    # 1. FERNET_KEYS from Django settings (primary — used for encryption)
+    for k in getattr(settings, "FERNET_KEYS", []):
+        _add(k, "settings.FERNET_KEYS")
+
+    # 2. SECRET_KEY from Django settings
+    _add(getattr(settings, "SECRET_KEY", ""), "settings.SECRET_KEY")
+
+    # 3. Direct env reads (bypasses django-environ caching)
+    _add(os.environ.get("FIELD_ENCRYPTION_KEY", ""), "env.FIELD_ENCRYPTION_KEY")
+    _add(os.environ.get("SECRET_KEY", ""), "env.SECRET_KEY")
+
+    instances = []
+    for raw_key, source in raw_keys:
         derived = derive_fernet_key(raw_key)
-        _fernet_key_hash = hashlib.sha256(derived if isinstance(derived, bytes) else derived.encode()).hexdigest()[:12]
-        _fernet_instance = Fernet(derived)
-        logger.info("Fernet key initialised (hash=%s)", _fernet_key_hash)
-    return _fernet_instance
+        key_hash = hashlib.sha256(
+            derived if isinstance(derived, bytes) else derived.encode()
+        ).hexdigest()[:12]
+        instances.append((Fernet(derived), key_hash, source))
+
+    _all_fernets = instances
+    _primary_fernet = instances[0] if instances else None
+
+    summary = [(h, s) for _, h, s in instances]
+    logger.info(
+        "Fernet initialised: %d key(s) %s — primary=%s",
+        len(instances),
+        summary,
+        instances[0][1] if instances else "NONE",
+    )
+    return instances
+
+
+def _get_primary():
+    """Return the primary Fernet instance (for encryption)."""
+    if _primary_fernet is None:
+        _build_fernets()
+    return _primary_fernet[0]
+
+
+def _get_all():
+    """Return all Fernet instances (for multi-key decryption)."""
+    if _all_fernets is None:
+        _build_fernets()
+    return _all_fernets
 
 
 def encrypt_token(value):
     """Encrypt a token string. Empty/None values pass through unchanged."""
     if not value:
         return value
-    return _get_fernet().encrypt(value.encode()).decode()
+    return _get_primary().encrypt(value.encode()).decode()
 
 
 def decrypt_token(value):
-    """Decrypt a Fernet token string. Returns plaintext for legacy unencrypted values."""
+    """Decrypt a Fernet token string. Tries all known keys.
+
+    Returns plaintext on success, or the original value if no key works
+    (handles legacy unencrypted values).
+    """
     if not value:
         return value
-    try:
-        return _get_fernet().decrypt(value.encode()).decode()
-    except InvalidToken:
+
+    instances = _get_all()
+    for fernet, key_hash, source in instances:
+        try:
+            return fernet.decrypt(value.encode()).decode()
+        except InvalidToken:
+            continue
+        except Exception:
+            continue
+
+    # All keys exhausted
+    if value.startswith("gAAAAA"):
+        hashes = [h for _, h, _ in instances]
         logger.error(
-            "Fernet InvalidToken: cannot decrypt value (len=%d, prefix=%s, key_hash=%s). "
-            "Possible key mismatch between encrypt and decrypt.",
-            len(value), value[:10], _fernet_key_hash,
+            "ALL %d Fernet keys failed to decrypt (len=%d, prefix=%s, keys=%s). "
+            "Token is unrecoverable — user must reconnect the platform.",
+            len(instances), len(value), value[:10], hashes,
         )
-        return value
-    except Exception as exc:
-        logger.error(
-            "Fernet decrypt unexpected error: %s (value len=%d, prefix=%s, key_hash=%s)",
-            exc, len(value), value[:10], _fernet_key_hash,
-        )
-        return value
+    return value
 
 
 class EncryptedTokenField(models.TextField):
