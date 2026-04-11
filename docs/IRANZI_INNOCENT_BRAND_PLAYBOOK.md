@@ -29,12 +29,7 @@
 
 A Mastercard Foundation Scholar from Nanyuki, Kenya — who didn't wait for graduation to start building.
 
-While studying Data Science at USIU-Africa, you:
-- Built UNIMART AFRICA from zero — a digital marketplace now serving 607 users, 227 vendors, and 1,093 products with zero external funding
-- Trained 200+ students in digital skills and 40 underserved youth in Kibera — 78% of whom got jobs
-- Won Best Cumulative GPA (2023-2025) while shipping production code
-- Taught physics and math to refugee students in Turkana
-- Then built **Kova Agent** — an AI system with 6 autonomous agents, alone, from scratch
+While studying Data Science at USIU-Africa, you built **Kova Agent** — a full AI-powered social media operating system with 6 autonomous agents, solo, from scratch. Research, Create, Predict, Schedule, Engage, Learn — all working 24/7 for African businesses at KES 299/month.
 
 You're not a LinkedIn thought leader who philosophizes about AI. You're a builder who ships AI systems and has the receipts.
 
@@ -44,7 +39,6 @@ You're not a LinkedIn thought leader who philosophizes about AI. You're a builde
 |-----------|---------|
 | **Name** | Iranzi Innocent |
 | **Primary title** | Founder & CEO, Kova Agent |
-| **Secondary role** | Founder, UNIMART AFRICA |
 | **Academic** | BSc Data Science & Analytics, USIU-Africa (Mastercard Foundation Scholar) — Expected 2027 |
 | **Location** | Nairobi, Kenya |
 | **Core identity** | Full-stack developer, data scientist, AI systems builder, and founder |
@@ -64,11 +58,10 @@ You're not a LinkedIn thought leader who philosophizes about AI. You're a builde
 
 1. **Build first, talk later** — The world has enough people with opinions. Ship receipts.
 2. **Africa doesn't need charity tools — Africa needs powerful tools at fair prices** — KES 299/month proves it.
-3. **One person with the right tools can outperform a funded team** — You bootstrapped a marketplace to 600+ users solo. Then built a 6-agent AI system. The tools matter more than the headcount.
-4. **Data science is worthless if it doesn't solve real problems** — Fancy models mean nothing. Impact on real businesses is everything.
+3. **One person with the right AI architecture can outperform a funded team** — 6 agents, 9 platforms, solo-built. The architecture matters more than the headcount.
+4. **AI is worthless if it doesn't solve real problems** — Fancy models mean nothing. Impact on real businesses is everything.
 5. **You don't need permission to start** — You didn't wait for funding, a co-founder, or graduation. You started.
-6. **The best founders teach as they build** — Training 200+ students and 40 underserved youth isn't a side project; it's who you are.
-7. **Zero external funding is a feature, not a limitation** — It means every decision is driven by users, not investors. (Until the right investors show up.)
+6. **Zero external funding is a feature, not a limitation** — It means every decision is driven by users, not investors. (Until the right investors show up.)
 
 ### Personality Traits (If Iranzi Innocent Were Described By a Friend)
 
@@ -107,9 +100,10 @@ You're not a LinkedIn thought leader who philosophizes about AI. You're a builde
 > Not because I couldn't raise — because I wanted to prove the system works before asking anyone for money. Receipts before pitches."
 
 **On a win:**
-> "UNIMART just passed 600 users. 227 vendors. KSh 147K in transactions. Zero external funding.
-> Built this while also building Kova, studying data science, and training youth in Kibera.
-> Not bragging. Just documenting — because someone out there needs to see that you can start before you're ready."
+> "Kova just published its first 50 posts autonomously across LinkedIn and Facebook.
+> Research Agent found the trends. Create Agent wrote the posts. Predict Agent scored them. Schedule Agent picked the times.
+> Zero human intervention after the initial seed.
+> Not bragging. Just documenting — because someone out there needs to see that one developer can build this."
 
 **On the grind:**
 > "3 AM in Nairobi. Debugging a Celery task that won't pick up the right LinkedIn token.
@@ -121,14 +115,9 @@ You're not a LinkedIn thought leader who philosophizes about AI. You're a builde
 > "When I say 'built for Africa,' I mean:
 > — M-Pesa payments, not Stripe-only
 > — KES 299/month, not $99/month
-> — Works on a phone in Kibera, not just a MacBook in Silicon Valley
+> — Mobile-first, not desktop-only
 > — Trained by African business data, not Bay Area assumptions
 > That's not a tagline. That's architecture."
-
-**On teaching:**
-> "40 youth in Kibera. 7 weeks of training. 31 got jobs.
-> That's a 78% placement rate.
-> No fancy bootcamp brand. No venture-funded nonprofit. Just a curriculum built from watching what employers actually hire for, and young people hungry enough to put in the work."
 
 **On failure/honesty:**
 > "My first version of the engagement agent marked every comment under 5 words as spam.
@@ -140,15 +129,15 @@ You're not a LinkedIn thought leader who philosophizes about AI. You're a builde
 
 | Rule | Example |
 |------|---------|
-| Lead with numbers | "607 users, 227 vendors, 0 investors" not "growing marketplace" |
+| Lead with numbers | "6 agents, 9 platforms, KES 299/mo" not "affordable AI tool" |
 | Show, don't tell | Post the screenshot, the metric, the commit | 
 | Short sentences for impact | "One person. Six agents. Nine platforms." |
 | Use "I built" not "we leverage" | Founder voice, not corporate voice |
-| Real timelines | "Built in 8 months" not "after a long journey" |
+| Real timelines | "Shipped in 3 months" not "after a long journey" |
 | Technical but accessible | "Celery task queues" is fine if you explain the outcome |
 | Swahili/Sheng when natural | "Kazi mode" = natural. "Habari dear connections" = cringe |
-| Data > adjectives | "78% placement rate" beats "incredibly impactful program" |
-| Active voice always | "I trained 200+ students" not "200+ students were trained" |
+| Data > adjectives | "$0.025 per AI image" beats "incredibly cost-effective" |
+| Active voice always | "I built 6 agents" not "6 agents were built" |
 
 ### Banned Words & Phrases (Never Use These)
 
@@ -161,7 +150,7 @@ You're not a LinkedIn thought leader who philosophizes about AI. You're a builde
 | "Game-changer" | Describe the actual change with numbers |
 | "Leveraging AI" | "Built an AI system that..." |
 | "On this journey" | Describe the specific milestone |
-| "Empowering" | "Gave 40 youth the skills to..." |
+| "Empowering" | "Gives businesses the ability to..." |
 | "Believe in yourself" | "Here's what I did, here's how you can too" |
 | "Agree?" (engagement bait) | End with a genuine question or a concrete CTA |
 | "Stay tuned" | Give a date or say nothing |
@@ -186,7 +175,7 @@ You're not a LinkedIn thought leader who philosophizes about AI. You're a builde
 **Recommended design:**
 - Left: Small professional headshot or Kova logo
 - Center: **"Building Africa's Business Intelligence Operating System"**
-- Subtext: **Founder & CEO @ Kova Agent  •  Founder @ UNIMART AFRICA**
+- Subtext: **Founder & CEO @ Kova Agent  •  6 AI Agents, 9 Platforms, KES 299/mo**
 - Background: Dark overlay on abstract tech/data pattern or Nairobi skyline
 - Bottom-right: Your production URL
 - Clean, minimal — let the words carry weight
@@ -201,17 +190,17 @@ Iranzi Innocent
 
 **Headline (220 chars max) — Option A (Builder-focused):**
 ```
-Founder & CEO @ Kova Agent — 6 AI Agents That Run Your Social Media | Built UNIMART AFRICA (607 users, 0 investors) | Data Scientist | Mastercard Foundation Scholar
+Founder & CEO @ Kova Agent — 6 AI Agents That Run Your Social Media | AI Systems Builder | Data Scientist | Mastercard Foundation Scholar | Nairobi 🇰🇪
 ```
 
 **Option B (Mission-focused):**
 ```
-Building Africa's First AI Social Media Operating System | Founder @ Kova Agent & UNIMART AFRICA | Full-Stack Dev × Data Science | Nairobi 🇰🇪
+Building Africa's First AI Social Media Operating System | Founder @ Kova Agent | 6 Agents × 9 Platforms × KES 299/mo | Shipping from Nairobi 🇰🇪
 ```
 
 **Option C (Punchy):**
 ```
-AI systems builder. Founded Kova Agent (6 AI agents, 9 platforms, KES 299/mo). Founded UNIMART AFRICA (607 users, zero funding). Shipping from Nairobi.
+AI systems builder. Founded Kova Agent — 6 AI agents, 9 platforms, KES 299/mo. Solo-built. Bootstrapped. Shipping from Nairobi.
 ```
 
 ### About Section (2,600 chars max)
@@ -219,35 +208,36 @@ AI systems builder. Founded Kova Agent (6 AI agents, 9 platforms, KES 299/mo). F
 ```
 I build AI systems that give African businesses capabilities they couldn't afford before.
 
-Right now I'm building Kova Agent — 6 AI agents that work 24/7 as your social media team. They research trends, create platform-native content, predict engagement, schedule posts, respond to your audience, and learn from every result. Starting at KES 299/month.
+I'm the founder of Kova Agent — 6 AI agents that work 24/7 as your social media team. They research trends, create platform-native content, predict engagement, schedule posts, respond to your audience, and learn from every result. Starting at KES 299/month.
 
-Before that, I built UNIMART AFRICA — a digital marketplace that grew to 607 users, 227 vendors, and 1,093 products with zero external funding. Real transactions. Real vendors. Real impact.
+THE SYSTEM:
 
-THE THREAD THAT CONNECTS EVERYTHING:
+→ Research Agent scans your industry for trending topics and opportunities
+→ Create Agent writes platform-native content adapted for each channel
+→ Predict Agent scores content before you post — so you only publish winners
+→ Schedule Agent picks optimal posting times based on your audience data
+→ Engage Agent analyzes comments and generates on-brand replies
+→ Learn Agent tracks what works and feeds insights back into the loop
 
-→ I grew up in Nanyuki, Kenya. Got a merit scholarship to high school, where I served as School President and rewrote the student constitution for 800+ students.
+All 6 agents, publishing across 9 platforms (LinkedIn, X, Instagram, Facebook, TikTok, YouTube, Pinterest, Threads, Bluesky), with AI image generation — built solo from Nairobi.
 
-→ Won a Mastercard Foundation Scholarship to USIU-Africa for Data Science & Analytics. Maintained Best Cumulative GPA (2023-2025) while building two companies.
+THE TECH:
 
-→ Taught physics and math to refugee students in Turkana through Windle International Kenya.
-
-→ Trained 200+ students in digital skills as Chairperson of USIU-Africa's Ajira Digital Club.
-
-→ Trained 40 underserved youth in Kibera through Konexio Africa. 31 got jobs. 78% placement rate.
-
-→ Built UNIMART from an idea to a production marketplace — Django, PostgreSQL, AWS, M-Pesa integration, AI chatbot, real-time analytics.
-
-→ Built Kova Agent solo — 6 autonomous AI agents, DeepSeek LLM integration, FLUX image generation, Celery task orchestration, 9-platform publishing, engagement analysis.
+→ Django 5 + DRF + Celery + Redis + PostgreSQL, deployed on Railway
+→ DeepSeek V3.2 via OpenRouter for content generation
+→ FLUX AI image generation via Together.ai with Pillow-based branded graphics
+→ M-Pesa + Stripe payment integration
+→ Every line of code written by one person
 
 WHAT I'M FOCUSED ON NOW:
 
-• Scaling Kova Agent — proving that one developer with the right AI architecture can build what normally takes a 20-person marketing team
-• Securing seed funding to scale Kova across Africa
-• Writing about what I'm learning: AI agent architecture, bootstrapping, building in Africa
+• Scaling Kova Agent across Africa — proving that one developer with the right AI architecture can build what normally takes a 20-person marketing team
+• Securing seed funding to grow Kova's user base and expand agent capabilities
+• Building in public — sharing the architecture, decisions, and real metrics as I go
 
 I believe the best technology is built by people who understand the problem personally. I'm not building for Africa from a distance — I'm building from Nairobi, tested with real African businesses, priced in KES, payable via M-Pesa.
 
-If you're a founder building in Africa, an investor looking at African AI, or someone who thinks one person can't build a real product — let's connect.
+If you're a founder who needs AI to handle your social media, an investor looking at African AI, or a builder interested in agentic systems — let's connect.
 
 📧 iranzi297@gmail.com
 🔗 linkedin.com/in/iranzi-innocent
@@ -257,8 +247,8 @@ If you're a founder building in Africa, an investor looking at African AI, or so
 ### Featured Section (Pin these in order)
 
 1. **Kova Agent demo** — Screen recording or Loom walkthrough of the product (create this)
-2. **UNIMART AFRICA** — Link to unimartafrica.com
-3. **"How I Built 6 AI Agents Solo"** — LinkedIn article (write this in Week 1)
+2. **"How I Built 6 AI Agents Solo from Nairobi"** — LinkedIn article (write this in Week 1)
+3. **Architecture diagram** — Visual of the 6-agent loop (Research → Create → Predict → Schedule → Engage → Learn)
 4. **Your best-performing LinkedIn post** — Pin after 30 days based on engagement data
 
 ### Experience Section
@@ -280,60 +270,7 @@ Building Africa's first AI-powered social media operating system.
 • Solo-built: product, engineering, design, and go-to-market — all one person
 ```
 
-**Experience 2:**
-```
-Founder & Lead Developer
-UNIMART AFRICA
-Jun 2025 – Present | Nairobi, Kenya | unimartafrica.com
-
-Built a production-grade digital marketplace from zero serving displaced and marginalized entrepreneurs.
-
-• 607 users, 227 vendors, 1,093 products — zero external funding
-• KSh 147,710 in real transactions through integrated M-Pesa payments
-• Full-stack: Python/Django, PostgreSQL, AWS, Bootstrap, SEO
-• AI-powered chatbot with 22 tools and 31 intents
-• Loyalty program, real-time analytics dashboard, multi-country/multi-currency architecture
-• Recruited and trained 8 community mobilizers for grassroots vendor onboarding
-```
-
-**Experience 3:**
-```
-Digital Skills Trainer
-Konexio Africa | Kibera, Nairobi
-2024
-
-Trained underserved youth in digital literacy, customer support, and online professionalism.
-
-• 40 trainees → 31 employed = 78% job placement rate
-• Curriculum built from real employer hiring patterns
-• Coached on CV development, CRM tools, and remote work readiness
-```
-
-**Experience 4:**
-```
-Chairperson, Ajira Digital Club
-USIU-Africa
-2023 – Present
-
-Led campus-wide digital skills initiatives.
-
-• Equipped 200+ students with digital, freelancing, and technology skills
-• Organized training events, mentorship meetups, and career readiness programs
-• Enrolled 40 students in Odoo University ERP/CRM certification
-```
-
-**Experience 5:**
-```
-Teacher (Physics & Mathematics)
-Windle International Kenya | Kalobeyei Settlement, Turkana
-Feb – Mar 2024
-
-Taught science and mathematics to refugee students at a settlement secondary school.
-
-• Analyzed student performance data to identify gaps and optimize instruction
-• Created dashboards for academic trend visualization
-• Mentored students in problem-solving, improving examination scores
-```
+(Keep your other experience entries on LinkedIn — UNIMART, Konexio, Ajira, Windle — but Kova should be the primary and most detailed one. The rest provide credibility background.)
 
 ### Skills (Top 15 — Order Matters)
 
@@ -348,7 +285,7 @@ Taught science and mathematics to refugee students at a settlement secondary sch
 9. JavaScript
 10. AI Agent Development
 11. SaaS Product Development
-12. E-Commerce
+12. Celery / Task Orchestration
 13. Digital Marketing
 14. Strategic Planning
 15. Leadership
@@ -405,30 +342,22 @@ Everything you post falls into one of these. Rotate them to keep your feed balan
 - "AI images at $0.025 per image — here's the tier-routing system"
 
 #### Pillar 3: African Tech & Business (20% of content)
-**What**: Insights about building technology for the African market — pricing, payments, infrastructure, user behavior, the ecosystem.
+**What**: Insights about building AI technology for the African market — pricing, payments, infrastructure, user behavior, the ecosystem.
 **Why**: This is your lived experience. Most AI content comes from Silicon Valley. Yours comes from Nairobi.
 **Examples**:
 - "Why KES 299/month matters more than $49/month in Africa"
 - "M-Pesa-first: what Western SaaS companies get wrong about African payments"
-- "607 users, zero funding: what I learned bootstrapping in Nairobi"
-- "The real cost of building SaaS in Kenya (numbers included)"
+- "The real cost of running AI agents in production (numbers included)"
+- "Why African MSMEs need AI teams, not more social media managers"
 
-#### Pillar 4: Founder Lessons & Mindset (10% of content)
-**What**: Real lessons from building — decisions, mistakes, frameworks, time management, solo-founder life.
+#### Pillar 4: Founder Lessons & Mindset (15% of content)
+**What**: Real lessons from building Kova — decisions, mistakes, frameworks, time management, solo-founder life.
 **Why**: Humanizes you. Connects with other founders. But keep it data-grounded, never motivational-speaker.
 **Examples**:
-- "I'm a full-time student, running two companies, and training youth. Here's how I actually manage time (no productivity hacks — just ruthless prioritization)"
-- "Biggest mistake I made building UNIMART: [specific technical/business decision]"
+- "I'm a full-time student building a 6-agent AI system solo. Here's how I actually manage time (no productivity hacks — just ruthless prioritization)"
+- "The biggest architectural mistake I made in Kova — and how I fixed it"
 - "Why I won't raise money until the numbers say I should"
-- "What teaching refugee students in Turkana taught me about product design"
-
-#### Pillar 5: Community & Impact (5% of content)
-**What**: Training programs, mentorship, community impact, the why behind the work.
-**Why**: Shows the complete picture — you don't just build for profit, you build for impact.
-**Examples**:
-- "31 out of 40. That's how many youth got jobs after our 7-week program in Kibera"
-- "What happens when you give displaced entrepreneurs a digital storefront"
-- "200+ students trained through Ajira Digital Club — here's what actually mattered"
+- "What I learned building for users who pay KES 299/month vs $99/month"
 
 ### Content Calendar Framework
 
@@ -439,7 +368,7 @@ Everything you post falls into one of these. Rotate them to keep your feed balan
 | **Wednesday** | African Tech | Market insight, pricing strategy, infrastructure lesson |
 | **Thursday** | Build in Public | Screenshot/demo of something you shipped today |
 | **Friday** | Founder Lessons | Reflection, lesson learned, or honest take |
-| **Saturday** | Community/Impact OR rest | Optional — impact story or repurpose best-performing post |
+| **Saturday** | Rest or repurpose | Optional — repurpose best-performing post of the week |
 | **Sunday** | Rest | Don't post. Recharge. |
 
 **Posting frequency**: 4-5x per week on LinkedIn. Quality over quantity.
@@ -530,19 +459,19 @@ What this means for [founders / builders / the ecosystem]:
 
 **Example:**
 ```
-607 users. 227 vendors. KSh 147,710 in transactions.
-Zero external funding.
+6 agents. 9 platforms. KES 299/month.
+Zero external funding. One developer.
 
-→ Jun 2025: Bought a domain and started coding
-→ Month 2: First 10 vendors signed up from door-to-door onboarding
-→ Month 4: M-Pesa integration went live. Transactions started flowing
-→ Month 6: Built AI chatbot (22 tools, 31 intents) — vendor support automated
-→ Month 8: 600+ users. Product running on AWS with real-time analytics
+→ Month 1: Research Agent + Create Agent — generating content from trends
+→ Month 2: Predict Agent + Schedule Agent — scoring posts and picking optimal times
+→ Month 3: Engage Agent — analyzing comments, generating replies, auto-responding
+→ Month 4: AI image generation — FLUX models, branded graphics, visual strategy routing
+→ Now: Publishing autonomously across LinkedIn, Facebook, Instagram, and more
 
 Every line of code written by one person.
-Every vendor onboarded without a sales team.
+Every agent designed, built, and shipped from Nairobi.
 
-Next: Building the AI system (Kova Agent) that I wished I had while doing all this alone.
+Next: Scaling to 1,000 African businesses who'll never need a social media manager again.
 ```
 
 ---
@@ -579,7 +508,7 @@ Hey [Name] — I'm building Kova Agent, an AI system for social media management
 
 **Template for investor connects:**
 ```
-Hi [Name] — I'm Iranzi Innocent, building Kova Agent from Nairobi. 6 AI agents, 9 platforms, bootstrapped. Previously built UNIMART AFRICA to 600+ users with zero funding. Building in public on LinkedIn. Would love to be on your radar.
+Hi [Name] — I'm Iranzi Innocent, building Kova Agent from Nairobi — 6 AI agents that run social media for African businesses, starting at KES 299/mo. Solo-built, bootstrapped, building in public on LinkedIn. Would love to be on your radar.
 ```
 
 ### DM Strategy (Only After Genuine Connection)
@@ -609,9 +538,9 @@ Direct, builder-focused, evidence-driven. First-person founder voice — "I buil
 ```json
 [
   "6 agents. 9 platforms. One developer. No investors. That's Kova Agent today. Not because I couldn't raise — because I wanted to prove the system works before asking anyone for money. Receipts before pitches.",
-  "607 users. 227 vendors. KSh 147K in transactions. Zero external funding. Built this while also building Kova, studying data science, and training youth in Kibera. Not bragging. Just documenting.",
+  "Kova just published 50 posts autonomously across LinkedIn and Facebook. Research Agent found the trends. Create Agent wrote the posts. Predict Agent scored them. Zero human intervention after the seed.",
   "3 AM in Nairobi. Debugging a Celery task that won't pick up the right LinkedIn token. Nobody watching. No co-founder to vent to. That's 90% of building. The other 10% is the LinkedIn post about it.",
-  "When I say 'built for Africa,' I mean: M-Pesa payments, not Stripe-only. KES 299/month, not $99/month. Works on a phone in Kibera, not just a MacBook in Silicon Valley. That's not a tagline. That's architecture."
+  "When I say 'built for Africa,' I mean: M-Pesa payments, not Stripe-only. KES 299/month, not $99/month. Mobile-first, not desktop-only. That's not a tagline. That's architecture."
 ]
 ```
 
@@ -632,12 +561,12 @@ Founders and CEOs building startups in Africa. Investors interested in African t
 
 **Content Pillars:**
 ```json
-["Build in Public — Kova & UNIMART shipping updates", "AI Agent Architecture & Systems", "Building Technology for Africa", "Bootstrapped Founder Lessons", "Community Impact & Digital Skills Training"]
+["Build in Public — Kova Agent shipping updates", "AI Agent Architecture & Systems", "Building AI Technology for Africa", "Bootstrapped Solo-Founder Lessons"]
 ```
 
 **Key Offerings:**
 ```json
-["Kova Agent — AI social media operating system (KES 299-2999/mo)", "UNIMART AFRICA — digital marketplace for entrepreneurs", "Technical consulting on AI/agentic systems", "Speaking on AI in Africa, bootstrapping, and digital inclusion"]
+["Kova Agent — AI social media operating system (KES 299-2999/mo)", "Technical consulting on AI/agentic systems", "Speaking on AI in Africa, bootstrapping, and solo-building"]
 ```
 
 **Content Language:**
@@ -690,7 +619,7 @@ professional
 | Technical breakdowns | Simple architecture diagram (hand-drawn or Excalidraw style) |
 | Number posts | Kova-generated stat highlight graphic (branded, bold number) |
 | Lessons / reflections | Text-only post (no image needed — LinkedIn rewards these) |
-| Impact stories | Photo from the actual program/event if available |
+| Customer wins | Screenshot of Kova in action for a real business |
 
 ### Screenshot Standards
 - Use light mode for product screenshots (better contrast on LinkedIn)
@@ -714,7 +643,7 @@ professional
 | Day | Action |
 |-----|--------|
 | **Day 1** | Update LinkedIn profile using Section 3 of this playbook. New photo + banner. New headline + about section. |
-| **Day 2** | **First post** — Introduction: "I've been building in silence for 2 years. Here's everything I've shipped..." (use Format 5: The Number Post — combined UNIMART + Kova metrics) |
+| **Day 2** | **First post** — Introduction: "I've been building in silence. Here's what I shipped..." (use Format 5: The Number Post — Kova metrics: 6 agents, 9 platforms, KES 299/mo) |
 | **Day 3** | **Post** — "What is Kova Agent?" explanation (Build in Public pillar). Include demo screenshot. |
 | **Day 4** | Comment on 10+ posts from African tech founders and AI builders. No posts today — just engage. |
 | **Day 5** | **Post** — Technical breakdown: "The 6-agent architecture inside Kova" (AI Systems pillar). Simple diagram. |
@@ -728,7 +657,7 @@ professional
 | **Day 9** | **Post** — Technical insight about one specific AI decision |
 | **Day 10** | **Post** — Africa take: "Why I price Kova at KES 299/month" |
 | **Day 11** | Engage-only day. Comment on 15+ posts. |
-| **Day 12** | **Post** — Founder lesson from building UNIMART or Kova |
+| **Day 12** | **Post** — Founder lesson from building Kova solo |
 | **Day 13-14** | Send 20 more connection requests. Respond to all comments on your posts. |
 
 ### Week 3: Go Deeper
@@ -737,9 +666,9 @@ professional
 |-----|--------|
 | **Day 15** | **Post** — Build log with a specific bug story + fix (the engagement agent spam story is perfect) |
 | **Day 16** | **Post** — "How AI image generation works in Kova" — technical but visual |
-| **Day 17** | **Post** — UNIMART milestone or insight — keep both brands alive |
+| **Day 17** | **Post** — Customer story or use case: "How a [type of business] uses Kova to..." |
 | **Day 18** | Engage-only. |
-| **Day 19** | **Post** — Impact story: the Kibera training program, 78% placement |
+| **Day 19** | **Post** — Kova pricing/economics breakdown: "What it actually costs to run 6 AI agents" |
 | **Day 20-21** | Write your first LinkedIn article: "How I Built 6 AI Agents Solo from Nairobi" — pin to Featured |
 
 ### Week 4: Optimize & Scale
@@ -805,7 +734,7 @@ You're not building a LinkedIn presence for vanity. Here's the strategic calculu
 
 **Knowledge sharing → Talent pipeline.** When you're ready to hire, the people who've been following your build-in-public journey are already pre-sold on the mission.
 
-**Teaching → Authority.** Your 200+ students, 40 Kibera trainees, and refugee teaching experience aren't just good deeds — they prove you can make complex things simple. That's the most valuable skill in tech communication.
+**Building in public → Technical authority.** Every post about Kova's architecture proves you can make complex AI systems simple. That's the most valuable skill in tech communication.
 
 ### The Moat
 
@@ -817,10 +746,10 @@ Most founders on LinkedIn fall into predictable categories:
 
 Your moat is **real receipts from real building in Africa**. Nobody else is:
 1. Building a 6-agent AI system solo in Nairobi
-2. While running a 600+ user marketplace
-3. While studying Data Science at university
-4. While training underserved communities
-5. And documenting all of it with actual numbers
+2. Shipping autonomous publishing across 9 platforms
+3. Pricing at KES 299/month with M-Pesa payments
+4. Studying Data Science at university while doing all of it
+5. And documenting every decision with actual numbers
 
 That intersection is ***unclonable***. Own it.
 
