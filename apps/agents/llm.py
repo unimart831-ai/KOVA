@@ -188,19 +188,30 @@ def parse_llm_json(text: str) -> dict:
     try:
         posts_match = re.search(r'"posts"\s*:\s*\[', cleaned)
         if posts_match:
-            # Find all complete post objects {...} inside the array
+            # Find all complete post objects {...} inside the array,
+            # properly skipping string contents so embedded {/} don't
+            # confuse the brace matcher.
             arr_start = posts_match.end() - 1  # the '['
             depth = 0
             last_complete = arr_start
+            in_str = False
+            esc = False
             i = arr_start
             while i < len(cleaned):
                 ch = cleaned[i]
-                if ch == '{':
-                    depth += 1
-                elif ch == '}':
-                    depth -= 1
-                    if depth == 0:
-                        last_complete = i + 1
+                if esc:
+                    esc = False
+                elif ch == '\\' and in_str:
+                    esc = True
+                elif ch == '"':
+                    in_str = not in_str
+                elif not in_str:
+                    if ch == '{':
+                        depth += 1
+                    elif ch == '}':
+                        depth -= 1
+                        if depth == 0:
+                            last_complete = i + 1
                 i += 1
             if last_complete > arr_start + 1:
                 # Build a valid JSON with the complete posts we found
@@ -251,22 +262,16 @@ def _repair_truncated_json(text: str) -> str:
     # Remove any trailing incomplete key-value pair
     result = text.rstrip()
 
-    # If we're inside an unterminated string, close it
+    # If we're inside an unterminated string, close it while preserving
+    # as much content as possible.  The old logic deleted the entire string
+    # value when truncation landed mid-content — now we keep the partial
+    # text (a truncated post is better than an empty one).
     if in_string:
-        # Strip back to the last comma or colon outside a partial value
-        # to avoid broken key-value pairs
         result = result.rstrip()
-        # Remove trailing partial content that might have unescaped chars
-        last_quote = result.rfind('"')
-        if last_quote > 0:
-            # Check if content between last quote and end is sensible
-            after_quote = result[last_quote + 1:]
-            if len(after_quote) > 0 and not after_quote.strip().startswith((',', '}', ']', ':')):
-                result = result[:last_quote + 1]
-            else:
-                result += '"'
-        else:
-            result += '"'
+        # Strip a trailing backslash that would escape our closing quote
+        if result.endswith('\\'):
+            result = result[:-1]
+        result += '"'
 
     if result.endswith(','):
         result = result[:-1]

@@ -598,6 +598,17 @@ class LinkedInProvider(BaseProvider):
         if media_content:
             payload["content"] = media_content
 
+        # Diagnostic: log commentary length so truncation issues are visible
+        commentary_len = len(content) if content else 0
+        logger.info(
+            "LinkedIn publish: commentary=%d chars, has_media=%s, "
+            "first_80=%r, last_40=%r",
+            commentary_len,
+            bool(media_content),
+            (content[:80] if content else ""),
+            (content[-40:] if content else ""),
+        )
+
         try:
             with httpx.Client(timeout=30) as client:
                 resp = client.post(

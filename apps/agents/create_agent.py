@@ -144,11 +144,12 @@ PLATFORM_GUIDES = {
             "Numbered framework/list with actionable steps",
             "Contrarian industry take backed by experience",
             "Behind-the-scenes of a decision/process with real numbers",
-            "Hook line → line break → line break → story → lesson → question to audience",
+            "Hook line → single line break → punchy follow-up → then develop the story",
         ],
-        "avoid": "Humble-bragging, 'Agree?' as a CTA, fake stories, emoji walls, 'I'm thrilled to share' openings",
+        "avoid": "Humble-bragging, 'Agree?' as a CTA, fake stories, emoji walls, 'I'm thrilled to share' openings, excessive blank lines between short sentences in the opening",
         "cta_style": "End with a genuine question that invites people to share their experience. Make it specific, not generic.",
         "formats": ["text post", "article-style post", "carousel outline"],
+        "formatting_rules": "CRITICAL: LinkedIn hides content behind 'see more' after ~5 visible lines. Blank lines count as visible lines. Front-load value in the first 5 lines — use SINGLE line breaks (not double) for the opening hook and first 2-3 sentences. Save double line breaks for structure AFTER the fold. The reader must see enough substance in those first 5 lines to WANT to click 'see more'. Never waste above-the-fold space on a title line followed by a blank line.",
     },
     "instagram": {
         "name": "Instagram",
@@ -414,6 +415,8 @@ def build_generation_prompt(seed: ContentSeed, platforms: list[dict]) -> str:
     for p in platforms:
         guide = PLATFORM_GUIDES.get(p["platform"], {})
         winning = "\n".join(f"    - {w}" for w in guide.get("winning_patterns", []))
+        formatting = guide.get("formatting_rules", "")
+        formatting_line = f"\n- **Formatting**: {formatting}" if formatting else ""
         platform_section += f"""
 ### {guide.get('name', p['platform'].title())} (@{p['username']})
 - **Character limit**: {guide.get('max_chars', 'N/A')}
@@ -422,7 +425,7 @@ def build_generation_prompt(seed: ContentSeed, platforms: list[dict]) -> str:
 {winning}
 - **Avoid**: {guide.get('avoid', 'Generic content')}
 - **CTA approach**: {guide.get('cta_style', 'Adapt to context')}
-- **Format options**: {', '.join(guide.get('formats', ['text post']))}
+- **Format options**: {', '.join(guide.get('formats', ['text post']))}{formatting_line}
 """
 
     prompt = f"""## YOUR TASK
@@ -630,6 +633,15 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                 continue
 
             content_text = pd.get("content_text", "")
+
+            # Diagnostic: warn if content seems suspiciously short
+            # (may indicate LLM token-limit truncation salvaged by JSON repair)
+            if content_text and len(content_text) < 200 and platform in ("linkedin", "facebook"):
+                logger.warning(
+                    "Create Agent: %s content_text is only %d chars "
+                    "(may be truncated). First 100: %s",
+                    platform, len(content_text), repr(content_text[:100]),
+                )
 
             post = Post.objects.create(
                 user=user,
