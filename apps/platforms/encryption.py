@@ -9,16 +9,31 @@ Empty/None values pass through without encryption, so DB-level filters
 like `refresh_token__gt=""` continue to work correctly.
 """
 
+import hashlib
+import logging
+
 from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
 from django.db import models
 from fernet_fields.hkdf import derive_fernet_key
 
+logger = logging.getLogger(__name__)
+
+_fernet_instance = None
+_fernet_key_hash = None
+
 
 def _get_fernet():
     """Build a Fernet instance from the configured encryption key."""
-    keys = getattr(settings, "FERNET_KEYS", [settings.SECRET_KEY])
-    return Fernet(derive_fernet_key(keys[0]))
+    global _fernet_instance, _fernet_key_hash
+    if _fernet_instance is None:
+        keys = getattr(settings, "FERNET_KEYS", [settings.SECRET_KEY])
+        raw_key = keys[0]
+        derived = derive_fernet_key(raw_key)
+        _fernet_key_hash = hashlib.sha256(derived if isinstance(derived, bytes) else derived.encode()).hexdigest()[:12]
+        _fernet_instance = Fernet(derived)
+        logger.info("Fernet key initialised (hash=%s)", _fernet_key_hash)
+    return _fernet_instance
 
 
 def encrypt_token(value):
@@ -34,7 +49,18 @@ def decrypt_token(value):
         return value
     try:
         return _get_fernet().decrypt(value.encode()).decode()
-    except (InvalidToken, Exception):
+    except InvalidToken:
+        logger.error(
+            "Fernet InvalidToken: cannot decrypt value (len=%d, prefix=%s, key_hash=%s). "
+            "Possible key mismatch between encrypt and decrypt.",
+            len(value), value[:10], _fernet_key_hash,
+        )
+        return value
+    except Exception as exc:
+        logger.error(
+            "Fernet decrypt unexpected error: %s (value len=%d, prefix=%s, key_hash=%s)",
+            exc, len(value), value[:10], _fernet_key_hash,
+        )
         return value
 
 

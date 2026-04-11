@@ -443,8 +443,25 @@ def publish_post(self, post_id: str):
             or None
         )
 
+        # Safety net: detect and fix encrypted tokens not decrypted by ORM
+        token = account.access_token
+        if token and token.startswith("gAAAAA"):
+            from apps.platforms.encryption import decrypt_token
+            logger.warning(
+                "Token for %s still encrypted after ORM load (len=%d). "
+                "Attempting explicit decrypt.",
+                account.platform, len(token),
+            )
+            token = decrypt_token(token)
+            if token.startswith("gAAAAA"):
+                logger.error(
+                    "Explicit decrypt ALSO failed for %s. Token is unrecoverable — "
+                    "user must reconnect.",
+                    account.platform,
+                )
+
         result = provider.publish_post(
-            access_token=account.access_token,
+            access_token=token,
             content=publish_content,
             media_urls=absolute_media_urls,
             media_files=media_files or None,
