@@ -216,7 +216,7 @@ PLAN_LIMITS = {
         "engagement_agent": True,
         "competitor_tracking": True,
         "ai_image_generation": True,
-        "ai_images_per_month": 999999,
+        "ai_images_per_month": 500,
         "auto_approve": True,
         "ab_testing": True,
         "max_team_members": 25,
