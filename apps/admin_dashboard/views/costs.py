@@ -23,6 +23,7 @@ from apps.accounts.models import UserProfile
 from apps.admin_dashboard.decorators import superuser_required
 from apps.agents.models import AgentAction, LLMConfig
 from apps.billing.models import MpesaPayment, get_all_plan_limits
+from apps.content.models import Post
 
 
 # ── Model pricing (USD per 1M tokens) ───────────────────────────────────
@@ -56,6 +57,7 @@ MODEL_PRICING = {
 }
 
 # ── Non-LLM AI service pricing ──────────────────────────────────────
+# Image costs are now tier-routed: each plan uses a different FLUX model.
 NON_LLM_PRICING = {
     "whisper-1": {
         "label": "OpenAI Whisper (Voice Memo)",
@@ -63,23 +65,38 @@ NON_LLM_PRICING = {
         "avg_memo_seconds": 20,
         "provider": "OpenAI",
     },
-    "image_together": {
+    "image_together_schnell": {
         "label": "Together.ai FLUX.1-schnell",
-        "cost_per_image": 0.00,
+        "cost_per_image": 0.003,
         "provider": "Together.ai",
-        "priority": 1,
+        "plan": "starter",
+        "note": "Starter fallback only (images disabled for starter)",
+    },
+    "image_together_krea": {
+        "label": "Together.ai FLUX.1-krea-dev",
+        "cost_per_image": 0.025,
+        "provider": "Together.ai",
+        "plan": "growth",
+        "note": "Growth plan — 50 images/month limit",
+    },
+    "image_together_pro": {
+        "label": "Together.ai FLUX.1.1-pro",
+        "cost_per_image": 0.04,
+        "provider": "Together.ai",
+        "plan": "pro / agency",
+        "note": "Pro (100/mo) & Agency (500/mo)",
     },
     "image_huggingface": {
         "label": "HuggingFace FLUX.1-schnell",
         "cost_per_image": 0.00,
         "provider": "HuggingFace",
-        "priority": 2,
+        "note": "Fallback provider (free tier)",
     },
     "image_pollinations": {
         "label": "Pollinations.ai Flux",
-        "cost_per_image": 0.005,
+        "cost_per_image": 0.00,
         "provider": "Pollinations.ai",
-        "priority": 3,
+        "note": "Last-resort fallback (free)",
     },
     "graphics_pillow": {
         "label": "Branded Graphics (Pillow)",
@@ -89,12 +106,20 @@ NON_LLM_PRICING = {
     },
 }
 
+# Per-plan image cost (USD per image) — matches tier-routed models
+PLAN_IMAGE_COST = {
+    "starter": 0.00,    # Images disabled for starter
+    "growth": 0.025,    # FLUX.1-krea-dev
+    "pro": 0.04,        # FLUX.1.1-pro
+    "agency": 0.04,     # FLUX.1.1-pro
+}
+
 # Default per-plan token estimates (from cost analysis doc)
 # voice_memos = estimated monthly voice memo recordings per user
 PLAN_TOKEN_ESTIMATES = {
     "starter": {"input": 40_000, "output": 35_000, "images": 0, "voice_memos": 5},
     "growth": {"input": 260_000, "output": 220_000, "images": 50, "voice_memos": 20},
-    "pro": {"input": 1_100_000, "output": 900_000, "images": 200, "voice_memos": 50},
+    "pro": {"input": 1_100_000, "output": 900_000, "images": 100, "voice_memos": 50},
     "agency": {"input": 2_200_000, "output": 1_800_000, "images": 500, "voice_memos": 100},
 }
 
@@ -103,8 +128,6 @@ INFRA_COSTS = {
     "railway_base": 20.00,
     "email_free_limit": 100,  # emails/day on Resend free tier
     "r2_storage_free_gb": 10,
-    "image_cost_free": 0.00,  # HuggingFace FLUX.1-schnell
-    "image_cost_paid": 0.005,  # Gemini 2.5 Flash per image
 }
 
 
@@ -305,9 +328,10 @@ def cost_overview(request):
             plan_total_cost += c
 
         avg_cost_per_user = plan_total_cost / active_count if active_count else 0
-        # Image cost estimate (paid fallback only — primary providers are free)
+        # Image cost estimate — tier-routed model pricing per plan
         est = PLAN_TOKEN_ESTIMATES.get(plan_code, {})
-        image_cost = est.get("images", 0) * INFRA_COSTS["image_cost_paid"] if plan_code != "starter" else 0
+        per_image_cost = PLAN_IMAGE_COST.get(plan_code, 0)
+        image_cost = est.get("images", 0) * per_image_cost
 
         # Voice cost estimate (Whisper @ $0.006/min, avg ~20s memo)
         whisper = NON_LLM_PRICING["whisper-1"]
@@ -430,6 +454,28 @@ def cost_overview(request):
     # ── Current LLM config for display ──────────────────────────────
     config = LLMConfig.load()
 
+    # ── 7. Image generation stats (30d) ─────────────────────────────
+    image_stats_30d = (
+        Post.objects.filter(created_at__gte=last_30d)
+        .values("media_status")
+        .annotate(count=Count("id"))
+    )
+    image_stats = {s["media_status"]: s["count"] for s in image_stats_30d}
+    images_generated = image_stats.get("generated", 0)
+    images_failed = image_stats.get("failed", 0)
+    images_pending = image_stats.get("pending", 0)
+
+    # Estimated actual image cost (30d) — by plan of post owner
+    image_cost_30d = 0.0
+    plan_image_counts = (
+        Post.objects.filter(created_at__gte=last_30d, media_status="generated")
+        .values("user__profile__plan")
+        .annotate(count=Count("id"))
+    )
+    for pic in plan_image_counts:
+        plan = pic["user__profile__plan"] or "starter"
+        image_cost_30d += pic["count"] * PLAN_IMAGE_COST.get(plan, 0)
+
     context = {
         "page_title": "Cost Economics",
         # Summary cards
@@ -451,6 +497,12 @@ def cost_overview(request):
         ) if float(total_monthly_revenue) > 0 else 0,
         "actual_revenue_30d": float(actual_revenue_30d),
         "total_active_users": total_active_users,
+        # Image generation stats
+        "images_generated_30d": images_generated,
+        "images_failed_30d": images_failed,
+        "images_pending_30d": images_pending,
+        "image_cost_30d": round(image_cost_30d, 4),
+        "plan_image_cost": PLAN_IMAGE_COST,
         # Charts
         "daily_cost_chart_json": daily_cost_chart,
         # Tables
@@ -509,13 +561,21 @@ def cost_calculator(request):
     workhorse_output = _float("workhorse_output_price", 0.38)
     fast_input = _float("fast_input_price", 0.26)
     fast_output = _float("fast_output_price", 0.38)
-    image_cost_per = _float("image_cost", 0.005)
+    image_cost_growth = _float("image_cost_growth", 0.025)
+    image_cost_pro = _float("image_cost_pro", 0.04)
     voice_cost_per_min = _float("voice_cost_per_min", 0.006)
     hosting_cost = _float("hosting_cost", 20.0)
 
     results = []
     total_revenue = 0.0
     total_cost = 0.0
+
+    plan_image_costs = {
+        "starter": 0.00,
+        "growth": image_cost_growth,
+        "pro": image_cost_pro,
+        "agency": image_cost_pro,
+    }
 
     for plan_code, user_count in [
         ("starter", starter_users), ("growth", growth_users),
@@ -545,7 +605,8 @@ def cost_calculator(request):
         )
 
         images = est.get("images", 0)
-        img_cost = images * (0 if plan_code == "starter" else image_cost_per)
+        per_img = plan_image_costs.get(plan_code, 0)
+        img_cost = images * per_img
         voice_memos = est.get("voice_memos", 0)
         voice_cost = voice_memos * (20 / 60) * voice_cost_per_min  # 20s avg memo
         infra = hosting_cost / total_users if total_users > 0 else 0

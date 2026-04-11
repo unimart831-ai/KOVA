@@ -76,6 +76,36 @@
   </div>
 </div>
 
+<!-- Image generation stats bar -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm mb-6 flex flex-wrap items-center gap-6">
+  <div>
+    <span class="text-[10px] font-semibold text-purple-400 uppercase">Images Generated (30d)</span>
+    <p class="text-lg font-bold text-purple-600 dark:text-purple-400">{{ images_generated_30d|format_number }}</p>
+  </div>
+  <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
+  <div>
+    <span class="text-[10px] font-semibold text-gray-400 uppercase">Failed</span>
+    <p class="text-lg font-bold {% if images_failed_30d > 0 %}text-red-500{% else %}text-gray-900 dark:text-white{% endif %}">{{ images_failed_30d|format_number }}</p>
+  </div>
+  <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
+  <div>
+    <span class="text-[10px] font-semibold text-gray-400 uppercase">Pending</span>
+    <p class="text-lg font-bold text-amber-500">{{ images_pending_30d|format_number }}</p>
+  </div>
+  <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
+  <div>
+    <span class="text-[10px] font-semibold text-gray-400 uppercase">Image Cost (30d)</span>
+    <p class="text-lg font-bold {% if image_cost_30d > 0 %}text-amber-600 dark:text-amber-400{% else %}text-emerald-600 dark:text-emerald-400{% endif %}">${{ image_cost_30d|floatformat:4 }}</p>
+  </div>
+  <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
+  <div>
+    <span class="text-[10px] font-semibold text-gray-400 uppercase">Avg Cost/Image</span>
+    <p class="text-lg font-bold text-gray-900 dark:text-white">
+      {% if images_generated_30d > 0 %}${{ image_cost_30d|floatformat:4 }}{% else %}$0{% endif %}
+    </p>
+  </div>
+</div>
+
 
 <!-- ══════════════════════════════════════════════════════════════════════
      SECTION 2 — DAILY COST CHART
@@ -97,7 +127,7 @@
 <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6 overflow-hidden">
   <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
     <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Per-Plan Unit Economics (Actual 30d Data)</h2>
-    <p class="text-[10px] text-gray-400 mt-0.5">LLM cost = actual tokens used × model prices · Image &amp; infra = estimated</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">LLM cost = actual tokens used × model prices · Image cost = plan limit × tier-routed model price · Infra = estimated</p>
   </div>
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
@@ -343,10 +373,16 @@
                    class="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
           </div>
           <div class="grid grid-cols-3 gap-2 items-center">
-            <label class="text-xs text-gray-600 dark:text-gray-400">Image ($/img)</label>
-            <input type="number" x-model.number="image_cost" min="0" step="0.001" placeholder="Cost"
+            <label class="text-xs text-gray-600 dark:text-gray-400">Image Growth ($/img)</label>
+            <input type="number" x-model.number="image_cost_growth" min="0" step="0.001" placeholder="Cost"
                    class="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-            <span class="text-[10px] text-gray-400">Per AI image</span>
+            <span class="text-[10px] text-gray-400">FLUX.1-krea-dev</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2 items-center">
+            <label class="text-xs text-gray-600 dark:text-gray-400">Image Pro ($/img)</label>
+            <input type="number" x-model.number="image_cost_pro" min="0" step="0.001" placeholder="Cost"
+                   class="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+            <span class="text-[10px] text-gray-400">FLUX.1.1-pro (Pro &amp; Agency)</span>
           </div>
           <div class="grid grid-cols-3 gap-2 items-center">
             <label class="text-xs text-gray-600 dark:text-gray-400">Voice ($/min)</label>
@@ -474,7 +510,7 @@
 <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6 overflow-hidden">
   <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
     <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Non-LLM AI Services Pricing</h2>
-    <p class="text-[10px] text-gray-400 mt-0.5">Voice transcription, image generation, and branded graphics — separate from token-based LLM costs</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">Voice transcription, tier-routed image generation, and branded graphics — separate from token-based LLM costs</p>
   </div>
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
@@ -507,43 +543,64 @@
           <td class="px-4 py-2.5 text-right font-mono text-xs text-gray-600 dark:text-gray-400">~$3.00</td>
           <td class="px-4 py-2.5 text-[10px] text-gray-400">~20s avg memo × 25 memos/user/mo</td>
         </tr>
-        {# Images - Together #}
-        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-          <td class="px-4 py-2.5" rowspan="3">
+        {# Images - Together Tier-Routed #}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 bg-purple-50/30 dark:bg-purple-950/10">
+          <td class="px-4 py-2.5" rowspan="5">
             <div class="flex items-center gap-2">
               <svg class="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
               </svg>
               <span class="text-xs font-medium text-gray-700 dark:text-gray-300">AI Image Gen</span>
+              <span class="text-[9px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 font-semibold">TIER-ROUTED</span>
             </div>
           </td>
-          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Together.ai <span class="text-[9px] text-kova-500 font-semibold">(PRIMARY)</span></td>
-          <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">FLUX.1-schnell-Free</td>
-          <td class="px-4 py-2.5 text-right">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span>
-          </td>
-          <td class="px-4 py-2.5 text-right font-mono text-xs text-emerald-600 dark:text-emerald-400">$0.00</td>
-          <td class="px-4 py-2.5 text-[10px] text-gray-400">1st in fallback chain</td>
-        </tr>
-        {# Images - HuggingFace #}
-        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">HuggingFace</td>
+          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Together.ai <span class="text-[9px] text-gray-400">Starter</span></td>
           <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">FLUX.1-schnell</td>
           <td class="px-4 py-2.5 text-right">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500">DISABLED</span>
+          </td>
+          <td class="px-4 py-2.5 text-right font-mono text-xs text-gray-400">$0.00</td>
+          <td class="px-4 py-2.5 text-[10px] text-gray-400">Starter plan: images disabled (0 limit)</td>
+        </tr>
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Together.ai <span class="text-[9px] text-kova-500 font-semibold">Growth</span></td>
+          <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">FLUX.1-krea-dev</td>
+          <td class="px-4 py-2.5 text-right">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">$0.025/img</span>
+          </td>
+          <td class="px-4 py-2.5 text-right font-mono text-xs text-gray-600 dark:text-gray-400">50 × $0.025 = $1.25</td>
+          <td class="px-4 py-2.5 text-[10px] text-gray-400">Growth: 50 images/mo limit</td>
+        </tr>
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Together.ai <span class="text-[9px] text-indigo-500 font-semibold">Pro</span></td>
+          <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">FLUX.1.1-pro</td>
+          <td class="px-4 py-2.5 text-right">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">$0.040/img</span>
+          </td>
+          <td class="px-4 py-2.5 text-right font-mono text-xs text-gray-600 dark:text-gray-400">100 × $0.04 = $4.00</td>
+          <td class="px-4 py-2.5 text-[10px] text-gray-400">Pro: 100 images/mo limit</td>
+        </tr>
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Together.ai <span class="text-[9px] text-amber-600 font-semibold">Agency</span></td>
+          <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">FLUX.1.1-pro</td>
+          <td class="px-4 py-2.5 text-right">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">$0.040/img</span>
+          </td>
+          <td class="px-4 py-2.5 text-right font-mono text-xs text-gray-600 dark:text-gray-400">500 × $0.04 = $20.00</td>
+          <td class="px-4 py-2.5 text-[10px] text-gray-400">Agency: 500 images/mo limit (capped)</td>
+        </tr>
+        {# Fallback providers #}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 bg-gray-50/50 dark:bg-gray-800/20">
+          <td class="px-4 py-2.5 text-xs text-gray-500 dark:text-gray-500">
+            HuggingFace / Pollinations
+            <span class="text-[9px] text-gray-400 ml-1">FALLBACK</span>
+          </td>
+          <td class="px-4 py-2.5 text-xs font-mono text-gray-500 dark:text-gray-500">FLUX.1-schnell / flux</td>
+          <td class="px-4 py-2.5 text-right">
             <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span>
           </td>
           <td class="px-4 py-2.5 text-right font-mono text-xs text-emerald-600 dark:text-emerald-400">$0.00</td>
-          <td class="px-4 py-2.5 text-[10px] text-gray-400">2nd fallback, 120s timeout</td>
-        </tr>
-        {# Images - Pollinations #}
-        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Pollinations.ai</td>
-          <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">flux</td>
-          <td class="px-4 py-2.5 text-right">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">~$0.005/img</span>
-          </td>
-          <td class="px-4 py-2.5 text-right font-mono text-xs text-gray-600 dark:text-gray-400">~$3.75</td>
-          <td class="px-4 py-2.5 text-[10px] text-gray-400">3rd fallback (paid), last resort</td>
+          <td class="px-4 py-2.5 text-[10px] text-gray-400">Fallback chain: HF → Pollinations (both free)</td>
         </tr>
         {# Graphics - Pillow #}
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 bg-emerald-50/30 dark:bg-emerald-950/10">
@@ -690,7 +747,8 @@ function costCalculator() {
     workhorse_output_price: 0.38,
     fast_input_price: 0.26,
     fast_output_price: 0.38,
-    image_cost: 0.005,
+    image_cost_growth: 0.025,
+    image_cost_pro: 0.04,
     voice_cost_per_min: 0.006,
     hosting_cost: 20,
     // State
@@ -704,25 +762,25 @@ function costCalculator() {
         this.premium_input_price = 0; this.premium_output_price = 0;
         this.workhorse_input_price = 0; this.workhorse_output_price = 0;
         this.fast_input_price = 0; this.fast_output_price = 0;
-        this.image_cost = 0; this.voice_cost_per_min = 0.006;
+        this.image_cost_growth = 0.025; this.image_cost_pro = 0.04; this.voice_cost_per_min = 0.006;
       } else if (name === 'phase3') {
         // Phase 3 (Month 3-6): DeepSeek V3.2 primary all tiers
         this.premium_input_price = 0.26; this.premium_output_price = 0.38;
         this.workhorse_input_price = 0.26; this.workhorse_output_price = 0.38;
         this.fast_input_price = 0.26; this.fast_output_price = 0.38;
-        this.image_cost = 0.005; this.voice_cost_per_min = 0.006;
+        this.image_cost_growth = 0.025; this.image_cost_pro = 0.04; this.voice_cost_per_min = 0.006;
       } else if (name === 'phase4') {
         // Phase 4 (Month 6+): Gemini Flash premium, DeepSeek workhorse, Step Flash fast
         this.premium_input_price = 0.50; this.premium_output_price = 3.00;
         this.workhorse_input_price = 0.26; this.workhorse_output_price = 0.38;
         this.fast_input_price = 0.10; this.fast_output_price = 0.30;
-        this.image_cost = 0.005; this.voice_cost_per_min = 0.006;
+        this.image_cost_growth = 0.025; this.image_cost_pro = 0.04; this.voice_cost_per_min = 0.006;
       } else if (name === 'premium') {
         // Premium: Claude/GPT-level pricing (ceiling test)
         this.premium_input_price = 3.00; this.premium_output_price = 15.00;
         this.workhorse_input_price = 0.50; this.workhorse_output_price = 3.00;
         this.fast_input_price = 0.26; this.fast_output_price = 0.38;
-        this.image_cost = 0.04; this.voice_cost_per_min = 0.006;
+        this.image_cost_growth = 0.04; this.image_cost_pro = 0.06; this.voice_cost_per_min = 0.006;
       }
       this.runEstimate();
     },
@@ -745,7 +803,8 @@ function costCalculator() {
       body.append('workhorse_output_price', self.workhorse_output_price || 0);
       body.append('fast_input_price', self.fast_input_price || 0);
       body.append('fast_output_price', self.fast_output_price || 0);
-      body.append('image_cost', self.image_cost || 0);
+      body.append('image_cost_growth', self.image_cost_growth || 0);
+      body.append('image_cost_pro', self.image_cost_pro || 0);
       body.append('voice_cost_per_min', self.voice_cost_per_min || 0);
       body.append('hosting_cost', self.hosting_cost || 0);
 
