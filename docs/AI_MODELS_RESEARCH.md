@@ -1,10 +1,10 @@
 # Kova Agent — AI Models Research & Recommendations
 > Choosing the right models for content that actually performs
 
-**Last updated:** April 1, 2026
+**Last updated:** June 2026
 **Current provider:** OpenRouter (gateway to 665+ models)
-**Current dev model:** `stepfun/step-3.5-flash:free` (all tiers)
-**Current image gen:** HuggingFace FLUX.1-schnell (free)
+**Current dev model:** `deepseek/deepseek-v3.2` (all LLM tiers)
+**Current image gen:** Together.ai FLUX tier-routed (FLUX.1-krea-dev for Growth, FLUX.1.1-pro for Pro/Agency)
 
 ---
 
@@ -113,10 +113,17 @@ This is the most critical choice. The Create Agent's output IS what users pay fo
 
 ## 3. Image Generation Models
 
-### Current Setup
-- **Primary:** HuggingFace FLUX.1-schnell (free Inference API)
-- **Fallback 1:** Together.ai FLUX.1-schnell-Free (requires deposit)
-- **Fallback 2:** Pollinations.ai Flux Schnell (requires API key)
+### Current Setup (Implemented — Tier-Routed)
+- **Architecture**: Per-plan model routing via LLMConfig singleton (admin-configurable)
+- **Starter**: Images disabled (0 limit) — fallback model: FLUX.1-schnell ($0.003/img)
+- **Growth**: Together.ai FLUX.1-krea-dev ($0.025/img, 50/month)
+- **Pro**: Together.ai FLUX.1.1-pro ($0.04/img, 100/month)
+- **Agency**: Together.ai FLUX.1.1-pro ($0.04/img, 500/month — capped)
+- **Fallback chain**: Together.ai → HuggingFace FLUX.1-schnell (free) → Pollinations (free)
+- **Visual Strategy**: AI selects optimal visual type (ai_photo, quote_card, tip_graphic, etc.) — Pillow graphics are FREE
+- **Kill switch**: Admin dashboard toggle + `AI_IMAGE_GENERATION_ENABLED` env var
+
+> **Note:** The research table below shows models evaluated during planning. The implemented system uses Together.ai FLUX models exclusively for AI photo generation, with Pillow for branded graphics.
 
 ### Available Image Models (via OpenRouter + Direct APIs)
 

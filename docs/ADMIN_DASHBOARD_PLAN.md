@@ -667,9 +667,35 @@ Full audit trail from `BillingEvent` model — every Stripe webhook and M-Pesa c
 
 | Provider | Model | Status | Avg Latency | Errors (24h) |
 |----------|-------|--------|-------------|-------------|
-| OpenRouter | stepfun/step-3.5-flash:free | 🟢 | 3.2s | 0 |
-| HuggingFace | flux (images) | 🟢 | 8.1s | 2 |
-| Together.ai | flux (fallback) | 🟢 | 6.4s | 0 |
+| OpenRouter | deepseek/deepseek-v3.2 | 🟢 | 2.1s | 0 |
+| Together.ai | FLUX.1-krea-dev (Growth) | 🟢 | 5.2s | 0 |
+| Together.ai | FLUX.1.1-pro (Pro/Agency) | 🟢 | 6.8s | 0 |
+| HuggingFace | FLUX.1-schnell (fallback) | 🟢 | 8.1s | 2 |
+| Pollinations | flux (last resort) | 🟢 | 9.5s | 0 |
+
+### Image Generation Configuration (LLM Overview Tab)
+
+Configurable from Admin Dashboard → LLM Config → Image Generation Configuration:
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| **Image Enabled** | Global kill-switch for all image generation | ✅ On |
+| **Default Provider** | Primary image provider | Together.ai |
+| **Default Model** | Fallback model if plan config missing | FLUX.1-schnell |
+| **Per-Plan Model Routing** | Which FLUX model each plan uses | Starter→schnell, Growth→krea-dev, Pro/Agency→FLUX.1.1-pro |
+| **Fallback Chain** | Ordered provider list if primary fails | Together → HuggingFace → Pollinations |
+
+### Image Generation Stats (Cost Economics Page)
+
+New image stats bar on Cost Economics dashboard:
+
+| Metric | Source | What It Shows |
+|--------|--------|--------------|
+| **Images Generated (30d)** | `Post.media_status = "generated"` | Total AI images created |
+| **Failed** | `Post.media_status = "failed"` | Generation failures |
+| **Pending** | `Post.media_status = "pending"` | Currently queued |
+| **Image Cost (30d)** | Per-plan count × PLAN_IMAGE_COST | Actual estimated spend |
+| **Avg Cost/Image** | Total cost ÷ generated count | Blended rate across plans |
 
 ---
 

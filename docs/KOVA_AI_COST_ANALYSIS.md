@@ -62,7 +62,7 @@
 | Social accounts | 1 | 3 | 10 | 25 |
 | Posts/month | 15 | 60 | 150 | Unlimited |
 | Seeds/month | 5 | 30 | 60 | Unlimited |
-| AI images/month | 0 | 50 | 100 | Unlimited |
+| AI images/month | 0 | 50 | 100 | 500 |
 | Daily brief | ✅ | ✅ | ✅ | ✅ |
 | Email brief | ❌ | ✅ | ✅ | ✅ |
 | Engagement agent | ❌ | ✅ | ✅ | ✅ |

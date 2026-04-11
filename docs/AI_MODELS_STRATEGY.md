@@ -307,10 +307,20 @@ At 100 users, infra per user drops to $0.20 and margins improve 5-15% across all
 - **Future**: Gemini 3 Flash supports audio input ($1/1M audio tokens) — could enable voice-to-content
 - **Recommendation**: Phase 4+ feature. No model decision needed now.
 
-### Image Generation
-- **Current**: HuggingFace FLUX.1-schnell (free), Gemini image gen for paid tiers
-- **Status**: Working well at current cost
-- **Recommendation**: No change. Image generation is a separate pipeline from LLM routing.
+### Image Generation (Tier-Routed — Implemented)
+- **Provider**: Together.ai (primary) → HuggingFace (fallback) → Pollinations (last resort)
+- **Architecture**: Per-plan model routing via `LLMConfig` singleton (admin-adjustable)
+- **Models**:
+  - Starter: FLUX.1-schnell ($0.003/img) — **images disabled** (0 limit)
+  - Growth: FLUX.1-krea-dev ($0.025/img) — 50 images/month
+  - Pro: FLUX.1.1-pro ($0.04/img) — 100 images/month
+  - Agency: FLUX.1.1-pro ($0.04/img) — 500 images/month (capped)
+- **Visual Strategy System**: AI selects optimal visual type per post:
+  - `ai_photo` — AI-generated photograph (uses FLUX models above)
+  - `quote_card`, `tip_graphic`, `stat_highlight`, `cta_banner`, `carousel`, `story_graphic` — Pillow-generated (FREE)
+- **Logo Watermark**: Brand logo auto-applied to all Pillow graphics
+- **Kill Switch**: Admin dashboard toggle + `AI_IMAGE_GENERATION_ENABLED` env var
+- **Cost Economics Dashboard**: Tracks actual image gen count, cost by plan, success/failure rates
 
 ### Multimodal Analysis
 - **Opportunity**: Gemini 3 Flash and Qwen 3.6 Plus both support image+text input
@@ -411,7 +421,13 @@ A 30-day line chart showing paid vs free AI cost per day. Helps you see:
 
 **Critical rule**: If any plan shows negative profit, that plan is losing money on every user. Action required immediately (reduce model quality for that tier or increase price).
 
-**Image cost logic**: Starter gets $0 image cost (free providers only). Growth/Pro/Agency estimated at $0.005/image using Pollinations.ai as paid fallback.
+**Image cost logic**: Tier-routed — each plan uses a different FLUX model via Together.ai:
+- Starter: $0 (images disabled, 0 limit)
+- Growth: $0.025/image × 50 limit = max $1.25/month (FLUX.1-krea-dev)
+- Pro: $0.04/image × 100 limit = max $4.00/month (FLUX.1.1-pro)
+- Agency: $0.04/image × 500 limit = max $20.00/month (FLUX.1.1-pro)
+
+Fallback chain (HuggingFace → Pollinations) is free but lower quality. Pillow-generated graphics (quote cards, stat graphics, CTA banners) are always free.
 
 **Voice cost logic**: OpenAI Whisper at $0.006/minute, with average memo length of 20 seconds:
 ```
@@ -502,16 +518,16 @@ The calculator has 5 preset buttons that load different model pricing scenarios:
 Premium:   $0 / $0          (Qwen 3.6 Plus free)
 Workhorse: $0 / $0          (Qwen 3.6 Plus free)
 Fast:      $0 / $0          (StepFun free)
-Images:    $0               (HuggingFace/Together.ai free)
+Images:    $0.025 Growth / $0.04 Pro+Agency  (Together.ai FLUX tier-routed)
 ```
-**When to use**: Current state. 90%+ calls hit free models, paid fallback rare. Shows your floor cost (just infra + voice).
+**When to use**: Current state. 90%+ calls hit free models, paid fallback rare. Image costs are the main expense since they use paid Together.ai models.
 
 #### Phase 3 — All DeepSeek
 ```
 Premium:   $0.26 / $0.38    (DeepSeek V3.2)
 Workhorse: $0.26 / $0.38    (DeepSeek V3.2)
 Fast:      $0.26 / $0.38    (DeepSeek V3.2)
-Images:    $0.005           (Pollinations.ai)
+Images:    $0.025 Growth / $0.04 Pro+Agency  (Together.ai FLUX tier-routed)
 ```
 **When to use**: After free model dependency is eliminated. All tiers on cheapest quality paid model. This is the "safe paid floor."
 
@@ -520,19 +536,19 @@ Images:    $0.005           (Pollinations.ai)
 Premium:   $0.50 / $3.00    (Gemini 3 Flash)
 Workhorse: $0.26 / $0.38    (DeepSeek V3.2)
 Fast:      $0.10 / $0.30    (Step 3.5 Flash)
-Images:    $0.005
+Images:    $0.025 Growth / $0.04 Pro+Agency  (Together.ai FLUX tier-routed)
 ```
 **When to use**: Mature state. Premium gets the best model, fast gets the cheapest model, workhorse in the middle. Maximizes quality-per-dollar.
 
 #### Free Only
-Same as Phase 2. All zeros. Shows infrastructure-only cost.
+Same as Phase 2 LLM pricing. All LLM zeros. Image costs remain (tier-routed). Shows infrastructure + image-only cost.
 
 #### Premium — Ceiling Test
 ```
 Premium:   $3.00 / $15.00   (Claude Sonnet level)
 Workhorse: $0.50 / $3.00    (Gemini Flash level)
 Fast:      $0.26 / $0.38    (DeepSeek level)
-Images:    $0.04            (Expensive image gen)
+Images:    $0.04 Growth / $0.06 Pro+Agency  (Higher-end image models)
 ```
 **When to use**: Stress test. "What if we used the most expensive models?" Shows your worst-case cost ceiling. If margins are still positive here, your pricing is robust.
 
@@ -544,7 +560,7 @@ These are the assumed monthly token volumes per user, per plan (defined in `PLAN
 |------|-------------|--------------|--------|-------------|
 | **Starter** | 40,000 | 35,000 | 0 | 5 |
 | **Growth** | 260,000 | 220,000 | 50 | 20 |
-| **Pro** | 1,100,000 | 900,000 | 200 | 50 |
+| **Pro** | 1,100,000 | 900,000 | 100 | 50 |
 | **Agency** | 2,200,000 | 1,800,000 | 500 | 100 |
 
 **Where these numbers come from**: Based on plan feature limits (max posts, max agents, max platforms) and estimated usage patterns from the COST_ANALYSIS.md doc. The Per-Plan Unit Economics section shows **actual** usage — check it regularly to see if estimates match reality. If actual Pro usage is 500K tokens but we estimated 1.1M, margins are better than projected.
@@ -556,13 +572,15 @@ Not all AI costs are LLM tokens:
 | Service | Provider | Cost | Used For |
 |---------|----------|------|----------|
 | **Whisper** | OpenAI | $0.006/min | Voice memo transcription |
-| **FLUX.1-schnell** | Together.ai | Free | Image generation (primary) |
-| **FLUX.1-schnell** | HuggingFace | Free | Image generation (fallback 1) |
-| **Pollinations.ai** | Pollinations | $0.005/img | Image generation (fallback 2) |
-| **Pillow Graphics** | On-device | Free | Branded quote cards, stat graphics, CTA banners |
+| **FLUX.1-schnell** | Together.ai | $0.003/img | Image gen — Starter fallback (images disabled) |
+| **FLUX.1-krea-dev** | Together.ai | $0.025/img | Image gen — Growth plan (50/month) |
+| **FLUX.1.1-pro** | Together.ai | $0.04/img | Image gen — Pro (100/mo) & Agency (500/mo) |
+| **FLUX.1-schnell** | HuggingFace | Free | Image gen fallback provider |
+| **Pollinations.ai** | Pollinations | Free | Image gen last-resort fallback |
+| **Pillow Graphics** | On-device | Free | Quote cards, tip graphics, stat highlights, CTA banners, carousels |
 | **Railway** | Railway.app | $20+/mo | Server hosting, DB, Redis |
 
-**Image generation priority chain**: Together.ai (free) → HuggingFace (free) → Pollinations ($0.005/img). The calculator uses $0.005 as worst-case, but in practice most images are generated for free.
+**Image generation system**: Tier-routed via Together.ai (each plan uses the FLUX model assigned in the admin dashboard). Fallback chain: HuggingFace (free) → Pollinations (free). The calculator uses per-plan costs: Growth=$0.025, Pro/Agency=$0.04.
 
 ### 11.6 Reading the Numbers — Decision Framework
 

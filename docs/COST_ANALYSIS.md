@@ -54,7 +54,7 @@ Every dollar Kova spends falls into one of these buckets:
 | Category | What's Inside | Variable/Fixed | Controls |
 |----------|--------------|----------------|----------|
 | **AI Models (LLM)** | OpenRouter API calls for 6 agents | Variable (per-token) | Model choice, prompt length, frequency |
-| **AI Models (Image)** | HuggingFace / Gemini image gen | Variable (per-image) | Model tier, images per post |
+| **AI Models (Image)** | Together.ai FLUX tier-routed image gen | Variable (per-image, per-plan) | Plan tier, monthly limit |
 | **Infrastructure** | Railway (web, worker, beat, DB, Redis) | Semi-fixed (usage-based) | Service sizing, scaling |
 | **Third-party APIs** | Platform APIs (mostly free), email (Resend/SES) | Mostly free | Volume limits |
 | **Payment processing** | M-Pesa (0% for STK Push) / Stripe (2.9% + $0.30) | Variable (per-txn) | Provider choice |
@@ -154,8 +154,9 @@ Still doesn't work for Pro/Agency with Claude. The problem is clear: **Claude So
 | **Premium** | `google/gemini-3-flash-preview` | $0.50 / $3.00 | #3 Marketing rank, excellent creative quality, 5x cheaper output than Claude |
 | **Workhorse** | `deepseek/deepseek-v3.2` | $0.26 / $0.38 | GPT-5 class reasoning, absurdly cheap |
 | **Fast** | `deepseek/deepseek-v3.2` | $0.26 / $0.38 | Same model simplifies config, near-free for classification |
-| **Image (Free)** | HuggingFace FLUX.1-schnell | FREE | Starter plan |
-| **Image (Paid)** | Gemini 2.5 Flash Image | ~$0.005/img | Growth+ plans |
+| **Image (Starter)** | Together.ai FLUX.1-schnell | $0.003/img | Disabled (0 limit) |
+| **Image (Growth)** | Together.ai FLUX.1-krea-dev | $0.025/img | 50 images/month |
+| **Image (Pro/Agency)** | Together.ai FLUX.1.1-pro | $0.04/img | Pro: 100/mo, Agency: 500/mo |
 
 **Why not Claude?** Claude Sonnet 4.6 is the best creative writer, but at $15/1M output tokens, it's 5x more expensive than Gemini Flash ($3/1M). Gemini 3 Flash is ranked #3 in Marketing on OpenRouter — it's 80% of Claude's quality at 20% of the cost. For a KES 299-2999 product, this is the right trade-off.
 
@@ -165,33 +166,49 @@ Still doesn't work for Pro/Agency with Claude. The problem is clear: **Claude So
 
 ## 4. Image Generation Costs
 
-### Per-Image Costs by Model
+### Architecture: Tier-Routed FLUX Models via Together.ai
 
-| Model | Cost/Image | Quality | Best For |
-|-------|-----------|---------|---------|
-| HuggingFace FLUX.1-schnell | **FREE** | Good (no text rendering) | Starter plan, dev |
-| Gemini 2.5 Flash Image | **~$0.005** | Great (text rendering, editing) | Growth/Pro plans |
-| Gemini 3 Pro Image | **~$0.04** | Excellent (4K, identity preservation) | Agency plan |
-| GPT-5 Image Mini | **~$0.03** | Excellent (instruction following) | Alternative premium |
+Image generation uses **per-plan model routing** — each plan tier gets a different FLUX model, configurable from the admin dashboard (LLM Config → Image Generation Configuration).
+
+**Provider chain**: Together.ai (primary, paid) → HuggingFace FLUX.1-schnell (free fallback) → Pollinations (free last resort)
+
+**Visual Strategy System**: The AI selects the optimal visual type per post:
+- `ai_photo` — uses FLUX models (costs per table below)
+- `quote_card`, `tip_graphic`, `stat_highlight`, `cta_banner`, `carousel`, `story_graphic` — Pillow-generated (FREE, $0 cost)
+
+### Per-Image Costs by Model (Together.ai)
+
+| Model | Cost/Image | Quality | Plan Assignment |
+|-------|-----------|---------|----------------|
+| FLUX.1-schnell | **$0.003** | Good (fast, decent quality) | Starter (disabled) |
+| FLUX.1-krea-dev | **$0.025** | Great (significantly better detail) | Growth |
+| FLUX.1.1-pro | **$0.04** | Excellent (best FLUX quality) | Pro & Agency |
 
 ### Monthly Image Cost Per Plan
 
-Assumption: 1 AI image per post (some posts won't need images)
+Based on actual plan limits (enforced in billing):
 
-| Plan | Posts/mo | Image Model | Cost/Image | **Total Image Cost** |
-|------|----------|-------------|-----------|---------------------|
-| **Starter** | 15 | FLUX.1-schnell | FREE | **$0.00** |
-| **Growth** | 50 | Gemini 2.5 Flash | $0.005 | **$0.25** |
-| **Pro** | 200 | Gemini 2.5 Flash | $0.005 | **$1.00** |
-| **Agency** | 500 | Gemini 3 Pro | $0.04 | **$20.00** |
+| Plan | Image Limit/mo | Image Model | Cost/Image | **Max Monthly Image Cost** | **% of Revenue** |
+|------|---------------|-------------|-----------|---------------------------|-----------------|
+| **Starter** | 0 | N/A (disabled) | — | **$0.00** | 0% |
+| **Growth** | 50 | FLUX.1-krea-dev | $0.025 | **$1.25** | 18% of $7 |
+| **Pro** | 100 | FLUX.1.1-pro | $0.04 | **$4.00** | 29% of $14 |
+| **Agency** | 500 | FLUX.1.1-pro | $0.04 | **$20.00** | 95% of $21 ⚠️ |
 
 ### 🚨 Agency Image Cost Alert
 
-At $0.04/image × 500 posts = $20/month — that's 81% of Agency revenue just on images.
+At $0.04/image × 500 images = $20/month — that's 95% of Agency revenue ($21) just on images if a user maxes out their limit.
 
-**Fix:** Use Gemini 2.5 Flash ($0.005) as default even for Agency. Offer Gemini 3 Pro as "Premium quality" toggle (10 premium images/month included).
+**Mitigation (implemented):**
+1. Agency limit capped at 500 (was unlimited/999,999)
+2. Visual strategy system routes many posts to FREE Pillow graphics instead of paid AI images
+3. Only platforms that **require** images (Instagram, TikTok, Pinterest) auto-generate — text-first platforms skip image gen
+4. Admin can adjust per-plan limits and model routing from the dashboard without code changes
 
-**Revised Agency image cost:** 490 × $0.005 + 10 × $0.04 = $2.45 + $0.40 = **$2.85**
+**Realistic usage**: Most Agency users won't hit 500 AI images/month because:
+- Many posts use Pillow graphics (quote cards, stat highlights) — $0 cost
+- Text-first platforms (Twitter, LinkedIn, Facebook) don't auto-generate images
+- Estimated realistic usage: ~150-200 AI images/month = $6-$8 (29-38% of revenue)
 
 ---
 
