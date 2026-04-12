@@ -171,6 +171,67 @@ def _gather_brief_data(user):
         failed=Count("id", filter=Q(status=Post.Status.FAILED)),
     )
 
+    # ── Decisions needed: items requiring human judgment ──────────────
+    # Unanswered interactions (new/flagged)
+    try:
+        from apps.engage.models import Interaction
+        unanswered = Interaction.objects.filter(
+            user=user,
+            status__in=["new", "flagged"],
+        ).order_by("-created_at")[:10]
+        unanswered_data = [
+            {
+                "author": i.author_name,
+                "content": i.content[:120],
+                "platform": i.platform,
+                "type": i.interaction_type,
+                "status": i.status,
+                "sentiment": i.sentiment,
+            }
+            for i in unanswered
+        ]
+        unanswered_count = Interaction.objects.filter(
+            user=user, status__in=["new", "flagged"],
+        ).count()
+    except Exception as e:
+        logger.warning("Unanswered interactions query failed: %s", e)
+        unanswered_data = []
+        unanswered_count = 0
+
+    # New leads awaiting action
+    try:
+        from apps.leads.models import Lead
+        new_leads = Lead.objects.filter(
+            user=user, status="new",
+        ).order_by("-created_at")[:5]
+        new_leads_data = [
+            {
+                "name": l.name,
+                "source": l.source,
+                "created": l.created_at.strftime("%b %d"),
+            }
+            for l in new_leads
+        ]
+        new_leads_count = Lead.objects.filter(user=user, status="new").count()
+        open_leads_count = Lead.objects.filter(
+            user=user, status__in=["new", "contacted", "qualified"],
+        ).count()
+    except Exception as e:
+        logger.warning("Leads query for brief failed: %s", e)
+        new_leads_data = []
+        new_leads_count = 0
+        open_leads_count = 0
+
+    decisions_needed = {
+        "unanswered_interactions": unanswered_data,
+        "unanswered_count": unanswered_count,
+        "new_leads": new_leads_data,
+        "new_leads_count": new_leads_count,
+        "open_leads_count": open_leads_count,
+        "posts_pending_approval": pending_posts,
+        "failed_posts": failed_posts,
+    }
+
     return {
         "today": today.isoformat(),
         "yesterday_published": yesterday_posts.count(),
@@ -194,41 +255,63 @@ def _gather_brief_data(user):
         "competitor_intel": competitor_intel,
         "product_catalog": product_data,
         "revenue_attribution": revenue_data,
+        "decisions_needed": decisions_needed,
     }
 
 
 def _generate_brief_with_llm(user, brief_data):
-    """Use LLM to compose a natural-language daily brief."""
+    """Use LLM to compose a natural-language daily brief in agency-director tone."""
     profile = getattr(user, "profile", None)
     company = getattr(profile, "company_name", "") if profile else ""
+    first_name = user.first_name or "there"
 
     system_prompt = (
-        "You are the Chief Strategist Agent for Kova Agent, an AI social media platform. "
-        "You compile a daily brief for the user — a concise, actionable morning summary. "
-        f"The user's brand is '{company}'. "
-        "Write in a warm but professional tone, like a smart assistant who knows the business.\n\n"
+        "You are the Chief Strategist at Kova — an AI social media agency. "
+        "Every morning you sit down with your client for a 2-minute strategy check-in. "
+        f"Your client is {first_name}, who runs '{company}'.\n\n"
+        "THIS IS NOT A REPORT OR SUMMARY. This is a strategic conversation. "
+        "Talk like an agency director who genuinely knows the business:\n"
+        "- Be direct: 'You should...' not 'It is recommended...'\n"
+        "- Be specific: name actual posts, actual numbers, actual people\n"
+        "- Be strategic: connect dots between data (why something worked, what to do about it)\n"
+        "- Be honest: if something failed or underperformed, say so and say what to change\n"
+        "- Be motivating: celebrate wins, highlight momentum\n"
+        "- Use 'we' for the agency team, 'you' for the client\n\n"
         "Respond in JSON with these keys:\n"
-        '- "summary": 3-5 sentences — the main briefing (what happened, what needs attention, what\'s coming)\n'
-        '- "trending_topics": list of 3-5 relevant trending topics/hashtags to consider for content today\n'
-        '- "suggested_posts": list of 2-3 content ideas with {idea, reasoning, platform} — based on what\'s working\n'
-        '- "performance_highlight": one standout metric or insight from yesterday\n'
-        '- "engagement_summary": 2-3 sentences about engagement health — response rate, sentiment trends, '
-        'superfans to acknowledge, unanswered items needing attention\n'
-        '- "agent_summary": 1-2 sentences about what the AI agents did in the last 24 hours\n'
-        '- "competitor_update": 1-2 sentences about competitor activity — new insights, '
-        'content gaps to exploit, or threats to watch. Empty string if no competitor data.\n'
-        '- "product_update": 1-2 sentences about product catalog health — low stock warnings, '
-        'out-of-stock items to stop promoting, featured products to push, stock-content mismatches. '
-        'Empty string if no product data.\n'
-        '- "revenue_update": 1-2 sentences about revenue attribution — sales tracked this week, '
-        'best-performing post by revenue, ROI trend, platforms driving the most sales. '
-        'Empty string if no revenue data.\n'
+        '- "summary": 4-6 sentences — the morning check-in. Start with the most important thing. '
+        'What happened, what needs attention NOW, and what we\'re doing about it. '
+        'Address the user by name. Sound like a trusted advisor, not a dashboard.\n'
+        '- "decisions_needed": list of 1-4 items needing human judgment, each with '
+        '{item, context, recommended_action, urgency: "now"|"today"|"this_week"}. '
+        'E.g. "3 flagged comments need your review", "A lead asked about pricing — reply recommended". '
+        'Empty list if nothing needs attention.\n'
+        '- "agent_plan": list of 2-4 things the agents will do today, each with '
+        '{agent, action, why}. E.g. {agent: "Research", action: "Scanning competitor X\'s new campaign", '
+        'why: "They posted 3x more than usual yesterday"}. Be specific, not generic.\n'
+        '- "trending_topics": list of 3-5 relevant trending topics with '
+        '{topic, relevance, urgency: "high"|"medium"|"low", suggested_angle, platforms: []}.\n'
+        '- "suggested_posts": list of 2-3 content ideas with {idea, reasoning, platform} — '
+        'grounded in what\'s working + what\'s trending. Not generic ideas.\n'
+        '- "performance_highlight": 2-3 sentences — one standout insight from yesterday/this week. '
+        'Connect it to strategy: not just "engagement up 20%" but "your behind-the-scenes posts '
+        'are getting 3x more saves — we should do more of these."\n'
+        '- "engagement_summary": 2-3 sentences — engagement health, response quality, '
+        'superfans to acknowledge, sentiment shifts.\n'
+        '- "pipeline_summary": 2-3 sentences about the sales/lead pipeline — '
+        'new leads, open conversations, conversion opportunities. Empty string if no lead data.\n'
+        '- "agent_summary": 1-2 sentences — what the AI agents accomplished in the last 24 hours. '
+        'Specific actions, not "agents were active."\n'
+        '- "competitor_update": 1-2 sentences if competitor data exists, empty string otherwise.\n'
+        '- "product_update": 1-2 sentences if product catalog data exists, empty string otherwise.\n'
+        '- "revenue_update": 1-2 sentences if revenue data exists, empty string otherwise.\n'
     )
 
     prompt = (
-        f"Compile today's daily brief based on this data:\n\n"
+        f"Compile today's morning check-in based on this data:\n\n"
         f"{json.dumps(brief_data, indent=2, default=str)}\n\n"
-        "Generate an actionable, personalized daily brief."
+        "Generate a strategic, personalized morning briefing. "
+        "Be direct — tell the client what matters, what to do, and what we're handling. "
+        "If something needs their decision, flag it clearly."
     )
 
     response = generate(
@@ -236,8 +319,8 @@ def _generate_brief_with_llm(user, brief_data):
         system=system_prompt,
         model=get_model_for_task("strategist.brief", user=user),
         json_mode=True,
-        temperature=0.4,
-        max_tokens=1500,
+        temperature=0.5,
+        max_tokens=2500,
     )
     return response
 
@@ -333,6 +416,13 @@ def generate_daily_brief(user, *, user_date=None):
             performance_summary={
                 "highlight": llm_result.get("performance_highlight", ""),
                 "agent_summary": llm_result.get("agent_summary", ""),
+                "engagement_summary": llm_result.get("engagement_summary", ""),
+                "pipeline_summary": llm_result.get("pipeline_summary", ""),
+                "competitor_update": llm_result.get("competitor_update", ""),
+                "product_update": llm_result.get("product_update", ""),
+                "revenue_update": llm_result.get("revenue_update", ""),
+                "decisions_needed": llm_result.get("decisions_needed", []),
+                "agent_plan": llm_result.get("agent_plan", []),
                 "data": brief_data.get("performance", {}).get("performance_data", {}),
             },
             agent_activity=[

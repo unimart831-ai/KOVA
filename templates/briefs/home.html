@@ -2,7 +2,7 @@
 
 {% block page_title %}Daily Brief{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Your Chief Strategist’s summary and next actions</p>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Your morning check-in with Kova's Chief Strategist</p>
 {% endblock %}
 
 {% block content %}
@@ -32,7 +32,7 @@
             <div class="flex flex-wrap items-start gap-4 mb-5">
               <div class="w-12 h-12 rounded-xl bg-kova-100 dark:bg-kova-950 flex items-center justify-center text-2xl shrink-0" aria-hidden="true">🧠</div>
               <div class="min-w-0 flex-1">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Good morning — here’s your brief</h2>
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Morning, {{ request.user.first_name|default:"there" }} — let's talk strategy</h2>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ brief.date|date:"l, F j, Y" }}</p>
               </div>
             </div>
@@ -41,6 +41,79 @@
             </div>
           </div>
         </div>
+
+        {# ── Decisions needed — things that require human judgment ── #}
+        {% with decisions=brief.performance_summary.decisions_needed %}
+        {% if decisions %}
+          <div class="card border-amber-200 dark:border-amber-800/60">
+            <div class="px-6 py-4 border-b border-amber-100 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20 rounded-t-xl">
+              <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <span class="text-amber-600 dark:text-amber-400" aria-hidden="true">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                </span>
+                Needs your decision
+              </h3>
+              <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">Items only you can handle — we'll take care of the rest</p>
+            </div>
+            <ul class="divide-y divide-amber-100 dark:divide-amber-900/30">
+              {% for d in decisions %}
+                <li class="px-6 py-4">
+                  <div class="flex items-start gap-3">
+                    {% if d.urgency == "now" %}
+                      <span class="mt-0.5 shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">Now</span>
+                    {% elif d.urgency == "today" %}
+                      <span class="mt-0.5 shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">Today</span>
+                    {% else %}
+                      <span class="mt-0.5 shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">This week</span>
+                    {% endif %}
+                    <div class="min-w-0 flex-1">
+                      <p class="text-sm font-medium text-gray-900 dark:text-white">{{ d.item }}</p>
+                      {% if d.context %}
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ d.context }}</p>
+                      {% endif %}
+                      {% if d.recommended_action %}
+                        <p class="text-xs text-kova-600 dark:text-kova-400 mt-1 font-medium">→ {{ d.recommended_action }}</p>
+                      {% endif %}
+                    </div>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+        {% endwith %}
+
+        {# ── Agent plan — what the AI team is doing today ── #}
+        {% with agent_plan=brief.performance_summary.agent_plan %}
+        {% if agent_plan %}
+          <div class="card">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+              <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <span class="text-kova-600 dark:text-kova-400" aria-hidden="true">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                </span>
+                What your agents are doing today
+              </h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Your AI team's plan — no action needed from you</p>
+            </div>
+            <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+              {% for ap in agent_plan %}
+                <li class="px-6 py-4">
+                  <div class="flex items-start gap-3">
+                    <span class="mt-0.5 shrink-0 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-kova-100 text-kova-700 dark:bg-kova-950 dark:text-kova-300">{{ ap.agent }}</span>
+                    <div class="min-w-0 flex-1">
+                      <p class="text-sm font-medium text-gray-900 dark:text-white">{{ ap.action }}</p>
+                      {% if ap.why %}
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ ap.why }}</p>
+                      {% endif %}
+                    </div>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+        {% endwith %}
 
         {% if brief.performance_summary.highlight %}
           <div class="card">
@@ -52,12 +125,49 @@
                 Performance insight
               </h3>
             </div>
-            <div class="card-body">
+            <div class="card-body space-y-4">
               <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.highlight }}</p>
+
+              {% if brief.performance_summary.engagement_summary %}
+              <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Engagement</p>
+                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.engagement_summary }}</p>
+              </div>
+              {% endif %}
+
+              {% if brief.performance_summary.pipeline_summary %}
+              <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Sales pipeline</p>
+                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.pipeline_summary }}</p>
+              </div>
+              {% endif %}
+
+              {% if brief.performance_summary.revenue_update %}
+              <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Revenue</p>
+                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.revenue_update }}</p>
+              </div>
+              {% endif %}
+
+              {% if brief.performance_summary.competitor_update %}
+              <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Competitor Intel</p>
+                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.competitor_update }}</p>
+              </div>
+              {% endif %}
+
+              {% if brief.performance_summary.product_update %}
+              <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Products</p>
+                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.product_update }}</p>
+              </div>
+              {% endif %}
+
               {% if brief.performance_summary.agent_summary %}
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-                  <span class="font-medium text-gray-600 dark:text-gray-300">Agent activity:</span> {{ brief.performance_summary.agent_summary }}
-                </p>
+                <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Agent activity</p>
+                  <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.agent_summary }}</p>
+                </div>
               {% endif %}
             </div>
           </div>
@@ -144,7 +254,7 @@
             <div class="card-body">
               <p class="text-xs font-semibold uppercase tracking-wide text-kova-700 dark:text-kova-300 mb-1">Needs you</p>
               <p class="font-semibold text-gray-900 dark:text-white">{{ brief.posts_pending }} post{{ brief.posts_pending|pluralize }} ready for review</p>
-              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Your Create Agent drafted these while you were away.</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">We drafted these while you were away — take a quick look.</p>
               <a href="{% url 'content:studio' %}" class="btn-primary w-full justify-center mt-4">Review in Studio</a>
             </div>
           </div>
@@ -229,10 +339,10 @@
     <div class="card max-w-2xl mx-auto">
       <div class="card-body text-center py-14 px-6">
         <div class="w-16 h-16 mx-auto rounded-2xl bg-kova-100 dark:bg-kova-950 flex items-center justify-center text-3xl mb-5" aria-hidden="true">🧠</div>
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white">No brief yet today</h2>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Your strategist hasn't checked in yet</h2>
         <p class="text-gray-600 dark:text-gray-400 mt-3 max-w-md mx-auto text-sm leading-relaxed">
-          Your Chief Strategist compiles your daily brief at {{ request.user.daily_brief_time|time:"g:i A" }}.
-          Connect platforms and enable agents to see summaries here.
+          Your morning check-in arrives at {{ request.user.daily_brief_time|time:"g:i A" }} every day.
+          Connect platforms and enable agents so your strategist has data to work with.
         </p>
         <div class="flex flex-col sm:flex-row gap-3 justify-center mt-8">
           <a href="{% url 'platforms:list' %}" class="btn-primary">Connect a platform</a>
