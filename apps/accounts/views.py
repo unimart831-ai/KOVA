@@ -93,8 +93,14 @@ def onboarding_view(request):
             from apps.emails.tasks import send_welcome_email
             send_welcome_email.delay(str(request.user.pk))
 
-            messages.success(request, "Welcome to Kova Agent! Your 6 AI agents are active and your 14-day trial has started.")
-            return redirect("brief:home")
+            # ── Fire the Agency Intelligence task chain ──────────────
+            # Research → Starter Seeds → Content → Welcome Brief
+            from apps.agents.onboarding_tasks import run_onboarding_intelligence
+            from apps.utils import fire_task
+            fire_task(run_onboarding_intelligence, str(request.user.pk))
+
+            messages.success(request, "Welcome to Kova Agent! Your AI agency is analyzing your industry now.")
+            return redirect("accounts:onboarding_complete")
 
         from apps.platforms.models import SocialAccount
         connected = SocialAccount.objects.filter(user=request.user, is_active=True)
@@ -141,3 +147,56 @@ def profile_industry_api(request):
     profile = getattr(request.user, "profile", None)
     industry = getattr(profile, "industry", "") if profile else ""
     return JsonResponse({"industry": industry})
+
+
+@login_required
+def onboarding_complete(request):
+    """
+    The "Agency First Meeting" page — shown after onboarding Step 4.
+    Displays animated progress as the AI agency analyzes the user's
+    industry, creates starter content, and prepares a welcome brief.
+    Uses HTMX polling to check progress.
+    """
+    from apps.agents.onboarding_tasks import get_onboarding_progress
+    from apps.briefs.models import DailyBrief
+
+    progress = get_onboarding_progress(request.user)
+    today = timezone.now().date()
+    brief = DailyBrief.objects.filter(user=request.user, date=today).first()
+
+    # If everything is done, redirect to brief home after a few visits
+    if progress["all_done"] and brief and request.GET.get("completed"):
+        return redirect("brief:home")
+
+    return render(request, "accounts/onboarding_complete.html", {
+        "progress": progress,
+        "brief": brief,
+        "page_title": "Your AI Agency is Starting",
+    })
+
+
+@login_required
+def onboarding_progress_api(request):
+    """HTMX polling endpoint — returns progress fragment."""
+    from apps.agents.onboarding_tasks import get_onboarding_progress
+    from apps.briefs.models import DailyBrief
+    from apps.content.models import Post
+    from apps.platforms.models import SocialAccount
+
+    progress = get_onboarding_progress(request.user)
+    today = timezone.now().date()
+    brief = DailyBrief.objects.filter(user=request.user, date=today).first()
+    posts_ready = Post.objects.filter(
+        user=request.user,
+        status__in=[Post.Status.PENDING_APPROVAL, Post.Status.DRAFT],
+    ).count()
+    has_platforms = SocialAccount.objects.filter(
+        user=request.user, is_active=True
+    ).exists()
+
+    return render(request, "accounts/_onboarding_progress.html", {
+        "progress": progress,
+        "brief": brief,
+        "posts_ready": posts_ready,
+        "has_platforms": has_platforms,
+    })
