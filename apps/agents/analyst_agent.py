@@ -576,9 +576,77 @@ def get_content_dna_summary(user, days=30):
 
     winning.sort(key=lambda x: x["avg_engagement"], reverse=True)
 
+    # ── Algorithm Signal Rates (saves/shares as % of reach) ──────────────
+    signal_rates = {}
+    platform_format_stats = {}  # for format mix recommendation
+    for post in posts:
+        try:
+            m = post.metrics
+        except PostMetric.DoesNotExist:
+            continue
+        platform = post.social_account.platform if post.social_account else "unknown"
+        reach = m.reach or m.impressions or 0
+        if reach < 10:
+            continue  # skip posts with negligible reach
+
+        save_rate = round((m.saves / reach) * 100, 2) if m.saves else 0
+        share_rate = round((m.shares / reach) * 100, 2) if m.shares else 0
+        comment_rate = round((m.comments / reach) * 100, 2) if m.comments else 0
+
+        if platform not in signal_rates:
+            signal_rates[platform] = {
+                "save_rates": [], "share_rates": [], "comment_rates": [], "posts": 0,
+            }
+        signal_rates[platform]["save_rates"].append(save_rate)
+        signal_rates[platform]["share_rates"].append(share_rate)
+        signal_rates[platform]["comment_rates"].append(comment_rate)
+        signal_rates[platform]["posts"] += 1
+
+        # Track format performance per platform for mix recommendation
+        dna = post.content_dna or {}
+        fmt = dna.get("format", "unknown")
+        img_type = dna.get("image_type", "none")
+        content_format = img_type if img_type not in ("none", None) else fmt
+        key = (platform, content_format)
+        if key not in platform_format_stats:
+            platform_format_stats[key] = {"total_engagement": 0, "total_reach": 0, "count": 0}
+        platform_format_stats[key]["total_engagement"] += m.engagement_rate or 0
+        platform_format_stats[key]["total_reach"] += reach
+        platform_format_stats[key]["count"] += 1
+
+    # Compute averages
+    algo_signals = {}
+    for platform, data in signal_rates.items():
+        n = data["posts"]
+        algo_signals[platform] = {
+            "avg_save_rate": round(sum(data["save_rates"]) / n, 2) if n else 0,
+            "avg_share_rate": round(sum(data["share_rates"]) / n, 2) if n else 0,
+            "avg_comment_rate": round(sum(data["comment_rates"]) / n, 2) if n else 0,
+            "posts_analyzed": n,
+        }
+
+    # Format mix: per-platform ranked formats
+    format_mix = {}
+    for (platform, fmt), data in platform_format_stats.items():
+        if data["count"] < 2:
+            continue
+        avg_eng = round(data["total_engagement"] / data["count"], 2)
+        if platform not in format_mix:
+            format_mix[platform] = []
+        format_mix[platform].append({
+            "format": fmt,
+            "avg_engagement": avg_eng,
+            "avg_reach": round(data["total_reach"] / data["count"]),
+            "posts": data["count"],
+        })
+    for platform in format_mix:
+        format_mix[platform].sort(key=lambda x: x["avg_engagement"], reverse=True)
+
     return {
         "winning_attributes": winning[:10],
         "total_analyzed": posts.count(),
+        "algorithm_signals": algo_signals,
+        "format_mix": format_mix,
     }
 
 

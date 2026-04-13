@@ -57,6 +57,26 @@ def _get_performance_intelligence(user) -> str:
             parts.append("")
             parts.append("INSTRUCTION: Bias your content toward these winning attributes when they fit naturally.")
             parts.append("Don't force it — but all else being equal, prefer formats, tones, and hooks that have proven to work.")
+
+        # Algorithm signal rates — saves/shares as % of reach
+        algo_signals = dna.get("algorithm_signals", {})
+        if algo_signals:
+            parts.append("\n## ALGORITHM SIGNAL RATES (what the algorithms reward)")
+            for plat, sigs in algo_signals.items():
+                parts.append(f"  **{plat}**: save rate {sigs['avg_save_rate']}% · share rate {sigs['avg_share_rate']}% · comment rate {sigs['avg_comment_rate']}% ({sigs['posts_analyzed']} posts)")
+            parts.append("INSTRUCTION: Saves and shares matter 5-10x more than likes for algorithm distribution.")
+            parts.append("Write content people want to SAVE (reference-worthy, actionable) or SHARE (relatable, surprising, useful to others).")
+            parts.append("Ask yourself: 'Would someone screenshot this or send it to a friend?' If not, make it more save/share-worthy.\n")
+
+        # Format mix — which content formats perform best per platform
+        format_mix = dna.get("format_mix", {})
+        if format_mix:
+            parts.append("## FORMAT MIX INTELLIGENCE (which formats your audience prefers)")
+            for plat, formats in format_mix.items():
+                top = formats[:3]
+                ranked = ", ".join(f"{f['format']} ({f['avg_engagement']}% eng, {f['posts']} posts)" for f in top)
+                parts.append(f"  **{plat}**: {ranked}")
+            parts.append("INSTRUCTION: Lean heavily toward the top-performing formats. If carousels outperform photos 3x, create more carousels.\n")
     except Exception as e:
         logger.debug("Performance intelligence (DNA) unavailable for %s: %s", user.email, e)
 
@@ -154,7 +174,7 @@ PLATFORM_GUIDES = {
     "instagram": {
         "name": "Instagram",
         "max_chars": 2200,
-        "psychology": "Aspiration + education. Save-worthy content wins the algorithm. Carousels get 3x engagement. People save posts that teach them something they can reference later.",
+        "psychology": "Aspiration + education. Save-worthy content wins the algorithm. Carousels get 3x engagement. People save posts that teach them something they can reference later. DM shares are the #1 algorithm signal — content that gets sent to friends gets massive distribution.",
         "winning_patterns": [
             "Carousel-style: '5 things I wish I knew about X' (write as numbered list)",
             "Micro-lesson: one specific tip explained in depth",
@@ -163,13 +183,14 @@ PLATFORM_GUIDES = {
             "Behind-the-scenes with authentic storytelling",
         ],
         "avoid": "Stock photo language, over-polished corporate tone, irrelevant hashtags, being preachy",
-        "cta_style": "Save this for later / Share with someone who needs this / Drop a 🔥 if you agree",
+        "cta_style": "Save this for later / Share with someone who needs this / Drop a 🔥 if you agree / Send this to a friend who...",
         "formats": ["photo caption", "carousel caption", "reel script"],
+        "formatting_rules": "Instagram shows ~125 characters before 'more'. The first line MUST create a curiosity gap or bold statement that demands expansion. Never start with a hashtag or generic greeting. Front-load the hook."
     },
     "facebook": {
         "name": "Facebook",
         "max_chars": 63206,
-        "psychology": "Community + conversation. Facebook rewards posts that generate long comment threads. Storytelling and relatable content get shared. People share content that makes them look thoughtful or helpful.",
+        "psychology": "Community + conversation. Facebook rewards posts that generate long comment threads. Storytelling and relatable content get shared. People share content that makes them look thoughtful or helpful. Shares are the #1 signal — if someone shares your post to their timeline, you win.",
         "winning_patterns": [
             "Story format: setup → tension → resolution → lesson",
             "Opinion piece that invites debate (not controversy, but perspective)",
@@ -177,9 +198,10 @@ PLATFORM_GUIDES = {
             "Question that taps into shared experience",
             "Longer-form storytelling with emotional hooks",
         ],
-        "avoid": "Clickbait, engagement bait ('Tag 3 friends'), overly promotional, link-only posts",
+        "avoid": "Clickbait, engagement bait ('Tag 3 friends'), overly promotional, link-only posts (links reduce reach — put links in comments instead)",
         "cta_style": "Ask a genuine question. 'What's been your experience with X?' works better than 'Like if you agree'.",
         "formats": ["text post", "link post with commentary", "photo post"],
+        "formatting_rules": "Facebook shows ~400 characters before 'See more'. Front-load the hook — the first 2-3 lines must be gripping enough to demand expansion. Never put external links in the main post text (it kills reach) — add links in the first comment instead.",
     },
     "tiktok": {
         "name": "TikTok",
@@ -283,6 +305,34 @@ ENGAGEMENT_ENGINEERING = """
 5. **Emotional resonance**: Connect to feelings your audience experiences daily (frustration, aspiration, pride).
 6. **Actionability**: Every post should leave the reader with something they can DO, THINK, or FEEL differently.
 7. **Conversation starters**: End with questions people WANT to answer (about their experience, not yes/no).
+
+## ALGORITHM OPTIMIZATION (how platforms decide to show your content to MORE people)
+
+The first 30-60 minutes after posting decide everything. Platforms show your post to a small test audience first.
+If THEY engage, the algorithm pushes it wider. If they don't — it dies.
+
+**Engagement value ranking (most to least valuable for distribution):**
+  1. DM shares / Sends — someone actively shared your content with a friend (STRONGEST signal)
+  2. Saves / Bookmarks — they want to come back to it (HIGH value)
+  3. Long comments (5+ words) — they invested time responding
+  4. Shares / Reposts — public endorsement
+  5. Watch time / Dwell time — they stopped scrolling and consumed
+  6. "See more" clicks — they expanded to read the full text
+  7. Likes — weakest signal, still counts but barely moves distribution
+
+**HOOK RULES (first line is EVERYTHING):**
+- The first line must create an IRRESISTIBLE reason to keep reading.
+- Test: would YOU stop scrolling for this first line? If not, rewrite it.
+- For platforms with "See more" (LinkedIn, Instagram, Facebook): the visible preview (first 2-3 lines)
+  must be so compelling that NOT clicking "See more" feels like a loss.
+- Strong hooks: bold claim, surprising stat, curiosity gap, direct "you" address, contrarian take.
+- Weak hooks: greetings ("Hey everyone!"), announcements ("Excited to share"), questions with obvious answers.
+
+**SAVE/SHARE OPTIMIZATION:**
+- "Save-worthy" = reference material (tips, steps, frameworks, templates, checklists)
+- "Share-worthy" = relatable truth, useful to others, makes the sharer look smart/helpful
+- Explicitly prompt when natural: "Save this for when you need it" or "Send this to someone who..."
+- Don't beg — engineer content so good that saving/sharing is the natural response.
 """
 
 

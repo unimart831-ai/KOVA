@@ -450,7 +450,8 @@ def generate_replies(user, batch_size=10):
         return 0
 
     # Get interactions that need replies
-    # Prioritize: flagged first, then new with sentiment, skip spam/ignored
+    # Priority: 1) comments on fresh posts (<1hr, algorithm velocity boost),
+    #           2) flagged, 3) new with sentiment, skip spam/ignored
     needs_reply = (
         Interaction.objects.filter(
             user=user,
@@ -460,8 +461,8 @@ def generate_replies(user, batch_size=10):
         .exclude(sentiment="")
         .select_related("social_account", "post")
         .order_by(
-            # Flagged items first, then by recency
-            models_case_when_priority(),
+            # Fresh-post comments first (algorithm velocity), then flagged, then recency
+            _reply_priority_ordering(),
             "-created_at",
         )[:batch_size]
     )
@@ -515,6 +516,28 @@ def models_case_when_priority():
         When(status=Interaction.Status.FLAGGED, then=Value(0)),
         When(status=Interaction.Status.NEW, then=Value(1)),
         default=Value(2),
+        output_field=IntegerField(),
+    )
+
+
+def _reply_priority_ordering():
+    """
+    SQL ordering that prioritizes algorithm-critical replies:
+    0 = comment on a post published < 1 hour ago (creator reply velocity = algorithm boost)
+    1 = flagged interactions
+    2 = new interactions
+    3 = everything else
+    """
+    from django.db.models import Case, Value, When, IntegerField, Q
+    one_hour_ago = timezone.now() - timedelta(hours=1)
+    return Case(
+        When(
+            Q(post__published_at__gte=one_hour_ago) & Q(status=Interaction.Status.NEW),
+            then=Value(0),
+        ),
+        When(status=Interaction.Status.FLAGGED, then=Value(1)),
+        When(status=Interaction.Status.NEW, then=Value(2)),
+        default=Value(3),
         output_field=IntegerField(),
     )
 
