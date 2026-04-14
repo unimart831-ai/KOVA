@@ -165,9 +165,9 @@ def onboarding_complete(request):
     today = timezone.now().date()
     brief = DailyBrief.objects.filter(user=request.user, date=today).first()
 
-    # If everything is done, redirect to brief home after a few visits
-    if progress["all_done"] and brief and request.GET.get("completed"):
-        return redirect("brief:home")
+    # If everything is done, redirect to Content Studio where their posts are waiting
+    if progress["all_done"] and request.GET.get("completed"):
+        return redirect("content:studio")
 
     return render(request, "accounts/onboarding_complete.html", {
         "progress": progress,

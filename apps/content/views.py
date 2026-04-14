@@ -538,6 +538,28 @@ def reject_post(request, post_id):
 
 @login_required
 @require_POST
+def rate_post(request, post_id):
+    """
+    Quick-rate a post's AI quality (HTMX).
+
+    Accepts rating=1 (poor), 2 (good), 3 (great).
+    Returns an updated rating widget fragment.
+    """
+    post = get_object_or_404(Post, id=post_id, user=request.user)
+    try:
+        rating = int(request.POST.get("rating", 0))
+    except (ValueError, TypeError):
+        rating = 0
+
+    if rating in (1, 2, 3):
+        post.user_rating = rating
+        post.save(update_fields=["user_rating", "updated_at"])
+
+    return render(request, "components/_rating_widget.html", {"post": post})
+
+
+@login_required
+@require_POST
 def delete_post(request, post_id):
     """Soft-delete a post (HTMX). Removes it from the studio."""
     post = get_object_or_404(Post.objects.select_related("user"), id=post_id)

@@ -52,7 +52,7 @@ def send_email_task(self, email_type, to_email, user_id=None, context=None, subj
 
 # ─── Convenience tasks (named, easy to call from other apps) ─────────────────
 
-@shared_task(name="emails.send_welcome")
+@shared_task(name="emails.send_welcome", autoretry_for=(Exception,), retry_backoff=60, max_retries=3)
 def send_welcome_email(user_id):
     """Send welcome email to a newly registered user."""
     from apps.accounts.models import User
@@ -64,7 +64,7 @@ def send_welcome_email(user_id):
         logger.error("Welcome email failed for user %s: %s", user_id, e)
 
 
-@shared_task(name="emails.send_payment_confirmation")
+@shared_task(name="emails.send_payment_confirmation", autoretry_for=(Exception,), retry_backoff=60, max_retries=3)
 def send_payment_confirmation_email(user_id, amount, plan, provider="stripe", receipt_number=""):
     from apps.accounts.models import User
     from apps.emails.services import email_service
@@ -75,7 +75,7 @@ def send_payment_confirmation_email(user_id, amount, plan, provider="stripe", re
         logger.error("Payment confirmation email failed for user %s: %s", user_id, e)
 
 
-@shared_task(name="emails.send_payment_failed")
+@shared_task(name="emails.send_payment_failed", autoretry_for=(Exception,), retry_backoff=60, max_retries=3)
 def send_payment_failed_email(user_id, plan=None):
     from apps.accounts.models import User
     from apps.emails.services import email_service
@@ -238,6 +238,42 @@ def send_partner_milestone_email(partner_user_id, milestone_label, bonus_kes, ex
 
 
 # ─── Scheduled tasks ────────────────────────────────────────────────────────
+
+@shared_task(name="emails.check_trial_expiry_emails")
+def check_trial_expiry_emails():
+    """
+    Send trial expiry email sequence: Day 7, 3, 1, and 0 before trial end.
+
+    Runs daily via Celery Beat. Uses day-of check to avoid duplicate sends
+    (each day_marker only fires once per user since trial_ends_at is fixed).
+    """
+    from apps.accounts.models import UserProfile
+    from apps.emails.services import email_service
+
+    now = timezone.now()
+
+    # Day markers: (days_until_expiry, subject_hint)
+    day_markers = [7, 3, 1, 0]
+
+    profiles = UserProfile.objects.filter(
+        subscription_status="trialing",
+        trial_ends_at__isnull=False,
+    ).select_related("user")
+
+    sent = 0
+    for profile in profiles:
+        days_left = (profile.trial_ends_at - now).days
+
+        if days_left in day_markers:
+            email_service.send_trial_ending(profile.user, days_left)
+            sent += 1
+            logger.info(
+                "Trial expiry email sent: user=%s days_left=%d",
+                profile.user.email, days_left,
+            )
+
+    logger.info("Trial expiry emails sent: %d", sent)
+    return sent
 
 @shared_task(name="emails.send_weekly_reports_all")
 def send_weekly_reports_all():

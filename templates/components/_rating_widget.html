@@ -1,0 +1,21 @@
+{# ── Rating widget for AI-generated posts ── #}
+{# Inline HTMX widget: 3 emoji buttons, highlights the selected one #}
+<div class="flex items-center gap-1" id="rating-{{ post.id }}">
+  {% for value, label in post.RATING_CHOICES %}
+    <button
+      hx-post="{% url 'content:rate' post.id %}"
+      hx-vals='{"rating": "{{ value }}"}'
+      hx-target="#rating-{{ post.id }}"
+      hx-swap="outerHTML"
+      class="px-2 py-1 rounded-md text-sm transition-all
+        {% if post.user_rating == value %}
+          bg-kova-100 dark:bg-kova-900/40 ring-1 ring-kova-400 scale-110
+        {% else %}
+          hover:bg-gray-100 dark:hover:bg-gray-800 opacity-60 hover:opacity-100
+        {% endif %}"
+      title="{{ label }}"
+    >
+      {% if value == 1 %}👎{% elif value == 2 %}👍{% else %}🔥{% endif %}
+    </button>
+  {% endfor %}
+</div>

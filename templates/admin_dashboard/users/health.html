@@ -1,0 +1,135 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}User Health{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  {# ── Summary cards ── #}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="card">
+      <div class="card-body text-center py-4">
+        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ total }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Total users</p>
+      </div>
+    </div>
+    <div class="card border-red-200 dark:border-red-800/60">
+      <div class="card-body text-center py-4">
+        <p class="text-2xl font-bold text-red-600 dark:text-red-400">{{ critical_count }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Critical risk</p>
+      </div>
+    </div>
+    <div class="card border-amber-200 dark:border-amber-800/60">
+      <div class="card-body text-center py-4">
+        <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ warning_count }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Warning</p>
+      </div>
+    </div>
+    <div class="card border-green-200 dark:border-green-800/60">
+      <div class="card-body text-center py-4">
+        <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ healthy_count }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Healthy</p>
+      </div>
+    </div>
+  </div>
+
+  {# ── Filters ── #}
+  <div class="flex flex-wrap gap-2">
+    <a href="?status=trialing" class="px-3 py-1.5 rounded-lg text-sm font-medium {% if status_filter == 'trialing' %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">
+      Trialing
+    </a>
+    <a href="?status=active" class="px-3 py-1.5 rounded-lg text-sm font-medium {% if status_filter == 'active' %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">
+      Active
+    </a>
+    <a href="?status=at_risk" class="px-3 py-1.5 rounded-lg text-sm font-medium {% if status_filter == 'at_risk' %}bg-red-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">
+      At Risk Only
+    </a>
+    <a href="?status=all" class="px-3 py-1.5 rounded-lg text-sm font-medium {% if status_filter == 'all' %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">
+      All
+    </a>
+  </div>
+
+  {# ── User table ── #}
+  <div class="card overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-800/50">
+          <tr>
+            <th class="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-400">Risk</th>
+            <th class="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-400">User</th>
+            <th class="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-400">Plan</th>
+            <th class="px-4 py-3 text-center font-semibold text-gray-600 dark:text-gray-400">Posts</th>
+            <th class="px-4 py-3 text-center font-semibold text-gray-600 dark:text-gray-400">Platforms</th>
+            <th class="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-400">Last login</th>
+            <th class="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-400">Trial left</th>
+            <th class="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-400">Risk signals</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for entry in users_with_risk %}
+          <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30{% if entry.risk_level == 'critical' %} bg-red-50/30 dark:bg-red-950/10{% endif %}">
+            <td class="px-4 py-3">
+              {% if entry.risk_level == "critical" %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">{{ entry.risk_score }}%</span>
+              {% elif entry.risk_level == "warning" %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">{{ entry.risk_score }}%</span>
+              {% else %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300">{{ entry.risk_score }}%</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <a href="{% url 'admin_dashboard:user_detail' entry.user.pk %}" class="text-sm font-medium text-kova-600 dark:text-kova-400 hover:underline">
+                {{ entry.user.full_name|default:entry.user.email }}
+              </a>
+              <p class="text-xs text-gray-500 dark:text-gray-500">{{ entry.user.email }}</p>
+            </td>
+            <td class="px-4 py-3">
+              <span class="text-xs font-medium">{{ entry.user.profile.plan|default:"starter" }}</span>
+            </td>
+            <td class="px-4 py-3 text-center tabular-nums {% if entry.published_count == 0 %}text-red-500{% else %}text-gray-900 dark:text-white{% endif %}">
+              {{ entry.published_count }}
+            </td>
+            <td class="px-4 py-3 text-center tabular-nums {% if entry.platform_count == 0 %}text-red-500{% else %}text-gray-900 dark:text-white{% endif %}">
+              {{ entry.platform_count }}
+            </td>
+            <td class="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">
+              {% if entry.days_since_login is not None %}
+                {% if entry.days_since_login == 0 %}Today{% elif entry.days_since_login == 1 %}Yesterday{% else %}{{ entry.days_since_login }}d ago{% endif %}
+              {% else %}
+                <span class="text-red-500">Never</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-xs">
+              {% if entry.trial_days_left is not None %}
+                {% if entry.trial_days_left <= 1 %}
+                  <span class="text-red-600 dark:text-red-400 font-bold">{{ entry.trial_days_left }}d</span>
+                {% elif entry.trial_days_left <= 3 %}
+                  <span class="text-amber-600 dark:text-amber-400 font-medium">{{ entry.trial_days_left }}d</span>
+                {% else %}
+                  <span class="text-gray-600 dark:text-gray-400">{{ entry.trial_days_left }}d</span>
+                {% endif %}
+              {% else %}
+                <span class="text-gray-400">—</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex flex-wrap gap-1">
+                {% for signal in entry.risk_signals %}
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">{{ signal }}</span>
+                {% endfor %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+              No users match this filter.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

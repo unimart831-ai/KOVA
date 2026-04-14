@@ -56,10 +56,25 @@ def initiate_mpesa_checkout(user, plan_tier, phone_number, discount=None):
     # Validate and format phone
     formatted_phone = format_phone_number(phone_number)
 
-    # Check if user has an existing pending payment
+    # Idempotency guard: reject if user has a pending payment created < 2 min ago
+    # This prevents double-tap STK pushes that could lead to double charges
+    recent_cutoff = timezone.now() - timedelta(minutes=2)
+    recent_pending = MpesaPayment.objects.filter(
+        user=user,
+        status=MpesaPayment.Status.PENDING,
+        created_at__gte=recent_cutoff,
+    ).exists()
+    if recent_pending:
+        raise ValueError(
+            "A payment is already in progress. Please check your phone for the M-Pesa prompt, "
+            "or wait 2 minutes before trying again."
+        )
+
+    # Expire any older pending payments
     MpesaPayment.objects.filter(
         user=user,
         status=MpesaPayment.Status.PENDING,
+        created_at__lt=recent_cutoff,
     ).update(status=MpesaPayment.Status.EXPIRED)
 
     # Determine if this is a renewal

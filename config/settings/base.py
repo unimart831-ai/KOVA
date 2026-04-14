@@ -226,6 +226,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "agents.track_audience_growth",
         "schedule": 24 * 3600.0,  # daily — snapshot follower counts for growth intelligence
     },
+    "check-trial-expiry-emails": {
+        "task": "emails.check_trial_expiry_emails",
+        "schedule": 24 * 3600.0,  # daily — send trial countdown emails (day 7, 3, 1, 0)
+    },
 }
 
 # ─── AUTH ────────────────────────────────────────────────────────────────────

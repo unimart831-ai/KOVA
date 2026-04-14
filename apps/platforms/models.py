@@ -77,14 +77,40 @@ class SocialAccount(models.Model):
     def needs_reauth(self):
         return not self.is_active or (self.is_token_expired and not self.refresh_token)
 
-    def mark_error(self, error_message):
+    # HTTP status codes that indicate transient (retryable) failures.
+    # These should NOT count as strikes — the external service is having issues.
+    TRANSIENT_STATUS_CODES = {429, 500, 502, 503, 504}
+
+    def mark_error(self, error_message, status_code=None):
         """
-        Record an API error. Deactivates on the 3rd consecutive error
-        to avoid killing accounts on transient failures.
+        Record an API error with smart classification.
+
+        Transient errors (429/500/502/503/504): logged but do NOT count as
+        strikes. The external service is having issues — not our user's fault.
+
+        Permanent errors (401/403/other): count toward 3-strike deactivation.
+        These indicate real auth failures that require user action.
+
+        Args:
+            error_message: Human-readable error description
+            status_code: HTTP status code (if available) for classification
         """
         meta = self.metadata or {}
+        is_transient = status_code in self.TRANSIENT_STATUS_CODES if status_code else False
+
+        if is_transient:
+            # Log the transient error but don't count it as a strike
+            meta["last_transient_error"] = str(error_message)[:500]
+            meta["transient_error_count"] = meta.get("transient_error_count", 0) + 1
+            self.metadata = meta
+            self.last_error = f"[transient {status_code}] {str(error_message)[:900]}"
+            self.save(update_fields=["last_error", "metadata", "updated_at"])
+            return
+
+        # Permanent error — counts as a strike
         consecutive = meta.get("consecutive_errors", 0) + 1
         meta["consecutive_errors"] = consecutive
+        meta["transient_error_count"] = 0  # Reset transient counter on real error
         self.metadata = meta
         self.last_error = str(error_message)[:1000]
         fields = ["last_error", "metadata", "updated_at"]

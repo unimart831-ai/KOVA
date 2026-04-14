@@ -29,6 +29,7 @@ urlpatterns = [
     path("<uuid:post_id>/regenerate/", views.regenerate_post, name="regenerate"),
     path("<uuid:post_id>/regenerate/status/", views.regenerate_status, name="regenerate_status"),
     path("<uuid:post_id>/preview/", views.post_preview, name="preview"),
+    path("<uuid:post_id>/rate/", views.rate_post, name="rate"),
     path("<uuid:post_id>/upload/", views.upload_media, name="upload_media"),
     path("<uuid:post_id>/card-upload/", views.card_upload_media, name="card_upload_media"),
     path("<uuid:post_id>/clear-media/", views.clear_ai_media, name="clear_ai_media"),

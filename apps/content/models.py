@@ -154,6 +154,17 @@ class Post(SoftDeleteMixin, models.Model):
         help_text="0.0 = no changes, 1.0 = completely rewritten. Measures how much user changed AI output.",
     )
 
+    # User quality rating — quick feedback on AI-generated content
+    RATING_CHOICES = [
+        (1, "👎 Poor"),
+        (2, "👍 Good"),
+        (3, "🔥 Great"),
+    ]
+    user_rating = models.PositiveSmallIntegerField(
+        null=True, blank=True, choices=RATING_CHOICES,
+        help_text="User's quality rating of AI-generated content (1=poor, 2=good, 3=great).",
+    )
+
     # Content DNA — attributes for performance correlation
     content_dna = models.JSONField(
         default=dict, blank=True,

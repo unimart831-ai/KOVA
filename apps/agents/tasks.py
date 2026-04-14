@@ -9,6 +9,7 @@ import logging
 from celery import shared_task
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -31,12 +32,23 @@ def run_daily_research():
     ).distinct()
 
     dispatched = 0
+    now = timezone.now()
     for idx, user in enumerate(users_with_research):
         plan = getattr(getattr(user, "profile", None), "plan", "starter")
         if "research" not in get_plan_limits(plan).get("agents_enabled", []):
             continue
-        # Stagger by 5s per user to avoid OpenRouter rate limits (429s)
-        _run_research_for_user.apply_async(args=[user.pk], countdown=idx * 5)
+
+        # New users (first 7 days) get priority scheduling — dispatched first
+        # with shorter delays to ensure they get rich research data quickly
+        days_since_signup = (now - user.date_joined).days
+        is_new_user = days_since_signup <= 7
+
+        if is_new_user:
+            countdown = idx * 3  # Tighter spacing for new users
+        else:
+            countdown = idx * 5  # Standard stagger
+
+        _run_research_for_user.apply_async(args=[user.pk], countdown=countdown)
         dispatched += 1
 
     if dispatched:

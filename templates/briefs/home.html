@@ -23,6 +23,9 @@
   </div>
   {% endif %}
 
+  {# ── First-week setup checklist (auto-hides once all done or after 14 days) ── #}
+  {% include "briefs/_setup_checklist.html" %}
+
   {% if brief %}
     <div class="lg:grid lg:grid-cols-3 lg:gap-8 lg:items-start">
       <!-- Main column -->
@@ -249,6 +252,10 @@
 
       <!-- Side column: actions + stats + history -->
       <div class="space-y-6 mt-6 lg:mt-0">
+
+        {# ── Value-delivered summary (what Kova did this week) ── #}
+        {% include "briefs/_value_summary.html" %}
+
         {% if brief.posts_pending > 0 %}
           <div class="card border-kova-200 dark:border-kova-800 bg-kova-50/50 dark:bg-kova-950/30">
             <div class="card-body">

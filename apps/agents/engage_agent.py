@@ -195,13 +195,13 @@ def _fetch_post_comments(user, account, provider):
                 new_count += 1
 
         except PlatformAuthError as e:
-            # Token expired or permissions missing — record error (3-strike deactivation)
+            # Token expired or permissions missing — permanent auth failure
             logger.error(
                 "Auth error for %s account %s — strike %d: %s",
                 account.platform, account.id,
                 (account.metadata or {}).get("consecutive_errors", 0) + 1, e,
             )
-            account.mark_error(str(e))
+            account.mark_error(str(e), status_code=401)
             if not account.is_active:
                 _notify_account_deactivated(user, account, str(e))
             break  # stop trying other posts on this account

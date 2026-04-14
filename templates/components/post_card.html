@@ -10,6 +10,12 @@ Partials: _card_header.html, _card_body.html, _card_actions.html, _card_schedule
 
   <div class="p-4">
     {% include "components/_card_body.html" %}
+    {% if post.generated_by_agent %}
+      <div class="mt-2 mb-2 flex items-center gap-2">
+        <span class="text-xs text-gray-400 dark:text-gray-500">Rate:</span>
+        {% include "components/_rating_widget.html" %}
+      </div>
+    {% endif %}
     {% include "components/_card_actions.html" %}
   </div>
 </div>
