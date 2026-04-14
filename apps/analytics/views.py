@@ -379,3 +379,23 @@ def shopify_disconnect(request, pk):
 
     messages.success(request, f"Disconnected {store.shop_domain}.")
     return redirect("analytics:revenue")
+
+
+# ─── Pixel JS Serve ──────────────────────────────────────────────────────────
+
+def serve_pixel_js(request):
+    """
+    Serve the Kova Pixel JavaScript with proper caching headers.
+    Served from a URL path so it works regardless of staticfiles setup.
+    """
+    from django.contrib.staticfiles import finders
+    from django.http import HttpResponse
+
+    js_path = finders.find("js/kova-pixel.js")
+    if js_path:
+        with open(js_path) as f:
+            response = HttpResponse(f.read(), content_type="application/javascript")
+            response["Cache-Control"] = "public, max-age=86400"  # 24h cache
+            response["Access-Control-Allow-Origin"] = "*"
+            return response
+    return HttpResponse("", status=404, content_type="application/javascript")

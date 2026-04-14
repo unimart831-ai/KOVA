@@ -569,3 +569,86 @@ class GrowthSnapshot(models.Model):
             }
 
         return summary
+
+
+# ─── Website Pixel Tracking ──────────────────────────────────────────────────
+
+
+class WebsiteEvent(models.Model):
+    """
+    Raw events captured by the Kova Pixel embedded on a user's website.
+    Powers attribution, conversion tracking, and the revenue dashboard.
+    """
+
+    class EventType(models.TextChoices):
+        PAGE_VIEW = "page_view", "Page View"
+        FORM_SUBMIT = "form_submit", "Form Submission"
+        BUTTON_CLICK = "button_click", "Button Click"
+        PURCHASE = "purchase", "Purchase"
+        ADD_TO_CART = "add_to_cart", "Add to Cart"
+        SIGN_UP = "sign_up", "Sign Up"
+        CUSTOM = "custom", "Custom Event"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE, related_name="website_events",
+    )
+
+    # Event data
+    event_type = models.CharField(max_length=20, choices=EventType.choices)
+    event_name = models.CharField(max_length=100, blank=True, help_text="Custom event label")
+
+    # Page context
+    page_url = models.URLField(max_length=2048)
+    page_title = models.CharField(max_length=500, blank=True)
+    referrer = models.URLField(max_length=2048, blank=True)
+
+    # UTM attribution (links event back to social post)
+    utm_source = models.CharField(max_length=255, blank=True, db_index=True)
+    utm_medium = models.CharField(max_length=255, blank=True)
+    utm_campaign = models.CharField(max_length=255, blank=True)
+    utm_content = models.CharField(max_length=255, blank=True)
+
+    # Visitor tracking (anonymous cookie-based)
+    visitor_id = models.CharField(
+        max_length=64, db_index=True,
+        help_text="Anonymous cookie-based visitor ID set by the pixel.",
+    )
+    session_id = models.CharField(max_length=64, blank=True)
+
+    # Device
+    device_type = models.CharField(
+        max_length=10, blank=True,
+        choices=[("desktop", "Desktop"), ("mobile", "Mobile"), ("tablet", "Tablet")],
+    )
+
+    # Revenue (for purchase / add_to_cart events)
+    revenue = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    currency = models.CharField(max_length=3, default="USD")
+
+    # Flexible extra data
+    metadata = models.JSONField(default=dict, blank=True)
+
+    # Attribution links (populated by attribution engine)
+    post = models.ForeignKey(
+        "content.Post", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="website_events",
+    )
+    journey = models.ForeignKey(
+        ConversionJourney, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="website_events",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["user", "event_type", "-created_at"]),
+            models.Index(fields=["visitor_id", "-created_at"]),
+            models.Index(fields=["utm_source", "utm_campaign"]),
+        ]
+
+    def __str__(self):
+        return f"{self.get_event_type_display()} on {self.page_url[:60]}"

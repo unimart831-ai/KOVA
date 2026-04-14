@@ -6,7 +6,7 @@
 #
 # This document is the SINGLE SOURCE OF TRUTH for building Kova Agent.
 # Every decision, every sprint, every feature traces back to here.
-# Last Updated: April 13, 2026
+# Last Updated: April 14, 2026
 # ============================================================================
 
 
@@ -40,6 +40,13 @@ Kova Agent
 
 ## 1.2 Tagline
 "Your social media runs itself. You stay in control."
+
+## 1.2.1 Positioning Shift (April 2026 — Market Intelligence)
+Primary: "Kova turns your social media into a revenue engine — and proves it."
+Secondary: "Your social media runs itself. You stay in control."
+
+Why: Market validation (CEO/marketing expert consultation) confirmed that SMEs don't pay
+for social media management — they pay for revenue growth. Kova must prove ROI to retain.
 
 ## 1.3 Category
 Business Intelligence Operating System — a new category.
@@ -860,12 +867,15 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 | Phase 3 | Sprint 12 | ✅ Complete | Production Hardening (security, perf optimization, caching, token encryption) |
 | Phase 4 | Sprint 13 | ✅ Complete | Agency Multi-Brand, Revenue Attribution, Mobile PWA, API Docs |
 | Phase 4 | Voice Memo | ✅ Complete | Voice Memo input (Whisper transcription → content seed) |
+| **Pre-Launch** | **Security** | **✅ Complete** | **M-Pesa webhook hardening, content safety gate, engage review flow, billing enforcement, emergency pause, partner sybil detection, API rate limiting** |
+| **Pre-Launch** | **Hardening** | **✅ Complete** | **HTTP retry utility, smart strike system, M-Pesa idempotency, email retry, setup checklist, trial emails, content rating, value summary, admin churn dashboard, research priority boost** |
 | Phase 5 | Post-Launch  | ⏳ Not Started | WhatsApp Intelligence, Meme Engine, Status Studio |
-| Phase 6 | Post-Phase 5 | 🟡 In Progress | **6A ✅ 6B ✅ 6C ✅ 6D ✅ 6E ✅** 6F ⏳ 6G 🟡 6H ⏳ |
+| Phase 6 | Post-Phase 5 | 🟡 In Progress | **6A ✅ 6B ✅ 6C ✅ 6D ✅ 6E ✅** 6F ⏳ **6G ✅** 6H ⏳ |
+| **Tier 2** | **Revenue Bridge** | **⏳ Not Started** | **Kova Pixel (website tracking), Conversion Dashboard, Lead Pipeline enhancement, Content Importance Tiers, CRM Webhook (outbound)** |
 | Phase 7 | Post-Phase 6 | ⏳ Not Started | Commerce Pipeline, Revenue Prediction, Audience Genome, Kova Score, Network Intelligence, Strategic Foresight, Digital Business Passport |
 | Phase 8 | Post-Phase 7 | ⏳ Deferred | White-label UI, Agent Marketplace, Open-source |
 
-## CELERY BEAT SCHEDULE (Current — 9 tasks)
+## CELERY BEAT SCHEDULE (Current — 11 tasks)
 | Task | Schedule | Source |
 |------|----------|--------|
 | `check-and-publish` | Every 60 seconds | `apps/content/tasks.py` |
@@ -878,6 +888,7 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 | `check-mpesa-subscriptions` | Every 24 hours | `apps/billing/tasks.py` |
 | `analyze-all-competitors` | Weekly | `apps/analytics/tasks.py` |
 | `send-weekly-reports-all` | Weekly (Monday 8AM) | `apps/emails/tasks.py` |
+| `check-trial-expiry-emails` | Daily | `apps/emails/tasks.py` |
 
 ## ─── PHASE 1: MVP — "AI-Assisted Scheduling" (Weeks 1-8) ✅ COMPLETE ───
 
@@ -1115,6 +1126,333 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 - [ ] Custom agent skills / marketplace — Agents are hard-coded, no plugin/skill architecture
 - [ ] Open-source self-hosted edition — Docker infra exists, needs licensing + packaging
 - ~~[ ] Advanced AI features (voice memo, video generation)~~ — Voice memo ✅ complete, Video AI → Phase 6 Sprint 6F
+
+
+## ─── PRE-LAUNCH HARDENING — "Battle-Ready" (April 2026) ✅ COMPLETE ───
+##
+## ORIGIN: Comprehensive security audit + market probability analysis + first-week UX audit.
+## Built in a single sprint before going to market with first 50 customers.
+## All items verified with `manage.py check` — 0 issues. Committed and pushed.
+##
+
+### Security Sprint ✅ COMPLETE (7 fixes)
+- [x] **M-Pesa webhook hardening** — HMAC signature verification on webhook endpoint
+  - File: `apps/billing/views.py`, `config/settings/base.py` (MPESA_WEBHOOK_SECRET)
+- [x] **Content safety gate** — Two-tier pre-publish check (hard block dangerous, soft flag risky)
+  - File: `apps/content/safety.py` (NEW), `apps/content/tasks.py` (gate added to publish_post)
+- [x] **Engage Agent review flow** — AI replies go to approval queue instead of auto-sending
+  - File: `apps/agents/engage_agent.py`, status_code=401 on PlatformAuthError
+- [x] **Billing enforcement** — Plan limit checks (posts, platforms, API access)
+  - File: `apps/billing/enforcement.py` (NEW), `apps/api/views.py` (HasAPIAccess permission)
+- [x] **Emergency pause** — One-click halt all autonomous publishing
+  - File: `apps/accounts/models.py` (emergency_pause field), `apps/accounts/views.py`, `apps/accounts/urls.py`
+  - Enforced in: `apps/content/tasks.py`, `apps/agents/strategist_agent.py`, `apps/media_queue/tasks.py`
+- [x] **Partner sybil detection** — Detect fake referral signups by IP, email domain, timing
+  - File: `apps/partners/signals.py`, `apps/partners/models.py` (signup_ip, is_flagged, flag_reason)
+- [x] **API rate limiting** — Plan-based throttle (Starter: 100/hr, Growth: 500/hr, Pro: 2000/hr)
+  - File: `apps/api/throttling.py` (NEW), `config/settings/base.py` (REST_FRAMEWORK config)
+
+### API Resilience Sprint ✅ COMPLETE (4 items)
+- [x] **HTTP retry utility** — Resilient HTTP client with exponential backoff + jitter for all external API calls
+  - File: `apps/utils/http.py` (NEW) — resilient_request(), TransientAPIError, PermanentAPIError
+  - Retryable: 429, 500, 502, 503, 504. Permanent: 401, 403. Respects Retry-After header.
+- [x] **Smart strike system** — Transient errors (rate limits, server errors) don't count as strikes
+  - File: `apps/platforms/models.py` — mark_error() upgraded with TRANSIENT_STATUS_CODES classification
+- [x] **M-Pesa idempotency + status polling** — 2-min guard on STK push + poll before expiring stale payments
+  - Files: `apps/billing/mpesa_services.py` (idempotency), `apps/billing/tasks.py` (recovery polling)
+- [x] **Email retry** — autoretry_for on critical email tasks (welcome, payment confirmation/failure)
+  - File: `apps/emails/tasks.py` (autoretry_for + retry_backoff + max_retries)
+
+### First-Week Value Sprint ✅ COMPLETE (5 items)
+- [x] **Setup checklist widget** — 4-item checklist (connect platform, brand voice, first post, read brief)
+  - Files: `apps/briefs/views.py` (_build_setup_checklist), `templates/briefs/_setup_checklist.html` (NEW)
+- [x] **Post-onboarding → Content Studio** — Redirect to where value is (publish posts, not read brief)
+  - Files: `apps/accounts/views.py` (redirect to content:studio), `templates/accounts/_onboarding_progress.html`
+- [x] **Trial email sequence** — Day 7, 3, 1, 0 before trial expires
+  - Files: `apps/emails/tasks.py` (check_trial_expiry_emails), `config/settings/base.py` (Beat schedule)
+- [x] **Content quality quick-rating** — 👎👍🔥 rating widget on AI-generated posts
+  - Files: `apps/content/models.py` (user_rating), `apps/content/views.py` (rate_post), `templates/components/_rating_widget.html` (NEW)
+  - Migration: `apps/content/migrations/0015_post_user_rating.py`
+- [x] **Value-delivered summary card** — Shows "This week Kova delivered X posts, Y engagements, Z leads"
+  - Files: `apps/briefs/views.py` (_build_value_summary), `templates/briefs/_value_summary.html` (NEW)
+
+### Admin & Ops Sprint ✅ COMPLETE (2 items)
+- [x] **User health + churn risk dashboard** — 0-100 risk score (inactivity, no posts, no platforms, trial ending)
+  - Files: `apps/admin_dashboard/views/user_health.py` (NEW), `templates/admin_dashboard/users/health.html` (NEW)
+  - Filter: trialing/active/at_risk/all, sorted by risk descending
+- [x] **Research priority for new users** — First 7 days get 3s spacing (vs 5s) for faster first brief
+  - File: `apps/agents/tasks.py` (run_daily_research priority scheduling)
+
+- DELIVERABLE: ✅ Platform is security-hardened, API-resilient, first-week-optimized, and admin-visible.
+  Ready for first 50 customers.
+
+
+## ─── TIER 2: Revenue Bridge — "Prove the Money" (Post-Launch, Weeks 1-4) ⏳ NOT STARTED ───
+##
+## THE STRATEGIC INSIGHT:
+## ──────────────────────
+## Market intelligence from CEO/marketing expert consultation (April 2026) revealed:
+## "SMEs don't pay for social media management. They pay for revenue growth."
+##
+## The expert's ROI framework:
+## 1. Leads from posts → CRM → count enquiries
+## 2. Actual sales from social links
+## 3. Subscriptions from social
+## 4. Brand awareness (views/comments) ← only this one is currently measured by Kova
+##
+## Kova dominates creation → publishing → engagement (top of funnel).
+## But SMEs measure success at the bottom (sales → revenue).
+## The bridge between them is LEAD ATTRIBUTION — and that's our biggest gap.
+##
+## Her exact words: "Been looking for such a system that can be deployed for SMEs
+## as a plug and play with minimum customization."
+##
+## And the trust barrier: "I am afraid of automating key messages."
+##
+## This phase closes BOTH gaps — prove ROI + build trust through control tiers.
+##
+## PRIORITY: Build immediately after launch, in parallel with first 50 customers.
+## These features convert Kova from "a cost" to "a provable revenue driver."
+
+### Sprint T2A: Kova Pixel — Website Event Tracking ⏳ NOT STARTED
+##
+## WHY THIS IS THE #1 PRIORITY:
+## Kova already adds UTM params to every URL in every post. That's half the bridge.
+## The pixel is the receiver on the other end — it reads those UTMs and reports back
+## what happened after the click. Without it, UTM tracking is data going into a void.
+##
+
+- [ ] **Lightweight JavaScript pixel** — `static/js/kova-pixel.js` (~3KB minified)
+  - Auto-captures UTM parameters from URL on page load
+  - Stores attribution in first-party cookie (7-day window, refreshed on return)
+  - Auto-detects form submissions (listens for `<form>` submit events)
+  - Auto-tracks page views (fires on DOMContentLoaded)
+  - Custom event API: `kova.track('purchase', {value: 5000, currency: 'KES'})`
+  - Custom event API: `kova.track('subscribe', {plan: 'premium'})`
+  - Custom event API: `kova.track('signup', {source: 'landing_page'})`
+  - Respects cookie consent: checks for `kova_consent` cookie before firing
+  - No third-party dependencies. No jQuery. No tracking pixels from other services.
+  - Async loading: `<script async src="...">` — never blocks page render
+
+- [ ] **Pixel embed UI** — `/settings/pixel/`
+  - Copy-paste snippet: `<script src="https://app.usekova.com/pixel.js" data-brand="{brand_id}"></script>`
+  - One-click copy button
+  - Platform-specific guides: "How to add to WordPress", "How to add to Shopify", "How to add to any site"
+  - Test mode: "Visit your site → come back here → we'll confirm the pixel is working"
+  - Pixel status: active/inactive, last event received, total events today
+
+- [ ] **Events API endpoint** — `apps/analytics/` or new `apps/tracking/`
+  - POST `/api/v1/events/` — receives pixel events
+  - Fields: brand_id, event_type (page_view, form_submit, purchase, subscribe, custom),
+    page_url, utm_source, utm_medium, utm_campaign, utm_content (links to post_id),
+    referrer, user_agent, metadata (JSONField), timestamp
+  - Rate limiting: 1000 events/min per brand (prevent abuse)
+  - Validation: brand_id must exist, event_type must be in allowed list
+  - CORS: allow from any origin (pixel runs on customer's domain)
+
+- [ ] **WebsiteEvent model** — stores all pixel events
+  - Fields: brand (FK), event_type, page_url, utm_source, utm_medium, utm_campaign,
+    utm_content, referrer, visitor_id (hashed, anonymous), device_type, country (GeoIP),
+    metadata (JSONField — custom event data like purchase value), created_at
+  - Indexes: (brand, created_at), (brand, utm_content), (brand, event_type)
+  - Retention: 90 days for free, 1 year for Growth+, unlimited for Pro
+
+- [ ] **Attribution engine** — `apps/analytics/attribution.py`
+  - Link WebsiteEvent → Post via utm_content (contains post_id)
+  - Link WebsiteEvent → Campaign via utm_campaign
+  - Link WebsiteEvent → Platform via utm_source
+  - Aggregate: per-post conversions, per-platform revenue, per-campaign ROI
+  - Auto-create Lead when form_submit event has email in metadata
+
+- [ ] CORS middleware update for pixel endpoint (allow cross-origin POST)
+- [ ] Privacy: no PII stored by default, visitor_id is hashed, first-party cookies only
+- [ ] Plan limits: Starter = 1,000 events/mo | Growth = 10,000/mo | Pro = 100,000/mo | Agency = unlimited
+
+- DELIVERABLE: Users paste one line of code on their website → Kova tracks every visitor from
+  social → attributes leads and sales back to specific posts. The UTM loop is closed.
+
+### Sprint T2B: Conversion Dashboard — "Prove ROI" ⏳ NOT STARTED
+##
+## WHY: Without visualization, pixel data is just database rows. This dashboard is
+## the proof the marketing expert asked for: "How many people buy from following her link?"
+##
+
+- [ ] **Conversion funnel visualization** — `/analytics/conversions/`
+  - Funnel: Impressions → Clicks (UTM) → Page Views (pixel) → Leads (form_submit) → Sales (purchase)
+  - Drop-off percentages between each stage
+  - Filter by: platform, campaign, date range, post
+
+- [ ] **Revenue attribution cards**
+  - Hero card: "Social media generated KES X this month" (sum of purchase events with value)
+  - Per-platform breakdown: "Instagram: KES 120,000 | LinkedIn: KES 45,000 | Twitter: KES 12,000"
+  - Per-campaign breakdown: which content seeds drive the most revenue
+  - ROI calculation: plan cost vs attributed revenue
+
+- [ ] **Per-post ROI view**
+  - On every published post card: impressions → clicks → conversions → revenue
+  - Sort posts by revenue (not just engagement)
+  - "Best performing post this month (by revenue)" highlight
+
+- [ ] **Daily Brief integration**
+  - "Yesterday, your social media generated 3 leads and KES 15,000 in sales.
+    Your Instagram carousel about [topic] drove 2 of those sales."
+
+- [ ] **Weekly report update**
+  - Add revenue section to auto-emailed weekly report
+  - Include conversion funnel summary + top revenue posts
+
+- DELIVERABLE: Users can prove exactly which posts make money. The #1 feature that prevents churn.
+
+### Sprint T2C: Content Importance Tiers — "Trust Through Control" ⏳ NOT STARTED
+##
+## WHY: Marketing expert said "I am afraid of automating key messages."
+## This converts fear into a feature. Different content gets different levels of AI control.
+##
+
+- [ ] **Post.importance_tier field** — choices: routine, important, critical
+  - `routine` — AI creates, auto-queues, user bulk-approves. Default for all auto-generated posts.
+  - `important` — AI creates, flagged for individual review. User must approve one-by-one.
+  - `critical` — User writes the message. AI refines tone and adapts per platform. No auto-generation.
+
+- [ ] **Tier behavior in pipeline**:
+  - Strategist Agent: creates seeds with importance=routine by default
+  - User can set default tier per content pillar (e.g., "Product launches" = critical)
+  - User can override tier on any individual post in Content Studio
+  - Batch approve: only works on routine-tier posts
+  - Critical posts: show "You wrote this. AI adapted it for {platform}." badge
+
+- [ ] **Settings UI** — `/settings/content-control/`
+  - Default tier selector (routine/important/critical)
+  - Per-pillar override (e.g., "Promotions" → important, "Tips" → routine)
+  - Explanation text: "Routine = fast. Important = reviewed. Critical = you're in charge."
+
+- [ ] **Content Studio UI updates**:
+  - Visual tier badge on each post (green/yellow/red)
+  - Filter by tier in queue view
+  - Critical post creation flow: user writes → AI adapts per platform → preview → approve
+
+- DELIVERABLE: Users control HOW MUCH automation they want per content type. Trust barrier removed.
+
+### Sprint T2D: Lead Pipeline Enhancement ⏳ NOT STARTED
+##
+## WHY: Sprint 6C built the Lead Inbox. This enhances it with pixel-sourced leads
+## and a simple pipeline for SMEs who don't have a CRM.
+##
+
+- [ ] **Auto-create leads from pixel events**
+  - When pixel fires `form_submit` with email in metadata → auto-create Lead
+  - When pixel fires `purchase` → update existing Lead status to converted, record value
+  - Source tracking: Lead.source_type = 'website_pixel', source_post linked via UTM
+
+- [ ] **Simple pipeline view** — `/leads/pipeline/`
+  - Kanban columns: New → Contacted → Qualified → Won → Lost
+  - Drag-and-drop between columns (HTMX + Alpine.js)
+  - Deal value on Won cards (from purchase events or manual entry)
+  - Pipeline total: "KES 340,000 in pipeline | KES 120,000 won this month"
+
+- [ ] **Lead source attribution**
+  - Every lead shows: "Came from [Instagram post title] on [date]"
+  - Lead detail: full journey (page views, form submissions, purchases) from pixel events
+
+- DELIVERABLE: SMEs without a CRM have a simple, visual lead pipeline. SMEs with a CRM use webhooks.
+
+### Sprint T2E: CRM Webhook (Outbound) ⏳ NOT STARTED
+##
+## WHY: The marketing expert uses ODOO. She needs Kova to push data to her existing CRM.
+## This is the simplest possible integration — no API client libraries, no OAuth, just webhooks.
+##
+
+- [ ] **Webhook configuration** — `/settings/integrations/`
+  - Add webhook URL (e.g., https://their-odoo.com/api/webhook/kova/)
+  - Select events to send: new_lead, lead_status_changed, new_conversion, new_form_submission
+  - Secret token for HMAC signature verification (Kova signs, their server verifies)
+  - Test button: fires a test event to validate URL is reachable
+
+- [ ] **WebhookEndpoint model**
+  - Fields: brand (FK), url, secret, events (JSONField — list of event types),
+    is_active, last_triggered_at, last_status_code, failure_count, created_at
+
+- [ ] **Webhook dispatch** — Celery task
+  - On relevant event (lead created, status changed, etc.) → fire webhook
+  - Payload: JSON with event_type, timestamp, data (lead details, conversion details)
+  - HMAC-SHA256 signature in `X-Kova-Signature` header
+  - Retry: 3 attempts with exponential backoff on failure
+  - Auto-disable after 10 consecutive failures (notify user)
+
+- [ ] **Pre-built templates** for common CRMs:
+  - ODOO: "How to receive Kova webhooks in ODOO" guide
+  - HubSpot: "How to use Kova webhooks with HubSpot Workflows" guide
+  - Zapier: "Connect Kova to 5000+ apps via Zapier webhook trigger" guide
+
+- DELIVERABLE: Kova pushes lead/conversion events to any CRM via webhooks. Zero vendor lock-in.
+
+### Sprint T2F: Comment Moderation ⏳ NOT STARTED
+##
+## WHY: Platform gap analysis identified this as a daily task human managers do.
+## Currently missing from Kova. Easy to add, high engagement value.
+##
+
+- [ ] **Delete/hide comments** on supported platforms
+  - Facebook: DELETE /{comment_id} (via Page token)
+  - Instagram: DELETE /{comment_id} (via Page token) or POST /{comment_id} with hide=true
+  - LinkedIn: DELETE comment (via socialActions API)
+  - Twitter: No public API for comment deletion (user must delete from Twitter)
+- [ ] **Spam detection** — flag obvious spam comments
+  - Pattern matching: repeated URLs, emoji-only, gibberish
+  - AI classification via Engage Agent: spam/not-spam confidence
+  - Auto-hide option: hide comments flagged as spam with >90% confidence
+- [ ] **Moderation queue** in Engage Inbox
+  - Filter: "Flagged as spam" view
+  - Bulk actions: hide all, delete all, dismiss flags
+- DELIVERABLE: Comments are moderated. Spam doesn't sit on posts for days.
+
+### Sprint T2G: Polls & Interactive Content ⏳ NOT STARTED
+##
+## WHY: Platform gap analysis — polls are high-engagement format. Easy to add.
+##
+
+- [ ] **Poll content type** — Post.content_type includes 'poll'
+  - Twitter polls: POST /tweets with poll options (2-4 choices, 5min-7day duration)
+  - LinkedIn polls: POST /rest/polls (requires w_member_social scope)
+  - Create Agent: can generate poll content from seeds ("Ask your audience about...")
+- [ ] **Poll results tracking** — fetch poll results after expiry
+  - Store results in PostMetric.metadata
+  - Show in post detail view: bar chart of votes
+- DELIVERABLE: Kova can create polls on Twitter and LinkedIn. High-engagement format unlocked.
+
+### Tier 2 — Key Metrics (How We Know It's Working)
+| Metric | Target | How Measured |
+|--------|--------|-------------|
+| Pixel adoption | 30% of active users install pixel within 2 weeks | WebsiteEvent count per brand > 0 |
+| Conversion tracking | 20% of pixel users track at least 1 purchase event | WebsiteEvent with type=purchase |
+| Revenue attribution | Users with pixel have 50% lower churn than those without | Subscription churn segmented by pixel status |
+| Importance tier usage | 40% of users set at least 1 pillar to important/critical | Post.importance_tier distribution |
+| Webhook adoption | 15% of Growth+ users configure at least 1 webhook | WebhookEndpoint count |
+| Lead pipeline usage | 25% of users with pixel use pipeline view weekly | Pipeline page views / active users with pixel |
+| Comment moderation | 60% of flagged spam auto-hidden within 1 hour | Moderation action timestamps |
+
+### Tier 2 — Technical Architecture Notes
+- **Pixel**: served from CDN or Django static. ~3KB. No external deps. First-party cookies only.
+- **Events API**: high-throughput endpoint. Consider Django async view or separate Celery ingest.
+  Expected volume: 100-1000 events/day per active brand. At 1000 brands: ~500K events/day.
+  PostgreSQL handles this with proper indexes. COPY for bulk insert if needed.
+- **CRM Webhooks**: Celery tasks with retry. No webhook library — raw httpx POST.
+  payload + HMAC-SHA256 signature. Simple and universal.
+- **No new external services.** Everything runs on existing stack.
+- **LLM cost**: only importance tiers and spam detection add LLM calls. ~2-5 extra calls/day/user.
+  Negligible cost increase.
+
+### Tier 2 — What We Explicitly Will NOT Build
+| Feature | Why Not |
+|---------|---------|
+| Full CRM (deals, invoicing, pipeline management) | ODOO/HubSpot do this better. We integrate, don't compete |
+| AI phone calling / outbound dialing | Different product category. Partner with existing tools |
+| POS system | Different market. Out of scope |
+| Video creation/editing | Users create videos elsewhere. Kova publishes them |
+| Profile/bio editing API calls | Low-frequency task. Not worth API complexity |
+| Live streaming integration | No platform API supports third-party live streaming |
+| Google Analytics 4 replacement | GA4 exists. Kova pixel complements it, doesn't replace it |
+
 
 ## ─── PHASE 5: WhatsApp Intelligence — "Own the Most Important Channel" (Post-Launch) ───
 
@@ -3090,6 +3428,8 @@ while you focus on what you do best. Your business grows while you sleep."
 ## 17.3 The Evolution Arc
 ```
 Phase 1-4:  CONTENT TOOL              → "AI helps you post better"
+Pre-Launch: BATTLE-READY              → "Security-hardened, resilient, first-week value optimized"
+Tier 2:     REVENUE BRIDGE            → "AI proves your social media makes money"
 Phase 5:    CHANNEL OWNER             → "AI owns the conversation on WhatsApp"
 Phase 6:    STOCK-AWARE OPERATING SYSTEM → "AI runs your marketing AND knows what you sell"
 Phase 7:    INTELLIGENCE SYSTEM        → "AI tells your business where to go next"

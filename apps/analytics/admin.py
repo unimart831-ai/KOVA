@@ -9,6 +9,7 @@ from apps.analytics.models import (
     ConversionTouchpoint,
     PostMetric,
     ShopifyStore,
+    WebsiteEvent,
 )
 
 
@@ -71,3 +72,12 @@ class ShopifyStoreAdmin(admin.ModelAdmin):
     list_filter = ["is_active"]
     search_fields = ["shop_domain", "user__email"]
     readonly_fields = ["created_at", "updated_at"]
+
+
+@admin.register(WebsiteEvent)
+class WebsiteEventAdmin(admin.ModelAdmin):
+    list_display = ["event_type", "user", "page_url", "utm_source", "visitor_id", "revenue", "created_at"]
+    list_filter = ["event_type", "device_type"]
+    search_fields = ["user__email", "page_url", "visitor_id", "utm_campaign"]
+    readonly_fields = ["created_at"]
+    raw_id_fields = ["user", "post", "journey"]
