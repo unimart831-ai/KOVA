@@ -156,6 +156,9 @@ class EmailSubscriber(models.Model):
     subscribed_at = models.DateTimeField(auto_now_add=True)
     unsubscribed_at = models.DateTimeField(null=True, blank=True)
     bounce_count = models.PositiveSmallIntegerField(default=0)
+    unsubscribe_token = models.CharField(
+        max_length=64, unique=True, db_index=True, blank=True, default="",
+    )
 
     class Meta:
         ordering = ["-subscribed_at"]
@@ -167,6 +170,12 @@ class EmailSubscriber(models.Model):
 
     def __str__(self):
         return f"{self.name or self.email} ({self.get_status_display()})"
+
+    def save(self, *args, **kwargs):
+        if not self.unsubscribe_token:
+            import secrets
+            self.unsubscribe_token = secrets.token_urlsafe(32)
+        super().save(*args, **kwargs)
 
     def record_bounce(self):
         self.bounce_count += 1

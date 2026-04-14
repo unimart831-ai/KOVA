@@ -43,7 +43,12 @@ class Notification(models.Model):
 
     @classmethod
     def create_for_user(cls, user, notification_type, message, related_post=None):
-        """Helper to create a notification."""
+        """Create a notification, respecting user preferences."""
+        # System notifications always go through (critical alerts)
+        if notification_type != cls.NotificationType.SYSTEM:
+            prefs = NotificationPreference.for_user(user)
+            if not prefs.is_enabled(notification_type):
+                return None
         return cls.objects.create(
             user=user,
             notification_type=notification_type,
@@ -58,3 +63,40 @@ class Notification(models.Model):
     @classmethod
     def mark_all_read(cls, user):
         cls.objects.filter(user=user, is_read=False).update(is_read=True)
+
+
+class NotificationPreference(models.Model):
+    """Per-user notification preferences. One row per user, auto-created."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="notification_prefs",
+    )
+    post_published = models.BooleanField(default=True, help_text="Notify when a post is published")
+    publish_failed = models.BooleanField(default=True, help_text="Notify when publishing fails")
+    posts_generated = models.BooleanField(default=True, help_text="Notify when new posts are generated")
+    agent_action = models.BooleanField(default=True, help_text="Notify when agents take actions")
+
+    class Meta:
+        verbose_name = "Notification Preference"
+        verbose_name_plural = "Notification Preferences"
+
+    def __str__(self):
+        return f"NotificationPreference({self.user})"
+
+    def is_enabled(self, notification_type):
+        """Check if a notification type is enabled for this user."""
+        field_map = {
+            Notification.NotificationType.POST_PUBLISHED: self.post_published,
+            Notification.NotificationType.PUBLISH_FAILED: self.publish_failed,
+            Notification.NotificationType.POSTS_GENERATED: self.posts_generated,
+            Notification.NotificationType.AGENT_ACTION: self.agent_action,
+        }
+        return field_map.get(notification_type, True)
+
+    @classmethod
+    def for_user(cls, user):
+        """Get or create preferences for a user."""
+        prefs, _ = cls.objects.get_or_create(user=user)
+        return prefs

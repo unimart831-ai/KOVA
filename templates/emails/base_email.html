@@ -47,6 +47,9 @@
                 Sent by <strong>Kova Agent</strong> — your AI social media team.<br>
                 <a href="{{ site_url }}/billing/" style="color:#7c3aed;text-decoration:none;">Manage plan</a> · 
                 <a href="{{ site_url }}/accounts/settings/" style="color:#7c3aed;text-decoration:none;">Email preferences</a>
+                {% if unsubscribe_url %} · 
+                <a href="{{ unsubscribe_url }}" style="color:#9ca3af;text-decoration:underline;">Unsubscribe</a>
+                {% endif %}
               </p>
               <p style="margin:8px 0 0;font-size:11px;color:#d1d5db;">
                 © {{ current_year }} Kova Agent. All rights reserved.

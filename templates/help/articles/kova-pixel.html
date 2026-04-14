@@ -1,0 +1,45 @@
+<h2>Kova Pixel — Website Tracking</h2>
+
+<p>The Kova Pixel is a lightweight JavaScript snippet you add to your website. It tracks visitor behavior — page views, clicks, and conversions — and connects them back to your social media posts.</p>
+
+<h3>What It Does</h3>
+<ul>
+  <li><strong>Tracks page views</strong> — See which pages your social media audience visits</li>
+  <li><strong>Measures conversions</strong> — Track purchases, sign-ups, or any custom event</li>
+  <li><strong>Attribution</strong> — Links website activity back to the specific social post or platform that drove the visit</li>
+  <li><strong>Revenue tracking</strong> — When you fire a conversion event with a value, Kova calculates your social media ROI</li>
+</ul>
+
+<h3>Setting Up the Pixel</h3>
+<ol>
+  <li>Go to <a href="/analytics/pixel/">Kova Pixel</a> from the sidebar under Conversion</li>
+  <li>Copy the pixel code snippet</li>
+  <li>Paste it into the <code>&lt;head&gt;</code> section of your website (or use Google Tag Manager)</li>
+  <li>The pixel starts tracking immediately — no configuration needed for basic page views</li>
+</ol>
+
+<h3>Tracking Custom Events</h3>
+<p>Beyond page views, you can track custom events like purchases or form submissions:</p>
+<pre><code>// Track a purchase
+KovaPixel.track('purchase', { value: 2500, currency: 'KES' });
+
+// Track a sign-up
+KovaPixel.track('signup');
+
+// Track a custom event
+KovaPixel.track('added_to_cart', { product: 'Premium Plan' });</code></pre>
+
+<h3>Viewing Results</h3>
+<p>Go to <a href="/analytics/pixel/">Kova Pixel</a> settings to see:</p>
+<ul>
+  <li>Total events tracked</li>
+  <li>Unique visitors</li>
+  <li>Revenue attributed to social media</li>
+  <li>Top pages visited</li>
+</ul>
+
+<h3>How Attribution Works</h3>
+<p>When someone clicks a link from your social post, the Kova Pixel picks up UTM parameters automatically. It then connects that visitor's website activity back to the specific post and platform — so you can see exactly which social content drives real business results.</p>
+
+<h3>Availability</h3>
+<p>The Kova Pixel is available on the <strong>Biashara (Pro)</strong> and <strong>Wakala (Agency)</strong> plans.</p>

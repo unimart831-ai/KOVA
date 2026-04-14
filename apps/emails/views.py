@@ -157,3 +157,137 @@ def resend_webhook(request):
 
     logger.info("Resend webhook: %s for email %s", event_type, email_id)
     return HttpResponse(status=200)
+
+
+# ─── Public one-click unsubscribe (no login required) ────────────────────
+
+
+@csrf_exempt
+@ratelimit(key="ip", rate="30/m", block=True)
+def unsubscribe(request, token):
+    """
+    One-click unsubscribe endpoint. Handles both GET (link click) and
+    POST (List-Unsubscribe header in email clients like Gmail).
+
+    CAN-SPAM / GDPR compliant: no login, no confirmation page required.
+    """
+    from apps.emails.models import EmailSubscriber
+
+    try:
+        subscriber = EmailSubscriber.objects.get(unsubscribe_token=token)
+    except EmailSubscriber.DoesNotExist:
+        # Show a generic page — don't reveal whether token exists
+        return _unsubscribe_response(success=False)
+
+    if subscriber.status != EmailSubscriber.Status.UNSUBSCRIBED:
+        subscriber.status = EmailSubscriber.Status.UNSUBSCRIBED
+        subscriber.unsubscribed_at = timezone.now()
+        subscriber.save(update_fields=["status", "unsubscribed_at"])
+        logger.info("Subscriber unsubscribed: %s (owner: %s)", subscriber.email, subscriber.user_id)
+
+    # POST from email client List-Unsubscribe-Post header
+    if request.method == "POST":
+        return HttpResponse(status=200)
+
+    return _unsubscribe_response(success=True, email=subscriber.email)
+
+
+def _unsubscribe_response(success=True, email=""):
+    """Return a simple HTML unsubscribe confirmation page."""
+    if success:
+        title = "Unsubscribed"
+        message = f"<strong>{email}</strong> has been unsubscribed. You won't receive marketing emails from this sender anymore."
+    else:
+        title = "Invalid Link"
+        message = "This unsubscribe link is invalid or has already expired."
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{title} — Kova Agent</title>
+  <style>
+    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }}
+    .card {{ background: #fff; border-radius: 12px; padding: 40px; max-width: 420px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.1); }}
+    h1 {{ font-size: 24px; color: #111827; margin: 0 0 12px; }}
+    p {{ font-size: 14px; color: #6b7280; line-height: 1.6; margin: 0; }}
+    a {{ color: #7c3aed; text-decoration: none; }}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>{title}</h1>
+    <p>{message}</p>
+    <p style="margin-top: 20px;"><a href="https://kovaagent.com">← Back to Kova Agent</a></p>
+  </div>
+</body>
+</html>"""
+    return HttpResponse(html, content_type="text/html")
+
+
+# ─── Public one-click unsubscribe (no login required) ────────────────────
+
+
+@csrf_exempt
+@ratelimit(key="ip", rate="30/m", block=True)
+def unsubscribe(request, token):
+    """
+    One-click unsubscribe endpoint. Handles both GET (link click) and
+    POST (List-Unsubscribe header in email clients like Gmail).
+
+    CAN-SPAM / GDPR compliant: no login, no confirmation page required.
+    """
+    from apps.emails.models import EmailSubscriber
+
+    try:
+        subscriber = EmailSubscriber.objects.get(unsubscribe_token=token)
+    except EmailSubscriber.DoesNotExist:
+        # Show a generic page — don't reveal whether token exists
+        return _unsubscribe_response(success=False)
+
+    if subscriber.status != EmailSubscriber.Status.UNSUBSCRIBED:
+        subscriber.status = EmailSubscriber.Status.UNSUBSCRIBED
+        subscriber.unsubscribed_at = timezone.now()
+        subscriber.save(update_fields=["status", "unsubscribed_at"])
+        logger.info("Subscriber unsubscribed: %s (owner: %s)", subscriber.email, subscriber.user_id)
+
+    # POST from email client List-Unsubscribe-Post header
+    if request.method == "POST":
+        return HttpResponse(status=200)
+
+    return _unsubscribe_response(success=True, email=subscriber.email)
+
+
+def _unsubscribe_response(success=True, email=""):
+    """Return a simple HTML unsubscribe confirmation page."""
+    if success:
+        title = "Unsubscribed"
+        message = f"<strong>{email}</strong> has been unsubscribed. You won't receive marketing emails from this sender anymore."
+    else:
+        title = "Invalid Link"
+        message = "This unsubscribe link is invalid or has already expired."
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{title} — Kova Agent</title>
+  <style>
+    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }}
+    .card {{ background: #fff; border-radius: 12px; padding: 40px; max-width: 420px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.1); }}
+    h1 {{ font-size: 24px; color: #111827; margin: 0 0 12px; }}
+    p {{ font-size: 14px; color: #6b7280; line-height: 1.6; margin: 0; }}
+    a {{ color: #7c3aed; text-decoration: none; }}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>{title}</h1>
+    <p>{message}</p>
+    <p style="margin-top: 20px;"><a href="https://kovaagent.com">← Back to Kova Agent</a></p>
+  </div>
+</body>
+</html>"""
+    return HttpResponse(html, content_type="text/html")

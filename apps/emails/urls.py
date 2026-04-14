@@ -5,6 +5,9 @@ from apps.emails import marketing_views, views
 app_name = "emails"
 
 urlpatterns = [
+    # Public one-click unsubscribe (no login required)
+    path("unsubscribe/<str:token>/", views.unsubscribe, name="unsubscribe"),
+
     # Resend delivery webhooks
     path("webhooks/resend/", views.resend_webhook, name="resend_webhook"),
 

@@ -101,6 +101,12 @@ class EmailService:
         if user:
             base_context["user"] = user
             base_context["first_name"] = user.first_name or user.email.split("@")[0]
+
+            # Generate one-click unsubscribe URL for this recipient
+            unsubscribe_url = self._get_unsubscribe_url(user, to_email)
+            if unsubscribe_url:
+                base_context["unsubscribe_url"] = unsubscribe_url
+
         if context:
             base_context.update(context)
 
@@ -126,6 +132,13 @@ class EmailService:
                 to=[to_email],
             )
             msg.attach_alternative(html_body, "text/html")
+
+            # Add List-Unsubscribe headers (RFC 8058) for email client support
+            unsub_url = base_context.get("unsubscribe_url")
+            if unsub_url:
+                msg.extra_headers["List-Unsubscribe"] = f"<{unsub_url}>"
+                msg.extra_headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
+
             msg.send(fail_silently=False)
 
             log.status = EmailLog.Status.SENT
@@ -142,6 +155,24 @@ class EmailService:
             logger.error("Email failed: type=%s to=%s error=%s", email_type, to_email, e)
 
         return log
+
+    def _get_unsubscribe_url(self, user, to_email):
+        """
+        Get or create an unsubscribe URL for this user/email combo.
+        Returns None if subscriber record doesn't exist (transactional-only recipient).
+        """
+        from apps.emails.models import EmailSubscriber
+
+        try:
+            subscriber = EmailSubscriber.objects.get(user=user, email=to_email)
+        except EmailSubscriber.DoesNotExist:
+            return None
+
+        if not subscriber.unsubscribe_token:
+            subscriber.save()  # triggers token generation in save()
+
+        site_url = getattr(settings, "SITE_URL", "https://kovaagent.com")
+        return f"{site_url}/emails/unsubscribe/{subscriber.unsubscribe_token}/"
 
     # ─── Authentication emails ───────────────────────────────────────────
 

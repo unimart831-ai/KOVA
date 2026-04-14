@@ -87,6 +87,13 @@ ARTICLES = [
         "category": "content",
         "order": 3,
     },
+    {
+        "slug": "media-queue",
+        "title": "Media Queue",
+        "description": "Upload, organize, and reorder images and videos for your posts.",
+        "category": "content",
+        "order": 4,
+    },
     # AI Agents
     {
         "slug": "understanding-agents",
@@ -131,6 +138,27 @@ ARTICLES = [
         "category": "analytics",
         "order": 3,
     },
+    {
+        "slug": "kova-pixel",
+        "title": "Kova Pixel — Website Tracking",
+        "description": "Track website visitors and attribute conversions back to your social posts.",
+        "category": "analytics",
+        "order": 4,
+    },
+    {
+        "slug": "leads",
+        "title": "Lead Capture & Management",
+        "description": "Turn social engagement into business opportunities with lead tracking.",
+        "category": "analytics",
+        "order": 5,
+    },
+    {
+        "slug": "kova-links",
+        "title": "Kova Links — Bio Link Pages",
+        "description": "Create a customizable bio link page with click analytics.",
+        "category": "analytics",
+        "order": 6,
+    },
     # Account & Billing
     {
         "slug": "plans-and-pricing",
@@ -147,11 +175,18 @@ ARTICLES = [
         "order": 2,
     },
     {
+        "slug": "teams-and-brands",
+        "title": "Teams & Multi-Brand Management",
+        "description": "Collaborate with team members and manage multiple brands from one account.",
+        "category": "account",
+        "order": 3,
+    },
+    {
         "slug": "faq",
         "title": "Frequently Asked Questions",
         "description": "Quick answers to common questions about Kova Agent.",
         "category": "account",
-        "order": 3,
+        "order": 4,
     },
 ]
 

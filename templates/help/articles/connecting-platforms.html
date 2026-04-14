@@ -9,7 +9,10 @@
   <li><strong>Twitter / X</strong> — Personal and business accounts</li>
   <li><strong>LinkedIn</strong> — Personal profiles and company pages</li>
   <li><strong>TikTok</strong> — Creator and business accounts</li>
+  <li><strong>YouTube</strong> — Channels (video publishing + analytics)</li>
   <li><strong>Pinterest</strong> — Business accounts</li>
+  <li><strong>Threads</strong> — Personal accounts (via Instagram)</li>
+  <li><strong>Bluesky</strong> — Personal accounts (uses App Password — no OAuth)</li>
 </ul>
 
 <h3>How to Connect</h3>
@@ -21,20 +24,29 @@
   <li>You'll be redirected back to Kova — the platform will show as Connected</li>
 </ol>
 
+<h3>Special Connection Flows</h3>
+<ul>
+  <li><strong>LinkedIn Company Pages</strong> — After authorizing, you'll see a list of company pages you manage. Select the one you want Kova to post to.</li>
+  <li><strong>Bluesky</strong> — Uses an App Password instead of OAuth. Go to your Bluesky settings, create an App Password, and paste it into Kova. Step-by-step instructions are shown on the connection page.</li>
+  <li><strong>Instagram</strong> — Requires a connected Facebook Page. Connect Facebook first, then connect Instagram.</li>
+</ul>
+
 <h3>Platform Limits by Plan</h3>
 <ul>
-  <li><strong>Starter</strong> — Up to 3 connected platforms</li>
-  <li><strong>Growth</strong> — Up to 8 connected platforms</li>
-  <li><strong>Pro</strong> — Up to 20 connected platforms</li>
-  <li><strong>Agency</strong> — Unlimited platforms</li>
+  <li><strong>Jipange (Starter)</strong> — 1 social account</li>
+  <li><strong>Kazi (Growth)</strong> — 3 social accounts</li>
+  <li><strong>Biashara (Pro)</strong> — 10 social accounts</li>
+  <li><strong>Wakala (Agency)</strong> — 25 social accounts</li>
 </ul>
 
 <h3>Disconnecting a Platform</h3>
-<p>Go to <a href="/platforms/">Platforms</a>, find the connected account, and click <strong>Disconnect</strong>. This revokes Kova's access. Any scheduled posts for that platform will be paused.</p>
+<p>Go to <a href="/platforms/">Platforms</a>, find the connected account, and click <strong>Disconnect</strong>. This revokes Kova's access and deletes the stored token. Any scheduled posts for that platform will be paused.</p>
 
 <h3>Troubleshooting</h3>
 <ul>
   <li><strong>Connection failed?</strong> — Make sure you're logged into the correct social account in your browser before connecting</li>
-  <li><strong>Token expired?</strong> — Disconnect and reconnect the platform to refresh your access</li>
+  <li><strong>Token expired?</strong> — Disconnect and reconnect the platform to refresh your access. Instagram tokens expire after 60 days</li>
   <li><strong>Instagram not showing?</strong> — Instagram requires a connected Facebook Page. Connect Facebook first, then connect Instagram</li>
+  <li><strong>LinkedIn page not listed?</strong> — You must be an admin of the company page on LinkedIn</li>
+  <li><strong>Platform shows error status?</strong> — Check the error message on your <a href="/platforms/">Platforms</a> page. Most issues resolve by reconnecting</li>
 </ul>

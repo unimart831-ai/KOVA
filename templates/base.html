@@ -27,6 +27,18 @@
   <!-- Tailwind CSS -->
   <link rel="stylesheet" href="{% static 'css/output.css' %}">
 
+  <!-- HTMX request-in-flight: disable submit buttons to prevent double-submit -->
+  <style>
+    .htmx-request [type="submit"],
+    .htmx-request button[hx-post],
+    .htmx-request button[hx-put],
+    .htmx-request button[hx-patch],
+    .htmx-request button[hx-delete] {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+  </style>
+
   <!-- Inter Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,7 +48,7 @@
   <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
 
   <!-- Alpine.js + Intersect plugin -->
-  <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/intersect@3/dist/cdn.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/intersect@3.14.8/dist/cdn.min.js" integrity="sha384-eA6+k1peuuIgxPHwWoQHx6OoDZ7hFJ+SKfMOhop5+zMV4SWR5OWBMatbIdoqA4lZ" crossorigin="anonymous"></script>
   <script defer src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js"></script>
 
   <!-- HTMX config -->
@@ -76,6 +88,35 @@
 
   {% block extra_js %}{% endblock %}
 
+  <!-- Cookie consent banner (GDPR) -->
+  <div x-data="{ shown: !localStorage.getItem('kova-cookie-consent') }"
+       x-show="shown"
+       x-transition:enter="transition ease-out duration-300"
+       x-transition:enter-start="opacity-0 translate-y-4"
+       x-transition:enter-end="opacity-100 translate-y-0"
+       x-transition:leave="transition ease-in duration-200"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0 translate-y-4"
+       class="fixed bottom-0 inset-x-0 z-50 p-4 sm:p-6"
+       x-cloak>
+    <div class="mx-auto max-w-xl bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+      <p class="text-sm text-gray-600 dark:text-gray-300 flex-1">
+        We use cookies to improve your experience. By continuing to use Kova Agent, you agree to our
+        <a href="/terms/" class="underline text-violet-600 dark:text-violet-400">cookie policy</a>.
+      </p>
+      <div class="flex gap-2 shrink-0">
+        <button @click="localStorage.setItem('kova-cookie-consent', 'essential'); shown = false"
+                class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+          Essential only
+        </button>
+        <button @click="localStorage.setItem('kova-cookie-consent', 'all'); shown = false"
+                class="px-3 py-1.5 text-xs font-medium rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition">
+          Accept all
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Service Worker registration -->
   <script>
     if ("serviceWorker" in navigator) {
@@ -84,6 +125,18 @@
     // Re-init Alpine components after HTMX swaps (fixes x-teleport, x-data, etc.)
     document.body.addEventListener('htmx:load', function(evt) {
       if (window.Alpine && evt.target) Alpine.initTree(evt.target);
+    });
+    // HTMX global error handler — toast on failed requests
+    document.body.addEventListener('htmx:responseError', function(evt) {
+      var status = evt.detail.xhr ? evt.detail.xhr.status : 0;
+      var msg = status === 403 ? 'Permission denied. Please refresh and try again.'
+              : status === 429 ? 'Too many requests. Please wait a moment.'
+              : status >= 500 ? 'Something went wrong. Please try again.'
+              : 'Request failed. Please try again.';
+      window.dispatchEvent(new CustomEvent('notify', { detail: { message: msg, type: 'error' } }));
+    });
+    document.body.addEventListener('htmx:sendError', function() {
+      window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'Network error. Check your connection.', type: 'error' } }));
     });
   </script>
 </body>

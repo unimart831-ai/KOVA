@@ -251,6 +251,13 @@ ACCOUNT_SIGNUP_REDIRECT_URL = "/accounts/onboarding/"
 LOGIN_REDIRECT_URL = "/brief/"
 LOGOUT_REDIRECT_URL = "/"
 LOGIN_URL = "/accounts/login/"
+
+# Session: keep users logged in for 30 days
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 days
+SESSION_SAVE_EVERY_REQUEST = True         # Reset expiry on each request
+
+# Allauth: always remember the session (skip "remember me" checkbox)
+ACCOUNT_SESSION_REMEMBER = True
 # Rate limiting (allauth built-in)
 ACCOUNT_RATE_LIMITS = {
     "login": "5/m/ip,30/h/ip",          # 5 attempts/min, 30/hour per IP

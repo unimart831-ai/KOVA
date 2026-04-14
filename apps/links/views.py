@@ -410,9 +410,9 @@ def public_form_submit(request, slug, form_id):
         # Create notification for page owner
         try:
             from apps.notifications.models import Notification
-            Notification.objects.create(
+            Notification.create_for_user(
                 user=page.user,
-                notification_type="SYSTEM",
+                notification_type=Notification.NotificationType.SYSTEM,
                 message=f"New form submission from {submission.name or submission.email} on {page.title}",
             )
         except Exception:
