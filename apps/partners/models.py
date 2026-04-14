@@ -166,11 +166,15 @@ class Partner(models.Model):
 
     @property
     def active_referrals_count(self):
-        return self.referrals.filter(is_active=True, activated_at__isnull=False).count()
+        return self.referrals.filter(is_active=True, is_flagged=False, activated_at__isnull=False).count()
 
     @property
     def pending_referrals_count(self):
-        return self.referrals.filter(is_active=True, activated_at__isnull=True).count()
+        return self.referrals.filter(is_active=True, is_flagged=False, activated_at__isnull=True).count()
+
+    @property
+    def flagged_referrals_count(self):
+        return self.referrals.filter(is_flagged=True).count()
 
     @property
     def total_referrals_count(self):
@@ -228,6 +232,19 @@ class Referral(models.Model):
     )
     consecutive_paid_months = models.PositiveIntegerField(default=0)
     current_plan = models.CharField(max_length=20, blank=True)
+    # Anti-sybil fields
+    signup_ip = models.GenericIPAddressField(
+        null=True, blank=True,
+        help_text="IP address at signup — used for sybil detection",
+    )
+    is_flagged = models.BooleanField(
+        default=False,
+        help_text="True if referral triggered anti-fraud checks",
+    )
+    flag_reason = models.TextField(
+        blank=True,
+        help_text="Why this referral was flagged (IP clustering, disposable email, etc.)",
+    )
 
     class Meta:
         ordering = ["-signed_up_at"]

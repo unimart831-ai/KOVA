@@ -45,6 +45,19 @@ def process_media_queues():
         queue = item.queue
         account = queue.social_account
 
+        # ── Plan enforcement: check post limit before publishing ──────
+        from apps.billing.enforcement import check_post_limit
+        allowed, msg = check_post_limit(queue.user)
+        if not allowed:
+            logger.info("Media Queue skipping item %s: %s", item.pk, msg)
+            continue
+
+        # ── Emergency pause — halt all autonomous media publishing ────
+        profile = getattr(queue.user, "profile", None)
+        if profile and profile.emergency_pause:
+            logger.info("EMERGENCY PAUSE: Media Queue skipping item %s for %s", item.pk, queue.user.email)
+            continue
+
         try:
             item.status = QueueItem.Status.PUBLISHING
             item.save(update_fields=["status", "updated_at"])

@@ -322,6 +322,40 @@ def publish_post(self, post_id: str):
         logger.warning("Post %s has status %s, skipping publish", post_id, post.status)
         return {"error": f"Post status is {post.status}, not publishable"}
 
+    # ── Emergency pause — halt all autonomous publishing ──────────────
+    profile = getattr(post.user, "profile", None)
+    if profile and profile.emergency_pause:
+        logger.info("EMERGENCY PAUSE: skipping publish for post %s (user %s)", post_id, post.user.email)
+        return {"error": "Publishing paused — emergency pause is active"}
+
+    # ── Content safety gate — last line of defense before going live ──
+    from apps.content.safety import check_content_safety
+    safety = check_content_safety(post.content_text, user=post.user)
+    if safety.blocked:
+        # Hard block: content is dangerous, revert to pending approval
+        post.status = Post.Status.PENDING_APPROVAL
+        post.ai_reasoning = f"SAFETY BLOCKED: {safety.summary}"
+        post.save(update_fields=["status", "ai_reasoning", "updated_at"])
+        Notification.create_for_user(
+            post.user, "system",
+            f"⚠️ Post blocked by safety check: {safety.summary[:150]}. Please review and edit.",
+            related_post=post,
+        )
+        logger.warning("SAFETY BLOCKED post %s: %s", post_id, safety.summary)
+        return {"error": f"Content blocked: {safety.summary}"}
+    elif not safety.is_safe:
+        # Soft block: risky content, send back for human review
+        post.status = Post.Status.PENDING_APPROVAL
+        post.ai_reasoning = f"SAFETY REVIEW (score={safety.risk_score}): {safety.summary}"
+        post.save(update_fields=["status", "ai_reasoning", "updated_at"])
+        Notification.create_for_user(
+            post.user, "system",
+            f"⚠️ Post needs review (risk score {safety.risk_score}): {safety.summary[:150]}",
+            related_post=post,
+        )
+        logger.info("SAFETY REVIEW post %s (score=%d): %s", post_id, safety.risk_score, safety.summary)
+        return {"error": f"Content flagged for review: {safety.summary}"}
+
     # Mark as publishing
     post.status = Post.Status.PUBLISHING
     post.save(update_fields=["status", "updated_at"])

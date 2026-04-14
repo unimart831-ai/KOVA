@@ -192,6 +192,11 @@ class UserProfile(models.Model):
         default=False,
         help_text="If True, engage agent can respond to comments automatically.",
     )
+    emergency_pause = models.BooleanField(
+        default=False,
+        help_text="If True, ALL autonomous agent actions are halted immediately. "
+                  "No publishing, no seeds, no replies, no media queue processing.",
+    )
     # ── Default CTA settings (Sprint 6B) ──
     default_cta_type = models.CharField(
         max_length=20,

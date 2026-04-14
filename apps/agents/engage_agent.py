@@ -712,19 +712,30 @@ def _generate_single_reply(interaction, brand_voice, company):
 
 def auto_respond(user):
     """
-    Auto-send replies for high-confidence positive interactions.
-    Only active when user has auto_engage=True on their profile.
+    Queue AI-suggested replies for user review instead of auto-sending.
 
-    Criteria for auto-sending:
+    When auto_engage=True, replies are staged as PENDING_REVIEW so the user
+    can approve/reject in the Engage inbox. A notification summary is sent
+    so the user knows replies are waiting.
+
+    This ensures NO reply goes to a real person without human approval,
+    protecting the user's brand reputation.
+
+    Criteria:
       - Sentiment is positive
       - Interaction is a comment or reply (not DM — too personal)
       - Reply has been generated
-      - Interaction is still in NEW or FLAGGED status (not already replied)
+      - Interaction is still in NEW status
 
-    Returns count of auto-sent replies.
+    Returns count of replies queued for review.
     """
     profile = user.profile
     if not profile.auto_engage:
+        return 0
+
+    # ── Emergency pause — halt all autonomous engagement ──────────────
+    if profile.emergency_pause:
+        logger.info("EMERGENCY PAUSE: Engage agent skipping auto-respond for %s", user.email)
         return 0
 
     config = AgentConfig.objects.filter(user=user, agent_type="engage").first()
@@ -741,47 +752,29 @@ def auto_respond(user):
         ai_suggested_reply="",
     ).select_related("social_account")[:5]  # Cap at 5 per cycle
 
-    sent = 0
+    queued = 0
     for interaction in candidates:
-        account = interaction.social_account
-        provider = get_provider(account.platform)
-        if not provider:
-            continue
+        # Stage the reply for human review — do NOT send to platform
+        interaction.status = Interaction.Status.FLAGGED  # "flagged" = needs user review
+        interaction.save(update_fields=["status"])
+        queued += 1
 
-        try:
-            # For Facebook/Instagram, use page token
-            token = account.access_token
-            if account.platform in ("facebook", "instagram"):
-                pages = (account.metadata or {}).get("pages", [])
-                if pages:
-                    token = pages[0].get("access_token", account.access_token)
+        logger.info(
+            "Queued AI reply for review: %s comment from %s on %s",
+            interaction.sentiment, interaction.author_name,
+            interaction.social_account.platform,
+        )
 
-            if interaction.interaction_type in ("comment", "reply"):
-                provider.reply_to_comment(
-                    access_token=token,
-                    comment_id=interaction.platform_interaction_id,
-                    message=interaction.ai_suggested_reply,
-                )
+    # Notify user that replies are waiting for their approval
+    if queued:
+        from apps.notifications.models import Notification
+        Notification.create_for_user(
+            user, "agent_action",
+            f"💬 {queued} AI-suggested replies ready for your review in the Engage inbox.",
+        )
+        logger.info("Queued %d replies for review for %s", queued, user.email)
 
-            interaction.ai_reply_sent = interaction.ai_suggested_reply
-            interaction.status = Interaction.Status.AI_REPLIED
-            interaction.save(update_fields=["ai_reply_sent", "status"])
-            sent += 1
-
-            logger.info(
-                "Auto-replied to %s comment from %s on %s",
-                interaction.sentiment, interaction.author_name, account.platform,
-            )
-
-        except Exception as e:
-            logger.warning(
-                "Auto-reply failed for interaction %s: %s", interaction.id, e,
-            )
-
-    if sent:
-        logger.info("Auto-responded to %d interactions for %s", sent, user.email)
-
-    return sent
+    return queued
 
 
 # ─── Orchestrator: Full Engage Cycle ─────────────────────────────────────────

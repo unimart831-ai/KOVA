@@ -1,6 +1,6 @@
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, BasePermission
 from rest_framework.response import Response
 
 from apps.agents.models import AgentAction, AgentConfig
@@ -18,11 +18,26 @@ from .serializers import (
 )
 
 
+# ─── Plan-based API access permission ────────────────────────────────────────
+
+class HasAPIAccess(BasePermission):
+    """Only allow Pro and Agency plan users to access the API."""
+    message = "API access requires a Pro or Agency plan."
+
+    def has_permission(self, request, view):
+        from apps.billing.enforcement import check_api_access
+        allowed, msg = check_api_access(request.user)
+        if not allowed:
+            self.message = msg
+        return allowed
+
+
 # ─── Platforms ───────────────────────────────────────────────────────────────
 
 class SocialAccountListView(generics.ListAPIView):
     """List connected social accounts."""
     serializer_class = SocialAccountSerializer
+    permission_classes = [IsAuthenticated, HasAPIAccess]
 
     def get_queryset(self):
         return SocialAccount.objects.filter(user=self.request.user, is_active=True)
@@ -33,17 +48,24 @@ class SocialAccountListView(generics.ListAPIView):
 class SeedListCreateView(generics.ListCreateAPIView):
     """List or create content seeds."""
     serializer_class = ContentSeedSerializer
+    permission_classes = [IsAuthenticated, HasAPIAccess]
 
     def get_queryset(self):
         return ContentSeed.objects.filter(user=self.request.user).order_by("-created_at")
 
     def perform_create(self, serializer):
+        from apps.billing.enforcement import check_seed_limit
+        allowed, msg = check_seed_limit(self.request.user)
+        if not allowed:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied(msg)
         serializer.save(user=self.request.user)
 
 
 class SeedDetailView(generics.RetrieveAPIView):
     """Retrieve a content seed."""
     serializer_class = ContentSeedSerializer
+    permission_classes = [IsAuthenticated, HasAPIAccess]
 
     def get_queryset(self):
         return ContentSeed.objects.filter(user=self.request.user)
@@ -54,6 +76,7 @@ class SeedDetailView(generics.RetrieveAPIView):
 class PostListView(generics.ListAPIView):
     """List user's posts with optional status filter."""
     serializer_class = PostSerializer
+    permission_classes = [IsAuthenticated, HasAPIAccess]
 
     def get_queryset(self):
         qs = Post.objects.filter(user=self.request.user).select_related(
@@ -74,6 +97,7 @@ class PostListView(generics.ListAPIView):
 class PostDetailView(generics.RetrieveUpdateAPIView):
     """Retrieve or update (edit text, reschedule) a post."""
     serializer_class = PostSerializer
+    permission_classes = [IsAuthenticated, HasAPIAccess]
 
     def get_queryset(self):
         return Post.objects.filter(user=self.request.user).select_related(
@@ -86,6 +110,7 @@ class PostDetailView(generics.RetrieveUpdateAPIView):
 class PostMetricsView(generics.RetrieveAPIView):
     """Get metrics for a specific post."""
     serializer_class = PostMetricSerializer
+    permission_classes = [IsAuthenticated, HasAPIAccess]
 
     def get_queryset(self):
         from apps.analytics.models import PostMetric
@@ -93,7 +118,7 @@ class PostMetricsView(generics.RetrieveAPIView):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, HasAPIAccess])
 def analytics_summary(request):
     """Quick aggregate analytics for the authenticated user."""
     from django.db.models import Avg, Sum
@@ -124,6 +149,7 @@ def analytics_summary(request):
 class AgentConfigListView(generics.ListAPIView):
     """List agent configurations."""
     serializer_class = AgentConfigSerializer
+    permission_classes = [IsAuthenticated, HasAPIAccess]
 
     def get_queryset(self):
         return AgentConfig.objects.filter(user=self.request.user)
@@ -132,6 +158,7 @@ class AgentConfigListView(generics.ListAPIView):
 class AgentActionListView(generics.ListAPIView):
     """List recent agent actions."""
     serializer_class = AgentActionSerializer
+    permission_classes = [IsAuthenticated, HasAPIAccess]
 
     def get_queryset(self):
         qs = AgentAction.objects.filter(user=self.request.user).order_by("-created_at")
@@ -146,6 +173,7 @@ class AgentActionListView(generics.ListAPIView):
 class ConversionListCreateView(generics.ListCreateAPIView):
     """List or create conversion events (revenue attribution)."""
     serializer_class = ConversionSerializer
+    permission_classes = [IsAuthenticated, HasAPIAccess]
 
     def get_queryset(self):
         from apps.analytics.models import Conversion

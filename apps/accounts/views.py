@@ -3,6 +3,7 @@ from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.http import JsonResponse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from apps.accounts.forms import (
     UserSettingsForm,
@@ -200,3 +201,22 @@ def onboarding_progress_api(request):
         "posts_ready": posts_ready,
         "has_platforms": has_platforms,
     })
+
+
+@login_required
+@require_POST
+def toggle_emergency_pause(request):
+    """
+    Toggle the emergency pause — instantly halts or resumes all autonomous
+    agent actions (publishing, strategist seeds, engage replies, media queue).
+    """
+    profile = request.user.profile
+    profile.emergency_pause = not profile.emergency_pause
+    profile.save(update_fields=["emergency_pause"])
+
+    if profile.emergency_pause:
+        messages.warning(request, "⚠️ Emergency pause ACTIVATED — all autonomous actions are halted.")
+    else:
+        messages.success(request, "✅ Emergency pause deactivated — agents are running again.")
+
+    return redirect(request.META.get("HTTP_REFERER", "accounts:settings"))

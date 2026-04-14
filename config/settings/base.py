@@ -296,7 +296,7 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle",
+        "apps.api.throttling.PlanBasedThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
         "anon": "20/minute",
@@ -431,6 +431,7 @@ MPESA_PASSKEY = env(
     default="bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919",  # Sandbox default
 )
 MPESA_CALLBACK_URL = env("MPESA_CALLBACK_URL", default="")       # e.g. https://yourdomain.com/billing/webhook/mpesa/
+MPESA_WEBHOOK_SECRET = env("MPESA_WEBHOOK_SECRET", default="")   # Optional: append ?token=<secret> to callback URL
 MPESA_TRIAL_DAYS = env.int("MPESA_TRIAL_DAYS", default=14)
 
 # ─── SOCIAL PLATFORM OAUTH ───────────────────────────────────────────────────

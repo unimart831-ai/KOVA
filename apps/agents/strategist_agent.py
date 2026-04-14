@@ -611,6 +611,19 @@ def _execute_proactive_seeds(user, decisions, inputs):
     if not content_plan:
         return 0
 
+    # ── Emergency pause — halt all autonomous seed creation ───────────
+    profile = getattr(user, "profile", None)
+    if profile and profile.emergency_pause:
+        logger.info("EMERGENCY PAUSE: Strategist skipping seed creation for %s", user.email)
+        return 0
+
+    # ── Plan enforcement: check seed limit before creating ────────────
+    from apps.billing.enforcement import check_seed_limit
+    allowed, msg = check_seed_limit(user)
+    if not allowed:
+        logger.info("Strategist skipping seed creation: %s (%s)", msg, user.email)
+        return 0
+
     created = 0
     for item in content_plan:
         idea = item.get("idea", "").strip()

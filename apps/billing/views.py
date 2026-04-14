@@ -312,11 +312,43 @@ def mpesa_webhook(request):
     M-Pesa callback endpoint.
 
     Daraja sends the STK Push result here after the user confirms or cancels.
-    No signature verification needed — M-Pesa uses URL-based security
-    (only Safaricom knows your callback URL).
+
+    Security layers:
+      1. Rate limiting (30/min per IP)
+      2. Safaricom IP allowlist (production only)
+      3. CheckoutRequestID must match a pending MpesaPayment we initiated
+      4. Optional webhook secret token in URL (?token=...)
     """
+    from apps.billing.models import MpesaPayment
+    from apps.billing.mpesa import parse_stk_callback
     from apps.billing.mpesa_services import process_mpesa_callback
 
+    # ── Layer 1: Safaricom IP allowlist (production only) ─────────────
+    SAFARICOM_IP_RANGES = (
+        "196.201.214.", "196.201.213.",  # Safaricom Daraja production IPs
+        "40.90.",  # Azure (Daraja cloud infra)
+    )
+    client_ip = (
+        request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+        or request.META.get("REMOTE_ADDR", "")
+    )
+    mpesa_env = getattr(settings, "MPESA_ENVIRONMENT", "sandbox")
+    if mpesa_env == "production":
+        if not any(client_ip.startswith(prefix) for prefix in SAFARICOM_IP_RANGES):
+            logger.warning(
+                "M-Pesa callback from non-Safaricom IP: %s — BLOCKED", client_ip
+            )
+            return HttpResponse(status=403)
+
+    # ── Layer 2: Optional webhook secret token ────────────────────────
+    webhook_secret = getattr(settings, "MPESA_WEBHOOK_SECRET", "")
+    if webhook_secret:
+        provided_token = request.GET.get("token", "")
+        if provided_token != webhook_secret:
+            logger.warning("M-Pesa callback with invalid webhook secret from %s", client_ip)
+            return HttpResponse(status=403)
+
+    # ── Parse the callback payload ────────────────────────────────────
     try:
         callback_data = json.loads(request.body)
     except (json.JSONDecodeError, ValueError):
@@ -324,8 +356,23 @@ def mpesa_webhook(request):
         return HttpResponse(status=400)
 
     # Log the raw callback for debugging
-    logger.info("M-Pesa callback received: %s", json.dumps(callback_data)[:500])
+    logger.info("M-Pesa callback received from %s: %s", client_ip, json.dumps(callback_data)[:500])
+
+    # ── Layer 3: Verify CheckoutRequestID matches a payment we initiated ──
+    parsed = parse_stk_callback(callback_data)
+    checkout_id = parsed.get("checkout_request_id", "")
+    if not checkout_id:
+        logger.warning("M-Pesa callback missing CheckoutRequestID — rejected")
+        return HttpResponse(status=400)
+
+    try:
+        MpesaPayment.objects.get(checkout_request_id=checkout_id)
+    except MpesaPayment.DoesNotExist:
+        logger.warning(
+            "M-Pesa callback for unknown CheckoutRequestID: %s — possible fraud", checkout_id
+        )
+        return HttpResponse(status=404)
 
     success = process_mpesa_callback(callback_data)
-    # M-Pesa expects a 200 OK response — always acknowledge
+    # M-Pesa expects a 200 OK response — always acknowledge valid callbacks
     return HttpResponse(status=200)
