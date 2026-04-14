@@ -167,6 +167,16 @@
         Revenue
       </a>
 
+      <a href="{% if request.plan_limits.multi_touch_attribution %}{% url 'analytics:pixel_settings' %}{% else %}{% url 'billing:pricing' %}{% endif %}"
+         {% if '/analytics/pixel' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/analytics/pixel' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/analytics/pixel' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+        </svg>
+        Kova Pixel
+        {% if not request.plan_limits.multi_touch_attribution %}<span class="ml-auto text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">PRO</span>{% endif %}
+      </a>
+
       <a href="{% url 'campaigns:list' %}"
          {% if '/campaigns/' in request.path %}aria-current="page"{% endif %}
          class="{% if '/campaigns/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">

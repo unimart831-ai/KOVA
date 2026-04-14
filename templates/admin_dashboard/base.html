@@ -133,6 +133,14 @@
         Revenue
       </a>
 
+      <a href="{% url 'admin_dashboard:pixel_overview' %}"
+         class="{% if '/dashboard/pixel' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/dashboard/pixel' in request.path %}text-purple-600 dark:text-purple-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+        </svg>
+        Kova Pixel
+      </a>
+
       <a href="{% url 'admin_dashboard:campaigns_overview' %}"
          class="{% if '/dashboard/campaigns' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if '/dashboard/campaigns' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

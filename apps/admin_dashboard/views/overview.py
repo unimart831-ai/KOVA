@@ -222,6 +222,11 @@ def overview(request):
         created_at__gte=thirty_days_ago,
     ).aggregate(total=Sum("revenue"))["total"] or 0
 
+    # ── Kova Pixel ───────────────────────────────────────────────────────
+    from apps.analytics.models import WebsiteEvent
+    pixel_events_30d = WebsiteEvent.objects.filter(created_at__gte=thirty_days_ago).count()
+    active_pixels = UserProfile.objects.exclude(pixel_token__isnull=True).exclude(pixel_token="").count()
+
     # ── API Tokens ───────────────────────────────────────────────────────
     total_api_tokens = Token.objects.count()
 
@@ -297,6 +302,9 @@ def overview(request):
         "total_conversions": total_conversions,
         "conversions_30d": conversions_30d,
         "conversion_revenue": conversion_revenue,
+        # Kova Pixel
+        "pixel_events_30d": pixel_events_30d,
+        "active_pixels": active_pixels,
         # API
         "total_api_tokens": total_api_tokens,
         # Team Activity

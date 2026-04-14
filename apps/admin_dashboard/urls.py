@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, campaigns, content, costs, emails, engage, help, llm, logs, media_queue, overview, partners, partials, platforms, products, revenue, system, teams, user_health, users
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, campaigns, content, costs, emails, engage, help, llm, logs, media_queue, overview, partners, partials, pixel, platforms, products, revenue, system, teams, user_health, users
 
 app_name = "admin_dashboard"
 
@@ -90,6 +90,11 @@ urlpatterns = [
     path("revenue/shopify/", revenue.shopify_stores_list, name="shopify_stores"),
     path("revenue/shopify/<uuid:pk>/toggle/", revenue.shopify_store_toggle, name="shopify_store_toggle"),
     path("revenue/journeys/", revenue.journey_list, name="revenue_journeys"),
+
+    # Kova Pixel
+    path("pixel/", pixel.pixel_overview, name="pixel_overview"),
+    path("pixel/events/", pixel.pixel_events, name="pixel_events"),
+    path("pixel/users/", pixel.pixel_users, name="pixel_users"),
 
     # Teams
     path("teams/", teams.teams_overview, name="teams_overview"),

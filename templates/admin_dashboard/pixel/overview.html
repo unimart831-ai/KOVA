@@ -1,0 +1,236 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+  Website tracking pixel analytics · Last {{ days }} day{{ days|pluralize }}
+  <span class="mx-1">·</span>
+  <a href="?days=1" class="{% if days == 1 %}text-kova-600 dark:text-kova-400 font-semibold{% else %}hover:underline{% endif %}">24h</a>
+  <a href="?days=7" class="ml-1 {% if days == 7 %}text-kova-600 dark:text-kova-400 font-semibold{% else %}hover:underline{% endif %}">7d</a>
+  <a href="?days=14" class="ml-1 {% if days == 14 %}text-kova-600 dark:text-kova-400 font-semibold{% else %}hover:underline{% endif %}">14d</a>
+  <a href="?days=30" class="ml-1 {% if days == 30 %}text-kova-600 dark:text-kova-400 font-semibold{% else %}hover:underline{% endif %}">30d</a>
+  <span class="mx-2">·</span>
+  <a href="{% url 'admin_dashboard:pixel_events' %}" class="hover:underline">All Events</a>
+  <span class="mx-1">·</span>
+  <a href="{% url 'admin_dashboard:pixel_users' %}" class="hover:underline">Pixel Users</a>
+</p>
+{% endblock %}
+
+{% block content %}
+
+{# ── Global Stats Cards ───────────────────────────────────────────────── #}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Total Events</p>
+    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">{{ totals.total_events|format_number }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Unique Visitors</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ totals.unique_visitors|format_number }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Pixel Revenue</p>
+    <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">${{ totals.total_revenue|floatformat:0 }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Active Pixels</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ active_pixel_users }} <span class="text-sm text-gray-400 font-normal">/ {{ total_pixel_tokens }} installed</span></p>
+  </div>
+</div>
+
+{# ── Event Type Breakdown ─────────────────────────────────────────────── #}
+<div class="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 shadow-sm text-center">
+    <p class="text-xs text-gray-500 dark:text-gray-400">Page Views</p>
+    <p class="text-lg font-bold text-gray-900 dark:text-white">{{ totals.page_views|format_number }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 shadow-sm text-center">
+    <p class="text-xs text-gray-500 dark:text-gray-400">Forms</p>
+    <p class="text-lg font-bold text-gray-900 dark:text-white">{{ totals.form_submits|format_number }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 shadow-sm text-center">
+    <p class="text-xs text-gray-500 dark:text-gray-400">Purchases</p>
+    <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400">{{ totals.purchases|format_number }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 shadow-sm text-center">
+    <p class="text-xs text-gray-500 dark:text-gray-400">Sign Ups</p>
+    <p class="text-lg font-bold text-gray-900 dark:text-white">{{ totals.sign_ups|format_number }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 shadow-sm text-center">
+    <p class="text-xs text-gray-500 dark:text-gray-400">Clicks</p>
+    <p class="text-lg font-bold text-gray-900 dark:text-white">{{ totals.button_clicks|format_number }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 shadow-sm text-center">
+    <p class="text-xs text-gray-500 dark:text-gray-400">Custom</p>
+    <p class="text-lg font-bold text-gray-900 dark:text-white">{{ totals.custom_events|format_number }}</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+  {# ── Daily Trend Chart ──────────────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Daily Events & Visitors</h2>
+    </div>
+    <div class="p-5">
+      {% if daily_trend %}
+      <div class="h-48">
+        <canvas id="pixelTrendChart"></canvas>
+      </div>
+      {% else %}
+      <p class="text-sm text-gray-400 text-center py-8">No events in this period</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Top UTM Sources ────────────────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Top UTM Sources</h2>
+    </div>
+    <div class="p-5">
+      {% if top_sources %}
+      <div class="space-y-3">
+        {% for src in top_sources %}
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-700 dark:text-gray-300 font-medium capitalize">{{ src.utm_source }}</span>
+          <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ src.count|format_number }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-sm text-gray-400 text-center py-8">No UTM-tagged events yet</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+  {# ── Top Users ──────────────────────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Top Users by Events</h2>
+      <a href="{% url 'admin_dashboard:pixel_users' %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">View all</a>
+    </div>
+    <div class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for u in top_users %}
+      <div class="px-5 py-3 flex items-center justify-between">
+        <div class="min-w-0">
+          <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ u.user__full_name|default:u.user__email }}</p>
+          <p class="text-xs text-gray-400 truncate">{{ u.user__email }}</p>
+        </div>
+        <div class="text-right flex-shrink-0 ml-4">
+          <p class="text-sm font-semibold text-purple-600 dark:text-purple-400">{{ u.event_count|format_number }}</p>
+          <p class="text-xs text-gray-400">{{ u.visitor_count }} visitors</p>
+        </div>
+      </div>
+      {% empty %}
+      <p class="px-5 py-6 text-sm text-gray-400 text-center">No pixel events yet</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ── Top Pages + Device Breakdown ───────────────────────────────────── #}
+  <div class="space-y-6">
+    {# Top Tracked Pages #}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Top Tracked Pages</h2>
+      </div>
+      <div class="p-5">
+        {% if top_pages %}
+        <div class="space-y-2">
+          {% for pg in top_pages %}
+          <div class="flex items-center justify-between text-sm gap-3">
+            <span class="text-gray-700 dark:text-gray-300 truncate flex-1 font-mono text-xs">{{ pg.page_url|truncatechars:50 }}</span>
+            <span class="text-gray-500 dark:text-gray-400 font-medium flex-shrink-0">{{ pg.count }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-400 text-center py-4">No page views yet</p>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Device Breakdown #}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Device Breakdown</h2>
+      </div>
+      <div class="p-5">
+        {% if device_breakdown %}
+        <div class="space-y-2">
+          {% for d in device_breakdown %}
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-700 dark:text-gray-300 capitalize">{{ d.device_type }}</span>
+            <span class="text-gray-500 dark:text-gray-400 font-medium">{{ d.count|format_number }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-400 text-center py-4">No device data yet</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{% if daily_trend %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+  const isDark = document.documentElement.classList.contains('dark');
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const textColor = isDark ? '#9ca3af' : '#6b7280';
+
+  const trendData = {{ daily_trend|safe }};
+  const labels = trendData.map(d => d.date);
+  const events = trendData.map(d => d.events);
+  const visitors = trendData.map(d => d.visitors);
+
+  new Chart(document.getElementById('pixelTrendChart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Events',
+          data: events,
+          borderColor: '#9333ea',
+          backgroundColor: 'rgba(147, 51, 234, 0.1)',
+          fill: true,
+          tension: 0.3,
+          borderWidth: 2,
+          pointRadius: 0,
+        },
+        {
+          label: 'Visitors',
+          data: visitors,
+          borderColor: '#06b6d4',
+          backgroundColor: 'transparent',
+          borderDash: [4, 4],
+          tension: 0.3,
+          borderWidth: 2,
+          pointRadius: 0,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: true, labels: { color: textColor, boxWidth: 12, font: { size: 11 } } } },
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 }, maxTicksLimit: 7 } },
+        y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } }, beginAtZero: true },
+      }
+    }
+  });
+</script>
+{% endif %}
+{% endblock %}
