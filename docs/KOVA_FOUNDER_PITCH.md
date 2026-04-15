@@ -32,15 +32,23 @@ Every version of this pitch follows the same structure. Memorize the structure, 
 
 ### Step 2 — Personal WHY
 
-"I am an African Business Hero because I watched incredibly talented African entrepreneurs fail at growth — not because their products were bad, but because they couldn't afford to show up online consistently.
+"I am an African Business Hero because I didn't just study the problem — I lived it.
 
-A restaurant owner in Nairobi making the best chapati in the city — zero online presence. A fashion designer in Lagos with world-class designs — posting once a month because she's running the whole business alone. These people don't have a talent problem. They have a capacity problem. And I refused to accept that."
+I'm also the founder of Unimart Africa — an e-commerce platform that connects university student sellers to student buyers within their campus ecosystem. Great product. Real users. Real transactions happening.
+
+But when it came to scaling? Social media crushed us. I'm building the product, managing operations, handling support — and somehow I'm also supposed to post consistently across 5 platforms, engage with comments, track what's working, and create content that actually converts? Every week I'd tell myself 'I'll post tomorrow.' Tomorrow never came.
+
+I watched Unimart struggle to grow — not because the product was bad, but because I literally could not keep up with social media while running the entire business. That's when it hit me: if I — a data science student who can code — can't solve this, what chance does a chapati seller in Nairobi have? A fashion designer in Lagos? A farmer in Kampala?
+
+I didn't read about this problem in a report. I live it. Every single day."
 
 ### Step 3 — Your Solution
 
-"So I built Kova Agent — a platform where 6 AI agents work as your social media department. You tell Kova about your business once. From that moment, it researches your industry, creates content in your brand voice, predicts what will perform, schedules at optimal times, publishes across 9 platforms, and even engages with your audience.
+"That frustration — watching my own startup struggle to grow online — led me to build Kova Agent.
 
-What used to require a 5-person team and $2,000/month, Kova does for KES 299/month. That's about $2. Built in Nairobi. Priced for Africa."
+A platform where 6 AI agents work as your social media department. You tell Kova about your business once. From that moment, it researches your industry, creates content in your brand voice, predicts what will perform, schedules at optimal times, publishes across 9 platforms, and even engages with your audience.
+
+What used to require a 5-person team and $2,000/month, Kova does for KES 299/month. That's about $2. Built in Nairobi. Priced for Africa. And yes — Unimart Africa is Kova's first customer."
 
 ### Step 4 — Show Proof
 
@@ -51,6 +59,8 @@ Our goal? Become the default growth engine for every African SME. There are over
 ### Step 5 — What Makes ME Different
 
 "I built this entire system — 6 AI agents, 9 platform integrations, the full infrastructure — solo. No co-founder, no funded team. Just a Mastercard Foundation Scholar at USIU-Africa who codes at 2 AM and ships at 8 AM.
+
+But here's what really makes this different: I'm not just the builder — I'm the customer. I run Unimart Africa. I feel the pain of social media every day. Every feature in Kova exists because I needed it first. That's not market research. That's survival.
 
 What drives me is a stubborn belief that Africans can solve African problems. We don't need Silicon Valley to build our tools. We need builders who understand our context, our budgets, and our hustle. That's me. That's Kova."
 
@@ -68,21 +78,27 @@ What drives me is a stubborn belief that Africans can solve African problems. We
 
 ### Step 2 — Personal WHY
 
-"Let me tell you about someone I met in my first year at university in Nairobi.
+"Before I built Kova, I built another startup — Unimart Africa. An e-commerce platform connecting university student sellers to student buyers on campus. Real product. Real users. Real transactions.
 
-A woman running a small catering business. Her food was incredible — the kind people drive across the city for. But when I asked about her social media, she laughed. She said, 'I wake up at 4 AM to cook. I deliver until 8 PM. When am I supposed to post on Instagram?'
+But here's what nobody tells you about building a startup in Africa: the product is the easy part. Growth is where dreams go to die.
 
-That moment broke something in me. Because I realized — the gap between a surviving business and a thriving business in Africa isn't talent. It's not even money. It's time and access. The tools that help businesses grow online were built for companies with marketing departments. Not for a woman who cooks and delivers and does the books herself.
+I remember sitting in my room in Nairobi at midnight, staring at our Instagram page. Last post — three weeks ago. Our Twitter? Dead. LinkedIn? Never started. Not because I didn't care. Because I'd spent that day fixing a payment bug, answering 40 customer messages, and studying for an exam. Social media was always the thing I'd 'do tomorrow.'
 
-I decided that had to change."
+And I watched Unimart flatline. Not because students didn't love the product — they did. But because nobody new was discovering us. We were invisible.
+
+That's when I realized: I'm a developer. I can literally code. And even I can't keep up with social media while running a business. What about the millions of African founders who can't code? Who can't afford an agency? Who are just as invisible as I was?
+
+That moment broke something in me. And it built something too."
 
 ### Step 3 — Your Solution
 
-"That experience led me to build Kova Agent.
+"That pain — watching my own startup struggle to grow — is why I built Kova Agent.
 
 Imagine this: you sign up, tell Kova about your business — your industry, your voice, your goals. And then... Kova works. 24 hours a day, 7 days a week. It researches what's trending in your industry. It creates posts in your voice. It predicts which ones will perform best. It schedules them at the perfect time. It publishes across every platform. It even responds to your audience.
 
-Six AI agents. Working as your social media team. For less than the price of a lunch in Nairobi."
+Six AI agents. Working as your social media team. For less than the price of a lunch in Nairobi.
+
+And the first business I pointed it at? Unimart Africa. My own startup. Because I built Kova to solve my own problem first."
 
 ### Step 4 — Show Proof
 
@@ -96,9 +112,11 @@ Where are we going? Every African SME that's ever said 'I don't have time for so
 
 "People ask me — 'How did you build all this alone?'
 
-The honest answer? I didn't have a choice. I saw a problem I couldn't unsee. I had the skills to solve it. And I couldn't find anyone building what African businesses actually needed — not a cheaper copy of an American tool, but something built from scratch for our reality.
+The honest answer? I didn't have a choice. I watched my own startup — Unimart Africa — struggle to grow because I couldn't keep up with social media. I had the skills to fix it. So I did.
 
-What drives me is this: I believe the next generation of global tech companies will be built in Africa, by Africans, for problems that the rest of the world doesn't even see yet. Kova is my proof of that belief. I turned frustration into a system that works while founders sleep.
+I'm not a founder who built a tool and went looking for a problem. I'm a founder who had the problem, and the pain was so bad that I built the solution. Every feature in Kova came from something I needed yesterday.
+
+What drives me is this: I believe the next generation of global tech companies will be built in Africa, by Africans, for problems that the rest of the world doesn't even see yet. Kova is my proof of that belief. I turned my own startup's biggest struggle into a system that works while founders sleep.
 
 And I'm just getting started."
 
@@ -116,7 +134,7 @@ And I'm just getting started."
 
 ### Step 2 — Personal WHY
 
-"I kept meeting African business owners who were incredible at what they do but completely invisible online — not because they didn't care, but because they're running the entire business alone. There's no time to post, no budget to hire. I thought — what if AI could just handle all of that?"
+"I run another startup — Unimart Africa, e-commerce for campus students. Great product, but it was dying online because I couldn't keep up with social media while running everything else. I thought — if I can code and I still can't solve this, what about everyone else? So I built the solution."
 
 ### Step 3 — Your Solution
 
@@ -128,7 +146,7 @@ And I'm just getting started."
 
 ### Step 5 — What Makes ME Different
 
-"I built the whole thing solo — 6 agents, 9 platforms, full-stack. Still a student at USIU-Africa on a Mastercard Foundation scholarship. I just believe African founders deserve tools built for their reality, not recycled Silicon Valley products. That's what I'm building."
+"I built the whole thing solo — 6 agents, 9 platforms, full-stack. Still a student at USIU-Africa on a Mastercard Foundation scholarship. But I'm not just the builder — I'm my own first customer. Unimart Africa runs on Kova. I feel every pain point, which means I fix them faster than anyone who's just guessing. That's the difference."
 
 ---
 
@@ -158,10 +176,11 @@ And I'm just getting started."
 
 ## HOMEWORK FOR IRANZI
 
-- [ ] **Find your "father died" moment.** The healthcare founder had a clear, irreversible personal pain point. What's yours? The moment you couldn't unsee the problem. Write it down. Practice saying it out loud until it doesn't feel rehearsed.
+- [x] **~~Find your "father died" moment.~~** DONE. It's Unimart Africa. You lived the problem. Your own startup struggling to scale because of social media. That's your irreversible moment — you couldn't unsee it because you're still living it.
 - [ ] **Memorize all 3 versions.** Practice in front of a mirror. Record yourself. The best pitch sounds like a conversation, not a script.
 - [ ] **Update Step 4 monthly.** As metrics grow, update the proof section. More users, more posts, more platforms, more revenue — every number makes the pitch stronger.
-- [ ] **Build a 10-second version.** "I'm Iranzi. I built Kova — AI that runs social media for African businesses. 6 agents. KES 299/month. We're live." — For when someone says "what do you do?" at a party.
+- [ ] **Build a 10-second version.** "I'm Iranzi. My startup couldn't grow because of social media, so I built Kova — 6 AI agents that run your social media for KES 299/month. We're live." — For when someone says "what do you do?" at a party.
+- [ ] **Track Unimart's growth on Kova.** This is your live case study. Document before/after metrics. When you pitch, having "my own startup grew X% after I pointed Kova at it" is the most powerful proof you can show.
 
 ---
 
