@@ -23,6 +23,7 @@ from django.views.decorators.http import require_POST
 
 from apps.accounts.models import UserProfile
 from apps.analytics.models import (
+    Conversion,
     ConversionJourney,
     ConversionTouchpoint,
     WebsiteEvent,
@@ -147,6 +148,15 @@ def pixel_track(request):
     if len(meta_str) > MAX_METADATA_SIZE:
         metadata = {"_truncated": True}
 
+    # Deduplication: prevent duplicate events from beacon retry + XHR fallback
+    dedup_key = f"pixel_dedup:{token[:16]}:{visitor_id}:{event_type}:{str(data.get('page_url', ''))[:80]}"
+    if cache.get(dedup_key):
+        response = JsonResponse({"ok": True, "deduplicated": True}, status=200)
+        for k, v in cors_headers.items():
+            response[k] = v
+        return response
+    cache.set(dedup_key, 1, timeout=5)  # 5-second dedup window
+
     # Create the event
     event = WebsiteEvent.objects.create(
         user=user,
@@ -255,15 +265,79 @@ def pixel_settings(request):
 
 
 @login_required
+@require_POST
 def pixel_regenerate_token(request):
     """Regenerate the pixel token (invalidates old pixel installations)."""
-    if request.method != "POST":
-        return JsonResponse({"error": "POST required"}, status=405)
-
     profile = request.user.profile
     profile.pixel_token = secrets.token_hex(32)
     profile.save(update_fields=["pixel_token"])
     return JsonResponse({"token": profile.pixel_token})
+
+
+@login_required
+def pixel_events(request):
+    """User-facing event browser — browse pixel events with filters."""
+    from django.core.paginator import Paginator
+
+    profile = request.user.profile
+    limits = get_plan_limits(profile.plan)
+    if not limits.get("multi_touch_attribution"):
+        return render(request, "analytics/pixel_events.html", {"pixel_enabled": False})
+
+    qs = WebsiteEvent.objects.filter(user=request.user).select_related("post")
+
+    # Filters
+    event_type = request.GET.get("type", "")
+    if event_type and event_type in VALID_EVENT_TYPES:
+        qs = qs.filter(event_type=event_type)
+
+    visitor = request.GET.get("visitor", "").strip()
+    if visitor:
+        qs = qs.filter(visitor_id=visitor)
+
+    has_revenue = request.GET.get("revenue", "")
+    if has_revenue == "yes":
+        qs = qs.filter(revenue__gt=0)
+
+    paginator = Paginator(qs, 50)
+    page = paginator.get_page(request.GET.get("page", 1))
+
+    # Visitor journeys summary (top 10 active)
+    journeys = (
+        ConversionJourney.objects.filter(user=request.user)
+        .order_by("-last_touch_at")[:10]
+    )
+
+    context = {
+        "pixel_enabled": True,
+        "events": page,
+        "paginator": paginator,
+        "event_types": WebsiteEvent.EventType.choices,
+        "current_type": event_type,
+        "current_visitor": visitor,
+        "current_revenue": has_revenue,
+        "journeys": journeys,
+    }
+    return render(request, "analytics/pixel_events.html", context)
+
+
+@login_required
+def pixel_test(request):
+    """Check if pixel has fired recently — returns JSON for HTMX polling."""
+    now = timezone.now()
+    recent = WebsiteEvent.objects.filter(
+        user=request.user,
+        created_at__gte=now - timezone.timedelta(minutes=5),
+    ).order_by("-created_at").first()
+
+    if recent:
+        return JsonResponse({
+            "detected": True,
+            "event_type": recent.get_event_type_display(),
+            "page_url": recent.page_url[:80],
+            "time": recent.created_at.isoformat(),
+        })
+    return JsonResponse({"detected": False})
 
 
 # ─── Attribution engine ───────────────────────────────────────────────────────
@@ -293,12 +367,24 @@ def _attribute_to_post(event):
 
     # Try utm_content first (most specific — contains post ID prefix)
     if event.utm_content:
-        post = (
-            Post.objects.filter(
-                user=event.user,
-                id__startswith=event.utm_content,
-            ).first()
-        )
+        # Use a range filter on UUID which is indexable, instead of id__startswith
+        prefix = event.utm_content.strip()
+        try:
+            # Pad prefix to form valid UUID range bounds
+            lower = prefix.ljust(32, "0")
+            upper = prefix.ljust(32, "f")
+            # Insert hyphens for UUID format
+            lower_uuid = f"{lower[:8]}-{lower[8:12]}-{lower[12:16]}-{lower[16:20]}-{lower[20:32]}"
+            upper_uuid = f"{upper[:8]}-{upper[8:12]}-{upper[12:16]}-{upper[16:20]}-{upper[20:32]}"
+            post = (
+                Post.objects.filter(
+                    user=event.user,
+                    id__gte=lower_uuid,
+                    id__lte=upper_uuid,
+                ).first()
+            )
+        except (ValueError, Exception):
+            post = None
         if post:
             event.post = post
             event.save(update_fields=["post"])
@@ -375,6 +461,46 @@ def _update_journey(user, event):
         journey.converted_at = timezone.now()
         journey.total_revenue = event.revenue
         update_fields += ["is_converted", "converted_at", "total_revenue"]
+
+        # Bridge: create a Conversion record so revenue appears in the dashboard
+        conversion = Conversion.objects.create(
+            user=user,
+            post=event.post,
+            conversion_type=Conversion.ConversionType.SALE,
+            revenue=event.revenue,
+            event_name=event.event_name or "pixel_purchase",
+            utm_source=event.utm_source,
+            utm_medium=event.utm_medium,
+            utm_campaign=event.utm_campaign,
+            utm_content=event.utm_content,
+            metadata={
+                "source": "kova_pixel",
+                "page_url": event.page_url,
+                "visitor_id": event.visitor_id,
+                "currency": event.currency,
+            },
+        )
+        journey.conversion = conversion
+        update_fields.append("conversion")
+
+    elif event.event_type == "sign_up":
+        # Also record sign-ups as lead conversions
+        Conversion.objects.create(
+            user=user,
+            post=event.post,
+            conversion_type=Conversion.ConversionType.LEAD,
+            revenue=0,
+            event_name=event.event_name or "pixel_signup",
+            utm_source=event.utm_source,
+            utm_medium=event.utm_medium,
+            utm_campaign=event.utm_campaign,
+            utm_content=event.utm_content,
+            metadata={
+                "source": "kova_pixel",
+                "page_url": event.page_url,
+                "visitor_id": event.visitor_id,
+            },
+        )
 
     journey.save(update_fields=update_fields)
 

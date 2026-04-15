@@ -19,7 +19,7 @@
     {% for plat in connected_platforms %}
       <a href="{% url 'analytics:insights' %}?platform={{ plat }}"
          class="text-xs px-3 py-1.5 rounded-full border font-medium transition-colors {% if current_platform == plat %}bg-kova-600 text-white border-kova-600{% else %}bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-kova-300{% endif %}">
-        {% if plat == 'facebook' %}Facebook{% elif plat == 'instagram' %}Instagram{% elif plat == 'twitter' %}X (Twitter){% elif plat == 'linkedin' %}LinkedIn{% elif plat == 'tiktok' %}TikTok{% elif plat == 'youtube' %}YouTube{% elif plat == 'pinterest' %}Pinterest{% elif plat == 'threads' %}Threads{% elif plat == 'bluesky' %}Bluesky{% else %}{{ plat|title }}{% endif %}
+        {% if plat == 'facebook' %}Facebook{% elif plat == 'instagram' %}Instagram{% elif plat == 'twitter' %}X (Twitter){% elif plat == 'linkedin' %}LinkedIn{% elif plat == 'tiktok' %}TikTok{% elif plat == 'youtube' %}YouTube{% elif plat == 'pinterest' %}Pinterest{% elif plat == 'threads' %}Threads{% elif plat == 'bluesky' %}Bluesky{% elif plat == 'whatsapp' %}WhatsApp{% else %}{{ plat|title }}{% endif %}
       </a>
     {% endfor %}
   </div>

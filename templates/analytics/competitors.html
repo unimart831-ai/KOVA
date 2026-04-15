@@ -167,8 +167,11 @@
                       <p class="text-xs font-semibold text-gray-900 dark:text-white truncate">{{ insight.title }}</p>
                     </div>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ insight.competitor.name }}</p>
+                    {% if insight.description %}
+                    <p class="text-xs text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">{{ insight.description|truncatechars:120 }}</p>
+                    {% endif %}
                     {% if insight.suggested_action %}
-                    <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">{{ insight.suggested_action|truncatechars:100 }}</p>
+                    <p class="text-xs text-kova-600 dark:text-kova-400 mt-1 font-medium">→ {{ insight.suggested_action|truncatechars:80 }}</p>
                     {% endif %}
 
                     <div class="flex items-center gap-2 mt-2">

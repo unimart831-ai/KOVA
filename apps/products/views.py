@@ -83,8 +83,8 @@ def product_add(request):
 
     return render(request, "products/product_form.html", {
         "form": form,
-        "title": "Add Product",
-        "submit_label": "Add Product",
+        "title": "Add to Catalog",
+        "submit_label": "Add to Catalog",
     })
 
 

@@ -55,7 +55,7 @@ def _build_setup_checklist(user):
             "key": "read_brief",
             "label": "Review your Daily Brief",
             "done": has_brief,
-            "url_name": "briefs:home",
+            "url_name": "brief:home",
             "icon": "📊",
         },
     ]
@@ -107,7 +107,7 @@ def _build_value_summary(user):
     # Leads captured
     from apps.leads.models import Lead
     leads_count = Lead.objects.filter(
-        user=user, created_at__gte=week_ago,
+        user=user, first_seen_at__gte=week_ago,
     ).count()
 
     # If no activity at all, don't show the card

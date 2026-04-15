@@ -49,6 +49,11 @@ class ProductManager(models.Manager):
 
 
 class Product(models.Model):
+    class OfferingType(models.TextChoices):
+        PRODUCT = "product", "Physical Product"
+        SERVICE = "service", "Service"
+        DIGITAL = "digital", "Digital Product"
+
     class StockStatus(models.TextChoices):
         IN_STOCK = "in_stock", "In Stock"
         LOW_STOCK = "low_stock", "Low Stock"
@@ -59,6 +64,10 @@ class Product(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="products"
+    )
+    offering_type = models.CharField(
+        max_length=10, choices=OfferingType.choices, default=OfferingType.PRODUCT,
+        help_text="Product, service, or digital — determines how AI talks about it",
     )
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
@@ -71,9 +80,9 @@ class Product(models.Model):
     price_range_max = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     image = models.ImageField(upload_to="product_images/", blank=True)
 
-    # Stock
+    # Stock (only relevant for physical products)
     stock_status = models.CharField(
-        max_length=20, choices=StockStatus.choices, default=StockStatus.IN_STOCK
+        max_length=20, choices=StockStatus.choices, default=StockStatus.IN_STOCK,
     )
     quantity = models.PositiveIntegerField(null=True, blank=True, help_text="Leave blank if you don't track exact numbers")
     low_stock_threshold = models.PositiveIntegerField(default=5, help_text="Flag as low stock below this number")
@@ -96,10 +105,16 @@ class Product(models.Model):
             models.Index(fields=["user", "stock_status"]),
             models.Index(fields=["user", "is_featured"]),
             models.Index(fields=["user", "is_active"]),
+            models.Index(fields=["user", "offering_type"]),
         ]
 
     def __str__(self):
         return self.name
+
+    @property
+    def tracks_stock(self):
+        """Services and digital products don't have stock — skip all stock logic."""
+        return self.offering_type == self.OfferingType.PRODUCT
 
     @property
     def display_price(self):
@@ -110,7 +125,9 @@ class Product(models.Model):
         return ""
 
     def check_low_stock(self):
-        """Auto-update status if quantity drops below threshold."""
+        """Auto-update status if quantity drops below threshold. Skips services/digital."""
+        if not self.tracks_stock:
+            return
         if self.quantity is not None and self.stock_status == self.StockStatus.IN_STOCK:
             if self.quantity <= 0:
                 self.stock_status = self.StockStatus.OUT_OF_STOCK

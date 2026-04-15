@@ -19,6 +19,7 @@ class SocialAccount(models.Model):
         PINTEREST = "pinterest", "Pinterest"
         THREADS = "threads", "Threads"
         BLUESKY = "bluesky", "Bluesky"
+        WHATSAPP = "whatsapp", "WhatsApp"
 
     class AccountType(models.TextChoices):
         PERSONAL = "personal", "Personal"

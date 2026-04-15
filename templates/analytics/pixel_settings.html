@@ -55,6 +55,16 @@
       <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">${{ stats.revenue_7d|floatformat:0 }}</p>
     </div>
   </div>
+  <div class="flex gap-3">
+    <a href="{% url 'analytics:pixel_events' %}" class="btn-secondary btn-sm flex items-center gap-1.5">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      Browse Events
+    </a>
+    <a href="{% url 'analytics:revenue' %}" class="btn-secondary btn-sm flex items-center gap-1.5">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Revenue Dashboard
+    </a>
+  </div>
   {% endif %}
 
   {# ── Setup Instructions ── #}
@@ -108,6 +118,40 @@
               class="px-3 py-2.5 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition font-medium">
         Regenerate
       </button>
+    </div>
+  </div>
+
+  {# ── Test Pixel ── #}
+  <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6" x-data="pixelTest()">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+      <svg class="w-5 h-5 text-kova-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      Test Pixel
+    </h3>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Verify that your pixel is installed and sending events.</p>
+    <div class="mt-3">
+      <button @click="startTest()" :disabled="polling"
+              class="btn-primary btn-sm flex items-center gap-2">
+        <template x-if="polling">
+          <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+        </template>
+        <span x-text="polling ? 'Listening for events...' : (detected ? 'Test Again' : 'Start Test')"></span>
+      </button>
+      <div x-show="detected" x-cloak class="mt-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+        <p class="text-sm text-emerald-700 dark:text-emerald-400 font-medium">✅ Pixel is working!</p>
+        <p class="text-xs text-emerald-600 dark:text-emerald-500 mt-1">
+          Detected <strong x-text="eventType"></strong> on <span x-text="pageUrl" class="font-mono"></span>
+        </p>
+      </div>
+      <div x-show="failed" x-cloak class="mt-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+        <p class="text-sm text-red-700 dark:text-red-400 font-medium">No events detected in the last 30 seconds.</p>
+        <p class="text-xs text-red-600 dark:text-red-500 mt-1">Make sure the pixel snippet is installed on your site, then visit a page and try again.</p>
+      </div>
+      <p x-show="polling" class="text-xs text-gray-500 mt-2">Visit your website in another tab now — we'll detect the event here.</p>
     </div>
   </div>
 
@@ -209,6 +253,47 @@ function copySnippet() {
     btn.textContent = 'Copied!';
     setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
   });
+}
+
+function pixelTest() {
+  return {
+    polling: false,
+    detected: false,
+    failed: false,
+    eventType: '',
+    pageUrl: '',
+    _timer: null,
+    _attempts: 0,
+
+    startTest() {
+      this.polling = true;
+      this.detected = false;
+      this.failed = false;
+      this._attempts = 0;
+      this._poll();
+    },
+
+    async _poll() {
+      if (this._attempts >= 10) {
+        this.polling = false;
+        this.failed = true;
+        return;
+      }
+      this._attempts++;
+      try {
+        const resp = await fetch('{% url "analytics:pixel_test" %}');
+        const data = await resp.json();
+        if (data.detected) {
+          this.polling = false;
+          this.detected = true;
+          this.eventType = data.event_type;
+          this.pageUrl = data.page_url;
+          return;
+        }
+      } catch (e) {}
+      this._timer = setTimeout(() => this._poll(), 3000);
+    }
+  };
 }
 </script>
 {% endblock %}

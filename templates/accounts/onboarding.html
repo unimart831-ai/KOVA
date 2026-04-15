@@ -62,10 +62,10 @@
             <a href="{% url 'platforms:connect' platform %}"
                class="flex items-center gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-kova-400 dark:hover:border-kova-500 hover:shadow-sm transition-all group">
               <span class="text-lg">
-                {% if platform == "facebook" %}📘{% elif platform == "instagram" %}📷{% elif platform == "twitter" %}🐦{% elif platform == "linkedin" %}💼{% elif platform == "tiktok" %}🎵{% elif platform == "youtube" %}📺{% elif platform == "pinterest" %}📌{% elif platform == "threads" %}🧵{% elif platform == "bluesky" %}🦋{% endif %}
+                {% if platform == "facebook" %}📘{% elif platform == "instagram" %}📷{% elif platform == "twitter" %}🐦{% elif platform == "linkedin" %}💼{% elif platform == "tiktok" %}🎵{% elif platform == "youtube" %}📺{% elif platform == "pinterest" %}📌{% elif platform == "threads" %}🧵{% elif platform == "bluesky" %}🦋{% elif platform == "whatsapp" %}💬{% endif %}
               </span>
               <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-kova-600 dark:group-hover:text-kova-400">
-                {% if platform == "facebook" %}Facebook{% elif platform == "instagram" %}Instagram{% elif platform == "twitter" %}X (Twitter){% elif platform == "linkedin" %}LinkedIn{% elif platform == "tiktok" %}TikTok{% elif platform == "youtube" %}YouTube{% elif platform == "pinterest" %}Pinterest{% elif platform == "threads" %}Threads{% elif platform == "bluesky" %}Bluesky{% endif %}
+                {% if platform == "facebook" %}Facebook{% elif platform == "instagram" %}Instagram{% elif platform == "twitter" %}X (Twitter){% elif platform == "linkedin" %}LinkedIn{% elif platform == "tiktok" %}TikTok{% elif platform == "youtube" %}YouTube{% elif platform == "pinterest" %}Pinterest{% elif platform == "threads" %}Threads{% elif platform == "bluesky" %}Bluesky{% elif platform == "whatsapp" %}WhatsApp{% endif %}
               </span>
             </a>
           {% endfor %}
@@ -101,8 +101,54 @@
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">Define your voice & visual identity</h2>
             <p class="text-gray-600 dark:text-gray-400 mt-1">
               The more detail you give here, the better your AI agents will sound and look from day one.
-              Think of this as training your content team.
             </p>
+          </div>
+
+          {# ── AI Brand Builder toggle ────────────────────────────── #}
+          <div x-data="brandBuilder()" class="mb-6">
+            <div class="flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300"
+                 :class="aiMode ? 'border-kova-500 bg-kova-50 dark:bg-kova-950/30 dark:border-kova-600' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/40'">
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-lg" x-text="aiMode ? '🤖' : '✍️'"></span>
+                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white" x-text="aiMode ? 'AI Brand Builder' : 'Manual Setup'"></h3>
+                </div>
+                <p class="text-xs mt-0.5" :class="aiMode ? 'text-kova-600 dark:text-kova-400' : 'text-gray-500 dark:text-gray-400'"
+                   x-text="aiMode ? 'Give a brief hint about your business — AI handles the rest' : 'Fill in each field yourself (you can always come back later)'"></p>
+              </div>
+              <button type="button" @click="aiMode = !aiMode"
+                      class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200"
+                      :class="aiMode ? 'bg-kova-600' : 'bg-gray-300 dark:bg-gray-600'">
+                <span class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200"
+                      :class="aiMode ? 'translate-x-6' : 'translate-x-1'"></span>
+              </button>
+            </div>
+
+            {# AI mode — hint input + generate button #}
+            <div x-show="aiMode" x-cloak class="mt-4 space-y-3">
+              <div>
+                <label class="label mb-1">Tell us about your business in your own words</label>
+                <textarea x-model="hint" rows="3"
+                          class="input w-full"
+                          placeholder="E.g.: We're a web development agency in Nairobi. We build fast, modern websites for SMEs. Our clients are mostly small business owners who need online presence but aren't tech-savvy. We want to sound helpful and approachable, not corporate."></textarea>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">The more context you give, the better the AI result. But even a sentence works.</p>
+              </div>
+              <button type="button" @click="generateBrand()"
+                      :disabled="loading"
+                      class="btn-primary w-full flex items-center justify-center gap-2 py-3">
+                <template x-if="loading">
+                  <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                  </svg>
+                </template>
+                <span x-text="loading ? 'Building your brand identity...' : '🤖 Generate My Brand Identity'"></span>
+              </button>
+              <p x-show="error" x-text="error" class="text-xs text-red-500 text-center"></p>
+              <p x-show="success" x-cloak class="text-xs text-green-600 dark:text-green-400 text-center font-medium">
+                ✅ Brand identity generated! Review and tweak below, then click Continue.
+              </p>
+            </div>
           </div>
         {% elif step == 3 %}
           <div class="mb-6">
@@ -351,8 +397,80 @@
 </div>
 
 {% if step == 2 %}
-{# ── Industry-based pillar suggestions (P3 UX enhancement) ── #}
+{# ── AI Brand Builder + Industry pillar suggestions ── #}
 <script>
+function brandBuilder() {
+  return {
+    aiMode: false,
+    hint: '',
+    loading: false,
+    error: '',
+    success: false,
+
+    async generateBrand() {
+      this.loading = true;
+      this.error = '';
+      this.success = false;
+
+      try {
+        const formData = new FormData();
+        formData.append('hint', this.hint);
+
+        const response = await fetch('{% url "accounts:ai_brand_builder" %}', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          this.error = data.error || 'Something went wrong. Try again.';
+          return;
+        }
+
+        // Populate form fields with AI-generated data
+        const voiceField = document.getElementById('id_brand_voice');
+        if (voiceField && data.brand_voice) voiceField.value = data.brand_voice;
+
+        const audienceField = document.getElementById('id_target_audience');
+        if (audienceField && data.target_audience) audienceField.value = data.target_audience;
+
+        const pillarsField = document.getElementById('id_content_pillars_text');
+        if (pillarsField && data.content_pillars) {
+          pillarsField.value = data.content_pillars.join('\n');
+        }
+
+        const restrictionsField = document.getElementById('id_brand_restrictions');
+        if (restrictionsField && data.brand_restrictions) restrictionsField.value = data.brand_restrictions;
+
+        const examplesField = document.getElementById('id_brand_voice_examples_text');
+        if (examplesField && data.brand_voice_examples && data.brand_voice_examples.length) {
+          examplesField.value = data.brand_voice_examples.join('\n\n');
+        }
+
+        // Check the right tone checkboxes
+        if (data.tone_attributes && data.tone_attributes.length > 0) {
+          // Uncheck all first
+          document.querySelectorAll('input[name="tone_selection"]').forEach(cb => cb.checked = false);
+          // Check the AI-selected ones
+          data.tone_attributes.forEach(tone => {
+            const cb = document.querySelector(`input[name="tone_selection"][value="${tone}"]`);
+            if (cb) cb.checked = true;
+          });
+        }
+
+        this.success = true;
+
+      } catch (err) {
+        this.error = 'Network error. Check your connection and try again.';
+      } finally {
+        this.loading = false;
+      }
+    }
+  };
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   const pillarSuggestions = {
     saas: ['Product updates & feature launches', 'Industry trends & analysis', 'Customer success stories', 'Behind-the-scenes engineering', 'Tips & how-to guides'],

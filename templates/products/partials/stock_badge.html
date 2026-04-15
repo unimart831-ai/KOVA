@@ -1,3 +1,12 @@
+{% if product.offering_type == 'service' %}
+<span class="inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+  🔧 Service
+</span>
+{% elif product.offering_type == 'digital' %}
+<span class="inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
+  💻 Digital
+</span>
+{% else %}
 <span class="inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium
   {% if product.stock_status == 'in_stock' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300
   {% elif product.stock_status == 'low_stock' %}bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300
@@ -7,3 +16,4 @@
   {% if product.stock_status == 'in_stock' %}🟢{% elif product.stock_status == 'low_stock' %}🟡{% elif product.stock_status == 'out_of_stock' %}🔴{% elif product.stock_status == 'made_to_order' %}🔵{% else %}⚪{% endif %}
   {{ product.get_stock_status_display }}
 </span>
+{% endif %}

@@ -61,6 +61,44 @@
           <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1">Voice & audience</h3>
           <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">How your AI agents sound — this trains all content generation</p>
 
+          {# ── AI Brand Builder ── #}
+          <div x-data="settingsBrandBuilder()" class="mb-5">
+            <div class="p-4 rounded-xl border-2 transition-all duration-300"
+                 :class="open ? 'border-kova-500 bg-kova-50 dark:bg-kova-950/30 dark:border-kova-600' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/40'">
+              <div class="flex items-center justify-between cursor-pointer" @click="open = !open">
+                <div class="flex items-center gap-2">
+                  <span class="text-lg">🤖</span>
+                  <div>
+                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white">AI Brand Builder</h4>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Regenerate your voice &amp; audience with AI — all fields below will be updated</p>
+                  </div>
+                </div>
+                <svg class="w-4 h-4 text-gray-400 transition-transform" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </div>
+              <div x-show="open" x-cloak class="mt-3 space-y-3">
+                <div>
+                  <label class="label mb-1">Describe your brand in your own words</label>
+                  <textarea x-model="hint" rows="2" class="input w-full"
+                            placeholder="E.g.: We help SMEs build modern websites. Friendly, approachable, no jargon."></textarea>
+                </div>
+                <button type="button" @click="generateBrand()" :disabled="loading"
+                        class="btn-primary w-full flex items-center justify-center gap-2 py-2.5 text-sm">
+                  <template x-if="loading">
+                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                  </template>
+                  <span x-text="loading ? 'Generating...' : 'Regenerate Voice & Audience'"></span>
+                </button>
+                <p x-show="error" x-text="error" class="text-xs text-red-500 text-center"></p>
+                <p x-show="success" x-cloak class="text-xs text-green-600 dark:text-green-400 text-center font-medium">
+                  ✅ Fields updated below — review and hit Save settings when ready.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {% for field in brand_form %}
             {% if field.name == 'brand_voice' or field.name == 'target_audience' %}
               <div class="mb-4">
@@ -282,4 +320,84 @@
     </div>
   </div>
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function settingsBrandBuilder() {
+  return {
+    open: false,
+    hint: '',
+    loading: false,
+    error: '',
+    success: false,
+
+    async generateBrand() {
+      this.loading = true;
+      this.error = '';
+      this.success = false;
+
+      try {
+        const formData = new FormData();
+        formData.append('hint', this.hint);
+
+        const response = await fetch('{% url "accounts:ai_brand_builder" %}', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          this.error = data.error || 'Something went wrong. Try again.';
+          return;
+        }
+
+        // Populate the settings form fields
+        const voiceField = document.querySelector('[name="brand_voice"]') || document.getElementById('id_brand_voice');
+        if (voiceField && data.brand_voice) voiceField.value = data.brand_voice;
+
+        const audienceField = document.querySelector('[name="target_audience"]') || document.getElementById('id_brand_target_audience');
+        if (audienceField && data.target_audience) audienceField.value = data.target_audience;
+
+        const pillarsField = document.querySelector('[name="content_pillars_text"]') || document.getElementById('id_brand_content_pillars_text');
+        if (pillarsField && data.content_pillars) pillarsField.value = data.content_pillars.join('\n');
+
+        const restrictionsField = document.querySelector('[name="brand_restrictions"]') || document.getElementById('id_brand_brand_restrictions');
+        if (restrictionsField && data.brand_restrictions) {
+          restrictionsField.value = data.brand_restrictions;
+          const details = restrictionsField.closest('details');
+          if (details) details.open = true;
+        }
+
+        const examplesField = document.querySelector('[name="brand_voice_examples_text"]') || document.getElementById('id_brand_brand_voice_examples_text');
+        if (examplesField && data.brand_voice_examples && data.brand_voice_examples.length) {
+          examplesField.value = data.brand_voice_examples.join('\n\n');
+        }
+
+        // Check the right tone checkboxes
+        if (data.tone_attributes && data.tone_attributes.length > 0) {
+          document.querySelectorAll('input[name="tone_selection"]').forEach(cb => cb.checked = false);
+          data.tone_attributes.forEach(tone => {
+            const cb = document.querySelector(`input[name="tone_selection"][value="${tone}"]`);
+            if (cb) cb.checked = true;
+          });
+        }
+
+        this.success = true;
+
+        // Scroll to the voice fields so user can see the result
+        document.getElementById('settings-voice')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      } catch (err) {
+        this.error = 'Network error. Check your connection and try again.';
+      } finally {
+        this.loading = false;
+      }
+    }
+  };
+}
+</script>
 {% endblock %}

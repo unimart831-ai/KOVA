@@ -72,6 +72,7 @@ def platform_icon(platform):
         "pinterest": "📌",
         "threads": "@",
         "bluesky": "🦋",
+        "whatsapp": "💬",
     }
     return icons.get(platform, "●")
 

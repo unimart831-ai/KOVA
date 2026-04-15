@@ -1,0 +1,184 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Pixel Events{% endblock %}
+{% block page_subtitle %}
+  <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
+    <a href="{% url 'analytics:insights' %}" class="hover:text-kova-600 dark:hover:text-kova-400">Analytics</a>
+    <span class="mx-1">/</span>
+    <a href="{% url 'analytics:pixel_settings' %}" class="hover:text-kova-600 dark:hover:text-kova-400">Pixel</a>
+    <span class="mx-1">/</span> Events
+  </p>
+{% endblock %}
+
+{% block page_actions %}
+  <a href="{% url 'analytics:pixel_settings' %}" class="btn-secondary btn-sm">← Pixel Settings</a>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+  {% if not pixel_enabled %}
+  <div class="card p-8 text-center">
+    <p class="text-gray-500 dark:text-gray-400">Pixel requires a Pro or Agency plan.</p>
+    <a href="{% url 'billing:plans' %}" class="btn-primary btn-sm mt-4">Upgrade</a>
+  </div>
+  {% else %}
+
+  {# ── Filters ── #}
+  <div class="card p-4">
+    <form method="get" class="flex flex-wrap items-end gap-3">
+      <div>
+        <label class="label text-xs mb-1">Event Type</label>
+        <select name="type" class="input text-sm py-1.5">
+          <option value="">All types</option>
+          {% for val, label in event_types %}
+            <option value="{{ val }}" {% if current_type == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="label text-xs mb-1">Visitor ID</label>
+        <input type="text" name="visitor" value="{{ current_visitor }}" placeholder="Filter by visitor..." class="input text-sm py-1.5 w-48">
+      </div>
+      <div>
+        <label class="label text-xs mb-1">Revenue</label>
+        <select name="revenue" class="input text-sm py-1.5">
+          <option value="">Any</option>
+          <option value="yes" {% if current_revenue == "yes" %}selected{% endif %}>Has revenue</option>
+        </select>
+      </div>
+      <button type="submit" class="btn-primary btn-sm py-1.5">Filter</button>
+      {% if current_type or current_visitor or current_revenue %}
+        <a href="{% url 'analytics:pixel_events' %}" class="text-xs text-gray-500 hover:text-kova-600 py-2">Clear</a>
+      {% endif %}
+    </form>
+  </div>
+
+  {# ── Visitor Journeys ── #}
+  {% if journeys %}
+  <div class="card">
+    <div class="px-5 py-3 border-b border-gray-100 dark:border-gray-800">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Recent Visitor Journeys</h3>
+    </div>
+    <div class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for j in journeys %}
+      <div class="px-5 py-3 flex items-center gap-4 text-sm">
+        <span class="font-mono text-xs text-gray-500 dark:text-gray-400 truncate w-32" title="{{ j.visitor_id }}">{{ j.visitor_id|truncatechars:16 }}</span>
+        <span class="text-gray-700 dark:text-gray-300">{{ j.touchpoint_count }} touch{{ j.touchpoint_count|pluralize:"es" }}</span>
+        {% if j.is_converted %}
+          <span class="px-2 py-0.5 text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full">Converted — ${{ j.total_revenue|floatformat:2 }}</span>
+        {% else %}
+          <span class="px-2 py-0.5 text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full">In progress</span>
+        {% endif %}
+        <span class="ml-auto text-xs text-gray-400 dark:text-gray-500">{{ j.last_touch_at|timesince }} ago</span>
+        <a href="?visitor={{ j.visitor_id }}" class="text-xs text-kova-600 hover:text-kova-700 font-medium">View events →</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Events Table ── #}
+  <div class="card overflow-hidden">
+    <div class="px-5 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+        Events
+        <span class="text-gray-400 font-normal">({{ paginator.count }})</span>
+      </h3>
+    </div>
+
+    {% if events %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <th class="px-4 py-2 text-left font-medium">Type</th>
+            <th class="px-4 py-2 text-left font-medium">Page</th>
+            <th class="px-4 py-2 text-left font-medium">Visitor</th>
+            <th class="px-4 py-2 text-left font-medium">Source</th>
+            <th class="px-4 py-2 text-right font-medium">Revenue</th>
+            <th class="px-4 py-2 text-left font-medium">Post</th>
+            <th class="px-4 py-2 text-right font-medium">When</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50 dark:divide-gray-800/50">
+          {% for event in events %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+            <td class="px-4 py-2.5">
+              {% if event.event_type == 'purchase' %}
+                <span class="px-2 py-0.5 text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full">Purchase</span>
+              {% elif event.event_type == 'form_submit' %}
+                <span class="px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full">Form</span>
+              {% elif event.event_type == 'page_view' %}
+                <span class="px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">Page View</span>
+              {% elif event.event_type == 'sign_up' %}
+                <span class="px-2 py-0.5 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-full">Sign Up</span>
+              {% elif event.event_type == 'button_click' %}
+                <span class="px-2 py-0.5 text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full">Click</span>
+              {% elif event.event_type == 'add_to_cart' %}
+                <span class="px-2 py-0.5 text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-full">Cart</span>
+              {% else %}
+                <span class="px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">{{ event.get_event_type_display }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2.5 max-w-[200px]">
+              <span class="text-gray-700 dark:text-gray-300 truncate block text-xs font-mono" title="{{ event.page_url }}">{{ event.page_url|truncatechars:40 }}</span>
+              {% if event.page_title %}<span class="text-gray-400 dark:text-gray-500 text-xs truncate block">{{ event.page_title|truncatechars:30 }}</span>{% endif %}
+            </td>
+            <td class="px-4 py-2.5">
+              <a href="?visitor={{ event.visitor_id }}" class="text-xs font-mono text-kova-600 hover:text-kova-700 dark:text-kova-400" title="{{ event.visitor_id }}">{{ event.visitor_id|truncatechars:12 }}</a>
+            </td>
+            <td class="px-4 py-2.5 text-xs text-gray-500 dark:text-gray-400">
+              {% if event.utm_source %}{{ event.utm_source }}{% else %}direct{% endif %}
+            </td>
+            <td class="px-4 py-2.5 text-right">
+              {% if event.revenue %}
+                <span class="text-emerald-600 dark:text-emerald-400 font-medium">${{ event.revenue|floatformat:2 }}</span>
+              {% else %}
+                <span class="text-gray-300 dark:text-gray-600">—</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2.5 text-xs">
+              {% if event.post %}
+                <span class="text-gray-700 dark:text-gray-300 truncate block max-w-[120px]" title="{{ event.post.content_text|truncatechars:60 }}">{{ event.post.content_text|truncatechars:20 }}</span>
+              {% else %}
+                <span class="text-gray-300 dark:text-gray-600">—</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2.5 text-right text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ event.created_at|timesince }} ago</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {# Pagination #}
+    {% if events.has_other_pages %}
+    <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+      <p class="text-xs text-gray-500">Page {{ events.number }} of {{ events.paginator.num_pages }}</p>
+      <div class="flex gap-1">
+        {% if events.has_previous %}
+          <a href="?page={{ events.previous_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_visitor %}&visitor={{ current_visitor }}{% endif %}{% if current_revenue %}&revenue={{ current_revenue }}{% endif %}"
+             class="px-3 py-1 text-xs rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">← Prev</a>
+        {% endif %}
+        {% if events.has_next %}
+          <a href="?page={{ events.next_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_visitor %}&visitor={{ current_visitor }}{% endif %}{% if current_revenue %}&revenue={{ current_revenue }}{% endif %}"
+             class="px-3 py-1 text-xs rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">Next →</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="p-8 text-center">
+      <p class="text-gray-400 dark:text-gray-500">No events found{% if current_type or current_visitor or current_revenue %} with these filters{% endif %}.</p>
+      {% if not current_type and not current_visitor %}
+        <p class="text-sm text-gray-400 mt-2">Events will appear here once visitors start using your website with the pixel installed.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  {% endif %}
+</div>
+{% endblock %}

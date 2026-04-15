@@ -4,12 +4,26 @@
 
 {% block content %}
 <div class="max-w-2xl mx-auto">
-  <div class="card p-6">
+  <div class="card p-6" x-data="{ offeringType: '{{ form.offering_type.value|default:"product" }}' }">
     <form method="post" enctype="multipart/form-data" class="space-y-5">
       {% csrf_token %}
 
       <div>
-        <label for="id_name" class="label">Product Name *</label>
+        <label for="id_offering_type" class="label">What are you adding? *</label>
+        {{ form.offering_type }}
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <span x-show="offeringType === 'product'">Physical product with inventory (e.g., shoes, electronics, food)</span>
+          <span x-show="offeringType === 'service'" x-cloak>Service you provide (e.g., web development, consulting, photography)</span>
+          <span x-show="offeringType === 'digital'" x-cloak>Digital product with unlimited supply (e.g., templates, courses, ebooks)</span>
+        </p>
+      </div>
+
+      <div>
+        <label for="id_name" class="label">
+          <span x-show="offeringType === 'product'">Product Name *</span>
+          <span x-show="offeringType === 'service'" x-cloak>Service Name *</span>
+          <span x-show="offeringType === 'digital'" x-cloak>Product Name *</span>
+        </label>
         {{ form.name }}
         {% if form.name.errors %}<p class="text-xs text-red-500 mt-1">{{ form.name.errors.0 }}</p>{% endif %}
       </div>
@@ -57,21 +71,32 @@
 
       <hr class="border-gray-200 dark:border-gray-700">
 
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label for="id_stock_status" class="label">Stock Status</label>
-          {{ form.stock_status }}
+      {# Stock fields — only for physical products #}
+      <div x-show="offeringType === 'product'" x-cloak>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="id_stock_status" class="label">Stock Status</label>
+            {{ form.stock_status }}
+          </div>
+          <div>
+            <label for="id_quantity" class="label">Quantity</label>
+            {{ form.quantity }}
+          </div>
         </div>
-        <div>
-          <label for="id_quantity" class="label">Quantity</label>
-          {{ form.quantity }}
+
+        <div class="mt-4">
+          <label for="id_low_stock_threshold" class="label">Low Stock Threshold</label>
+          {{ form.low_stock_threshold }}
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Flag as "low stock" when quantity drops below this number.</p>
         </div>
       </div>
 
-      <div>
-        <label for="id_low_stock_threshold" class="label">Low Stock Threshold</label>
-        {{ form.low_stock_threshold }}
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Flag as "low stock" when quantity drops below this number.</p>
+      {# Info banner for services / digital #}
+      <div x-show="offeringType !== 'product'" x-cloak class="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4">
+        <p class="text-xs text-blue-700 dark:text-blue-300">
+          <span x-show="offeringType === 'service'"><strong>Services</strong> are always available — no stock tracking needed. The AI will promote your service using booking/scheduling language.</span>
+          <span x-show="offeringType === 'digital'"><strong>Digital products</strong> have unlimited supply — no stock tracking needed. The AI will promote freely with focus on instant access.</span>
+        </p>
       </div>
 
       <div class="flex items-center gap-6">

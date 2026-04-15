@@ -78,6 +78,7 @@ LOCAL_APPS = [
     "apps.leads",
     "apps.products",
     "apps.campaigns",
+    "apps.whatsapp",
     "apps.api",
 ]
 
@@ -463,6 +464,13 @@ PINTEREST_APP_ID = env("PINTEREST_APP_ID", default="")
 PINTEREST_APP_SECRET = env("PINTEREST_APP_SECRET", default="")
 THREADS_APP_ID = env("THREADS_APP_ID", default="")        # Falls back to FACEBOOK_APP_ID in provider
 THREADS_APP_SECRET = env("THREADS_APP_SECRET", default="") # Falls back to FACEBOOK_APP_SECRET in provider
+
+# ── WhatsApp Cloud API ────────────────────────────────────────────────────
+WHATSAPP_PHONE_NUMBER_ID = env("WHATSAPP_PHONE_NUMBER_ID", default="")  # Meta phone number ID
+WHATSAPP_ACCESS_TOKEN = env("WHATSAPP_ACCESS_TOKEN", default="")        # Permanent system user token
+WHATSAPP_WABA_ID = env("WHATSAPP_WABA_ID", default="")                 # WhatsApp Business Account ID
+WHATSAPP_VERIFY_TOKEN = env("WHATSAPP_VERIFY_TOKEN", default="kova-whatsapp-verify")  # Webhook verification
+WHATSAPP_APP_SECRET = env("WHATSAPP_APP_SECRET", default="")            # For webhook signature validation
 
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
 

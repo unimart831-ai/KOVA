@@ -142,6 +142,14 @@ def _gather_strategy_inputs(user):
     content_growth_correlation = _get_content_growth_correlation(user, days=30)
     revenue_signals = _get_revenue_signals(user, days=30)
 
+    # 9. Product & stock intelligence
+    try:
+        from apps.products.utils import get_product_strategy_context
+        product_intelligence = get_product_strategy_context(user)
+    except Exception as e:
+        logger.warning("Product intelligence for strategist failed: %s", e)
+        product_intelligence = ""
+
     return {
         "trends": trends,
         "performance": performance,
@@ -149,6 +157,7 @@ def _gather_strategy_inputs(user):
         "pipeline": pipeline,
         "platforms": platforms,
         "competitor_intel": competitor_intel,
+        "product_intelligence": product_intelligence,
         "growth_intelligence": {
             "growth_summary": growth_summary,
             "content_growth_correlation": content_growth_correlation,
@@ -450,6 +459,13 @@ def _make_strategic_decisions(user, inputs):
         "- If engagement sentiment is negative, address it in the strategy.\n"
         "- Use competitor intelligence to find content gaps they're missing.\n"
         "- Flag any risks or issues that need human attention.\n\n"
+        "STOCK-AWARE STRATEGY RULES:\n"
+        "- NEVER suggest content seeds for OUT OF STOCK products.\n"
+        "- Prioritize FEATURED products — they should get 2-3x more content mentions.\n"
+        "- For LOW STOCK items, create urgency/scarcity angles ('selling fast', 'limited').\n"
+        "- If a product is NEVER PROMOTED but in stock, flag it as a content opportunity.\n"
+        "- If demand signals show audience interest, create content to match.\n"
+        "- Flag stock-content mismatches as CRITICAL alerts (scheduled posts for OOS products).\n\n"
         f"The user needs approximately {seeds_needed} new content ideas "
         f"(they have {already_queued} already queued, target is ~{target_posts}/day).\n"
         f"If {seeds_needed} is 0, focus on recommendations and insights instead.\n\n"
@@ -535,6 +551,11 @@ def _make_strategic_decisions(user, inputs):
             f"Conversions: {revenue.get('conversions', 0)}\n"
             f"Top click posts: {json.dumps(revenue.get('top_click_posts', [])[:3], indent=2, default=str)}\n\n"
         )
+
+    # Product intelligence section
+    product_intel = inputs.get("product_intelligence", "")
+    if product_intel:
+        prompt += f"{product_intel}\n"
 
     prompt += (
         f"=== USER GOALS ===\n"

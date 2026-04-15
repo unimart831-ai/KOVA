@@ -54,6 +54,8 @@ app.conf.task_routes = {
     "billing.check_mpesa_subscriptions": {"queue": "low"},
     # Media Queue — publish user photos on schedule
     "media_queue.process_queues": {"queue": "critical"},
+    # WhatsApp — AI auto-reply must be fast
+    "whatsapp.handle_incoming_message": {"queue": "critical"},
 }
 
 # NOTE: Beat schedule is defined in CELERY_BEAT_SCHEDULE in config/settings/base.py

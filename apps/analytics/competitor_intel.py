@@ -164,45 +164,66 @@ def analyze_competitor(user, competitor):
         comp_ctx = _build_competitor_context(competitor)
 
         system_prompt = (
-            "You are a competitive intelligence analyst for social media strategy.\n"
-            "You're analyzing a competitor for a business. Think like a strategist:\n\n"
+            "You are an elite competitive intelligence analyst specializing in social media "
+            "and digital marketing strategy for African and global markets.\n"
+            "You're analyzing a competitor for a business. Think like a war-room strategist:\n\n"
             "1. WHAT are they doing? (content themes, formats, frequency, tone, platforms)\n"
             "2. What's WORKING for them? (identify strengths from their strategy)\n"
             "3. What are they MISSING? (gaps, weaknesses, blind spots)\n"
             "4. How does the USER compare? (where is the user winning vs losing)\n"
-            "5. What can the user STEAL/ADAPT? (actionable opportunities)\n\n"
+            "5. What can the user STEAL/ADAPT? (actionable opportunities)\n"
+            "6. PRICING & POSITIONING — how do they price/position vs the user?\n"
+            "7. AUDIENCE ENGAGEMENT — quality of their community, not just size\n"
+            "8. PROMOTIONAL PATTERNS — how/when do they run campaigns, discounts, launches?\n"
+            "9. PLATFORM-SPECIFIC TACTICS — what do they do differently on each platform?\n"
+            "10. REPUTATION & SENTIMENT — how do customers talk about them publicly?\n\n"
             "Be SPECIFIC and ACTIONABLE. Not 'they post good content' — instead:\n"
             "'They post behind-the-scenes kitchen Reels 3x/week which likely drives high saves. "
             "You're not doing any BTS content — this is a gap you can fill.'\n\n"
+            "INDUSTRY CONTEXT: Analyze through the lens of their specific industry.\n"
+            "For e-commerce (Jumia, Jiji, Kilimall): compare product range, delivery, pricing, "
+            "promotional frequency, flash sales, payment options, customer service channels.\n"
+            "For restaurants/food: compare menu variety, delivery platforms, review responses, "
+            "food photography quality, influencer partnerships.\n"
+            "For tech/SaaS: compare feature marketing, case studies, thought leadership, "
+            "comparison pages, onboarding content, developer relations.\n\n"
             "Use what you know about the brand. If you don't know them specifically, "
             "analyze based on their industry, platform presence, and the user's notes.\n\n"
             "Respond in JSON:\n"
             '{\n'
-            '  "summary": "2-3 sentence executive summary of their strategy",\n'
+            '  "summary": "2-3 sentence executive summary of their overall strategy and market positioning",\n'
             '  "content_strategy": {\n'
             '    "primary_themes": ["list of main content themes"],\n'
-            '    "content_formats": ["formats they likely use most"],\n'
-            '    "posting_frequency": "estimated posts per week",\n'
+            '    "content_formats": ["formats they likely use most: reels, carousels, stories, etc."],\n'
+            '    "posting_frequency": "estimated posts per week per platform",\n'
             '    "tone": "their brand voice/tone description",\n'
-            '    "best_platforms": ["their strongest platforms"],\n'
-            '    "target_audience": "who they seem to target"\n'
+            '    "best_platforms": ["their strongest platforms ranked"],\n'
+            '    "target_audience": "who they seem to target",\n'
+            '    "engagement_quality": "how well their audience engages — comments quality, shares, saves",\n'
+            '    "promotional_patterns": "how often they run promos, flash sales, campaigns",\n'
+            '    "platform_tactics": {"instagram": "what they do specifically on IG", "twitter": "...", "etc": "..."}\n'
             '  },\n'
-            '  "strengths": ["3-5 specific things they do well"],\n'
-            '  "weaknesses": ["3-5 specific gaps or weaknesses"],\n'
-            '  "opportunities": ["3-5 things YOU can do that THEY miss"],\n'
-            '  "threats": ["2-3 things they do that threaten your positioning"],\n'
+            '  "strengths": ["3-5 specific things they do well — be concrete, not vague"],\n'
+            '  "weaknesses": ["3-5 specific gaps or weaknesses — things they neglect, do poorly, or miss entirely"],\n'
+            '  "opportunities": ["3-5 things YOU can do that THEY miss — content angles, platforms, audiences they ignore"],\n'
+            '  "threats": ["2-3 things they do that directly threaten your positioning"],\n'
             '  "comparison": {\n'
-            '    "you_win": ["areas where user is stronger"],\n'
-            '    "they_win": ["areas where competitor is stronger"],\n'
-            '    "neutral": ["areas roughly equal"]\n'
+            '    "you_win": ["specific areas where the user is stronger"],\n'
+            '    "they_win": ["specific areas where the competitor is stronger"],\n'
+            '    "neutral": ["areas roughly equal or incomparable"]\n'
+            '  },\n'
+            '  "pricing_positioning": {\n'
+            '    "pricing_approach": "premium/mid-range/budget/freemium — how they position on price",\n'
+            '    "value_proposition": "what they promise vs the user",\n'
+            '    "differentiation": "how they differentiate from competitors like the user"\n'
             '  },\n'
             '  "actionable_insights": [\n'
             '    {\n'
             '      "type": "content_gap|trend_ahead|weakness|strategy_shift|opportunity",\n'
             '      "priority": "high|medium|low",\n'
-            '      "title": "short insight title",\n'
-            '      "description": "what you noticed",\n'
-            '      "suggested_action": "what the user should do",\n'
+            '      "title": "short insight title — specific, not generic",\n'
+            '      "description": "what you noticed in 2-3 sentences with evidence",\n'
+            '      "suggested_action": "what the user should do about it — specific step",\n'
             '      "content_idea": "a specific content seed inspired by this insight"\n'
             '    }\n'
             '  ],\n'
@@ -237,13 +258,48 @@ def analyze_competitor(user, competitor):
 
         if comp_ctx["previous_patterns"]:
             prompt += (
-                f"\nPrevious analysis patterns (for detecting CHANGES):\n"
+                f"\nPrevious analysis patterns (COMPARE to detect CHANGES/SHIFTS):\n"
                 f"{json.dumps(comp_ctx['previous_patterns'], default=str)[:500]}\n"
+                f"Previous strengths: {json.dumps(comp_ctx['previous_strengths'], default=str)}\n"
+                f"Previous weaknesses: {json.dumps(comp_ctx['previous_weaknesses'], default=str)}\n"
+                f"If you detect any SHIFTS from the previous analysis, create a "
+                f"'strategy_shift' insight highlighting what changed and what it means.\n"
             )
+
+        # Product context — so analysis considers product/service overlap
+        try:
+            from apps.products.models import Product
+            user_products = Product.objects.filter(user=user, is_active=True)
+            if user_products.exists():
+                product_names = list(user_products.values_list("name", flat=True)[:15])
+                featured = list(
+                    user_products.filter(is_featured=True).values_list("name", flat=True)[:5]
+                )
+                categories = list(
+                    user_products.exclude(category=None)
+                    .values_list("category__name", flat=True).distinct()[:5]
+                )
+                prompt += (
+                    f"\n=== YOUR PRODUCT CATALOG ===\n"
+                    f"Products/services: {', '.join(product_names)}\n"
+                )
+                if categories:
+                    prompt += f"Categories: {', '.join(categories)}\n"
+                if featured:
+                    prompt += f"Featured products: {', '.join(featured)}\n"
+                prompt += (
+                    "Compare how the competitor likely approaches these same product "
+                    "categories. Do they promote similar products differently? "
+                    "Are there product categories they focus on that the user ignores, "
+                    "or vice versa? Include product-related insights.\n"
+                )
+        except Exception:
+            pass  # Product data is optional enrichment
 
         prompt += (
             "\nAnalyze this competitor's social media strategy. "
-            "Be specific, actionable, and focused on what the user can LEARN and DO differently."
+            "Be specific, actionable, and focused on what the user can LEARN and DO differently. "
+            "Think about what would make the user say 'Now I know exactly what to do about them.'"
         )
 
         response = generate(
@@ -279,9 +335,15 @@ def analyze_competitor(user, competitor):
         )
 
         # Update the competitor's cached intelligence
+        content_strategy = result.get("content_strategy", {})
+        # Merge pricing_positioning into content_patterns for storage
+        pricing = result.get("pricing_positioning", {})
+        if pricing:
+            content_strategy["pricing_positioning"] = pricing
+
         competitor.strengths = result.get("strengths", [])
         competitor.weaknesses = result.get("weaknesses", [])
-        competitor.content_patterns = result.get("content_strategy", {})
+        competitor.content_patterns = content_strategy
         competitor.threat_level = result.get("threat_level", "medium")
         competitor.last_analyzed_at = timezone.now()
         competitor.save(update_fields=[

@@ -7,13 +7,14 @@ class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
         fields = [
-            "name", "description", "category", "price", "currency",
+            "offering_type", "name", "description", "category", "price", "currency",
             "price_range_min", "price_range_max", "image",
             "stock_status", "quantity", "low_stock_threshold",
             "is_featured", "is_active",
         ]
         widgets = {
-            "name": forms.TextInput(attrs={"class": "input", "placeholder": "Product name"}),
+            "offering_type": forms.Select(attrs={"class": "input", "x-model": "offeringType"}),
+            "name": forms.TextInput(attrs={"class": "input", "placeholder": "e.g. Website Development, Running Shoes, Social Media Kit"}),
             "description": forms.Textarea(attrs={"class": "input", "rows": 3, "placeholder": "Brief description (optional)"}),
             "category": forms.Select(attrs={"class": "input"}),
             "price": forms.NumberInput(attrs={"class": "input", "placeholder": "e.g. 5000", "step": "0.01"}),

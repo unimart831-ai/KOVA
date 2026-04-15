@@ -205,6 +205,14 @@ def discover_trends(user):
             '  - "why_now": why this opportunity exists right now\n'
         )
 
+        # Product context — so trend discovery is relevant to actual products
+        product_research_context = ""
+        try:
+            from apps.products.utils import get_product_research_context
+            product_research_context = get_product_research_context(user)
+        except Exception as e:
+            logger.warning("Product context for research agent failed: %s", e)
+
         prompt = (
             f"Date: {today.strftime('%A, %B %d, %Y')}\n\n"
             f"Brand: {ctx['company'] or 'Not specified'}\n"
@@ -217,9 +225,11 @@ def discover_trends(user):
             f"Content language: {ctx['content_language']}\n\n"
             f"Recent content topics (to avoid repetition):\n"
             f"{json.dumps(ctx['recent_topics'], indent=2)}\n\n"
+            f"{product_research_context}\n"
             f"{web_context}\n"
             "Discover trending topics and content opportunities for this brand. "
-            "Be specific and actionable. Ground your suggestions in the web search data above when available."
+            "Be specific and actionable. Ground your suggestions in the web search data above when available. "
+            "Prioritize trends that connect to the business's actual products/services."
         )
 
         response = generate(

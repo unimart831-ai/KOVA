@@ -50,6 +50,9 @@
       if (config.trackForms !== false) {
         this._observeForms();
       }
+
+      // SPA support: detect client-side navigations
+      this._observeSPA();
     },
 
     /**
@@ -155,6 +158,46 @@
         }
       }
       return params;
+    },
+
+    /**
+     * SPA support: detect client-side navigation via pushState/popstate.
+     * Tracks a page_view on each route change.
+     */
+    _observeSPA: function() {
+      var self = this;
+      var lastUrl = window.location.href;
+
+      // Wrap pushState and replaceState
+      var origPush = history.pushState;
+      var origReplace = history.replaceState;
+
+      history.pushState = function() {
+        origPush.apply(this, arguments);
+        self._onSPANav(lastUrl);
+        lastUrl = window.location.href;
+      };
+
+      history.replaceState = function() {
+        origReplace.apply(this, arguments);
+        self._onSPANav(lastUrl);
+        lastUrl = window.location.href;
+      };
+
+      // Back/forward buttons
+      window.addEventListener('popstate', function() {
+        self._onSPANav(lastUrl);
+        lastUrl = window.location.href;
+      });
+    },
+
+    _onSPANav: function(previousUrl) {
+      // Only fire if the URL actually changed (ignore hash-only changes)
+      if (window.location.href !== previousUrl) {
+        // Re-capture UTMs in case the new URL has them
+        this._captureUTMs();
+        this.track('page_view');
+      }
     },
 
     /**

@@ -93,6 +93,7 @@ def _add_utm_to_url(url: str, platform: str, post_id: str) -> str:
         "utm_source": platform,
         "utm_medium": "social",
         "utm_campaign": f"kova_{post_id[:8]}",
+        "utm_content": post_id[:8],
     }
     separator = "&" if parsed.query else ""
     new_query = f"{parsed.query}{separator}{urlencode(utm)}"

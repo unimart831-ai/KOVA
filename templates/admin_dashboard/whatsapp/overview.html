@@ -1,0 +1,247 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+  {{ total_conversations }} conversation{{ total_conversations|pluralize }} · {{ total_messages|format_number }} message{{ total_messages|pluralize }}
+</p>
+{% endblock %}
+
+{% block content %}
+<!-- ── Global Stat Cards ─────────────────────────────────────────────── -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Active Conversations</p>
+    <p class="text-2xl font-bold text-[#25D366] mt-1">{{ active_conversations|format_number }}</p>
+    <p class="text-[10px] text-gray-400 mt-1">{{ conversations_7d }} new this week</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Messages (7d)</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ messages_7d|format_number }}</p>
+    <p class="text-[10px] text-gray-400 mt-1">↓{{ inbound_7d }} in · ↑{{ outbound_7d }} out</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">AI Auto-Replies (7d)</p>
+    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">{{ ai_replies_7d|format_number }}</p>
+    <p class="text-[10px] text-gray-400 mt-1">{% if avg_confidence %}{{ avg_confidence|floatformat:0 }}% avg confidence{% else %}No data yet{% endif %}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Escalated</p>
+    <p class="text-2xl font-bold {% if escalated %}text-amber-600 dark:text-amber-400{% else %}text-gray-400{% endif %} mt-1">{{ escalated }}</p>
+    <p class="text-[10px] text-gray-400 mt-1">Routed to human agents</p>
+  </div>
+</div>
+
+<!-- ── Delivery & Window Stats ───────────────────────────────────────── -->
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Delivery Rate</p>
+    <p class="text-xl font-bold {% if delivery_rate >= 95 %}text-emerald-600{% elif delivery_rate >= 80 %}text-amber-500{% else %}text-red-500{% endif %} mt-1">{{ delivery_rate }}%</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Read Rate</p>
+    <p class="text-xl font-bold text-blue-600 dark:text-blue-400 mt-1">{{ read_rate }}%</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Open Windows</p>
+    <p class="text-xl font-bold text-[#25D366] mt-1">{{ open_windows }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Failed (7d)</p>
+    <p class="text-xl font-bold {% if failed_messages %}text-red-500{% else %}text-gray-400{% endif %} mt-1">{{ failed_messages }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Active Broadcasts</p>
+    <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">{{ active_broadcasts }}</p>
+  </div>
+</div>
+
+<!-- ── Templates & Broadcasts Summary ────────────────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+  <!-- Templates Summary -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Templates</h2>
+      <a href="{% url 'admin_dashboard:whatsapp_templates' %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">View all →</a>
+    </div>
+    <div class="grid grid-cols-2 gap-4 text-sm">
+      <div>
+        <p class="text-gray-400 text-xs">Total</p>
+        <p class="font-bold text-gray-900 dark:text-white">{{ total_templates }}</p>
+      </div>
+      <div>
+        <p class="text-gray-400 text-xs">Approved</p>
+        <p class="font-bold text-emerald-600 dark:text-emerald-400">{{ approved_templates }}</p>
+      </div>
+      <div>
+        <p class="text-gray-400 text-xs">Pending Review</p>
+        <p class="font-bold {% if pending_templates %}text-amber-500{% else %}text-gray-500{% endif %}">{{ pending_templates }}</p>
+      </div>
+      <div>
+        <p class="text-gray-400 text-xs">Rejected</p>
+        <p class="font-bold {% if rejected_templates %}text-red-500{% else %}text-gray-500{% endif %}">{{ rejected_templates }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Broadcast Performance -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Broadcast Performance</h2>
+      <a href="{% url 'admin_dashboard:whatsapp_broadcasts' %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">View all →</a>
+    </div>
+    <div class="grid grid-cols-2 gap-4 text-sm">
+      <div>
+        <p class="text-gray-400 text-xs">Total Broadcasts</p>
+        <p class="font-bold text-gray-900 dark:text-white">{{ total_broadcasts }}</p>
+      </div>
+      <div>
+        <p class="text-gray-400 text-xs">Messages Sent</p>
+        <p class="font-bold text-gray-900 dark:text-white">{{ broadcast_stats.total_sent|default:0|format_number }}</p>
+      </div>
+      <div>
+        <p class="text-gray-400 text-xs">Delivered</p>
+        <p class="font-bold text-emerald-600 dark:text-emerald-400">{{ broadcast_stats.total_delivered|default:0|format_number }}</p>
+      </div>
+      <div>
+        <p class="text-gray-400 text-xs">Replies</p>
+        <p class="font-bold text-blue-600 dark:text-blue-400">{{ broadcast_stats.total_replied|default:0|format_number }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Message Chart & Recent Conversations ──────────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+  <!-- 7-Day Message Chart -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Message Volume (7 Days)</h2>
+    <canvas id="msgChart" height="220"></canvas>
+  </div>
+
+  <!-- Recent Conversations -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Recent Conversations</h2>
+      <a href="{% url 'admin_dashboard:whatsapp_conversations' %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">View all →</a>
+    </div>
+    <div class="space-y-3">
+      {% for conv in recent_conversations %}
+      <div class="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+        <div class="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center text-[#25D366] text-sm font-bold flex-shrink-0">
+          {{ conv.contact_name|default:conv.contact_wa_id|truncatechars:1 }}
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2">
+            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ conv.contact_name|default:conv.contact_wa_id }}</p>
+            {% if conv.status == 'escalated' %}
+            <span class="inline-flex px-1.5 py-0.5 text-[9px] font-medium rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">Escalated</span>
+            {% elif conv.status == 'active' %}
+            <span class="inline-flex px-1.5 py-0.5 text-[9px] font-medium rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">Active</span>
+            {% endif %}
+            {% if conv.ai_handling %}
+            <span class="inline-flex px-1.5 py-0.5 text-[9px] font-medium rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">AI</span>
+            {% endif %}
+          </div>
+          <div class="flex items-center gap-2 mt-0.5">
+            <p class="text-[10px] text-gray-400">{{ conv.social_account.user.email|truncatechars:20 }}</p>
+            {% if conv.last_message_at %}
+            <span class="text-[10px] text-gray-400">· {{ conv.last_message_at|timesince }} ago</span>
+            {% endif %}
+          </div>
+        </div>
+        {% if conv.is_window_open %}
+        <span class="text-[9px] text-green-600 dark:text-green-400 font-medium whitespace-nowrap">Window open</span>
+        {% else %}
+        <span class="text-[9px] text-gray-400 whitespace-nowrap">Window closed</span>
+        {% endif %}
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-400 text-center py-8">No conversations yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── Quick Actions ─────────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+  <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <a href="{% url 'admin_dashboard:whatsapp_conversations' %}" class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-green-400 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all">
+      <div class="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+        <svg class="w-4 h-4 text-[#25D366]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+      </div>
+      <div>
+        <p class="text-sm font-medium text-gray-900 dark:text-white">All Conversations</p>
+        <p class="text-xs text-gray-400">{{ total_conversations }} total conversations</p>
+      </div>
+    </a>
+    <a href="{% url 'admin_dashboard:whatsapp_templates' %}" class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all">
+      <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      </div>
+      <div>
+        <p class="text-sm font-medium text-gray-900 dark:text-white">Message Templates</p>
+        <p class="text-xs text-gray-400">{{ approved_templates }} approved templates</p>
+      </div>
+    </a>
+    <a href="{% url 'admin_dashboard:whatsapp_broadcasts' %}" class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all">
+      <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
+      </div>
+      <div>
+        <p class="text-sm font-medium text-gray-900 dark:text-white">Broadcasts</p>
+        <p class="text-xs text-gray-400">{{ total_broadcasts }} campaigns</p>
+      </div>
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const msgData = {{ message_chart_json|safe }};
+
+  if (document.getElementById('msgChart') && msgData.length) {
+    new Chart(document.getElementById('msgChart'), {
+      type: 'bar',
+      data: {
+        labels: msgData.map(d => {
+          const dt = new Date(d.date);
+          return dt.toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
+        }),
+        datasets: [
+          {
+            label: 'Inbound',
+            data: msgData.map(d => d.inbound),
+            backgroundColor: '#25D366',
+            borderRadius: 4
+          },
+          {
+            label: 'Outbound',
+            data: msgData.map(d => d.outbound),
+            backgroundColor: '#075E54',
+            borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle', font: { size: 11 }, color: '#9ca3af' } }
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 }, color: '#9ca3af' } },
+          y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(156,163,175,0.1)' }, ticks: { font: { size: 10 }, color: '#9ca3af' } }
+        }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

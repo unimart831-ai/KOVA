@@ -151,6 +151,109 @@ def profile_industry_api(request):
 
 
 @login_required
+@require_POST
+def ai_brand_builder(request):
+    """
+    AI Brand Builder — generates brand voice, target audience, content pillars,
+    tone attributes, and brand restrictions from minimal user input.
+
+    Called via HTMX from onboarding Step 2. Returns JSON that populates the form.
+    """
+    import json
+    import logging
+    from apps.agents.llm import generate
+
+    logger = logging.getLogger(__name__)
+    profile = request.user.profile
+
+    # Collect context from Step 1 data + user hint
+    company_name = profile.company_name or "my business"
+    industry = profile.get_industry_display() if profile.industry else "general"
+    website = profile.website_url or ""
+    offerings = ", ".join(profile.key_offerings) if profile.key_offerings else ""
+    hint = request.POST.get("hint", "").strip()
+    language = profile.get_content_language_display() if profile.content_language else "English"
+
+    system_prompt = (
+        "You are a brand strategist helping a business define their social media voice and identity. "
+        "Analyze the information provided and generate a complete brand identity profile. "
+        "Be specific, actionable, and tailored — never generic. "
+        f"The primary content language is {language}. Tailor tone advice accordingly.\n\n"
+        "Return ONLY valid JSON with these exact keys:\n"
+        "{\n"
+        '  "brand_voice": "2-4 sentence description of how the brand sounds on social media. '
+        'Be vivid and specific — use analogies, describe the personality.",\n'
+        '  "target_audience": "Specific demographic + psychographic description. '
+        'Age range, location hints, interests, pain points, where they hang out online.",\n'
+        '  "content_pillars": ["pillar 1", "pillar 2", "pillar 3", "pillar 4", "pillar 5"],\n'
+        '  "tone_attributes": ["tone1", "tone2", "tone3"],\n'
+        '  "brand_voice_examples": ["Example social media post 1", "Example post 2", "Example post 3"],\n'
+        '  "brand_restrictions": "2-4 practical guardrails for what the AI should never do or say."\n'
+        "}\n\n"
+        "For tone_attributes, choose 3-5 from EXACTLY these values: "
+        "confident, approachable, witty, professional, casual, bold, educational, "
+        "inspirational, empathetic, authoritative, playful, minimalist.\n\n"
+        "For content_pillars, suggest 4-6 specific, actionable topics relevant to this exact business — "
+        "not generic marketing buzzwords.\n\n"
+        "For brand_voice_examples, write 2-3 realistic sample social media posts that demonstrate "
+        "the brand voice in action. Make them sound natural and platform-ready — not templated. "
+        "Each should be a complete post (1-3 sentences) the brand could actually publish."
+    )
+
+    user_prompt_parts = [f"Business: {company_name}"]
+    if industry != "general":
+        user_prompt_parts.append(f"Industry: {industry}")
+    if website:
+        user_prompt_parts.append(f"Website: {website}")
+    if offerings:
+        user_prompt_parts.append(f"Products/Services: {offerings}")
+    if hint:
+        user_prompt_parts.append(f"Owner's description: {hint}")
+
+    user_prompt = "\n".join(user_prompt_parts)
+
+    try:
+        response = generate(
+            prompt=user_prompt,
+            system=system_prompt,
+            temperature=0.8,
+            max_tokens=1024,
+            json_mode=True,
+        )
+
+        if not response.content:
+            return JsonResponse({"error": "AI returned an empty response. Try again."}, status=500)
+
+        result = json.loads(response.content)
+
+        # Validate tone_attributes are from allowed set
+        allowed_tones = {
+            "confident", "approachable", "witty", "professional", "casual",
+            "bold", "educational", "inspirational", "empathetic",
+            "authoritative", "playful", "minimalist",
+        }
+        result["tone_attributes"] = [
+            t for t in result.get("tone_attributes", []) if t in allowed_tones
+        ]
+
+        return JsonResponse({
+            "brand_voice": result.get("brand_voice", ""),
+            "target_audience": result.get("target_audience", ""),
+            "content_pillars": result.get("content_pillars", []),
+            "tone_attributes": result.get("tone_attributes", []),
+            "brand_voice_examples": result.get("brand_voice_examples", []),
+            "brand_restrictions": result.get("brand_restrictions", ""),
+        })
+
+    except json.JSONDecodeError:
+        logger.warning("AI brand builder returned invalid JSON: %s", response.content[:200])
+        return JsonResponse({"error": "AI returned invalid data. Try again."}, status=500)
+    except Exception as e:
+        logger.warning("AI brand builder failed: %s", e)
+        return JsonResponse({"error": "Something went wrong. Try again."}, status=500)
+
+
+@login_required
 def onboarding_complete(request):
     """
     The "Agency First Meeting" page — shown after onboarding Step 4.

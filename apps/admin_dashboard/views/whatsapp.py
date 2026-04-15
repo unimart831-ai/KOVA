@@ -1,0 +1,279 @@
+"""
+Admin dashboard views for WhatsApp Business management.
+Provides monitoring for conversations, templates, broadcasts, and messaging health.
+"""
+
+from datetime import timedelta
+
+from django.core.paginator import Paginator
+from django.db.models import Avg, Count, Q, Sum
+from django.db.models.functions import TruncDate
+from django.shortcuts import render
+from django.utils import timezone
+
+from apps.admin_dashboard.decorators import staff_required
+from apps.whatsapp.models import (
+    WhatsAppBroadcast,
+    WhatsAppConversation,
+    WhatsAppMessage,
+    WhatsAppTemplate,
+)
+
+
+@staff_required
+def whatsapp_overview(request):
+    """WhatsApp dashboard — key metrics across conversations, messages, templates, broadcasts."""
+    now = timezone.now()
+    last_7d = now - timedelta(days=7)
+    last_24h = now - timedelta(hours=24)
+
+    # ── Conversation metrics ─────────────────────────────────────────
+    total_conversations = WhatsAppConversation.objects.count()
+    active_conversations = WhatsAppConversation.objects.filter(status="active").count()
+    escalated = WhatsAppConversation.objects.filter(status="escalated").count()
+    conversations_7d = WhatsAppConversation.objects.filter(created_at__gte=last_7d).count()
+
+    # Window status
+    open_windows = WhatsAppConversation.objects.filter(
+        window_expires_at__gt=now,
+    ).count()
+
+    # ── Message metrics ──────────────────────────────────────────────
+    total_messages = WhatsAppMessage.objects.count()
+    messages_7d = WhatsAppMessage.objects.filter(created_at__gte=last_7d).count()
+    inbound_7d = WhatsAppMessage.objects.filter(
+        created_at__gte=last_7d, direction="inbound",
+    ).count()
+    outbound_7d = WhatsAppMessage.objects.filter(
+        created_at__gte=last_7d, direction="outbound",
+    ).count()
+    ai_replies_7d = WhatsAppMessage.objects.filter(
+        created_at__gte=last_7d, is_ai_generated=True,
+    ).count()
+    failed_messages = WhatsAppMessage.objects.filter(
+        created_at__gte=last_7d, status="failed",
+    ).count()
+
+    # AI confidence
+    avg_confidence = WhatsAppMessage.objects.filter(
+        is_ai_generated=True, confidence_score__isnull=False,
+        created_at__gte=last_7d,
+    ).aggregate(avg=Avg("confidence_score"))["avg"]
+
+    # Delivery stats
+    delivered_7d = WhatsAppMessage.objects.filter(
+        created_at__gte=last_7d, direction="outbound",
+        status__in=["delivered", "read"],
+    ).count()
+    read_7d = WhatsAppMessage.objects.filter(
+        created_at__gte=last_7d, direction="outbound", status="read",
+    ).count()
+    delivery_rate = round(delivered_7d / outbound_7d * 100, 1) if outbound_7d else 100
+    read_rate = round(read_7d / outbound_7d * 100, 1) if outbound_7d else 0
+
+    # ── Template metrics ─────────────────────────────────────────────
+    total_templates = WhatsAppTemplate.objects.count()
+    approved_templates = WhatsAppTemplate.objects.filter(status="approved").count()
+    pending_templates = WhatsAppTemplate.objects.filter(status="submitted").count()
+    rejected_templates = WhatsAppTemplate.objects.filter(status="rejected").count()
+
+    # ── Broadcast metrics ────────────────────────────────────────────
+    total_broadcasts = WhatsAppBroadcast.objects.count()
+    active_broadcasts = WhatsAppBroadcast.objects.filter(
+        status__in=["scheduled", "sending"],
+    ).count()
+    broadcast_stats = WhatsAppBroadcast.objects.filter(
+        status="completed",
+    ).aggregate(
+        total_sent=Sum("sent_count"),
+        total_delivered=Sum("delivered_count"),
+        total_read=Sum("read_count"),
+        total_replied=Sum("replied_count"),
+    )
+
+    # ── 7-day message chart ──────────────────────────────────────────
+    inbound_by_day = dict(
+        WhatsAppMessage.objects.filter(
+            direction="inbound", created_at__date__gte=(now - timedelta(days=6)).date(),
+        ).annotate(day=TruncDate("created_at"))
+        .values("day").annotate(count=Count("id"))
+        .values_list("day", "count")
+    )
+    outbound_by_day = dict(
+        WhatsAppMessage.objects.filter(
+            direction="outbound", created_at__date__gte=(now - timedelta(days=6)).date(),
+        ).annotate(day=TruncDate("created_at"))
+        .values("day").annotate(count=Count("id"))
+        .values_list("day", "count")
+    )
+    message_chart = []
+    for i in range(6, -1, -1):
+        d = (now - timedelta(days=i)).date()
+        message_chart.append({
+            "date": d.isoformat(),
+            "inbound": inbound_by_day.get(d, 0),
+            "outbound": outbound_by_day.get(d, 0),
+        })
+
+    # ── Recent conversations ─────────────────────────────────────────
+    recent_conversations = (
+        WhatsAppConversation.objects
+        .select_related("social_account", "social_account__user")
+        .order_by("-last_message_at")[:5]
+    )
+
+    context = {
+        "page_title": "WhatsApp Management",
+        # Conversations
+        "total_conversations": total_conversations,
+        "active_conversations": active_conversations,
+        "escalated": escalated,
+        "conversations_7d": conversations_7d,
+        "open_windows": open_windows,
+        # Messages
+        "total_messages": total_messages,
+        "messages_7d": messages_7d,
+        "inbound_7d": inbound_7d,
+        "outbound_7d": outbound_7d,
+        "ai_replies_7d": ai_replies_7d,
+        "failed_messages": failed_messages,
+        "avg_confidence": avg_confidence,
+        "delivery_rate": delivery_rate,
+        "read_rate": read_rate,
+        # Templates
+        "total_templates": total_templates,
+        "approved_templates": approved_templates,
+        "pending_templates": pending_templates,
+        "rejected_templates": rejected_templates,
+        # Broadcasts
+        "total_broadcasts": total_broadcasts,
+        "active_broadcasts": active_broadcasts,
+        "broadcast_stats": broadcast_stats,
+        # Chart & recent
+        "message_chart_json": message_chart,
+        "recent_conversations": recent_conversations,
+    }
+    return render(request, "admin_dashboard/whatsapp/overview.html", context)
+
+
+@staff_required
+def whatsapp_conversations(request):
+    """All WhatsApp conversations with search, filter, sort."""
+    qs = (
+        WhatsAppConversation.objects
+        .select_related("social_account", "social_account__user")
+        .annotate(message_count=Count("messages"))
+    )
+
+    search = request.GET.get("q", "").strip()
+    if search:
+        qs = qs.filter(
+            Q(contact_name__icontains=search)
+            | Q(contact_phone__icontains=search)
+            | Q(contact_wa_id__icontains=search)
+        )
+
+    status = request.GET.get("status", "")
+    if status:
+        qs = qs.filter(status=status)
+
+    ai_filter = request.GET.get("ai", "")
+    if ai_filter == "ai":
+        qs = qs.filter(ai_handling=True)
+    elif ai_filter == "human":
+        qs = qs.filter(ai_handling=False)
+
+    sort = request.GET.get("sort", "-last_message_at")
+    valid_sorts = {
+        "last_message_at", "-last_message_at",
+        "created_at", "-created_at",
+        "contact_name", "-contact_name",
+        "message_count", "-message_count",
+    }
+    if sort not in valid_sorts:
+        sort = "-last_message_at"
+    qs = qs.order_by(sort)
+
+    paginator = Paginator(qs, 30)
+    page = paginator.get_page(request.GET.get("page", 1))
+
+    context = {
+        "page_title": "WhatsApp Conversations",
+        "page_obj": page,
+        "search": search,
+        "current_status": status,
+        "current_ai": ai_filter,
+        "current_sort": sort,
+        "total_count": paginator.count,
+    }
+    return render(request, "admin_dashboard/whatsapp/conversations.html", context)
+
+
+@staff_required
+def whatsapp_templates(request):
+    """All WhatsApp message templates with filtering."""
+    qs = WhatsAppTemplate.objects.select_related("social_account", "social_account__user")
+
+    search = request.GET.get("q", "").strip()
+    if search:
+        qs = qs.filter(
+            Q(name__icontains=search)
+            | Q(body_text__icontains=search)
+        )
+
+    status = request.GET.get("status", "")
+    if status:
+        qs = qs.filter(status=status)
+
+    category = request.GET.get("category", "")
+    if category:
+        qs = qs.filter(category=category)
+
+    qs = qs.order_by("-created_at")
+
+    paginator = Paginator(qs, 30)
+    page = paginator.get_page(request.GET.get("page", 1))
+
+    context = {
+        "page_title": "WhatsApp Templates",
+        "page_obj": page,
+        "search": search,
+        "current_status": status,
+        "current_category": category,
+        "total_count": paginator.count,
+        "status_choices": WhatsAppTemplate.TemplateStatus.choices,
+        "category_choices": WhatsAppTemplate.Category.choices,
+    }
+    return render(request, "admin_dashboard/whatsapp/templates.html", context)
+
+
+@staff_required
+def whatsapp_broadcasts(request):
+    """All WhatsApp broadcasts with filtering."""
+    qs = (
+        WhatsAppBroadcast.objects
+        .select_related("social_account", "social_account__user", "template")
+    )
+
+    search = request.GET.get("q", "").strip()
+    if search:
+        qs = qs.filter(name__icontains=search)
+
+    status = request.GET.get("status", "")
+    if status:
+        qs = qs.filter(status=status)
+
+    qs = qs.order_by("-created_at")
+
+    paginator = Paginator(qs, 30)
+    page = paginator.get_page(request.GET.get("page", 1))
+
+    context = {
+        "page_title": "WhatsApp Broadcasts",
+        "page_obj": page,
+        "search": search,
+        "current_status": status,
+        "total_count": paginator.count,
+        "status_choices": WhatsAppBroadcast.BroadcastStatus.choices,
+    }
+    return render(request, "admin_dashboard/whatsapp/broadcasts.html", context)

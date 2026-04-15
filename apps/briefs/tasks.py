@@ -303,6 +303,11 @@ def _generate_brief_with_llm(user, brief_data):
         'Specific actions, not "agents were active."\n'
         '- "competitor_update": 1-2 sentences if competitor data exists, empty string otherwise.\n'
         '- "product_update": 1-2 sentences if product catalog data exists, empty string otherwise.\n'
+        '- "product_alerts": list of 0-3 product alerts needing attention, each with '
+        '{item, severity: "critical"|"warning"|"info", action}. '
+        'E.g. {item: "Scheduled posts promote an out-of-stock product", severity: "critical", '
+        'action: "Pause or edit 2 posts mentioning Product X"}. '
+        'Check product_catalog data for stock_content_mismatches, demand_signals, and never_promoted items.\n'
         '- "revenue_update": 1-2 sentences if revenue data exists, empty string otherwise.\n'
     )
 

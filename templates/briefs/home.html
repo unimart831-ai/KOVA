@@ -161,8 +161,18 @@
 
               {% if brief.performance_summary.product_update %}
               <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
-                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Products</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">📦 Product Pulse</p>
                 <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.product_update }}</p>
+                {% if brief.performance_summary.product_alerts %}
+                <div class="mt-2 space-y-1">
+                  {% for alert in brief.performance_summary.product_alerts %}
+                  <div class="flex items-start gap-2 text-sm {% if alert.severity == 'critical' %}text-red-600 dark:text-red-400{% elif alert.severity == 'warning' %}text-amber-600 dark:text-amber-400{% else %}text-blue-600 dark:text-blue-400{% endif %}">
+                    <span class="mt-0.5">{% if alert.severity == 'critical' %}🔴{% elif alert.severity == 'warning' %}⚠️{% else %}ℹ️{% endif %}</span>
+                    <span>{{ alert.item }}{% if alert.action %} — <strong>{{ alert.action }}</strong>{% endif %}</span>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% endif %}
               </div>
               {% endif %}
 

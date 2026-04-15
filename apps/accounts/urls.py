@@ -12,4 +12,5 @@ urlpatterns = [
     path("onboarding/complete/", views.onboarding_complete, name="onboarding_complete"),
     path("onboarding/progress/", views.onboarding_progress_api, name="onboarding_progress"),
     path("api/profile-industry/", views.profile_industry_api, name="profile_industry_api"),
+    path("api/ai-brand-builder/", views.ai_brand_builder, name="ai_brand_builder"),
 ]

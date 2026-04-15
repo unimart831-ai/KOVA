@@ -17,7 +17,7 @@
       </div>
       {% include "products/partials/stock_badge.html" %}
     </div>
-    {% if product.quantity is not None %}
+    {% if product.offering_type == 'product' and product.quantity is not None %}
     <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">{{ product.quantity }} unit{{ product.quantity|pluralize }}</p>
     {% endif %}
   </div>

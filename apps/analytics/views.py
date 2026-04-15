@@ -188,6 +188,36 @@ def competitor_detail(request, pk):
 
 
 @login_required
+def competitor_edit(request, pk):
+    """Edit a tracked competitor's details and handles."""
+    competitor = get_object_or_404(
+        Competitor, pk=pk, user=request.user,
+    )
+
+    if request.method == "POST":
+        competitor.name = request.POST.get("name", competitor.name).strip()
+        competitor.website = request.POST.get("website", "").strip()
+        competitor.industry = request.POST.get("industry", "").strip()
+        competitor.notes = request.POST.get("notes", "").strip()
+        competitor.twitter_handle = request.POST.get("twitter_handle", "").strip().lstrip("@")
+        competitor.instagram_handle = request.POST.get("instagram_handle", "").strip().lstrip("@")
+        competitor.facebook_handle = request.POST.get("facebook_handle", "").strip()
+        competitor.linkedin_handle = request.POST.get("linkedin_handle", "").strip()
+        competitor.tiktok_handle = request.POST.get("tiktok_handle", "").strip().lstrip("@")
+        competitor.youtube_handle = request.POST.get("youtube_handle", "").strip()
+        competitor.threads_handle = request.POST.get("threads_handle", "").strip().lstrip("@")
+        competitor.save()
+
+        messages.success(request, f"Updated {competitor.name}.")
+        return redirect("analytics:competitor_detail", pk=competitor.pk)
+
+    return render(request, "analytics/competitor_edit.html", {
+        "page_title": f"Edit {competitor.name}",
+        "competitor": competitor,
+    })
+
+
+@login_required
 def competitor_analyze(request, pk):
     """Trigger a new analysis for a competitor."""
     competitor = get_object_or_404(

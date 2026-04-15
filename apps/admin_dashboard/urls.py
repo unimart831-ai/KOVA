@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, campaigns, content, costs, emails, engage, help, llm, logs, media_queue, overview, partners, partials, pixel, platforms, products, revenue, system, teams, user_health, users
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, campaigns, content, costs, emails, engage, help, llm, logs, media_queue, overview, partners, partials, pixel, platforms, products, revenue, system, teams, user_health, users, whatsapp
 
 app_name = "admin_dashboard"
 
@@ -140,4 +140,10 @@ urlpatterns = [
     # Campaigns
     path("campaigns/", campaigns.campaigns_overview, name="campaigns_overview"),
     path("campaigns/list/", campaigns.campaign_list_admin, name="admin_campaign_list"),
+
+    # WhatsApp
+    path("whatsapp/", whatsapp.whatsapp_overview, name="whatsapp_overview"),
+    path("whatsapp/conversations/", whatsapp.whatsapp_conversations, name="whatsapp_conversations"),
+    path("whatsapp/templates/", whatsapp.whatsapp_templates, name="whatsapp_templates"),
+    path("whatsapp/broadcasts/", whatsapp.whatsapp_broadcasts, name="whatsapp_broadcasts"),
 ]
