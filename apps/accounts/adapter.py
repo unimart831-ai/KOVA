@@ -18,6 +18,18 @@ class AsyncEmailAccountAdapter(DefaultAccountAdapter):
     We intercept and route through our Celery email task instead.
     """
 
+    def is_email_verified(self, request, email):
+        """Auto-verify superuser emails so they skip the verification flow."""
+        from apps.accounts.models import User
+
+        try:
+            user = User.objects.get(email=email)
+            if user.is_superuser:
+                return True
+        except User.DoesNotExist:
+            pass
+        return super().is_email_verified(request, email)
+
     def send_mail(self, template_prefix, email, context):
         """
         Send allauth emails asynchronously via Celery.
