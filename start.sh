@@ -30,6 +30,23 @@ python manage.py migrate --noinput 2>&1 || echo "WARNING: migrate failed"
 echo "==> Creating superuser (if not exists)..."
 python manage.py create_superuser 2>&1
 
+echo "==> Setting Site domain..."
+python -c "
+import django; django.setup()
+from django.contrib.sites.models import Site
+import os
+domain = os.environ.get('SITE_DOMAIN', 'kovaagents-production.up.railway.app')
+name = os.environ.get('SITE_NAME', 'Kova Agent')
+site = Site.objects.get_or_create(id=1)[0]
+if site.domain != domain or site.name != name:
+    site.domain = domain
+    site.name = name
+    site.save()
+    print(f'    Site updated: {name} ({domain})')
+else:
+    print(f'    Site OK: {name} ({domain})')
+" 2>&1
+
 echo "==> Checking storage backend..."
 python -c "
 import django; django.setup()

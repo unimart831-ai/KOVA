@@ -1,0 +1,11 @@
+{% load i18n %}{% autoescape off %}
+Hi there,
+
+Someone requested a password reset for this email address on Kova Agent, but we don't have an account with this email.
+
+If you'd like to create an account, visit: {{ signup_url }}
+
+If you didn't request this, you can safely ignore this email.
+
+— The Kova Agent Team
+{% endautoescape %}

@@ -1,0 +1,13 @@
+{% load i18n %}{% autoescape off %}
+Hi{% if user_first_name %} {{ user_first_name }}{% endif %},
+
+Welcome to Kova Agent — your AI-powered social media team!
+
+Please verify your email address by visiting:
+
+{{ activate_url }}
+
+If you didn't create an account on Kova Agent, you can safely ignore this email.
+
+— The Kova Agent Team
+{% endautoescape %}

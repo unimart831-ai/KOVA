@@ -23,30 +23,14 @@ def send_allauth_email(self, template_prefix, email, context):
     """
     Send an allauth email (verification, password reset, etc.) asynchronously.
 
-    Called by our custom AsyncEmailAccountAdapter instead of allauth's
-    synchronous msg.send(). This prevents SMTP timeouts from killing
-    Gunicorn workers during signup.
+    Renders templates directly (bypasses adapter.render_mail which needs
+    a request context that doesn't exist in Celery workers).
     """
-    from allauth.account.adapter import DefaultAccountAdapter
-    from django.contrib.sites.models import Site
+    from django.template.loader import render_to_string, TemplateDoesNotExist
 
     try:
-        # Work with a COPY so the original stays JSON-serializable for retries
+        # Build render context with user object if available
         render_ctx = dict(context)
-        adapter = DefaultAccountAdapter()
-
-        # Rebuild site object
-        try:
-            current_site = Site.objects.get_current()
-        except Exception:
-            from types import SimpleNamespace
-            current_site = SimpleNamespace(
-                name=context.get("current_site_name", "Kova Agent"),
-                domain=context.get("current_site_domain", "kovaagent.com"),
-            )
-        render_ctx["current_site"] = current_site
-
-        # Rebuild user if we have the email
         if "user_email" in context:
             from apps.accounts.models import User
             try:
@@ -54,10 +38,34 @@ def send_allauth_email(self, template_prefix, email, context):
             except User.DoesNotExist:
                 pass
 
-        # Use allauth's render_mail to get the proper subject/body/html
-        msg = adapter.render_mail(template_prefix, email, render_ctx)
-        msg.send()
+        # Render subject
+        subject = render_to_string(f"{template_prefix}_subject.txt", render_ctx)
+        subject = " ".join(subject.splitlines()).strip()
 
+        # Render bodies (HTML + plain text)
+        bodies = {}
+        for ext in ["html", "txt"]:
+            try:
+                bodies[ext] = render_to_string(
+                    f"{template_prefix}_message.{ext}", render_ctx
+                ).strip()
+            except TemplateDoesNotExist:
+                if ext == "txt" and not bodies:
+                    raise
+
+        from_email = settings.DEFAULT_FROM_EMAIL
+
+        # Build message
+        if "txt" in bodies:
+            msg = EmailMultiAlternatives(subject, bodies["txt"], from_email, [email])
+            if "html" in bodies:
+                msg.attach_alternative(bodies["html"], "text/html")
+        else:
+            from django.core.mail import EmailMessage
+            msg = EmailMessage(subject, bodies["html"], from_email, [email])
+            msg.content_subtype = "html"
+
+        msg.send()
         logger.info("Allauth email sent: template=%s to=%s", template_prefix, email)
     except Exception as exc:
         logger.error("Allauth email failed: template=%s to=%s error=%s", template_prefix, email, exc)

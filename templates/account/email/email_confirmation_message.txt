@@ -1,0 +1,11 @@
+{% load i18n %}{% autoescape off %}
+Hi{% if user_first_name %} {{ user_first_name }}{% endif %},
+
+Thanks for signing up for Kova Agent! Please verify your email address by visiting:
+
+{{ activate_url }}
+
+If you didn't create an account on Kova Agent, you can safely ignore this email.
+
+— The Kova Agent Team
+{% endautoescape %}
