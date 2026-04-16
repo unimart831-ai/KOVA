@@ -1,6 +1,6 @@
-# Kova AI — 10 Test Businesses for Full Platform Testing
+# Kova AI — 11 Test Businesses for Full Platform Testing
 
-> **Purpose:** 10 fictional businesses across different industries to onboard onto Kova and test every feature end-to-end.
+> **Purpose:** 11 fictional businesses across different industries to onboard onto Kova and test every feature end-to-end.
 > Each business has a unique profile, plan, platforms, and testing focus.
 
 ---
@@ -19,6 +19,7 @@
 | 8 | Green Roots Foundation | NGO / Non-Profit | Growth | FB, Twitter, LinkedIn, Instagram | Engagement, Email Marketing, Partner Program |
 | 9 | Neon Wave Agency | Creative / Marketing Agency | Agency | All 10 Platforms | Multi-Brand Teams, Media Queue, Full Agent Suite |
 | 10 | PesaPal Finance | Fintech / Financial Services | Growth | LinkedIn, Twitter, FB, Threads | Compliance Tone, Competitor Tracking, Campaigns |
+| 11 | Kakuma Wholesale | Wholesale / Mtumba & Retail | Pro | WhatsApp, FB, TikTok, Instagram | WhatsApp Commerce, Products, Refugee Market, Media Queue |
 
 ---
 
@@ -590,11 +591,109 @@
 
 ---
 
+## Business 11: Kakuma Wholesale
+
+**Category:** Wholesale & Retail — Mtumba, Bales & New Products
+**Plan:** Pro (KES 1,999/mo)
+**Website:** kakumawholesale.co.ke
+
+### Brand Profile
+
+| Field | Value |
+|-------|-------|
+| Company Name | Kakuma Wholesale |
+| Industry | Wholesale / Retail Trade |
+| Target Audience | Small traders, shop owners, and retailers in Kakuma Refugee Camp and Kalobeyei Settlement looking for affordable wholesale stock; also targets individual buyers wanting quality clothes, shoes, and household goods at wholesale prices |
+| Brand Voice | Straight-talking wholesaler — honest about quality, transparent on pricing, no hidden costs. Like a trusted supplier who picks the best bales for you. Mixes English, Swahili, and basic French (for Congolese community) |
+| Tone | Direct, trustworthy, practical, community-oriented |
+| Content Pillars | New stock arrivals & bale openings, Price lists & wholesale deals, Sourcing trips (Gikomba/Kamkunji/Eastleigh behind-the-scenes), Customer success stories (traders who grew their shops), Transport & delivery updates (Nairobi → Kakuma route), Quality grading guides (Grade A vs B vs mixed bales) |
+
+### Business Context
+
+Kakuma Wholesale bridges Nairobi's biggest markets to one of East Africa's largest refugee settlements:
+
+**Source Markets (Nairobi):**
+- **Gikomba Market** — East Africa's largest mtumba (second-hand clothing) market. Source of bales, individual pieces, and sorted grades
+- **Kamkunji Market** — New products hub: shoes, bags, electronics, hardware, household goods
+- **Eastleigh ("Little Mogadishu")** — Wholesale hub for new clothing, fabrics, perfumes, electronics. Somali-run wholesale network with direct import connections
+
+**Destination Markets:**
+- **Kakuma Refugee Camp** — 250,000+ residents, vibrant market economy, high demand for affordable clothing and goods
+- **Kalobeyei Settlement** — 40,000+ residents, growing commercial area, newer market with less competition
+- **Kakuma Town** — Host community, shops and market stalls serving both refugees and locals
+
+### Platforms to Connect
+
+| Platform | Handle | Content Type |
+|----------|--------|--------------|
+| WhatsApp | +254 712 345 011 | Order taking, price lists, stock alerts, delivery updates, customer groups |
+| Facebook | Kakuma Wholesale | Product photos, stock arrivals, community engagement, live bale openings |
+| TikTok | @kakumawholesale | Bale opening videos, Gikomba sourcing trips, packing & transport content |
+| Instagram | @kakumawholesale | Product showcases, before/after (bale → sorted stock), customer spotlights |
+
+### Products to Add (15+)
+
+| Product | Price (KES) | Min Order | Category |
+|---------|-------------|-----------|----------|
+| Mtumba Bale — Ladies Dresses (45kg) | 8,500 | 1 bale | Bales |
+| Mtumba Bale — Men's Shirts (45kg) | 7,000 | 1 bale | Bales |
+| Mtumba Bale — Kids Clothing (45kg) | 6,500 | 1 bale | Bales |
+| Mtumba Bale — Jeans Mixed (45kg) | 12,000 | 1 bale | Bales |
+| Mtumba Bale — T-Shirts (45kg) | 5,500 | 1 bale | Bales |
+| Sorted Grade A Dresses (per piece) | 150 | 50 pcs | Sorted Mtumba |
+| Sorted Grade A Men's Trousers (per piece) | 200 | 50 pcs | Sorted Mtumba |
+| New Canvas Shoes (Kamkunji) | 350 | 12 pairs | New — Shoes |
+| New Sneakers Assorted (Eastleigh) | 800 | 6 pairs | New — Shoes |
+| New School Shoes (Kamkunji) | 450 | 12 pairs | New — Shoes |
+| New Ladies Sandals (Eastleigh) | 250 | 12 pairs | New — Shoes |
+| New Bedsheets Set (Eastleigh) | 500 | 10 sets | New — Household |
+| Ankara Fabric (6 yards) | 350 | 20 pcs | New — Fabrics |
+| Men's Boxer Shorts Pack (3pc) | 200 | 24 packs | New — Undergarments |
+| Kids School Bags (Kamkunji) | 300 | 12 pcs | New — Accessories |
+
+### Features to Test
+
+- [ ] **Products Catalog** — Full inventory with wholesale pricing, minimum orders, and source market tags
+- [ ] **WhatsApp Commerce** — Primary sales channel: order taking via chat, price list broadcasts, stock alert messages
+- [ ] **WhatsApp Broadcasts** — "New Stock Arrived" alerts to trader groups, weekly price lists
+- [ ] **WhatsApp Groups** — Separate groups: Kakuma Traders, Kalobeyei Traders, Bulk Buyers
+- [ ] **Media Queue** — TikTok bale-opening queue, Instagram product showcase queue
+- [ ] **Facebook Live Integration** — Live bale openings with real-time ordering
+- [ ] **AI Image Generation** — Product display images, price list graphics
+- [ ] **Content DNA** — What wholesale content drives the most inquiries (bale openings? price lists? transport updates?)
+- [ ] **Campaigns** — "Back to School" campaign (school shoes, bags, uniforms), "Festive Season Stock-Up" campaign
+- [ ] **Meme Intelligence** — Trader humor memes, hustle culture content for the Kakuma market scene
+- [ ] **Multi-Language Content** — English + Swahili + French content generation for diverse refugee community
+- [ ] **Analytics** — Track which products get most WhatsApp inquiries, which content drives bulk orders
+- [ ] **Delivery Tracking Content** — "Your goods are on the way" stories showing Nairobi → Kakuma transport
+
+### Test Seeds to Create
+
+1. "New mtumba bales just landed from Gikomba — Grade A ladies dresses, men's shirts, and kids' clothes. DM to order before they finish 🔥"
+2. "Bale opening video: Watch what's inside this 45kg jeans bale we picked up from Gikomba this morning. Grade A quality, zero rejects"
+3. "Kamkunji price update: School shoes KES 450/pair (minimum 12 pairs), school bags KES 300. Back-to-school stock available now"
+4. "Our Nairobi → Kakuma delivery just arrived! 15 bales of mtumba + 200 pairs of shoes from Eastleigh. Traders, come to our store or WhatsApp to reserve"
+5. "How our customer Amina grew her shop in Kalobeyei from 2 bales/month to 10 bales/month in 6 months. Her secret? She focused on sorted Grade A pieces"
+6. "Eastleigh wholesale haul: New bedsheets, ankara fabrics, and men's underwear packs — all at Nairobi wholesale prices, delivered to Kakuma"
+7. "Price list update for this week (Swahili): Orodha ya bei — nguo za mtumba na bidhaa mpya. Piga simu au WhatsApp kuorder"
+
+### Unique Testing Angles
+
+- **Remote/Rural Commerce:** Tests Kova's ability to serve businesses operating in areas with intermittent internet
+- **WhatsApp-First Business:** WhatsApp is the primary platform — more important than any social media
+- **Multilingual Content:** Content must work in English, Swahili, and French for the Kakuma community
+- **Supply Chain Content:** Sourcing (Nairobi) → Transport → Delivery (Kakuma) is a content story arc
+- **Wholesale Pricing:** Tests product catalog with bulk pricing, minimum order quantities
+- **Community Trust Building:** In refugee camp markets, trust is everything — content must build reputation
+- **Price-Sensitive Audience:** Every shilling matters — content must always lead with value and pricing
+
+---
+
 ## Onboarding Sequence
 
 ### Phase 1: Setup (Day 1)
 
-1. Create all 10 user accounts with correct plan tiers
+1. Create all 11 user accounts with correct plan tiers
 2. Complete onboarding wizard for each (brand voice, industry, audience, pillars)
 3. Connect platforms per the tables above
 
@@ -615,7 +714,7 @@
 
 ### Phase 4: Advanced Features (Day 6-7)
 
-13. Set up WhatsApp for Pro/Agency businesses (Mara & Moto, Nyama Mama, Makao, Neon Wave)
+13. Set up WhatsApp for Pro/Agency businesses (Mara & Moto, Nyama Mama, Makao, Neon Wave, Kakuma Wholesale)
 14. Configure meme preferences for Pro+ businesses
 15. Add competitors for tracking (CloudStack, PesaPal)
 16. Set up media queues for visual-heavy businesses
@@ -629,40 +728,42 @@
 21. Test team role permissions (Neon Wave)
 22. Install Kova Pixel and test revenue attribution (Mara & Moto, CloudStack)
 23. Run partner program test (Green Roots applies, gets approved, shares referral code)
-24. Test admin dashboard with data from all 10 businesses
+24. Test admin dashboard with data from all 11 businesses
 
 ---
 
 ## Test Coverage Matrix
 
-| Feature | Mara&Moto | PixelCraft | Elimu | Nyama | CloudStack | Makao | Amara | GreenRoots | NeonWave | PesaPal |
-|---------|:---------:|:----------:|:-----:|:-----:|:----------:|:-----:|:-----:|:----------:|:--------:|:-------:|
-| **Plan** | Agency | Pro | Growth | Pro | Agency | Pro | Starter | Growth | Agency | Growth |
-| Content Creation | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Products | ✅ | | | ✅ | | | ✅ | | | |
-| Shopify + Pixel | ✅ | | | | ✅ | | | | | |
-| Revenue Attribution | ✅ | | | | ✅ | | | | | |
-| WhatsApp Full | ✅ | | | ✅ | | ✅ | | | ✅ | |
-| Memes | ✅ | | | ✅ | | ✅ | | | ✅ | |
-| Teams | | ✅ | | | ✅ | | | | ✅ | |
-| Multi-Brand | | | | | | | | | ✅ | |
-| Lead Capture | | ✅ | ✅ | | | ✅ | ✅ | ✅ | | ✅ |
-| Email Marketing | ✅ | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Email Sequences | | | ✅ | ✅ | | | | ✅ | | ✅ |
-| Campaigns | ✅ | ✅ | | | ✅ | ✅ | | ✅ | ✅ | ✅ |
-| A/B Testing | ✅ | ✅ | ✅ | | ✅ | | | ✅ | ✅ | ✅ |
-| Competitor Intel | | ✅ | | | ✅ | | | | | ✅ |
-| Media Queue | ✅ | | | ✅ | | | | | ✅ | |
-| AI Images | ✅ | | | ✅ | | | | | ✅ | |
-| All 6 Agents | ✅ | | | | ✅ | | | | ✅ | |
-| REST API | | | | | ✅ | | | | ✅ | |
-| Kova Pages | | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | | ✅ |
-| Partner Program | | | | | | | | ✅ | | |
-| Plan Limits | | | ✅ | | | | ✅ | ✅ | | ✅ |
-| Starter Ceiling | | | | | | | ✅ | | | |
+| Feature | Mara&Moto | PixelCraft | Elimu | Nyama | CloudStack | Makao | Amara | GreenRoots | NeonWave | PesaPal | KakumaWS |
+|---------|:---------:|:----------:|:-----:|:-----:|:----------:|:-----:|:-----:|:----------:|:--------:|:-------:|:--------:|
+| **Plan** | Agency | Pro | Growth | Pro | Agency | Pro | Starter | Growth | Agency | Growth | Pro |
+| Content Creation | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Products | ✅ | | | ✅ | | | ✅ | | | | ✅ |
+| Shopify + Pixel | ✅ | | | | ✅ | | | | | | |
+| Revenue Attribution | ✅ | | | | ✅ | | | | | | |
+| WhatsApp Full | ✅ | | | ✅ | | ✅ | | | ✅ | | ✅ |
+| Memes | ✅ | | | ✅ | | ✅ | | | ✅ | | ✅ |
+| Teams | | ✅ | | | ✅ | | | | ✅ | | |
+| Multi-Brand | | | | | | | | | ✅ | | |
+| Lead Capture | | ✅ | ✅ | | | ✅ | ✅ | ✅ | | ✅ | |
+| Email Marketing | ✅ | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | |
+| Email Sequences | | | ✅ | ✅ | | | | ✅ | | ✅ | |
+| Campaigns | ✅ | ✅ | | | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ |
+| A/B Testing | ✅ | ✅ | ✅ | | ✅ | | | ✅ | ✅ | ✅ | |
+| Competitor Intel | | ✅ | | | ✅ | | | | | ✅ | |
+| Media Queue | ✅ | | | ✅ | | | | | ✅ | | ✅ |
+| AI Images | ✅ | | | ✅ | | | | | ✅ | | ✅ |
+| All 6 Agents | ✅ | | | | ✅ | | | | ✅ | | |
+| REST API | | | | | ✅ | | | | ✅ | | |
+| Kova Pages | | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | | ✅ | |
+| Partner Program | | | | | | | | ✅ | | | |
+| Plan Limits | | | ✅ | | | | ✅ | ✅ | | ✅ | |
+| Starter Ceiling | | | | | | | ✅ | | | | |
+| Multi-Language | | | | | | | | | | | ✅ |
+| Wholesale/Bulk | | | | | | | | | | | ✅ |
 
 **Every feature is covered by at least 2 businesses. Every plan tier is tested by at least 2 businesses.**
 
 ---
 
-*Kova AI — 10 businesses, 4 plan tiers, every feature tested.*
+*Kova AI — 11 businesses, 4 plan tiers, every feature tested.*
