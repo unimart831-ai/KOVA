@@ -113,16 +113,19 @@ DATABASES["default"]["CONN_HEALTH_CHECKS"] = True  # noqa: F405
 # No changes needed unless you want a separate broker URL.
 
 # ─── EMAIL (Resend SMTP) ─────────────────────────────────────────────────────
-# Resend provides SMTP relay: smtp.resend.com:465 (TLS)
+# Resend provides SMTP relay: smtp.resend.com:587 (STARTTLS)
+# Port 465 (SSL) is blocked on some cloud platforms — 587 is more reliable.
 # Set RESEND_API_KEY in Railway env vars to enable.
 RESEND_API_KEY = env("RESEND_API_KEY", default="")  # noqa: F405
 if RESEND_API_KEY:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_HOST = "smtp.resend.com"
-    EMAIL_PORT = 465
-    EMAIL_USE_SSL = True
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    EMAIL_USE_SSL = False
     EMAIL_HOST_USER = "resend"
     EMAIL_HOST_PASSWORD = RESEND_API_KEY
+    EMAIL_TIMEOUT = 10  # seconds — fail fast instead of hanging the worker
 else:
     # Silently discard emails rather than dumping HTML to stderr logs.
     # Set RESEND_API_KEY in Railway env vars to enable real delivery.

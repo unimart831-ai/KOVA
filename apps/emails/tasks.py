@@ -16,6 +16,53 @@ from django.utils.html import strip_tags
 logger = logging.getLogger(__name__)
 
 
+# ─── Allauth async email task ────────────────────────────────────────────────
+
+@shared_task(name="emails.send_allauth_email", bind=True, max_retries=3, default_retry_delay=30)
+def send_allauth_email(self, template_prefix, email, context):
+    """
+    Send an allauth email (verification, password reset, etc.) asynchronously.
+
+    Called by our custom AsyncEmailAccountAdapter instead of allauth's
+    synchronous msg.send(). This prevents SMTP timeouts from killing
+    Gunicorn workers during signup.
+    """
+    from allauth.account.adapter import DefaultAccountAdapter
+    from django.contrib.sites.models import Site
+
+    try:
+        # Reconstruct the context that allauth's render_mail expects
+        adapter = DefaultAccountAdapter()
+
+        # Rebuild site object
+        try:
+            current_site = Site.objects.get_current()
+        except Exception:
+            from types import SimpleNamespace
+            current_site = SimpleNamespace(
+                name=context.get("current_site_name", "Kova Agent"),
+                domain=context.get("current_site_domain", "kovaagent.com"),
+            )
+        context["current_site"] = current_site
+
+        # Rebuild user if we have the email
+        if "user_email" in context:
+            from apps.accounts.models import User
+            try:
+                context["user"] = User.objects.get(email=context["user_email"])
+            except User.DoesNotExist:
+                pass
+
+        # Use allauth's render_mail to get the proper subject/body/html
+        msg = adapter.render_mail(template_prefix, email, context)
+        msg.send()
+
+        logger.info("Allauth email sent: template=%s to=%s", template_prefix, email)
+    except Exception as exc:
+        logger.error("Allauth email failed: template=%s to=%s error=%s", template_prefix, email, exc)
+        raise self.retry(exc=exc)
+
+
 @shared_task(name="emails.send_email", bind=True, max_retries=3, default_retry_delay=60)
 def send_email_task(self, email_type, to_email, user_id=None, context=None, subject=None, metadata=None):
     """
