@@ -31,7 +31,8 @@ def send_allauth_email(self, template_prefix, email, context):
     from django.contrib.sites.models import Site
 
     try:
-        # Reconstruct the context that allauth's render_mail expects
+        # Work with a COPY so the original stays JSON-serializable for retries
+        render_ctx = dict(context)
         adapter = DefaultAccountAdapter()
 
         # Rebuild site object
@@ -43,18 +44,18 @@ def send_allauth_email(self, template_prefix, email, context):
                 name=context.get("current_site_name", "Kova Agent"),
                 domain=context.get("current_site_domain", "kovaagent.com"),
             )
-        context["current_site"] = current_site
+        render_ctx["current_site"] = current_site
 
         # Rebuild user if we have the email
         if "user_email" in context:
             from apps.accounts.models import User
             try:
-                context["user"] = User.objects.get(email=context["user_email"])
+                render_ctx["user"] = User.objects.get(email=context["user_email"])
             except User.DoesNotExist:
                 pass
 
         # Use allauth's render_mail to get the proper subject/body/html
-        msg = adapter.render_mail(template_prefix, email, context)
+        msg = adapter.render_mail(template_prefix, email, render_ctx)
         msg.send()
 
         logger.info("Allauth email sent: template=%s to=%s", template_prefix, email)
