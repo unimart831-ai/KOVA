@@ -104,6 +104,93 @@ class WhatsAppProvider(BaseProvider):
         """WhatsApp permanent tokens don't expire. No-op."""
         return {}
 
+    def handle_embedded_signup(self, code: str, phone_number_id: str, waba_id: str) -> OAuthResult:
+        """
+        Handle WhatsApp Embedded Signup flow.
+
+        1. Exchange authorization code for access token
+        2. Subscribe WABA to our app for webhooks
+        3. Register phone number for Cloud API
+        4. Fetch phone display info
+        """
+        app_id = getattr(settings, "FACEBOOK_APP_ID", "")
+        app_secret = getattr(settings, "FACEBOOK_APP_SECRET", "")
+
+        if not app_id or not app_secret:
+            raise PlatformAuthError("Facebook App ID and Secret must be configured.")
+
+        # Step 1: Exchange code for access token
+        token_resp = self.client.get(
+            f"{WA_API_BASE}/oauth/access_token",
+            params={
+                "client_id": app_id,
+                "client_secret": app_secret,
+                "code": code,
+            },
+        )
+        token_resp.raise_for_status()
+        token_data = token_resp.json()
+        access_token = token_data["access_token"]
+
+        # Step 2: Subscribe WABA to our app (enables webhooks)
+        if waba_id:
+            try:
+                sub_resp = self.client.post(
+                    f"{WA_API_BASE}/{waba_id}/subscribed_apps",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
+                sub_resp.raise_for_status()
+                logger.info("Subscribed WABA %s to app", waba_id)
+            except httpx.HTTPStatusError as e:
+                logger.warning("WABA subscription failed (non-fatal): %s", e)
+
+        # Step 3: Register phone number for Cloud API
+        if phone_number_id:
+            try:
+                reg_resp = self.client.post(
+                    f"{WA_API_BASE}/{phone_number_id}/register",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                    json={"messaging_product": "whatsapp", "pin": "123456"},
+                )
+                reg_resp.raise_for_status()
+                logger.info("Registered phone %s for Cloud API", phone_number_id)
+            except httpx.HTTPStatusError:
+                logger.warning("Phone registration skipped (may already be registered)")
+
+        # Step 4: Fetch phone number details
+        display_phone = ""
+        verified_name = "WhatsApp Business"
+        quality = ""
+
+        if phone_number_id:
+            try:
+                info_resp = self.client.get(
+                    f"{WA_API_BASE}/{phone_number_id}",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                    params={"fields": "display_phone_number,verified_name,quality_rating"},
+                )
+                info_resp.raise_for_status()
+                info = info_resp.json()
+                display_phone = info.get("display_phone_number", "")
+                verified_name = info.get("verified_name", "WhatsApp Business")
+                quality = info.get("quality_rating", "")
+            except httpx.HTTPStatusError:
+                logger.warning("Could not fetch phone info for %s", phone_number_id)
+
+        return OAuthResult(
+            platform_user_id=phone_number_id or waba_id,
+            username=display_phone,
+            display_name=verified_name,
+            access_token=access_token,
+            metadata={
+                "phone_number_id": phone_number_id,
+                "waba_id": waba_id,
+                "quality_rating": quality,
+                "display_phone_number": display_phone,
+                "signup_method": "embedded_signup",
+            },
+        )
+
     # ── Messaging ────────────────────────────────────────────────────────
 
     def _get_token(self, access_token: str) -> str:

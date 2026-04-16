@@ -1,10 +1,12 @@
 import logging
 import secrets
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 
 from apps.platforms.models import SocialAccount
@@ -108,7 +110,7 @@ def connect_platform(request, platform):
         messages.error(request, f"Platform '{platform}' is not available.")
         return redirect("platforms:list")
 
-    # WhatsApp uses permanent token, not OAuth
+    # WhatsApp — Embedded Signup (primary) or manual token (fallback)
     if platform == "whatsapp":
         if request.method == "POST":
             access_token = request.POST.get("access_token", "").strip()
@@ -142,7 +144,16 @@ def connect_platform(request, platform):
                 logger.error("WhatsApp connect failed: %s", exc, exc_info=True)
                 messages.error(request, f"Failed to connect WhatsApp: {exc}")
             return redirect("platforms:list")
-        return render(request, "platforms/whatsapp_connect.html", {"page_title": "Connect WhatsApp"})
+        return render(request, "platforms/whatsapp_connect.html", {
+            "page_title": "Connect WhatsApp",
+            "facebook_app_id": getattr(settings, "FACEBOOK_APP_ID", ""),
+            "fb_wa_config_id": getattr(settings, "FB_WA_CONFIG_ID", ""),
+            "embedded_signup_available": bool(
+                getattr(settings, "FACEBOOK_APP_ID", "")
+                and getattr(settings, "FACEBOOK_APP_SECRET", "")
+                and getattr(settings, "FB_WA_CONFIG_ID", "")
+            ),
+        })
 
     # Bluesky uses app password, not OAuth
     if platform == "bluesky":
@@ -291,6 +302,55 @@ def disconnect_platform(request, pk):
     account.save(update_fields=["access_token", "refresh_token", "is_active", "last_error", "updated_at"])
 
     messages.success(request, f"Disconnected {platform_display} — @{username}")
+    return redirect("platforms:list")
+
+
+@login_required
+@ratelimit(key="user", rate="10/m", block=True)
+@require_POST
+def whatsapp_embedded_callback(request):
+    """
+    Handle WhatsApp Embedded Signup callback.
+
+    Receives authorization code + session info from Facebook JS SDK,
+    exchanges for access token, and stores the connection.
+    """
+    code = request.POST.get("code", "").strip()
+    phone_number_id = request.POST.get("phone_number_id", "").strip()
+    waba_id = request.POST.get("waba_id", "").strip()
+
+    if not code:
+        messages.error(request, "No authorization code received from WhatsApp signup.")
+        return redirect("platforms:list")
+
+    try:
+        provider = get_provider("whatsapp")
+        result = provider.handle_embedded_signup(
+            code=code,
+            phone_number_id=phone_number_id,
+            waba_id=waba_id,
+        )
+
+        SocialAccount.objects.update_or_create(
+            user=request.user,
+            platform="whatsapp",
+            platform_user_id=result.platform_user_id,
+            defaults={
+                "username": result.username,
+                "display_name": result.display_name,
+                "access_token": result.access_token,
+                "is_active": True,
+                "last_error": "",
+                "metadata": result.metadata,
+            },
+        )
+        messages.success(request, f"Connected WhatsApp — {result.display_name}")
+    except Exception as exc:
+        logger.error("WhatsApp Embedded Signup failed: %s", exc, exc_info=True)
+        messages.error(request, f"Failed to connect WhatsApp: {exc}")
+
+    if not request.user.onboarding_completed:
+        return redirect("/accounts/onboarding/?step=4")
     return redirect("platforms:list")
 
 

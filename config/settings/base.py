@@ -517,6 +517,7 @@ WHATSAPP_ACCESS_TOKEN = env("WHATSAPP_ACCESS_TOKEN", default="")        # Perman
 WHATSAPP_WABA_ID = env("WHATSAPP_WABA_ID", default="")                 # WhatsApp Business Account ID
 WHATSAPP_VERIFY_TOKEN = env("WHATSAPP_VERIFY_TOKEN", default="kova-whatsapp-verify")  # Webhook verification
 WHATSAPP_APP_SECRET = env("WHATSAPP_APP_SECRET", default="")            # For webhook signature validation
+FB_WA_CONFIG_ID = env("FB_WA_CONFIG_ID", default="")                    # Facebook Login for Business config ID (Embedded Signup)
 
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
 
