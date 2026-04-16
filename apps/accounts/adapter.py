@@ -6,6 +6,8 @@ Without this, allauth sends emails synchronously via SMTP during signup,
 which can timeout the Gunicorn worker if SMTP is slow or blocked.
 """
 
+import uuid
+
 from allauth.account.adapter import DefaultAccountAdapter
 
 
@@ -17,6 +19,10 @@ class AsyncEmailAccountAdapter(DefaultAccountAdapter):
     and password change emails. By default this calls msg.send() synchronously.
     We intercept and route through our Celery email task instead.
     """
+
+    def populate_username(self, request, user):
+        """Generate a unique username since we use email-only login."""
+        user.username = uuid.uuid4().hex[:30]
 
     def is_email_verified(self, request, email):
         """Auto-verify superuser emails so they skip the verification flow."""
