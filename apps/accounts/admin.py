@@ -19,6 +19,15 @@ class UserAdmin(BaseUserAdmin):
     search_fields = ["email", "full_name"]
     ordering = ["-date_joined"]
 
+    def delete_queryset(self, request, queryset):
+        """Use per-instance soft_delete so emails are properly mangled."""
+        for user in queryset:
+            user.soft_delete()
+
+    def delete_model(self, request, obj):
+        """Explicit soft_delete for single-object admin deletes."""
+        obj.soft_delete()
+
     fieldsets = (
         (None, {"fields": ("email", "password")}),
         ("Personal info", {"fields": ("full_name", "username", "avatar", "timezone", "daily_brief_time")}),

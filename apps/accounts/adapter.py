@@ -24,6 +24,27 @@ class AsyncEmailAccountAdapter(DefaultAccountAdapter):
         """Generate a unique username since we use email-only login."""
         user.username = uuid.uuid4().hex[:30]
 
+    def save_user(self, request, user, form, commit=True):
+        """Free the email constraint for any soft-deleted users before saving.
+
+        If a previous user was soft-deleted via queryset.delete() (e.g. Django
+        admin's 'Delete selected' action), the email may not have been mangled.
+        This causes a DB-level UniqueViolation when allauth tries to INSERT the
+        new user. We fix this by mangling those orphaned emails first.
+        """
+        from django.utils import timezone as tz
+        from apps.accounts.models import User
+
+        email = form.cleaned_data.get("email", "")
+        if email:
+            stale = User.all_objects.filter(email__iexact=email, is_deleted=True)
+            for u in stale:
+                stamp = int(tz.now().timestamp())
+                u.email = f"deleted_{stamp}_{u.pk}@deleted.local"
+                u.username = f"deleted_{stamp}_{u.pk}"
+                u.save(update_fields=["email", "username"])
+        return super().save_user(request, user, form, commit)
+
     def is_email_verified(self, request, email):
         """Auto-verify superuser emails so they skip the verification flow."""
         from apps.accounts.models import User
