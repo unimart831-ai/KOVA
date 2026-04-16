@@ -1,0 +1,105 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">All trending memes discovered by the AI engine</p>{% endblock %}
+
+{% block content %}
+
+{# ── Filters ─────────────────────────────────────────────────────────── #}
+<div class="flex flex-wrap items-center gap-3 mb-6">
+  <form method="get" class="flex items-center gap-2">
+    <select name="lifecycle" class="input text-xs w-36">
+      <option value="">All Lifecycles</option>
+      {% for val, label in lifecycles %}
+      <option value="{{ val }}" {% if current_lifecycle == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="category" class="input text-xs w-36">
+      <option value="">All Categories</option>
+      {% for val, label in categories %}
+      <option value="{{ val }}" {% if current_category == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn-primary text-xs px-3 py-1.5">Filter</button>
+    {% if current_lifecycle or current_category %}
+    <a href="{% url 'admin_dashboard:meme_list_admin' %}" class="text-xs text-gray-400 hover:text-gray-600">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+{# ── Meme Table ──────────────────────────────────────────────────────── #}
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Meme</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Category</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Source</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Lifecycle</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Viral</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Safe</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Cultural</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Adapts</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Detected</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for meme in page_obj %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-2.5">
+            <p class="text-xs font-medium text-gray-900 dark:text-white truncate max-w-[250px]" title="{{ meme.title }}">{{ meme.title }}</p>
+            <p class="text-[10px] text-gray-400 truncate max-w-[250px]">{{ meme.description|truncatechars:80 }}</p>
+          </td>
+          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-300">{{ meme.get_category_display }}</td>
+          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-300">{{ meme.get_source_platform_display }}</td>
+          <td class="px-4 py-2.5">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium
+              {% if meme.lifecycle == 'emerging' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
+              {% elif meme.lifecycle == 'trending' %}bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300
+              {% elif meme.lifecycle == 'peaked' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
+              {% elif meme.lifecycle == 'fading' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300
+              {% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300{% endif %}">
+              {{ meme.get_lifecycle_display }}
+            </span>
+          </td>
+          <td class="px-4 py-2.5 text-right">
+            <span class="text-xs font-bold {% if meme.virality_score >= 70 %}text-orange-600{% elif meme.virality_score >= 40 %}text-yellow-600{% else %}text-gray-400{% endif %}">{{ meme.virality_score }}</span>
+          </td>
+          <td class="px-4 py-2.5 text-right">
+            <span class="text-xs font-bold {% if meme.brand_safety_score >= 70 %}text-green-600{% elif meme.brand_safety_score >= 40 %}text-yellow-600{% else %}text-red-500{% endif %}">{{ meme.brand_safety_score }}</span>
+          </td>
+          <td class="px-4 py-2.5 text-right">
+            <span class="text-xs font-bold text-purple-600 dark:text-purple-400">{{ meme.cultural_relevance_score }}</span>
+          </td>
+          <td class="px-4 py-2.5 text-right text-xs font-bold text-gray-900 dark:text-white">{{ meme.adaptation_count }}</td>
+          <td class="px-4 py-2.5 text-right text-xs text-gray-400">{{ meme.detected_at|timesince }} ago</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" class="px-4 py-8 text-center text-sm text-gray-400">No memes found</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# ── Pagination ──────────────────────────────────────────────────────── #}
+{% if page_obj.has_other_pages %}
+<div class="flex items-center justify-between mt-4">
+  <p class="text-xs text-gray-400">
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    ({{ page_obj.paginator.count }} total)
+  </p>
+  <div class="flex items-center gap-2">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if current_lifecycle %}&lifecycle={{ current_lifecycle }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}" class="btn-outline text-xs px-3 py-1">← Prev</a>
+    {% endif %}
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if current_lifecycle %}&lifecycle={{ current_lifecycle }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}" class="btn-outline text-xs px-3 py-1">Next →</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

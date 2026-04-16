@@ -92,6 +92,7 @@ urlpatterns = [
     path("products/", include("apps.products.urls")),
     path("campaigns/", include("apps.campaigns.urls")),
     path("whatsapp/", include("apps.whatsapp.urls")),
+    path("memes/", include("apps.memes.urls")),
     path("dashboard/", include("apps.admin_dashboard.urls")),
     path("api/v1/", include("apps.api.urls")),
 ]

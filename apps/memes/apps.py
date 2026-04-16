@@ -1,0 +1,7 @@
+from django.apps import AppConfig
+
+
+class MemesConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.memes"
+    verbose_name = "Meme Intelligence"

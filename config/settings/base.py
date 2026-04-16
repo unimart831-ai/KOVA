@@ -79,6 +79,7 @@ LOCAL_APPS = [
     "apps.products",
     "apps.campaigns",
     "apps.whatsapp",
+    "apps.memes",
     "apps.api",
 ]
 
@@ -230,6 +231,18 @@ CELERY_BEAT_SCHEDULE = {
     "check-trial-expiry-emails": {
         "task": "emails.check_trial_expiry_emails",
         "schedule": 24 * 3600.0,  # daily — send trial countdown emails (day 7, 3, 1, 0)
+    },
+    "discover-trending-memes": {
+        "task": "memes.discover_trending_memes",
+        "schedule": 3 * 3600.0,  # every 3 hours — AI meme trend discovery
+    },
+    "adapt-memes-for-users": {
+        "task": "memes.adapt_memes_for_users",
+        "schedule": 4 * 3600.0,  # every 4 hours — create brand-adapted memes for users
+    },
+    "update-meme-lifecycle": {
+        "task": "memes.update_meme_lifecycle",
+        "schedule": 24 * 3600.0,  # daily — age out stale memes
     },
 }
 

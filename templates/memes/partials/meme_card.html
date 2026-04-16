@@ -1,0 +1,15 @@
+<div id="meme-{{ meme.id }}" class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 hover:border-kova-300 dark:hover:border-kova-700 transition-colors">
+  <div class="flex items-start justify-between mb-3">
+    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium
+      {% if meme.lifecycle == 'emerging' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
+      {% elif meme.lifecycle == 'trending' %}bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300
+      {% else %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300{% endif %}">
+      {{ meme.get_lifecycle_display }}
+    </span>
+    {% if adapted %}
+    <span class="text-[10px] text-kova-600 dark:text-kova-400 font-medium">✓ Adapted</span>
+    {% endif %}
+  </div>
+  <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">{{ meme.title }}</h3>
+  <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{{ meme.description }}</p>
+</div>

@@ -24,6 +24,14 @@ COMPETITOR_URLS = [
     "analytics:competitor_landscape",
 ]
 ENGAGE_URLS = ["engage:inbox", "engage:send_reply", "engage:trigger"]
+WHATSAPP_URLS = [
+    "whatsapp:inbox", "whatsapp:conversation", "whatsapp:send_message",
+    "whatsapp:toggle_ai", "whatsapp:template_list", "whatsapp:template_create",
+]
+MEMES_URLS = [
+    "memes:discover", "memes:queue", "memes:settings", "memes:detail",
+    "memes:adapt", "memes:card", "memes:approve", "memes:reject", "memes:to_post",
+]
 SEED_CREATE_URLS = ["content:generate"]
 
 
@@ -158,6 +166,34 @@ class PlanEnforcementMiddleware:
             return redirect("billing:pricing")
         return None
 
+    def _check_whatsapp_access(self, request):
+        """Check if user's plan includes WhatsApp features."""
+        profile = request.user.profile
+        limits = get_plan_limits(profile.plan)
+
+        if not limits.get("whatsapp_enabled", False):
+            messages.warning(
+                request,
+                f"WhatsApp is not included in your {limits['label']} plan. "
+                f"Upgrade to Biashara / Pro or higher to unlock.",
+            )
+            return redirect("billing:pricing")
+        return None
+
+    def _check_memes_access(self, request):
+        """Check if user's plan includes Meme Intelligence."""
+        profile = request.user.profile
+        limits = get_plan_limits(profile.plan)
+
+        if not limits.get("memes_enabled", False):
+            messages.warning(
+                request,
+                f"Meme Intelligence is not included in your {limits['label']} plan. "
+                f"Upgrade to Biashara / Pro or higher to unlock.",
+            )
+            return redirect("billing:pricing")
+        return None
+
     def process_view(self, request, view_func, view_args, view_kwargs):
         """Check plan limits before specific views execute."""
         if not request.user.is_authenticated:
@@ -174,6 +210,12 @@ class PlanEnforcementMiddleware:
 
         if full_name in ENGAGE_URLS:
             return self._check_engage_access(request)
+
+        if full_name in WHATSAPP_URLS:
+            return self._check_whatsapp_access(request)
+
+        if full_name in MEMES_URLS:
+            return self._check_memes_access(request)
 
         # ── Limit checks (POST only) ──
         if request.method != "POST":

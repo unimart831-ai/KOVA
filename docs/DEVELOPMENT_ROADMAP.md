@@ -6,7 +6,7 @@
 #
 # This document is the SINGLE SOURCE OF TRUTH for building Kova Agent.
 # Every decision, every sprint, every feature traces back to here.
-# Last Updated: April 14, 2026
+# Last Updated: April 16, 2026
 # ============================================================================
 
 
@@ -836,10 +836,12 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 - [ ] Bulk content upload (CSV)
 
 ## 8.5 WHATSAPP INTELLIGENCE (Phase 5)
-- [ ] WhatsApp Cloud API provider (messaging, templates, interactive messages, webhooks)
-- [ ] Meme Intelligence Engine (trend detection → meme ranking → brand adaptation)
+- [x] WhatsApp Cloud API provider (messaging, templates, interactive messages, webhooks) ✅
+- [x] Conversational AI auto-reply (Swahili/Sheng/English, brand-voice trained) ✅
+- [x] Meme Intelligence Engine (trend detection → meme ranking → brand adaptation) ✅
+- [x] Plan gating: WhatsApp + Memes restricted to Pro plan and above ✅
+- [x] Admin dashboard: Meme Intelligence section (overview, meme list, adaptation list) ✅
 - [ ] Status Content Studio (templates, AI generation, scheduling queue, one-tap share)
-- [ ] Conversational AI auto-reply (Swahili/Sheng/English, brand-voice trained)
 - [ ] Catalog assistant (product card responses, order status queries)
 - [ ] Broadcast campaign builder (smart segmentation, timing optimization, drip sequences)
 - [ ] WhatsApp analytics dashboard (response rates, sentiment trends, revenue attribution)
@@ -869,13 +871,15 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 | Phase 4 | Voice Memo | ✅ Complete | Voice Memo input (Whisper transcription → content seed) |
 | **Pre-Launch** | **Security** | **✅ Complete** | **M-Pesa webhook hardening, content safety gate, engage review flow, billing enforcement, emergency pause, partner sybil detection, API rate limiting** |
 | **Pre-Launch** | **Hardening** | **✅ Complete** | **HTTP retry utility, smart strike system, M-Pesa idempotency, email retry, setup checklist, trial emails, content rating, value summary, admin churn dashboard, research priority boost** |
-| Phase 5 | Post-Launch  | ⏳ Not Started | WhatsApp Intelligence, Meme Engine, Status Studio |
+| Phase 5 | Sprint 5A | ✅ Complete | WhatsApp Provider, Conversational AI, Webhook Handler, Template Management |
+| Phase 5 | Sprint 5B | ✅ Complete | Meme Intelligence Engine, Trend Discovery, Brand Adaptation, Admin Dashboard |
+| Phase 5 | Sprint 5C-5E | ⏳ Not Started | Status Content Studio, Broadcast Intelligence, WhatsApp Channels |
 | Phase 6 | Post-Phase 5 | 🟡 In Progress | **6A ✅ 6B ✅ 6C ✅ 6D ✅ 6E ✅** 6F ⏳ **6G ✅** 6H ⏳ |
 | **Tier 2** | **Revenue Bridge** | **⏳ Not Started** | **Kova Pixel (website tracking), Conversion Dashboard, Lead Pipeline enhancement, Content Importance Tiers, CRM Webhook (outbound)** |
 | Phase 7 | Post-Phase 6 | ⏳ Not Started | Commerce Pipeline, Revenue Prediction, Audience Genome, Kova Score, Network Intelligence, Strategic Foresight, Digital Business Passport |
 | Phase 8 | Post-Phase 7 | ⏳ Deferred | White-label UI, Agent Marketplace, Open-source |
 
-## CELERY BEAT SCHEDULE (Current — 11 tasks)
+## CELERY BEAT SCHEDULE (Current — 14 tasks)
 | Task | Schedule | Source |
 |------|----------|--------|
 | `check-and-publish` | Every 60 seconds | `apps/content/tasks.py` |
@@ -889,6 +893,9 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 | `analyze-all-competitors` | Weekly | `apps/analytics/tasks.py` |
 | `send-weekly-reports-all` | Weekly (Monday 8AM) | `apps/emails/tasks.py` |
 | `check-trial-expiry-emails` | Daily | `apps/emails/tasks.py` |
+| `discover-trending-memes` | Every 3 hours | `apps/memes/tasks.py` |
+| `adapt-memes-for-users` | Every 4 hours | `apps/memes/tasks.py` |
+| `update-meme-lifecycle` | Every 24 hours | `apps/memes/tasks.py` |
 
 ## ─── PHASE 1: MVP — "AI-Assisted Scheduling" (Weeks 1-8) ✅ COMPLETE ───
 
@@ -1454,7 +1461,7 @@ Default for new users: Level 2 (Guided) — builds trust gradually.
 | Google Analytics 4 replacement | GA4 exists. Kova pixel complements it, doesn't replace it |
 
 
-## ─── PHASE 5: WhatsApp Intelligence — "Own the Most Important Channel" (Post-Launch) ───
+## ─── PHASE 5: WhatsApp Intelligence — "Own the Most Important Channel" (Post-Launch) — 5A ✅ 5B ✅ 5C-5E ⏳ ───
 
 ### Context
 WhatsApp is the operating system of business and social life in Kenya (90%+ smartphone
@@ -1462,31 +1469,51 @@ penetration). 7.4M+ MSMEs run businesses through WhatsApp. Status is viewed more
 Instagram Stories. No existing tool treats WhatsApp as a first-class content + intelligence
 channel — they're all customer support tools. This is category creation.
 
-### Sprint 5A: WhatsApp Provider + Conversational AI
-- [ ] WhatsApp Cloud API provider (extends BaseProvider, Graph API v21.0)
-- [ ] OAuth flow via Facebook Business (shared infra with FB/IG provider)
-- [ ] Send/receive text, image, video, document messages
-- [ ] Template message registration + sending (pre-approved by Meta)
-- [ ] Interactive messages: button replies, list menus, product cards, CTAs
-- [ ] Webhook handler for incoming messages + delivery/read receipts
-- [ ] Business profile management (name, about, photo, address)
-- [ ] Conversational AI auto-reply (brand-voice trained, not generic chatbot)
-- [ ] Language Intelligence: auto-detect Swahili/Sheng/English, respond in same language
-- [ ] Smart routing: AI handles 80% of FAQs, flags complex queries to human with context
-- [ ] Catalog assistant: customer asks about products → AI pulls from WhatsApp Catalog, sends cards
-- DELIVERABLE: WhatsApp connected, AI handles customer conversations 24/7.
+### Sprint 5A: WhatsApp Provider + Conversational AI ✅ COMPLETE
+- [x] WhatsApp Cloud API provider (extends BaseProvider, Graph API v21.0)
+- [x] OAuth flow via Facebook Business (shared infra with FB/IG provider)
+- [x] Send/receive text, image, video, document messages
+- [x] Template message registration + sending (pre-approved by Meta)
+- [x] Interactive messages: button replies, list menus, product cards, CTAs
+- [x] Webhook handler for incoming messages + delivery/read receipts
+- [x] Business profile management (name, about, photo, address)
+- [x] Conversational AI auto-reply (brand-voice trained, not generic chatbot)
+- [x] Language Intelligence: auto-detect Swahili/Sheng/English, respond in same language
+- [x] Smart routing: AI handles 80% of FAQs, flags complex queries to human with context
+- [ ] Catalog assistant: customer asks about products → AI pulls from WhatsApp Catalog, sends cards — deferred to Sprint 5D
+- DELIVERABLE: ✅ WhatsApp connected, AI handles customer conversations 24/7.
+- **IMPLEMENTATION NOTES:**
+  - New app: `apps/whatsapp/` — models, views, webhook handler, tasks, admin, URLs
+  - Models: `WhatsAppConversation` (UUID PK, status, language, ai_handling, sentiment, tags), `WhatsAppMessage` (direction, type, is_ai_generated, delivered/read tracking), `WhatsAppTemplate` (name, category, language, components, status), `WhatsAppBroadcast` (audience_filter, scheduled delivery)
+  - Provider: `apps/platforms/providers/whatsapp.py` — extends BaseProvider, Graph API v21.0
+  - Webhook: `apps/whatsapp/webhook.py` — signature verification, message/status routing
+  - Conversational AI: `apps/whatsapp/tasks.py` — `process_incoming_message` (brand-voice LLM reply), language detection (Swahili/Sheng/English), smart routing (AI auto-reply vs human escalation)
+  - Views: inbox, conversation detail, send_message, toggle_ai, template_list, template_create
+  - Templates: `templates/whatsapp/` — inbox.html, conversation.html, templates.html
+  - Plan gating: WhatsApp restricted to Pro+ plans via `PlanEnforcementMiddleware` (whatsapp_enabled flag)
+  - Nav: WhatsApp link in app sidebar (Intelligence section) with PRO badge for lower plans
 
-### Sprint 5B: Meme Intelligence Engine (THE UNIQUE MOAT)
-- [ ] Trend Detection: monitor Kenyan Twitter/X (KOT), TikTok Kenya, Reddit r/Kenya, FB meme pages
-- [ ] Meme Ranking: score each meme by virality velocity, brand-safety, cultural relevance, humor type
-- [ ] Cultural Intelligence: Sheng references, political context (safe vs risky), local events
-  - (Mashujaa Day, election cycle, KPL season, county-specific humor)
-- [ ] Meme Adaptation: AI takes trending meme FORMAT and adapts to user's brand/product/context
-  - Not reposting — REMIXING (original meme + brand context = viral brand content)
-- [ ] Meme queue with Kenya peak times (6-8am commute, 12-1pm lunch, 6-9pm evening scroll)
-- [ ] Celery Beat task: `discover-trending-memes` — runs every 2-4 hours, scores + adapts
-- DELIVERABLE: Users get auto-curated, brand-adapted memes from Kenyan trends.
-- UNIQUENESS TEST: Nobody does AI-powered meme intelligence localized to Kenya.
+### Sprint 5B: Meme Intelligence Engine (THE UNIQUE MOAT) ✅ COMPLETE
+- [x] Trend Detection: AI-powered meme discovery via Tavily web search + LLM analysis
+- [x] Meme Ranking: score each meme by virality (0-100), brand-safety (0-100), cultural relevance (0-100), adaptability (0-100), humor type (8 types)
+- [x] Cultural Intelligence: Kenyan events database (28 events loaded — Mashujaa Day, Jamhuri Day, KPL season, etc.), sensitivity scoring (safe/moderate/sensitive/avoid), meme_potential rating
+- [x] Meme Adaptation: AI takes trending meme FORMAT and adapts to user's brand voice/product/context with brand_relevance_score + humor_preserved_score
+- [x] Meme queue with user approval flow (draft → approved → published/rejected), convert-to-post action
+- [x] Celery Beat tasks: `discover-trending-memes` (every 3h), `adapt-memes-for-users` (every 4h), `update-meme-lifecycle` (every 24h)
+- [x] Meme Preferences: per-user settings (risk_tolerance, preferred categories/humor types, max_memes_per_week, auto_queue)
+- [x] Admin dashboard: Meme Intelligence section (overview with all metrics, meme list, adaptation list)
+- [x] Plan gating: Memes restricted to Pro+ plans via PlanEnforcementMiddleware (memes_enabled flag)
+- DELIVERABLE: ✅ Users get auto-curated, brand-adapted memes from Kenyan trends.
+- UNIQUENESS TEST: ✅ Nobody does AI-powered meme intelligence localized to Kenya.
+- **IMPLEMENTATION NOTES:**
+  - New app: `apps/memes/` — models, views, tasks, forms, URLs, fixtures
+  - Models: `TrendingMeme` (UUID PK, 10 categories, 8 humor types, 8 source platforms, lifecycle stages: emerging/trending/peaked/fading/dead, 4 scores, tags/related_events JSON, sensitivity_notes), `MemeAdaptation` (user FK, trending_meme FK, adapted_text/caption, platform_targets, brand_relevance_score, humor_preserved_score, status, post FK for convert-to-post), `KenyanEvent` (date, event_type, meme_potential, sensitivity, annual flag, meme_angles JSON), `MemePreferences` (OneToOne user, risk_tolerance, preferred/excluded categories, preferred humor types, max_memes_per_week, auto_queue)
+  - Tasks: `apps/memes/tasks.py` — `discover_trending_memes` (Tavily web search → LLM analysis → TrendingMeme records), `adapt_memes_for_users` (iterates active MemePreferences, filters by risk/category/quota, LLM brand adaptation), `adapt_single_meme` (on-demand UI trigger), `update_meme_lifecycle` (daily aging through lifecycle stages)
+  - Views: meme_discover (browse with filters), meme_detail (scores + adaptations), meme_adapt (POST trigger), meme_queue (user adaptations), meme_approve/reject, meme_to_post (convert to Post, content_type="original"), meme_settings (preferences form), meme_card (HTMX partial)
+  - Fixtures: `apps/memes/fixtures/kenyan_events.json` — 28 Kenyan cultural/national events
+  - Admin dashboard: `apps/admin_dashboard/views/memes.py` — memes_overview (stat cards, lifecycle breakdown, avg scores, adaptation quality, top memes, recent feed, category/source breakdown, upcoming events, top users), meme_list_admin (paginated + filtered), adaptation_list_admin (paginated + filtered)
+  - Admin templates: `templates/admin_dashboard/memes/` — overview.html, meme_list.html, adaptation_list.html
+  - Nav: Memes link in app sidebar with PRO badge, admin dashboard sidebar (Intelligence section)
 
 ### Sprint 5C: Status Content Studio
 - [ ] Status Content Queue: AI-curated content ready for WhatsApp Status
@@ -1519,13 +1546,14 @@ channel — they're all customer support tools. This is category creation.
 - DELIVERABLE: WhatsApp Channels managed by Kova. Ready for Status API when it drops.
 
 ### WhatsApp Phase — Key Technical Notes
-- Provider: `apps/platforms/providers/whatsapp.py` (extends BaseProvider)
-- Shared FB Business infra: same Meta App as FB/IG, same Graph API
-- Meme engine: new app `apps/memes/` (trend detection + adaptation pipeline)
-- Webhook receiver: new endpoint in `apps/platforms/` for incoming messages
-- Template management: store approved templates in DB, render with context vars
-- Deep link for Status: `whatsapp://send?text=...` or `https://wa.me/?text=...` with media
-- Celery Beat tasks: `discover-trending-memes` (every 2-4h), `process-whatsapp-messages` (real-time via webhook)
+- Provider: `apps/platforms/providers/whatsapp.py` (extends BaseProvider) ✅
+- Shared FB Business infra: same Meta App as FB/IG, same Graph API ✅
+- Meme engine: `apps/memes/` (trend detection + adaptation pipeline) ✅
+- Webhook receiver: `apps/whatsapp/webhook.py` for incoming messages ✅
+- Template management: WhatsAppTemplate model with status tracking ✅
+- Deep link for Status: `whatsapp://send?text=...` or `https://wa.me/?text=...` with media — Sprint 5C
+- Celery Beat tasks: `discover-trending-memes` (every 3h), `adapt-memes-for-users` (every 4h), `update-meme-lifecycle` (daily) ✅ | `process-whatsapp-messages` (real-time via webhook) ✅
+- Plan enforcement: `whatsapp_enabled` and `memes_enabled` flags in PLAN_LIMITS, middleware-gated (Pro+ only), sidebar nav badges ✅
 
 
 ## ─── PHASE 6: Conversion Loop — "Close the Gap" (Post-Phase 5) ───

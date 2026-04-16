@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, campaigns, content, costs, emails, engage, help, llm, logs, media_queue, overview, partners, partials, pixel, platforms, products, revenue, system, teams, user_health, users, whatsapp
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, campaigns, content, costs, emails, engage, help, llm, logs, media_queue, memes, overview, partners, partials, pixel, platforms, products, revenue, system, teams, user_health, users, whatsapp
 
 app_name = "admin_dashboard"
 
@@ -140,6 +140,11 @@ urlpatterns = [
     # Campaigns
     path("campaigns/", campaigns.campaigns_overview, name="campaigns_overview"),
     path("campaigns/list/", campaigns.campaign_list_admin, name="admin_campaign_list"),
+
+    # Meme Intelligence
+    path("memes/", memes.memes_overview, name="memes_overview"),
+    path("memes/list/", memes.meme_list_admin, name="meme_list_admin"),
+    path("memes/adaptations/", memes.adaptation_list_admin, name="adaptation_list_admin"),
 
     # WhatsApp
     path("whatsapp/", whatsapp.whatsapp_overview, name="whatsapp_overview"),

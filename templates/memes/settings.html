@@ -1,0 +1,71 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Meme Settings{% endblock %}
+{% block page_title %}
+<div class="flex items-center justify-between">
+  <div>
+    <h1 class="text-lg font-bold text-gray-900 dark:text-white">⚙ Meme Preferences</h1>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Control how meme intelligence works for your brand</p>
+  </div>
+  <a href="{% url 'memes:discover' %}" class="btn-outline text-xs px-3 py-1.5">← Back to Discover</a>
+</div>
+{% endblock %}
+
+{% block content %}
+
+<div class="max-w-2xl">
+  <form method="post" class="space-y-6">
+    {% csrf_token %}
+
+    {# Active toggle #}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Meme Intelligence</h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Enable AI meme discovery and adaptation for your brand</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" name="is_active" {% if form.instance.is_active %}checked{% endif %} class="sr-only peer">
+          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kova-600"></div>
+        </label>
+      </div>
+    </div>
+
+    {# Risk tolerance #}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Risk Tolerance</h3>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">How edgy should meme suggestions be?</p>
+      {{ form.risk_tolerance }}
+      <div class="mt-2 text-[10px] text-gray-400">
+        <strong>Conservative:</strong> Only brand-safe, universally relatable memes (safety score ≥70)<br>
+        <strong>Moderate:</strong> Balanced — some edge, but nothing too risky (safety score ≥40)<br>
+        <strong>Bold:</strong> Show me everything — I'll decide what's too much
+      </div>
+    </div>
+
+    {# Weekly quota #}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Weekly Meme Quota</h3>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Maximum meme adaptations per week</p>
+      {{ form.max_memes_per_week }}
+    </div>
+
+    {# Auto-queue #}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Auto-Queue</h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Automatically add high-scoring adaptations to your content queue</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" name="auto_queue" {% if form.instance.auto_queue %}checked{% endif %} class="sr-only peer">
+          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kova-600"></div>
+        </label>
+      </div>
+    </div>
+
+    <button type="submit" class="btn-primary text-sm px-6 py-2.5">Save Preferences</button>
+  </form>
+</div>
+
+{% endblock %}

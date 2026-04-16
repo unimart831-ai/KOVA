@@ -1,0 +1,401 @@
+[
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "New Year's Day",
+      "description": "New year celebrations. Resolutions, new beginnings, 'new year new me' culture.",
+      "date": "2026-01-01",
+      "event_type": "national_holiday",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["new_year", "resolutions", "celebrations"],
+      "meme_angles": ["Failed resolutions", "New year same me", "January broke season", "Dry January struggles"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Madaraka Day",
+      "description": "Self-governance day. Celebrates Kenya's attainment of internal self-rule on June 1, 1963.",
+      "date": "2026-06-01",
+      "event_type": "national_holiday",
+      "meme_potential": "medium",
+      "sensitivity": "moderate",
+      "annual": true,
+      "tags": ["madaraka", "independence", "patriotic", "history"],
+      "meme_angles": ["Self-rule in your own house", "Independence from your boss", "Kenyan pride moments"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Mashujaa Day (Heroes' Day)",
+      "description": "Celebrates Kenyan heroes and heroines. National pride, recognizing everyday heroes.",
+      "date": "2026-10-20",
+      "event_type": "national_holiday",
+      "meme_potential": "high",
+      "sensitivity": "moderate",
+      "annual": true,
+      "tags": ["mashujaa", "heroes", "patriotic", "national_pride"],
+      "meme_angles": ["Everyday heroes (matatu drivers, mama mboga)", "Unsung heroes at work", "The real MVP", "Hero origin stories"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Jamhuri Day (Independence Day)",
+      "description": "Celebrates Kenya's independence from Britain on December 12, 1963. Full republic status.",
+      "date": "2026-12-12",
+      "event_type": "national_holiday",
+      "meme_potential": "high",
+      "sensitivity": "moderate",
+      "annual": true,
+      "tags": ["jamhuri", "independence", "republic", "patriotic"],
+      "meme_angles": ["Kenyan inventions and innovations", "Things only Kenyans understand", "Patriotic product promotions"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Labour Day",
+      "description": "Workers' day. Celebrates labor and workers' rights.",
+      "date": "2026-05-01",
+      "event_type": "national_holiday",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["labour_day", "workers", "hustle", "employment"],
+      "meme_angles": ["Hustle culture in Nairobi", "Side hustle appreciation", "Boss vs employee dynamics", "Work-from-home realities"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Utamaduni Day (Culture Day)",
+      "description": "Celebrates Kenya's diverse cultural heritage. 42+ ethnic communities, languages, traditions.",
+      "date": "2026-10-10",
+      "event_type": "cultural",
+      "meme_potential": "high",
+      "sensitivity": "moderate",
+      "annual": true,
+      "tags": ["utamaduni", "culture", "tribes", "diversity", "traditions"],
+      "meme_angles": ["Cultural stereotypes (light humor)", "Food from different communities", "Language mix-ups", "When your tribe does X"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Valentine's Day",
+      "description": "Love and relationships. Massive commercial event in Kenya. Couples vs singles content.",
+      "date": "2026-02-14",
+      "event_type": "commercial",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["valentines", "love", "relationships", "singles"],
+      "meme_angles": ["Nairobi dating struggles", "Single people solidarity", "M-Pesa Valentine gifts", "Bae expectations vs reality"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Easter Weekend",
+      "description": "Major Christian holiday. Long weekend, family gatherings, travel to rural homes.",
+      "date": "2026-04-05",
+      "end_date": "2026-04-06",
+      "event_type": "religious",
+      "meme_potential": "medium",
+      "sensitivity": "moderate",
+      "annual": true,
+      "tags": ["easter", "holiday", "long_weekend", "travel", "family"],
+      "meme_angles": ["Ushago (rural home) travel chaos", "Nairobi empty during Easter", "Holiday spending vs January poverty"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "KPL Season Kickoff",
+      "description": "Kenya Premier League football season. Gor Mahia vs AFC Leopards rivalry. Passionate fans.",
+      "date": "2026-02-15",
+      "event_type": "sports",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["kpl", "football", "gor_mahia", "afc_leopards", "sports"],
+      "meme_angles": ["Gor vs Leopards rivalry", "Match day reactions", "Football fans at work on Monday", "Referee decisions"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Safari Rally (WRC)",
+      "description": "World Rally Championship Safari Rally returns to Kenya. National pride in motorsport.",
+      "date": "2026-03-26",
+      "end_date": "2026-03-29",
+      "event_type": "sports",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["safari_rally", "wrc", "motorsport", "naivasha"],
+      "meme_angles": ["Nairobi drivers think they're rally drivers", "Potholes = free rally practice", "Weekend road trip energy"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Nairobi Marathon",
+      "description": "Major running event. Kenya's world-class running culture meets city hustle.",
+      "date": "2026-10-25",
+      "event_type": "sports",
+      "meme_potential": "medium",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["marathon", "running", "nairobi", "athletics"],
+      "meme_angles": ["Running to catch a matatu", "Monday morning marathon to the office", "Kenyan running dominance"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Back to School (January)",
+      "description": "Schools reopen in January. Parents scrambling for fees, shopping, uniforms.",
+      "date": "2026-01-06",
+      "event_type": "cultural",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["back_to_school", "school_fees", "january", "parents"],
+      "meme_angles": ["Parents' wallets in January", "School fees vs salary", "Kids' homework struggles", "School supply shopping chaos"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Nairobi Rains Season (Long Rains)",
+      "description": "March-May long rains. Flooding, traffic chaos, umbrella sellers everywhere.",
+      "date": "2026-03-15",
+      "end_date": "2026-05-31",
+      "event_type": "cultural",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["rains", "flooding", "traffic", "nairobi", "weather"],
+      "meme_angles": ["Nairobi floods turning roads into rivers", "Umbrella business booming", "Working from home because of rain", "Matatu fare hikes when it rains"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "KCSE/KCPE Results Release",
+      "description": "National exam results. High drama — top scorers celebrated, parents anxious.",
+      "date": "2026-01-15",
+      "event_type": "cultural",
+      "meme_potential": "high",
+      "sensitivity": "moderate",
+      "annual": true,
+      "tags": ["kcse", "kcpe", "exams", "results", "education"],
+      "meme_angles": ["Parents checking results", "University admission drama", "Course selection struggles", "A- students still stressed"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Black Friday / Jumia Black Friday",
+      "description": "Major shopping event. Jumia's Black Friday is massive in Kenya. Deal-hunting culture.",
+      "date": "2026-11-27",
+      "event_type": "commercial",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["black_friday", "shopping", "deals", "jumia", "ecommerce"],
+      "meme_angles": ["Fake discounts exposed", "Cart vs bank account", "Impulse buying regret", "Delivery guy is the real MVP"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Christmas Season",
+      "description": "December festivities. Nairobi empties as people travel home. Gift-giving, feasting.",
+      "date": "2026-12-25",
+      "event_type": "religious",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["christmas", "december", "holidays", "travel", "gifts"],
+      "meme_angles": ["Ushago travel chaos", "December vs January wallet", "Gift expectations vs reality", "Relatives asking about your life"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Ramadan",
+      "description": "Islamic holy month of fasting. Large Muslim population especially in Coast and North Eastern.",
+      "date": "2026-02-18",
+      "end_date": "2026-03-19",
+      "event_type": "religious",
+      "meme_potential": "low",
+      "sensitivity": "sensitive",
+      "annual": true,
+      "tags": ["ramadan", "fasting", "muslim", "coast", "mombasa"],
+      "meme_angles": ["Iftar food appreciation", "Community spirit"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Eid al-Fitr",
+      "description": "End of Ramadan celebrations. Public holiday in Kenya. Feasting and community.",
+      "date": "2026-03-20",
+      "event_type": "religious",
+      "meme_potential": "medium",
+      "sensitivity": "moderate",
+      "annual": true,
+      "tags": ["eid", "celebrations", "muslim", "holiday"],
+      "meme_angles": ["Eid feast appreciation", "Community celebrations", "Holiday vibes"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Mother's Day",
+      "description": "Celebrating mothers. Massive sentiment day. Gift-giving, appreciation posts.",
+      "date": "2026-05-10",
+      "event_type": "commercial",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["mothers_day", "family", "appreciation", "gifts"],
+      "meme_angles": ["Mama's rules growing up", "African mom parenting style", "The call you better not forget", "Gift ideas for Kenyan moms"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Father's Day",
+      "description": "Celebrating fathers. Third Sunday of June.",
+      "date": "2026-06-21",
+      "event_type": "commercial",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["fathers_day", "family", "dads"],
+      "meme_angles": ["Kenyan dad stereotypes", "Dad jokes", "The 'ask your mother' response", "Dad's WhatsApp forwarding habits"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Salary Week (End of Month)",
+      "description": "End of month payday cycle. Recurring cultural moment. Celebrations then broke memes.",
+      "date": "2026-01-28",
+      "event_type": "cultural",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": false,
+      "tags": ["salary", "payday", "broke", "end_month", "hustle"],
+      "meme_angles": ["Day 1 vs Day 15 of the month", "Salary disappearing act", "M-Pesa notification joy", "Bill payments eating salary"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Freshers' Week (University)",
+      "description": "University intake season. New students, campus culture, orientation chaos.",
+      "date": "2026-09-01",
+      "event_type": "campus",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["freshers", "university", "campus", "students", "gen_z"],
+      "meme_angles": ["Freshers vs final year students", "Campus life expectations vs reality", "First lecture shock", "Making friends in campus"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Lamu Cultural Festival",
+      "description": "Annual cultural festival in Lamu Island. Swahili culture, donkey races, dhow sailing.",
+      "date": "2026-11-20",
+      "end_date": "2026-11-22",
+      "event_type": "cultural",
+      "meme_potential": "medium",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["lamu", "coast", "swahili", "culture", "festival"],
+      "meme_angles": ["Island life vs city life", "Swahili culture appreciation", "Travel goals"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Nairobi Restaurant Week",
+      "description": "Annual food festival. Discounted menus at top restaurants. Foodie culture.",
+      "date": "2026-01-22",
+      "end_date": "2026-02-01",
+      "event_type": "commercial",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["food", "restaurants", "nairobi", "dining", "foodie"],
+      "meme_angles": ["Budget dining pretending to be fancy", "Instagram food photos", "Restaurant bill shock", "Nyama choma supremacy"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Koroga Festival",
+      "description": "Music and food festival. Major social event in Nairobi's entertainment scene.",
+      "date": "2026-04-18",
+      "end_date": "2026-04-19",
+      "event_type": "music",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["koroga", "music", "festival", "nairobi", "entertainment"],
+      "meme_angles": ["Festival outfit planning", "VIP vs regular tickets", "Festival food prices", "Post-festival Monday struggles"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Nairobi Traffic Appreciation Day",
+      "description": "Not official but should be. Nairobi traffic is a daily meme. Rush hour chaos.",
+      "date": "2026-01-01",
+      "event_type": "cultural",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": false,
+      "tags": ["traffic", "nairobi", "commute", "matatu", "daily_life"],
+      "meme_angles": ["Thika Road at 7am", "GPS says 15 minutes, takes 2 hours", "Matatu culture", "Working from home to avoid traffic"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "M-Pesa Anniversary",
+      "description": "M-Pesa launched March 2007. Kenya's fintech pride. Mobile money culture.",
+      "date": "2026-03-06",
+      "event_type": "commercial",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["mpesa", "fintech", "safaricom", "mobile_money", "innovation"],
+      "meme_angles": ["Life before vs after M-Pesa", "Transaction charges drama", "Sending money to wrong number", "Fuliza culture"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "World Cup Qualifiers",
+      "description": "Harambee Stars football matches. National pride (and frustration) in football.",
+      "date": "2026-06-10",
+      "event_type": "sports",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": false,
+      "tags": ["harambee_stars", "football", "world_cup", "qualifiers"],
+      "meme_angles": ["Supporting Harambee Stars through pain", "Next year is our year", "Football fan reactions", "Referee conspiracy theories"]
+    }
+  }
+]
