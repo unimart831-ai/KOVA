@@ -66,28 +66,33 @@ class WhatsAppProvider(BaseProvider):
         """WhatsApp doesn't use OAuth. Returns empty — connection is manual."""
         return ""
 
-    def handle_callback(self, code: str, redirect_uri: str) -> OAuthResult:
+    def handle_callback(self, code: str, redirect_uri: str, phone_number_id: str = "", waba_id: str = "") -> OAuthResult:
         """
         For WhatsApp, 'code' is the permanent access token entered manually.
         We verify it by calling the Graph API to get the phone number info.
         """
         token = code  # The user pastes their permanent token
+        # Use per-connection IDs if provided, fall back to global settings
+        pn_id = phone_number_id or self.phone_number_id
+        wa_id = waba_id or self.waba_id
+        if not pn_id:
+            raise PlatformAuthError("Phone Number ID is required. Find it in Meta Business Suite → WhatsApp → API Setup.")
         try:
             resp = self.client.get(
-                f"{WA_API_BASE}/{self.phone_number_id}",
+                f"{WA_API_BASE}/{pn_id}",
                 headers={"Authorization": f"Bearer {token}"},
                 params={"fields": "display_phone_number,verified_name,quality_rating"},
             )
             resp.raise_for_status()
             data = resp.json()
             return OAuthResult(
-                platform_user_id=self.phone_number_id,
+                platform_user_id=pn_id,
                 username=data.get("display_phone_number", ""),
                 display_name=data.get("verified_name", "WhatsApp Business"),
                 access_token=token,
                 metadata={
-                    "phone_number_id": self.phone_number_id,
-                    "waba_id": self.waba_id,
+                    "phone_number_id": pn_id,
+                    "waba_id": wa_id,
                     "quality_rating": data.get("quality_rating", ""),
                     "display_phone_number": data.get("display_phone_number", ""),
                 },

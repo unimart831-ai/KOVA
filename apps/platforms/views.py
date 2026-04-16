@@ -112,11 +112,18 @@ def connect_platform(request, platform):
     if platform == "whatsapp":
         if request.method == "POST":
             access_token = request.POST.get("access_token", "").strip()
-            if not access_token:
-                messages.error(request, "Access token is required.")
+            phone_number_id = request.POST.get("phone_number_id", "").strip()
+            waba_id = request.POST.get("waba_id", "").strip()
+            if not access_token or not phone_number_id:
+                messages.error(request, "Access token and Phone Number ID are required.")
                 return redirect("platforms:list")
             try:
-                result = provider.handle_callback(code=access_token, redirect_uri="")
+                result = provider.handle_callback(
+                    code=access_token,
+                    redirect_uri="",
+                    phone_number_id=phone_number_id,
+                    waba_id=waba_id,
+                )
                 SocialAccount.objects.update_or_create(
                     user=request.user,
                     platform="whatsapp",
