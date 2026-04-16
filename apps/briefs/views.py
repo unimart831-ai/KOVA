@@ -66,11 +66,14 @@ def _build_setup_checklist(user):
     if completed == total:
         return None  # All done — no need to show
 
+    next_step = next((i for i in items if not i["done"]), None)
+
     return {
         "items": items,
         "completed": completed,
         "total": total,
         "percent": int((completed / total) * 100),
+        "next_step": next_step,
     }
 
 
