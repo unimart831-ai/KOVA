@@ -14,6 +14,8 @@ urlpatterns = [
     path("users/<uuid:pk>/", users.user_detail, name="user_detail"),
     path("users/<uuid:pk>/change-plan/", users.user_change_plan, name="user_change_plan"),
     path("users/<uuid:pk>/toggle-staff/", users.user_toggle_staff, name="user_toggle_staff"),
+    path("users/<uuid:pk>/toggle-active/", users.user_toggle_active, name="user_toggle_active"),
+    path("users/<uuid:pk>/delete/", users.user_delete, name="user_delete"),
     path("users/health/", user_health.user_health, name="user_health"),
 
     # Content

@@ -23,6 +23,7 @@ def user_list(request):
         qs = qs.filter(
             Q(email__icontains=search) |
             Q(full_name__icontains=search) |
+            Q(phone_number__icontains=search) |
             Q(profile__company_name__icontains=search)
         )
 
@@ -207,13 +208,34 @@ def user_toggle_staff(request, pk):
 
 
 @superuser_required
+@require_POST
+def user_toggle_active(request, pk):
+    """Activate or deactivate a user. Requires superuser."""
+    user = get_object_or_404(User, pk=pk)
+    if user != request.user:  # Can't deactivate yourself
+        user.is_active = not user.is_active
+        user.save(update_fields=["is_active"])
+    return redirect("admin_dashboard:user_detail", pk=pk)
+
+
+@superuser_required
+@require_POST
+def user_delete(request, pk):
+    """Soft-delete a user. Requires superuser."""
+    user = get_object_or_404(User, pk=pk)
+    if user != request.user:  # Can't delete yourself
+        user.soft_delete()
+    return redirect("admin_dashboard:user_list")
+
+
+@superuser_required
 def user_export_csv(request):
     """Export all users as CSV. Requires superuser."""
     response = HttpResponse(content_type="text/csv")
     response["Content-Disposition"] = 'attachment; filename="kova_users.csv"'
     writer = csv.writer(response)
     writer.writerow([
-        "Email", "Name", "Company", "Industry", "Plan",
+        "Email", "Name", "Phone", "Company", "Industry", "Plan",
         "Status", "Payment Provider", "Joined", "Onboarded",
         "Posts Published", "Platforms Connected",
     ])
@@ -225,6 +247,7 @@ def user_export_csv(request):
         writer.writerow([
             u.email,
             u.full_name,
+            u.phone_number,
             u.profile.company_name,
             u.profile.get_industry_display() if u.profile.industry else "",
             u.profile.get_plan_display(),

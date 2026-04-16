@@ -1,6 +1,43 @@
+import re
+
 from django import forms
 
 from apps.accounts.models import User, UserProfile
+
+
+class KovaSignupForm(forms.Form):
+    """Extra fields collected during signup. allauth calls signup() after user creation."""
+
+    phone_number = forms.CharField(
+        max_length=15,
+        required=False,
+        widget=forms.TextInput(attrs={
+            "class": "input",
+            "placeholder": "07XX XXX XXX",
+            "autocomplete": "tel",
+        }),
+        label="Phone number",
+        help_text="Kenyan format: 07xx, 01xx, or 02xx",
+    )
+
+    def clean_phone_number(self):
+        phone = self.cleaned_data.get("phone_number", "").strip()
+        if not phone:
+            return ""
+        # Strip spaces and dashes
+        phone = re.sub(r"[\s\-]", "", phone)
+        # Must match Kenyan local format: 07xx, 01xx, 02xx (10 digits)
+        if not re.match(r"^0[127]\d{8}$", phone):
+            raise forms.ValidationError(
+                "Enter a valid Kenyan phone number starting with 07, 01, or 02 (10 digits)."
+            )
+        return phone
+
+    def signup(self, request, user):
+        phone = self.cleaned_data.get("phone_number", "")
+        if phone:
+            user.phone_number = phone
+            user.save(update_fields=["phone_number"])
 
 
 class UserSettingsForm(forms.ModelForm):

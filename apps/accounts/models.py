@@ -1,5 +1,7 @@
+import re
 import uuid
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import RegexValidator
 from django.db import models
 from django.utils import timezone as tz
 
@@ -17,6 +19,10 @@ class User(SoftDeleteMixin, AbstractUser):
     onboarding_completed = models.BooleanField(default=False)
     daily_brief_time = models.TimeField(default="09:00:00")
     avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
+    phone_number = models.CharField(
+        max_length=15, blank=True, default="",
+        help_text="Kenyan phone number (07xx, 01xx, 02xx). Multiple users can share a number.",
+    )
 
     # Override the default SoftDeleteManager with UserManager-compatible version
     objects = SoftDeleteUserManager()

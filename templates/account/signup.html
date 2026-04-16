@@ -109,6 +109,14 @@
           </div>
 
           <div>
+            <label for="id_phone_number" class="label">Phone number <span class="text-gray-400 font-normal">(optional)</span></label>
+            <input type="tel" name="phone_number" id="id_phone_number"
+                   class="input" placeholder="07XX XXX XXX"
+                   value="{{ form.phone_number.value|default:'' }}" autocomplete="tel">
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Kenyan format: 07xx, 01xx, or 02xx</p>
+          </div>
+
+          <div>
             <label for="id_password1" class="label">Password</label>
             <input type="password" name="password1" id="id_password1"
                    class="input" placeholder="At least 8 characters" required>

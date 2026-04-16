@@ -290,6 +290,7 @@ SITE_ID = 1
 ACCOUNT_ADAPTER = "apps.accounts.adapter.AsyncEmailAccountAdapter"
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+ACCOUNT_SIGNUP_FORM_CLASS = "apps.accounts.forms.KovaSignupForm"
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
