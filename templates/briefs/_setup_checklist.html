@@ -1,48 +1,22 @@
-{# ── First-week setup checklist ── #}
-{# Only rendered when setup_checklist is not None (new user, items remaining) #}
-{% load i18n %}
-
+{# ── Compact setup progress bar ── #}
 {% if setup_checklist %}
-<div class="card border-kova-200 dark:border-kova-800/60 bg-gradient-to-br from-kova-50/50 to-white dark:from-kova-950/30 dark:to-gray-900">
-  <div class="px-6 py-4 border-b border-kova-100 dark:border-kova-900/40">
-    <div class="flex items-center justify-between">
-      <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-        <span class="text-kova-600 dark:text-kova-400" aria-hidden="true">🚀</span>
-        Get started with Kova
-      </h3>
-      <span class="text-xs font-medium text-kova-600 dark:text-kova-400">
-        {{ setup_checklist.completed }}/{{ setup_checklist.total }} done
-      </span>
-    </div>
-    {# Progress bar #}
-    <div class="mt-3 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-      <div class="bg-kova-500 h-2 rounded-full transition-all duration-500" style="width: {{ setup_checklist.percent }}%"></div>
-    </div>
+<div class="rounded-xl border border-kova-800/60 bg-gray-900/60 px-5 py-3 flex items-center gap-4">
+  <span class="text-sm font-medium text-white whitespace-nowrap">🚀 Setup</span>
+
+  {# Next uncompleted step as clickable link #}
+  {% for item in setup_checklist.items %}
+    {% if not item.done %}
+      <a href="{% url item.url_name %}" class="text-xs text-kova-400 hover:text-kova-300 transition-colors whitespace-nowrap">
+        Next: {{ item.label }} →
+      </a>
+      {% break %}
+    {% endif %}
+  {% endfor %}
+
+  <div class="flex-1 bg-gray-700 rounded-full h-2 min-w-[80px]">
+    <div class="bg-kova-500 h-2 rounded-full transition-all duration-500" style="width: {{ setup_checklist.percent }}%"></div>
   </div>
 
-  <ul class="divide-y divide-gray-100 dark:divide-gray-800">
-    {% for item in setup_checklist.items %}
-    <li class="px-6 py-3">
-      <a href="{% url item.url_name %}" class="flex items-center gap-3 group">
-        {% if item.done %}
-          <span class="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center shrink-0">
-            <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-            </svg>
-          </span>
-          <span class="text-sm text-gray-400 dark:text-gray-500 line-through">{{ item.label }}</span>
-        {% else %}
-          <span class="w-6 h-6 rounded-full border-2 border-gray-300 dark:border-gray-600 group-hover:border-kova-500 dark:group-hover:border-kova-400 flex items-center justify-center shrink-0 transition-colors">
-            <span class="text-xs" aria-hidden="true">{{ item.icon }}</span>
-          </span>
-          <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-kova-600 dark:group-hover:text-kova-400 transition-colors">{{ item.label }}</span>
-          <svg class="w-4 h-4 ml-auto text-gray-400 group-hover:text-kova-500 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-          </svg>
-        {% endif %}
-      </a>
-    </li>
-    {% endfor %}
-  </ul>
+  <span class="text-xs font-medium text-kova-400 whitespace-nowrap">{{ setup_checklist.completed }}/{{ setup_checklist.total }}</span>
 </div>
 {% endif %}
