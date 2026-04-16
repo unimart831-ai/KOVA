@@ -81,6 +81,15 @@ class UserProfile(models.Model):
         HEALTH = "health", "Health & Wellness"
         FINANCE = "finance", "Finance"
         REAL_ESTATE = "real_estate", "Real Estate"
+        FOOD_RESTAURANT = "food_restaurant", "Food & Restaurant"
+        WHOLESALE_RETAIL = "wholesale_retail", "Wholesale & Retail"
+        FASHION_BEAUTY = "fashion_beauty", "Fashion & Beauty"
+        TRAVEL_TOURISM = "travel_tourism", "Travel & Tourism"
+        MEDIA_ENTERTAINMENT = "media_entertainment", "Media & Entertainment"
+        AGRICULTURE = "agriculture", "Agriculture"
+        LOGISTICS_TRANSPORT = "logistics_transport", "Logistics & Transport"
+        CONSTRUCTION = "construction", "Construction & Manufacturing"
+        LEGAL = "legal", "Legal Services"
         OTHER = "other", "Other"
 
     class PlanTier(models.TextChoices):
@@ -105,6 +114,10 @@ class UserProfile(models.Model):
         help_text="Structured tone descriptors. E.g., ['confident', 'witty', 'educational']",
     )
     industry = models.CharField(max_length=30, choices=Industry.choices, blank=True)
+    industry_other = models.CharField(
+        max_length=100, blank=True, default="",
+        help_text="Custom industry name when 'Other' is selected.",
+    )
     company_name = models.CharField(max_length=255, blank=True)
     website_url = models.URLField(blank=True)
     goals = models.JSONField(

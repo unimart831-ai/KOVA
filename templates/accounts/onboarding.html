@@ -157,7 +157,7 @@
           </div>
         {% endif %}
 
-        <form method="post" class="space-y-5">
+        <form method="post" class="space-y-5" x-data="{ industry: '{{ form.industry.value|default:'' }}' }">
           {% csrf_token %}
 
           {% for field in form %}
@@ -342,6 +342,18 @@
                 </div>
               </details>
 
+            {# ── "Other" industry text input — shown only when industry == other ── #}
+            {% elif field.name == 'industry_other' %}
+              <div x-show="industry === 'other'" x-cloak>
+                <label for="id_{{ field.name }}" class="label">{{ field.label }}</label>
+                <input type="text" name="{{ field.html_name }}" id="id_{{ field.name }}"
+                       value="{{ field.value|default:'' }}"
+                       class="input" placeholder="Enter your industry">
+                {% for error in field.errors %}
+                  <p class="text-xs text-red-600 mt-1">{{ error }}</p>
+                {% endfor %}
+              </div>
+
             {# ── Default field rendering ── #}
             {% else %}
               <div>
@@ -484,6 +496,14 @@ document.addEventListener('DOMContentLoaded', function() {
     finance: ['Financial tips & literacy', 'Market insights', 'Product education', 'Customer stories', 'Regulatory updates'],
     real_estate: ['Property showcases', 'Market analysis', 'Buying/selling tips', 'Neighborhood guides', 'Client testimonials'],
     food_restaurant: ['Menu highlights & specials', 'Kitchen behind-the-scenes', 'Customer stories', 'Ingredient sourcing', 'Recipes & cooking tips'],
+    wholesale_retail: ['Product arrivals & restocks', 'Bulk deals & offers', 'Supplier stories', 'Market trends', 'Customer testimonials'],
+    fashion_beauty: ['Style guides & lookbooks', 'Product launches', 'Behind-the-scenes', 'Customer transformations', 'Seasonal trends'],
+    travel_tourism: ['Destination highlights', 'Travel tips & guides', 'Customer experiences', 'Hidden gems', 'Seasonal packages'],
+    media_entertainment: ['New releases & premieres', 'Behind-the-scenes', 'Artist/creator spotlights', 'Event coverage', 'Fan engagement'],
+    agriculture: ['Farm updates & harvests', 'Farming tips & techniques', 'Market prices & trends', 'Sustainability stories', 'Product spotlights'],
+    logistics_transport: ['Fleet updates', 'Delivery milestones', 'Industry insights', 'Customer success stories', 'Route & service updates'],
+    construction: ['Project showcases', 'Before & after transformations', 'Safety tips', 'Team spotlights', 'Material & technique insights'],
+    legal: ['Legal tips & awareness', 'Case study insights', 'Regulatory updates', 'Client testimonials', 'Industry news'],
     other: ['Industry insights', 'Product/service updates', 'Customer stories', 'Tips & how-tos', 'Behind-the-scenes'],
   };
 

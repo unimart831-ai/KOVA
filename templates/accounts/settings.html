@@ -40,18 +40,27 @@
         {% endfor %}
 
         {# ═══════ Brand Basics ═══════ #}
-        <div id="settings-brand" class="pt-6 border-t border-gray-100 dark:border-gray-800 scroll-mt-24">
+        <div id="settings-brand" class="pt-6 border-t border-gray-100 dark:border-gray-800 scroll-mt-24" x-data="{ industry: '{{ brand_form.industry.value|default:'' }}' }">
           <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1">Brand basics</h3>
           <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Company info and content language</p>
 
           {% for field in brand_form %}
-            {% if field.name in 'company_name,website_url,industry,content_language,key_offerings_text' %}
+            {% if field.name in 'company_name,website_url,industry,industry_other,content_language,key_offerings_text' %}
+              {% if field.name == 'industry_other' %}
+              <div class="mb-4" x-show="industry === 'other'" x-cloak>
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ field.help_text }}</p>{% endif %}
+                {% for error in field.errors %}<p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ error }}</p>{% endfor %}
+              </div>
+              {% else %}
               <div class="mb-4">
                 <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
                 {{ field }}
                 {% if field.help_text %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ field.help_text }}</p>{% endif %}
                 {% for error in field.errors %}<p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ error }}</p>{% endfor %}
               </div>
+              {% endif %}
             {% endif %}
           {% endfor %}
         </div>

@@ -145,6 +145,7 @@ class BrandProfileForm(forms.ModelForm):
             "company_name",
             "website_url",
             "industry",
+            "industry_other",
             "brand_voice",
             "target_audience",
             "posting_frequency",
@@ -164,7 +165,8 @@ class BrandProfileForm(forms.ModelForm):
         widgets = {
             "company_name": forms.TextInput(attrs={"class": "input", "placeholder": "Your company or brand name"}),
             "website_url": forms.URLInput(attrs={"class": "input", "placeholder": "https://example.com"}),
-            "industry": forms.Select(attrs={"class": "input"}),
+            "industry": forms.Select(attrs={"class": "input", "x-model": "industry", "@change": "industry = $event.target.value"}),
+            "industry_other": forms.TextInput(attrs={"class": "input", "placeholder": "Enter your industry", "x-show": "industry === 'other'"}),
             "brand_voice": forms.Textarea(
                 attrs={
                     "class": "input",
@@ -290,11 +292,12 @@ class OnboardingStep1Form(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        fields = ["company_name", "website_url", "industry", "content_language"]
+        fields = ["company_name", "website_url", "industry", "industry_other", "content_language"]
         widgets = {
             "company_name": forms.TextInput(attrs={"class": "input", "placeholder": "Your brand name"}),
             "website_url": forms.URLInput(attrs={"class": "input", "placeholder": "https://yoursite.com"}),
-            "industry": forms.Select(attrs={"class": "input"}),
+            "industry": forms.Select(attrs={"class": "input", "x-model": "industry", "@change": "industry = $event.target.value"}),
+            "industry_other": forms.TextInput(attrs={"class": "input", "placeholder": "Enter your industry", "x-show": "industry === 'other'"}),
             "content_language": forms.Select(attrs={"class": "input"}),
         }
 
