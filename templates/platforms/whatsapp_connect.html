@@ -146,6 +146,7 @@ function whatsappConnect() {
           const data = JSON.parse(event.data);
           if (data.type === 'WA_EMBEDDED_SIGNUP') {
             this.sessionInfo = data.data || {};
+            console.log('[Kova] WA session info received:', this.sessionInfo);
           }
         } catch(e) { /* Not our message */ }
       });
@@ -162,11 +163,17 @@ function whatsappConnect() {
       }
 
       FB.login((response) => {
+        console.log('[Kova] FB.login response:', JSON.stringify(response));
         if (response.authResponse) {
           const code = response.authResponse.code;
+          if (!code) {
+            this.error = 'No authorization code received. Please try again.';
+            this.loading = false;
+            return;
+          }
           this.submitToBackend(code, this.sessionInfo);
         } else {
-          this.error = 'WhatsApp signup was cancelled.';
+          this.error = 'WhatsApp signup was cancelled or not completed.';
           this.loading = false;
         }
       }, {
@@ -181,28 +188,48 @@ function whatsappConnect() {
       });
     },
 
-    submitToBackend(code, session) {
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = '{% url "platforms:whatsapp_embedded_callback" %}';
-
-      const fields = {
-        csrfmiddlewaretoken: document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+    async submitToBackend(code, session) {
+      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+      const body = new URLSearchParams({
+        csrfmiddlewaretoken: csrfToken,
         code: code,
         phone_number_id: session.phone_number_id || '',
         waba_id: session.waba_id || '',
-      };
+      });
 
-      for (const [key, value] of Object.entries(fields)) {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = value;
-        form.appendChild(input);
+      console.log('[Kova] Submitting to backend — code length:', code.length,
+                   'phone_number_id:', session.phone_number_id || '(empty)',
+                   'waba_id:', session.waba_id || '(empty)');
+
+      try {
+        const resp = await fetch('{% url "platforms:whatsapp_embedded_callback" %}', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body.toString(),
+          redirect: 'follow',
+        });
+
+        if (resp.redirected) {
+          window.location.href = resp.url;
+          return;
+        }
+
+        if (!resp.ok) {
+          const text = await resp.text();
+          console.error('[Kova] Backend error:', resp.status, text.substring(0, 500));
+          this.error = `Connection failed (${resp.status}). Please try the manual setup below.`;
+          this.loading = false;
+          this.showManual = true;
+          return;
+        }
+
+        // If not redirected, follow the response URL
+        window.location.href = resp.url || '{% url "platforms:list" %}';
+      } catch(err) {
+        console.error('[Kova] Fetch error:', err);
+        this.error = 'Network error during connection. Please try again.';
+        this.loading = false;
       }
-
-      document.body.appendChild(form);
-      form.submit();
     },
   };
 }

@@ -109,9 +109,10 @@ class WhatsAppProvider(BaseProvider):
         Handle WhatsApp Embedded Signup flow.
 
         1. Exchange authorization code for access token
-        2. Subscribe WABA to our app for webhooks
-        3. Register phone number for Cloud API
-        4. Fetch phone display info
+        2. Auto-discover WABA + phone if session info wasn't captured
+        3. Subscribe WABA to our app for webhooks
+        4. Register phone number for Cloud API
+        5. Fetch phone display info
         """
         app_id = getattr(settings, "FACEBOOK_APP_ID", "")
         app_secret = getattr(settings, "FACEBOOK_APP_SECRET", "")
@@ -132,7 +133,18 @@ class WhatsAppProvider(BaseProvider):
         token_data = token_resp.json()
         access_token = token_data["access_token"]
 
-        # Step 2: Subscribe WABA to our app (enables webhooks)
+        # Step 2: Auto-discover WABA and phone number if session info was empty
+        # (WA_EMBEDDED_SIGNUP message doesn't always fire for existing WABAs)
+        if not waba_id or not phone_number_id:
+            logger.info("Session info incomplete — discovering WABA/phone from API")
+            try:
+                waba_id, phone_number_id = self._discover_waba_and_phone(
+                    access_token, waba_id, phone_number_id
+                )
+            except Exception as e:
+                logger.warning("WABA auto-discovery failed (non-fatal): %s", e)
+
+        # Step 3: Subscribe WABA to our app (enables webhooks)
         if waba_id:
             try:
                 sub_resp = self.client.post(
@@ -144,7 +156,7 @@ class WhatsAppProvider(BaseProvider):
             except httpx.HTTPStatusError as e:
                 logger.warning("WABA subscription failed (non-fatal): %s", e)
 
-        # Step 3: Register phone number for Cloud API
+        # Step 4: Register phone number for Cloud API
         if phone_number_id:
             try:
                 reg_resp = self.client.post(
@@ -157,7 +169,7 @@ class WhatsAppProvider(BaseProvider):
             except httpx.HTTPStatusError:
                 logger.warning("Phone registration skipped (may already be registered)")
 
-        # Step 4: Fetch phone number details
+        # Step 5: Fetch phone number details
         display_phone = ""
         verified_name = "WhatsApp Business"
         quality = ""
@@ -177,6 +189,12 @@ class WhatsAppProvider(BaseProvider):
             except httpx.HTTPStatusError:
                 logger.warning("Could not fetch phone info for %s", phone_number_id)
 
+        if not phone_number_id and not waba_id:
+            raise PlatformAuthError(
+                "Could not determine your WhatsApp Business Account. "
+                "Please try the manual setup instead."
+            )
+
         return OAuthResult(
             platform_user_id=phone_number_id or waba_id,
             username=display_phone,
@@ -190,6 +208,57 @@ class WhatsAppProvider(BaseProvider):
                 "signup_method": "embedded_signup",
             },
         )
+
+    def _discover_waba_and_phone(
+        self, access_token: str, waba_id: str, phone_number_id: str
+    ) -> tuple[str, str]:
+        """
+        Discover WABA ID and phone number ID from the Graph API.
+
+        When the WA_EMBEDDED_SIGNUP session event doesn't fire (common for
+        existing WABAs), we query the API to find the shared assets.
+        """
+        headers = {"Authorization": f"Bearer {access_token}"}
+
+        # If we don't have the WABA ID, look it up via debug_token or shared WABAs
+        if not waba_id:
+            # Try debug_token first — it includes granular scopes with asset IDs
+            try:
+                app_id = getattr(settings, "FACEBOOK_APP_ID", "")
+                debug_resp = self.client.get(
+                    f"{WA_API_BASE}/debug_token",
+                    params={"input_token": access_token},
+                    headers={"Authorization": f"Bearer {app_id}|{getattr(settings, 'FACEBOOK_APP_SECRET', '')}"},
+                )
+                debug_resp.raise_for_status()
+                debug_data = debug_resp.json().get("data", {})
+                # Extract WABA ID from granular scopes
+                for scope in debug_data.get("granular_scopes", []):
+                    if scope.get("scope") == "whatsapp_business_management":
+                        target_ids = scope.get("target_ids", [])
+                        if target_ids:
+                            waba_id = str(target_ids[0])
+                            logger.info("Discovered WABA %s from debug_token", waba_id)
+                            break
+            except Exception as e:
+                logger.warning("debug_token lookup failed: %s", e)
+
+        # If we have WABA but no phone number, list phone numbers under the WABA
+        if waba_id and not phone_number_id:
+            try:
+                phones_resp = self.client.get(
+                    f"{WA_API_BASE}/{waba_id}/phone_numbers",
+                    headers=headers,
+                )
+                phones_resp.raise_for_status()
+                phones = phones_resp.json().get("data", [])
+                if phones:
+                    phone_number_id = str(phones[0]["id"])
+                    logger.info("Discovered phone %s from WABA %s", phone_number_id, waba_id)
+            except Exception as e:
+                logger.warning("Phone number lookup failed: %s", e)
+
+        return waba_id, phone_number_id
 
     # ── Messaging ────────────────────────────────────────────────────────
 
