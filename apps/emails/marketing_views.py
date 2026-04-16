@@ -259,6 +259,47 @@ def campaign_edit(request, campaign_id):
     })
 
 
+@login_required
+@require_POST
+def campaign_send(request, campaign_id):
+    """Queue a campaign for sending."""
+    campaign = get_object_or_404(EmailCampaign, pk=campaign_id, user=request.user)
+
+    if campaign.status not in (EmailCampaign.Status.DRAFT, EmailCampaign.Status.SCHEDULED):
+        messages.error(request, "Only draft or scheduled campaigns can be sent.")
+        return redirect("emails:campaign_detail", campaign_id=campaign.pk)
+
+    if not campaign.target_list:
+        messages.error(request, "This campaign has no target list. Add a list before sending.")
+        return redirect("emails:campaign_detail", campaign_id=campaign.pk)
+
+    subscriber_count = campaign.target_list.get_active_subscribers().count()
+    if subscriber_count == 0:
+        messages.error(request, "The target list has no active subscribers.")
+        return redirect("emails:campaign_detail", campaign_id=campaign.pk)
+
+    # Check plan limits
+    limits = get_plan_limits(request.user)
+    monthly_limit = limits.get("email_campaigns_per_month")
+    if monthly_limit is not None:
+        from datetime import timedelta
+        month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        sent_this_month = EmailCampaign.objects.filter(
+            user=request.user,
+            status=EmailCampaign.Status.SENT,
+            sent_at__gte=month_start,
+        ).count()
+        if sent_this_month >= monthly_limit:
+            messages.error(request, f"You've reached your plan limit of {monthly_limit} campaigns this month.")
+            return redirect("emails:campaign_detail", campaign_id=campaign.pk)
+
+    from apps.emails.tasks import send_campaign_task
+    send_campaign_task.delay(str(campaign.pk))
+
+    messages.success(request, f"Campaign queued for sending to {subscriber_count} subscribers.")
+    return redirect("emails:campaign_detail", campaign_id=campaign.pk)
+
+
 # ────────────────────────────────────────────────────────────────────
 # Sequences
 # ────────────────────────────────────────────────────────────────────

@@ -29,6 +29,7 @@ urlpatterns = [
     path("campaigns/create/", marketing_views.campaign_create, name="campaign_create"),
     path("campaigns/<uuid:campaign_id>/", marketing_views.campaign_detail, name="campaign_detail"),
     path("campaigns/<uuid:campaign_id>/edit/", marketing_views.campaign_edit, name="campaign_edit"),
+    path("campaigns/<uuid:campaign_id>/send/", marketing_views.campaign_send, name="campaign_send"),
 
     # Sequences
     path("sequences/", marketing_views.sequence_list, name="sequences"),

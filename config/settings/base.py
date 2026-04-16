@@ -232,6 +232,14 @@ CELERY_BEAT_SCHEDULE = {
         "task": "emails.check_trial_expiry_emails",
         "schedule": 24 * 3600.0,  # daily — send trial countdown emails (day 7, 3, 1, 0)
     },
+    "send-weekly-reports": {
+        "task": "emails.send_weekly_reports_all",
+        "schedule": 7 * 24 * 3600.0,  # weekly — performance summary emails
+    },
+    "process-email-sequences": {
+        "task": "emails.process_email_sequences",
+        "schedule": 30 * 60.0,  # every 30 min — advance sequence enrollments
+    },
     "discover-trending-memes": {
         "task": "memes.discover_trending_memes",
         "schedule": 3 * 3600.0,  # every 3 hours — AI meme trend discovery

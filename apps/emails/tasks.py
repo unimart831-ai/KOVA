@@ -8,7 +8,10 @@ blocks a request/response cycle.
 import logging
 
 from celery import shared_task
+from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
 from django.utils import timezone
+from django.utils.html import strip_tags
 
 logger = logging.getLogger(__name__)
 
@@ -317,3 +320,220 @@ def send_weekly_reports_all():
 
     logger.info("Weekly reports sent: %d", sent)
     return sent
+
+
+# ─── Campaign & Sequence tasks ──────────────────────────────────────────────
+
+@shared_task(name="emails.send_campaign", bind=True, max_retries=2, default_retry_delay=120)
+def send_campaign_task(self, campaign_id):
+    """
+    Send an email campaign to all active subscribers on its target list.
+
+    Flow: campaign.status → sending → iterate subscribers → send each → sent
+    Creates an EmailLog per recipient and updates campaign metrics.
+    """
+    from apps.emails.models import EmailCampaign, EmailLog, EmailSubscriber
+    from apps.emails.services import email_service
+
+    try:
+        campaign = EmailCampaign.objects.select_related("target_list", "user").get(pk=campaign_id)
+    except EmailCampaign.DoesNotExist:
+        logger.error("send_campaign_task: Campaign %s not found", campaign_id)
+        return
+
+    if campaign.status not in (EmailCampaign.Status.DRAFT, EmailCampaign.Status.SCHEDULED):
+        logger.warning("send_campaign_task: Campaign %s status is %s, skipping", campaign_id, campaign.status)
+        return
+
+    if not campaign.target_list:
+        logger.error("send_campaign_task: Campaign %s has no target list", campaign_id)
+        campaign.status = EmailCampaign.Status.CANCELLED
+        campaign.save(update_fields=["status"])
+        return
+
+    # Mark as sending
+    campaign.status = EmailCampaign.Status.SENDING
+    campaign.save(update_fields=["status"])
+
+    subscribers = campaign.target_list.get_active_subscribers()
+    sent_count = 0
+    failed_count = 0
+
+    for subscriber in subscribers.iterator():
+        # Skip if subscriber has unsubscribed or bounced
+        if subscriber.status != EmailSubscriber.Status.ACTIVE:
+            continue
+
+        try:
+            # Build context for the campaign email
+            context = {
+                "campaign_name": campaign.name,
+                "preview_text": campaign.preview_text,
+                "html_content": campaign.html_content,
+                "subscriber_name": subscriber.name or subscriber.email.split("@")[0],
+                "subscriber_email": subscriber.email,
+                "unsubscribe_url": f"{getattr(settings, 'SITE_URL', '')}/emails/unsubscribe/{subscriber.unsubscribe_token}/",
+            }
+
+            from_name = campaign.from_name or campaign.user.profile.company_name or "Kova Agent"
+            from_email = f"{from_name} <{settings.DEFAULT_FROM_EMAIL.split('<')[-1].rstrip('>')}" if "<" in settings.DEFAULT_FROM_EMAIL else settings.DEFAULT_FROM_EMAIL
+
+            log = EmailLog.objects.create(
+                user=campaign.user,
+                to_email=subscriber.email,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                email_type="promotional",
+                subject=campaign.subject,
+                status=EmailLog.Status.QUEUED,
+                metadata={"campaign_id": str(campaign.pk), "subscriber_id": str(subscriber.pk)},
+            )
+
+            html_body = campaign.html_content
+            text_body = campaign.text_content or strip_tags(html_body)
+
+            msg = EmailMultiAlternatives(
+                subject=campaign.subject,
+                body=text_body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[subscriber.email],
+            )
+            if campaign.reply_to:
+                msg.reply_to = [campaign.reply_to]
+            msg.attach_alternative(html_body, "text/html")
+
+            # Unsubscribe headers
+            unsub_url = context["unsubscribe_url"]
+            msg.extra_headers["List-Unsubscribe"] = f"<{unsub_url}>"
+            msg.extra_headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
+
+            # Message-ID for webhook correlation
+            from_domain = settings.DEFAULT_FROM_EMAIL.split("@")[-1].rstrip(">")
+            msg.extra_headers["Message-ID"] = f"<{log.pk}@{from_domain}>"
+
+            msg.send(fail_silently=False)
+
+            log.status = EmailLog.Status.SENT
+            log.sent_at = timezone.now()
+            log.save(update_fields=["status", "sent_at"])
+            sent_count += 1
+
+        except Exception as e:
+            logger.error("Campaign %s: failed to send to %s: %s", campaign_id, subscriber.email, e)
+            failed_count += 1
+            if 'log' in locals():
+                log.status = EmailLog.Status.FAILED
+                log.error_message = str(e)[:500]
+                log.failed_at = timezone.now()
+                log.save(update_fields=["status", "error_message", "failed_at"])
+
+    # Update campaign metrics and mark as sent
+    campaign.total_sent = sent_count
+    campaign.status = EmailCampaign.Status.SENT
+    campaign.sent_at = timezone.now()
+    campaign.save(update_fields=["total_sent", "status", "sent_at"])
+
+    logger.info("Campaign %s sent: %d delivered, %d failed", campaign.name, sent_count, failed_count)
+    return {"sent": sent_count, "failed": failed_count}
+
+
+@shared_task(name="emails.process_email_sequences")
+def process_email_sequences():
+    """
+    Process due email sequence steps.
+
+    Finds all active enrollments where next_send_at <= now,
+    sends the current step email, and advances the enrollment.
+
+    Runs every 30 minutes via Celery Beat.
+    """
+    from apps.emails.models import EmailSequence, EmailSequenceStep, SequenceEnrollment
+    from apps.emails.services import email_service
+
+    now = timezone.now()
+    due_enrollments = SequenceEnrollment.objects.filter(
+        status=SequenceEnrollment.Status.ACTIVE,
+        next_send_at__lte=now,
+        sequence__is_active=True,
+    ).select_related("sequence", "subscriber", "subscriber__user")
+
+    sent = 0
+    completed = 0
+
+    for enrollment in due_enrollments:
+        try:
+            # Get the current step
+            step = EmailSequenceStep.objects.filter(
+                sequence=enrollment.sequence,
+                step_number=enrollment.current_step,
+            ).first()
+
+            if not step:
+                # No more steps — mark as completed
+                enrollment.status = SequenceEnrollment.Status.COMPLETED
+                enrollment.completed_at = now
+                enrollment.next_send_at = None
+                enrollment.save(update_fields=["status", "completed_at", "next_send_at"])
+                completed += 1
+                continue
+
+            subscriber = enrollment.subscriber
+
+            # Skip if subscriber is no longer active
+            if subscriber.status != "active":
+                enrollment.status = SequenceEnrollment.Status.CANCELLED
+                enrollment.save(update_fields=["status"])
+                continue
+
+            # Send the step email
+            context = {
+                "subscriber_name": subscriber.name or subscriber.email.split("@")[0],
+                "subscriber_email": subscriber.email,
+                "sequence_name": enrollment.sequence.name,
+                "step_number": step.step_number,
+                "html_content": step.html_content,
+                "unsubscribe_url": f"{getattr(settings, 'SITE_URL', '')}/emails/unsubscribe/{subscriber.unsubscribe_token}/",
+            }
+
+            email_service._send(
+                email_type="promotional",
+                to_email=subscriber.email,
+                context=context,
+                user=subscriber.user,
+                subject=step.subject,
+                metadata={
+                    "sequence_id": str(enrollment.sequence.pk),
+                    "step_number": step.step_number,
+                    "enrollment_id": str(enrollment.pk),
+                },
+            )
+            sent += 1
+
+            # Advance to next step
+            next_step = EmailSequenceStep.objects.filter(
+                sequence=enrollment.sequence,
+                step_number=enrollment.current_step + 1,
+            ).first()
+
+            if next_step:
+                from datetime import timedelta
+                delay = timedelta(days=next_step.delay_days, hours=next_step.delay_hours)
+                enrollment.current_step += 1
+                enrollment.next_send_at = now + delay
+                enrollment.save(update_fields=["current_step", "next_send_at"])
+            else:
+                # That was the last step
+                enrollment.current_step += 1
+                enrollment.status = SequenceEnrollment.Status.COMPLETED
+                enrollment.completed_at = now
+                enrollment.next_send_at = None
+                enrollment.save(update_fields=["current_step", "status", "completed_at", "next_send_at"])
+                completed += 1
+
+        except Exception as e:
+            logger.error(
+                "Sequence step failed: enrollment=%s step=%d error=%s",
+                enrollment.pk, enrollment.current_step, e,
+            )
+
+    logger.info("Email sequences processed: %d sent, %d completed", sent, completed)
+    return {"sent": sent, "completed": completed}

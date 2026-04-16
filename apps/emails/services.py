@@ -139,6 +139,11 @@ class EmailService:
                 msg.extra_headers["List-Unsubscribe"] = f"<{unsub_url}>"
                 msg.extra_headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
 
+            # Set a custom Message-ID containing our log UUID so Resend
+            # echoes it back in webhooks and we can correlate delivery events.
+            from_domain = settings.DEFAULT_FROM_EMAIL.split("@")[-1].rstrip(">")
+            msg.extra_headers["Message-ID"] = f"<{log.pk}@{from_domain}>"
+
             msg.send(fail_silently=False)
 
             log.status = EmailLog.Status.SENT

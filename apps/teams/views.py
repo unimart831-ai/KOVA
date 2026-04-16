@@ -165,7 +165,7 @@ def team_invite(request, slug):
         invite_url = request.build_absolute_uri(
             reverse("teams:invitation_accept", kwargs={"token": token})
         )
-        send_team_invitation_email.delay(email, team.name, request.user.get_full_name() or request.user.email, invite_url)
+        send_team_invitation_email.delay(email, request.user.get_full_name() or request.user.email, team.name, invite_url)
 
         messages.success(request, f"Invitation sent to {email}.")
         return redirect("teams:detail", slug=slug)

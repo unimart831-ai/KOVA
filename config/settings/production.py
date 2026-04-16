@@ -134,8 +134,8 @@ else:
         EMAIL_FILE_PATH,
     )
 
-# Enable email verification once Resend is configured
-ACCOUNT_EMAIL_VERIFICATION = "optional" if RESEND_API_KEY else "none"
+# Enforce email verification in production (Resend must be configured)
+ACCOUNT_EMAIL_VERIFICATION = "mandatory" if RESEND_API_KEY else "none"
 
 # ─── LOGGING ─────────────────────────────────────────────────────────────────
 import logging as _logging

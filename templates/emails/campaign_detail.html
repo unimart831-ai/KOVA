@@ -10,6 +10,13 @@
   <div class="flex items-center gap-3">
     {% if campaign.status == 'draft' or campaign.status == 'scheduled' %}
     <a href="{% url 'emails:campaign_edit' campaign_id=campaign.pk %}" class="btn-primary text-sm px-4 py-2">Edit Campaign</a>
+    <form method="post" action="{% url 'emails:campaign_send' campaign_id=campaign.pk %}" onsubmit="return confirm('Send this campaign to all subscribers on the target list?')">
+      {% csrf_token %}
+      <button type="submit" class="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-lg font-medium transition">Send Campaign</button>
+    </form>
+    {% endif %}
+    {% if campaign.status == 'sending' %}
+    <span class="text-sm text-amber-600 dark:text-amber-400 font-medium">Sending in progress…</span>
     {% endif %}
     <a href="{% url 'emails:campaigns' %}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">← Back to campaigns</a>
   </div>
