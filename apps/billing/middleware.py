@@ -27,6 +27,19 @@ ENGAGE_URLS = ["engage:inbox", "engage:send_reply", "engage:trigger"]
 WHATSAPP_URLS = [
     "whatsapp:inbox", "whatsapp:conversation", "whatsapp:send_message",
     "whatsapp:toggle_ai", "whatsapp:template_list", "whatsapp:template_create",
+    # Sprint 5C — Status Studio
+    "whatsapp:status_studio", "whatsapp:status_create", "whatsapp:status_share",
+    "whatsapp:status_skip", "whatsapp:status_repurpose", "whatsapp:status_calendar",
+    # Sprint 5D — Broadcasts + Analytics
+    "whatsapp:broadcast_list", "whatsapp:broadcast_create", "whatsapp:broadcast_detail",
+    "whatsapp:broadcast_launch", "whatsapp:broadcast_pause",
+    "whatsapp:sequence_create", "whatsapp:sequence_detail",
+    "whatsapp:sequence_add_step", "whatsapp:sequence_toggle",
+    "whatsapp:wa_analytics", "whatsapp:wa_digest_detail",
+    # Sprint 5E — Channels
+    "whatsapp:channel_dashboard", "whatsapp:channel_create", "whatsapp:channel_detail",
+    "whatsapp:channel_post_create", "whatsapp:channel_post_publish",
+    "whatsapp:channel_toggle_curate",
 ]
 MEMES_URLS = [
     "memes:discover", "memes:queue", "memes:settings", "memes:detail",

@@ -244,6 +244,29 @@ CELERY_BEAT_SCHEDULE = {
         "task": "memes.update_meme_lifecycle",
         "schedule": 24 * 3600.0,  # daily — age out stale memes
     },
+    # WhatsApp Sprint 5C — Status Studio
+    "generate-status-queue": {
+        "task": "whatsapp.generate_status_queue",
+        "schedule": 24 * 3600.0,  # daily
+    },
+    # WhatsApp Sprint 5D — Broadcasts + Analytics
+    "process-sequence-steps": {
+        "task": "whatsapp.process_sequence_steps",
+        "schedule": 30 * 60.0,  # every 30 minutes
+    },
+    "aggregate-daily-wa-analytics": {
+        "task": "whatsapp.aggregate_daily_analytics",
+        "schedule": 24 * 3600.0,  # daily
+    },
+    "generate-weekly-wa-digest": {
+        "task": "whatsapp.generate_weekly_digest",
+        "schedule": 7 * 24 * 3600.0,  # weekly
+    },
+    # WhatsApp Sprint 5E — Channels
+    "curate-channel-content": {
+        "task": "whatsapp.curate_channel_content",
+        "schedule": 6 * 3600.0,  # every 6 hours
+    },
 }
 
 # ─── AUTH ────────────────────────────────────────────────────────────────────

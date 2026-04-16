@@ -56,6 +56,14 @@ app.conf.task_routes = {
     "media_queue.process_queues": {"queue": "critical"},
     # WhatsApp — AI auto-reply must be fast
     "whatsapp.handle_incoming_message": {"queue": "critical"},
+    "whatsapp.execute_broadcast": {"queue": "critical"},
+    "whatsapp.process_sequence_steps": {"queue": "critical"},
+    "whatsapp.generate_status_content": {"queue": "default"},
+    "whatsapp.repurpose_post_to_status": {"queue": "default"},
+    "whatsapp.cross_post_to_channel": {"queue": "default"},
+    "whatsapp.aggregate_daily_analytics": {"queue": "low"},
+    "whatsapp.generate_weekly_digest": {"queue": "low"},
+    "whatsapp.curate_channel_content": {"queue": "low"},
 }
 
 # NOTE: Beat schedule is defined in CELERY_BEAT_SCHEDULE in config/settings/base.py

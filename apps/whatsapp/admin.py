@@ -5,6 +5,15 @@ from apps.whatsapp.models import (
     WhatsAppMessage,
     WhatsAppTemplate,
     WhatsAppBroadcast,
+    StatusContent,
+    StatusTemplate,
+    BroadcastSequence,
+    BroadcastSequenceStep,
+    SequenceEnrollment,
+    WhatsAppAnalytics,
+    WeeklyDigest,
+    WhatsAppChannel,
+    ChannelPost,
 )
 
 
@@ -39,4 +48,68 @@ class WhatsAppTemplateAdmin(admin.ModelAdmin):
 class WhatsAppBroadcastAdmin(admin.ModelAdmin):
     list_display = ("name", "status", "total_recipients", "delivered_count", "read_count", "scheduled_at")
     list_filter = ("status",)
+    readonly_fields = ("id", "created_at")
+
+
+@admin.register(StatusContent)
+class StatusContentAdmin(admin.ModelAdmin):
+    list_display = ("user", "category", "state", "scheduled_for", "ai_generated", "created_at")
+    list_filter = ("state", "category", "ai_generated")
+    search_fields = ("text",)
+    readonly_fields = ("id", "created_at")
+
+
+@admin.register(StatusTemplate)
+class StatusTemplateAdmin(admin.ModelAdmin):
+    list_display = ("name", "category", "is_active", "usage_count")
+    list_filter = ("category", "is_active")
+    search_fields = ("name",)
+    readonly_fields = ("id", "created_at")
+
+
+@admin.register(BroadcastSequence)
+class BroadcastSequenceAdmin(admin.ModelAdmin):
+    list_display = ("name", "sequence_type", "status", "enrolled_count", "completed_count")
+    list_filter = ("status", "sequence_type")
+    readonly_fields = ("id", "created_at")
+
+
+@admin.register(BroadcastSequenceStep)
+class BroadcastSequenceStepAdmin(admin.ModelAdmin):
+    list_display = ("sequence", "order", "delay_hours", "sent_count", "read_count")
+    list_filter = ("sequence__status",)
+    readonly_fields = ("id",)
+
+
+@admin.register(SequenceEnrollment)
+class SequenceEnrollmentAdmin(admin.ModelAdmin):
+    list_display = ("sequence", "conversation", "current_step", "status", "next_send_at")
+    list_filter = ("status",)
+    readonly_fields = ("id", "enrolled_at")
+
+
+@admin.register(WhatsAppAnalytics)
+class WhatsAppAnalyticsAdmin(admin.ModelAdmin):
+    list_display = ("social_account", "date", "messages_inbound", "messages_outbound", "ai_replies")
+    list_filter = ("date",)
+    readonly_fields = ("id",)
+
+
+@admin.register(WeeklyDigest)
+class WeeklyDigestAdmin(admin.ModelAdmin):
+    list_display = ("user", "week_start", "week_end", "model_used")
+    readonly_fields = ("id", "created_at")
+
+
+@admin.register(WhatsAppChannel)
+class WhatsAppChannelAdmin(admin.ModelAdmin):
+    list_display = ("name", "social_account", "status", "follower_count", "auto_curate")
+    list_filter = ("status", "auto_curate")
+    readonly_fields = ("id", "created_at")
+
+
+@admin.register(ChannelPost)
+class ChannelPostAdmin(admin.ModelAdmin):
+    list_display = ("channel", "status", "ai_adapted", "source_platform", "reach", "created_at")
+    list_filter = ("status", "ai_adapted")
     readonly_fields = ("id", "created_at")

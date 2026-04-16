@@ -1,0 +1,164 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}{{ channel.name }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">WhatsApp Channel · {{ channel.follower_count|default:0 }} followers</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+  <a href="{% url 'whatsapp:channel_dashboard' %}" class="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">← Back to Channels</a>
+
+  {# Channel Status & Controls #}
+  <div class="card">
+    <div class="card-body flex items-start justify-between">
+      <div>
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white">{{ channel.name }}</h2>
+        <div class="flex items-center gap-2 mt-1">
+          {% if channel.status == 'active' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Active</span>
+          {% elif channel.status == 'paused' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">Paused</span>
+          {% else %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Disconnected</span>
+          {% endif %}
+          {% if channel.auto_curate %}
+            <span class="text-xs text-kova-500">Auto-Curate ON</span>
+          {% endif %}
+          <span class="text-xs text-gray-400">Max {{ channel.max_posts_per_day }}/day</span>
+        </div>
+        {% if channel.description %}
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{{ channel.description }}</p>
+        {% endif %}
+      </div>
+      <form method="post" action="{% url 'whatsapp:channel_toggle_curate' channel.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-sm {% if channel.auto_curate %}btn-secondary{% else %}btn-primary{% endif %}">
+          {% if channel.auto_curate %}Disable{% else %}Enable{% endif %} Auto-Curate
+        </button>
+      </form>
+    </div>
+  </div>
+
+  {# Stats #}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-kova-600 dark:text-kova-400">{{ stats.total }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Total Posts</p>
+    </div>
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ stats.published }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Published</p>
+    </div>
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ stats.drafts }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Drafts</p>
+    </div>
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ stats.reach }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Total Reach</p>
+    </div>
+  </div>
+
+  {# Create Post #}
+  <div class="card" x-data="{ open: false }">
+    <div class="card-body">
+      <button @click="open = !open" class="w-full flex items-center justify-between">
+        <h3 class="font-medium text-gray-900 dark:text-white">Create Channel Post</h3>
+        <svg class="w-5 h-5 text-gray-400 transition-transform" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </button>
+      <form x-show="open" x-collapse method="post" action="{% url 'whatsapp:channel_post_create' channel.pk %}" class="mt-4 space-y-3">
+        {% csrf_token %}
+        <div>
+          <label class="label">Post Text</label>
+          <textarea name="text" rows="3" class="input-field" placeholder="Write your channel update…"></textarea>
+        </div>
+        <button type="submit" class="btn-primary btn-sm">Create Post</button>
+      </form>
+    </div>
+  </div>
+
+  {# Filter #}
+  <div class="flex items-center gap-2">
+    <select onchange="window.location.search='?status=' + this.value" class="input-field !w-auto text-sm">
+      <option value="">All Posts</option>
+      <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Drafts</option>
+      <option value="published" {% if status_filter == 'published' %}selected{% endif %}>Published</option>
+      <option value="scheduled" {% if status_filter == 'scheduled' %}selected{% endif %}>Scheduled</option>
+    </select>
+  </div>
+
+  {# Posts List #}
+  {% if page_obj.object_list %}
+  <div class="space-y-3">
+    {% for post in page_obj %}
+    <div class="card">
+      <div class="card-body">
+        <div class="flex items-start gap-4">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              {% if post.status == 'published' %}
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Published</span>
+              {% elif post.status == 'scheduled' %}
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">Scheduled</span>
+              {% elif post.status == 'failed' %}
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Failed</span>
+              {% else %}
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">Draft</span>
+              {% endif %}
+              {% if post.ai_adapted %}
+                <span class="text-xs text-kova-500">AI Adapted</span>
+              {% endif %}
+              {% if post.source_platform %}
+                <span class="text-xs text-blue-500">↻ {{ post.source_platform|title }}</span>
+              {% endif %}
+            </div>
+            <p class="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">{{ post.text }}</p>
+            {% if post.reach or post.reactions %}
+              <div class="flex items-center gap-3 mt-1.5 text-xs text-gray-400">
+                {% if post.reach %}<span>👁 {{ post.reach }} reach</span>{% endif %}
+                {% if post.reactions %}<span>❤ {{ post.reactions }} reactions</span>{% endif %}
+              </div>
+            {% endif %}
+          </div>
+          <div class="flex flex-col gap-2 shrink-0">
+            {% if post.status == 'draft' %}
+              <form method="post" action="{% url 'whatsapp:channel_post_publish' channel.pk post.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-primary btn-sm whitespace-nowrap">Publish</button>
+              </form>
+            {% endif %}
+            <span class="text-xs text-gray-400 text-right">{{ post.created_at|timesince }} ago</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# Pagination #}
+  {% if page_obj.has_other_pages %}
+  <nav class="flex justify-center gap-2 mt-6">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}" class="btn-secondary btn-sm">← Prev</a>
+    {% endif %}
+    <span class="text-sm text-gray-500 py-1.5">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}" class="btn-secondary btn-sm">Next →</a>
+    {% endif %}
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <div class="card border-dashed border-gray-200 dark:border-gray-700">
+    <div class="card-body text-center py-10 px-6">
+      <p class="text-sm text-gray-500 dark:text-gray-400">
+        No posts yet. Create a post above or enable auto-curate to pull content from other platforms.
+      </p>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

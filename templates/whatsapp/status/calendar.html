@@ -1,0 +1,65 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Status Calendar{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">7-day visual planner with mix optimization</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+  {# Mix Warnings #}
+  {% for warning in mix_warnings %}
+  <div class="card border-l-4 border-amber-400 bg-amber-50 dark:bg-amber-900/20">
+    <div class="card-body py-3 flex items-center gap-2">
+      <svg class="w-5 h-5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+      <p class="text-sm text-amber-700 dark:text-amber-300">{{ warning }}</p>
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="flex items-center justify-between">
+    <a href="{% url 'whatsapp:status_studio' %}" class="btn-secondary btn-sm">← Back to Studio</a>
+  </div>
+
+  {# 7-Day Calendar #}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
+    {% for day in days %}
+    <div class="card {% if forloop.first %}ring-2 ring-kova-500{% endif %}">
+      <div class="card-body p-3">
+        <div class="text-center mb-2">
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{{ day.day_name|truncatechars:3 }}</p>
+          <p class="text-lg font-bold text-gray-900 dark:text-white">{{ day.date|date:"j" }}</p>
+        </div>
+        {% if day.statuses %}
+          <div class="space-y-1.5">
+            {% for status in day.statuses %}
+            <div class="p-1.5 rounded bg-gray-50 dark:bg-gray-800/60 text-xs">
+              <span class="font-medium text-gray-900 dark:text-white block truncate">{{ status.text|truncatechars:40 }}</span>
+              <span class="text-gray-400">{{ status.scheduled_for|date:"g:i A" }} · {{ status.get_category_display }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-xs text-center text-gray-400 py-4">No statuses</p>
+        {% endif %}
+        <p class="text-center text-xs text-gray-400 mt-2">{{ day.count }} post{{ day.count|pluralize }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# Legend #}
+  <div class="card">
+    <div class="card-body py-3">
+      <h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">Kenya Peak Times</h4>
+      <div class="flex flex-wrap gap-4 text-xs text-gray-500 dark:text-gray-400">
+        <span>🌅 6-8 AM Commute</span>
+        <span>🍽️ 12-1 PM Lunch</span>
+        <span>📱 6-9 PM Evening Scroll</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

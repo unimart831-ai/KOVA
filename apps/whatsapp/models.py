@@ -6,6 +6,10 @@ Covers the full WhatsApp Cloud API lifecycle:
 - Messages (inbound + outbound, all types)
 - Templates (Meta approval workflow)
 - Broadcasts (segmented campaigns with drip support)
+- Status Content Studio (Sprint 5C)
+- Broadcast Sequences / Drip Campaigns (Sprint 5D)
+- WhatsApp Analytics (Sprint 5D)
+- WhatsApp Channels (Sprint 5E)
 """
 
 import uuid
@@ -346,3 +350,479 @@ class WhatsAppBroadcast(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.get_status_display()})"
+
+
+# ─── STATUS CONTENT (Sprint 5C) ─────────────────────────────────────────────
+
+class StatusContent(models.Model):
+    """
+    A piece of content ready for WhatsApp Status sharing.
+
+    WhatsApp Status doesn't have a direct posting API (yet), so we prepare
+    content and give the user a one-tap deep link to share. The AI generates
+    Status-optimized content (short, visual, punchy, Kenyan tone) and the
+    smart scheduler suggests optimal posting times.
+    """
+
+    class ContentCategory(models.TextChoices):
+        NEW_PRODUCT = "new_product", "New Product"
+        OFFER = "offer", "Offer / Discount"
+        TESTIMONIAL = "testimonial", "Testimonial"
+        BTS = "bts", "Behind the Scenes"
+        POLL = "poll", "Poll / Question"
+        MEME = "meme", "Meme / Humor"
+        QUOTE = "quote", "Motivational Quote"
+        TIP = "tip", "Tip / How-To"
+        ANNOUNCEMENT = "announcement", "Announcement"
+        REPURPOSED = "repurposed", "Repurposed Content"
+
+    class StatusState(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        READY = "ready", "Ready to Share"
+        SHARED = "shared", "Shared"
+        EXPIRED = "expired", "Expired"
+        SKIPPED = "skipped", "Skipped"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="status_contents",
+    )
+    # Content
+    text = models.TextField(help_text="Status text (short, punchy — 200 chars ideal)")
+    caption = models.TextField(blank=True, help_text="Extended caption if sharing media")
+    media_url = models.URLField(blank=True, help_text="Image/video URL for visual Status")
+    media_type = models.CharField(
+        max_length=10, blank=True,
+        choices=[("image", "Image"), ("video", "Video")],
+    )
+    # Classification
+    category = models.CharField(max_length=20, choices=ContentCategory.choices)
+    state = models.CharField(max_length=10, choices=StatusState.choices, default=StatusState.DRAFT)
+    # Scheduling
+    scheduled_for = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Suggested share time (based on contact activity patterns)",
+    )
+    shared_at = models.DateTimeField(null=True, blank=True)
+    # Source tracking (for repurposed content)
+    source_post = models.ForeignKey(
+        "content.Post",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="status_repurposes",
+        help_text="Original post if this Status was repurposed from another platform",
+    )
+    source_platform = models.CharField(max_length=20, blank=True, help_text="Platform the content came from")
+    # AI metadata
+    ai_generated = models.BooleanField(default=False)
+    ai_reasoning = models.TextField(blank=True)
+    model_used = models.CharField(max_length=100, blank=True)
+    tokens_used = models.PositiveIntegerField(default=0)
+    # Deep link
+    share_url = models.URLField(blank=True, help_text="WhatsApp deep link for one-tap sharing")
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-scheduled_for", "-created_at"]
+        indexes = [
+            models.Index(fields=["user", "state", "-scheduled_for"]),
+        ]
+
+    def __str__(self):
+        return f"Status: {self.text[:50]}… ({self.get_state_display()})"
+
+    @property
+    def is_shareable(self):
+        return self.state in (self.StatusState.DRAFT, self.StatusState.READY)
+
+    def generate_share_url(self):
+        """Build WhatsApp deep link for one-tap sharing."""
+        from urllib.parse import quote
+        text = self.text
+        if self.media_url:
+            text = f"{self.text}\n{self.media_url}"
+        self.share_url = f"https://wa.me/?text={quote(text)}"
+        return self.share_url
+
+
+class StatusTemplate(models.Model):
+    """
+    Reusable Status content templates for common business scenarios.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    category = models.CharField(max_length=20, choices=StatusContent.ContentCategory.choices)
+    text_template = models.TextField(
+        help_text="Template with {product}, {price}, {name} etc. placeholders",
+    )
+    caption_template = models.TextField(blank=True)
+    media_prompt = models.TextField(blank=True, help_text="AI image generation prompt if visual")
+    example_text = models.TextField(blank=True, help_text="Filled-in example for preview")
+    is_active = models.BooleanField(default=True)
+    usage_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-usage_count", "name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.get_category_display()})"
+
+
+# ─── BROADCAST SEQUENCES (Sprint 5D) ────────────────────────────────────────
+
+class BroadcastSequence(models.Model):
+    """
+    A multi-step drip sequence — automated multi-day broadcast campaigns.
+
+    Each step sends a template at a specified delay after the trigger
+    (onboarding, re-engagement, cart abandonment, etc.).
+    """
+
+    class SequenceType(models.TextChoices):
+        ONBOARDING = "onboarding", "Onboarding"
+        RE_ENGAGEMENT = "re_engagement", "Re-engagement"
+        CART_ABANDONMENT = "cart_abandonment", "Cart Abandonment"
+        POST_PURCHASE = "post_purchase", "Post Purchase"
+        CUSTOM = "custom", "Custom"
+
+    class SequenceStatus(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        ACTIVE = "active", "Active"
+        PAUSED = "paused", "Paused"
+        COMPLETED = "completed", "Completed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    social_account = models.ForeignKey(
+        "platforms.SocialAccount",
+        on_delete=models.CASCADE,
+        related_name="broadcast_sequences",
+    )
+    name = models.CharField(max_length=255)
+    sequence_type = models.CharField(max_length=20, choices=SequenceType.choices)
+    description = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=SequenceStatus.choices, default=SequenceStatus.DRAFT)
+    # Targeting
+    segment = models.JSONField(
+        default=dict, blank=True,
+        help_text="Targeting criteria: {tags: [], languages: [], last_active_days: N}",
+    )
+    # Metrics
+    enrolled_count = models.PositiveIntegerField(default=0)
+    completed_count = models.PositiveIntegerField(default=0)
+    dropped_count = models.PositiveIntegerField(default=0)
+    # AI
+    ai_generated = models.BooleanField(default=False)
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.name} ({self.get_sequence_type_display()})"
+
+    @property
+    def total_steps(self):
+        return self.steps.count()
+
+
+class BroadcastSequenceStep(models.Model):
+    """A single step in a drip sequence."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    sequence = models.ForeignKey(
+        BroadcastSequence,
+        on_delete=models.CASCADE,
+        related_name="steps",
+    )
+    order = models.PositiveIntegerField(help_text="Step number (1, 2, 3...)")
+    template = models.ForeignKey(
+        WhatsAppTemplate,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="sequence_steps",
+    )
+    delay_hours = models.PositiveIntegerField(
+        help_text="Hours to wait after previous step (or enrollment for step 1)",
+    )
+    template_variables = models.JSONField(
+        default=dict, blank=True,
+        help_text="Variable mappings for this step",
+    )
+    # Metrics
+    sent_count = models.PositiveIntegerField(default=0)
+    delivered_count = models.PositiveIntegerField(default=0)
+    read_count = models.PositiveIntegerField(default=0)
+    replied_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["sequence", "order"]
+        unique_together = ["sequence", "order"]
+
+    def __str__(self):
+        return f"Step {self.order} of {self.sequence.name}"
+
+
+class SequenceEnrollment(models.Model):
+    """Tracks a contact's progress through a broadcast sequence."""
+
+    class EnrollmentStatus(models.TextChoices):
+        ACTIVE = "active", "Active"
+        COMPLETED = "completed", "Completed"
+        DROPPED = "dropped", "Dropped"
+        PAUSED = "paused", "Paused"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    sequence = models.ForeignKey(
+        BroadcastSequence,
+        on_delete=models.CASCADE,
+        related_name="enrollments",
+    )
+    conversation = models.ForeignKey(
+        WhatsAppConversation,
+        on_delete=models.CASCADE,
+        related_name="sequence_enrollments",
+    )
+    current_step = models.PositiveIntegerField(default=0, help_text="Last completed step number")
+    status = models.CharField(
+        max_length=20, choices=EnrollmentStatus.choices, default=EnrollmentStatus.ACTIVE,
+    )
+    next_send_at = models.DateTimeField(null=True, blank=True)
+    enrolled_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-enrolled_at"]
+        unique_together = ["sequence", "conversation"]
+
+    def __str__(self):
+        return f"{self.conversation} in {self.sequence.name} (step {self.current_step})"
+
+
+# ─── WHATSAPP ANALYTICS (Sprint 5D) ─────────────────────────────────────────
+
+class WhatsAppAnalytics(models.Model):
+    """
+    Daily analytics snapshot for a WhatsApp Business account.
+
+    Aggregated daily so we can track trends: conversation volume,
+    response times, AI performance, sentiment shifts, etc.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    social_account = models.ForeignKey(
+        "platforms.SocialAccount",
+        on_delete=models.CASCADE,
+        related_name="whatsapp_analytics",
+    )
+    date = models.DateField()
+    # Volume
+    conversations_total = models.PositiveIntegerField(default=0)
+    conversations_new = models.PositiveIntegerField(default=0)
+    conversations_escalated = models.PositiveIntegerField(default=0)
+    messages_inbound = models.PositiveIntegerField(default=0)
+    messages_outbound = models.PositiveIntegerField(default=0)
+    # AI performance
+    ai_replies = models.PositiveIntegerField(default=0)
+    ai_auto_sent = models.PositiveIntegerField(default=0, help_text="High confidence, sent automatically")
+    ai_drafts_approved = models.PositiveIntegerField(default=0, help_text="Medium confidence, user approved")
+    ai_drafts_rejected = models.PositiveIntegerField(default=0)
+    # Response metrics
+    avg_response_time_seconds = models.FloatField(
+        null=True, blank=True,
+        help_text="Average time from inbound message to first reply",
+    )
+    avg_ai_confidence = models.FloatField(null=True, blank=True)
+    # Sentiment
+    avg_sentiment = models.FloatField(null=True, blank=True, help_text="-1 to +1")
+    sentiment_positive_pct = models.FloatField(default=0)
+    sentiment_negative_pct = models.FloatField(default=0)
+    # Delivery
+    messages_delivered = models.PositiveIntegerField(default=0)
+    messages_read = models.PositiveIntegerField(default=0)
+    messages_failed = models.PositiveIntegerField(default=0)
+    # Revenue attribution (manual or webhook-tracked)
+    conversions = models.PositiveIntegerField(default=0)
+    revenue_attributed = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    # Status content
+    statuses_shared = models.PositiveIntegerField(default=0)
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-date"]
+        unique_together = ["social_account", "date"]
+        indexes = [
+            models.Index(fields=["social_account", "-date"]),
+        ]
+
+    def __str__(self):
+        return f"WA Analytics {self.social_account} — {self.date}"
+
+    @property
+    def delivery_rate(self):
+        total = self.messages_outbound
+        if not total:
+            return 0
+        return round(self.messages_delivered / total * 100, 1)
+
+    @property
+    def read_rate(self):
+        total = self.messages_delivered
+        if not total:
+            return 0
+        return round(self.messages_read / total * 100, 1)
+
+
+class WeeklyDigest(models.Model):
+    """
+    AI-generated weekly WhatsApp performance digest.
+
+    "Top-performing Status was the chapati meme (847 views).
+     Response time improved 34%."
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="wa_weekly_digests",
+    )
+    week_start = models.DateField()
+    week_end = models.DateField()
+    # Content
+    summary = models.TextField(help_text="AI-generated natural language summary")
+    highlights = models.JSONField(
+        default=list, blank=True,
+        help_text="Key metrics [{title, value, change_pct, insight}]",
+    )
+    recommendations = models.JSONField(
+        default=list, blank=True,
+        help_text="AI-generated action items for next week",
+    )
+    # Raw data
+    analytics_data = models.JSONField(default=dict, blank=True, help_text="Aggregated metrics for the week")
+    model_used = models.CharField(max_length=100, blank=True)
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-week_start"]
+        unique_together = ["user", "week_start"]
+
+    def __str__(self):
+        return f"WA Digest {self.user} — {self.week_start} to {self.week_end}"
+
+
+# ─── WHATSAPP CHANNELS (Sprint 5E) ──────────────────────────────────────────
+
+class WhatsAppChannel(models.Model):
+    """
+    A WhatsApp Channel managed by Kova.
+
+    WhatsApp Channels are broadcast-only (like newsletters). Kova can
+    curate content from any platform and cross-post to the Channel.
+    """
+
+    class ChannelStatus(models.TextChoices):
+        ACTIVE = "active", "Active"
+        PAUSED = "paused", "Paused"
+        DISCONNECTED = "disconnected", "Disconnected"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    social_account = models.ForeignKey(
+        "platforms.SocialAccount",
+        on_delete=models.CASCADE,
+        related_name="whatsapp_channels",
+    )
+    channel_id = models.CharField(max_length=255, blank=True, help_text="WhatsApp Channel ID from Meta")
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    # Status
+    status = models.CharField(max_length=20, choices=ChannelStatus.choices, default=ChannelStatus.ACTIVE)
+    # Growth metrics
+    follower_count = models.PositiveIntegerField(default=0)
+    follower_count_updated_at = models.DateTimeField(null=True, blank=True)
+    # Settings
+    auto_curate = models.BooleanField(
+        default=False,
+        help_text="Let AI automatically select and post content to this Channel",
+    )
+    curate_from_platforms = models.JSONField(
+        default=list, blank=True,
+        help_text="Platforms to pull content from: ['linkedin', 'instagram', ...]",
+    )
+    max_posts_per_day = models.PositiveIntegerField(default=3)
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Channel: {self.name} ({self.get_status_display()})"
+
+
+class ChannelPost(models.Model):
+    """A post published to a WhatsApp Channel."""
+
+    class PostStatus(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        SCHEDULED = "scheduled", "Scheduled"
+        PUBLISHED = "published", "Published"
+        FAILED = "failed", "Failed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    channel = models.ForeignKey(
+        WhatsAppChannel,
+        on_delete=models.CASCADE,
+        related_name="posts",
+    )
+    # Content
+    text = models.TextField()
+    media_url = models.URLField(blank=True)
+    media_type = models.CharField(
+        max_length=10, blank=True,
+        choices=[("image", "Image"), ("video", "Video"), ("document", "Document")],
+    )
+    # Source tracking
+    source_post = models.ForeignKey(
+        "content.Post",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="channel_reposts",
+        help_text="Original post if cross-posted from another platform",
+    )
+    source_platform = models.CharField(max_length=20, blank=True)
+    ai_adapted = models.BooleanField(default=False, help_text="Was the content AI-adapted for Channel format?")
+    # Scheduling
+    status = models.CharField(max_length=20, choices=PostStatus.choices, default=PostStatus.DRAFT)
+    scheduled_at = models.DateTimeField(null=True, blank=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+    # Engagement (from Channel analytics)
+    reach = models.PositiveIntegerField(default=0)
+    reactions = models.PositiveIntegerField(default=0)
+    # Meta tracking
+    meta_post_id = models.CharField(max_length=255, blank=True, help_text="Channel post ID from Meta")
+    # AI
+    ai_reasoning = models.TextField(blank=True)
+    model_used = models.CharField(max_length=100, blank=True)
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["channel", "status", "-scheduled_at"]),
+        ]
+
+    def __str__(self):
+        return f"Channel post: {self.text[:50]}… ({self.get_status_display()})"
