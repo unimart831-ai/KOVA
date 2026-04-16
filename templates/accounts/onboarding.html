@@ -428,13 +428,24 @@ function brandBuilder() {
         const formData = new FormData();
         formData.append('hint', this.hint);
 
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 60000);
+
         const response = await fetch('{% url "accounts:ai_brand_builder" %}', {
           method: 'POST',
           headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
           body: formData,
+          signal: controller.signal,
         });
+        clearTimeout(timeout);
 
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (parseErr) {
+          this.error = `Server error (${response.status}). Try again in a moment.`;
+          return;
+        }
 
         if (!response.ok) {
           this.error = data.error || 'Something went wrong. Try again.';
@@ -475,7 +486,11 @@ function brandBuilder() {
         this.success = true;
 
       } catch (err) {
-        this.error = 'Network error. Check your connection and try again.';
+        if (err.name === 'AbortError') {
+          this.error = 'Request timed out. The AI is busy — please try again.';
+        } else {
+          this.error = 'Network error. Check your connection and try again.';
+        }
       } finally {
         this.loading = false;
       }

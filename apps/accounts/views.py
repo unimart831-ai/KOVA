@@ -161,9 +161,28 @@ def ai_brand_builder(request):
     """
     import json
     import logging
-    from apps.agents.llm import generate
+    from apps.agents.llm import generate, _get_llm_config
 
     logger = logging.getLogger(__name__)
+
+    # Pre-flight: ensure an LLM provider is actually configured
+    config = _get_llm_config()
+    has_config = config and config.pk
+    if not has_config:
+        from django.conf import settings as s
+        provider = getattr(s, "DEFAULT_LLM_PROVIDER", "openai")
+        has_key = bool(
+            (provider == "openai" and getattr(s, "OPENAI_API_KEY", ""))
+            or (provider == "anthropic" and getattr(s, "ANTHROPIC_API_KEY", ""))
+            or (provider == "openrouter" and getattr(s, "OPENROUTER_API_KEY", ""))
+        )
+        if not has_key:
+            logger.error("AI Brand Builder: no API key for provider '%s'", provider)
+            return JsonResponse(
+                {"error": f"AI is not configured yet — no API key for {provider}. Contact support."},
+                status=503,
+            )
+
     profile = request.user.profile
 
     # Collect context from Step 1 data + user hint
@@ -249,8 +268,8 @@ def ai_brand_builder(request):
         logger.warning("AI brand builder returned invalid JSON: %s", response.content[:200])
         return JsonResponse({"error": "AI returned invalid data. Try again."}, status=500)
     except Exception as e:
-        logger.warning("AI brand builder failed: %s", e)
-        return JsonResponse({"error": "Something went wrong. Try again."}, status=500)
+        logger.error("AI brand builder failed (%s): %s", type(e).__name__, e, exc_info=True)
+        return JsonResponse({"error": f"AI error: {type(e).__name__}. Try again in a moment."}, status=500)
 
 
 @login_required
