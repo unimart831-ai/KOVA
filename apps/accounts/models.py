@@ -1,6 +1,7 @@
 import uuid
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone as tz
 
 from apps.accounts.soft_delete import SoftDeleteMixin, SoftDeleteUserManager
 from apps.platforms.encryption import EncryptedTokenField
@@ -34,6 +35,30 @@ class User(SoftDeleteMixin, AbstractUser):
     def first_initial(self):
         name = self.full_name or self.email
         return name[0].upper() if name else "?"
+
+    def soft_delete(self):
+        """Soft-delete user: mangle email/username to free them for re-registration,
+        deactivate the account, and remove allauth EmailAddress records."""
+        from allauth.account.models import EmailAddress
+
+        # Remove allauth email records so the email is fully freed
+        EmailAddress.objects.filter(user=self).delete()
+
+        # Mangle email & username so the unique constraint is freed
+        stamp = int(tz.now().timestamp())
+        self.email = f"deleted_{stamp}_{self.pk}@deleted.local"
+        self.username = f"deleted_{stamp}_{self.pk}"
+        self.is_active = False
+        self.is_deleted = True
+        self.deleted_at = tz.now()
+        self.save(update_fields=[
+            "email", "username", "is_active",
+            "is_deleted", "deleted_at",
+        ])
+
+    def delete(self, using=None, keep_parents=False):
+        """Route instance.delete() through soft_delete so the account is never hard-deleted."""
+        self.soft_delete()
 
 
 class UserProfile(models.Model):
