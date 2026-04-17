@@ -367,3 +367,75 @@ def promote_product(request, product_id):
 
     messages.success(request, f"Creating content for '{product.name}' — posts will appear in your Content Studio shortly.")
     return redirect("content:studio")
+
+
+# ── Snap to Sell ─────────────────────────────────────────────────────
+
+@login_required
+def snap_to_sell(request):
+    """Camera/upload page — user snaps a product photo."""
+    return render(request, "products/snap_to_sell.html")
+
+
+@login_required
+@require_POST
+def snap_launch(request):
+    """
+    Receive photo + name + price, create a Product, and fire the
+    Snap to Sell background task (vision AI → content pipeline).
+    """
+    from apps.billing.models import get_plan_limits
+    from apps.products.tasks import snap_to_sell_analyze
+    from apps.utils import fire_task
+
+    # Plan limit check
+    limits = get_plan_limits(request.user.profile.plan)
+    current_count = Product.objects.filter(user=request.user, is_active=True).count()
+    max_products = limits.get("max_products", 5)
+    if current_count >= max_products:
+        messages.error(request, f"Your plan allows up to {max_products} products. Upgrade to add more.")
+        return redirect("products:snap")
+
+    # Validate required fields
+    name = request.POST.get("name", "").strip()
+    photo = request.FILES.get("photo")
+
+    if not name:
+        messages.error(request, "Please enter a product name.")
+        return redirect("products:snap")
+    if not photo:
+        messages.error(request, "Please upload or take a photo.")
+        return redirect("products:snap")
+
+    # Parse optional price
+    price = None
+    price_raw = request.POST.get("price", "").strip()
+    if price_raw:
+        try:
+            price = float(price_raw)
+        except ValueError:
+            pass
+
+    currency = request.POST.get("currency", "KES").strip() or "KES"
+    description = request.POST.get("description", "").strip()
+
+    # Create the product
+    product = Product.objects.create(
+        user=request.user,
+        name=name,
+        price=price,
+        currency=currency,
+        description=description,
+        image=photo,
+        stock_status=Product.StockStatus.IN_STOCK,
+    )
+
+    # Fire background task: vision AI → content generation
+    fire_task(snap_to_sell_analyze, str(product.pk))
+
+    messages.success(
+        request,
+        f"📸 '{product.name}' added! AI is analyzing your photo and creating content — "
+        f"check your Content Studio in a moment."
+    )
+    return redirect("products:detail", product_id=product.pk)

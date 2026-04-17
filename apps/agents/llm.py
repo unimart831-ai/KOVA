@@ -602,3 +602,150 @@ def _generate_anthropic(
         finish_reason=finish,
         raw=response.model_dump() if hasattr(response, "model_dump") else {},
     )
+
+
+# ── Vision AI ────────────────────────────────────────────────────────
+def analyze_image(
+    image_url: str,
+    prompt: str = "What is in this image?",
+    system: str = "",
+    model: str = "",
+    max_tokens: int = 1024,
+    json_mode: bool = False,
+) -> LLMResponse:
+    """
+    Send an image to a vision-capable LLM and get a text/JSON response.
+
+    Supports OpenAI (gpt-4o, gpt-4o-mini) and OpenRouter vision models.
+    The image can be a URL or a base64 data URI.
+
+    Args:
+        image_url: Public URL or base64 data URI (data:image/...;base64,...).
+        prompt: Question or instruction about the image.
+        system: Optional system message.
+        model: Override model. Defaults to gpt-4o-mini (cheap, vision-capable).
+        max_tokens: Max response tokens.
+        json_mode: If True, request JSON output.
+
+    Returns:
+        LLMResponse with the analysis content.
+    """
+    config = _get_llm_config()
+
+    if config and config.pk:
+        provider = config.default_provider
+        model = model or "gpt-4o-mini"
+    else:
+        provider = getattr(settings, "DEFAULT_LLM_PROVIDER", "openai")
+        model = model or "gpt-4o-mini"
+
+    # Vision requires OpenAI-compatible API (works with OpenAI and OpenRouter)
+    if provider == "anthropic":
+        return _analyze_image_anthropic(image_url, prompt, system, model, max_tokens)
+
+    # Use OpenAI or OpenRouter client
+    if provider == "openrouter":
+        client = _get_openrouter_client()
+    else:
+        client = _get_openai_client()
+
+    start = time.monotonic()
+
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+
+    # Build the vision message with image + text
+    user_content = [
+        {"type": "image_url", "image_url": {"url": image_url, "detail": "low"}},
+        {"type": "text", "text": prompt},
+    ]
+    messages.append({"role": "user", "content": user_content})
+
+    kwargs = {
+        "model": model,
+        "messages": messages,
+        "max_tokens": max_tokens,
+    }
+    if json_mode:
+        kwargs["response_format"] = {"type": "json_object"}
+
+    try:
+        response = client.chat.completions.create(**kwargs)
+        duration = int((time.monotonic() - start) * 1000)
+
+        if not response.choices:
+            raise ValueError("Vision LLM returned no choices")
+        choice = response.choices[0]
+        usage = response.usage
+
+        return LLMResponse(
+            content=choice.message.content or "",
+            model=response.model,
+            input_tokens=usage.prompt_tokens if usage else 0,
+            output_tokens=usage.completion_tokens if usage else 0,
+            total_tokens=usage.total_tokens if usage else 0,
+            duration_ms=duration,
+            finish_reason=getattr(choice, "finish_reason", "") or "",
+            raw=response.model_dump() if hasattr(response, "model_dump") else {},
+        )
+    except Exception as exc:
+        duration = int((time.monotonic() - start) * 1000)
+        logger.error("Vision AI failed (%s/%s) after %dms: %s", provider, model, duration, exc)
+        raise
+
+
+def _analyze_image_anthropic(
+    image_url: str, prompt: str, system: str, model: str, max_tokens: int,
+) -> LLMResponse:
+    """Anthropic vision uses a different message format for images."""
+    import base64 as b64mod
+    client = _get_anthropic_client()
+    start = time.monotonic()
+
+    # Anthropic needs base64 source or URL source
+    if image_url.startswith("data:"):
+        # Parse data URI: data:image/jpeg;base64,/9j/4AAQ...
+        header, data = image_url.split(",", 1)
+        media_type = header.split(":")[1].split(";")[0]
+        image_content = {
+            "type": "image",
+            "source": {"type": "base64", "media_type": media_type, "data": data},
+        }
+    else:
+        image_content = {
+            "type": "image",
+            "source": {"type": "url", "url": image_url},
+        }
+
+    kwargs = {
+        "model": model or "claude-sonnet-4-20250514",
+        "max_tokens": max_tokens,
+        "messages": [
+            {"role": "user", "content": [image_content, {"type": "text", "text": prompt}]},
+        ],
+    }
+    if system:
+        kwargs["system"] = system
+
+    response = client.messages.create(**kwargs)
+    duration = int((time.monotonic() - start) * 1000)
+
+    content = ""
+    for block in response.content:
+        if hasattr(block, "text"):
+            content += block.text
+
+    stop_reason = getattr(response, "stop_reason", "") or ""
+    finish = "length" if stop_reason == "max_tokens" else "stop"
+
+    return LLMResponse(
+        content=content,
+        model=response.model,
+        input_tokens=response.usage.input_tokens,
+        output_tokens=response.usage.output_tokens,
+        total_tokens=response.usage.input_tokens + response.usage.output_tokens,
+        duration_ms=duration,
+        finish_reason=finish,
+        raw=response.model_dump() if hasattr(response, "model_dump") else {},
+    )

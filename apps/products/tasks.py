@@ -321,3 +321,139 @@ def _build_promotion_idea(product):
         idea += f" Keywords: {', '.join(product.tags)}."
 
     return idea
+
+
+# ── Snap to Sell ─────────────────────────────────────────────────────
+
+@shared_task(name="products.snap_to_sell_analyze")
+def snap_to_sell_analyze(product_id: str):
+    """
+    Vision AI analyzes a product photo, enriches the product description,
+    then auto-creates a ContentSeed and fires the content pipeline.
+
+    Called after the user snaps/uploads a photo, provides name + price,
+    and hits "Launch".
+    """
+    from apps.agents.llm import analyze_image, generate, parse_llm_json
+    from apps.content.models import ContentSeed
+    from apps.content.tasks import generate_from_seed
+    from apps.platforms.models import SocialAccount
+    from apps.products.models import Product
+    from apps.utils import fire_task
+
+    try:
+        product = Product.objects.select_related("user", "category").get(pk=product_id)
+    except Product.DoesNotExist:
+        logger.error("Snap to Sell: product %s not found", product_id)
+        return {"error": "Product not found"}
+
+    user = product.user
+
+    # ── Step 1: Vision AI — analyze the product photo ────────────────
+    if not product.image:
+        logger.warning("Snap to Sell: product %s has no image", product_id)
+        return {"error": "No image attached"}
+
+    image_url = product.image.url
+    # If it's a relative URL, we can't send it to the API — use base64
+    if not image_url.startswith("http"):
+        import base64
+        with open(product.image.path, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode("utf-8")
+        # Detect mime type
+        ext = product.image.name.rsplit(".", 1)[-1].lower()
+        mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+                "webp": "image/webp", "gif": "image/gif"}.get(ext, "image/jpeg")
+        image_url = f"data:{mime};base64,{encoded}"
+
+    vision_prompt = (
+        "You are a product photography analyst for a social media marketing platform.\n"
+        f"Product name: {product.name}\n"
+        f"Price: {product.display_price or 'not set'}\n\n"
+        "Analyze this product image and return JSON with:\n"
+        "{\n"
+        '  "description": "A compelling 2-3 sentence product description for social media marketing",\n'
+        '  "key_features": ["feature1", "feature2", "feature3"],\n'
+        '  "target_audience": "Who would buy this",\n'
+        '  "suggested_tags": ["tag1", "tag2", "tag3"],\n'
+        '  "visual_style": "Describe the visual aesthetic (colors, mood, quality)",\n'
+        '  "campaign_angle": "Best marketing angle for social media"\n'
+        "}"
+    )
+
+    try:
+        vision_resp = analyze_image(
+            image_url=image_url,
+            prompt=vision_prompt,
+            system="You are a product marketing expert. Always respond with valid JSON only.",
+            json_mode=True,
+            max_tokens=800,
+        )
+        analysis = parse_llm_json(vision_resp.content)
+    except Exception as exc:
+        logger.error("Snap to Sell vision failed for %s: %s", product_id, exc)
+        analysis = {
+            "description": f"Quality {product.name} — perfect for your needs.",
+            "key_features": [],
+            "target_audience": "General consumers",
+            "suggested_tags": [],
+            "visual_style": "Product photo",
+            "campaign_angle": "Product showcase",
+        }
+
+    # ── Step 2: Enrich the product with AI analysis ──────────────────
+    if not product.description and analysis.get("description"):
+        product.description = analysis["description"]
+
+    if analysis.get("suggested_tags"):
+        existing_tags = set(product.tags or [])
+        new_tags = list(existing_tags | set(analysis["suggested_tags"][:5]))
+        product.tags = new_tags[:8]  # Cap at 8 tags
+
+    product.save(update_fields=["description", "tags", "updated_at"])
+
+    # ── Step 3: Create a content seed and launch the campaign ────────
+    platforms = list(
+        SocialAccount.objects.filter(user=user, is_active=True)
+        .values_list("platform", flat=True)
+    )
+
+    features_text = ""
+    if analysis.get("key_features"):
+        features_text = " Key features: " + ", ".join(analysis["key_features"][:3]) + "."
+
+    audience_text = ""
+    if analysis.get("target_audience"):
+        audience_text = f" Target audience: {analysis['target_audience']}."
+
+    seed = ContentSeed.objects.create(
+        user=user,
+        product=product,
+        idea=(
+            f"📸 Snap to Sell: Promote {product.name}."
+            f"{f' Price: {product.display_price}.' if product.display_price else ''}"
+            f"{features_text}"
+            f" Campaign angle: {analysis.get('campaign_angle', 'product showcase')}."
+            f"{audience_text}"
+            f" Use the product photo as the hero image."
+        ),
+        notes=(
+            f"AI Vision Analysis:\n"
+            f"Description: {analysis.get('description', '')}\n"
+            f"Visual style: {analysis.get('visual_style', '')}\n"
+            f"Source: Snap to Sell — user-uploaded product photo"
+        ),
+        target_platforms=platforms[:3] if platforms else [],
+    )
+
+    fire_task(generate_from_seed, str(seed.id))
+
+    logger.info(
+        "Snap to Sell complete: product=%s, seed=%s, user=%s",
+        product_id, seed.id, user.email,
+    )
+    return {
+        "product_id": str(product.pk),
+        "seed_id": str(seed.pk),
+        "analysis": analysis,
+    }

@@ -15,4 +15,7 @@ urlpatterns = [
     path("<uuid:product_id>/delete/", views.product_delete, name="delete"),
     path("<uuid:product_id>/stock/", views.product_update_stock, name="update_stock"),
     path("<uuid:product_id>/promote/", views.promote_product, name="promote"),
+    # Snap to Sell
+    path("snap/", views.snap_to_sell, name="snap"),
+    path("snap/launch/", views.snap_launch, name="snap_launch"),
 ]

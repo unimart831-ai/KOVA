@@ -1,0 +1,173 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Snap to Sell{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Snap a photo → AI creates your campaign</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto space-y-6" x-data="snapToSell()">
+
+  {# Hero / explainer #}
+  <div class="card px-6 py-5 text-center border-2 border-dashed border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/20">
+    <div class="text-3xl mb-2">📸</div>
+    <h2 class="text-lg font-bold text-gray-900 dark:text-white">Photo → Content → Sales</h2>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+      Take a photo of your product, add a name &amp; price, and Kova's AI will
+      analyze it and create a full social media campaign — in seconds.
+    </p>
+  </div>
+
+  <form method="post" action="{% url 'products:snap_launch' %}" enctype="multipart/form-data" class="space-y-5">
+    {% csrf_token %}
+
+    {# Photo capture / upload area #}
+    <div class="card p-5 space-y-4">
+      <label class="label text-base font-semibold">1. Product Photo</label>
+
+      {# Preview area #}
+      <div class="relative">
+        <template x-if="preview">
+          <div class="relative">
+            <img :src="preview" alt="Product preview"
+                 class="w-full max-h-80 object-contain rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <button type="button" @click="clearPhoto()"
+                    class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm hover:bg-red-600 shadow-lg">
+              ✕
+            </button>
+          </div>
+        </template>
+
+        <template x-if="!preview">
+          <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center cursor-pointer hover:border-purple-400 dark:hover:border-purple-500 transition-colors"
+               @click="$refs.fileInput.click()">
+            <div class="text-4xl mb-3">📷</div>
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Tap to take a photo or upload</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">JPG, PNG, or WebP — max 10 MB</p>
+          </div>
+        </template>
+      </div>
+
+      {# Hidden file input — accept camera on mobile #}
+      <input type="file" name="photo" accept="image/*" capture="environment"
+             x-ref="fileInput" @change="handleFile($event)" class="hidden" required>
+
+      {# Action buttons below preview #}
+      <div class="flex items-center gap-3">
+        <button type="button" @click="$refs.fileInput.click()"
+                class="btn-secondary text-sm px-4 py-2 flex-1">
+          <span x-text="preview ? '📷 Retake' : '📷 Camera'"></span>
+        </button>
+        <button type="button" @click="openGallery()"
+                class="btn-secondary text-sm px-4 py-2 flex-1">
+          🖼️ Gallery
+        </button>
+        <input type="file" name="gallery_photo" accept="image/*"
+               x-ref="galleryInput" @change="handleFile($event)" class="hidden">
+      </div>
+    </div>
+
+    {# Product details #}
+    <div class="card p-5 space-y-4">
+      <label class="label text-base font-semibold">2. Quick Details</label>
+
+      <div>
+        <label for="snap-name" class="label">Product Name *</label>
+        <input type="text" id="snap-name" name="name" required
+               class="input" placeholder="e.g. Handmade Leather Bag"
+               x-model="name">
+      </div>
+
+      <div class="grid grid-cols-3 gap-3">
+        <div class="col-span-2">
+          <label for="snap-price" class="label">Price</label>
+          <input type="number" id="snap-price" name="price" step="0.01" min="0"
+                 class="input" placeholder="e.g. 2500"
+                 x-model="price">
+        </div>
+        <div>
+          <label for="snap-currency" class="label">Currency</label>
+          <select id="snap-currency" name="currency" class="input">
+            <option value="KES">KES</option>
+            <option value="USD">USD</option>
+            <option value="UGX">UGX</option>
+            <option value="TZS">TZS</option>
+            <option value="RWF">RWF</option>
+            <option value="NGN">NGN</option>
+            <option value="GHS">GHS</option>
+            <option value="ZAR">ZAR</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label for="snap-desc" class="label">Description <span class="text-gray-400">(optional — AI will generate if blank)</span></label>
+        <textarea id="snap-desc" name="description" rows="2"
+                  class="input" placeholder="Brief description — or leave blank and let AI write it from the photo"></textarea>
+      </div>
+    </div>
+
+    {# Launch button #}
+    <button type="submit"
+            :disabled="!preview || !name"
+            class="w-full btn-primary text-base py-3.5 rounded-xl font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20">
+      <span>🚀</span>
+      <span>Snap to Sell — Launch Campaign</span>
+    </button>
+
+    <p class="text-xs text-center text-gray-500 dark:text-gray-400">
+      AI will analyze your photo, write a product description, and generate social media posts automatically.
+    </p>
+  </form>
+
+</div>
+
+<script>
+function snapToSell() {
+  return {
+    preview: null,
+    name: '',
+    price: '',
+
+    handleFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file.');
+        return;
+      }
+
+      // Validate file size (10 MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('Image is too large. Please use a photo under 10 MB.');
+        return;
+      }
+
+      // Set the main file input to this file
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      this.$refs.fileInput.files = dt.files;
+
+      // Show preview
+      const reader = new FileReader();
+      reader.onload = (e) => { this.preview = e.target.result; };
+      reader.readAsDataURL(file);
+    },
+
+    clearPhoto() {
+      this.preview = null;
+      this.$refs.fileInput.value = '';
+    },
+
+    openGallery() {
+      // Remove capture attribute to open gallery instead of camera
+      this.$refs.galleryInput.click();
+    }
+  };
+}
+</script>
+{% endblock %}
