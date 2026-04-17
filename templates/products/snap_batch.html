@@ -1,0 +1,249 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Batch Snap{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Snap multiple products → AI creates campaigns for each</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6" x-data="batchSnap()">
+
+  {# Hero #}
+  <div class="card px-6 py-5 text-center border-2 border-dashed border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/20">
+    <div class="text-3xl mb-2">📦⚡</div>
+    <h2 class="text-lg font-bold text-gray-900 dark:text-white">Batch Snap — Multiple Products at Once</h2>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+      Snap up to 10 <strong>different products</strong>. AI will identify each one,
+      create separate product listings, and generate unique social media content for every product.
+    </p>
+    <a href="{% url 'products:snap' %}" class="inline-block mt-3 text-xs text-purple-600 dark:text-purple-400 hover:underline font-medium">
+      📸 Just one product? Use Snap to Sell →
+    </a>
+  </div>
+
+  <form method="post" action="{% url 'products:snap_batch_launch' %}" enctype="multipart/form-data"
+        class="space-y-5" @submit="prepareSubmit($event)">
+    {% csrf_token %}
+
+    {# Product cards #}
+    <div class="space-y-4">
+      <div class="flex items-center justify-between">
+        <label class="label text-base font-semibold mb-0">Products</label>
+        <span class="text-xs text-gray-500 dark:text-gray-400"
+              x-text="items.length + '/10 products'"></span>
+      </div>
+
+      <template x-for="(item, index) in items" :key="item.id">
+        <div class="card p-4 space-y-3 border-l-4"
+             :class="item.preview ? 'border-l-emerald-500' : 'border-l-gray-300 dark:border-l-gray-600'">
+          <div class="flex gap-4">
+            {# Photo #}
+            <div class="flex-shrink-0">
+              <template x-if="item.preview">
+                <div class="relative w-24 h-24 rounded-lg overflow-hidden">
+                  <img :src="item.preview" alt="Product" class="w-full h-full object-cover">
+                  <button type="button" @click="retakePhoto(index)"
+                          class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] py-0.5 text-center">
+                    Retake
+                  </button>
+                </div>
+              </template>
+              <template x-if="!item.preview">
+                <div class="w-24 h-24 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 transition-colors"
+                     @click="captureForItem(index)">
+                  <div class="text-xl">📷</div>
+                  <p class="text-[9px] text-gray-400 mt-0.5">Add photo</p>
+                </div>
+              </template>
+            </div>
+
+            {# Details #}
+            <div class="flex-1 min-w-0 space-y-2">
+              <div class="flex items-start justify-between gap-2">
+                <span class="text-xs font-bold text-gray-400 dark:text-gray-500 mt-1"
+                      x-text="'#' + (index + 1)"></span>
+                <button type="button" @click="removeItem(index)"
+                        class="text-red-400 hover:text-red-600 text-xs flex-shrink-0"
+                        x-show="items.length > 1">✕ Remove</button>
+              </div>
+              <input type="text" :name="'name_' + index"
+                     class="input text-sm py-1.5"
+                     placeholder="Product name (or leave blank — AI will name it)"
+                     x-model="item.name">
+              <div class="flex gap-2">
+                <input type="number" :name="'price_' + index" step="0.01" min="0"
+                       class="input text-sm py-1.5 flex-1"
+                       placeholder="Price (optional)"
+                       x-model="item.price">
+                <select :name="'currency_' + index" class="input text-sm py-1.5 w-20" x-model="item.currency">
+                  <option value="KES">KES</option>
+                  <option value="USD">USD</option>
+                  <option value="UGX">UGX</option>
+                  <option value="TZS">TZS</option>
+                  <option value="RWF">RWF</option>
+                  <option value="NGN">NGN</option>
+                  <option value="GHS">GHS</option>
+                  <option value="ZAR">ZAR</option>
+                  <option value="EUR">EUR</option>
+                  <option value="GBP">GBP</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      {# Add another product button #}
+      <template x-if="items.length < 10">
+        <div class="flex gap-3">
+          <button type="button" @click="addItem(); $nextTick(() => captureForItem(items.length - 1))"
+                  class="btn-secondary text-sm px-4 py-2.5 flex-1">
+            📷 + Snap Another Product
+          </button>
+          <button type="button" @click="addFromGalleryBatch()"
+                  class="btn-secondary text-sm px-4 py-2.5 flex-1">
+            🖼️ + From Gallery
+          </button>
+        </div>
+      </template>
+    </div>
+
+    {# Hidden file inputs #}
+    <input type="file" accept="image/*" capture="environment"
+           x-ref="cameraInput" @change="handleCapture($event)" class="hidden">
+    <input type="file" accept="image/*" multiple
+           x-ref="galleryBatch" @change="handleGalleryBatch($event)" class="hidden">
+
+    {# Hidden multi-file for form submit #}
+    <input type="file" name="photos" multiple x-ref="submitInput" class="hidden">
+    {# Hidden field with item count #}
+    <input type="hidden" name="item_count" :value="items.length">
+
+    {# Summary + Launch #}
+    <div class="card p-4 bg-gray-50 dark:bg-gray-800/50">
+      <div class="flex items-center justify-between text-sm">
+        <span class="text-gray-600 dark:text-gray-400">
+          <strong x-text="readyCount()"></strong> product<span x-show="readyCount() !== 1">s</span> with photos
+        </span>
+        <span class="text-gray-500 dark:text-gray-400 text-xs">
+          AI will auto-name products without names
+        </span>
+      </div>
+    </div>
+
+    <button type="submit"
+            :disabled="readyCount() === 0"
+            class="w-full btn-primary text-base py-3.5 rounded-xl font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 bg-orange-600 hover:bg-orange-700">
+      <span>⚡</span>
+      <span x-text="readyCount() === 1
+        ? 'Launch 1 Product Campaign'
+        : 'Launch ' + readyCount() + ' Product Campaigns'"></span>
+    </button>
+
+    <p class="text-xs text-center text-gray-500 dark:text-gray-400">
+      Each product gets its own AI analysis, description, and social media content — all running in parallel.
+    </p>
+  </form>
+
+</div>
+
+<script>
+function batchSnap() {
+  let nextId = 1;
+
+  return {
+    items: [{ id: nextId++, file: null, preview: null, name: '', price: '', currency: 'KES' }],
+    captureTargetIndex: null,
+
+    addItem() {
+      if (this.items.length >= 10) return;
+      this.items.push({ id: nextId++, file: null, preview: null, name: '', price: '', currency: 'KES' });
+    },
+
+    removeItem(index) {
+      this.items.splice(index, 1);
+    },
+
+    captureForItem(index) {
+      this.captureTargetIndex = index;
+      this.$refs.cameraInput.click();
+    },
+
+    retakePhoto(index) {
+      this.captureTargetIndex = index;
+      this.$refs.cameraInput.click();
+    },
+
+    handleCapture(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) { alert('Please select an image.'); return; }
+      if (file.size > 10 * 1024 * 1024) { alert('Image too large (max 10 MB).'); return; }
+
+      const idx = this.captureTargetIndex;
+      if (idx === null || idx >= this.items.length) return;
+
+      const reader = new FileReader();
+      const self = this;
+      reader.onload = function(e) {
+        self.items[idx].file = file;
+        self.items[idx].preview = e.target.result;
+      };
+      reader.readAsDataURL(file);
+      event.target.value = '';
+    },
+
+    addFromGalleryBatch() {
+      this.$refs.galleryBatch.click();
+    },
+
+    handleGalleryBatch(event) {
+      const files = Array.from(event.target.files);
+      for (const file of files) {
+        if (this.items.length >= 10) break;
+        if (!file.type.startsWith('image/')) continue;
+        if (file.size > 10 * 1024 * 1024) continue;
+
+        // If the last item has no photo, fill it; otherwise add new
+        let target = this.items.find(it => !it.file);
+        if (!target) {
+          target = { id: nextId++, file: null, preview: null, name: '', price: '', currency: 'KES' };
+          this.items.push(target);
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          target.file = file;
+          target.preview = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+      event.target.value = '';
+    },
+
+    readyCount() {
+      return this.items.filter(it => it.file).length;
+    },
+
+    prepareSubmit(event) {
+      // Filter to only items with photos
+      const ready = this.items.filter(it => it.file);
+      if (ready.length === 0) { event.preventDefault(); return; }
+
+      // Pack files in order into the hidden input
+      const dt = new DataTransfer();
+      for (const item of ready) {
+        dt.items.add(item.file);
+      }
+      this.$refs.submitInput.files = dt.files;
+
+      // Update item_count to match ready items
+      // Names/prices are sent via name_0, name_1, etc. — reindex to match file order
+      // We need to ensure the indices match the files. Let's rebuild:
+      // Remove items without photos and reindex
+      this.items = ready;
+    }
+  };
+}
+</script>
+{% endblock %}

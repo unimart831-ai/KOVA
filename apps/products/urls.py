@@ -18,4 +18,7 @@ urlpatterns = [
     # Snap to Sell
     path("snap/", views.snap_to_sell, name="snap"),
     path("snap/launch/", views.snap_launch, name="snap_launch"),
+    # Batch Snap
+    path("snap/batch/", views.snap_batch, name="snap_batch"),
+    path("snap/batch/launch/", views.snap_batch_launch, name="snap_batch_launch"),
 ]

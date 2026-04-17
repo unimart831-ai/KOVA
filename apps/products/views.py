@@ -457,3 +457,88 @@ def snap_launch(request):
         f"AI is analyzing and creating content — check your Content Studio in a moment."
     )
     return redirect("products:detail", product_id=product.pk)
+
+
+# ── Batch Snap ───────────────────────────────────────────────────────
+
+@login_required
+def snap_batch(request):
+    """Batch snap page — user snaps multiple different products."""
+    return render(request, "products/snap_batch.html")
+
+
+@login_required
+@require_POST
+def snap_batch_launch(request):
+    """
+    Receive up to 10 photos of different products.
+    Each photo becomes a separate Product with its own AI analysis + campaign.
+    """
+    from apps.billing.models import get_plan_limits
+    from apps.products.tasks import snap_batch_process
+    from apps.utils import fire_task
+
+    # Plan limit check
+    limits = get_plan_limits(request.user.profile.plan)
+    current_count = Product.objects.filter(user=request.user, is_active=True).count()
+    max_products = limits.get("max_products", 5)
+
+    photos = request.FILES.getlist("photos")
+    if not photos:
+        messages.error(request, "Please add at least one product photo.")
+        return redirect("products:snap_batch")
+
+    photos = photos[:10]  # Cap at 10
+
+    remaining_slots = max_products - current_count
+    if remaining_slots <= 0:
+        messages.error(request, f"Your plan allows up to {max_products} products. Upgrade to add more.")
+        return redirect("products:snap_batch")
+
+    if len(photos) > remaining_slots:
+        photos = photos[:remaining_slots]
+        messages.warning(
+            request,
+            f"Only processing {remaining_slots} product(s) — you've reached your plan limit of {max_products}."
+        )
+
+    # Create products — one per photo
+    # Match up names/prices from the form (name_0, price_0, etc.)
+    product_ids = []
+    for i, photo in enumerate(photos):
+        name = request.POST.get(f"name_{i}", "").strip()
+        price_raw = request.POST.get(f"price_{i}", "").strip()
+        currency = request.POST.get(f"currency_{i}", "KES").strip() or "KES"
+
+        price = None
+        if price_raw:
+            try:
+                price = float(price_raw)
+            except ValueError:
+                pass
+
+        # If no name provided, use a placeholder — AI will rename it
+        if not name:
+            name = f"Product {i + 1} (AI naming...)"
+
+        product = Product.objects.create(
+            user=request.user,
+            name=name,
+            price=price,
+            currency=currency,
+            image=photo,
+            stock_status=Product.StockStatus.IN_STOCK,
+        )
+        product_ids.append(str(product.pk))
+
+    # Fire batch processing task
+    fire_task(snap_batch_process, product_ids)
+
+    count = len(product_ids)
+    messages.success(
+        request,
+        f"⚡ {count} product{'s' if count != 1 else ''} created! "
+        f"AI is analyzing each photo and generating campaigns — "
+        f"check your Content Studio shortly."
+    )
+    return redirect("products:list")

@@ -501,3 +501,177 @@ def snap_to_sell_analyze(product_id: str):
         "seed_id": str(seed.pk),
         "analysis": analysis,
     }
+
+
+# ── Batch Snap ───────────────────────────────────────────────────────
+
+@shared_task(name="products.snap_batch_process")
+def snap_batch_process(product_ids: list):
+    """
+    Process a batch of products from Batch Snap.
+    Each product has one photo of a DIFFERENT product.
+
+    For each product:
+      1. Vision AI analyzes the photo
+      2. Auto-names the product if user left it blank (AI naming)
+      3. Enriches description, tags
+      4. Creates a ContentSeed and fires the content pipeline
+
+    All products are processed sequentially to avoid overwhelming the LLM API,
+    but each product's content pipeline runs in parallel (fire_task).
+    """
+    from apps.agents.llm import analyze_image, parse_llm_json
+    from apps.content.models import ContentSeed
+    from apps.content.tasks import generate_from_seed
+    from apps.platforms.models import SocialAccount
+    from apps.products.models import Product
+    from apps.utils import fire_task
+
+    results = []
+
+    for product_id in product_ids:
+        try:
+            product = Product.objects.select_related("user", "category").get(pk=product_id)
+        except Product.DoesNotExist:
+            logger.error("Batch Snap: product %s not found", product_id)
+            results.append({"product_id": product_id, "error": "Not found"})
+            continue
+
+        user = product.user
+
+        if not product.image:
+            logger.warning("Batch Snap: product %s has no image", product_id)
+            results.append({"product_id": product_id, "error": "No image"})
+            continue
+
+        # ── Convert image to base64 if needed ────────────────────────
+        image_url = product.image.url
+        if not image_url.startswith("http"):
+            import base64
+            try:
+                with open(product.image.path, "rb") as f:
+                    encoded = base64.b64encode(f.read()).decode("utf-8")
+                ext = product.image.name.rsplit(".", 1)[-1].lower()
+                mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+                        "webp": "image/webp", "gif": "image/gif"}.get(ext, "image/jpeg")
+                image_url = f"data:{mime};base64,{encoded}"
+            except Exception as exc:
+                logger.error("Batch Snap: could not read image for %s: %s", product_id, exc)
+                results.append({"product_id": product_id, "error": str(exc)})
+                continue
+
+        # ── Vision AI — identify and analyze the product ─────────────
+        needs_name = "AI naming" in product.name or product.name.startswith("Product ")
+
+        vision_prompt = (
+            "You are a product identification and marketing expert.\n"
+            "Analyze this product photo and return JSON with:\n"
+            "{\n"
+            '  "product_name": "The specific product name (be descriptive, e.g. \'Handmade Brown Leather Messenger Bag\')",\n'
+            '  "description": "A compelling 2-3 sentence product description for social media",\n'
+            '  "key_features": ["feature1", "feature2", "feature3"],\n'
+            '  "target_audience": "Who would buy this",\n'
+            '  "suggested_tags": ["tag1", "tag2", "tag3"],\n'
+            '  "visual_style": "Describe the visual aesthetic",\n'
+            '  "campaign_angle": "Best marketing angle for social media",\n'
+            '  "product_category": "General category (e.g. Fashion, Electronics, Food, Beauty, Home)"\n'
+            "}\n\n"
+            "Be specific about what the product IS — identify it from the image."
+        )
+
+        if not needs_name:
+            vision_prompt += f"\nThe user named this product: {product.name}"
+        if product.price:
+            vision_prompt += f"\nPrice: {product.display_price}"
+
+        try:
+            vision_resp = analyze_image(
+                image_url=image_url,
+                prompt=vision_prompt,
+                system="You are a product identification expert. Always respond with valid JSON only.",
+                json_mode=True,
+                max_tokens=600,
+            )
+            analysis = parse_llm_json(vision_resp.content)
+        except Exception as exc:
+            logger.error("Batch Snap vision failed for %s: %s", product_id, exc)
+            analysis = {
+                "product_name": product.name,
+                "description": f"Quality product — check it out!",
+                "key_features": [],
+                "target_audience": "General consumers",
+                "suggested_tags": [],
+                "visual_style": "Product photo",
+                "campaign_angle": "Product showcase",
+                "product_category": "",
+            }
+
+        # ── Auto-name the product if user didn't provide a name ──────
+        if needs_name and analysis.get("product_name"):
+            ai_name = analysis["product_name"][:200]
+            # Avoid duplicate names for this user
+            base_name = ai_name
+            suffix = 0
+            while Product.objects.filter(user=user, name=ai_name).exclude(pk=product.pk).exists():
+                suffix += 1
+                ai_name = f"{base_name} ({suffix})"
+            product.name = ai_name
+
+        # ── Enrich product with AI analysis ──────────────────────────
+        if not product.description and analysis.get("description"):
+            product.description = analysis["description"]
+
+        if analysis.get("suggested_tags"):
+            existing_tags = set(product.tags or [])
+            new_tags = list(existing_tags | set(analysis["suggested_tags"][:5]))
+            product.tags = new_tags[:8]
+
+        product.save(update_fields=["name", "description", "tags", "updated_at"])
+
+        # ── Create content seed and launch pipeline ──────────────────
+        platforms = list(
+            SocialAccount.objects.filter(user=user, is_active=True)
+            .values_list("platform", flat=True)
+        )
+
+        features_text = ""
+        if analysis.get("key_features"):
+            features_text = " Key features: " + ", ".join(analysis["key_features"][:3]) + "."
+
+        seed = ContentSeed.objects.create(
+            user=user,
+            product=product,
+            idea=(
+                f"📦 Batch Snap: Promote {product.name}."
+                f"{f' Price: {product.display_price}.' if product.display_price else ''}"
+                f"{features_text}"
+                f" Campaign angle: {analysis.get('campaign_angle', 'product showcase')}."
+                f" Target audience: {analysis.get('target_audience', 'general consumers')}."
+                f" Use the product photo as the hero image."
+            ),
+            notes=(
+                f"AI Vision Analysis (Batch Snap):\n"
+                f"Identified as: {analysis.get('product_name', product.name)}\n"
+                f"Description: {analysis.get('description', '')}\n"
+                f"Category: {analysis.get('product_category', '')}\n"
+                f"Visual style: {analysis.get('visual_style', '')}\n"
+                f"Source: Batch Snap — auto-identified from product photo"
+            ),
+            target_platforms=platforms[:3] if platforms else [],
+        )
+
+        fire_task(generate_from_seed, str(seed.id))
+
+        logger.info(
+            "Batch Snap processed: product=%s (%s), seed=%s",
+            product_id, product.name, seed.id,
+        )
+        results.append({
+            "product_id": str(product.pk),
+            "product_name": product.name,
+            "seed_id": str(seed.pk),
+            "ai_named": needs_name,
+        })
+
+    logger.info("Batch Snap complete: %d/%d products processed", len(results), len(product_ids))
+    return {"processed": len(results), "results": results}

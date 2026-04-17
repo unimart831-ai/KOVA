@@ -16,6 +16,9 @@
       Take multiple photos of your product, add a name &amp; price, and Kova's AI will
       analyze them and create specialized content for each angle — in seconds.
     </p>
+    <a href="{% url 'products:snap_batch' %}" class="inline-block mt-3 text-xs text-orange-600 dark:text-orange-400 hover:underline font-medium">
+      📦 Have multiple products? Try Batch Snap →
+    </a>
   </div>
 
   <form method="post" action="{% url 'products:snap_launch' %}" enctype="multipart/form-data" class="space-y-5"
