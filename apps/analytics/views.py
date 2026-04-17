@@ -6,6 +6,7 @@ from apps.utils import fire_task
 from django.db.models import Avg, Count, Q, Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from apps.analytics.models import (
     Competitor,
@@ -429,3 +430,220 @@ def serve_pixel_js(request):
             response["Access-Control-Allow-Origin"] = "*"
             return response
     return HttpResponse("", status=404, content_type="application/javascript")
+
+
+# ─── Attribution Dashboard ───────────────────────────────────────────────────
+
+
+@login_required
+def attribution_dashboard(request):
+    """
+    The single answer to: "How many customers came from social media this month?"
+
+    Combines: reach → engagement → clicks → leads → sales → revenue
+    Per-platform breakdown. Response time metrics. Month-over-month comparison.
+    """
+    from datetime import timedelta
+    from decimal import Decimal
+
+    from django.db.models import Avg, F
+    from django.db.models.functions import TruncDate
+
+    from apps.engage.models import Interaction
+    from apps.leads.models import Lead
+    from apps.links.models import LinkClick
+
+    days = int(request.GET.get("days", 30))
+    if days not in (7, 14, 30, 90):
+        days = 30
+
+    now = timezone.now()
+    cutoff = now - timedelta(days=days)
+    prev_cutoff = cutoff - timedelta(days=days)  # Previous period for comparison
+
+    # ── 1. Reach & Engagement (from PostMetric) ──────────────────────────────
+    published_posts = request.user.posts.filter(status="published", published_at__gte=cutoff)
+    post_ids = list(published_posts.values_list("id", flat=True))
+
+    metrics_qs = PostMetric.objects.filter(post_id__in=post_ids)
+    engagement = metrics_qs.aggregate(
+        total_impressions=Sum("impressions"),
+        total_reach=Sum("reach"),
+        total_likes=Sum("likes"),
+        total_comments=Sum("comments"),
+        total_shares=Sum("shares"),
+        total_saves=Sum("saves"),
+        total_clicks=Sum("clicks"),
+        avg_engagement_rate=Avg("engagement_rate"),
+    )
+    engagement = {k: v or 0 for k, v in engagement.items()}
+    engagement["total_engagements"] = (
+        engagement["total_likes"] + engagement["total_comments"]
+        + engagement["total_shares"] + engagement["total_saves"]
+    )
+
+    # Previous period for comparison
+    prev_posts = request.user.posts.filter(
+        status="published", published_at__gte=prev_cutoff, published_at__lt=cutoff,
+    )
+    prev_ids = list(prev_posts.values_list("id", flat=True))
+    prev_metrics = PostMetric.objects.filter(post_id__in=prev_ids).aggregate(
+        total_reach=Sum("reach"),
+        total_engagements=Sum(F("likes") + F("comments") + F("shares") + F("saves")),
+    )
+
+    # ── 2. Link Clicks ───────────────────────────────────────────────────────
+    link_clicks = LinkClick.objects.filter(
+        link__page__user=request.user, clicked_at__gte=cutoff,
+    ).count()
+
+    # ── 3. Leads ─────────────────────────────────────────────────────────────
+    leads_qs = Lead.objects.filter(user=request.user, first_seen_at__gte=cutoff)
+    leads_total = leads_qs.count()
+    leads_by_source = list(
+        leads_qs.values("source_type").annotate(count=Count("id")).order_by("-count")
+    )
+    leads_by_platform = list(
+        leads_qs.exclude(source_platform="").values("source_platform")
+        .annotate(count=Count("id")).order_by("-count")
+    )
+
+    prev_leads = Lead.objects.filter(
+        user=request.user, first_seen_at__gte=prev_cutoff, first_seen_at__lt=cutoff,
+    ).count()
+
+    # ── 4. Conversions & Revenue ─────────────────────────────────────────────
+    conversions = Conversion.objects.filter(user=request.user, created_at__gte=cutoff)
+    conv_totals = conversions.aggregate(
+        total_revenue=Sum("revenue"),
+        total_sales=Count("id", filter=Q(conversion_type="sale")),
+        total_leads=Count("id", filter=Q(conversion_type="lead")),
+        total_clicks=Count("id", filter=Q(conversion_type="click")),
+        total_all=Count("id"),
+    )
+    conv_totals = {k: v or (Decimal("0") if "revenue" in k else 0) for k, v in conv_totals.items()}
+
+    prev_conv = Conversion.objects.filter(
+        user=request.user, created_at__gte=prev_cutoff, created_at__lt=cutoff,
+    ).aggregate(
+        total_revenue=Sum("revenue"),
+        total_sales=Count("id", filter=Q(conversion_type="sale")),
+    )
+
+    # Per-platform revenue
+    platform_breakdown = list(
+        conversions.filter(social_account__isnull=False)
+        .values("social_account__platform")
+        .annotate(
+            revenue=Sum("revenue"),
+            sales=Count("id", filter=Q(conversion_type="sale")),
+            leads=Count("id", filter=Q(conversion_type="lead")),
+            clicks=Count("id", filter=Q(conversion_type="click")),
+        )
+        .order_by("-revenue")
+    )
+
+    # Daily revenue trend
+    daily_revenue = list(
+        conversions.filter(revenue__gt=0)
+        .annotate(date=TruncDate("created_at"))
+        .values("date")
+        .annotate(revenue=Sum("revenue"), count=Count("id"))
+        .order_by("date")
+    )
+
+    # ── 5. Response Time Metrics ─────────────────────────────────────────────
+    responded = Interaction.objects.filter(
+        user=request.user,
+        responded_at__isnull=False,
+        created_at__gte=cutoff,
+    )
+    response_stats = responded.aggregate(
+        count=Count("id"),
+        avg_seconds=Avg(F("responded_at") - F("created_at")),
+    )
+    total_interactions = Interaction.objects.filter(
+        user=request.user, created_at__gte=cutoff,
+    ).count()
+    replied_interactions = Interaction.objects.filter(
+        user=request.user, created_at__gte=cutoff,
+        status__in=["ai_replied", "user_replied"],
+    ).count()
+
+    # Convert avg timedelta to minutes
+    avg_response_minutes = None
+    if response_stats["avg_seconds"]:
+        avg_response_minutes = round(response_stats["avg_seconds"].total_seconds() / 60, 1)
+
+    response_metrics = {
+        "total_interactions": total_interactions,
+        "replied": replied_interactions,
+        "reply_rate": round(replied_interactions / total_interactions * 100, 1) if total_interactions else 0,
+        "avg_response_minutes": avg_response_minutes,
+        "responded_count": response_stats["count"] or 0,
+    }
+
+    # ── 6. The Answer ────────────────────────────────────────────────────────
+    customers_from_social = conv_totals["total_sales"]
+    revenue_from_social = conv_totals["total_revenue"]
+
+    # Deltas vs previous period
+    prev_revenue = prev_conv.get("total_revenue") or Decimal("0")
+    prev_sales = prev_conv.get("total_sales") or 0
+    prev_reach_val = prev_metrics.get("total_reach") or 0
+
+    deltas = {
+        "revenue": float(revenue_from_social - prev_revenue) if prev_revenue else None,
+        "sales": customers_from_social - prev_sales if prev_sales else None,
+        "reach": (engagement["total_reach"] - prev_reach_val) if prev_reach_val else None,
+        "leads": leads_total - prev_leads if prev_leads else None,
+    }
+
+    # ── 7. Funnel ────────────────────────────────────────────────────────────
+    funnel = {
+        "reach": engagement["total_reach"],
+        "engagements": engagement["total_engagements"],
+        "clicks": conv_totals["total_clicks"] + link_clicks,
+        "leads": leads_total,
+        "sales": customers_from_social,
+        "revenue": conv_totals["total_revenue"],
+    }
+    # Conversion rates between stages
+    funnel["reach_to_engage"] = (
+        round(funnel["engagements"] / funnel["reach"] * 100, 2)
+        if funnel["reach"] else 0
+    )
+    funnel["engage_to_click"] = (
+        round(funnel["clicks"] / funnel["engagements"] * 100, 2)
+        if funnel["engagements"] else 0
+    )
+    funnel["click_to_lead"] = (
+        round(funnel["leads"] / funnel["clicks"] * 100, 2)
+        if funnel["clicks"] else 0
+    )
+    funnel["lead_to_sale"] = (
+        round(funnel["sales"] / funnel["leads"] * 100, 2)
+        if funnel["leads"] else 0
+    )
+
+    # ── 8. Posts published count ─────────────────────────────────────────────
+    posts_published = published_posts.count()
+
+    return render(request, "analytics/attribution.html", {
+        "page_title": "Social Media Attribution",
+        "days": days,
+        "customers_from_social": customers_from_social,
+        "revenue_from_social": revenue_from_social,
+        "engagement": engagement,
+        "leads_total": leads_total,
+        "leads_by_source": leads_by_source,
+        "leads_by_platform": leads_by_platform,
+        "conv_totals": conv_totals,
+        "platform_breakdown": platform_breakdown,
+        "daily_revenue": daily_revenue,
+        "response_metrics": response_metrics,
+        "funnel": funnel,
+        "deltas": deltas,
+        "posts_published": posts_published,
+        "link_clicks": link_clicks,
+    })

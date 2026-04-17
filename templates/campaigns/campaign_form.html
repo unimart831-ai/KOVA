@@ -78,6 +78,26 @@
       </div>
     </div>
 
+    {# ── Goal Setting ──────────────────────────────────────────────────── #}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 space-y-5">
+      <div>
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Campaign Goal</h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Set a measurable target to track progress</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Goal Metric</label>
+          {{ form.goal_metric }}
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Target Number</label>
+          {{ form.goal_target }}
+          <p class="text-[10px] text-gray-400 mt-1">e.g. 50 leads, 10 sales, KES 100,000 revenue</p>
+        </div>
+      </div>
+    </div>
+
     <div class="flex items-center gap-3">
       <button type="submit" class="btn-primary text-sm px-6 py-2">{% if editing %}Save Changes{% else %}Create Campaign{% endif %}</button>
       <a href="{% if editing %}{% url 'campaigns:detail' pk=campaign.pk %}{% else %}{% url 'campaigns:list' %}{% endif %}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">Cancel</a>

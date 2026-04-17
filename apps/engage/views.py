@@ -3,6 +3,7 @@ import logging
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
 
 from apps.engage.models import Interaction, Superfan
 from apps.platforms.providers.registry import get_provider
@@ -166,7 +167,9 @@ def send_reply(request, pk):
         # Mark as replied
         interaction.ai_reply_sent = reply_text
         interaction.status = Interaction.Status.AI_REPLIED
-        interaction.save(update_fields=["ai_reply_sent", "status", "user_edited_reply"])
+        if not interaction.responded_at:
+            interaction.responded_at = timezone.now()
+        interaction.save(update_fields=["ai_reply_sent", "status", "user_edited_reply", "responded_at"])
 
         # Re-render the interaction item
         return render(request, "engage/_interaction_item.html", {

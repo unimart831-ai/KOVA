@@ -43,6 +43,10 @@ class Interaction(models.Model):
     platform_interaction_id = models.CharField(max_length=255, blank=True, db_index=True)
     sentiment = models.CharField(max_length=20, blank=True, db_index=True)  # positive, neutral, negative
     created_at = models.DateTimeField(auto_now_add=True)
+    responded_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the first reply (AI or human) was sent.",
+    )
 
     class Meta:
         ordering = ["-created_at"]
@@ -51,6 +55,13 @@ class Interaction(models.Model):
             models.Index(fields=["social_account", "-created_at"]),
             models.Index(fields=["user", "sentiment", "-created_at"]),
         ]
+
+    @property
+    def response_time_seconds(self):
+        """Seconds between interaction received and first reply."""
+        if self.responded_at and self.created_at:
+            return (self.responded_at - self.created_at).total_seconds()
+        return None
 
 
 class Superfan(models.Model):

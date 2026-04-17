@@ -60,6 +60,26 @@ class Campaign(models.Model):
         "emails.EmailCampaign", through="CampaignEmail", blank=True, related_name="campaigns"
     )
 
+    # Goal tracking
+    class GoalMetric(models.TextChoices):
+        NONE = "none", "No Goal"
+        IMPRESSIONS = "impressions", "Impressions"
+        REACH = "reach", "Reach"
+        CLICKS = "clicks", "Link Clicks"
+        LEADS = "leads", "Leads"
+        SALES = "sales", "Sales"
+        REVENUE = "revenue", "Revenue (KES)"
+        ENGAGEMENT = "engagement", "Engagements"
+
+    goal_metric = models.CharField(
+        max_length=20, choices=GoalMetric.choices, default=GoalMetric.NONE,
+        help_text="What KPI are you targeting?",
+    )
+    goal_target = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+        help_text="Target number to hit.",
+    )
+
     # Cached aggregates (refreshed when campaign is viewed)
     metrics_snapshot = models.JSONField(default=dict, blank=True)
 
@@ -105,6 +125,65 @@ class Campaign(models.Model):
             cs.seed.posts.filter(status="published").count()
             for cs in self.campaign_seeds.select_related("seed")
         )
+
+    @property
+    def goal_current(self):
+        """Calculate current progress toward the campaign goal from real data."""
+        if self.goal_metric == self.GoalMetric.NONE or not self.goal_target:
+            return None
+
+        from apps.analytics.models import Conversion, PostMetric
+        from apps.leads.models import Lead
+        from django.db.models import Sum
+
+        tag = self.utm_campaign_tag
+
+        if self.goal_metric in ("impressions", "reach", "engagement"):
+            post_ids = []
+            for cs in self.campaign_seeds.select_related("seed"):
+                post_ids.extend(cs.seed.posts.filter(status="published").values_list("id", flat=True))
+            if not post_ids:
+                return 0
+            metrics = PostMetric.objects.filter(post_id__in=post_ids)
+            if self.goal_metric == "impressions":
+                return metrics.aggregate(v=Sum("impressions"))["v"] or 0
+            elif self.goal_metric == "reach":
+                return metrics.aggregate(v=Sum("reach"))["v"] or 0
+            else:  # engagement
+                from django.db.models import F
+                return metrics.aggregate(
+                    v=Sum(F("likes") + F("comments") + F("shares") + F("saves"))
+                )["v"] or 0
+
+        if self.goal_metric == "clicks":
+            return Conversion.objects.filter(
+                user=self.user, conversion_type="click", utm_campaign=tag,
+            ).count()
+
+        if self.goal_metric == "leads":
+            return Lead.objects.filter(
+                user=self.user, metadata__utm_campaign=tag,
+            ).count()
+
+        if self.goal_metric == "sales":
+            return Conversion.objects.filter(
+                user=self.user, conversion_type="sale", utm_campaign=tag,
+            ).count()
+
+        if self.goal_metric == "revenue":
+            return Conversion.objects.filter(
+                user=self.user, utm_campaign=tag,
+            ).aggregate(v=Sum("revenue"))["v"] or 0
+
+        return 0
+
+    @property
+    def goal_progress_pct(self):
+        """Percentage progress toward the goal (capped at 100)."""
+        current = self.goal_current
+        if current is None or not self.goal_target:
+            return None
+        return min(round(float(current) / float(self.goal_target) * 100, 1), 100.0)
 
 
 class CampaignSeed(models.Model):

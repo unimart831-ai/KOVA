@@ -20,6 +20,8 @@ urlpatterns = [
     path("revenue/", views.revenue_dashboard, name="revenue"),
     path("revenue/shopify/connect/", views.shopify_connect, name="shopify_connect"),
     path("revenue/shopify/<uuid:pk>/disconnect/", views.shopify_disconnect, name="shopify_disconnect"),
+    # Attribution Dashboard (the single answer)
+    path("attribution/", views.attribution_dashboard, name="attribution"),
     # Kova Pixel (Sprint T2A)
     path("pixel/", pixel_settings, name="pixel_settings"),
     path("pixel/track/", pixel_track, name="pixel_track"),
