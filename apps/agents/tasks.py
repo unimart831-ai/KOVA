@@ -67,8 +67,42 @@ def _run_research_for_user(user_id):
         if result.get("trending_topics"):
             logger.info("Research complete for %s: %d topics", user.email, len(result["trending_topics"]))
             _auto_seed_from_trends(user, result)
+
+        # Pre-generate AI suggestions so Studio loads instantly
+        refresh_seed_suggestions.apply_async(args=[user_id], countdown=10)
     except Exception as e:
         logger.error("Research Agent failed for %s: %s", user.email, e)
+
+
+@shared_task(name="agents.refresh_seed_suggestions", max_retries=1, acks_late=True)
+def refresh_seed_suggestions(user_id):
+    """
+    Pre-generate and cache AI-powered content suggestions for a user.
+    Called after the Research Agent completes so the Studio page always
+    has fresh, personalised ideas ready.
+    """
+    from django.core.cache import cache
+
+    user = User.objects.get(pk=user_id)
+    cache_key = f"ai_seed_suggestions:{user.pk}"
+
+    # Clear stale cache so _get_ai_generated_suggestions regenerates
+    cache.delete(cache_key)
+
+    try:
+        from apps.agents.playbooks import _get_ai_generated_suggestions
+
+        profile = getattr(user, "profile", None)
+        if not profile:
+            return
+
+        suggestions = _get_ai_generated_suggestions(user, profile, max_count=8)
+        logger.info(
+            "Refreshed %d AI suggestions for %s", len(suggestions), user.email
+        )
+        return len(suggestions)
+    except Exception as e:
+        logger.error("Refresh suggestions failed for %s: %s", user.email, e)
 
 
 def _auto_seed_from_trends(user, research_result):

@@ -42,6 +42,7 @@ app.conf.task_routes = {
     "content.generate_from_seed": {"queue": "default"},
     "content.generate_ab_test_variants": {"queue": "default"},
     "agents.run_daily_research": {"queue": "default"},
+    "agents.refresh_seed_suggestions": {"queue": "low"},
     "agents.run_engage_cycle": {"queue": "default"},
     "agents.run_strategy_cycle": {"queue": "default"},
     "briefs.generate_all_daily_briefs": {"queue": "default"},

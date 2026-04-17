@@ -414,9 +414,9 @@ def get_playbook_intelligence(user) -> str:
 def get_seed_suggestions(user) -> list[dict]:
     """
     Return dynamic content suggestions from AI agents, competitor insights,
-    and static playbooks (fallback).
+    and AI-generated business-goal-aware ideas (cached).
 
-    Each suggestion is a dict: {"text": str, "source": "trend"|"competitor"|"playbook"}
+    Each suggestion is a dict: {"text": str, "source": "trend"|"competitor"|"ai"}
     """
     suggestions = []
 
@@ -475,16 +475,173 @@ def get_seed_suggestions(user) -> list[dict]:
     except Exception:
         pass
 
-    # 3. Fallback — static industry playbook if we have fewer than 4 dynamic suggestions
-    if len(suggestions) < 4:
-        playbook = get_playbook_for_industry(
-            industry=profile.industry,
-            company_name=profile.company_name,
-            brand_voice=profile.brand_voice,
-        )
-        if playbook:
-            remaining = 7 - len(suggestions)
-            for s in playbook.get("seed_suggestions", [])[:remaining]:
-                suggestions.append({"text": s, "source": "playbook"})
+    # 3. AI-generated suggestions from business goals, products & context (cached)
+    if len(suggestions) < 6:
+        remaining = 8 - len(suggestions)
+        ai_ideas = _get_ai_generated_suggestions(user, profile, max_count=remaining)
+        suggestions.extend(ai_ideas)
 
     return suggestions
+
+
+def _get_ai_generated_suggestions(user, profile, max_count=6) -> list[dict]:
+    """
+    Generate personalised content suggestions using the LLM, grounded in
+    the user's business goals, products, audience, recent performance,
+    and the current date (seasonality).  Results are cached per-user for
+    6 hours so the Studio page loads instantly.
+    """
+    import json
+    import logging
+
+    from django.core.cache import cache
+
+    logger = logging.getLogger(__name__)
+
+    cache_key = f"ai_seed_suggestions:{user.pk}"
+    cached = cache.get(cache_key)
+    if cached:
+        return cached[:max_count]
+
+    # ── Gather business context ──────────────────────────────────────
+    try:
+        from django.utils import timezone
+
+        from apps.content.models import ContentSeed, Post
+        from apps.products.models import Product
+
+        goals = getattr(profile, "goals", []) or []
+        pillars = getattr(profile, "content_pillars", []) or []
+        offerings = getattr(profile, "key_offerings", []) or []
+        audience = getattr(profile, "target_audience", "") or ""
+        voice = getattr(profile, "brand_voice", "") or ""
+        industry = getattr(profile, "industry", "") or ""
+        company = getattr(profile, "company_name", "") or ""
+        language = getattr(profile, "content_language", "en") or "en"
+
+        # Products — featured first, then recent
+        products_qs = Product.objects.filter(user=user, is_active=True)
+        featured = list(
+            products_qs.filter(is_featured=True)
+            .values_list("name", flat=True)[:5]
+        )
+        other_products = list(
+            products_qs.exclude(is_featured=True)
+            .order_by("-created_at")
+            .values_list("name", flat=True)[:5]
+        )
+
+        # Recent seeds — avoid repetition
+        recent_ideas = list(
+            ContentSeed.objects.filter(user=user)
+            .order_by("-created_at")
+            .values_list("idea", flat=True)[:8]
+        )
+
+        # Top-performing published posts (by engagement rate)
+        top_posts = list(
+            Post.objects.filter(user=user, status=Post.Status.PUBLISHED)
+            .select_related("metrics")
+            .order_by("-metrics__engagement_rate")
+            .values_list("content_text", flat=True)[:5]
+        )
+
+        # Connected platforms
+        platforms = list(
+            user.social_accounts.filter(is_active=True)
+            .values_list("platform", flat=True)
+            .distinct()
+        )
+
+        today = timezone.now().date()
+    except Exception:
+        logger.exception("AI suggestions: failed to gather context for %s", user.pk)
+        return _static_playbook_fallback(profile, max_count)
+
+    # ── Build LLM prompt ─────────────────────────────────────────────
+    prompt = (
+        f"Date: {today.strftime('%A, %B %d, %Y')}\n\n"
+        f"Business: {company}\n"
+        f"Industry: {industry}\n"
+        f"Brand voice: {voice}\n"
+        f"Target audience: {audience}\n"
+        f"Business goals: {json.dumps(goals)}\n"
+        f"Content pillars: {json.dumps(pillars)}\n"
+        f"Key offerings: {json.dumps(offerings)}\n"
+        f"Featured products: {json.dumps(featured)}\n"
+        f"Other products: {json.dumps(other_products)}\n"
+        f"Connected platforms: {json.dumps(platforms)}\n"
+        f"Content language: {language}\n\n"
+        f"Recent content ideas (AVOID repeating these):\n"
+        f"{json.dumps([i[:120] for i in recent_ideas])}\n\n"
+        f"Top-performing post themes (lean into what works):\n"
+        f"{json.dumps([t[:120] for t in top_posts])}\n\n"
+        "Generate 8 fresh, specific, and actionable content ideas for this "
+        "business. Each idea should be a single sentence that could be dropped "
+        "straight into a content creation tool.\n\n"
+        "Rules:\n"
+        "- At least 2 ideas must directly promote specific products/services listed above\n"
+        "- At least 2 ideas must advance the stated business goals\n"
+        "- At least 1 idea should ride a current trend or seasonal hook for the date above\n"
+        "- Mix content formats: posts, carousels, reels, stories, threads\n"
+        "- Be SPECIFIC to this business — no generic 'share a tip' ideas\n"
+        "- Match the brand voice described above\n"
+        "- Do NOT repeat the recent content ideas listed above\n\n"
+        'Respond ONLY with valid JSON: {"suggestions": ["idea 1", "idea 2", ...]}'
+    )
+
+    system = (
+        "You are a world-class social media strategist. Generate content ideas "
+        "that are specific, creative, and directly tied to this business's goals, "
+        "products, and audience. Every idea should feel tailor-made, not templated."
+    )
+
+    # ── Call LLM ─────────────────────────────────────────────────────
+    try:
+        from apps.agents.llm import generate, get_model_for_task, parse_llm_json
+
+        response = generate(
+            prompt=prompt,
+            system=system,
+            model=get_model_for_task("research.suggestions", user=user),
+            json_mode=True,
+            temperature=0.8,
+            max_tokens=1200,
+        )
+
+        result = parse_llm_json(response.content)
+        raw_suggestions = result.get("suggestions", [])
+        if not isinstance(raw_suggestions, list) or not raw_suggestions:
+            raise ValueError("Empty or invalid suggestions list")
+
+        ai_suggestions = [
+            {"text": str(s).strip(), "source": "ai"}
+            for s in raw_suggestions
+            if isinstance(s, str) and s.strip()
+        ][:8]
+
+        # Cache for 6 hours
+        cache.set(cache_key, ai_suggestions, timeout=6 * 60 * 60)
+        logger.info(
+            "AI suggestions: generated %d ideas for %s", len(ai_suggestions), user.pk
+        )
+        return ai_suggestions[:max_count]
+
+    except Exception:
+        logger.exception("AI suggestions: LLM call failed for %s", user.pk)
+        return _static_playbook_fallback(profile, max_count)
+
+
+def _static_playbook_fallback(profile, max_count=6) -> list[dict]:
+    """Last-resort fallback to static industry playbook suggestions."""
+    playbook = get_playbook_for_industry(
+        industry=getattr(profile, "industry", ""),
+        company_name=getattr(profile, "company_name", ""),
+        brand_voice=getattr(profile, "brand_voice", ""),
+    )
+    if not playbook:
+        return []
+    return [
+        {"text": s, "source": "playbook"}
+        for s in playbook.get("seed_suggestions", [])[:max_count]
+    ]

@@ -235,6 +235,23 @@ def dismiss_failed_seeds(request):
 
 
 @login_required
+@require_POST
+def refresh_suggestions(request):
+    """HTMX endpoint: clear cached suggestions and regenerate from AI."""
+    from django.core.cache import cache
+
+    cache.delete(f"ai_seed_suggestions:{request.user.pk}")
+
+    from apps.agents.playbooks import get_seed_suggestions
+
+    seed_suggestions = get_seed_suggestions(request.user)
+
+    return render(request, "content/_suggestions.html", {
+        "seed_suggestions": seed_suggestions,
+    })
+
+
+@login_required
 def seed_status(request, seed_id):
     """HTMX endpoint: poll seed processing status."""
     from datetime import timedelta

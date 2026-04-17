@@ -329,8 +329,8 @@ def promote_product(request, product_id):
     with the product FK set, so the Create Agent gets full product context.
     """
     from apps.content.models import ContentSeed
-    from apps.agents.tasks import generate_from_seed
-    from apps.utils.tasks import fire_task
+    from apps.content.tasks import generate_from_seed
+    from apps.utils import fire_task
 
     product = get_object_or_404(Product, pk=product_id, user=request.user)
 

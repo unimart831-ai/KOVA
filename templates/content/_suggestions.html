@@ -1,0 +1,46 @@
+{# Partial: seed suggestion chips — rendered inline or via HTMX refresh #}
+
+<div id="seed-suggestions">
+{% if seed_suggestions %}
+<div class="card border-dashed border-kova-200 dark:border-kova-800/60 bg-kova-50/40 dark:bg-kova-950/20">
+  <div class="card-body py-4">
+    <div class="flex items-center justify-between mb-3">
+      <p class="text-xs font-semibold text-kova-600 dark:text-kova-400 uppercase tracking-wider">
+        <svg class="inline w-3.5 h-3.5 mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+        Suggested for you
+      </p>
+      <button type="button"
+              hx-post="{% url 'content:refresh_suggestions' %}"
+              hx-target="#seed-suggestions"
+              hx-swap="outerHTML"
+              hx-indicator="#refresh-spinner"
+              class="inline-flex items-center gap-1 text-[10px] text-gray-400 hover:text-kova-500 dark:hover:text-kova-400 transition-colors"
+              title="Refresh suggestions">
+        <svg id="refresh-spinner" class="w-3 h-3 htmx-indicator animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        <svg class="w-3 h-3 [.htmx-request_&]:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        Refresh
+      </button>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      {% for suggestion in seed_suggestions %}
+      <button type="button"
+              onclick="document.getElementById('idea-input').value = this.dataset.idea; document.getElementById('idea-input').focus(); document.getElementById('idea-input').scrollIntoView({behavior:'smooth', block:'center'})"
+              data-idea="{{ suggestion.text }}"
+              class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-kova-200 dark:border-kova-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-kova-400 hover:bg-kova-50 dark:hover:bg-kova-900/30 transition-colors cursor-pointer text-left">
+        {% if suggestion.source == "trend" %}
+          <span class="text-[10px]" title="Trending">🔬</span>
+        {% elif suggestion.source == "competitor" %}
+          <span class="text-[10px]" title="Competitor gap">🏆</span>
+        {% elif suggestion.source == "ai" %}
+          <span class="text-[10px]" title="AI — tailored to your goals">✨</span>
+        {% else %}
+          <span class="text-[10px]" title="Industry playbook">💡</span>
+        {% endif %}
+        {{ suggestion.text|truncatewords:10 }}
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+</div>
