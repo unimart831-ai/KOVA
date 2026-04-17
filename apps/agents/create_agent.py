@@ -1007,31 +1007,64 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
             post.populate_utm()
 
             # ── Attach product image if available (Snap to Sell) ─────
-            # If the seed's product has a photo, use it directly instead
-            # of generating an AI image — the real photo is better.
+            # If the seed's product has photos, use them directly instead
+            # of generating AI images — real photos are better.
+            # With multiple images, distribute them across posts (round-robin)
+            # so each post gets a different angle/photo.
             product_image_attached = False
             if seed and seed.product and seed.product.image:
                 try:
                     from apps.content.models import MediaAttachment
-                    from django.core.files import File
-                    import os
 
                     product = seed.product
-                    # Create a MediaAttachment from the product image
-                    attachment = MediaAttachment.objects.create(
-                        post=post,
-                        file=product.image,  # Django copies the FieldFile reference
-                        file_type="image",
-                        alt_text=product.name[:500],
-                        order=0,
-                    )
+                    all_urls = product.all_image_urls  # primary + additional
+
+                    # Round-robin: pick a different image for each post
+                    post_index = len(created_posts)  # 0-based index of this post
+                    img_index = post_index % len(all_urls)
+                    chosen_url = all_urls[img_index]
+
+                    # Create MediaAttachment — use the actual file for primary,
+                    # or the URL reference for additional images
+                    if img_index == 0 and product.image:
+                        attachment = MediaAttachment.objects.create(
+                            post=post,
+                            file=product.image,
+                            file_type="image",
+                            alt_text=product.name[:500],
+                            order=0,
+                        )
+                    else:
+                        # Additional images are stored via default_storage
+                        from django.core.files.storage import default_storage
+                        from django.core.files.base import ContentFile
+                        # Try to read the file from storage path
+                        storage_path = chosen_url.replace("/media/", "", 1) if chosen_url.startswith("/media/") else chosen_url.lstrip("/")
+                        try:
+                            with default_storage.open(storage_path) as f:
+                                file_data = f.read()
+                            ext = storage_path.rsplit(".", 1)[-1].lower()
+                            filename = f"post_media/{post.pk}_{img_index}.{ext}"
+                            attachment = MediaAttachment.objects.create(
+                                post=post,
+                                file_type="image",
+                                alt_text=product.name[:500],
+                                order=0,
+                            )
+                            attachment.file.save(filename, ContentFile(file_data), save=True)
+                        except Exception:
+                            # Fallback: just use the URL without a file attachment
+                            attachment = None
+
                     # Set media_urls so the publishing pipeline picks it up
-                    img_url = product.image.url
-                    post.media_urls = [img_url]
+                    post.media_urls = [chosen_url]
                     post.media_status = Post.MediaStatus.UPLOADED
                     post.save(update_fields=["media_urls", "media_status", "updated_at"])
                     product_image_attached = True
-                    logger.info("Attached product image to post %s: %s", post.id, img_url)
+                    logger.info(
+                        "Attached product image %d/%d to post %s: %s",
+                        img_index + 1, len(all_urls), post.id, chosen_url,
+                    )
                 except Exception as img_exc:
                     logger.warning("Failed to attach product image to post %s: %s", post.id, img_exc)
 

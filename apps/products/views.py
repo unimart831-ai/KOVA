@@ -381,12 +381,13 @@ def snap_to_sell(request):
 @require_POST
 def snap_launch(request):
     """
-    Receive photo + name + price, create a Product, and fire the
+    Receive multiple photos + name + price, create a Product, and fire the
     Snap to Sell background task (vision AI → content pipeline).
     """
     from apps.billing.models import get_plan_limits
     from apps.products.tasks import snap_to_sell_analyze
     from apps.utils import fire_task
+    from django.core.files.storage import default_storage
 
     # Plan limit check
     limits = get_plan_limits(request.user.profile.plan)
@@ -398,14 +399,17 @@ def snap_launch(request):
 
     # Validate required fields
     name = request.POST.get("name", "").strip()
-    photo = request.FILES.get("photo")
+    photos = request.FILES.getlist("photos")
 
     if not name:
         messages.error(request, "Please enter a product name.")
         return redirect("products:snap")
-    if not photo:
-        messages.error(request, "Please upload or take a photo.")
+    if not photos:
+        messages.error(request, "Please upload or take at least one photo.")
         return redirect("products:snap")
+
+    # Cap at 6 images
+    photos = photos[:6]
 
     # Parse optional price
     price = None
@@ -419,23 +423,37 @@ def snap_launch(request):
     currency = request.POST.get("currency", "KES").strip() or "KES"
     description = request.POST.get("description", "").strip()
 
-    # Create the product
+    # Create the product with the first image as primary
     product = Product.objects.create(
         user=request.user,
         name=name,
         price=price,
         currency=currency,
         description=description,
-        image=photo,
+        image=photos[0],
         stock_status=Product.StockStatus.IN_STOCK,
     )
+
+    # Save additional images (2nd onward) to storage, store URLs
+    additional_urls = []
+    for extra_photo in photos[1:]:
+        # Save to product_images/ folder
+        ext = extra_photo.name.rsplit(".", 1)[-1].lower() if "." in extra_photo.name else "jpg"
+        filename = f"product_images/{product.pk}_{len(additional_urls) + 1}.{ext}"
+        saved_path = default_storage.save(filename, extra_photo)
+        additional_urls.append(default_storage.url(saved_path))
+
+    if additional_urls:
+        product.additional_images = additional_urls
+        product.save(update_fields=["additional_images"])
 
     # Fire background task: vision AI → content generation
     fire_task(snap_to_sell_analyze, str(product.pk))
 
+    photo_count = len(photos)
     messages.success(
         request,
-        f"📸 '{product.name}' added! AI is analyzing your photo and creating content — "
-        f"check your Content Studio in a moment."
+        f"📸 '{product.name}' added with {photo_count} photo{'s' if photo_count != 1 else ''}! "
+        f"AI is analyzing and creating content — check your Content Studio in a moment."
     )
     return redirect("products:detail", product_id=product.pk)

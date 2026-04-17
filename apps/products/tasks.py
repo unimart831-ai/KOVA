@@ -328,10 +328,14 @@ def _build_promotion_idea(product):
 @shared_task(name="products.snap_to_sell_analyze")
 def snap_to_sell_analyze(product_id: str):
     """
-    Vision AI analyzes a product photo, enriches the product description,
+    Vision AI analyzes product photos, enriches the product description,
     then auto-creates a ContentSeed and fires the content pipeline.
 
-    Called after the user snaps/uploads a photo, provides name + price,
+    Supports multiple images — analyzes the primary image for product details,
+    and tells the content pipeline about all available images so each post
+    can use a different photo.
+
+    Called after the user snaps/uploads photos, provides name + price,
     and hits "Launch".
     """
     from apps.agents.llm import analyze_image, generate, parse_llm_json
@@ -349,27 +353,46 @@ def snap_to_sell_analyze(product_id: str):
 
     user = product.user
 
-    # ── Step 1: Vision AI — analyze the product photo ────────────────
-    if not product.image:
-        logger.warning("Snap to Sell: product %s has no image", product_id)
-        return {"error": "No image attached"}
+    # ── Gather all product images ────────────────────────────────────
+    all_images = product.all_image_urls  # primary + additional_images
+    if not all_images:
+        logger.warning("Snap to Sell: product %s has no images", product_id)
+        return {"error": "No images attached"}
 
-    image_url = product.image.url
+    # ── Step 1: Vision AI — analyze the primary product photo ────────
+    image_url = all_images[0]
     # If it's a relative URL, we can't send it to the API — use base64
     if not image_url.startswith("http"):
         import base64
-        with open(product.image.path, "rb") as f:
-            encoded = base64.b64encode(f.read()).decode("utf-8")
-        # Detect mime type
-        ext = product.image.name.rsplit(".", 1)[-1].lower()
-        mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
-                "webp": "image/webp", "gif": "image/gif"}.get(ext, "image/jpeg")
-        image_url = f"data:{mime};base64,{encoded}"
+        try:
+            from django.core.files.storage import default_storage
+            if product.image:
+                file_path = product.image.path
+            else:
+                # Additional image stored via default_storage
+                file_path = default_storage.path(image_url.lstrip("/"))
+            with open(file_path, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode("utf-8")
+            ext = file_path.rsplit(".", 1)[-1].lower()
+            mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+                    "webp": "image/webp", "gif": "image/gif"}.get(ext, "image/jpeg")
+            image_url = f"data:{mime};base64,{encoded}"
+        except Exception as exc:
+            logger.warning("Snap to Sell: could not read image file: %s", exc)
+            import base64
+            with open(product.image.path, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode("utf-8")
+            ext = product.image.name.rsplit(".", 1)[-1].lower()
+            mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+                    "webp": "image/webp", "gif": "image/gif"}.get(ext, "image/jpeg")
+            image_url = f"data:{mime};base64,{encoded}"
 
+    num_images = len(all_images)
     vision_prompt = (
         "You are a product photography analyst for a social media marketing platform.\n"
         f"Product name: {product.name}\n"
-        f"Price: {product.display_price or 'not set'}\n\n"
+        f"Price: {product.display_price or 'not set'}\n"
+        f"Number of product photos available: {num_images}\n\n"
         "Analyze this product image and return JSON with:\n"
         "{\n"
         '  "description": "A compelling 2-3 sentence product description for social media marketing",\n'
@@ -377,9 +400,15 @@ def snap_to_sell_analyze(product_id: str):
         '  "target_audience": "Who would buy this",\n'
         '  "suggested_tags": ["tag1", "tag2", "tag3"],\n'
         '  "visual_style": "Describe the visual aesthetic (colors, mood, quality)",\n'
-        '  "campaign_angle": "Best marketing angle for social media"\n'
-        "}"
+        '  "campaign_angle": "Best marketing angle for social media"'
     )
+    if num_images > 1:
+        vision_prompt += (
+            ',\n  "multi_image_angles": ['
+            '"Unique content angle for photo 1", "Unique content angle for photo 2", ...'
+            f'] (provide {num_images} different angles, one per photo)'
+        )
+    vision_prompt += "\n}"
 
     try:
         vision_resp = analyze_image(
@@ -426,6 +455,19 @@ def snap_to_sell_analyze(product_id: str):
     if analysis.get("target_audience"):
         audience_text = f" Target audience: {analysis['target_audience']}."
 
+    # Multi-image angles for specialized content per photo
+    multi_angles = analysis.get("multi_image_angles", [])
+    image_note = ""
+    if num_images > 1:
+        image_note = (
+            f" This product has {num_images} different photos available."
+            f" Create varied content — each post should use a DIFFERENT photo"
+            f" from the product's image gallery for visual variety."
+        )
+        if multi_angles:
+            angles_text = "; ".join(f"Photo {i+1}: {a}" for i, a in enumerate(multi_angles[:num_images]))
+            image_note += f" Suggested angles per photo: {angles_text}."
+
     seed = ContentSeed.objects.create(
         user=user,
         product=product,
@@ -435,13 +477,15 @@ def snap_to_sell_analyze(product_id: str):
             f"{features_text}"
             f" Campaign angle: {analysis.get('campaign_angle', 'product showcase')}."
             f"{audience_text}"
-            f" Use the product photo as the hero image."
+            f"{image_note}"
         ),
         notes=(
             f"AI Vision Analysis:\n"
             f"Description: {analysis.get('description', '')}\n"
             f"Visual style: {analysis.get('visual_style', '')}\n"
-            f"Source: Snap to Sell — user-uploaded product photo"
+            f"Product images: {num_images}\n"
+            f"Image URLs: {', '.join(all_images)}\n"
+            f"Source: Snap to Sell — user-uploaded product photos"
         ),
         target_platforms=platforms[:3] if platforms else [],
     )
