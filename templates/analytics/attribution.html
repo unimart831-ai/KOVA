@@ -1,7 +1,7 @@
 {% extends "layouts/app.html" %}
 {% load humanize %}
 
-{% block page_title %}Social Media Attribution{% endblock %}
+{% block page_title %}Revenue{% endblock %}
 {% block page_subtitle %}
   <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
     The answer: how many customers came from social media?
@@ -9,6 +9,7 @@
 {% endblock %}
 
 {% block content %}
+{% include "analytics/_revenue_tabs.html" %}
 <div class="max-w-6xl mx-auto space-y-6">
 
   {# Period selector #}

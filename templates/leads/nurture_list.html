@@ -1,6 +1,6 @@
 {% extends "layouts/app.html" %}
 
-{% block page_title %}Lead Nurture Sequences{% endblock %}
+{% block page_title %}Leads{% endblock %}
 {% block page_subtitle %}
   <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
     Automated follow-up sequences for new leads
@@ -15,6 +15,8 @@
 {% endblock %}
 
 {% block content %}
+{% include "leads/_leads_tabs.html" %}
+
 <div class="max-w-4xl mx-auto space-y-6">
 
   {% if not sequences %}

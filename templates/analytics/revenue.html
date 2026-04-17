@@ -1,14 +1,14 @@
 {% extends "layouts/app.html" %}
 
-{% block page_title %}Revenue Attribution{% endblock %}
+{% block page_title %}Revenue{% endblock %}
 {% block page_subtitle %}
   <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
-    <a href="{% url 'analytics:insights' %}" class="hover:text-kova-600 dark:hover:text-kova-400">Analytics</a>
-    <span class="mx-1">/</span> Revenue · Last {{ days }} days
+    Track revenue, ROI, and social media attribution
   </p>
 {% endblock %}
 
 {% block content %}
+{% include "analytics/_revenue_tabs.html" %}
 <div class="max-w-6xl mx-auto space-y-6">
 
   {# Period selector #}

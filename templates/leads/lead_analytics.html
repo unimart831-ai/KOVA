@@ -1,13 +1,10 @@
 {% extends "layouts/app.html" %}
 
-{% block page_title %}Lead Analytics{% endblock %}
+{% block page_title %}Leads{% endblock %}
 
 {% block content %}
+{% include "leads/_leads_tabs.html" %}
 <div class="max-w-4xl mx-auto space-y-6">
-
-  <div class="flex items-center justify-between">
-    <a href="{% url 'leads:list' %}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">← Lead Inbox</a>
-  </div>
 
   {# Top metrics #}
   <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">

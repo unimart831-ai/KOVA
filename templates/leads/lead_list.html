@@ -1,11 +1,12 @@
 {% extends "layouts/app.html" %}
 
-{% block page_title %}Lead Inbox{% endblock %}
+{% block page_title %}Leads{% endblock %}
 {% block page_subtitle %}
 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">{{ stats.new }} new · {{ stats.total }} total</p>
 {% endblock %}
 
 {% block content %}
+{% include "leads/_leads_tabs.html" %}
 <div class="space-y-6">
 
   {# Stats bar #}
