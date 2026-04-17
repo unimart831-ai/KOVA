@@ -10,25 +10,53 @@
 
   {# Hero / explainer #}
   <div class="card px-6 py-5 text-center border-2 border-dashed border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/20">
-    <div class="text-3xl mb-2">📸</div>
-    <h2 class="text-lg font-bold text-gray-900 dark:text-white">Photos → Content → Sales</h2>
-    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-      Take multiple photos of your product, add a name &amp; price, and Kova's AI will
-      analyze them and create specialized content for each angle — in seconds.
-    </p>
+    <div class="text-3xl mb-2" x-text="offeringConfig[offeringType].emoji">📸</div>
+    <h2 class="text-lg font-bold text-gray-900 dark:text-white" x-text="offeringConfig[offeringType].hero">Photos → Content → Sales</h2>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1" x-text="offeringConfig[offeringType].subtitle"></p>
     <a href="{% url 'products:snap_batch' %}" class="inline-block mt-3 text-xs text-orange-600 dark:text-orange-400 hover:underline font-medium">
-      📦 Have multiple products? Try Batch Snap →
+      📦 Have multiple offerings? Try Batch Snap →
     </a>
+  </div>
+
+  {# Offering type selector #}
+  <div class="card p-4">
+    <label class="label text-sm font-semibold mb-2">What are you selling?</label>
+    <div class="grid grid-cols-3 gap-2">
+      <button type="button" @click="offeringType = 'product'"
+              class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
+              :class="offeringType === 'product'
+                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
+        📦 Product
+      </button>
+      <button type="button" @click="offeringType = 'service'"
+              class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
+              :class="offeringType === 'service'
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
+        🛠️ Service
+      </button>
+      <button type="button" @click="offeringType = 'digital'"
+              class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
+              :class="offeringType === 'digital'
+                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
+        💻 Digital
+      </button>
+    </div>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2" x-text="offeringConfig[offeringType].hint"></p>
   </div>
 
   <form method="post" action="{% url 'products:snap_launch' %}" enctype="multipart/form-data" class="space-y-5"
         @submit="prepareSubmit($event)">
     {% csrf_token %}
 
+    <input type="hidden" name="offering_type" :value="offeringType">
+
     {# Photo capture / upload area #}
     <div class="card p-5 space-y-4">
       <div class="flex items-center justify-between">
-        <label class="label text-base font-semibold mb-0">1. Product Photos</label>
+        <label class="label text-base font-semibold mb-0" x-text="'1. ' + offeringConfig[offeringType].photoLabel">1. Product Photos</label>
         <span class="text-xs text-gray-500 dark:text-gray-400"
               x-text="photos.length + '/6 photos'"></span>
       </div>
@@ -66,8 +94,8 @@
       <template x-if="photos.length === 0">
         <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center">
           <div class="text-4xl mb-2">📷</div>
-          <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Tap below to add product photos</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Multiple angles = better AI content. Up to 6 photos.</p>
+          <p class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="offeringConfig[offeringType].emptyTitle">Tap below to add product photos</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-text="offeringConfig[offeringType].emptyHint">Multiple angles = better AI content. Up to 6 photos.</p>
         </div>
       </template>
 
@@ -95,22 +123,29 @@
       </div>
     </div>
 
-    {# Product details #}
+    {# Details #}
     <div class="card p-5 space-y-4">
       <label class="label text-base font-semibold">2. Quick Details</label>
 
       <div>
-        <label for="snap-name" class="label">Product Name *</label>
+        <label for="snap-name" class="label" x-text="offeringConfig[offeringType].nameLabel + ' *'">Name *</label>
         <input type="text" id="snap-name" name="name" required
-               class="input" placeholder="e.g. Handmade Leather Bag"
+               class="input" :placeholder="offeringConfig[offeringType].namePlaceholder"
                x-model="name">
+      </div>
+
+      {# Service-specific: what does the photo show? #}
+      <div x-show="offeringType !== 'product'" x-cloak>
+        <label for="snap-context" class="label">What does this photo show? <span class="text-gray-400">(helps AI understand your work)</span></label>
+        <input type="text" id="snap-context" name="photo_context"
+               class="input" :placeholder="offeringConfig[offeringType].contextPlaceholder">
       </div>
 
       <div class="grid grid-cols-3 gap-3">
         <div class="col-span-2">
-          <label for="snap-price" class="label">Price</label>
+          <label for="snap-price" class="label" x-text="offeringConfig[offeringType].priceLabel">Price</label>
           <input type="number" id="snap-price" name="price" step="0.01" min="0"
-                 class="input" placeholder="e.g. 2500"
+                 class="input" :placeholder="offeringConfig[offeringType].pricePlaceholder"
                  x-model="price">
         </div>
         <div>
@@ -133,7 +168,7 @@
       <div>
         <label for="snap-desc" class="label">Description <span class="text-gray-400">(optional — AI will generate if blank)</span></label>
         <textarea id="snap-desc" name="description" rows="2"
-                  class="input" placeholder="Brief description — or leave blank and let AI write it from the photos"></textarea>
+                  class="input" :placeholder="offeringConfig[offeringType].descPlaceholder"></textarea>
       </div>
     </div>
 
@@ -147,8 +182,7 @@
         : 'Snap to Sell — Launch with ' + photos.length + ' Photos'"></span>
     </button>
 
-    <p class="text-xs text-center text-gray-500 dark:text-gray-400">
-      AI will analyze your photos, write a product description, and generate specialized posts for each angle.
+    <p class="text-xs text-center text-gray-500 dark:text-gray-400" x-text="offeringConfig[offeringType].launchHint">
     </p>
   </form>
 
@@ -160,6 +194,58 @@ function snapToSell() {
     photos: [],   // [{file: File, preview: 'data:...'}]
     name: '',
     price: '',
+    offeringType: 'product',
+
+    offeringConfig: {
+      product: {
+        emoji: '📸',
+        hero: 'Photos → Content → Sales',
+        subtitle: 'Take photos of your product, add a name & price — AI creates specialized marketing content in seconds.',
+        hint: 'Physical items: clothes, food, electronics, crafts, etc.',
+        photoLabel: 'Product Photos',
+        emptyTitle: 'Tap below to add product photos',
+        emptyHint: 'Multiple angles = better AI content. Up to 6 photos.',
+        nameLabel: 'Product Name',
+        namePlaceholder: 'e.g. Handmade Leather Bag',
+        priceLabel: 'Price',
+        pricePlaceholder: 'e.g. 2500',
+        contextPlaceholder: '',
+        descPlaceholder: 'Brief description — or leave blank and let AI write it from the photos',
+        launchHint: 'AI will analyze your photos, write a product description, and generate specialized posts for each angle.',
+      },
+      service: {
+        emoji: '🛠️',
+        hero: 'Show Your Work → Build Authority',
+        subtitle: 'Snap your portfolio work, client results, or projects — AI creates credibility-building content that attracts new clients.',
+        hint: 'Web design, consulting, photography, events, training, beauty, etc.',
+        photoLabel: 'Work Evidence',
+        emptyTitle: 'Add photos of your work',
+        emptyHint: 'Portfolio pieces, client results, before/afters, you in action. Up to 6.',
+        nameLabel: 'Service Name',
+        namePlaceholder: 'e.g. Website Design, Brand Strategy, Event Planning',
+        priceLabel: 'Starting Price',
+        pricePlaceholder: 'e.g. from 50000',
+        contextPlaceholder: 'e.g. "Website I designed for a bakery" or "Before & after brand refresh"',
+        descPlaceholder: 'What you do — or leave blank and AI will craft it from your work evidence',
+        launchHint: 'AI will analyze your work, craft authority-building content, and generate posts that showcase your expertise.',
+      },
+      digital: {
+        emoji: '💻',
+        hero: 'Screenshots → Downloads & Sales',
+        subtitle: 'Snap screenshots of your digital product — AI creates compelling content to drive downloads and sales.',
+        hint: 'Templates, courses, ebooks, apps, presets, printables, etc.',
+        photoLabel: 'Product Screenshots',
+        emptyTitle: 'Add screenshots of your digital product',
+        emptyHint: 'UI screenshots, preview pages, results, feature highlights. Up to 6.',
+        nameLabel: 'Product Name',
+        namePlaceholder: 'e.g. Social Media Template Pack, Python Course',
+        priceLabel: 'Price',
+        pricePlaceholder: 'e.g. 1500',
+        contextPlaceholder: 'e.g. "Dashboard view of the app" or "Sample lesson from the course"',
+        descPlaceholder: 'What it is and what the buyer gets — or let AI figure it out from screenshots',
+        launchHint: 'AI will analyze your screenshots, write compelling copy, and generate posts that drive downloads.',
+      },
+    },
 
     addFromInput(event) {
       const files = Array.from(event.target.files);

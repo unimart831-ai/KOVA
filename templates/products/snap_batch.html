@@ -11,19 +11,49 @@
   {# Hero #}
   <div class="card px-6 py-5 text-center border-2 border-dashed border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/20">
     <div class="text-3xl mb-2">📦⚡</div>
-    <h2 class="text-lg font-bold text-gray-900 dark:text-white">Batch Snap — Multiple Products at Once</h2>
+    <h2 class="text-lg font-bold text-gray-900 dark:text-white">Batch Snap — Multiple Offerings at Once</h2>
     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-      Snap up to 10 <strong>different products</strong>. AI will identify each one,
-      create separate product listings, and generate unique social media content for every product.
+      Snap up to 10 <strong>different offerings</strong>. AI will identify each one,
+      create separate listings, and generate unique social media content for every item.
     </p>
     <a href="{% url 'products:snap' %}" class="inline-block mt-3 text-xs text-purple-600 dark:text-purple-400 hover:underline font-medium">
-      📸 Just one product? Use Snap to Sell →
+      📸 Just one offering? Use Snap to Sell →
     </a>
+  </div>
+
+  {# Offering type selector — applies to all items in the batch #}
+  <div class="card p-4">
+    <label class="label text-sm font-semibold mb-2">What are you selling?</label>
+    <div class="grid grid-cols-3 gap-2">
+      <button type="button" @click="offeringType = 'product'"
+              class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
+              :class="offeringType === 'product'
+                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
+        📦 Products
+      </button>
+      <button type="button" @click="offeringType = 'service'"
+              class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
+              :class="offeringType === 'service'
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
+        🛠️ Services
+      </button>
+      <button type="button" @click="offeringType = 'digital'"
+              class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
+              :class="offeringType === 'digital'
+                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
+        💻 Digital
+      </button>
+    </div>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2" x-text="typeHints[offeringType]"></p>
   </div>
 
   <form method="post" action="{% url 'products:snap_batch_launch' %}" enctype="multipart/form-data"
         class="space-y-5" @submit="prepareSubmit($event)">
     {% csrf_token %}
+    <input type="hidden" name="offering_type" :value="offeringType">
 
     {# Product cards #}
     <div class="space-y-4">
@@ -68,8 +98,14 @@
               </div>
               <input type="text" :name="'name_' + index"
                      class="input text-sm py-1.5"
-                     placeholder="Product name (or leave blank — AI will name it)"
+                     :placeholder="namePlaceholders[offeringType]"
                      x-model="item.name">
+              {# Context field for services/digital #}
+              <input x-show="offeringType !== 'product'" x-cloak
+                     type="text" :name="'context_' + index"
+                     class="input text-sm py-1.5"
+                     :placeholder="contextPlaceholders[offeringType]"
+                     x-model="item.context">
               <div class="flex gap-2">
                 <input type="number" :name="'price_' + index" step="0.01" min="0"
                        class="input text-sm py-1.5 flex-1"
@@ -152,12 +188,29 @@ function batchSnap() {
   let nextId = 1;
 
   return {
-    items: [{ id: nextId++, file: null, preview: null, name: '', price: '', currency: 'KES' }],
+    items: [{ id: nextId++, file: null, preview: null, name: '', price: '', currency: 'KES', context: '' }],
     captureTargetIndex: null,
+    offeringType: 'product',
+
+    typeHints: {
+      product: 'Physical items: clothes, food, electronics, crafts, etc.',
+      service: 'Web design, consulting, photography, event planning, training, beauty, etc.',
+      digital: 'Templates, courses, ebooks, apps, presets, printables, etc.',
+    },
+    namePlaceholders: {
+      product: 'Product name (or leave blank — AI will name it)',
+      service: 'Service name (e.g. Website Design, Brand Strategy)',
+      digital: 'Product name (e.g. Template Pack, Online Course)',
+    },
+    contextPlaceholders: {
+      product: '',
+      service: 'What does this photo show? e.g. "Website I built for a café"',
+      digital: 'What does this show? e.g. "Dashboard view of the app"',
+    },
 
     addItem() {
       if (this.items.length >= 10) return;
-      this.items.push({ id: nextId++, file: null, preview: null, name: '', price: '', currency: 'KES' });
+      this.items.push({ id: nextId++, file: null, preview: null, name: '', price: '', currency: 'KES', context: '' });
     },
 
     removeItem(index) {
@@ -207,7 +260,7 @@ function batchSnap() {
         // If the last item has no photo, fill it; otherwise add new
         let target = this.items.find(it => !it.file);
         if (!target) {
-          target = { id: nextId++, file: null, preview: null, name: '', price: '', currency: 'KES' };
+          target = { id: nextId++, file: null, preview: null, name: '', price: '', currency: 'KES', context: '' };
           this.items.push(target);
         }
 

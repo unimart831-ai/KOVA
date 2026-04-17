@@ -422,16 +422,29 @@ def snap_launch(request):
 
     currency = request.POST.get("currency", "KES").strip() or "KES"
     description = request.POST.get("description", "").strip()
+    offering_type = request.POST.get("offering_type", "product").strip()
+    photo_context = request.POST.get("photo_context", "").strip()
+
+    # Validate offering_type
+    valid_types = {c[0] for c in Product.OfferingType.choices}
+    if offering_type not in valid_types:
+        offering_type = "product"
 
     # Create the product with the first image as primary
+    stock_status = (
+        Product.StockStatus.UNLIMITED
+        if offering_type in ("service", "digital")
+        else Product.StockStatus.IN_STOCK
+    )
     product = Product.objects.create(
         user=request.user,
         name=name,
+        offering_type=offering_type,
         price=price,
         currency=currency,
         description=description,
         image=photos[0],
-        stock_status=Product.StockStatus.IN_STOCK,
+        stock_status=stock_status,
     )
 
     # Save additional images (2nd onward) to storage, store URLs
@@ -448,7 +461,7 @@ def snap_launch(request):
         product.save(update_fields=["additional_images"])
 
     # Fire background task: vision AI → content generation
-    fire_task(snap_to_sell_analyze, str(product.pk))
+    fire_task(snap_to_sell_analyze, str(product.pk), photo_context)
 
     photo_count = len(photos)
     messages.success(
@@ -504,11 +517,24 @@ def snap_batch_launch(request):
 
     # Create products — one per photo
     # Match up names/prices from the form (name_0, price_0, etc.)
+    offering_type = request.POST.get("offering_type", "product").strip()
+    valid_types = {c[0] for c in Product.OfferingType.choices}
+    if offering_type not in valid_types:
+        offering_type = "product"
+
+    stock_status = (
+        Product.StockStatus.UNLIMITED
+        if offering_type in ("service", "digital")
+        else Product.StockStatus.IN_STOCK
+    )
+
     product_ids = []
+    contexts = []
     for i, photo in enumerate(photos):
         name = request.POST.get(f"name_{i}", "").strip()
         price_raw = request.POST.get(f"price_{i}", "").strip()
         currency = request.POST.get(f"currency_{i}", "KES").strip() or "KES"
+        context = request.POST.get(f"context_{i}", "").strip()
 
         price = None
         if price_raw:
@@ -519,20 +545,23 @@ def snap_batch_launch(request):
 
         # If no name provided, use a placeholder — AI will rename it
         if not name:
-            name = f"Product {i + 1} (AI naming...)"
+            type_label = {'product': 'Product', 'service': 'Service', 'digital': 'Digital Product'}[offering_type]
+            name = f"{type_label} {i + 1} (AI naming...)"
 
         product = Product.objects.create(
             user=request.user,
             name=name,
+            offering_type=offering_type,
             price=price,
             currency=currency,
             image=photo,
-            stock_status=Product.StockStatus.IN_STOCK,
+            stock_status=stock_status,
         )
         product_ids.append(str(product.pk))
+        contexts.append(context)
 
     # Fire batch processing task
-    fire_task(snap_batch_process, product_ids)
+    fire_task(snap_batch_process, product_ids, contexts)
 
     count = len(product_ids)
     messages.success(

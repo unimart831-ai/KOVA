@@ -323,10 +323,127 @@ def _build_promotion_idea(product):
     return idea
 
 
+# ── Offering-type-aware prompt builders ──────────────────────────────
+
+def _build_vision_prompt(*, offering_type, name, display_price, num_images, photo_context=""):
+    """Build the vision AI prompt based on offering type."""
+
+    context_line = ""
+    if photo_context:
+        context_line = f"\nUser context about this photo: {photo_context}\n"
+
+    if offering_type == "service":
+        prompt = (
+            "You are an expert analyst for a social media marketing platform, specialized in SERVICE businesses.\n"
+            f"Service name: {name}\n"
+            f"Price: {display_price}\n"
+            f"{context_line}\n"
+            "This photo shows EVIDENCE of work from a service business — it could be:\n"
+            "- A portfolio piece (website built, design completed, event organized)\n"
+            "- Before/after results of their work\n"
+            "- The professional in action (consulting, training, presenting)\n"
+            "- Client results, metrics, or testimonials\n\n"
+            "Analyze this work evidence and return JSON with:\n"
+            "{\n"
+            '  "description": "A compelling 2-3 sentence description of this service and the quality of work shown",\n'
+            '  "key_features": ["what makes this service stand out — based on the work evidence"],\n'
+            '  "target_audience": "Who would hire this service provider",\n'
+            '  "suggested_tags": ["tag1", "tag2", "tag3"],\n'
+            '  "visual_style": "Describe what the photo shows (portfolio piece, results, etc.)",\n'
+            '  "campaign_angle": "Best angle — focus on AUTHORITY, TRUST, EXPERTISE, and RESULTS rather than just selling",\n'
+            '  "work_evidence_type": "portfolio|results|in_action|testimonial|other",\n'
+            '  "credibility_hook": "One compelling sentence about why this work evidence proves expertise"'
+        )
+    elif offering_type == "digital":
+        prompt = (
+            "You are an expert analyst for a social media marketing platform, specialized in DIGITAL PRODUCTS.\n"
+            f"Product name: {name}\n"
+            f"Price: {display_price}\n"
+            f"{context_line}\n"
+            "This photo shows a DIGITAL PRODUCT — it could be:\n"
+            "- A screenshot of an app, template, or tool\n"
+            "- A preview of a course, ebook, or digital guide\n"
+            "- Results or outcomes from using the digital product\n\n"
+            "Analyze this and return JSON with:\n"
+            "{\n"
+            '  "description": "A compelling 2-3 sentence description focused on what the buyer GETS and the TRANSFORMATION/VALUE",\n'
+            '  "key_features": ["feature1", "feature2", "feature3"],\n'
+            '  "target_audience": "Who would buy/download this",\n'
+            '  "suggested_tags": ["tag1", "tag2", "tag3"],\n'
+            '  "visual_style": "Describe the visual aesthetic of the screenshot/preview",\n'
+            '  "campaign_angle": "Best angle — focus on the OUTCOME the buyer gets, not just features"'
+        )
+    else:  # product (default)
+        prompt = (
+            "You are a product photography analyst for a social media marketing platform.\n"
+            f"Product name: {name}\n"
+            f"Price: {display_price}\n"
+            f"Number of product photos available: {num_images}\n\n"
+            "Analyze this product image and return JSON with:\n"
+            "{\n"
+            '  "description": "A compelling 2-3 sentence product description for social media marketing",\n'
+            '  "key_features": ["feature1", "feature2", "feature3"],\n'
+            '  "target_audience": "Who would buy this",\n'
+            '  "suggested_tags": ["tag1", "tag2", "tag3"],\n'
+            '  "visual_style": "Describe the visual aesthetic (colors, mood, quality)",\n'
+            '  "campaign_angle": "Best marketing angle for social media"'
+        )
+
+    if num_images > 1:
+        prompt += (
+            ',\n  "multi_image_angles": ['
+            '"Unique content angle for photo 1", "Unique content angle for photo 2", ...'
+            f'] (provide {num_images} different angles, one per photo)'
+        )
+    prompt += "\n}"
+    return prompt
+
+
+def _build_seed_idea(*, offering_type, name, display_price, features_text,
+                     campaign_angle, audience_text, image_note):
+    """Build the ContentSeed idea text based on offering type."""
+
+    if offering_type == "service":
+        return (
+            f"🛠️ Service Showcase: Demonstrate expertise in {name}."
+            f"{f' Starting from {display_price}.' if display_price else ''}"
+            f"{features_text}"
+            f" Campaign angle: {campaign_angle}."
+            f"{audience_text}"
+            f" IMPORTANT: This is a SERVICE — content should build AUTHORITY and TRUST."
+            f" Focus on expertise, results delivered, and why clients should hire/book."
+            f" Use phrases like 'We deliver...', 'Our clients get...', 'See what we built...'."
+            f" Avoid product-selling language like 'Buy now' or 'Order today'."
+            f" Instead use 'Book a consultation', 'Get started', 'Let\\'s work together'."
+            f"{image_note}"
+        )
+    elif offering_type == "digital":
+        return (
+            f"💻 Digital Product: Promote {name}."
+            f"{f' Price: {display_price}.' if display_price else ''}"
+            f"{features_text}"
+            f" Campaign angle: {campaign_angle}."
+            f"{audience_text}"
+            f" IMPORTANT: This is a DIGITAL PRODUCT — focus on the TRANSFORMATION the buyer gets."
+            f" Emphasize instant access, no shipping, the value/outcome."
+            f" Use CTAs like 'Download now', 'Get instant access', 'Start learning today'."
+            f"{image_note}"
+        )
+    else:  # product
+        return (
+            f"📸 Snap to Sell: Promote {name}."
+            f"{f' Price: {display_price}.' if display_price else ''}"
+            f"{features_text}"
+            f" Campaign angle: {campaign_angle}."
+            f"{audience_text}"
+            f"{image_note}"
+        )
+
+
 # ── Snap to Sell ─────────────────────────────────────────────────────
 
 @shared_task(name="products.snap_to_sell_analyze")
-def snap_to_sell_analyze(product_id: str):
+def snap_to_sell_analyze(product_id: str, photo_context: str = ""):
     """
     Vision AI analyzes product photos, enriches the product description,
     then auto-creates a ContentSeed and fires the content pipeline.
@@ -334,6 +451,9 @@ def snap_to_sell_analyze(product_id: str):
     Supports multiple images — analyzes the primary image for product details,
     and tells the content pipeline about all available images so each post
     can use a different photo.
+
+    Offering-type-aware: adapts vision prompt and content strategy for
+    physical products, services, and digital products.
 
     Called after the user snaps/uploads photos, provides name + price,
     and hits "Launch".
@@ -388,33 +508,27 @@ def snap_to_sell_analyze(product_id: str):
             image_url = f"data:{mime};base64,{encoded}"
 
     num_images = len(all_images)
-    vision_prompt = (
-        "You are a product photography analyst for a social media marketing platform.\n"
-        f"Product name: {product.name}\n"
-        f"Price: {product.display_price or 'not set'}\n"
-        f"Number of product photos available: {num_images}\n\n"
-        "Analyze this product image and return JSON with:\n"
-        "{\n"
-        '  "description": "A compelling 2-3 sentence product description for social media marketing",\n'
-        '  "key_features": ["feature1", "feature2", "feature3"],\n'
-        '  "target_audience": "Who would buy this",\n'
-        '  "suggested_tags": ["tag1", "tag2", "tag3"],\n'
-        '  "visual_style": "Describe the visual aesthetic (colors, mood, quality)",\n'
-        '  "campaign_angle": "Best marketing angle for social media"'
+    offering_type = product.offering_type
+
+    # ── Build offering-type-aware vision prompt ──────────────────────
+    vision_prompt = _build_vision_prompt(
+        offering_type=offering_type,
+        name=product.name,
+        display_price=product.display_price or "not set",
+        num_images=num_images,
+        photo_context=photo_context,
     )
-    if num_images > 1:
-        vision_prompt += (
-            ',\n  "multi_image_angles": ['
-            '"Unique content angle for photo 1", "Unique content angle for photo 2", ...'
-            f'] (provide {num_images} different angles, one per photo)'
-        )
-    vision_prompt += "\n}"
 
     try:
+        system_prompts = {
+            "product": "You are a product marketing expert. Always respond with valid JSON only.",
+            "service": "You are a service business marketing expert. Analyze work evidence to build authority. Always respond with valid JSON only.",
+            "digital": "You are a digital product marketing expert. Focus on buyer transformation. Always respond with valid JSON only.",
+        }
         vision_resp = analyze_image(
             image_url=image_url,
             prompt=vision_prompt,
-            system="You are a product marketing expert. Always respond with valid JSON only.",
+            system=system_prompts.get(offering_type, system_prompts["product"]),
             json_mode=True,
             max_tokens=800,
         )
@@ -471,21 +585,23 @@ def snap_to_sell_analyze(product_id: str):
     seed = ContentSeed.objects.create(
         user=user,
         product=product,
-        idea=(
-            f"📸 Snap to Sell: Promote {product.name}."
-            f"{f' Price: {product.display_price}.' if product.display_price else ''}"
-            f"{features_text}"
-            f" Campaign angle: {analysis.get('campaign_angle', 'product showcase')}."
-            f"{audience_text}"
-            f"{image_note}"
+        idea=_build_seed_idea(
+            offering_type=offering_type,
+            name=product.name,
+            display_price=product.display_price,
+            features_text=features_text,
+            campaign_angle=analysis.get("campaign_angle", "showcase"),
+            audience_text=audience_text,
+            image_note=image_note,
         ),
         notes=(
             f"AI Vision Analysis:\n"
+            f"Offering type: {offering_type}\n"
             f"Description: {analysis.get('description', '')}\n"
             f"Visual style: {analysis.get('visual_style', '')}\n"
             f"Product images: {num_images}\n"
             f"Image URLs: {', '.join(all_images)}\n"
-            f"Source: Snap to Sell — user-uploaded product photos"
+            f"Source: Snap to Sell — user-uploaded photos"
         ),
         target_platforms=platforms[:3] if platforms else [],
     )
@@ -506,19 +622,19 @@ def snap_to_sell_analyze(product_id: str):
 # ── Batch Snap ───────────────────────────────────────────────────────
 
 @shared_task(name="products.snap_batch_process")
-def snap_batch_process(product_ids: list):
+def snap_batch_process(product_ids: list, contexts: list = None):
     """
     Process a batch of products from Batch Snap.
-    Each product has one photo of a DIFFERENT product.
+    Each product has one photo of a DIFFERENT product/service/digital item.
+
+    Offering-type-aware: reads each product's offering_type and adapts
+    the vision prompt and content strategy accordingly.
 
     For each product:
-      1. Vision AI analyzes the photo
+      1. Vision AI analyzes the photo (with offering-type-aware prompt)
       2. Auto-names the product if user left it blank (AI naming)
       3. Enriches description, tags
       4. Creates a ContentSeed and fires the content pipeline
-
-    All products are processed sequentially to avoid overwhelming the LLM API,
-    but each product's content pipeline runs in parallel (fire_task).
     """
     from apps.agents.llm import analyze_image, parse_llm_json
     from apps.content.models import ContentSeed
@@ -526,6 +642,9 @@ def snap_batch_process(product_ids: list):
     from apps.platforms.models import SocialAccount
     from apps.products.models import Product
     from apps.utils import fire_task
+
+    if contexts is None:
+        contexts = [""] * len(product_ids)
 
     results = []
 
@@ -560,49 +679,65 @@ def snap_batch_process(product_ids: list):
                 results.append({"product_id": product_id, "error": str(exc)})
                 continue
 
-        # ── Vision AI — identify and analyze the product ─────────────
-        needs_name = "AI naming" in product.name or product.name.startswith("Product ")
+        # ── Vision AI — identify and analyze (offering-type-aware) ────
+        offering_type = product.offering_type
+        needs_name = "AI naming" in product.name or product.name.startswith("Product ") or product.name.startswith("Service ") or product.name.startswith("Digital Product ")
 
-        vision_prompt = (
-            "You are a product identification and marketing expert.\n"
-            "Analyze this product photo and return JSON with:\n"
-            "{\n"
-            '  "product_name": "The specific product name (be descriptive, e.g. \'Handmade Brown Leather Messenger Bag\')",\n'
-            '  "description": "A compelling 2-3 sentence product description for social media",\n'
-            '  "key_features": ["feature1", "feature2", "feature3"],\n'
-            '  "target_audience": "Who would buy this",\n'
-            '  "suggested_tags": ["tag1", "tag2", "tag3"],\n'
-            '  "visual_style": "Describe the visual aesthetic",\n'
-            '  "campaign_angle": "Best marketing angle for social media",\n'
-            '  "product_category": "General category (e.g. Fashion, Electronics, Food, Beauty, Home)"\n'
-            "}\n\n"
-            "Be specific about what the product IS — identify it from the image."
+        # Get photo context for this item
+        idx = product_ids.index(product_id) if product_id in product_ids else 0
+        photo_context = contexts[idx] if idx < len(contexts) else ""
+
+        # Build offering-type-aware identification prompt
+        type_labels = {"product": "product", "service": "service/work evidence", "digital": "digital product"}
+        type_label = type_labels.get(offering_type, "product")
+
+        identification_prompt = _build_vision_prompt(
+            offering_type=offering_type,
+            name=product.name if not needs_name else "Unknown — identify from photo",
+            display_price=product.display_price or "not set",
+            num_images=1,
+            photo_context=photo_context,
+        )
+        # Add identification request for batch (AI needs to name it)
+        identification_prompt = identification_prompt.rstrip("}")
+        identification_prompt += (
+            ',\n  "product_name": "A specific, descriptive name for this '
+            f'{type_label} (identify it from the image)",\n'
+            '  "product_category": "General category"\n}'
         )
 
         if not needs_name:
-            vision_prompt += f"\nThe user named this product: {product.name}"
-        if product.price:
-            vision_prompt += f"\nPrice: {product.display_price}"
+            identification_prompt += f"\nThe user named this: {product.name}"
 
         try:
+            system_prompts = {
+                "product": "You are a product identification expert. Always respond with valid JSON only.",
+                "service": "You are a service business expert. Identify the type of work shown and its quality. Always respond with valid JSON only.",
+                "digital": "You are a digital product expert. Identify the product type and its value proposition. Always respond with valid JSON only.",
+            }
             vision_resp = analyze_image(
                 image_url=image_url,
-                prompt=vision_prompt,
-                system="You are a product identification expert. Always respond with valid JSON only.",
+                prompt=identification_prompt,
+                system=system_prompts.get(offering_type, system_prompts["product"]),
                 json_mode=True,
                 max_tokens=600,
             )
             analysis = parse_llm_json(vision_resp.content)
         except Exception as exc:
             logger.error("Batch Snap vision failed for %s: %s", product_id, exc)
+            fallback_desc = {
+                "product": "Quality product — check it out!",
+                "service": "Professional service — see our work!",
+                "digital": "Premium digital product — get instant access!",
+            }
             analysis = {
                 "product_name": product.name,
-                "description": f"Quality product — check it out!",
+                "description": fallback_desc.get(offering_type, fallback_desc["product"]),
                 "key_features": [],
                 "target_audience": "General consumers",
                 "suggested_tags": [],
-                "visual_style": "Product photo",
-                "campaign_angle": "Product showcase",
+                "visual_style": "Photo",
+                "campaign_angle": "showcase",
                 "product_category": "",
             }
 
@@ -638,24 +773,30 @@ def snap_batch_process(product_ids: list):
         if analysis.get("key_features"):
             features_text = " Key features: " + ", ".join(analysis["key_features"][:3]) + "."
 
+        audience_text = ""
+        if analysis.get("target_audience"):
+            audience_text = f" Target audience: {analysis['target_audience']}."
+
         seed = ContentSeed.objects.create(
             user=user,
             product=product,
-            idea=(
-                f"📦 Batch Snap: Promote {product.name}."
-                f"{f' Price: {product.display_price}.' if product.display_price else ''}"
-                f"{features_text}"
-                f" Campaign angle: {analysis.get('campaign_angle', 'product showcase')}."
-                f" Target audience: {analysis.get('target_audience', 'general consumers')}."
-                f" Use the product photo as the hero image."
+            idea=_build_seed_idea(
+                offering_type=offering_type,
+                name=product.name,
+                display_price=product.display_price,
+                features_text=features_text,
+                campaign_angle=analysis.get("campaign_angle", "showcase"),
+                audience_text=audience_text,
+                image_note=" Use the uploaded photo as the hero image.",
             ),
             notes=(
                 f"AI Vision Analysis (Batch Snap):\n"
+                f"Offering type: {offering_type}\n"
                 f"Identified as: {analysis.get('product_name', product.name)}\n"
                 f"Description: {analysis.get('description', '')}\n"
                 f"Category: {analysis.get('product_category', '')}\n"
                 f"Visual style: {analysis.get('visual_style', '')}\n"
-                f"Source: Batch Snap — auto-identified from product photo"
+                f"Source: Batch Snap — auto-identified from photo"
             ),
             target_platforms=platforms[:3] if platforms else [],
         )
