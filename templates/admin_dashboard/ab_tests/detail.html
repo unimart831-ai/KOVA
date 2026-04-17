@@ -38,7 +38,7 @@
         {% if ab_test.concluded_at %}· Concluded {{ ab_test.concluded_at|date:"M j, Y H:i" }}{% endif %}
       </p>
     </div>
-    <div class="grid grid-cols-3 gap-4 text-center">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
       <div>
         <p class="text-xl font-bold text-gray-900 dark:text-white">{{ ab_test.variant_count }}</p>
         <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">Variants</p>

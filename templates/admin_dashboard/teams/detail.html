@@ -23,7 +23,7 @@
       <p class="text-sm text-gray-500 dark:text-gray-400">Slug: {{ team.slug }}</p>
       <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Created {{ team.created_at|date:"M j, Y H:i" }}</p>
     </div>
-    <div class="grid grid-cols-3 gap-4 text-center">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
       <div>
         <p class="text-xl font-bold text-gray-900 dark:text-white">{{ members|length }}</p>
         <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">Members</p>

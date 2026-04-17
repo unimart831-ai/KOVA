@@ -36,7 +36,7 @@
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
     <div class="flex flex-wrap items-center gap-2">
       <form method="get" class="flex items-center gap-2">
-        <input type="text" name="q" value="{{ current_q }}" placeholder="Search products…" class="input text-sm w-48">
+        <input type="text" name="q" value="{{ current_q }}" placeholder="Search products…" class="input text-sm w-full sm:w-48">
         <select name="status" class="input text-sm w-auto" onchange="this.form.submit()">
           <option value="">All statuses</option>
           <option value="in_stock" {% if current_status == 'in_stock' %}selected{% endif %}>🟢 In Stock</option>
@@ -55,7 +55,7 @@
         {% endif %}
       </form>
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2 flex-wrap">
       <a href="{% url 'products:snap' %}" class="btn-primary text-sm px-4 py-1.5 bg-purple-600 hover:bg-purple-700">📸 Snap to Sell</a>
       <a href="{% url 'products:snap_batch' %}" class="btn-primary text-sm px-4 py-1.5 bg-orange-600 hover:bg-orange-700">📦 Batch Snap</a>
       <a href="{% url 'products:categories' %}" class="btn-secondary text-sm px-3 py-1.5">Categories</a>

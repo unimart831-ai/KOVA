@@ -126,7 +126,7 @@
 
         <div>
           <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Active days</label>
-          <div class="flex gap-2">
+          <div class="flex flex-wrap gap-2">
             {% with day_names="Mon Tue Wed Thu Fri Sat Sun" %}
             {% for day in day_names.split %}
             <label class="cursor-pointer">

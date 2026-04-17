@@ -62,7 +62,7 @@
       </div>
 
       {# Photo grid #}
-      <div class="grid grid-cols-3 gap-3">
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {# Existing photos #}
         <template x-for="(photo, index) in photos" :key="index">
           <div class="relative aspect-square rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
@@ -141,8 +141,8 @@
                class="input" :placeholder="offeringConfig[offeringType].contextPlaceholder">
       </div>
 
-      <div class="grid grid-cols-3 gap-3">
-        <div class="col-span-2">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="sm:col-span-2">
           <label for="snap-price" class="label" x-text="offeringConfig[offeringType].priceLabel">Price</label>
           <input type="number" id="snap-price" name="price" step="0.01" min="0"
                  class="input" :placeholder="offeringConfig[offeringType].pricePlaceholder"

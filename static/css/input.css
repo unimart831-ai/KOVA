@@ -6,6 +6,40 @@
   display: none !important;
 }
 
+/* ── Cross-browser compatibility ──────────────────────────────────── */
+
+/* Prevent iOS Safari zoom on input focus (inputs < 16px trigger zoom) */
+@supports (-webkit-touch-callout: none) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Safe area insets for notched devices (iPhone X+) */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Prevent 300ms tap delay on touch devices */
+a,
+button,
+[role="button"],
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
 @layer utilities {
   .counter-reset-list {
     counter-reset: list-counter;

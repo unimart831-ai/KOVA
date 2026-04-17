@@ -76,7 +76,7 @@
 </div>
 
 <!-- ── Tabs Navigation ───────────────────────────────────────────────── -->
-<div class="flex items-center gap-1 mb-6 overflow-x-auto pb-1 border-b border-gray-200 dark:border-gray-800">
+<div class="flex flex-wrap items-center gap-1 mb-6 border-b border-gray-200 dark:border-gray-800">
   {% with pk=target_user.pk %}
   {% for tab_id, tab_label in "profile:Profile,content:Content,platforms:Platforms,agents:Agents,billing:Billing,engagement:Engagement,briefs:Briefs"|split_tabs %}
   <a href="{% url 'admin_dashboard:user_detail' pk=pk %}?tab={{ tab_id }}"

@@ -34,7 +34,7 @@
 </div>
 
 {# ── Status Tabs ─────────────────────────────────────────────────────── #}
-<div class="flex items-center gap-2 mb-6">
+<div class="flex flex-wrap items-center gap-2 mb-6">
   <a href="{% url 'memes:queue' %}"
      class="px-3 py-1.5 rounded-lg text-xs font-medium {% if not current_status %}bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-300{% else %}text-gray-500 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">
     All
