@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from apps.memes.tasks import adapt_single_meme
 from apps.utils import fire_task
 
 from .forms import MemePreferencesForm
@@ -126,7 +127,7 @@ def meme_adapt(request, meme_id):
         return redirect("memes:detail", meme_id=meme.id)
 
     # Fire the adaptation task
-    fire_task("memes.adapt_single_meme", args=[str(meme.id), request.user.id])
+    fire_task(adapt_single_meme, args=[str(meme.id), request.user.id])
     messages.success(request, f"Adapting \"{meme.title}\" for your brand — check back in a moment!")
 
     return redirect("memes:queue")
