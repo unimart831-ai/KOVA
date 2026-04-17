@@ -1006,6 +1006,35 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
             # Auto-populate UTM fields for revenue attribution
             post.populate_utm()
 
+            # ── Attach product image if available (Snap to Sell) ─────
+            # If the seed's product has a photo, use it directly instead
+            # of generating an AI image — the real photo is better.
+            product_image_attached = False
+            if seed and seed.product and seed.product.image:
+                try:
+                    from apps.content.models import MediaAttachment
+                    from django.core.files import File
+                    import os
+
+                    product = seed.product
+                    # Create a MediaAttachment from the product image
+                    attachment = MediaAttachment.objects.create(
+                        post=post,
+                        file=product.image,  # Django copies the FieldFile reference
+                        file_type="image",
+                        alt_text=product.name[:500],
+                        order=0,
+                    )
+                    # Set media_urls so the publishing pipeline picks it up
+                    img_url = product.image.url
+                    post.media_urls = [img_url]
+                    post.media_status = Post.MediaStatus.UPLOADED
+                    post.save(update_fields=["media_urls", "media_status", "updated_at"])
+                    product_image_attached = True
+                    logger.info("Attached product image to post %s: %s", post.id, img_url)
+                except Exception as img_exc:
+                    logger.warning("Failed to attach product image to post %s: %s", post.id, img_exc)
+
             # Store visual strategy on the Post for analytics tracking
             image_prompt = pd.get("image_prompt", "")
             visual_strategy_data = pd.get("visual_strategy", {})
@@ -1034,7 +1063,7 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
             platform_requires_media = post_platform in Post.MEDIA_REQUIRED_PLATFORMS
             user_opted_in_images = getattr(seed, "generate_images", False)
 
-            if has_visual_request and (platform_requires_media or user_opted_in_images):
+            if has_visual_request and (platform_requires_media or user_opted_in_images) and not product_image_attached:
                 from apps.billing.models import get_plan_limits
                 user_plan = getattr(getattr(seed.user, "profile", None), "plan", "starter")
                 plan_limits = get_plan_limits(user_plan)
