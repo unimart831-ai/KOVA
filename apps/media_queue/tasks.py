@@ -62,12 +62,17 @@ def process_media_queues():
             item.status = QueueItem.Status.PUBLISHING
             item.save(update_fields=["status", "updated_at"])
 
+            # AI caption generation — if user didn't write one
+            caption = item.caption or ""
+            if not caption.strip():
+                caption = _generate_ai_caption(queue.user, account.platform, queue.name)
+
             # Create a Post so the existing publish pipeline handles it
             post = Post.objects.create(
                 user=queue.user,
                 social_account=account,
                 platform=account.platform,
-                content_text=item.caption or "",
+                content_text=caption,
                 content_type="original",
                 status=Post.Status.APPROVED,
                 media_status=Post.MediaStatus.UPLOADED,
@@ -141,3 +146,57 @@ def process_media_queues():
 
     logger.info("Media Queue processed: %d items published", published_count)
     return {"published": published_count}
+
+
+def _generate_ai_caption(user, platform, queue_name=""):
+    """
+    Generate an AI caption for a media queue photo that has no user-written caption.
+    Uses the user's brand voice + product context to write a platform-appropriate caption.
+    Falls back to empty string on any error (never blocks publishing).
+    """
+    try:
+        from apps.agents.llm import generate, get_model_for_task
+        from apps.products.utils import get_product_context
+
+        profile = getattr(user, "profile", None)
+        brand_voice = getattr(profile, "brand_voice", "") if profile else ""
+        company = getattr(profile, "company_name", "") if profile else ""
+        product_ctx = get_product_context(user)
+
+        platform_hints = {
+            "instagram": "Use 2-4 relevant hashtags. Keep it casual and visual. Max 150 words.",
+            "facebook": "Conversational tone. Ask a question to drive comments. Max 100 words.",
+            "twitter": "Short and punchy. Max 280 characters total. 1-2 hashtags max.",
+            "linkedin": "Professional tone. Add value or insight. Max 150 words.",
+            "tiktok": "Trendy, casual, hook-first. Max 100 characters.",
+        }
+
+        prompt = (
+            f"Write a social media caption for a photo being posted to {platform}.\n\n"
+            f"Business: {company or 'a small business'}\n"
+            f"Queue: {queue_name or 'General photos'}\n"
+        )
+        if brand_voice:
+            prompt += f"Brand voice: {brand_voice[:300]}\n"
+        if product_ctx:
+            prompt += f"\n{product_ctx[:500]}\n"
+        prompt += (
+            f"\nPlatform guidelines: {platform_hints.get(platform, 'Keep it engaging and on-brand.')}\n\n"
+            f"Write ONLY the caption text. No quotes, no labels, no explanation."
+        )
+
+        response = generate(
+            prompt=prompt,
+            system="You are a social media copywriter. Write captions that match the brand voice and drive engagement.",
+            model=get_model_for_task("create.write", user=user),
+            temperature=0.7,
+            max_tokens=300,
+        )
+
+        caption = (response.content or "").strip().strip('"').strip("'")
+        logger.info("AI caption generated for %s/%s (%d chars)", user.email, platform, len(caption))
+        return caption
+
+    except Exception as e:
+        logger.warning("AI caption generation failed for %s: %s", user.email, e)
+        return ""

@@ -40,6 +40,18 @@
   </div>
 </div>
 
+<!-- ── AI Captions ───────────────────────────────────────────────────── -->
+{% if items_no_caption > 0 %}
+<div class="flex items-center gap-3 px-4 py-3 mb-6 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-200 dark:border-indigo-900/50">
+  <span class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
+  <p class="text-xs text-indigo-700 dark:text-indigo-300">
+    <span class="font-semibold">AI Captions Active:</span>
+    {{ items_no_caption }} queued item{{ items_no_caption|pluralize }} without captions will get AI-generated captions on publish.
+    {{ items_with_caption }} item{{ items_with_caption|pluralize }} already have captions.
+  </p>
+</div>
+{% endif %}
+
 <!-- ── 7-Day Chart + Alerts Row ──────────────────────────────────────── -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
 

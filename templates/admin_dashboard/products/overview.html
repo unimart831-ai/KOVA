@@ -7,7 +7,7 @@
 {% block content %}
 
 {# ── Stat Cards ──────────────────────────────────────────────────────── #}
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Total Products</p>
     <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ total_products|format_number }}</p>
@@ -27,6 +27,11 @@
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Out of Stock</p>
     <p class="text-2xl font-bold {% if out_of_stock > 0 %}text-red-600 dark:text-red-400{% else %}text-gray-900 dark:text-white{% endif %} mt-1">{{ out_of_stock }}</p>
     <p class="text-xs text-gray-400 mt-0.5">{{ unread_alerts }} unread alert{{ unread_alerts|pluralize }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-indigo-200 dark:border-indigo-900/50 p-4 shadow-sm">
+    <p class="text-xs font-medium text-indigo-600 dark:text-indigo-400">Auto-Promoted</p>
+    <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">{{ auto_promo_seeds }}</p>
+    <p class="text-xs text-gray-400 mt-0.5">{{ auto_promo_7d }} this week</p>
   </div>
 </div>
 

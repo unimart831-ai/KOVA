@@ -89,6 +89,29 @@ def content_overview(request):
         .order_by("-c")
     )
 
+    # ── Auto-Seed Source Breakdown ───────────────────────────────────────
+    auto_seed_labels = [
+        ("[Research Agent]", "Research Agent", "indigo"),
+        ("[Competitor Intel]", "Competitor Intel", "orange"),
+        ("[Recycle]", "Content Recycling", "purple"),
+        ("[Campaign AI]", "Campaign AI", "blue"),
+    ]
+    auto_seed_breakdown = []
+    for prefix, label, color in auto_seed_labels:
+        count = ContentSeed.objects.filter(notes__startswith=prefix).count()
+        if count:
+            auto_seed_breakdown.append({"label": label, "count": count, "color": color})
+    total_auto_seeds = sum(s["count"] for s in auto_seed_breakdown)
+    manual_seeds = ContentSeed.objects.count() - total_auto_seeds
+
+    # Smart auto-approval stats
+    auto_approved = Post.objects.filter(
+        generated_by_agent="create",
+        status__in=["approved", "scheduled", "published"],
+    ).count()
+    pending_approval = Post.objects.filter(status="pending_approval").count()
+    rejected_posts = Post.objects.filter(status="rejected").count()
+
     context = {
         "page_title": "Content Pipeline",
         "seed_counts": seed_counts,
@@ -99,6 +122,13 @@ def content_overview(request):
         "platform_breakdown": platform_breakdown,
         "agent_breakdown": agent_breakdown,
         "type_breakdown": type_breakdown,
+        # AI Automation
+        "auto_seed_breakdown": auto_seed_breakdown,
+        "total_auto_seeds": total_auto_seeds,
+        "manual_seeds": manual_seeds,
+        "auto_approved": auto_approved,
+        "pending_approval": pending_approval,
+        "rejected_posts": rejected_posts,
     }
     return render(request, "admin_dashboard/content/overview.html", context)
 

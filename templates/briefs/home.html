@@ -208,7 +208,7 @@
                     {% else %}
                       <span class="mt-0.5 shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">New</span>
                     {% endif %}
-                    <div class="min-w-0">
+                    <div class="min-w-0 flex-1">
                       <p class="text-sm font-medium text-gray-900 dark:text-white">{{ topic.topic|default:topic }}</p>
                       {% if topic.relevance %}
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ topic.relevance }}</p>
@@ -216,6 +216,16 @@
                       {% if topic.suggested_angle %}
                         <p class="text-xs text-kova-600 dark:text-kova-400 mt-1">Angle: {{ topic.suggested_angle }}</p>
                       {% endif %}
+                      <form hx-post="{% url 'brief:action' %}" hx-swap="outerHTML" class="mt-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="idea" value="Trending topic: {{ topic.topic|default:topic }}{% if topic.suggested_angle %} — Angle: {{ topic.suggested_angle }}{% endif %}">
+                        <input type="hidden" name="context" value="{{ topic.relevance|default:'' }}">
+                        <input type="hidden" name="action_type" value="trend">
+                        <button type="submit" class="inline-flex items-center gap-1 text-xs font-medium text-kova-600 dark:text-kova-400 hover:text-kova-800 dark:hover:text-kova-300">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                          Create content
+                        </button>
+                      </form>
                     </div>
                   </li>
                 {% endfor %}
@@ -252,6 +262,16 @@
                     {% if suggestion.timing %}
                       <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300">{{ suggestion.timing }}</span>
                     {% endif %}
+                    <form hx-post="{% url 'brief:action' %}" hx-swap="outerHTML" class="ml-auto">
+                      {% csrf_token %}
+                      <input type="hidden" name="idea" value="{{ suggestion.idea }}">
+                      <input type="hidden" name="context" value="{{ suggestion.reasoning|default:'' }}">
+                      <input type="hidden" name="action_type" value="suggestion">
+                      <button type="submit" class="inline-flex items-center gap-1 text-xs font-medium text-kova-600 dark:text-kova-400 hover:text-kova-800 dark:hover:text-kova-300">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        Create this
+                      </button>
+                    </form>
                   </div>
                 </li>
               {% endfor %}

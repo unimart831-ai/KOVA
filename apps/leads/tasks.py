@@ -109,7 +109,7 @@ def process_nurture_steps():
 
 
 def _send_nurture_email(lead, step):
-    """Send a nurture follow-up email to a lead."""
+    """Send a nurture follow-up email to a lead. AI-generates content if empty."""
     from apps.emails.services import email_service
     from apps.leads.models import LeadActivity
 
@@ -120,30 +120,125 @@ def _send_nurture_email(lead, step):
     profile = getattr(lead.user, "profile", None)
     business_name = getattr(profile, "company_name", "") if profile else ""
 
+    subject = step.email_subject
+    body = step.email_body
+
+    # AI-generate email content if the user left subject/body empty
+    if not subject or not body:
+        ai_subject, ai_body = _ai_generate_nurture_email(lead, step, business_name)
+        subject = subject or ai_subject
+        body = body or ai_body
+
     email_service._send(
         email_type="lead_nurture",
         to_email=lead.email,
         context={
             "lead_name": lead.name or lead.email.split("@")[0],
             "business_name": business_name,
-            "email_body": step.email_body,
+            "email_body": body,
         },
         user=lead.user,
-        subject=step.email_subject or "Following up",
+        subject=subject or "Following up",
     )
 
     LeadActivity.objects.create(
         lead=lead,
         activity_type=LeadActivity.ActivityType.EMAIL_SENT,
-        description=f"Nurture email: {step.email_subject or 'Follow-up'}",
+        description=f"Nurture email: {subject or 'Follow-up'}",
     )
+
+
+def _ai_generate_nurture_email(lead, step, business_name):
+    """
+    Use LLM to generate a nurture email subject+body when the user
+    hasn't written them. Returns (subject, body) tuple.
+    Falls back to generic content on any error.
+    """
+    try:
+        from apps.agents.llm import generate, get_model_for_task
+
+        sequence = step.sequence
+        step_num = step.order + 1
+        total_steps = sequence.steps.count()
+        lead_source = lead.get_source_display() if hasattr(lead, "get_source_display") else lead.source
+
+        prompt = (
+            f"Write a short, warm follow-up email for a lead nurture sequence.\n\n"
+            f"Business: {business_name or 'a local business'}\n"
+            f"Sequence: {sequence.name}\n"
+            f"Step {step_num} of {total_steps}\n"
+            f"Lead name: {lead.name or 'there'}\n"
+            f"Lead source: {lead_source}\n"
+            f"Delay since last step: {step.delay_hours} hours\n\n"
+            f"Rules:\n"
+            f"- Keep it under 150 words\n"
+            f"- Be conversational and human, not salesy\n"
+            f"- If this is step 1, introduce the business warmly\n"
+            f"- If later steps, add value (tip, insight, or offer)\n"
+            f"- End with a soft CTA (reply, visit, or call)\n\n"
+            f"Return ONLY valid JSON: {{\"subject\": \"...\", \"body\": \"...\"}}"
+        )
+
+        model = get_model_for_task("create.write", user=lead.user)
+        resp = generate(model=model, prompt=prompt, temperature=0.7, max_tokens=400)
+
+        if resp and resp.text:
+            import json
+            data = json.loads(resp.text.strip().strip("`").strip())
+            return data.get("subject", ""), data.get("body", "")
+    except Exception as e:
+        logger.warning("AI nurture email generation failed: %s", e)
+
+    # Fallback
+    lead_name = lead.name or "there"
+    return (
+        f"Quick follow-up from {business_name or 'us'}",
+        f"Hi {lead_name},\n\nJust wanted to check in and see if there's anything "
+        f"we can help you with. Feel free to reply to this email anytime.\n\n"
+        f"Best,\n{business_name or 'The team'}",
+    )
+
+
+@shared_task(name="leads.score_all_leads")
+def score_all_leads():
+    """
+    Daily task: re-compute priority for all active leads.
+    Enrolls newly-qualified HIGH_PRIORITY leads into matching sequences.
+    """
+    from apps.leads.models import Lead
+
+    active_leads = Lead.objects.exclude(
+        status__in=[Lead.Status.CONVERTED, Lead.Status.LOST]
+    )
+
+    rescored = 0
+    upgraded = 0
+
+    for lead in active_leads.iterator():
+        old_priority = lead.priority
+        lead.compute_priority()
+        if lead.priority != old_priority:
+            lead.save(update_fields=["priority"])
+            rescored += 1
+
+            # If priority upgraded to HIGH, check for HIGH_PRIORITY sequences
+            if lead.priority == Lead.Priority.HIGH and old_priority != Lead.Priority.HIGH:
+                enroll_lead_in_sequences(lead)
+                upgraded += 1
+
+    logger.info("Lead scoring: %d rescored, %d upgraded to high", rescored, upgraded)
+    return {"rescored": rescored, "upgraded_to_high": upgraded}
 
 
 def enroll_lead_in_sequences(lead):
     """
-    Auto-enroll a new lead in matching active nurture sequences.
+    Auto-enroll a lead in matching active nurture sequences.
 
-    Called from the Lead post_save signal when a new lead is created.
+    Called from:
+    - Lead post_save signal (new leads)
+    - score_all_leads task (priority upgrades)
+    - create_lead_from_submission signal (after priority computation)
+    Won't double-enroll — checks for existing enrollment.
     """
     from apps.leads.models import LeadEnrollment, NurtureSequence, NurtureStep
 

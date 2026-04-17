@@ -225,6 +225,14 @@ CELERY_BEAT_SCHEDULE = {
         "task": "check-stock-alerts",
         "schedule": 24 * 3600.0,  # daily — scan products for stock issues
     },
+    "auto-promote-products": {
+        "task": "products.auto_promote_products",
+        "schedule": 24 * 3600.0,  # daily — auto-create content for under-promoted products
+    },
+    "recycle-top-content": {
+        "task": "content.recycle_top_content",
+        "schedule": 24 * 3600.0,  # daily — repurpose high-performing old content
+    },
     "track-audience-growth": {
         "task": "agents.track_audience_growth",
         "schedule": 24 * 3600.0,  # daily — snapshot follower counts for growth intelligence
@@ -285,6 +293,11 @@ CELERY_BEAT_SCHEDULE = {
     "process-lead-nurture": {
         "task": "leads.process_nurture_steps",
         "schedule": 30 * 60.0,  # every 30 min — advance nurture enrollments
+    },
+    # Lead priority scoring
+    "score-all-leads": {
+        "task": "leads.score_all_leads",
+        "schedule": 24 * 3600.0,  # daily — re-score priorities, auto-enroll high-priority leads
     },
 }
 

@@ -16,4 +16,5 @@ urlpatterns = [
     path("<uuid:pk>/add-email/", views.campaign_add_email, name="add_email"),
     path("<uuid:pk>/remove-email/<uuid:email_pk>/", views.campaign_remove_email, name="remove_email"),
     path("<uuid:pk>/add-note/", views.campaign_add_note, name="add_note"),
+    path("ai-build/", views.campaign_ai_build, name="ai_build"),
 ]

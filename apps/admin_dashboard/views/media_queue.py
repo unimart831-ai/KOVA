@@ -149,6 +149,16 @@ def media_queue_overview(request):
         .order_by("-updated_at")[:10]
     )
 
+    # ── AI Caption Stats ─────────────────────────────────────────
+    # Items without captions (AI will auto-generate on publish)
+    items_no_caption = QueueItem.objects.filter(
+        status=QueueItem.Status.QUEUED,
+        caption="",
+    ).count()
+    items_with_caption = QueueItem.objects.filter(
+        status=QueueItem.Status.QUEUED,
+    ).exclude(caption="").count()
+
     return render(request, "admin_dashboard/media_queue/overview.html", {
         "total_queues": total_queues,
         "active_queues": active_queues,
@@ -168,6 +178,8 @@ def media_queue_overview(request):
         "search": search,
         "low_queues": low_queues,
         "recent_failures": recent_failures,
+        "items_no_caption": items_no_caption,
+        "items_with_caption": items_with_caption,
     })
 
 

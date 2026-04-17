@@ -24,6 +24,7 @@ def analyze_competitor_task(user_id, competitor_id):
         if analysis:
             logger.info("Competitor analysis complete: %s for %s", competitor.name, user.email)
             _send_competitor_alerts(user, competitor, analysis)
+            _auto_act_on_insights(user, competitor)
         return str(analysis.id) if analysis else None
     except Exception as e:
         logger.exception("analyze_competitor_task failed: %s", e)
@@ -40,7 +41,7 @@ def _send_competitor_alerts(user, competitor, analysis):
     recent_insights = CompetitorInsight.objects.filter(
         competitor=competitor,
         created_at__gte=timezone.now() - timedelta(minutes=10),
-        priority__in=["high", "critical"],
+        priority="high",
     )
 
     for insight in recent_insights[:3]:
@@ -53,6 +54,62 @@ def _send_competitor_alerts(user, competitor, analysis):
             )
         except Exception:
             logger.exception("Failed to create competitor alert notification")
+
+
+def _auto_act_on_insights(user, competitor):
+    """
+    Auto-create ContentSeeds from high-priority competitor insights that have
+    suggested content ideas. Turns intelligence into action without manual clicks.
+
+    Limits: max 1 auto-seed per competitor per analysis to avoid flooding.
+    Only acts on insights that are HIGH priority and have a content idea.
+    """
+    from datetime import timedelta
+
+    from apps.analytics.models import CompetitorInsight
+    from apps.content.models import ContentSeed
+    from apps.platforms.models import SocialAccount
+
+    platforms = list(
+        SocialAccount.objects.filter(user=user, is_active=True)
+        .values_list("platform", flat=True)
+    )
+    if not platforms:
+        return
+
+    # Get recent high-priority insights with content ideas, not yet acted on
+    insights = CompetitorInsight.objects.filter(
+        user=user,
+        competitor=competitor,
+        priority="high",
+        is_acted_on=False,
+        is_dismissed=False,
+        created_at__gte=timezone.now() - timedelta(minutes=10),
+    ).exclude(
+        suggested_content_idea=""
+    ).order_by("-created_at")[:1]  # Max 1 per analysis
+
+    for insight in insights:
+        idea = (
+            f"Competitive response — {competitor.name}: {insight.title}\n\n"
+            f"{insight.suggested_content_idea}\n\n"
+            f"Context: {insight.description[:300]}"
+        )
+
+        ContentSeed.objects.create(
+            user=user,
+            idea=idea,
+            notes=f"Auto-created from competitor insight: {insight.title} ({competitor.name})",
+            target_platforms=platforms[:3],
+        )
+
+        insight.is_acted_on = True
+        insight.save(update_fields=["is_acted_on"])
+
+        logger.info(
+            "Auto-acted on competitor insight: %s — %s (user: %s)",
+            competitor.name, insight.title, user.email,
+        )
 
 
 @shared_task(name="analyze-all-competitors")

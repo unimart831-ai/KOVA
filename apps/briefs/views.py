@@ -1,6 +1,8 @@
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from apps.briefs.models import DailyBrief
 from apps.engage.models import Superfan
@@ -173,3 +175,54 @@ def brief_home(request):
         "value_summary": _build_value_summary(request.user),
         "page_title": "Daily Brief",
     })
+
+
+@login_required
+@require_POST
+def brief_action(request):
+    """
+    One-click action from brief: turn a suggestion/trend into a ContentSeed.
+    HTMX-aware — returns a success badge to swap inline.
+    """
+    from apps.content.models import ContentSeed
+    from apps.platforms.models import SocialAccount
+
+    idea = request.POST.get("idea", "").strip()
+    context = request.POST.get("context", "").strip()
+    action_type = request.POST.get("action_type", "suggestion")  # suggestion, trend, decision
+
+    if not idea:
+        if request.headers.get("HX-Request"):
+            return HttpResponse(
+                '<span class="text-xs text-red-500">No idea provided</span>',
+                content_type="text/html",
+            )
+        return redirect("brief:home")
+
+    platforms = list(
+        SocialAccount.objects.filter(user=request.user, is_active=True)
+        .values_list("platform", flat=True)
+    )
+
+    seed_idea = idea
+    if context:
+        seed_idea += f"\n\nContext: {context}"
+
+    notes = f"Created from Daily Brief ({action_type})"
+
+    ContentSeed.objects.create(
+        user=request.user,
+        idea=seed_idea,
+        notes=notes,
+        target_platforms=platforms[:3],
+    )
+
+    if request.headers.get("HX-Request"):
+        return HttpResponse(
+            '<span class="inline-flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">'
+            '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">'
+            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>'
+            '</svg>Queued for creation</span>',
+            content_type="text/html",
+        )
+    return redirect("brief:home")

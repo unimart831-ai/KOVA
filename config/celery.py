@@ -64,8 +64,13 @@ app.conf.task_routes = {
     "whatsapp.aggregate_daily_analytics": {"queue": "low"},
     "whatsapp.generate_weekly_digest": {"queue": "low"},
     "whatsapp.curate_channel_content": {"queue": "low"},
-    # Lead nurture + monthly reports
+    # Products
+    "products.auto_promote_products": {"queue": "default"},
+    "content.recycle_top_content": {"queue": "low"},
+    "campaigns.ai_build_campaign": {"queue": "default"},
+    # Lead nurture + scoring + monthly reports
     "leads.process_nurture_steps": {"queue": "default"},
+    "leads.score_all_leads": {"queue": "low"},
     "emails.send_monthly_reports_all": {"queue": "low"},
 }
 

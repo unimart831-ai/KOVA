@@ -383,3 +383,32 @@ def _apply_utm_to_posts(campaign):
     """Push campaign UTM tag to all linked posts that don't have one."""
     for cs in campaign.campaign_seeds.select_related("seed"):
         cs.seed.posts.filter(utm_campaign="").update(utm_campaign=campaign.utm_campaign_tag)
+
+
+@login_required
+def campaign_ai_build(request):
+    """AI Campaign Builder — create a full campaign from a single prompt."""
+    if request.method != "POST":
+        return redirect("campaigns:list")
+
+    prompt = request.POST.get("prompt", "").strip()
+    if not prompt:
+        messages.error(request, "Please describe what you want your campaign to achieve.")
+        return redirect("campaigns:list")
+
+    duration = request.POST.get("duration_days", "7")
+    try:
+        duration_days = max(1, min(int(duration), 90))
+    except (ValueError, TypeError):
+        duration_days = 7
+
+    from apps.campaigns.tasks import ai_build_campaign
+    from apps.utils.helpers import fire_task
+
+    fire_task(ai_build_campaign, str(request.user.id), prompt, duration_days)
+
+    messages.success(
+        request,
+        "Your AI campaign is being built! Check back in a moment.",
+    )
+    return redirect("campaigns:list")

@@ -30,6 +30,86 @@ from apps.platforms.models import SocialAccount
 logger = logging.getLogger(__name__)
 
 
+# ─── Smart Auto-Approval (Learning from User Patterns) ──────────────────────
+
+def _should_auto_approve(user, post):
+    """
+    Decide if a post can be auto-approved based on learned patterns.
+    Returns True only when confidence is high enough.
+
+    Requirements to auto-approve:
+    1. User has reviewed 15+ posts (enough training data)
+    2. Approval rate >= 80% (user generally trusts the agent)
+    3. Post content length is within the platform's approved range
+    4. No recent rejections on this platform (last 5 posts)
+    """
+    from django.db.models import Q
+
+    # Need enough history to learn from
+    reviewed = Post.objects.filter(
+        user=user,
+        generated_by_agent="create",
+        status__in=[
+            Post.Status.APPROVED, Post.Status.SCHEDULED,
+            Post.Status.PUBLISHED, Post.Status.REJECTED,
+        ],
+    )
+    total = reviewed.count()
+    if total < 15:
+        return False
+
+    rejected_count = reviewed.filter(status=Post.Status.REJECTED).count()
+    approval_rate = (total - rejected_count) / total
+
+    if approval_rate < 0.80:
+        return False
+
+    # Check platform-specific: no rejections in last 5 posts for this platform
+    recent_platform = (
+        Post.objects.filter(
+            user=user,
+            platform=post.platform,
+            generated_by_agent="create",
+            status__in=[
+                Post.Status.APPROVED, Post.Status.SCHEDULED,
+                Post.Status.PUBLISHED, Post.Status.REJECTED,
+            ],
+        )
+        .order_by("-created_at")[:5]
+        .values_list("status", flat=True)
+    )
+    if Post.Status.REJECTED in list(recent_platform):
+        return False
+
+    # Content length sanity: must be within range of approved posts for platform
+    approved_lengths = list(
+        Post.objects.filter(
+            user=user,
+            platform=post.platform,
+            generated_by_agent="create",
+            status__in=[
+                Post.Status.APPROVED, Post.Status.SCHEDULED,
+                Post.Status.PUBLISHED,
+            ],
+        )
+        .exclude(content_text="")
+        .values_list("content_text", flat=True)[:30]
+    )
+    if approved_lengths:
+        lengths = [len(t) for t in approved_lengths]
+        min_len = min(lengths) * 0.5
+        max_len = max(lengths) * 1.5
+        post_len = len(post.content_text or "")
+        if post_len < min_len or post_len > max_len:
+            return False
+
+    logger.info(
+        "Smart auto-approval: approved post %s (platform=%s, approval_rate=%.0f%%)",
+        post.id, post.platform, approval_rate * 100,
+    )
+    return True
+
+
 # ─── Performance Intelligence (Content DNA Feedback Loop) ────────────────────
 
 def _get_performance_intelligence(user) -> str:
@@ -874,13 +954,12 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
 
         # Respect user's auto_approve_posts preference:
         # ON  → APPROVED (Adapt Agent will auto-schedule)
-        # OFF → PENDING_APPROVAL (user reviews in queue first)
+        # OFF → Smart auto-approval checks learned patterns first
         profile = getattr(user, "profile", None)
-        initial_status = (
-            Post.Status.APPROVED
-            if profile and profile.auto_approve_posts
-            else Post.Status.PENDING_APPROVAL
-        )
+        if profile and profile.auto_approve_posts:
+            initial_status = Post.Status.APPROVED
+        else:
+            initial_status = Post.Status.PENDING_APPROVAL
 
         for pd in post_dicts:
             raw_platform = pd.get("platform", "")
@@ -917,6 +996,12 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                 ai_framework=pd.get("framework_used", ""),
                 ai_original_text=content_text,
             )
+
+            # Smart auto-approval: learn from user's history
+            if post.status == Post.Status.PENDING_APPROVAL:
+                if _should_auto_approve(user, post):
+                    post.status = Post.Status.APPROVED
+                    post.save(update_fields=["status", "updated_at"])
 
             # Auto-populate UTM fields for revenue attribution
             post.populate_utm()

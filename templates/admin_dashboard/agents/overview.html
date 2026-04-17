@@ -59,6 +59,84 @@
   {% endfor %}
 </div>
 
+<!-- ── AI Automation Intelligence ──────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-indigo-200 dark:border-indigo-900/50 p-5 shadow-sm mb-6">
+  <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">AI Automation Intelligence</h3>
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+
+    <div>
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Auto-Seed Sources (7d)</p>
+      <dl class="space-y-1.5 text-xs">
+        <div class="flex justify-between">
+          <dt class="text-gray-500 dark:text-gray-400">Research Agent</dt>
+          <dd class="font-semibold text-indigo-600 dark:text-indigo-400">{{ auto_seed_sources.research }}</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-gray-500 dark:text-gray-400">Competitor Intel</dt>
+          <dd class="font-semibold text-orange-600 dark:text-orange-400">{{ auto_seed_sources.competitor }}</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-gray-500 dark:text-gray-400">Content Recycling</dt>
+          <dd class="font-semibold text-purple-600 dark:text-purple-400">{{ auto_seed_sources.recycle }}</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-gray-500 dark:text-gray-400">Campaign AI</dt>
+          <dd class="font-semibold text-blue-600 dark:text-blue-400">{{ auto_seed_sources.campaign_ai }}</dd>
+        </div>
+        <div class="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-1.5 mt-1.5">
+          <dt class="font-medium text-gray-900 dark:text-white">Total Auto-Seeds</dt>
+          <dd class="font-bold text-gray-900 dark:text-white">{{ total_auto_seeds_7d }}</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div>
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Smart Approval (30d)</p>
+      <dl class="space-y-1.5 text-xs">
+        <div class="flex justify-between">
+          <dt class="text-gray-500 dark:text-gray-400">Agent Posts</dt>
+          <dd class="font-semibold text-gray-900 dark:text-white">{{ total_agent_posts }}</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-gray-500 dark:text-gray-400">Auto-Approved</dt>
+          <dd class="font-semibold text-green-600 dark:text-green-400">{{ auto_approved_posts }}</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div>
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">User Preferences</p>
+      <dl class="space-y-1.5 text-xs">
+        <div class="flex justify-between">
+          <dt class="text-gray-500 dark:text-gray-400">Auto-Approve ON</dt>
+          <dd class="font-semibold text-green-600 dark:text-green-400">{{ auto_approve_on }}</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-gray-500 dark:text-gray-400">Smart Approval</dt>
+          <dd class="font-semibold text-blue-600 dark:text-blue-400">{{ auto_approve_off }}</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div>
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Active Automations</p>
+      <div class="flex flex-wrap gap-1">
+        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Lead Scoring</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Product Promo</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">Competitor Intel</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">Trend Seeding</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">Content Recycling</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300">Smart Approval</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">AI Captions</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">Nurture Emails</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300">Brief Actions</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">AI Campaigns</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- ── Charts Row ────────────────────────────────────────────────────── -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
   <!-- Success Rate Trend -->

@@ -162,6 +162,45 @@ def agent_overview(request):
         .order_by("-created_at")[:20]
     )
 
+    # ── AI Automation Stats ──────────────────────────────────────────────
+    from apps.content.models import ContentSeed, Post
+
+    # Auto-seeds by source (7d)
+    auto_seed_sources = {
+        "research": ContentSeed.objects.filter(
+            created_at__gte=last_24h - timedelta(days=6),
+            notes__startswith="[Research Agent]",
+        ).count(),
+        "competitor": ContentSeed.objects.filter(
+            created_at__gte=last_24h - timedelta(days=6),
+            notes__startswith="[Competitor Intel]",
+        ).count(),
+        "recycle": ContentSeed.objects.filter(
+            created_at__gte=last_24h - timedelta(days=6),
+            notes__startswith="[Recycle]",
+        ).count(),
+        "campaign_ai": ContentSeed.objects.filter(
+            created_at__gte=last_24h - timedelta(days=6),
+            notes__startswith="[Campaign AI]",
+        ).count(),
+    }
+    total_auto_seeds_7d = sum(auto_seed_sources.values())
+
+    # Smart auto-approval rate
+    agent_posts_30d = Post.objects.filter(
+        generated_by_agent="create",
+        created_at__gte=last_30d,
+    )
+    total_agent_posts = agent_posts_30d.count()
+    auto_approved_posts = agent_posts_30d.filter(
+        status__in=["approved", "scheduled", "published"],
+    ).count()
+
+    # Users with auto-approve ON vs smart approval
+    from apps.accounts.models import UserProfile
+    auto_approve_on = UserProfile.objects.filter(auto_approve_posts=True).count()
+    auto_approve_off = UserProfile.objects.filter(auto_approve_posts=False).count()
+
     context = {
         "page_title": "Agent Operations",
         "agents": agents,
@@ -173,6 +212,13 @@ def agent_overview(request):
         "token_trend_json": token_trend,
         "agent_types": AGENT_TYPES,
         "recent_errors": recent_errors,
+        # AI Automation
+        "auto_seed_sources": auto_seed_sources,
+        "total_auto_seeds_7d": total_auto_seeds_7d,
+        "total_agent_posts": total_agent_posts,
+        "auto_approved_posts": auto_approved_posts,
+        "auto_approve_on": auto_approve_on,
+        "auto_approve_off": auto_approve_off,
     }
     return render(request, "admin_dashboard/agents/overview.html", context)
 

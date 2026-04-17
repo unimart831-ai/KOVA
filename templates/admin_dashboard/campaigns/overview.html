@@ -7,7 +7,7 @@
 {% block content %}
 
 {# ── Stat Cards ──────────────────────────────────────────────────────── #}
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Total Campaigns</p>
     <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ total|format_number }}</p>
@@ -27,6 +27,16 @@
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">This Week</p>
     <p class="text-2xl font-bold text-kova-600 dark:text-kova-400 mt-1">{{ created_this_week }}</p>
     <p class="text-xs text-gray-400 mt-0.5">new campaigns</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-indigo-200 dark:border-indigo-900/50 p-4 shadow-sm">
+    <p class="text-xs font-medium text-indigo-600 dark:text-indigo-400">AI-Built</p>
+    <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">{{ ai_built }}</p>
+    <p class="text-xs text-gray-400 mt-0.5">{{ ai_built_this_week }} this week</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Avg Seeds/Campaign</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ avg_seeds }}</p>
+    <p class="text-xs text-gray-400 mt-0.5">content pieces</p>
   </div>
 </div>
 

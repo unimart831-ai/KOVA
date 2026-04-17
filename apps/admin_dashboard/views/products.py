@@ -78,6 +78,16 @@ def products_overview(request):
         .order_by("-created_at")[:15]
     )
 
+    # ── Auto-Promotion Stats ─────────────────────────────────────────
+    from apps.content.models import ContentSeed
+    auto_promo_seeds = ContentSeed.objects.filter(
+        notes__startswith="[Auto-Promo]",
+    ).count()
+    auto_promo_7d = ContentSeed.objects.filter(
+        notes__startswith="[Auto-Promo]",
+        created_at__gte=week_ago,
+    ).count()
+
     return render(request, "admin_dashboard/products/overview.html", {
         "page_title": "Product Intelligence",
         "total_products": total_products,
@@ -94,6 +104,8 @@ def products_overview(request):
         "updates_7d": list(updates_7d),
         "top_users": top_users,
         "recent_products": recent_products,
+        "auto_promo_seeds": auto_promo_seeds,
+        "auto_promo_7d": auto_promo_7d,
     })
 
 

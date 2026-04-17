@@ -850,3 +850,95 @@ def evaluate_ab_tests():
     if evaluated:
         logger.info("Auto-evaluated %d A/B tests", evaluated)
     return {"evaluated": evaluated}
+
+
+# ── Content Recycling Engine ─────────────────────────────────────────────────
+
+@shared_task(name="content.recycle_top_content")
+def recycle_top_content():
+    """
+    Find high-performing published posts (30+ days old) and create
+    ContentSeeds to repurpose them on different platforms or with fresh angles.
+    Runs daily. Max 1 recycle-seed per user per day.
+    """
+    from datetime import timedelta
+
+    from django.contrib.auth import get_user_model
+    from django.db.models import F, Q
+
+    from apps.analytics.models import PostMetric
+    from apps.content.models import ContentSeed, Post
+    from apps.platforms.models import SocialAccount
+
+    User = get_user_model()
+    cutoff = timezone.now() - timedelta(days=30)
+    recycled = 0
+
+    for user in User.objects.filter(is_active=True):
+        # Skip if already recycled recently
+        recent_recycle = ContentSeed.objects.filter(
+            user=user,
+            notes__startswith="[Recycle]",
+            created_at__gte=timezone.now() - timedelta(hours=24),
+        ).exists()
+        if recent_recycle:
+            continue
+
+        platforms = list(
+            SocialAccount.objects.filter(user=user, is_active=True)
+            .values_list("platform", flat=True)
+        )
+        if not platforms:
+            continue
+
+        # Find top-performing posts: published 30+ days ago, with good engagement
+        top_posts = (
+            Post.objects.filter(
+                user=user,
+                status=Post.Status.PUBLISHED,
+                published_at__lte=cutoff,
+                published_at__isnull=False,
+                metrics__isnull=False,
+            )
+            .select_related("metrics")
+            .order_by("-metrics__engagement_rate")[:10]
+        )
+
+        for post in top_posts:
+            metrics = post.metrics
+            # Require meaningful engagement
+            total_engagement = (
+                metrics.likes + metrics.comments + metrics.shares + metrics.saves
+            )
+            if total_engagement < 5:
+                continue
+
+            # Don't recycle the same post twice
+            already_recycled = ContentSeed.objects.filter(
+                user=user,
+                notes__contains=str(post.id),
+            ).exists()
+            if already_recycled:
+                continue
+
+            # Pick different platforms for cross-posting
+            other_platforms = [p for p in platforms if p != post.platform]
+            target = other_platforms[:2] if other_platforms else [post.platform]
+
+            ContentSeed.objects.create(
+                user=user,
+                idea=(
+                    f"Repurpose top-performing content:\n\n"
+                    f"Original ({post.platform}): {post.content_text[:300]}\n\n"
+                    f"Performance: {total_engagement} engagements, "
+                    f"{metrics.engagement_rate or 0:.1f}% rate\n\n"
+                    f"Give it a fresh angle for {', '.join(target)}."
+                ),
+                notes=f"[Recycle] From post {post.id} ({post.platform})",
+                target_platforms=target,
+            )
+            recycled += 1
+            break  # Max 1 per user
+
+    logger.info("Content recycling: created %d seeds", recycled)
+    return {"recycled": recycled}

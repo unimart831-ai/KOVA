@@ -66,8 +66,100 @@ def _run_research_for_user(user_id):
         result = discover_trends(user)
         if result.get("trending_topics"):
             logger.info("Research complete for %s: %d topics", user.email, len(result["trending_topics"]))
+            _auto_seed_from_trends(user, result)
     except Exception as e:
         logger.error("Research Agent failed for %s: %s", user.email, e)
+
+
+def _auto_seed_from_trends(user, research_result):
+    """
+    Auto-create ContentSeeds from high-urgency trending topics.
+    Only seeds from topics with urgency="high" and a suggested_angle.
+    Max 1 seed per research run to avoid flooding.
+    """
+    from datetime import timedelta
+
+    from apps.content.models import ContentSeed
+    from apps.platforms.models import SocialAccount
+
+    # Emergency pause check
+    profile = getattr(user, "profile", None)
+    if profile and getattr(profile, "emergency_pause", False):
+        return
+
+    platforms = list(
+        SocialAccount.objects.filter(user=user, is_active=True)
+        .values_list("platform", flat=True)
+    )
+    if not platforms:
+        return
+
+    # Don't exceed 1 auto-trend-seed per 12 hours
+    recent_trend_seeds = ContentSeed.objects.filter(
+        user=user,
+        notes__startswith="[Research Agent]",
+        created_at__gte=timezone.now() - timedelta(hours=12),
+    ).count()
+    if recent_trend_seeds >= 1:
+        return
+
+    # Find the best high-urgency topic
+    for topic in research_result.get("trending_topics", []):
+        if not isinstance(topic, dict):
+            continue
+        if topic.get("urgency") != "high":
+            continue
+        if not topic.get("suggested_angle"):
+            continue
+
+        topic_name = topic.get("topic", "")
+        angle = topic.get("suggested_angle", "")
+        relevance = topic.get("relevance", "")
+        target_platforms = topic.get("platforms", [])
+
+        # Filter to connected platforms
+        valid_platforms = [p for p in target_platforms if p in platforms] or platforms[:3]
+
+        # Duplicate check
+        idea_prefix = topic_name[:40].lower()
+        recent = ContentSeed.objects.filter(
+            user=user,
+            created_at__gte=timezone.now() - timedelta(hours=48),
+        ).values_list("idea", flat=True)
+        if any(idea_prefix in s.lower() for s in recent):
+            continue
+
+        ContentSeed.objects.create(
+            user=user,
+            idea=f"Trending NOW: {topic_name}\n\nAngle: {angle}",
+            notes=f"[Research Agent] Auto-seeded from high-urgency trend. Relevance: {relevance}",
+            target_platforms=valid_platforms,
+        )
+        logger.info("Auto-seeded from trend: %s (user: %s)", topic_name[:60], user.email)
+        return  # Max 1 per run
+
+    # Also check opportunity_briefs for "today" timing
+    for brief in research_result.get("opportunity_briefs", []):
+        if not isinstance(brief, dict):
+            continue
+        if brief.get("timing") != "today":
+            continue
+
+        title = brief.get("title", "")
+        desc = brief.get("description", "")
+        platform = brief.get("platform", "")
+        why_now = brief.get("why_now", "")
+
+        valid_platforms = [platform] if platform in platforms else platforms[:2]
+
+        ContentSeed.objects.create(
+            user=user,
+            idea=f"{title}\n\n{desc}",
+            notes=f"[Research Agent] Time-sensitive opportunity. Why now: {why_now}",
+            target_platforms=valid_platforms,
+        )
+        logger.info("Auto-seeded from opportunity: %s (user: %s)", title[:60], user.email)
+        return  # Max 1 per run
 
 
 @shared_task(name="agents.run_engage_cycle")
