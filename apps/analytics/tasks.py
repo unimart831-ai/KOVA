@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 @shared_task(name="analyze-competitor")
 def analyze_competitor_task(user_id, competitor_id):
-    """Run AI analysis on a single competitor."""
+    """Run AI analysis on a single competitor, then alert on high-priority insights."""
     from apps.accounts.models import User
     from apps.analytics.competitor_intel import analyze_competitor
     from apps.analytics.models import Competitor
@@ -23,10 +23,36 @@ def analyze_competitor_task(user_id, competitor_id):
         analysis = analyze_competitor(user, competitor)
         if analysis:
             logger.info("Competitor analysis complete: %s for %s", competitor.name, user.email)
+            _send_competitor_alerts(user, competitor, analysis)
         return str(analysis.id) if analysis else None
     except Exception as e:
         logger.exception("analyze_competitor_task failed: %s", e)
         return None
+
+
+def _send_competitor_alerts(user, competitor, analysis):
+    """Create notifications for high-priority competitor insights."""
+    from datetime import timedelta
+
+    from apps.analytics.models import CompetitorInsight
+    from apps.notifications.models import Notification
+
+    recent_insights = CompetitorInsight.objects.filter(
+        competitor=competitor,
+        created_at__gte=timezone.now() - timedelta(minutes=10),
+        priority__in=["high", "critical"],
+    )
+
+    for insight in recent_insights[:3]:
+        message = f"🔔 Competitor alert: {competitor.name} — {insight.title}"
+        try:
+            Notification.create_for_user(
+                user=user,
+                notification_type=Notification.NotificationType.AGENT_ACTION,
+                message=message,
+            )
+        except Exception:
+            logger.exception("Failed to create competitor alert notification")
 
 
 @shared_task(name="analyze-all-competitors")

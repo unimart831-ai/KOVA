@@ -1,12 +1,13 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, campaigns, content, costs, emails, engage, help, llm, logs, media_queue, memes, overview, partners, partials, pixel, platforms, products, revenue, system, teams, user_health, users, whatsapp
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, campaigns, content, costs, emails, engage, feature_usage, help, llm, logs, media_queue, memes, overview, partners, partials, pixel, platforms, products, revenue, system, teams, user_health, users, whatsapp
 
 app_name = "admin_dashboard"
 
 urlpatterns = [
     # Overview
     path("", overview.overview, name="overview"),
+    path("feature-usage/", feature_usage.feature_usage, name="feature_usage"),
 
     # Users
     path("users/", users.user_list, name="user_list"),

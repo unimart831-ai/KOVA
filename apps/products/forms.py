@@ -9,6 +9,7 @@ class ProductForm(forms.ModelForm):
         fields = [
             "offering_type", "name", "description", "category", "price", "currency",
             "price_range_min", "price_range_max", "image",
+            "product_url", "external_id",
             "stock_status", "quantity", "low_stock_threshold",
             "is_featured", "is_active",
         ]
@@ -21,6 +22,8 @@ class ProductForm(forms.ModelForm):
             "currency": forms.TextInput(attrs={"class": "input w-20", "placeholder": "KES"}),
             "price_range_min": forms.NumberInput(attrs={"class": "input", "placeholder": "Min", "step": "0.01"}),
             "price_range_max": forms.NumberInput(attrs={"class": "input", "placeholder": "Max", "step": "0.01"}),
+            "product_url": forms.URLInput(attrs={"class": "input", "placeholder": "https://yourstore.com/product/timberland-casuals"}),
+            "external_id": forms.TextInput(attrs={"class": "input", "placeholder": "SKU or external platform ID (optional)"}),
             "stock_status": forms.Select(attrs={"class": "input"}),
             "quantity": forms.NumberInput(attrs={"class": "input", "placeholder": "Optional — exact count"}),
             "low_stock_threshold": forms.NumberInput(attrs={"class": "input", "placeholder": "5"}),

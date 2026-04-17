@@ -26,4 +26,10 @@ urlpatterns = [
 
     # Conversions / Revenue Attribution
     path("conversions/", views.ConversionListCreateView.as_view(), name="conversion-list"),
+
+    # Products / Catalog
+    path("products/", views.ProductListCreateView.as_view(), name="product-list"),
+    path("products/<uuid:pk>/", views.ProductDetailView.as_view(), name="product-detail"),
+    path("products/bulk-import/", views.ProductBulkImportView.as_view(), name="product-bulk-import"),
+    path("products/categories/", views.ProductCategoryListCreateView.as_view(), name="product-category-list"),
 ]

@@ -14,4 +14,9 @@ urlpatterns = [
     path("<uuid:lead_id>/note/", views.lead_add_note, name="add_note"),
     path("<uuid:lead_id>/tag/", views.lead_add_tag, name="add_tag"),
     path("<uuid:lead_id>/tag/remove/", views.lead_remove_tag, name="remove_tag"),
+    # Nurture Sequences
+    path("nurture/", views.nurture_list, name="nurture_list"),
+    path("nurture/create/", views.nurture_create, name="nurture_create"),
+    path("nurture/<uuid:sequence_id>/", views.nurture_detail, name="nurture_detail"),
+    path("nurture/<uuid:sequence_id>/toggle/", views.nurture_toggle, name="nurture_toggle"),
 ]

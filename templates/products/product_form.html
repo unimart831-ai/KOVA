@@ -69,6 +69,19 @@
         {% endif %}
       </div>
 
+      {# E-commerce integration fields #}
+      <div>
+        <label for="id_product_url" class="label">Purchase / Product Page URL</label>
+        {{ form.product_url }}
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Where customers can buy this. Used for "Shop Now" CTAs in AI-generated content.</p>
+      </div>
+
+      <div>
+        <label for="id_external_id" class="label">SKU / External ID</label>
+        {{ form.external_id }}
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">For syncing with Shopify, WooCommerce, or other e-commerce platforms.</p>
+      </div>
+
       <hr class="border-gray-200 dark:border-gray-700">
 
       {# Stock fields — only for physical products #}

@@ -135,3 +135,109 @@ class LeadActivity(models.Model):
 
     def __str__(self):
         return f"{self.get_activity_type_display()} — {self.lead.email}"
+
+
+# ─── Lead Nurture Sequences ─────────────────────────────────────────────────
+
+
+class NurtureSequence(models.Model):
+    """An automated follow-up sequence for leads."""
+
+    class Trigger(models.TextChoices):
+        ALL_NEW = "all_new", "All new leads"
+        FROM_FORM = "from_form", "From form submissions"
+        FROM_SOCIAL = "from_social", "From social (DMs & comments)"
+        HIGH_PRIORITY = "high_priority", "High-priority leads only"
+        FROM_PLATFORM = "from_platform", "From specific platform"
+        MANUAL = "manual", "Manual enrollment only"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="nurture_sequences"
+    )
+    name = models.CharField(max_length=200)
+    trigger = models.CharField(max_length=20, choices=Trigger.choices, default=Trigger.ALL_NEW)
+    trigger_platform = models.CharField(max_length=30, blank=True, help_text="Platform filter when trigger=from_platform")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.name} ({self.get_trigger_display()})"
+
+    @property
+    def enrolled_count(self):
+        return self.enrollments.count()
+
+    @property
+    def completed_count(self):
+        return self.enrollments.filter(completed=True).count()
+
+
+class NurtureStep(models.Model):
+    """A single step in a nurture sequence."""
+
+    class ActionType(models.TextChoices):
+        SEND_EMAIL = "send_email", "Send Email"
+        ADD_TAG = "add_tag", "Add Tag"
+        CHANGE_STATUS = "change_status", "Change Status"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    sequence = models.ForeignKey(NurtureSequence, on_delete=models.CASCADE, related_name="steps")
+    order = models.PositiveIntegerField(default=0)
+    delay_hours = models.PositiveIntegerField(default=1, help_text="Hours after previous step (or enrollment)")
+    action_type = models.CharField(max_length=20, choices=ActionType.choices, default=ActionType.SEND_EMAIL)
+
+    # Email fields
+    email_subject = models.CharField(max_length=200, blank=True)
+    email_body = models.TextField(blank=True)
+
+    # Tag field
+    tag_value = models.CharField(max_length=50, blank=True)
+
+    # Status field
+    status_value = models.CharField(max_length=20, blank=True, choices=Lead.Status.choices)
+
+    class Meta:
+        ordering = ["order"]
+        unique_together = ["sequence", "order"]
+
+    def __str__(self):
+        return f"Step {self.order}: {self.get_action_type_display()}"
+
+    @property
+    def delay_display(self):
+        """Human-readable delay: '2h', '1d', '3d 12h'."""
+        if self.delay_hours == 0:
+            return "Immediately"
+        days, hours = divmod(self.delay_hours, 24)
+        if days and hours:
+            return f"{days}d {hours}h"
+        if days:
+            return f"{days}d"
+        return f"{hours}h"
+
+
+class LeadEnrollment(models.Model):
+    """Tracks a lead's progress through a nurture sequence."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name="enrollments")
+    sequence = models.ForeignKey(NurtureSequence, on_delete=models.CASCADE, related_name="enrollments")
+    current_step = models.PositiveIntegerField(default=0)
+    enrolled_at = models.DateTimeField(auto_now_add=True)
+    next_step_at = models.DateTimeField(null=True, blank=True)
+    completed = models.BooleanField(default=False)
+    paused = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-enrolled_at"]
+        unique_together = ["lead", "sequence"]
+        indexes = [
+            models.Index(fields=["completed", "paused", "next_step_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.lead.email} → {self.sequence.name}"

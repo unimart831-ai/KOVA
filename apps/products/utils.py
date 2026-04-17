@@ -61,6 +61,8 @@ def get_product_context(user) -> str:
         line = f"• {p.name}"
         if p.display_price:
             line += f" — {p.display_price}"
+        if p.product_url:
+            line += f" → {p.product_url}"
         if p.is_featured:
             line += " [FEATURED]"
         if p.tags:
@@ -670,6 +672,7 @@ def generate_restock_seed(user, product_name: str) -> bool:
     """
     from apps.content.models import ContentSeed
     from apps.platforms.models import SocialAccount
+    from apps.products.models import Product
 
     # Don't create if there's already a recent seed about this product
     recent = ContentSeed.objects.filter(
@@ -689,8 +692,12 @@ def generate_restock_seed(user, product_name: str) -> bool:
     if not platforms:
         return False
 
+    # Look up the product to link via FK
+    product = Product.objects.filter(user=user, name=product_name, is_active=True).first()
+
     ContentSeed.objects.create(
         user=user,
+        product=product,
         idea=(
             f"🔥 BACK IN STOCK: {product_name} is available again! "
             f"Create an exciting 'back in stock' announcement. "

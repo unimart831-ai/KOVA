@@ -238,3 +238,104 @@ def lead_analytics(request):
         "conversion_rate": conversion_rate,
         "page_title": "Lead Analytics",
     })
+
+
+# ─── Lead Nurture Sequences ─────────────────────────────────────────────────
+
+
+@login_required
+def nurture_list(request):
+    """List all nurture sequences."""
+    from apps.leads.models import LeadEnrollment, NurtureSequence
+
+    sequences = NurtureSequence.objects.filter(user=request.user).prefetch_related("steps")
+    active_count = sequences.filter(is_active=True).count()
+
+    total_enrolled = LeadEnrollment.objects.filter(sequence__user=request.user).count()
+    total_completed = LeadEnrollment.objects.filter(sequence__user=request.user, completed=True).count()
+
+    return render(request, "leads/nurture_list.html", {
+        "sequences": sequences,
+        "active_count": active_count,
+        "total_enrolled": total_enrolled,
+        "total_completed": total_completed,
+        "page_title": "Nurture Sequences",
+    })
+
+
+@login_required
+def nurture_create(request):
+    """Create a new nurture sequence with steps."""
+    import json
+
+    from apps.leads.models import NurtureSequence, NurtureStep
+
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        trigger = request.POST.get("trigger", "all_new")
+        trigger_platform = request.POST.get("trigger_platform", "").strip()
+
+        if not name:
+            messages.error(request, "Sequence name is required.")
+            return redirect("leads:nurture_create")
+
+        sequence = NurtureSequence.objects.create(
+            user=request.user,
+            name=name,
+            trigger=trigger,
+            trigger_platform=trigger_platform,
+        )
+
+        step_count = int(request.POST.get("step_count", 0))
+        for i in range(step_count):
+            delay = int(request.POST.get(f"step_{i}_delay", 1))
+            action = request.POST.get(f"step_{i}_action", "send_email")
+            NurtureStep.objects.create(
+                sequence=sequence,
+                order=i,
+                delay_hours=max(0, delay),
+                action_type=action,
+                email_subject=request.POST.get(f"step_{i}_subject", ""),
+                email_body=request.POST.get(f"step_{i}_body", ""),
+                tag_value=request.POST.get(f"step_{i}_tag", "").strip().lower(),
+                status_value=request.POST.get(f"step_{i}_status", ""),
+            )
+
+        messages.success(request, f"Nurture sequence '{name}' created!")
+        return redirect("leads:nurture_detail", sequence_id=sequence.pk)
+
+    return render(request, "leads/nurture_form.html", {
+        "page_title": "New Nurture Sequence",
+        "is_edit": False,
+    })
+
+
+@login_required
+def nurture_detail(request, sequence_id):
+    """View a nurture sequence with steps and enrolled leads."""
+    from apps.leads.models import NurtureSequence
+
+    sequence = get_object_or_404(NurtureSequence, pk=sequence_id, user=request.user)
+    steps = sequence.steps.all()
+    enrollments = sequence.enrollments.select_related("lead").all()[:50]
+
+    return render(request, "leads/nurture_detail.html", {
+        "sequence": sequence,
+        "steps": steps,
+        "enrollments": enrollments,
+        "page_title": sequence.name,
+    })
+
+
+@login_required
+@require_POST
+def nurture_toggle(request, sequence_id):
+    """Toggle a nurture sequence active/paused."""
+    from apps.leads.models import NurtureSequence
+
+    sequence = get_object_or_404(NurtureSequence, pk=sequence_id, user=request.user)
+    sequence.is_active = not sequence.is_active
+    sequence.save(update_fields=["is_active"])
+    status = "activated" if sequence.is_active else "paused"
+    messages.success(request, f"Sequence '{sequence.name}' {status}.")
+    return redirect("leads:nurture_list")

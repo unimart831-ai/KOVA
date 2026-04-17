@@ -59,3 +59,20 @@ def create_lead_from_submission(sender, instance, created, **kwargs):
     # Auto-score priority
     lead.compute_priority()
     lead.save(update_fields=["priority"])
+
+
+@receiver(post_save, sender="leads.Lead")
+def enroll_new_lead_in_sequences(sender, instance, created, **kwargs):
+    """Auto-enroll newly created leads into matching nurture sequences."""
+    if not created:
+        return
+
+    from apps.leads.tasks import enroll_lead_in_sequences
+
+    try:
+        enroll_lead_in_sequences(instance)
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception(
+            "Failed to enroll lead %s in nurture sequences", instance.pk
+        )

@@ -93,11 +93,13 @@ def product_detail(request, product_id):
     product = get_object_or_404(Product, pk=product_id, user=request.user)
     stock_history = product.stock_updates.all()[:20]
     alerts = product.alerts.filter(is_read=False)[:10]
+    recent_posts = product.posts.order_by("-created_at")[:10]
 
     return render(request, "products/product_detail.html", {
         "product": product,
         "stock_history": stock_history,
         "alerts": alerts,
+        "recent_posts": recent_posts,
     })
 
 
@@ -241,6 +243,8 @@ def _import_csv(user, csv_file, remaining):
                     "stock_status": status,
                     "quantity": int(qty) if qty else None,
                     "description": row.get("description", "").strip(),
+                    "product_url": row.get("product_url", "").strip(),
+                    "external_id": row.get("external_id", row.get("sku", "")).strip(),
                 },
             )
             if created:
@@ -314,3 +318,52 @@ def category_add(request):
         "form": form,
         "title": "Add Category",
     })
+
+
+@login_required
+@require_POST
+def promote_product(request, product_id):
+    """
+    One-click: create a ContentSeed pre-filled with product data, then fire the AI pipeline.
+    Creates a seed like "Promote [Product Name] — [Price] — [Description snippet]"
+    with the product FK set, so the Create Agent gets full product context.
+    """
+    from apps.content.models import ContentSeed
+    from apps.agents.tasks import generate_from_seed
+    from apps.utils.tasks import fire_task
+
+    product = get_object_or_404(Product, pk=product_id, user=request.user)
+
+    if product.stock_status == Product.StockStatus.OUT_OF_STOCK:
+        messages.error(request, f"Cannot promote '{product.name}' — it's out of stock.")
+        return redirect("products:detail", product_id=product.pk)
+
+    # Build a rich seed idea from product data
+    idea_parts = [f"Promote {product.name}"]
+    if product.display_price:
+        idea_parts.append(f"at {product.display_price}")
+    if product.description:
+        desc = product.description[:200]
+        idea_parts.append(f"— {desc}")
+
+    notes_parts = []
+    if product.product_url:
+        notes_parts.append(f"Purchase link: {product.product_url}")
+    if product.tags:
+        notes_parts.append(f"Tags: {', '.join(product.tags)}")
+    if product.stock_status == Product.StockStatus.LOW_STOCK:
+        notes_parts.append(f"LOW STOCK — only {product.quantity or 'few'} left. Create urgency!")
+    if product.is_featured:
+        notes_parts.append("This is a FEATURED product — push harder.")
+
+    seed = ContentSeed.objects.create(
+        user=request.user,
+        product=product,
+        idea=" ".join(idea_parts),
+        notes="\n".join(notes_parts),
+    )
+
+    fire_task(generate_from_seed, str(seed.id))
+
+    messages.success(request, f"Creating content for '{product.name}' — posts will appear in your Content Studio shortly.")
+    return redirect("content:studio")

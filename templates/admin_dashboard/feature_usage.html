@@ -1,0 +1,231 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Which features your users are actually using — last {{ days }} days</p>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  {# Period selector #}
+  <div class="flex items-center justify-end gap-2">
+    <a href="?days=7" class="px-3 py-1 text-xs rounded-full {% if days == 7 %}bg-purple-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">7d</a>
+    <a href="?days=14" class="px-3 py-1 text-xs rounded-full {% if days == 14 %}bg-purple-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">14d</a>
+    <a href="?days=30" class="px-3 py-1 text-xs rounded-full {% if days == 30 %}bg-purple-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">30d</a>
+    <a href="?days=90" class="px-3 py-1 text-xs rounded-full {% if days == 90 %}bg-purple-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">90d</a>
+  </div>
+
+  {# ═══ Hero stats ═══ #}
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Total Page Views</p>
+      <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_views|format_number }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Active Users</p>
+      <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_active_users }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">of {{ total_registered }} registered</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Adoption Rate</p>
+      <p class="text-3xl font-bold {% if adoption_rate >= 50 %}text-emerald-600{% elif adoption_rate >= 25 %}text-amber-600{% else %}text-red-600{% endif %}">{{ adoption_rate }}%</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Features Used</p>
+      <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ sections|length }}</p>
+      {% if unused %}<p class="text-xs text-gray-500 dark:text-gray-400">{{ unused|length }} unused</p>{% endif %}
+    </div>
+  </div>
+
+  {# ═══ Section breakdown — the core table ═══ #}
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Feature Popularity</h3>
+    {% if sections %}
+    <div class="space-y-3">
+      {% for s in sections %}
+      <div class="flex items-center gap-4">
+        <div class="w-36 flex-shrink-0">
+          <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ s.label }}</p>
+        </div>
+        <div class="flex-1">
+          <div class="h-6 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-500
+              {% if forloop.counter <= 3 %}bg-purple-600{% elif forloop.counter <= 6 %}bg-blue-500{% else %}bg-gray-400 dark:bg-gray-600{% endif %}"
+              style="width: {{ s.bar_pct }}%"></div>
+          </div>
+        </div>
+        <div class="w-28 flex-shrink-0 text-right">
+          <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ s.views|format_number }}</span>
+          <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">views</span>
+        </div>
+        <div class="w-24 flex-shrink-0 text-right">
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{ s.users }}</span>
+          <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">users</span>
+        </div>
+        <div class="w-20 flex-shrink-0 text-right">
+          <span class="text-xs text-gray-500 dark:text-gray-400">{{ s.avg_per_user }}/user</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-8">No usage data yet. Data will appear as users navigate the platform.</p>
+    {% endif %}
+  </div>
+
+  {# ═══ Unused features — adoption gaps ═══ #}
+  {% if unused %}
+  <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-5">
+    <h3 class="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-3">
+      ⚠ Unused Features ({{ unused|length }})
+    </h3>
+    <p class="text-xs text-amber-700 dark:text-amber-400 mb-3">These features had zero visits in the last {{ days }} days. Consider improving discoverability or onboarding.</p>
+    <div class="flex flex-wrap gap-2">
+      {% for u in unused %}
+      <span class="px-2.5 py-1 text-xs rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 font-medium">{{ u.label }}</span>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    {# ═══ Daily views trend chart ═══ #}
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Daily Usage Trend</h3>
+      <canvas id="dailyTrendChart" height="200"></canvas>
+    </div>
+
+    {# ═══ Peak hours chart ═══ #}
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Peak Usage Hours (UTC)</h3>
+      <canvas id="peakHoursChart" height="200"></canvas>
+    </div>
+
+    {# ═══ Section trend (top 5) chart ═══ #}
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Top 5 Features — Daily Trend</h3>
+      <canvas id="sectionTrendChart" height="200"></canvas>
+    </div>
+
+    {# ═══ User journey depth ═══ #}
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Feature Depth — How Many Sections Users Explore</h3>
+      {% if depth_dist %}
+      <div class="space-y-2">
+        {% for d in depth_dist %}
+        <div class="flex items-center gap-3">
+          <span class="w-24 text-xs font-medium text-gray-700 dark:text-gray-300">{{ d.sections }} section{{ d.sections|pluralize }}</span>
+          <div class="flex-1 h-5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+            <div class="h-full bg-purple-500 rounded-full" style="width: {% widthratio d.users total_active_users 100 %}%"></div>
+          </div>
+          <span class="w-12 text-xs text-right text-gray-600 dark:text-gray-400">{{ d.users }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-sm text-gray-500 text-center py-4">No data yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ═══ Top users table ═══ #}
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Most Active Users</h3>
+    {% if top_users %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200 dark:border-gray-700">
+            <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">#</th>
+            <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">User</th>
+            <th class="text-right py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Page Views</th>
+            <th class="text-right py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Sections Used</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in top_users %}
+          <tr class="border-b border-gray-100 dark:border-gray-800 last:border-0">
+            <td class="py-2.5 px-3 text-gray-400">{{ forloop.counter }}</td>
+            <td class="py-2.5 px-3">
+              <a href="{% url 'admin_dashboard:user_detail' u.user__id %}" class="text-purple-600 dark:text-purple-400 hover:underline font-medium">
+                {{ u.user__full_name|default:u.user__email }}
+              </a>
+              {% if u.user__full_name %}
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ u.user__email }}</p>
+              {% endif %}
+            </td>
+            <td class="py-2.5 px-3 text-right font-semibold text-gray-900 dark:text-white">{{ u.views|format_number }}</td>
+            <td class="py-2.5 px-3 text-right text-gray-700 dark:text-gray-300">{{ u.sections }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-sm text-gray-500 text-center py-4">No data yet.</p>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+  const isDark = document.documentElement.classList.contains('dark');
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const textColor = isDark ? '#9ca3af' : '#6b7280';
+
+  const defaultOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } },
+      y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } },
+    },
+  };
+
+  // Daily trend
+  const dailyLabels = {{ daily_labels|safe }};
+  const dailyCounts = {{ daily_counts|safe }};
+  const dailyUsers = {{ daily_users|safe }};
+
+  new Chart(document.getElementById('dailyTrendChart'), {
+    type: 'line',
+    data: {
+      labels: dailyLabels,
+      datasets: [
+        { label: 'Page Views', data: dailyCounts, borderColor: '#7c3aed', backgroundColor: 'rgba(124,58,237,0.1)', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 0 },
+        { label: 'Active Users', data: dailyUsers, borderColor: '#2563eb', backgroundColor: 'transparent', borderDash: [5,3], tension: 0.3, borderWidth: 1.5, pointRadius: 0 },
+      ],
+    },
+    options: { ...defaultOpts, plugins: { legend: { display: true, labels: { color: textColor, font: { size: 11 }, boxWidth: 12 } } } },
+  });
+
+  // Peak hours
+  new Chart(document.getElementById('peakHoursChart'), {
+    type: 'bar',
+    data: {
+      labels: {{ hours_labels|safe }},
+      datasets: [{ data: {{ hours_data|safe }}, backgroundColor: '#7c3aed', borderRadius: 4 }],
+    },
+    options: defaultOpts,
+  });
+
+  // Section trend (top 5)
+  const sectionDatasets = [
+    {% for ds in section_trend_datasets %}
+    { label: '{{ ds.label }}', data: {{ ds.data|safe }}, borderColor: '{{ ds.color }}', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2, pointRadius: 0 },
+    {% endfor %}
+  ];
+  new Chart(document.getElementById('sectionTrendChart'), {
+    type: 'line',
+    data: { labels: dailyLabels, datasets: sectionDatasets },
+    options: { ...defaultOpts, plugins: { legend: { display: true, labels: { color: textColor, font: { size: 10 }, boxWidth: 10 } } } },
+  });
+</script>
+{% endblock %}

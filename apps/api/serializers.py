@@ -4,6 +4,7 @@ from apps.agents.models import AgentAction, AgentConfig
 from apps.analytics.models import Conversion, PostMetric
 from apps.content.models import ContentSeed, Post
 from apps.platforms.models import SocialAccount
+from apps.products.models import Product, ProductCategory
 
 
 class SocialAccountSerializer(serializers.ModelSerializer):
@@ -24,7 +25,7 @@ class ContentSeedSerializer(serializers.ModelSerializer):
         model = ContentSeed
         fields = [
             "id", "idea", "notes", "target_platforms",
-            "status", "batch_strategy", "brand",
+            "status", "batch_strategy", "brand", "product",
             "created_at", "updated_at",
         ]
         read_only_fields = ["id", "status", "created_at", "updated_at"]
@@ -104,3 +105,42 @@ class ConversionSerializer(serializers.ModelSerializer):
             "metadata", "created_at",
         ]
         read_only_fields = ["id", "created_at"]
+
+
+class ProductCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductCategory
+        fields = ["id", "name", "description", "position", "is_active", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(source="category.name", read_only=True, default="")
+    offering_type_display = serializers.CharField(source="get_offering_type_display", read_only=True)
+    stock_status_display = serializers.CharField(source="get_stock_status_display", read_only=True)
+
+    class Meta:
+        model = Product
+        fields = [
+            "id", "offering_type", "offering_type_display",
+            "name", "description", "category", "category_name",
+            "price", "currency", "price_range_min", "price_range_max",
+            "product_url", "external_id",
+            "image", "additional_images",
+            "stock_status", "stock_status_display",
+            "quantity", "low_stock_threshold",
+            "is_featured", "is_active", "tags",
+            "created_at", "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def validate_external_id(self, value):
+        """Ensure external_id is unique per user if provided."""
+        if value:
+            user = self.context["request"].user
+            qs = Product.objects.filter(user=user, external_id=value)
+            if self.instance:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise serializers.ValidationError(f"A product with external_id '{value}' already exists.")
+        return value

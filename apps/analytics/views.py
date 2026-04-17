@@ -647,3 +647,204 @@ def attribution_dashboard(request):
         "posts_published": posts_published,
         "link_clicks": link_clicks,
     })
+
+
+# ─── PDF Report Download ────────────────────────────────────────────────────
+
+
+@login_required
+def download_report(request):
+    """Generate and download a PDF performance report."""
+    from django.http import HttpResponse
+
+    from apps.analytics.reports import generate_report_pdf
+
+    days = int(request.GET.get("days", 30))
+    if days not in (7, 14, 30, 90):
+        days = 30
+
+    pdf_bytes = generate_report_pdf(request.user, days)
+    if not pdf_bytes:
+        messages.error(request, "Could not generate report. Try again.")
+        return redirect("analytics:attribution")
+
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    filename = f"kova-report-{days}d-{timezone.now().strftime('%Y%m%d')}.pdf"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+
+# ─── Content Intelligence ────────────────────────────────────────────────────
+
+
+@login_required
+def content_intelligence(request):
+    """Content Intelligence — what's working, what to post next, and when."""
+    from collections import defaultdict
+    from datetime import timedelta
+
+    from apps.content.models import Post
+
+    days = int(request.GET.get("days", 30))
+    if days not in (7, 14, 30, 90):
+        days = 30
+
+    cutoff = timezone.now() - timedelta(days=days)
+
+    posts = (
+        Post.objects.filter(
+            user=request.user,
+            status="published",
+            published_at__gte=cutoff,
+        )
+        .select_related("metrics", "social_account")
+        .exclude(content_dna={})
+    )
+
+    # 1. Best formats
+    format_stats = defaultdict(lambda: {"count": 0, "total_engagement": 0, "total_reach": 0})
+    # 2. Best posting times
+    hour_stats = defaultdict(lambda: {"count": 0, "total_engagement": 0})
+    # 3. Best themes
+    topic_stats = defaultdict(lambda: {"count": 0, "total_engagement": 0, "total_reach": 0})
+    # 4. Attribute correlation
+    attribute_stats = defaultdict(lambda: {"with": [], "without": []})
+    # 5. Platform stats
+    plat_stats = defaultdict(lambda: {"count": 0, "total_engagement": 0})
+
+    for post in posts:
+        try:
+            m = post.metrics
+        except PostMetric.DoesNotExist:
+            continue
+
+        engagement = m.likes + m.comments + m.shares + m.saves
+        dna = post.content_dna or {}
+
+        # Format
+        fmt = dna.get("format", "unknown")
+        format_stats[fmt]["count"] += 1
+        format_stats[fmt]["total_engagement"] += engagement
+        format_stats[fmt]["total_reach"] += m.reach
+
+        # Hour
+        if post.published_at:
+            hour = post.published_at.hour
+            hour_stats[hour]["count"] += 1
+            hour_stats[hour]["total_engagement"] += engagement
+
+        # Topic
+        topic = dna.get("topic", "")
+        if topic:
+            topic_stats[topic]["count"] += 1
+            topic_stats[topic]["total_engagement"] += engagement
+            topic_stats[topic]["total_reach"] += m.reach
+
+        # Boolean attributes
+        for attr in ["has_cta", "has_question", "has_stats", "has_emoji", "has_hashtags", "has_image"]:
+            if dna.get(attr):
+                attribute_stats[attr]["with"].append(engagement)
+            else:
+                attribute_stats[attr]["without"].append(engagement)
+
+        # Platform
+        platform = post.social_account.platform if post.social_account else "unknown"
+        plat_stats[platform]["count"] += 1
+        plat_stats[platform]["total_engagement"] += engagement
+
+    # Process format stats
+    best_formats = []
+    for fmt, stats in format_stats.items():
+        if stats["count"] >= 2:
+            best_formats.append({
+                "format": fmt,
+                "count": stats["count"],
+                "avg_engagement": round(stats["total_engagement"] / stats["count"], 1),
+                "avg_reach": round(stats["total_reach"] / stats["count"]),
+            })
+    best_formats.sort(key=lambda x: x["avg_engagement"], reverse=True)
+
+    # Process hour stats
+    best_hours = []
+    for hour, stats in hour_stats.items():
+        if stats["count"] >= 2:
+            best_hours.append({
+                "hour": hour,
+                "label": f"{hour:02d}:00",
+                "count": stats["count"],
+                "avg_engagement": round(stats["total_engagement"] / stats["count"], 1),
+            })
+    best_hours.sort(key=lambda x: x["avg_engagement"], reverse=True)
+
+    # Process topic stats
+    best_topics = []
+    for topic, stats in topic_stats.items():
+        if stats["count"] >= 2:
+            best_topics.append({
+                "topic": topic,
+                "count": stats["count"],
+                "avg_engagement": round(stats["total_engagement"] / stats["count"], 1),
+            })
+    best_topics.sort(key=lambda x: x["avg_engagement"], reverse=True)
+
+    # Process attribute impact
+    attribute_impact = []
+    for attr, stats in attribute_stats.items():
+        with_list = stats["with"]
+        without_list = stats["without"]
+        if len(with_list) >= 2 and len(without_list) >= 2:
+            avg_with = sum(with_list) / len(with_list)
+            avg_without = sum(without_list) / len(without_list)
+            multiplier = round(avg_with / avg_without, 1) if avg_without > 0 else 0
+            attribute_impact.append({
+                "attribute": attr.replace("has_", "").replace("_", " ").title(),
+                "with_avg": round(avg_with, 1),
+                "without_avg": round(avg_without, 1),
+                "multiplier": multiplier,
+                "positive": avg_with > avg_without,
+            })
+    attribute_impact.sort(key=lambda x: x["multiplier"], reverse=True)
+
+    # Process platform stats
+    platform_display = {}
+    for plat, stats in plat_stats.items():
+        platform_display[plat] = {
+            "count": stats["count"],
+            "avg_engagement": round(stats["total_engagement"] / stats["count"], 1) if stats["count"] else 0,
+        }
+
+    # Build recommendations
+    recommendations = []
+    if best_formats:
+        top = best_formats[0]
+        recommendations.append(
+            f"Your {top['format']} posts get the most engagement ({top['avg_engagement']:.0f} avg) — post more of them."
+        )
+    if best_hours:
+        top = best_hours[0]
+        recommendations.append(
+            f"Your best posting time is {top['label']} — schedule content around this hour."
+        )
+    for attr in attribute_impact[:2]:
+        if attr["positive"] and attr["multiplier"] >= 1.3:
+            recommendations.append(
+                f"Posts with {attr['attribute'].lower()} get {attr['multiplier']}x more engagement."
+            )
+    if best_topics:
+        top = best_topics[0]
+        recommendations.append(
+            f"'{top['topic']}' is your top theme ({top['avg_engagement']:.0f} avg engagement) — create more content around it."
+        )
+
+    return render(request, "analytics/content_intelligence.html", {
+        "page_title": "Content Intelligence",
+        "days": days,
+        "total_posts": posts.count(),
+        "best_formats": best_formats[:8],
+        "best_hours": best_hours[:6],
+        "best_topics": best_topics[:8],
+        "attribute_impact": attribute_impact,
+        "recommendations": recommendations,
+        "platform_stats": platform_display,
+        "has_data": posts.count() >= 5,
+    })

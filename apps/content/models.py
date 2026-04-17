@@ -20,6 +20,10 @@ class ContentSeed(models.Model):
         "teams.Brand", on_delete=models.SET_NULL, null=True, blank=True, related_name="content_seeds",
         help_text="Brand this content is for. Null = user's default brand voice.",
     )
+    product = models.ForeignKey(
+        "products.Product", on_delete=models.SET_NULL, null=True, blank=True, related_name="content_seeds",
+        help_text="Product this seed promotes. Enables product-to-content pipeline tracking.",
+    )
     idea = models.TextField(help_text="Your raw idea, topic, or content seed.")
     notes = models.TextField(blank=True, help_text="Additional context or instructions for the AI.")
     target_platforms = models.JSONField(
@@ -84,6 +88,10 @@ class Post(SoftDeleteMixin, models.Model):
     )
     seed = models.ForeignKey(
         ContentSeed, on_delete=models.SET_NULL, null=True, blank=True, related_name="posts",
+    )
+    product = models.ForeignKey(
+        "products.Product", on_delete=models.SET_NULL, null=True, blank=True, related_name="posts",
+        help_text="Product this post promotes. Inherited from seed or set directly.",
     )
     social_account = models.ForeignKey(
         "platforms.SocialAccount", on_delete=models.SET_NULL, null=True, blank=True, related_name="posts",

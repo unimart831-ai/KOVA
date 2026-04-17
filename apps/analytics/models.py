@@ -652,3 +652,62 @@ class WebsiteEvent(models.Model):
 
     def __str__(self):
         return f"{self.get_event_type_display()} on {self.page_url[:60]}"
+
+
+# ─── Feature / Section Usage Tracking ────────────────────────────────────────
+
+
+class PageView(models.Model):
+    """
+    Tracks every authenticated page view so we know which features
+    users actually use.  Aggregated in the admin usage dashboard.
+
+    The middleware writes one row per request. Older rows can be
+    pruned periodically — the admin view only needs ~90 days.
+    """
+
+    SECTION_CHOICES = [
+        ("brief", "Daily Brief"),
+        ("content", "Content Studio"),
+        ("engage", "Inbox (Engage)"),
+        ("whatsapp", "WhatsApp"),
+        ("agents", "Agents"),
+        ("analytics", "Analytics / Insights"),
+        ("attribution", "Attribution"),
+        ("intelligence", "Content Intelligence"),
+        ("competitors", "Competitors"),
+        ("leads", "Lead Inbox"),
+        ("nurture", "Nurture Sequences"),
+        ("links", "Kova Links"),
+        ("products", "Products"),
+        ("campaigns", "Campaigns"),
+        ("memes", "Meme Studio"),
+        ("media_queue", "Media Queue"),
+        ("billing", "Billing"),
+        ("teams", "Teams"),
+        ("emails", "Email Marketing"),
+        ("notifications", "Notifications"),
+        ("help", "Help Center"),
+        ("settings", "Account Settings"),
+        ("other", "Other"),
+    ]
+
+    id = models.BigAutoField(primary_key=True)
+    user = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE,
+        related_name="page_views", db_index=True,
+    )
+    section = models.CharField(max_length=30, choices=SECTION_CHOICES, db_index=True)
+    path = models.CharField(max_length=500)
+    viewed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-viewed_at"]
+        indexes = [
+            models.Index(fields=["user", "section", "-viewed_at"]),
+            models.Index(fields=["section", "-viewed_at"]),
+            models.Index(fields=["-viewed_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user} → {self.section} @ {self.viewed_at:%Y-%m-%d %H:%M}"

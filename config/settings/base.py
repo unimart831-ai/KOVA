@@ -99,6 +99,7 @@ MIDDLEWARE = [
     "apps.accounts.middleware.OnboardingMiddleware",
     "apps.billing.middleware.PlanEnforcementMiddleware",
     "apps.partners.middleware.ReferralMiddleware",
+    "apps.analytics.middleware.FeatureUsageMiddleware",
 ]
 
 # ─── URLS ────────────────────────────────────────────────────────────────────
@@ -274,6 +275,16 @@ CELERY_BEAT_SCHEDULE = {
     "curate-channel-content": {
         "task": "whatsapp.curate_channel_content",
         "schedule": 6 * 3600.0,  # every 6 hours
+    },
+    # Monthly attribution report emails
+    "send-monthly-reports": {
+        "task": "emails.send_monthly_reports_all",
+        "schedule": 30 * 24 * 3600.0,  # monthly — full attribution report emails
+    },
+    # Lead nurture sequence processing
+    "process-lead-nurture": {
+        "task": "leads.process_nurture_steps",
+        "schedule": 30 * 60.0,  # every 30 min — advance nurture enrollments
     },
 }
 

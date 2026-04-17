@@ -68,6 +68,12 @@ EMAIL_TEMPLATES = {
     "partner_app_rejected": ("emails/partner_app_rejected.html", "Update on your Growth Partner application — Kova Agent"),
     "partner_new_referral": ("emails/partner_new_referral.html", "New referral! Someone signed up with your link 🔥"),
     "partner_milestone": ("emails/partner_milestone.html", "Milestone achieved! You've unlocked a bonus 🏆"),
+
+    # Monthly attribution report
+    "monthly_report": ("emails/monthly_report.html", "Your monthly performance report — Kova Agent"),
+
+    # Lead nurture
+    "lead_nurture": ("emails/lead_nurture.html", "Following up"),
 }
 
 
@@ -269,6 +275,12 @@ class EmailService:
         return self._send(
             "weekly_report", user.email, user=user,
             context={"report": report_data},
+        )
+
+    def send_monthly_report(self, user, report_data):
+        return self._send(
+            "monthly_report", user.email, user=user,
+            context={"report": report_data, "user": user},
         )
 
     # ─── Product / Marketing ────────────────────────────────────────────

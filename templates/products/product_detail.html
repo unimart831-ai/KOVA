@@ -21,6 +21,14 @@
       {% endif %}
 
       <div class="flex-1 min-w-0 space-y-3">
+        {# Additional images row #}
+        {% if product.additional_images %}
+        <div class="flex gap-2 mb-2">
+          {% for img_url in product.additional_images %}
+          <img src="{{ img_url }}" alt="{{ product.name }}" class="w-14 h-14 rounded-md object-cover border border-gray-200 dark:border-gray-700">
+          {% endfor %}
+        </div>
+        {% endif %}
         {% if product.display_price %}
         <p class="text-xl font-bold text-gray-900 dark:text-white">{{ product.display_price }}</p>
         {% endif %}
@@ -29,6 +37,15 @@
         {% endif %}
         {% if product.category %}
         <p class="text-xs text-gray-500 dark:text-gray-400">Category: {{ product.category.name }}</p>
+        {% endif %}
+        {% if product.product_url %}
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          <span class="font-medium">Purchase link:</span>
+          <a href="{{ product.product_url }}" target="_blank" rel="noopener" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline">{{ product.product_url|truncatechars:60 }}</a>
+        </p>
+        {% endif %}
+        {% if product.external_id %}
+        <p class="text-xs text-gray-500 dark:text-gray-400">SKU / External ID: <span class="font-mono">{{ product.external_id }}</span></p>
         {% endif %}
         {% if product.quantity is not None %}
         <p class="text-sm text-gray-600 dark:text-gray-300">
@@ -48,6 +65,17 @@
 
     <div class="flex items-center gap-3 mt-5 pt-4 border-t border-gray-100 dark:border-gray-800">
       <a href="{% url 'products:edit' product_id=product.pk %}" class="btn-primary text-sm px-4 py-1.5">Edit</a>
+
+      {# Promote — one-click AI content generation #}
+      {% if product.stock_status != 'out_of_stock' %}
+      <form method="post" action="{% url 'products:promote' product_id=product.pk %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="btn-secondary text-sm px-4 py-1.5 bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-950 dark:text-green-300 dark:border-green-800 dark:hover:bg-green-900">
+          🚀 Promote
+        </button>
+      </form>
+      {% endif %}
+
       {# Quick stock update #}
       <form method="post" action="{% url 'products:update_stock' product_id=product.pk %}" class="flex items-center gap-2"
             hx-post="{% url 'products:update_stock' product_id=product.pk %}" hx-target="#stock-badge" hx-swap="innerHTML">
@@ -78,6 +106,39 @@
       <li class="text-sm text-gray-600 dark:text-gray-400">{{ alert.message }}</li>
       {% endfor %}
     </ul>
+  </div>
+  {% endif %}
+
+  {# Content created for this product #}
+  {% if recent_posts %}
+  <div class="card p-5">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Content for This Product</h3>
+    <ul class="space-y-2">
+      {% for post in recent_posts %}
+      <li class="flex items-center justify-between text-sm">
+        <span class="text-gray-600 dark:text-gray-400 truncate flex-1 mr-3">
+          <span class="inline-block px-1.5 py-0.5 rounded text-xs font-medium
+            {% if post.status == 'published' %}bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300
+            {% elif post.status == 'scheduled' %}bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300
+            {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+            {{ post.get_status_display }}
+          </span>
+          {{ post.content_text|truncatewords:15 }}
+        </span>
+        <span class="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">{{ post.created_at|timesince }} ago</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% elif product.stock_status != 'out_of_stock' %}
+  <div class="card border-l-4 border-blue-400 p-4">
+    <p class="text-sm text-blue-700 dark:text-blue-300">
+      No content has been created for this product yet.
+      <form method="post" action="{% url 'products:promote' product_id=product.pk %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="underline font-medium hover:text-blue-900 dark:hover:text-blue-100">Generate content now →</button>
+      </form>
+    </p>
   </div>
   {% endif %}
 

@@ -1,0 +1,99 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Monthly Report{% endblock %}
+{% block header_bg %}#4c1d95{% endblock %}
+{% block header_title %}📊 Your monthly performance report{% endblock %}
+{% block header_subtitle %}<p style="margin:4px 0 0;color:#ddd6fe;font-size:14px;">{{ report.period_start }} – {{ report.period_end }}</p>{% endblock %}
+{% block header_badge %}MONTHLY{% endblock %}
+
+{% block content %}
+<p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#374151;">
+  {% if first_name %}Hi {{ first_name }},{% endif %} Here's your monthly social media performance summary.
+</p>
+
+{# The Answer #}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:20px;background-color:#4c1d95;border-radius:8px;">
+  <tr>
+    <td width="50%" style="padding:16px 20px;text-align:center;">
+      <div style="font-size:36px;font-weight:700;color:#ffffff;">{{ report.sales|default:"0" }}</div>
+      <div style="font-size:11px;color:#ddd6fe;margin-top:2px;">Customers from social</div>
+    </td>
+    <td width="50%" style="padding:16px 20px;text-align:center;">
+      <div style="font-size:36px;font-weight:700;color:#ffffff;">KES {{ report.revenue|default:"0" }}</div>
+      <div style="font-size:11px;color:#ddd6fe;margin-top:2px;">Attributed revenue</div>
+    </td>
+  </tr>
+</table>
+
+{# Key metrics #}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:20px;">
+  <tr>
+    <td width="23%" style="text-align:center;padding:12px 4px;background-color:#f9fafb;border-radius:8px;">
+      <div style="font-size:22px;font-weight:700;color:#7c3aed;">{{ report.posts_published|default:"0" }}</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:2px;">Posts</div>
+    </td>
+    <td width="4%"></td>
+    <td width="23%" style="text-align:center;padding:12px 4px;background-color:#f0fdf4;border-radius:8px;">
+      <div style="font-size:22px;font-weight:700;color:#059669;">{{ report.reach|default:"0" }}</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:2px;">Reach</div>
+    </td>
+    <td width="4%"></td>
+    <td width="23%" style="text-align:center;padding:12px 4px;background-color:#eff6ff;border-radius:8px;">
+      <div style="font-size:22px;font-weight:700;color:#2563eb;">{{ report.leads_total|default:"0" }}</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:2px;">Leads</div>
+    </td>
+    <td width="4%"></td>
+    <td width="23%" style="text-align:center;padding:12px 4px;background-color:#fef3c7;border-radius:8px;">
+      <div style="font-size:22px;font-weight:700;color:#d97706;">{{ report.link_clicks|default:"0" }}</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:2px;">Clicks</div>
+    </td>
+  </tr>
+</table>
+
+{# Engagement #}
+<p style="margin:0 0 8px;font-size:12px;font-weight:600;color:#374151;">Engagement Breakdown</p>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:20px;">
+  <tr>
+    <td style="padding:8px;text-align:center;background-color:#f9fafb;border-radius:6px;">
+      <div style="font-size:16px;font-weight:700;color:#111827;">{{ report.likes|default:"0" }}</div>
+      <div style="font-size:9px;color:#6b7280;">Likes</div>
+    </td>
+    <td width="4"></td>
+    <td style="padding:8px;text-align:center;background-color:#f9fafb;border-radius:6px;">
+      <div style="font-size:16px;font-weight:700;color:#111827;">{{ report.comments|default:"0" }}</div>
+      <div style="font-size:9px;color:#6b7280;">Comments</div>
+    </td>
+    <td width="4"></td>
+    <td style="padding:8px;text-align:center;background-color:#f9fafb;border-radius:6px;">
+      <div style="font-size:16px;font-weight:700;color:#111827;">{{ report.shares|default:"0" }}</div>
+      <div style="font-size:9px;color:#6b7280;">Shares</div>
+    </td>
+    <td width="4"></td>
+    <td style="padding:8px;text-align:center;background-color:#f9fafb;border-radius:6px;">
+      <div style="font-size:16px;font-weight:700;color:#111827;">{{ report.saves|default:"0" }}</div>
+      <div style="font-size:9px;color:#6b7280;">Saves</div>
+    </td>
+  </tr>
+</table>
+
+{% if report.reply_rate %}
+<p style="margin:0 0 8px;font-size:12px;font-weight:600;color:#374151;">Community Management</p>
+<p style="margin:0 0 20px;font-size:13px;color:#6b7280;">
+  Reply rate: <strong style="color:#111827;">{{ report.reply_rate }}%</strong>
+  {% if report.avg_response_minutes %} &middot; Avg response: <strong style="color:#111827;">{{ report.avg_response_minutes }} min</strong>{% endif %}
+</p>
+{% endif %}
+
+<p style="margin:0 0 8px;font-size:11px;color:#9ca3af;">
+  Compared to previous period: Revenue {% if report.revenue_delta > 0 %}<span style="color:#059669;">+KES {{ report.revenue_delta }}</span>{% elif report.revenue_delta < 0 %}<span style="color:#dc2626;">KES {{ report.revenue_delta }}</span>{% else %}no change{% endif %}
+  &middot; Sales {% if report.sales_delta > 0 %}<span style="color:#059669;">+{{ report.sales_delta }}</span>{% elif report.sales_delta < 0 %}<span style="color:#dc2626;">{{ report.sales_delta }}</span>{% else %}no change{% endif %}
+</p>
+{% endblock %}
+
+{% block cta %}
+<tr>
+  <td align="center" style="padding:0 32px 28px;">
+    <a href="{{ site_url }}/analytics/attribution/" style="display:inline-block;background-color:#4c1d95;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">View full attribution dashboard →</a>
+  </td>
+</tr>
+{% endblock %}

@@ -485,8 +485,27 @@ Transform this raw idea into high-performing, platform-native content.
 ### THE IDEA
 {seed.idea}
 {f"### ADDITIONAL CONTEXT FROM USER" + chr(10) + seed.notes if seed.notes else ""}
+"""
 
-### STRATEGIC THINKING (do this before writing)
+    # Inject product-specific context when seed is linked to a product
+    if seed.product_id:
+        p = seed.product
+        product_lines = [f"### PRODUCT BEING PROMOTED"]
+        product_lines.append(f"- **Name**: {p.name}")
+        if p.display_price:
+            product_lines.append(f"- **Price**: {p.display_price}")
+        if p.description:
+            product_lines.append(f"- **Description**: {p.description}")
+        if p.product_url:
+            product_lines.append(f"- **Purchase URL**: {p.product_url}")
+            product_lines.append("→ Use this URL for 'Shop Now' / 'Buy Now' / 'Get Yours' CTAs.")
+        if p.tags:
+            product_lines.append(f"- **Tags**: {', '.join(p.tags)}")
+        if p.stock_status == "low_stock":
+            product_lines.append(f"- **⚠️ LOW STOCK** — Create urgency! Only {p.quantity or 'few'} left.")
+        prompt += "\n".join(product_lines) + "\n\n"
+
+    prompt += f"""### STRATEGIC THINKING (do this before writing)
 For each platform, consider:
 1. What's the most compelling ANGLE for THIS audience on THIS platform?
 2. Which content framework creates the most impact?
@@ -885,6 +904,7 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
             post = Post.objects.create(
                 user=user,
                 seed=seed,
+                product=seed.product if seed else None,
                 social_account=account,
                 platform=account.platform,
                 content_text=content_text,
@@ -1283,6 +1303,7 @@ Respond with a JSON object. No markdown code fences.
             post = Post.objects.create(
                 user=user,
                 seed=source_post.seed,
+                product=source_post.product,
                 social_account=account,
                 platform=account.platform,
                 content_text=pd.get("content_text", ""),
@@ -1450,6 +1471,7 @@ Generate exactly {n} variants labeled {', '.join(VARIANT_LABELS[:n])}.
             post = Post.objects.create(
                 user=user,
                 seed=seed,
+                product=seed.product if seed else None,
                 social_account=account,
                 platform=account.platform,
                 ab_test=ab_test,

@@ -64,6 +64,9 @@ app.conf.task_routes = {
     "whatsapp.aggregate_daily_analytics": {"queue": "low"},
     "whatsapp.generate_weekly_digest": {"queue": "low"},
     "whatsapp.curate_channel_content": {"queue": "low"},
+    # Lead nurture + monthly reports
+    "leads.process_nurture_steps": {"queue": "default"},
+    "emails.send_monthly_reports_all": {"queue": "low"},
 }
 
 # NOTE: Beat schedule is defined in CELERY_BEAT_SCHEDULE in config/settings/base.py

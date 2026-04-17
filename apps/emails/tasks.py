@@ -378,6 +378,35 @@ def send_weekly_reports_all():
     return sent
 
 
+@shared_task(name="emails.send_monthly_reports_all")
+def send_monthly_reports_all():
+    """
+    Send monthly attribution performance reports to all eligible users.
+    Uses the full gather_report_data pipeline for rich attribution data.
+    Runs once a month via Celery Beat.
+    """
+    from apps.accounts.models import UserProfile
+    from apps.analytics.reports import gather_report_data
+    from apps.emails.services import email_service
+
+    profiles = UserProfile.objects.filter(
+        subscription_status__in=("active", "trialing"),
+    ).select_related("user")
+
+    sent = 0
+    for profile in profiles:
+        user = profile.user
+        try:
+            report_data = gather_report_data(user, days=30)
+            email_service.send_monthly_report(user, report_data)
+            sent += 1
+        except Exception:
+            logger.exception("Monthly report failed for user %s", user.email)
+
+    logger.info("Monthly reports sent: %d", sent)
+    return sent
+
+
 # ─── Campaign & Sequence tasks ──────────────────────────────────────────────
 
 @shared_task(name="emails.send_campaign", bind=True, max_retries=2, default_retry_delay=120)

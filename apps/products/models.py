@@ -79,6 +79,20 @@ class Product(models.Model):
     price_range_min = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     price_range_max = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     image = models.ImageField(upload_to="product_images/", blank=True)
+    additional_images = models.JSONField(
+        default=list, blank=True,
+        help_text='URLs of extra product images for carousel content, e.g. ["/media/product_images/side.jpg", "https://cdn.example.com/img.jpg"]',
+    )
+
+    # External integration (e-commerce platforms)
+    product_url = models.URLField(
+        blank=True,
+        help_text="Direct purchase/product page URL — used for 'Shop Now' CTAs in generated content.",
+    )
+    external_id = models.CharField(
+        max_length=255, blank=True,
+        help_text="SKU or external platform product ID — for syncing with Shopify, WooCommerce, etc.",
+    )
 
     # Stock (only relevant for physical products)
     stock_status = models.CharField(
@@ -123,6 +137,16 @@ class Product(models.Model):
         if self.price_range_min and self.price_range_max:
             return f"{self.currency} {self.price_range_min:,.0f}–{self.price_range_max:,.0f}"
         return ""
+
+    @property
+    def all_image_urls(self):
+        """Return list of all image URLs (primary + additional). Used for carousel content."""
+        urls = []
+        if self.image:
+            urls.append(self.image.url)
+        if self.additional_images:
+            urls.extend(self.additional_images)
+        return urls
 
     def check_low_stock(self):
         """Auto-update status if quantity drops below threshold. Skips services/digital."""
