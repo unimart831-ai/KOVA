@@ -127,7 +127,7 @@ def meme_adapt(request, meme_id):
         return redirect("memes:detail", meme_id=meme.id)
 
     # Fire the adaptation task
-    fire_task(adapt_single_meme, args=[str(meme.id), request.user.id])
+    fire_task(adapt_single_meme, str(meme.id), request.user.id)
     messages.success(request, f"Adapting \"{meme.title}\" for your brand — check back in a moment!")
 
     return redirect("memes:queue")
