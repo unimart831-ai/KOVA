@@ -473,6 +473,24 @@ class MarketplacePartner(models.Model):
     )
 
     # ── Webhooks ──
+    # ── Description enrichment ──
+    enrich_descriptions = models.BooleanField(
+        default=True,
+        help_text=(
+            "Auto-append marketplace-specific data (condition, variants, specs) "
+            "to product descriptions so AI generates richer content."
+        ),
+    )
+    seller_data_mapping = models.JSONField(
+        default=dict, blank=True,
+        help_text=(
+            "Maps marketplace seller fields to seller_metadata keys. "
+            'E.g. {"business_name": "shop_name", "seller_tier": "tier", '
+            '"campus_codes": "locations"}'
+        ),
+    )
+
+    # ── Webhooks ──
     webhook_url = models.URLField(
         blank=True,
         help_text="URL to receive event notifications (seller activated, content generated, etc.)",
@@ -565,14 +583,25 @@ class MarketplaceSellerAccount(models.Model):
         max_length=12, choices=Status.choices, default=Status.INVITED,
     )
 
+    # ── Seller business info (universal across marketplaces) ──
+    business_name = models.CharField(
+        max_length=200, blank=True,
+        help_text="Seller's shop/business name on the marketplace",
+    )
+    business_url = models.URLField(
+        blank=True,
+        help_text="Direct URL to seller's store on the marketplace",
+    )
+
     # ── Seller metadata (flexible, varies per marketplace) ──
     seller_metadata = models.JSONField(
         default=dict, blank=True,
         help_text=(
             "Marketplace-specific seller info. Examples:\n"
             '{"shop_name": "Jane Electronics", "shop_url": "https://jumia.co.ke/jane-electronics"}\n'
-            '{"seller_tier": "gold", "store_rating": 4.7}\n'
-            '{"location": "Nairobi", "category": "Electronics"}'
+            '{"seller_tier": "gold", "store_rating": 4.7, "campus_codes": ["USIU", "KU"]}\n'
+            '{"location": "Nairobi", "category": "Electronics", "is_approved": true, '
+            '"delivery_zones": ["same_campus", "same_city"]}'
         ),
     )
 

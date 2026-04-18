@@ -56,6 +56,10 @@ class SellerProvisionSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=30, required=False)
     external_seller_id = serializers.CharField(max_length=255)
     full_name = serializers.CharField(max_length=200, required=False, default="")
+    business_name = serializers.CharField(max_length=200, required=False, default="")
+    business_url = serializers.URLField(required=False, default="")
+    business_description = serializers.CharField(required=False, default="")
+    location = serializers.CharField(max_length=200, required=False, default="")
     seller_metadata = serializers.DictField(required=False, default=dict)
 
     def validate(self, data):
@@ -97,6 +101,31 @@ class ProductSyncItemSerializer(serializers.Serializer):
     tags = serializers.ListField(child=serializers.CharField(), required=False, default=list)
     additional_images = serializers.ListField(
         child=serializers.URLField(), required=False, default=list,
+    )
+    # Marketplace-specific product data (UNIMART: condition, old_price, variants, specs, etc.)
+    condition = serializers.ChoiceField(
+        choices=["new", "used", "refurbished", ""], required=False, default="",
+        help_text="Product condition (new/used/refurbished) — stored in marketplace_metadata",
+    )
+    old_price = serializers.DecimalField(
+        max_digits=12, decimal_places=2, required=False, allow_null=True, default=None,
+        help_text="Original price before discount — stored in marketplace_metadata",
+    )
+    vendor_net_price = serializers.DecimalField(
+        max_digits=12, decimal_places=2, required=False, allow_null=True, default=None,
+        help_text="Vendor's net price before platform commission — stored in marketplace_metadata",
+    )
+    variants = serializers.ListField(
+        child=serializers.DictField(), required=False, default=list,
+        help_text='Product variants. E.g. [{"attribute": "Size", "value": "XL", "additional_price": 100}]',
+    )
+    specifications = serializers.ListField(
+        child=serializers.DictField(), required=False, default=list,
+        help_text='Product specs. E.g. [{"key": "Material", "value": "Cotton"}]',
+    )
+    campus_codes = serializers.ListField(
+        child=serializers.CharField(), required=False, default=list,
+        help_text="Campus codes where product is available (UNIMART-style)",
     )
     # Catch-all for marketplace-specific fields
     extra = serializers.DictField(required=False, default=dict)
@@ -158,6 +187,8 @@ class SellerListCreateView(APIView):
                 "external_seller_id": s.external_seller_id,
                 "email": s.user.email,
                 "full_name": s.user.full_name,
+                "business_name": s.business_name,
+                "business_url": s.business_url,
                 "status": s.status,
                 "products_synced": s.products_synced,
                 "content_generated": s.content_generated,
@@ -255,12 +286,27 @@ class SellerListCreateView(APIView):
                 if mp.auto_activate_sellers
                 else MarketplaceSellerAccount.Status.INVITED
             )
+
+            # Build enriched seller_metadata from explicit fields + raw metadata
+            enriched_metadata = data.get("seller_metadata", {})
+            if data.get("business_description"):
+                enriched_metadata["business_description"] = data["business_description"]
+            if data.get("location"):
+                enriched_metadata["location"] = data["location"]
+            # Apply marketplace seller_data_mapping if configured
+            if mp.seller_data_mapping:
+                for src_key, dst_key in mp.seller_data_mapping.items():
+                    if src_key in enriched_metadata:
+                        enriched_metadata[dst_key] = enriched_metadata.pop(src_key)
+
             seller = MarketplaceSellerAccount.objects.create(
                 marketplace=mp,
                 user=user,
                 external_seller_id=ext_id,
                 status=seller_status,
-                seller_metadata=data.get("seller_metadata", {}),
+                business_name=data.get("business_name", ""),
+                business_url=data.get("business_url", ""),
+                seller_metadata=enriched_metadata,
                 activated_at=timezone.now() if mp.auto_activate_sellers else None,
             )
         except IntegrityError:
@@ -273,6 +319,7 @@ class SellerListCreateView(APIView):
             "status": "provisioned",
             "external_seller_id": ext_id,
             "email": user.email,
+            "business_name": seller.business_name,
             "seller_status": seller.status,
             "plan": profile.plan,
             "auto_activated": mp.auto_activate_sellers,
@@ -401,15 +448,56 @@ class ProductSyncView(APIView):
                 user=seller.user, external_id=ext_id,
             ).first()
 
+            # ── Build marketplace_metadata from marketplace-specific fields ──
+            meta = dict(data.get("extra", {}))
+            if data.get("condition"):
+                meta["condition"] = data["condition"]
+            if data.get("old_price") is not None:
+                meta["old_price"] = float(data["old_price"])
+            if data.get("vendor_net_price") is not None:
+                meta["vendor_net_price"] = float(data["vendor_net_price"])
+            if data.get("variants"):
+                meta["variants"] = data["variants"]
+            if data.get("specifications"):
+                meta["specifications"] = data["specifications"]
+            if data.get("campus_codes"):
+                meta["campus_codes"] = data["campus_codes"]
+
+            # ── Build enriched description if marketplace opts in ──
+            description = data["description"]
+            if mp.enrich_descriptions and description:
+                enrichment_parts = []
+                if data.get("condition") and data["condition"] != "new":
+                    enrichment_parts.append(f"Condition: {data['condition']}")
+                if data.get("specifications"):
+                    specs_str = ", ".join(
+                        f"{s.get('key', '')}: {s.get('value', '')}"
+                        for s in data["specifications"][:10]
+                        if s.get("key") and s.get("value")
+                    )
+                    if specs_str:
+                        enrichment_parts.append(f"Specs: {specs_str}")
+                if data.get("variants"):
+                    variant_str = ", ".join(
+                        f"{v.get('attribute', '')}: {v.get('value', '')}"
+                        for v in data["variants"][:10]
+                        if v.get("attribute") and v.get("value")
+                    )
+                    if variant_str:
+                        enrichment_parts.append(f"Available in: {variant_str}")
+                if enrichment_parts:
+                    description = description.rstrip() + "\n\n" + " | ".join(enrichment_parts)
+
             product_data = {
                 "name": data["name"],
-                "description": data["description"],
+                "description": description,
                 "offering_type": data["offering_type"],
                 "stock_status": data["stock_status"],
                 "is_featured": data["is_featured"],
                 "tags": data["tags"],
                 "source": Product.Source.MARKETPLACE,
                 "marketplace_partner": mp,
+                "marketplace_metadata": meta,
                 "last_synced_at": timezone.now(),
                 "currency": data["currency"] or mp.default_product_currency,
             }

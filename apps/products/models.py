@@ -114,6 +114,15 @@ class Product(models.Model):
         null=True, blank=True,
         help_text="Last time this product was updated via marketplace sync",
     )
+    marketplace_metadata = models.JSONField(
+        default=dict, blank=True,
+        help_text=(
+            "Marketplace-specific product data that doesn't map to Kova fields. "
+            'E.g. {"condition": "used", "old_price": 5000, "variants": [{"size": "XL"}], '
+            '"specifications": [{"key": "Material", "value": "Cotton"}], '
+            '"campus_codes": ["USIU", "KU"], "vendor_net_price": 4500, "commission_pct": 10}'
+        ),
+    )
 
     # Stock (only relevant for physical products)
     stock_status = models.CharField(
