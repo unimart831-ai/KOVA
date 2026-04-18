@@ -32,6 +32,11 @@ urlpatterns = [
     path("pixel/events/", pixel_events, name="pixel_events"),
     path("pixel/test/", pixel_test, name="pixel_test"),
     path("pixel/kova-pixel.js", views.serve_pixel_js, name="pixel_js"),
+    # Screenshot to Compete
+    path("screenshot-compete/", views.screenshot_compete, name="screenshot_compete"),
+    # Performance to Email
+    path("recycle/", views.performance_recycle, name="performance_recycle"),
+    path("recycle/<uuid:pk>/action/", views.recycle_action, name="recycle_action"),
     # Webhooks (external — no auth)
     path("webhooks/shopify/order/", webhooks.shopify_order_webhook, name="shopify_order_webhook"),
     path("webhooks/mpesa/commerce/", webhooks.mpesa_commerce_callback, name="mpesa_commerce_callback"),

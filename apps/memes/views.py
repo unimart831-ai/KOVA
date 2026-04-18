@@ -256,6 +256,56 @@ def meme_settings(request):
     })
 
 
+# ─── TREND ALERTS ────────────────────────────────────────────────────────────
+
+
+@login_required
+def trend_alerts(request):
+    """View AI-detected trend alerts with approve/dismiss actions."""
+    from apps.memes.models import TrendAlert
+
+    status_filter = request.GET.get("status", "")
+    qs = (
+        TrendAlert.objects
+        .filter(user=request.user)
+        .select_related("content_seed")
+        .order_by("-detected_at")
+    )
+
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+
+    return render(request, "memes/trend_alerts.html", {
+        "alerts": qs[:50],
+        "status_filter": status_filter,
+        "status_choices": TrendAlert.Status.choices,
+    })
+
+
+@login_required
+@require_POST
+def trend_alert_action(request, pk):
+    """Approve or dismiss a trend alert."""
+    from apps.memes.models import TrendAlert
+    from apps.memes.tasks import generate_trend_ride_content
+
+    alert = get_object_or_404(TrendAlert, pk=pk, user=request.user)
+    action = request.POST.get("action")
+
+    if action == "approve" and alert.status in ("detected", "ready"):
+        alert.status = "approved"
+        alert.save(update_fields=["status", "updated_at"])
+        if not alert.content_seed:
+            generate_trend_ride_content.delay(str(alert.pk))
+        messages.success(request, f"Trend '{alert.trend_topic}' approved — content is being generated!")
+    elif action == "dismiss" and alert.status in ("detected", "ready"):
+        alert.status = "dismissed"
+        alert.save(update_fields=["status", "updated_at"])
+        messages.info(request, "Trend alert dismissed.")
+
+    return redirect("memes:trend_alerts")
+
+
 # ─── HTMX PARTIALS ──────────────────────────────────────────────────────────
 
 @login_required

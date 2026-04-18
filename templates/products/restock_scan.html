@@ -1,0 +1,131 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Receipt to Restock{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Upload a receipt — AI extracts items and updates your stock automatically</p>
+{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'products:list' %}" class="btn-secondary text-sm px-3 py-1.5">← Products</a>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+  {# Upload form #}
+  <div class="card">
+    <div class="card-body p-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">Upload Receipt Photo</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Snap a photo of your supplier receipt or invoice. AI will read the items, match them to your catalog, and update stock quantities — plus generate a "back in stock" content seed.</p>
+
+      <form method="post" enctype="multipart/form-data" class="space-y-4">
+        {% csrf_token %}
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Receipt Photo</label>
+          <input type="file" name="receipt" accept="image/*" required
+                 class="input text-sm w-full file:mr-3 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-orange-50 file:text-orange-700 dark:file:bg-orange-900/40 dark:file:text-orange-300 hover:file:bg-orange-100">
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">PNG, JPG, or WebP · Max 10 MB</p>
+        </div>
+        <button type="submit" class="btn-primary text-sm px-5 py-2 bg-orange-600 hover:bg-orange-700">🧾 Scan & Restock</button>
+      </form>
+    </div>
+  </div>
+
+  {# Scans list #}
+  {% if scans %}
+  <div class="space-y-3">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Your Restock Scans</h3>
+    {% for scan in scans %}
+    <div class="card hover:shadow-md transition-shadow">
+      <div class="card-body p-4">
+        <div class="flex items-start gap-4">
+          {# Thumbnail #}
+          <div class="shrink-0 w-16 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+            <img src="{{ scan.image.url }}" alt="Receipt" class="w-full h-full object-cover">
+          </div>
+
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              {% if scan.status == 'completed' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">✓ Completed</span>
+              {% elif scan.status == 'failed' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">✗ Failed</span>
+              {% else %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">⏳ {{ scan.get_status_display }}</span>
+              {% endif %}
+              {% if scan.supplier_name %}
+                <span class="text-xs font-medium text-gray-600 dark:text-gray-400">{{ scan.supplier_name }}</span>
+              {% endif %}
+            </div>
+
+            {# Stats row #}
+            {% if scan.status == 'completed' %}
+            <div class="flex items-center gap-4 text-sm">
+              <span class="text-emerald-600 dark:text-emerald-400 font-medium">{{ scan.products_matched }} matched</span>
+              <span class="text-gray-500 dark:text-gray-400">{{ scan.products_updated }} updated</span>
+              {% if scan.receipt_total %}
+                <span class="text-gray-500 dark:text-gray-400">{{ scan.receipt_currency|default:"KES" }} {{ scan.receipt_total|floatformat:0 }}</span>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            <div class="flex items-center gap-3 mt-2 text-xs text-gray-400 dark:text-gray-500">
+              <span>{{ scan.created_at|timesince }} ago</span>
+              {% if scan.receipt_date %}
+                <span>Receipt date: {{ scan.receipt_date|date:"M d, Y" }}</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        {# Extracted items details #}
+        {% if scan.extracted_items %}
+        <details class="mt-3">
+          <summary class="text-xs font-medium text-orange-600 dark:text-orange-400 cursor-pointer">Extracted Items ({{ scan.extracted_items|length }})</summary>
+          <div class="mt-2 overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead>
+                <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
+                  <th class="pb-1.5 pr-4">Item</th>
+                  <th class="pb-1.5 pr-4">Qty</th>
+                  <th class="pb-1.5">Price</th>
+                </tr>
+              </thead>
+              <tbody class="text-gray-600 dark:text-gray-400">
+                {% for item in scan.extracted_items %}
+                <tr class="border-b border-gray-50 dark:border-gray-800/50">
+                  <td class="py-1.5 pr-4">{{ item.name|default:"Unknown" }}</td>
+                  <td class="py-1.5 pr-4">{{ item.quantity|default:"-" }}</td>
+                  <td class="py-1.5">{{ item.price|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </details>
+        {% endif %}
+
+        {% if scan.items_not_matched %}
+        <div class="mt-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+          <p class="text-xs text-amber-700 dark:text-amber-300">
+            <span class="font-medium">Not matched:</span>
+            {% for item in scan.items_not_matched %}{{ item.name|default:item }}{% if not forloop.last %}, {% endif %}{% endfor %}
+          </p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card border-dashed">
+    <div class="card-body text-center py-12">
+      <div class="text-4xl mb-3">🧾</div>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">No restock scans yet</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400">Upload a supplier receipt above to auto-update your product stock.</p>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

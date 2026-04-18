@@ -21,4 +21,6 @@ urlpatterns = [
     # Batch Snap
     path("snap/batch/", views.snap_batch, name="snap_batch"),
     path("snap/batch/launch/", views.snap_batch_launch, name="snap_batch_launch"),
+    # Receipt to Restock
+    path("restock/", views.restock_scan, name="restock"),
 ]

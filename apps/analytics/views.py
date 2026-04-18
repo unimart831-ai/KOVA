@@ -7,6 +7,7 @@ from django.db.models import Avg, Count, Q, Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from apps.analytics.models import (
     Competitor,
@@ -848,3 +849,95 @@ def content_intelligence(request):
         "platform_stats": platform_display,
         "has_data": posts.count() >= 5,
     })
+
+
+# ─── SCREENSHOT TO COMPETE ──────────────────────────────────────────────────
+
+
+@login_required
+def screenshot_compete(request):
+    """Upload a competitor screenshot for AI analysis."""
+    from apps.analytics.models import CompetitorScreenshot
+    from apps.analytics.tasks import process_competitor_screenshot
+
+    if request.method == "POST":
+        image = request.FILES.get("screenshot")
+        if not image:
+            messages.error(request, "Please upload a screenshot.")
+            return redirect("analytics:screenshot_compete")
+
+        if image.size > 10 * 1024 * 1024:
+            messages.error(request, "Image too large. Maximum 10 MB.")
+            return redirect("analytics:screenshot_compete")
+
+        user_notes = request.POST.get("notes", "").strip()
+        ss = CompetitorScreenshot.objects.create(
+            user=request.user,
+            image=image,
+            user_notes=user_notes,
+        )
+        fire_task(process_competitor_screenshot, str(ss.pk))
+        messages.success(
+            request,
+            "Screenshot uploaded! AI is analyzing the competitor's strategy — "
+            "counter-content will be generated automatically."
+        )
+        return redirect("analytics:screenshot_compete")
+
+    screenshots = (
+        CompetitorScreenshot.objects
+        .filter(user=request.user)
+        .select_related("competitor", "counter_seed")
+        .order_by("-created_at")[:30]
+    )
+
+    return render(request, "analytics/screenshot_compete.html", {
+        "screenshots": screenshots,
+    })
+
+
+# ─── PERFORMANCE TO EMAIL ───────────────────────────────────────────────────
+
+
+@login_required
+def performance_recycle(request):
+    """View top-performing posts recycled into email campaigns."""
+    from apps.analytics.models import PerformanceRecycle
+
+    status_filter = request.GET.get("status", "")
+    qs = (
+        PerformanceRecycle.objects
+        .filter(user=request.user)
+        .select_related("source_post", "email_campaign")
+        .order_by("-detected_at")
+    )
+
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+
+    return render(request, "analytics/performance_recycle.html", {
+        "recycles": qs[:50],
+        "status_filter": status_filter,
+        "status_choices": PerformanceRecycle.Status.choices,
+    })
+
+
+@login_required
+@require_POST
+def recycle_action(request, pk):
+    """Dismiss or send a performance recycle."""
+    from apps.analytics.models import PerformanceRecycle
+
+    recycle = get_object_or_404(PerformanceRecycle, pk=pk, user=request.user)
+    action = request.POST.get("action")
+
+    if action == "dismiss" and recycle.status in ("detected", "ready"):
+        recycle.status = "dismissed"
+        recycle.save(update_fields=["status", "updated_at"])
+        messages.info(request, "Recycle dismissed.")
+    elif action == "send" and recycle.status == "ready":
+        recycle.status = "sent"
+        recycle.save(update_fields=["status", "updated_at"])
+        messages.success(request, "Email marked as sent!")
+
+    return redirect("analytics:performance_recycle")

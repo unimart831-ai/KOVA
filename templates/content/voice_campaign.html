@@ -1,0 +1,105 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Voice to Campaign{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Record or upload a voice memo — AI turns it into a full campaign</p>
+{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'content:studio' %}" class="btn-secondary text-sm px-3 py-1.5">← Studio</a>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+  {# Upload form #}
+  <div class="card">
+    <div class="card-body p-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">Upload Voice Memo</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Describe your campaign idea, product, promo, or message. AI will transcribe, extract intent, and generate a full multi-post campaign.</p>
+
+      <form method="post" enctype="multipart/form-data" class="space-y-4">
+        {% csrf_token %}
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Audio File</label>
+          <input type="file" name="audio" accept="audio/*,.mp3,.wav,.ogg,.webm,.m4a" required
+                 class="input text-sm w-full file:mr-3 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-kova-50 file:text-kova-700 dark:file:bg-kova-900/40 dark:file:text-kova-300 hover:file:bg-kova-100">
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">MP3, WAV, OGG, WebM, or M4A · Max 25 MB</p>
+        </div>
+        <button type="submit" class="btn-primary text-sm px-5 py-2">🎙️ Upload & Generate Campaign</button>
+      </form>
+    </div>
+  </div>
+
+  {# Voice briefs list #}
+  {% if briefs %}
+  <div class="space-y-3">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Your Voice Briefs</h3>
+    {% for brief in briefs %}
+    <div class="card hover:shadow-md transition-shadow">
+      <div class="card-body p-4">
+        <div class="flex items-start justify-between gap-4">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              {% if brief.status == 'completed' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">✓ Completed</span>
+              {% elif brief.status == 'failed' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">✗ Failed</span>
+              {% else %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">⏳ {{ brief.get_status_display }}</span>
+              {% endif %}
+              {% if brief.language_detected %}
+                <span class="text-xs text-gray-400 dark:text-gray-500">{{ brief.language_detected }}</span>
+              {% endif %}
+            </div>
+
+            {% if brief.transcript %}
+              <p class="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{{ brief.transcript|truncatewords:30 }}</p>
+            {% else %}
+              <p class="text-sm text-gray-400 dark:text-gray-500 italic">Waiting for transcription…</p>
+            {% endif %}
+
+            <div class="flex items-center gap-3 mt-2 text-xs text-gray-400 dark:text-gray-500">
+              <span>{{ brief.created_at|timesince }} ago</span>
+              {% if brief.seeds_created %}
+                <span>{{ brief.seeds_created }} seed{{ brief.seeds_created|pluralize }} created</span>
+              {% endif %}
+              {% if brief.processing_time_ms %}
+                <span>{{ brief.processing_time_ms|floatformat:0 }}ms</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="shrink-0 flex items-center gap-2">
+            {% if brief.campaign %}
+              <a href="{% url 'campaigns:detail' brief.campaign.pk %}" class="btn-secondary text-xs px-3 py-1">View Campaign</a>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if brief.ai_extraction %}
+        <details class="mt-3">
+          <summary class="text-xs font-medium text-kova-600 dark:text-kova-400 cursor-pointer">AI Extraction</summary>
+          <div class="mt-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-xs text-gray-600 dark:text-gray-400 space-y-1">
+            {% for key, value in brief.ai_extraction.items %}
+              <div><span class="font-medium">{{ key }}:</span> {{ value }}</div>
+            {% endfor %}
+          </div>
+        </details>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card border-dashed">
+    <div class="card-body text-center py-12">
+      <div class="text-4xl mb-3">🎙️</div>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">No voice briefs yet</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400">Upload a voice memo above to create your first AI-generated campaign.</p>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

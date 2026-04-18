@@ -571,3 +571,42 @@ def snap_batch_launch(request):
         f"check your Content Studio shortly."
     )
     return redirect("products:list")
+
+
+# ─── RECEIPT TO RESTOCK ─────────────────────────────────────────────────────
+
+
+@login_required
+def restock_scan(request):
+    """Upload a receipt photo to auto-restock products."""
+    from apps.products.models import RestockScan
+    from apps.products.tasks import process_restock_scan
+
+    if request.method == "POST":
+        image = request.FILES.get("receipt")
+        if not image:
+            messages.error(request, "Please upload a receipt photo.")
+            return redirect("products:restock")
+
+        if image.size > 10 * 1024 * 1024:
+            messages.error(request, "Image too large. Maximum 10 MB.")
+            return redirect("products:restock")
+
+        scan = RestockScan.objects.create(user=request.user, image=image)
+        fire_task(process_restock_scan, str(scan.pk))
+        messages.success(
+            request,
+            "Receipt uploaded! AI is extracting items and updating your stock — "
+            "check back in a moment."
+        )
+        return redirect("products:restock")
+
+    scans = (
+        RestockScan.objects
+        .filter(user=request.user)
+        .order_by("-created_at")[:30]
+    )
+
+    return render(request, "products/restock_scan.html", {
+        "scans": scans,
+    })
