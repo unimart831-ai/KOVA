@@ -30,26 +30,26 @@
   {% if brief %}
 
     {# ━━━ HERO BAR — Streak + Kova Score ━━━ #}
-    <div class="card bg-gradient-to-r from-kova-900 via-kova-800 to-kova-900 border-kova-700 shadow-kova dark:shadow-none overflow-hidden">
+    <div class="card bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-gray-800 dark:via-gray-750 dark:to-gray-800 border-gray-700 dark:border-gray-600 overflow-hidden">
       <div class="px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         {# Streak #}
         <div class="flex items-center gap-3">
           {% if brief_streak > 0 %}
-          <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm">
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-kova-500/15 border border-kova-500/20">
             <span class="text-lg" aria-hidden="true">🔥</span>
-            <span class="text-sm font-bold text-white tabular-nums">Day {{ brief_streak }}</span>
+            <span class="text-sm font-bold text-kova-400 tabular-nums">Day {{ brief_streak }}</span>
           </div>
           {% endif %}
           <div>
             <h2 class="text-lg font-semibold text-white">Morning, {{ request.user.first_name|default:"there" }}</h2>
-            <p class="text-sm text-kova-200 mt-0.5">{{ brief.date|date:"l, F j" }}</p>
+            <p class="text-sm text-gray-400 mt-0.5">{{ brief.date|date:"l, F j" }}</p>
           </div>
         </div>
 
         {# Kova Score #}
         <div class="flex items-center gap-4">
           <div class="text-right">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-kova-300">Kova Score</p>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Kova Score</p>
             <div class="flex items-baseline gap-1.5 mt-0.5">
               <span class="text-3xl font-black text-white tabular-nums leading-none">{{ brief.kova_score }}</span>
               {% if brief.kova_score_delta > 0 %}
@@ -66,7 +66,7 @@
               <circle cx="28" cy="28" r="24" stroke="currentColor" stroke-width="4" fill="none"
                       stroke-dasharray="{% widthratio brief.kova_score 100 151 %} 151"
                       stroke-linecap="round"
-                      class="{% if brief.kova_score >= 70 %}text-green-400{% elif brief.kova_score >= 40 %}text-amber-400{% else %}text-red-400{% endif %} transition-all duration-1000"/>
+                      class="{% if brief.kova_score >= 70 %}text-green-400{% elif brief.kova_score >= 40 %}text-amber-400{% else %}text-kova-400{% endif %} transition-all duration-1000"/>
             </svg>
           </div>
         </div>
