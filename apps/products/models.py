@@ -94,6 +94,27 @@ class Product(models.Model):
         help_text="SKU or external platform product ID — for syncing with Shopify, WooCommerce, etc.",
     )
 
+    # Source tracking (marketplace / API / manual)
+    class Source(models.TextChoices):
+        MANUAL = "manual", "Manual Entry"
+        SNAP = "snap", "Snap to Sell"
+        CSV = "csv", "CSV Import"
+        API = "api", "API"
+        MARKETPLACE = "marketplace", "Marketplace Sync"
+
+    source = models.CharField(
+        max_length=15, choices=Source.choices, default=Source.MANUAL,
+    )
+    marketplace_partner = models.ForeignKey(
+        "partners.MarketplacePartner", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="synced_products",
+        help_text="Which marketplace synced this product (if source=marketplace)",
+    )
+    last_synced_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Last time this product was updated via marketplace sync",
+    )
+
     # Stock (only relevant for physical products)
     stock_status = models.CharField(
         max_length=20, choices=StockStatus.choices, default=StockStatus.IN_STOCK,

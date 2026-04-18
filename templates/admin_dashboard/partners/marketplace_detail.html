@@ -1,0 +1,150 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+  {{ active_sellers }} active seller{{ active_sellers|pluralize }} · {{ products_synced }} product{{ products_synced|pluralize }} synced
+</p>
+{% endblock %}
+
+{% block content %}
+
+{# ── Marketplace Info Card ────────────────────────────────────────────── #}
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5 mb-6">
+  <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center gap-3">
+      {% if mp.logo_url %}
+      <img src="{{ mp.logo_url }}" alt="{{ mp.name }}" class="w-10 h-10 rounded-lg object-cover">
+      {% else %}
+      <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 text-lg font-bold">
+        {{ mp.name|first }}
+      </div>
+      {% endif %}
+      <div>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ mp.name }}</h2>
+        <p class="text-xs text-gray-400">{{ mp.slug }} · Created {{ mp.created_at|timesince }} ago</p>
+      </div>
+    </div>
+    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium
+      {% if mp.is_active %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+      {% else %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300{% endif %}">
+      {% if mp.is_active %}Active{% else %}Inactive{% endif %}
+    </span>
+  </div>
+
+  {# Config Summary #}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+    <div>
+      <p class="text-[10px] text-gray-400 uppercase">API Key</p>
+      <p class="text-xs font-mono text-gray-600 dark:text-gray-300">{{ mp.api_key_prefix }}…</p>
+      <p class="text-[10px] text-gray-400">Last used: {% if mp.api_key_last_used %}{{ mp.api_key_last_used|timesince }} ago{% else %}Never{% endif %}</p>
+    </div>
+    <div>
+      <p class="text-[10px] text-gray-400 uppercase">Seller Identity</p>
+      <p class="text-xs text-gray-900 dark:text-white">{{ mp.get_seller_identity_field_display }}</p>
+      <p class="text-[10px] text-gray-400">Plan: {{ mp.seller_default_plan }}</p>
+    </div>
+    <div>
+      <p class="text-[10px] text-gray-400 uppercase">Billing</p>
+      <p class="text-xs text-gray-900 dark:text-white">{{ mp.get_billing_model_display }}</p>
+      <p class="text-[10px] text-gray-400">
+        {% if mp.billing_model == "per_seller" %}KES {{ mp.rate_per_seller_kes|floatformat:0 }}/seller/mo
+        {% elif mp.billing_model == "flat_fee" %}KES {{ mp.flat_fee_kes|floatformat:0 }}/mo
+        {% elif mp.billing_model == "revenue_share" %}{{ mp.revenue_share_pct }}% revenue share
+        {% else %}Free pilot{% if mp.pilot_expires_at %} until {{ mp.pilot_expires_at|date:"M d, Y" }}{% endif %}{% endif %}
+      </p>
+    </div>
+    <div>
+      <p class="text-[10px] text-gray-400 uppercase">Limits</p>
+      <p class="text-xs text-gray-900 dark:text-white">{{ mp.total_sellers_count }} / {{ mp.max_sellers }} sellers</p>
+      <p class="text-[10px] text-gray-400">
+        {% if mp.enforce_marketplace_cta %}CTA enforced{% endif %}
+        {% if mp.auto_snap_on_sync %} · Auto-snap{% endif %}
+      </p>
+    </div>
+  </div>
+
+  {% if mp.contact_email or mp.website %}
+  <div class="flex gap-4 text-xs text-gray-500">
+    {% if mp.contact_name %}<span>{{ mp.contact_name }}</span>{% endif %}
+    {% if mp.contact_email %}<span>{{ mp.contact_email }}</span>{% endif %}
+    {% if mp.website %}<a href="{{ mp.website }}" target="_blank" class="text-kova-600 hover:underline">{{ mp.website }}</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{# ── Stat Cards ──────────────────────────────────────────────────────── #}
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ active_sellers }}</p>
+    <p class="text-[10px] text-gray-500 uppercase">Active Sellers</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ invited_sellers }}</p>
+    <p class="text-[10px] text-gray-500 uppercase">Invited</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ products_synced }}</p>
+    <p class="text-[10px] text-gray-500 uppercase">Products Synced</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-2xl font-bold {% if suspended_sellers > 0 %}text-red-600 dark:text-red-400{% else %}text-gray-900 dark:text-white{% endif %}">{{ suspended_sellers }}</p>
+    <p class="text-[10px] text-gray-500 uppercase">Suspended</p>
+  </div>
+</div>
+
+{# ── Sellers Table ───────────────────────────────────────────────────── #}
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Provisioned Sellers</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Seller</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">External ID</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">Status</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Products</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Content</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Provisioned</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for s in sellers %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-2.5">
+            <a href="{% url 'admin_dashboard:user_detail' s.user.pk %}" class="text-xs font-medium text-kova-600 dark:text-kova-400 hover:underline">{{ s.user.full_name|default:s.user.email }}</a>
+            <p class="text-[10px] text-gray-400">{{ s.user.email }}</p>
+          </td>
+          <td class="px-4 py-2.5 text-xs font-mono text-gray-500">{{ s.external_seller_id }}</td>
+          <td class="px-4 py-2.5 text-center">
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+              {% if s.status == 'active' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+              {% elif s.status == 'invited' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300
+              {% elif s.status == 'suspended' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
+              {% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300{% endif %}">
+              {{ s.get_status_display }}
+            </span>
+          </td>
+          <td class="px-4 py-2.5 text-right text-xs text-gray-600 dark:text-gray-400">{{ s.products_synced }}</td>
+          <td class="px-4 py-2.5 text-right text-xs text-gray-600 dark:text-gray-400">{{ s.content_generated }}</td>
+          <td class="px-4 py-2.5 text-right text-xs text-gray-400">{{ s.provisioned_at|timesince }} ago</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-4 py-8 text-center text-sm text-gray-400">No sellers provisioned yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if mp.notes %}
+<div class="mt-6 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+  <h3 class="text-xs font-semibold text-gray-500 uppercase mb-2">Internal Notes</h3>
+  <p class="text-sm text-gray-600 dark:text-gray-400">{{ mp.notes }}</p>
+</div>
+{% endif %}
+
+{% endblock %}

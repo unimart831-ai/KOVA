@@ -18,11 +18,15 @@ from django.views.decorators.http import require_POST
 from apps.admin_dashboard.decorators import senior_staff_required, staff_required
 from apps.partners.models import (
     Commission,
+    MarketplacePartner,
+    MarketplaceSellerAccount,
     MilestoneAward,
     Partner,
     PartnerApplication,
     Referral,
+    generate_api_key,
     generate_referral_code,
+    hash_api_key,
 )
 
 
@@ -297,3 +301,98 @@ def partner_detail(request, pk):
         "total_count": partner.total_referrals_count,
     }
     return render(request, "admin_dashboard/partners/detail.html", context)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MARKETPLACE PARTNERS
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@staff_required
+def marketplace_list(request):
+    """List all marketplace partners with key stats."""
+    marketplaces = MarketplacePartner.objects.select_related("partner__user").order_by("-created_at")
+
+    context = {
+        "page_title": "Marketplace Partners",
+        "marketplaces": marketplaces,
+        "total_marketplaces": marketplaces.count(),
+        "active_marketplaces": marketplaces.filter(is_active=True).count(),
+    }
+    return render(request, "admin_dashboard/partners/marketplace_list.html", context)
+
+
+@staff_required
+def marketplace_detail(request, pk):
+    """Detailed view of a marketplace partner — sellers, products, stats."""
+    mp = get_object_or_404(
+        MarketplacePartner.objects.select_related("partner__user"), pk=pk
+    )
+
+    sellers = mp.seller_accounts.select_related("user").order_by("-provisioned_at")[:50]
+    from apps.products.models import Product
+    products_synced = Product.objects.filter(marketplace_partner=mp, is_active=True).count()
+
+    # Seller status breakdown
+    seller_stats = mp.seller_accounts.values("status").annotate(count=Count("id"))
+    seller_breakdown = {row["status"]: row["count"] for row in seller_stats}
+
+    context = {
+        "page_title": f"Marketplace: {mp.name}",
+        "mp": mp,
+        "sellers": sellers,
+        "products_synced": products_synced,
+        "seller_breakdown": seller_breakdown,
+        "active_sellers": seller_breakdown.get("active", 0),
+        "invited_sellers": seller_breakdown.get("invited", 0),
+        "suspended_sellers": seller_breakdown.get("suspended", 0),
+    }
+    return render(request, "admin_dashboard/partners/marketplace_detail.html", context)
+
+
+@senior_staff_required
+def marketplace_create(request):
+    """Create a new marketplace partner (generates API key)."""
+    if request.method == "GET":
+        partners = Partner.objects.filter(is_active=True).select_related("user")
+        return render(request, "admin_dashboard/partners/marketplace_create.html", {
+            "page_title": "Create Marketplace Partner",
+            "partners": partners,
+            "billing_models": MarketplacePartner.BillingModel.choices,
+            "seller_identity_choices": MarketplacePartner.SellerIdentity.choices,
+        })
+
+    # POST — create the marketplace
+    partner_id = request.POST.get("partner_id")
+    partner = get_object_or_404(Partner, pk=partner_id)
+
+    # Generate API key (show once)
+    raw_key = generate_api_key()
+    key_hash = hash_api_key(raw_key)
+    key_prefix = raw_key[:8]
+
+    mp = MarketplacePartner.objects.create(
+        name=request.POST.get("name", "").strip(),
+        slug=request.POST.get("slug", "").strip(),
+        partner=partner,
+        api_key_hash=key_hash,
+        api_key_prefix=key_prefix,
+        contact_email=request.POST.get("contact_email", "").strip(),
+        contact_name=request.POST.get("contact_name", "").strip(),
+        website=request.POST.get("website", "").strip() or "",
+        seller_identity_field=request.POST.get("seller_identity_field", "email"),
+        seller_default_plan=request.POST.get("seller_default_plan", "growth"),
+        max_sellers=int(request.POST.get("max_sellers", 1000)),
+        billing_model=request.POST.get("billing_model", "per_seller"),
+        auto_activate_sellers=request.POST.get("auto_activate_sellers") == "on",
+        enforce_marketplace_cta=request.POST.get("enforce_marketplace_cta") == "on",
+        auto_snap_on_sync=request.POST.get("auto_snap_on_sync") == "on",
+        notes=request.POST.get("notes", "").strip(),
+    )
+
+    # Show the raw API key ONE TIME
+    return render(request, "admin_dashboard/partners/marketplace_created.html", {
+        "page_title": f"Marketplace Created: {mp.name}",
+        "mp": mp,
+        "raw_api_key": raw_key,
+    })

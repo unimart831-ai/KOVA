@@ -95,6 +95,7 @@ urlpatterns = [
     path("memes/", include("apps.memes.urls")),
     path("dashboard/", include("apps.admin_dashboard.urls")),
     path("api/v1/", include("apps.api.urls")),
+    path("api/v1/partner/", include("apps.api.partner_urls")),
 ]
 
 if settings.DEBUG:

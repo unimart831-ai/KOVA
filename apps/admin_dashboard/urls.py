@@ -123,6 +123,11 @@ urlpatterns = [
     path("partners/list/", partners.partner_list, name="partner_list"),
     path("partners/<int:pk>/", partners.partner_detail, name="partner_detail"),
 
+    # Marketplace Partners
+    path("partners/marketplaces/", partners.marketplace_list, name="marketplace_list"),
+    path("partners/marketplaces/create/", partners.marketplace_create, name="marketplace_create"),
+    path("partners/marketplaces/<int:pk>/", partners.marketplace_detail, name="marketplace_detail"),
+
     # Help Center
     path("help/", help.help_overview, name="help_overview"),
     path("help/articles/", help.help_article_views, name="help_article_views"),

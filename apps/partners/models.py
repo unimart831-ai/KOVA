@@ -1,5 +1,7 @@
+import hashlib
 import secrets
 import string
+import uuid
 from decimal import Decimal
 
 from django.conf import settings
@@ -316,3 +318,301 @@ class MilestoneAward(models.Model):
 
     def __str__(self):
         return f"{self.partner.referral_code} — {self.label} ({self.clients_required} clients)"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MARKETPLACE PARTNER SYSTEM
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+def generate_api_key():
+    """Generate a 40-char hex API key (displayed once, stored hashed)."""
+    return secrets.token_hex(20)
+
+
+def hash_api_key(raw_key: str) -> str:
+    """SHA-256 hash for storage — never store raw keys."""
+    return hashlib.sha256(raw_key.encode()).hexdigest()
+
+
+class MarketplacePartner(models.Model):
+    """
+    A marketplace (Jumia, Jiji, Unimart, etc.) that provisions Kova
+    accounts for their sellers and syncs product catalogs via API.
+
+    Each marketplace has unique configuration: seller identity schemes,
+    product schemas, billing models, and content rules.
+    """
+
+    class BillingModel(models.TextChoices):
+        PER_SELLER = "per_seller", "Per Active Seller / Month"
+        FLAT_FEE = "flat_fee", "Flat Monthly Fee"
+        REVENUE_SHARE = "revenue_share", "Revenue Share"
+        FREE_PILOT = "free_pilot", "Free Pilot (time-limited)"
+
+    class SellerIdentity(models.TextChoices):
+        EMAIL = "email", "Email Address"
+        PHONE = "phone", "Phone Number"
+        EXTERNAL_ID = "external_id", "Marketplace Seller ID"
+
+    class SyncDirection(models.TextChoices):
+        PUSH = "push", "Push (Marketplace → Kova)"
+        PULL = "pull", "Pull (Kova fetches from Marketplace)"
+        BOTH = "both", "Bidirectional Sync"
+
+    # ── Identity ──
+    name = models.CharField(
+        max_length=200,
+        help_text="Marketplace name (e.g. 'Jumia Kenya', 'Jiji Nigeria')",
+    )
+    slug = models.SlugField(
+        max_length=80, unique=True,
+        help_text="URL-safe identifier (e.g. 'jumia-ke', 'jiji-ng')",
+    )
+    partner = models.OneToOneField(
+        Partner, on_delete=models.CASCADE, related_name="marketplace",
+        help_text="Links to referral partner for commission tracking",
+    )
+    logo_url = models.URLField(blank=True)
+    website = models.URLField(blank=True)
+    contact_email = models.EmailField(blank=True)
+    contact_name = models.CharField(max_length=200, blank=True)
+
+    # ── API Credentials ──
+    api_key_hash = models.CharField(
+        max_length=64, unique=True, db_index=True,
+        help_text="SHA-256 hash of the API key — raw key shown only on creation",
+    )
+    api_key_prefix = models.CharField(
+        max_length=8,
+        help_text="First 8 chars of the key for identification (e.g. 'kmp_a3x7')",
+    )
+    api_key_created_at = models.DateTimeField(auto_now_add=True)
+    api_key_last_used = models.DateTimeField(null=True, blank=True)
+
+    # ── Seller Configuration ──
+    seller_identity_field = models.CharField(
+        max_length=15, choices=SellerIdentity.choices, default=SellerIdentity.EMAIL,
+        help_text="How this marketplace identifies sellers — determines provisioning lookup",
+    )
+    auto_activate_sellers = models.BooleanField(
+        default=True,
+        help_text="If True, sellers are active immediately. If False, seller must confirm/opt-in.",
+    )
+    seller_default_plan = models.CharField(
+        max_length=20, default="growth",
+        help_text="Plan tier assigned to provisioned sellers (starter/growth/pro/agency)",
+    )
+    max_sellers = models.PositiveIntegerField(
+        default=1000,
+        help_text="Contract limit on total provisioned sellers",
+    )
+    seller_welcome_email = models.BooleanField(
+        default=True,
+        help_text="Send welcome/activation email to provisioned sellers",
+    )
+
+    # ── Product Sync Configuration ──
+    sync_direction = models.CharField(
+        max_length=10, choices=SyncDirection.choices, default=SyncDirection.PUSH,
+    )
+    auto_snap_on_sync = models.BooleanField(
+        default=True,
+        help_text="Auto-trigger Snap to Sell vision AI when products are synced",
+    )
+    enforce_marketplace_cta = models.BooleanField(
+        default=True,
+        help_text="Force all generated content to link back to marketplace product pages",
+    )
+    product_field_mapping = models.JSONField(
+        default=dict, blank=True,
+        help_text=(
+            "Maps marketplace product fields to Kova fields. "
+            'E.g. {"title": "name", "sku": "external_id", "link": "product_url", '
+            '"amount": "price", "photo": "image_url"}'
+        ),
+    )
+    default_product_currency = models.CharField(
+        max_length=5, default="KES",
+        help_text="Currency for products if marketplace doesn't send currency per product",
+    )
+
+    # ── Billing ──
+    billing_model = models.CharField(
+        max_length=15, choices=BillingModel.choices, default=BillingModel.PER_SELLER,
+    )
+    rate_per_seller_kes = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal("150.00"),
+        help_text="Monthly rate per active seller (for per_seller billing)",
+    )
+    flat_fee_kes = models.DecimalField(
+        max_digits=12, decimal_places=2, default=Decimal("0.00"),
+        help_text="Monthly flat fee (for flat_fee billing)",
+    )
+    revenue_share_pct = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal("0.00"),
+        help_text="% of seller subscription revenue shared (for revenue_share billing)",
+    )
+    pilot_expires_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the free pilot period ends (for free_pilot billing)",
+    )
+
+    # ── Flexible Settings (marketplace-specific) ──
+    settings = models.JSONField(
+        default=dict, blank=True,
+        help_text=(
+            "Marketplace-specific config. Examples:\n"
+            '{"allowed_platforms": ["instagram", "facebook", "tiktok"]}\n'
+            '{"content_approval_required": true}\n'
+            '{"max_products_per_seller": 200}\n'
+            '{"branding": {"accent_color": "#F68B1E", "powered_by_text": "Powered by Kova"}}\n'
+            '{"webhook_events": ["seller.activated", "content.generated", "product.synced"]}\n'
+            '{"restricted_content_types": ["meme"]}'
+        ),
+    )
+
+    # ── Webhooks ──
+    webhook_url = models.URLField(
+        blank=True,
+        help_text="URL to receive event notifications (seller activated, content generated, etc.)",
+    )
+    webhook_secret = models.CharField(
+        max_length=64, blank=True,
+        help_text="Secret for signing webhook payloads (HMAC-SHA256)",
+    )
+
+    # ── Status ──
+    is_active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True, help_text="Internal notes about this partnership")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "marketplace partner"
+        verbose_name_plural = "marketplace partners"
+
+    def __str__(self):
+        return f"{self.name} ({self.slug})"
+
+    @property
+    def active_sellers_count(self):
+        return self.seller_accounts.filter(status="active").count()
+
+    @property
+    def total_sellers_count(self):
+        return self.seller_accounts.count()
+
+    @property
+    def total_products_synced(self):
+        from apps.products.models import Product
+        return Product.objects.filter(marketplace_partner=self, is_active=True).count()
+
+    @property
+    def can_provision_sellers(self):
+        return self.is_active and self.total_sellers_count < self.max_sellers
+
+    def get_setting(self, key, default=None):
+        """Safely get a marketplace-specific setting."""
+        return self.settings.get(key, default) if self.settings else default
+
+    def verify_api_key(self, raw_key: str) -> bool:
+        return hash_api_key(raw_key) == self.api_key_hash
+
+    @classmethod
+    def authenticate(cls, raw_key: str):
+        """Look up a marketplace partner by raw API key. Returns (partner, None) or (None, error)."""
+        key_hash = hash_api_key(raw_key)
+        try:
+            mp = cls.objects.select_related("partner", "partner__user").get(
+                api_key_hash=key_hash, is_active=True,
+            )
+            mp.api_key_last_used = timezone.now()
+            mp.save(update_fields=["api_key_last_used"])
+            return mp, None
+        except cls.DoesNotExist:
+            return None, "Invalid or inactive API key"
+
+
+class MarketplaceSellerAccount(models.Model):
+    """
+    Links a marketplace seller to their Kova user account.
+
+    One seller can only belong to one marketplace (enforced by unique user+marketplace).
+    The external_seller_id is the marketplace's identifier for this seller.
+    """
+
+    class Status(models.TextChoices):
+        INVITED = "invited", "Invited (pending activation)"
+        ACTIVE = "active", "Active"
+        SUSPENDED = "suspended", "Suspended by marketplace"
+        CHURNED = "churned", "Churned / Deactivated"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    marketplace = models.ForeignKey(
+        MarketplacePartner, on_delete=models.CASCADE, related_name="seller_accounts",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="marketplace_seller_accounts",
+    )
+    external_seller_id = models.CharField(
+        max_length=255,
+        help_text="Marketplace's ID for this seller (e.g. Jumia seller ID, Jiji vendor code)",
+    )
+    status = models.CharField(
+        max_length=12, choices=Status.choices, default=Status.INVITED,
+    )
+
+    # ── Seller metadata (flexible, varies per marketplace) ──
+    seller_metadata = models.JSONField(
+        default=dict, blank=True,
+        help_text=(
+            "Marketplace-specific seller info. Examples:\n"
+            '{"shop_name": "Jane Electronics", "shop_url": "https://jumia.co.ke/jane-electronics"}\n'
+            '{"seller_tier": "gold", "store_rating": 4.7}\n'
+            '{"location": "Nairobi", "category": "Electronics"}'
+        ),
+    )
+
+    # ── Sync tracking ──
+    products_synced = models.PositiveIntegerField(default=0)
+    last_product_sync = models.DateTimeField(null=True, blank=True)
+    content_generated = models.PositiveIntegerField(
+        default=0,
+        help_text="Total content pieces generated for this seller via marketplace",
+    )
+
+    # ── Timestamps ──
+    provisioned_at = models.DateTimeField(auto_now_add=True)
+    activated_at = models.DateTimeField(null=True, blank=True)
+    suspended_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-provisioned_at"]
+        unique_together = [
+            ("marketplace", "user"),
+            ("marketplace", "external_seller_id"),
+        ]
+        indexes = [
+            models.Index(fields=["marketplace", "status"]),
+            models.Index(fields=["external_seller_id"]),
+        ]
+        verbose_name = "marketplace seller account"
+        verbose_name_plural = "marketplace seller accounts"
+
+    def __str__(self):
+        return f"{self.user.email} @ {self.marketplace.name} ({self.get_status_display()})"
+
+    def activate(self):
+        """Activate this seller account."""
+        self.status = self.Status.ACTIVE
+        self.activated_at = timezone.now()
+        self.save(update_fields=["status", "activated_at"])
+
+    def suspend(self):
+        """Suspend this seller account (marketplace-initiated)."""
+        self.status = self.Status.SUSPENDED
+        self.suspended_at = timezone.now()
+        self.save(update_fields=["status", "suspended_at"])

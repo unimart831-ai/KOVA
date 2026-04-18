@@ -1,0 +1,103 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+  {{ active_marketplaces }} active marketplace{{ active_marketplaces|pluralize }} of {{ total_marketplaces }} total
+</p>
+{% endblock %}
+
+{% block content %}
+
+{# ── Header + Create Button ──────────────────────────────────────────── #}
+<div class="flex items-center justify-between mb-6">
+  <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Marketplace Partners</h2>
+  <a href="{% url 'admin_dashboard:marketplace_create' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-kova-600 text-white text-xs font-medium rounded-lg hover:bg-kova-700 transition-colors">
+    + New Marketplace
+  </a>
+</div>
+
+{# ── Marketplace Cards ───────────────────────────────────────────────── #}
+{% if marketplaces %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  {% for mp in marketplaces %}
+  <a href="{% url 'admin_dashboard:marketplace_detail' mp.pk %}"
+     class="bg-white dark:bg-gray-900 rounded-xl border {% if mp.is_active %}border-gray-200 dark:border-gray-800{% else %}border-red-200 dark:border-red-900/50{% endif %} shadow-sm p-5 hover:border-kova-300 dark:hover:border-kova-700 transition-colors block">
+
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-2">
+        {% if mp.logo_url %}
+        <img src="{{ mp.logo_url }}" alt="{{ mp.name }}" class="w-8 h-8 rounded-lg object-cover">
+        {% else %}
+        <div class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 text-xs font-bold">
+          {{ mp.name|first }}
+        </div>
+        {% endif %}
+        <div>
+          <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ mp.name }}</p>
+          <p class="text-[10px] text-gray-400">{{ mp.slug }} · API: {{ mp.api_key_prefix }}…</p>
+        </div>
+      </div>
+      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+        {% if mp.is_active %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+        {% else %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300{% endif %}">
+        {% if mp.is_active %}Active{% else %}Inactive{% endif %}
+      </span>
+    </div>
+
+    <div class="grid grid-cols-4 gap-3 text-center">
+      <div>
+        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ mp.active_sellers_count }}</p>
+        <p class="text-[10px] text-gray-400">Active Sellers</p>
+      </div>
+      <div>
+        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ mp.total_sellers_count }}</p>
+        <p class="text-[10px] text-gray-400">Total Sellers</p>
+      </div>
+      <div>
+        <p class="text-lg font-bold text-purple-600 dark:text-purple-400">{{ mp.total_products_synced }}</p>
+        <p class="text-[10px] text-gray-400">Products</p>
+      </div>
+      <div>
+        <p class="text-[10px] text-gray-400 mt-1">{{ mp.get_billing_model_display }}</p>
+        <p class="text-[10px] text-gray-400">
+          {% if mp.billing_model == "per_seller" %}KES {{ mp.rate_per_seller_kes|floatformat:0 }}/seller
+          {% elif mp.billing_model == "flat_fee" %}KES {{ mp.flat_fee_kes|floatformat:0 }}/mo
+          {% elif mp.billing_model == "revenue_share" %}{{ mp.revenue_share_pct }}%
+          {% else %}Free Pilot{% endif %}
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 flex flex-wrap gap-2">
+      <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500">
+        Identity: {{ mp.get_seller_identity_field_display }}
+      </span>
+      <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500">
+        Plan: {{ mp.seller_default_plan }}
+      </span>
+      {% if mp.enforce_marketplace_cta %}
+      <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300">
+        CTA enforced
+      </span>
+      {% endif %}
+      {% if mp.auto_snap_on_sync %}
+      <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300">
+        Auto-snap
+      </span>
+      {% endif %}
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-12 text-center">
+  <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">No marketplace partners yet</p>
+  <a href="{% url 'admin_dashboard:marketplace_create' %}"
+     class="text-xs text-kova-600 dark:text-kova-400 hover:underline">Create your first marketplace partnership →</a>
+</div>
+{% endif %}
+
+{% endblock %}
