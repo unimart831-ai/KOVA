@@ -224,7 +224,7 @@ def adapt_memes_for_users(self):
 
     logger.info("🎨 Meme Adaptation starting...")
 
-    # Get usable memes sorted by score
+    # Get usable memes sorted by score (no slice here — filtering happens per-user)
     usable_memes = TrendingMeme.objects.filter(
         lifecycle__in=[
             TrendingMeme.Lifecycle.EMERGING,
@@ -233,7 +233,7 @@ def adapt_memes_for_users(self):
         ],
         expires_at__gt=timezone.now(),
         brand_safety_score__gte=30,
-    ).order_by("-virality_score")[:10]
+    ).order_by("-virality_score")
 
     if not usable_memes:
         logger.info("No usable memes available for adaptation")
