@@ -1,0 +1,89 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}Trend Alerts{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Auto-detected trends matched to user brands</p>
+{% endblock %}
+
+{% block content %}
+
+{# ── Filters ──────────────────────────────────────────────────────────── #}
+<div class="flex items-center gap-2 mb-4">
+  <a href="{% url 'admin_dashboard:trend_alert_list' %}"
+     class="px-2.5 py-1 text-xs rounded-lg {% if not status_filter %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300{% endif %}">
+    All
+  </a>
+  {% for val, label in status_choices %}
+  <a href="?status={{ val }}"
+     class="px-2.5 py-1 text-xs rounded-lg {% if status_filter == val %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300{% endif %}">
+    {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+{# ── Cards ────────────────────────────────────────────────────────────── #}
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+  {% for alert in page %}
+  <a href="{% url 'admin_dashboard:trend_alert_detail' alert.pk %}"
+     class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-4 hover:border-kova-300 dark:hover:border-kova-700 transition-colors block {% if alert.is_expired %}opacity-60{% endif %}">
+
+    <div class="flex items-center justify-between mb-2">
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+          {{ alert.get_trend_source_display }}
+        </span>
+        {% if alert.trend_score %}
+        <span class="text-[10px] font-bold {% if alert.trend_score >= 80 %}text-red-600{% elif alert.trend_score >= 50 %}text-orange-600{% else %}text-gray-400{% endif %}">
+          {{ alert.trend_score }}
+        </span>
+        {% endif %}
+      </div>
+      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+        {% if alert.status == 'ready' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300
+        {% elif alert.status == 'approved' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+        {% elif alert.status == 'expired' %}bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500
+        {% elif alert.status == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
+        {% else %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300{% endif %}">
+        {{ alert.get_status_display }}
+      </span>
+    </div>
+
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">{{ alert.trend_topic|truncatechars:40 }}</h3>
+    <p class="text-[10px] text-gray-400 mb-2">{{ alert.user.email|truncatechars:25 }}</p>
+
+    {% if alert.brand_angle %}
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-2">{{ alert.brand_angle|truncatechars:80 }}</p>
+    {% endif %}
+
+    <div class="flex items-center justify-between mt-3 text-[10px] text-gray-400">
+      <span>{{ alert.detected_at|timesince }} ago</span>
+      {% if alert.urgency_hours %}
+      <span class="{% if alert.is_expired %}text-red-400{% else %}text-amber-500{% endif %}">
+        {{ alert.urgency_hours }}h window
+      </span>
+      {% endif %}
+    </div>
+  </a>
+  {% empty %}
+  <div class="col-span-full bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-8 text-center">
+    <p class="text-xs text-gray-400">No trend alerts found</p>
+  </div>
+  {% endfor %}
+</div>
+
+{# ── Pagination ───────────────────────────────────────────────────────── #}
+{% if page.has_other_pages %}
+<div class="flex justify-center gap-1 mt-4">
+  {% if page.has_previous %}
+  <a href="?page={{ page.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}"
+     class="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">&laquo; Prev</a>
+  {% endif %}
+  <span class="px-3 py-1.5 text-xs text-gray-400">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+  {% if page.has_next %}
+  <a href="?page={{ page.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}"
+     class="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">Next &raquo;</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

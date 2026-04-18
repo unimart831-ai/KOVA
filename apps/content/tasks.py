@@ -942,3 +942,181 @@ def recycle_top_content():
 
     logger.info("Content recycling: created %d seeds", recycled)
     return {"recycled": recycled}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# VOICE TO CAMPAIGN
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@shared_task(name="content.process_voice_brief")
+def process_voice_brief(voice_brief_id: str):
+    """
+    Process a voice memo into a full campaign.
+
+    Pipeline: Audio → Whisper transcription → LLM intent extraction →
+    Campaign creation → ContentSeed generation → optional EmailCampaign.
+    """
+    import time
+    from django.utils import timezone
+
+    from apps.content.models import VoiceBrief, ContentSeed
+    from apps.campaigns.models import Campaign, CampaignSeed
+    from apps.agents.models import AgentAction
+
+    start = time.time()
+
+    try:
+        vb = VoiceBrief.objects.select_related("user", "user__profile").get(pk=voice_brief_id)
+    except VoiceBrief.DoesNotExist:
+        logger.error("VoiceBrief %s not found", voice_brief_id)
+        return {"error": "not_found"}
+
+    user = vb.user
+    profile = getattr(user, "profile", None)
+
+    try:
+        # ── Step 1: Transcribe ──
+        vb.status = VoiceBrief.Status.TRANSCRIBING
+        vb.save(update_fields=["status"])
+
+        from apps.agents.llm_router import call_llm, call_whisper
+        transcript_result = call_whisper(vb.audio_file.path)
+        vb.transcript = transcript_result.get("text", "")
+        vb.language_detected = transcript_result.get("language", "en")
+        vb.save(update_fields=["transcript", "language_detected"])
+
+        if not vb.transcript.strip():
+            raise ValueError("Transcription returned empty text")
+
+        # ── Step 2: Extract intent ──
+        vb.status = VoiceBrief.Status.EXTRACTING
+        vb.save(update_fields=["status"])
+
+        brand_context = ""
+        if profile:
+            brand_context = f"Industry: {profile.industry or 'general'}. Brand voice: {profile.brand_voice or 'professional'}."
+
+        extraction_prompt = (
+            "You are a marketing AI assistant. Extract structured campaign intent from this voice transcript.\n\n"
+            f"Brand context: {brand_context}\n\n"
+            f"Transcript: \"{vb.transcript}\"\n\n"
+            "Return a JSON object with these keys:\n"
+            "- products: list of product/service names mentioned\n"
+            "- platforms: list of social platforms mentioned (instagram, facebook, twitter, tiktok, linkedin, whatsapp) — default to ['instagram', 'facebook'] if none mentioned\n"
+            "- urgency: one of 'today', 'this_week', 'this_month', 'no_rush'\n"
+            "- audience: target audience description if mentioned\n"
+            "- cta_type: call-to-action type if mentioned (link, phone, whatsapp, email) or null\n"
+            "- tone: detected tone (excited, urgent, casual, professional, etc.)\n"
+            "- key_message: the core marketing message in one sentence\n"
+            "- include_email: true if user mentioned email, subscribers, newsletter\n"
+            "- campaign_name: a suggested campaign name (short, catchy)\n"
+            "Return ONLY valid JSON."
+        )
+
+        extraction_response = call_llm(
+            prompt=extraction_prompt,
+            task="voice_extraction",
+            user=user,
+            json_mode=True,
+        )
+
+        import json
+        try:
+            vb.ai_extraction = json.loads(extraction_response["text"])
+        except (json.JSONDecodeError, KeyError):
+            vb.ai_extraction = {"raw_response": extraction_response.get("text", ""), "key_message": vb.transcript[:200]}
+
+        vb.save(update_fields=["ai_extraction"])
+
+        # ── Step 3: Generate Campaign + Seeds ──
+        vb.status = VoiceBrief.Status.GENERATING
+        vb.save(update_fields=["status"])
+
+        extraction = vb.ai_extraction
+        campaign_name = extraction.get("campaign_name", f"Voice Campaign — {timezone.now():%b %d}")
+        platforms = extraction.get("platforms", ["instagram", "facebook"])
+        key_message = extraction.get("key_message", vb.transcript[:200])
+
+        # Create Campaign
+        campaign = Campaign.objects.create(
+            user=user,
+            name=campaign_name,
+            objective="engagement",
+            description=f"Auto-generated from voice brief.\n\nOriginal message: {key_message}",
+            target_platforms=platforms,
+            target_audience=extraction.get("audience", ""),
+        )
+        vb.campaign = campaign
+
+        # Create ContentSeed
+        seed_idea = (
+            f"{key_message}\n\n"
+            f"Tone: {extraction.get('tone', 'professional')}. "
+            f"Products: {', '.join(extraction.get('products', []))}."
+        )
+        seed = ContentSeed.objects.create(
+            user=user,
+            idea=seed_idea,
+            notes=f"[Voice to Campaign] Transcript: {vb.transcript[:300]}",
+            target_platforms=platforms,
+        )
+        CampaignSeed.objects.create(campaign=campaign, seed=seed, role="primary")
+        vb.seeds_created = 1
+
+        # Trigger content generation from the seed
+        generate_from_seed.delay(str(seed.pk))
+
+        # Optional: create email campaign if user mentioned email
+        if extraction.get("include_email"):
+            try:
+                from apps.emails.models import EmailCampaign
+                email_camp = EmailCampaign.objects.create(
+                    user=user,
+                    name=f"Email: {campaign_name}",
+                    subject=key_message[:150],
+                    content_html=f"<p>{key_message}</p>",
+                    status="draft",
+                    ai_generated=True,
+                )
+                vb.email_campaign = email_camp
+            except Exception as e:
+                logger.warning("Voice brief email campaign creation failed: %s", e)
+
+        # ── Complete ──
+        vb.status = VoiceBrief.Status.COMPLETED
+        vb.completed_at = timezone.now()
+        vb.processing_time_ms = int((time.time() - start) * 1000)
+        vb.save()
+
+        # Log agent action
+        AgentAction.objects.create(
+            user=user,
+            agent_type="create",
+            action_type="voice_to_campaign",
+            input_data={"transcript": vb.transcript[:500]},
+            output_data={
+                "campaign_id": str(campaign.pk),
+                "seeds": vb.seeds_created,
+                "email_created": vb.email_campaign is not None,
+            },
+            tokens_used=extraction_response.get("tokens_used", 0),
+            model_used=extraction_response.get("model", ""),
+        )
+
+        logger.info(
+            "Voice brief %s completed: campaign=%s, seeds=%d, email=%s",
+            voice_brief_id, campaign.pk, vb.seeds_created, bool(vb.email_campaign),
+        )
+        return {
+            "status": "completed",
+            "campaign_id": str(campaign.pk),
+            "seeds_created": vb.seeds_created,
+        }
+
+    except Exception as e:
+        logger.exception("Voice brief %s failed: %s", voice_brief_id, e)
+        vb.status = VoiceBrief.Status.FAILED
+        vb.error_message = str(e)[:1000]
+        vb.save(update_fields=["status", "error_message"])
+        return {"error": str(e)}

@@ -852,3 +852,237 @@ def snap_batch_process(product_ids: list, contexts: list = None):
 
     logger.info("Batch Snap complete: %d/%d products processed", len(results), len(product_ids))
     return {"processed": len(results), "results": results}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# RECEIPT TO RESTOCK — Snap a receipt → AI extracts items → auto-restock + content
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@shared_task(name="products.process_restock_scan")
+def process_restock_scan(scan_id: str):
+    """
+    Process a receipt/invoice photo into stock updates + restock content.
+
+    Pipeline: Receipt photo → Vision AI extraction (items, quantities, prices) →
+    fuzzy-match to existing products → update stock levels → create StockUpdates →
+    generate 'back in stock' ContentSeed.
+    """
+    from django.utils import timezone
+    from apps.products.models import RestockScan, Product, StockUpdate, StockAlert
+    from apps.content.models import ContentSeed
+    from apps.agents.models import AgentAction
+
+    try:
+        scan = RestockScan.objects.select_related("user", "user__profile").get(pk=scan_id)
+    except RestockScan.DoesNotExist:
+        logger.error("RestockScan %s not found", scan_id)
+        return {"error": "not_found"}
+
+    user = scan.user
+
+    try:
+        # ── Step 1: Vision Analysis ──
+        scan.status = RestockScan.Status.ANALYZING
+        scan.save(update_fields=["status"])
+
+        from apps.agents.llm_router import call_llm_vision
+        import json
+
+        vision_prompt = (
+            "Analyze this receipt/invoice/delivery note photo. Extract all items listed.\n\n"
+            "Return a JSON object:\n"
+            "- items: array of objects, each with:\n"
+            "  - name: product name as written on receipt\n"
+            "  - quantity: number of units (integer)\n"
+            "  - unit_price: price per unit (number, or null if not visible)\n"
+            "- supplier_name: business/supplier name on the receipt (or null)\n"
+            "- receipt_date: date on receipt in YYYY-MM-DD format (or null)\n"
+            "- receipt_total: total amount (number, or null)\n"
+            "- currency: currency code (KES, USD, etc.) default KES\n"
+            "Return ONLY valid JSON. If you can't read something, set it to null."
+        )
+
+        vision_response = call_llm_vision(
+            prompt=vision_prompt,
+            image_path=scan.image.path,
+            task="restock_scan",
+            user=user,
+        )
+
+        try:
+            extraction = json.loads(vision_response["text"])
+        except (json.JSONDecodeError, KeyError):
+            raise ValueError(f"Vision AI returned invalid JSON: {vision_response.get('text', '')[:200]}")
+
+        raw_items = extraction.get("items", [])
+        scan.supplier_name = (extraction.get("supplier_name") or "")[:200]
+        scan.receipt_currency = extraction.get("currency", "KES")[:5]
+        scan.receipt_total = extraction.get("receipt_total")
+
+        if extraction.get("receipt_date"):
+            try:
+                from datetime import date
+                scan.receipt_date = date.fromisoformat(extraction["receipt_date"])
+            except (ValueError, TypeError):
+                pass
+
+        scan.save(update_fields=["supplier_name", "receipt_currency", "receipt_total", "receipt_date"])
+
+        # ── Step 2: Match to existing products ──
+        scan.status = RestockScan.Status.MATCHING
+        scan.save(update_fields=["status"])
+
+        user_products = list(Product.objects.filter(user=user, is_active=True).values("pk", "name"))
+        extracted_items = []
+        matched_products = []
+        not_matched = []
+
+        for item in raw_items:
+            item_name = item.get("name", "").strip()
+            if not item_name:
+                continue
+
+            quantity = item.get("quantity", 0)
+            unit_price = item.get("unit_price")
+
+            # Fuzzy match: check if product name is contained or similar
+            best_match = None
+            best_confidence = 0
+
+            item_lower = item_name.lower()
+            for prod in user_products:
+                prod_lower = prod["name"].lower()
+                # Exact substring match
+                if item_lower in prod_lower or prod_lower in item_lower:
+                    best_match = prod
+                    best_confidence = 0.95
+                    break
+                # Word overlap scoring
+                item_words = set(item_lower.split())
+                prod_words = set(prod_lower.split())
+                if item_words and prod_words:
+                    overlap = len(item_words & prod_words) / max(len(item_words), len(prod_words))
+                    if overlap > best_confidence and overlap >= 0.5:
+                        best_match = prod
+                        best_confidence = round(overlap, 2)
+
+            entry = {
+                "name": item_name,
+                "quantity": quantity,
+                "unit_price": float(unit_price) if unit_price else None,
+                "matched_product_id": str(best_match["pk"]) if best_match else None,
+                "match_confidence": best_confidence,
+            }
+            extracted_items.append(entry)
+
+            if best_match:
+                matched_products.append((best_match["pk"], quantity, item_name))
+            else:
+                not_matched.append(item_name)
+
+        scan.extracted_items = extracted_items
+        scan.products_matched = len(matched_products)
+        scan.items_not_matched = not_matched
+        scan.save(update_fields=["extracted_items", "products_matched", "items_not_matched"])
+
+        # ── Step 3: Update stock ──
+        scan.status = RestockScan.Status.UPDATING
+        scan.save(update_fields=["status"])
+
+        restocked_names = []
+        for product_pk, quantity, item_name in matched_products:
+            try:
+                product = Product.objects.get(pk=product_pk)
+                old_quantity = product.quantity or 0
+                new_quantity = old_quantity + quantity
+                old_status = product.stock_status
+
+                product.quantity = new_quantity
+                if product.tracks_stock and new_quantity > product.low_stock_threshold:
+                    product.stock_status = Product.StockStatus.IN_STOCK
+                product.save(update_fields=["quantity", "stock_status"])
+
+                StockUpdate.objects.create(
+                    product=product,
+                    user=user,
+                    previous_quantity=old_quantity,
+                    new_quantity=new_quantity,
+                    previous_status=old_status,
+                    new_status=product.stock_status,
+                    reason=StockUpdate.Reason.RESTOCK,
+                    notes=f"[Receipt to Restock] +{quantity} from {scan.supplier_name or 'receipt scan'}",
+                )
+
+                restocked_names.append(product.name)
+
+                # Create restock alert
+                if old_status in (Product.StockStatus.OUT_OF_STOCK, Product.StockStatus.LOW_STOCK):
+                    StockAlert.objects.create(
+                        user=user,
+                        product=product,
+                        alert_type=StockAlert.AlertType.RESTOCKED,
+                        message=f"{product.name} restocked: {old_quantity} → {new_quantity} units",
+                    )
+            except Product.DoesNotExist:
+                continue
+
+        scan.products_updated = len(restocked_names)
+
+        # ── Step 4: Generate 'back in stock' content ──
+        if restocked_names:
+            names_text = ", ".join(restocked_names[:5])
+            if len(restocked_names) > 5:
+                names_text += f" and {len(restocked_names) - 5} more"
+
+            seed = ContentSeed.objects.create(
+                user=user,
+                idea=(
+                    f"🔥 RESTOCKED: {names_text}!\n\n"
+                    f"These products are back in stock and ready to ship. "
+                    f"Create exciting 'back in stock' announcement posts. "
+                    f"Build urgency — they sold out before, they'll sell out again."
+                ),
+                notes=f"[Receipt to Restock] {len(restocked_names)} products restocked via receipt scan",
+            )
+            scan.content_seed = seed
+
+            from apps.content.tasks import generate_from_seed
+            generate_from_seed.delay(str(seed.pk))
+
+        # ── Complete ──
+        scan.status = RestockScan.Status.COMPLETED
+        scan.completed_at = timezone.now()
+        scan.save()
+
+        AgentAction.objects.create(
+            user=user,
+            agent_type="analyst",
+            action_type="receipt_to_restock",
+            input_data={"items_found": len(extracted_items)},
+            output_data={
+                "matched": scan.products_matched,
+                "updated": scan.products_updated,
+                "not_matched": not_matched,
+                "restocked": restocked_names,
+            },
+            tokens_used=vision_response.get("tokens_used", 0),
+            model_used=vision_response.get("model", ""),
+        )
+
+        logger.info(
+            "Restock scan %s complete: %d items found, %d matched, %d updated",
+            scan_id, len(extracted_items), scan.products_matched, scan.products_updated,
+        )
+        return {
+            "status": "completed",
+            "items_found": len(extracted_items),
+            "products_updated": scan.products_updated,
+        }
+
+    except Exception as e:
+        logger.exception("Restock scan %s failed: %s", scan_id, e)
+        scan.status = RestockScan.Status.FAILED
+        scan.error_message = str(e)[:1000]
+        scan.save(update_fields=["status", "error_message"])
+        return {"error": str(e)}

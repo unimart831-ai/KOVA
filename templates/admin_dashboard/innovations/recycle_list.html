@@ -1,0 +1,86 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}Performance Recycles{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Top-performing posts recycled into email campaigns</p>
+{% endblock %}
+
+{% block content %}
+
+{# ── Filters ──────────────────────────────────────────────────────────── #}
+<div class="flex items-center gap-2 mb-4">
+  <a href="{% url 'admin_dashboard:recycle_list' %}"
+     class="px-2.5 py-1 text-xs rounded-lg {% if not status_filter %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300{% endif %}">
+    All
+  </a>
+  {% for val, label in status_choices %}
+  <a href="?status={{ val }}"
+     class="px-2.5 py-1 text-xs rounded-lg {% if status_filter == val %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300{% endif %}">
+    {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+{# ── Table ────────────────────────────────────────────────────────────── #}
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <table class="w-full text-xs">
+    <thead class="bg-gray-50 dark:bg-gray-800/50">
+      <tr>
+        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400">User</th>
+        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400">Post</th>
+        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400">Multiplier</th>
+        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400">Trigger</th>
+        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400">Email Subject</th>
+        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400">Status</th>
+        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400">Detected</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for recycle in page %}
+      <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30 cursor-pointer"
+          onclick="window.location='{% url 'admin_dashboard:recycle_detail' recycle.pk %}'">
+        <td class="px-4 py-2.5 text-gray-900 dark:text-white font-medium">{{ recycle.user.email|truncatechars:25 }}</td>
+        <td class="px-4 py-2.5 text-gray-500 dark:text-gray-400">{{ recycle.source_post.text_content|truncatechars:30|default:"-" }}</td>
+        <td class="px-4 py-2.5">
+          <span class="font-bold {% if recycle.performance_multiplier >= 3 %}text-red-600{% elif recycle.performance_multiplier >= 2 %}text-orange-600{% else %}text-amber-600{% endif %}">
+            {{ recycle.performance_multiplier }}x
+          </span>
+        </td>
+        <td class="px-4 py-2.5 text-gray-500 dark:text-gray-400">{{ recycle.trigger_metric|default:"-" }}</td>
+        <td class="px-4 py-2.5 text-gray-500 dark:text-gray-400">{{ recycle.email_subject|truncatechars:30|default:"-" }}</td>
+        <td class="px-4 py-2.5">
+          <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+            {% if recycle.status == 'sent' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+            {% elif recycle.status == 'ready' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300
+            {% elif recycle.status == 'dismissed' %}bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500
+            {% else %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300{% endif %}">
+            {{ recycle.get_status_display }}
+          </span>
+        </td>
+        <td class="px-4 py-2.5 text-gray-400">{{ recycle.detected_at|timesince }} ago</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" class="px-4 py-8 text-center text-gray-400">No performance recycles found</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# ── Pagination ───────────────────────────────────────────────────────── #}
+{% if page.has_other_pages %}
+<div class="flex justify-center gap-1 mt-4">
+  {% if page.has_previous %}
+  <a href="?page={{ page.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}"
+     class="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">&laquo; Prev</a>
+  {% endif %}
+  <span class="px-3 py-1.5 text-xs text-gray-400">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+  {% if page.has_next %}
+  <a href="?page={{ page.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}"
+     class="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">Next &raquo;</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

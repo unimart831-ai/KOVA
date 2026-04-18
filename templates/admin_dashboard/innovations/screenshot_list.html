@@ -1,0 +1,75 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}Competitor Screenshots{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Screenshot-to-compete analyses</p>
+{% endblock %}
+
+{% block content %}
+
+{# ── Filters ──────────────────────────────────────────────────────────── #}
+<div class="flex items-center gap-2 mb-4">
+  <a href="{% url 'admin_dashboard:screenshot_list' %}"
+     class="px-2.5 py-1 text-xs rounded-lg {% if not status_filter %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300{% endif %}">
+    All
+  </a>
+  {% for val, label in status_choices %}
+  <a href="?status={{ val }}"
+     class="px-2.5 py-1 text-xs rounded-lg {% if status_filter == val %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300{% endif %}">
+    {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+{# ── Cards ────────────────────────────────────────────────────────────── #}
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+  {% for ss in page %}
+  <a href="{% url 'admin_dashboard:screenshot_detail' ss.pk %}"
+     class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden hover:border-kova-300 dark:hover:border-kova-700 transition-colors block">
+
+    {% if ss.image %}
+    <div class="h-32 bg-gray-100 dark:bg-gray-800 overflow-hidden">
+      <img src="{{ ss.image.url }}" alt="Screenshot" class="w-full h-full object-cover object-top">
+    </div>
+    {% endif %}
+
+    <div class="p-4">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-xs font-semibold text-gray-900 dark:text-white">{{ ss.competitor_name|default:"Unknown" }}</p>
+        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+          {% if ss.status == 'completed' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+          {% elif ss.status == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
+          {% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300{% endif %}">
+          {{ ss.get_status_display }}
+        </span>
+      </div>
+      <p class="text-[10px] text-gray-400">{{ ss.user.email|truncatechars:25 }}</p>
+      {% if ss.counter_strategy %}
+      <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-2 line-clamp-2">{{ ss.counter_strategy|truncatechars:100 }}</p>
+      {% endif %}
+      <p class="text-[10px] text-gray-400 mt-2">{{ ss.created_at|timesince }} ago</p>
+    </div>
+  </a>
+  {% empty %}
+  <div class="col-span-full bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-8 text-center">
+    <p class="text-xs text-gray-400">No competitor screenshots found</p>
+  </div>
+  {% endfor %}
+</div>
+
+{# ── Pagination ───────────────────────────────────────────────────────── #}
+{% if page.has_other_pages %}
+<div class="flex justify-center gap-1 mt-4">
+  {% if page.has_previous %}
+  <a href="?page={{ page.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}"
+     class="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">&laquo; Prev</a>
+  {% endif %}
+  <span class="px-3 py-1.5 text-xs text-gray-400">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+  {% if page.has_next %}
+  <a href="?page={{ page.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}"
+     class="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">Next &raquo;</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

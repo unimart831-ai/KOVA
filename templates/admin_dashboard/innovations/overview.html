@@ -1,0 +1,251 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}Innovations{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+  AI-powered features: Voice to Campaign, Screenshot to Compete, Receipt to Restock, Trend Ride, Performance to Email
+</p>
+{% endblock %}
+
+{% block content %}
+
+{# ── 5 Innovation Cards ──────────────────────────────────────────────── #}
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
+
+  {# Voice to Campaign #}
+  <a href="{% url 'admin_dashboard:voice_brief_list' %}"
+     class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5 hover:border-kova-300 dark:hover:border-kova-700 transition-colors block">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-10 h-10 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+        <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Voice to Campaign</h3>
+        <p class="text-[10px] text-gray-400">Voice memo → full campaign</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-3 gap-2 text-center">
+      <div>
+        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ voice_total }}</p>
+        <p class="text-[10px] text-gray-400">Total</p>
+      </div>
+      <div>
+        <p class="text-lg font-bold text-emerald-600">{{ voice_completed }}</p>
+        <p class="text-[10px] text-gray-400">Completed</p>
+      </div>
+      <div>
+        <p class="text-lg font-bold text-kova-600">{{ voice_7d }}</p>
+        <p class="text-[10px] text-gray-400">Last 7d</p>
+      </div>
+    </div>
+    {% if voice_total > 0 %}
+    <div class="mt-3 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+      <div class="h-full bg-violet-500 rounded-full" style="width: {{ voice_success_rate }}%"></div>
+    </div>
+    <p class="text-[10px] text-gray-400 mt-1">{{ voice_success_rate }}% success rate</p>
+    {% endif %}
+  </a>
+
+  {# Screenshot to Compete #}
+  <a href="{% url 'admin_dashboard:screenshot_list' %}"
+     class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5 hover:border-kova-300 dark:hover:border-kova-700 transition-colors block">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+        <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Screenshot to Compete</h3>
+        <p class="text-[10px] text-gray-400">Competitor screenshot → counter-posts</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-3 gap-2 text-center">
+      <div>
+        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ screenshot_total }}</p>
+        <p class="text-[10px] text-gray-400">Total</p>
+      </div>
+      <div>
+        <p class="text-lg font-bold text-emerald-600">{{ screenshot_completed }}</p>
+        <p class="text-[10px] text-gray-400">Analyzed</p>
+      </div>
+      <div>
+        <p class="text-lg font-bold text-kova-600">{{ screenshot_7d }}</p>
+        <p class="text-[10px] text-gray-400">Last 7d</p>
+      </div>
+    </div>
+  </a>
+
+  {# Receipt to Restock #}
+  <a href="{% url 'admin_dashboard:restock_scan_list' %}"
+     class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5 hover:border-kova-300 dark:hover:border-kova-700 transition-colors block">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+        <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Receipt to Restock</h3>
+        <p class="text-[10px] text-gray-400">Receipt photo → stock update + content</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-3 gap-2 text-center">
+      <div>
+        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ restock_total }}</p>
+        <p class="text-[10px] text-gray-400">Total Scans</p>
+      </div>
+      <div>
+        <p class="text-lg font-bold text-emerald-600">{{ restock_completed }}</p>
+        <p class="text-[10px] text-gray-400">Completed</p>
+      </div>
+      <div>
+        <p class="text-lg font-bold text-amber-600">{{ restock_products_updated }}</p>
+        <p class="text-[10px] text-gray-400">Products Updated</p>
+      </div>
+    </div>
+  </a>
+
+  {# Trend Ride #}
+  <a href="{% url 'admin_dashboard:trend_alert_list' %}"
+     class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5 hover:border-kova-300 dark:hover:border-kova-700 transition-colors block">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+        <svg class="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Trend Ride</h3>
+        <p class="text-[10px] text-gray-400">Auto-detect trends → brand-safe content</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-4 gap-2 text-center">
+      <div>
+        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ trend_total }}</p>
+        <p class="text-[10px] text-gray-400">Detected</p>
+      </div>
+      <div>
+        <p class="text-lg font-bold text-amber-600">{{ trend_ready }}</p>
+        <p class="text-[10px] text-gray-400">Ready</p>
+      </div>
+      <div>
+        <p class="text-lg font-bold text-emerald-600">{{ trend_approved }}</p>
+        <p class="text-[10px] text-gray-400">Approved</p>
+      </div>
+      <div>
+        <p class="text-lg font-bold text-kova-600">{{ trend_7d }}</p>
+        <p class="text-[10px] text-gray-400">Last 7d</p>
+      </div>
+    </div>
+  </a>
+
+  {# Performance to Email #}
+  <a href="{% url 'admin_dashboard:recycle_list' %}"
+     class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5 hover:border-kova-300 dark:hover:border-kova-700 transition-colors block">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Performance to Email</h3>
+        <p class="text-[10px] text-gray-400">Top posts → auto email drafts</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-4 gap-2 text-center">
+      <div>
+        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ recycle_total }}</p>
+        <p class="text-[10px] text-gray-400">Detected</p>
+      </div>
+      <div>
+        <p class="text-lg font-bold text-amber-600">{{ recycle_ready }}</p>
+        <p class="text-[10px] text-gray-400">Ready</p>
+      </div>
+      <div>
+        <p class="text-lg font-bold text-emerald-600">{{ recycle_sent }}</p>
+        <p class="text-[10px] text-gray-400">Sent</p>
+      </div>
+      <div>
+        <p class="text-lg font-bold text-kova-600">{{ avg_multiplier }}x</p>
+        <p class="text-[10px] text-gray-400">Avg Multi</p>
+      </div>
+    </div>
+  </a>
+
+</div>
+
+{# ── Recent Activity ─────────────────────────────────────────────────── #}
+<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+
+  {# Recent Voice Briefs #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-4">
+    <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Recent Voice Briefs</h3>
+    {% for vb in recent_voice %}
+    <div class="flex items-center justify-between py-2 {% if not forloop.last %}border-b border-gray-100 dark:border-gray-800{% endif %}">
+      <div>
+        <p class="text-xs font-medium text-gray-900 dark:text-white">{{ vb.user.email|truncatechars:25 }}</p>
+        <p class="text-[10px] text-gray-400">{{ vb.created_at|timesince }} ago</p>
+      </div>
+      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+        {% if vb.status == 'completed' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+        {% elif vb.status == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
+        {% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300{% endif %}">
+        {{ vb.get_status_display }}
+      </span>
+    </div>
+    {% empty %}
+    <p class="text-xs text-gray-400 py-2">No voice briefs yet</p>
+    {% endfor %}
+  </div>
+
+  {# Recent Trend Alerts #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-4">
+    <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Recent Trend Alerts</h3>
+    {% for alert in recent_trends %}
+    <div class="flex items-center justify-between py-2 {% if not forloop.last %}border-b border-gray-100 dark:border-gray-800{% endif %}">
+      <div>
+        <p class="text-xs font-medium text-gray-900 dark:text-white">{{ alert.trend_topic|truncatechars:30 }}</p>
+        <p class="text-[10px] text-gray-400">{{ alert.user.email|truncatechars:20 }} · {{ alert.detected_at|timesince }} ago</p>
+      </div>
+      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+        {% if alert.status == 'ready' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300
+        {% elif alert.status == 'approved' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+        {% elif alert.status == 'expired' %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400
+        {% else %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300{% endif %}">
+        {{ alert.get_status_display }}
+      </span>
+    </div>
+    {% empty %}
+    <p class="text-xs text-gray-400 py-2">No trend alerts yet</p>
+    {% endfor %}
+  </div>
+
+  {# Recent Restock Scans #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-4">
+    <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Recent Restock Scans</h3>
+    {% for scan in recent_restocks %}
+    <div class="flex items-center justify-between py-2 {% if not forloop.last %}border-b border-gray-100 dark:border-gray-800{% endif %}">
+      <div>
+        <p class="text-xs font-medium text-gray-900 dark:text-white">{{ scan.user.email|truncatechars:25 }}</p>
+        <p class="text-[10px] text-gray-400">{{ scan.products_updated }} updated · {{ scan.created_at|timesince }} ago</p>
+      </div>
+      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+        {% if scan.status == 'completed' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+        {% elif scan.status == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
+        {% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300{% endif %}">
+        {{ scan.get_status_display }}
+      </span>
+    </div>
+    {% empty %}
+    <p class="text-xs text-gray-400 py-2">No restock scans yet</p>
+    {% endfor %}
+  </div>
+
+</div>
+
+{% endblock %}

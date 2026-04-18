@@ -352,3 +352,117 @@ class MemePreferences(models.Model):
 
     def __str__(self):
         return f"Meme prefs for {self.user}"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TREND RIDE — Auto-detect trends → generate brand-safe content → one-tap approve
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class TrendAlert(models.Model):
+    """
+    15-Minute Trend Response system.
+
+    When Research Agent detects a trending topic that matches the user's
+    industry/audience → auto-generates brand-safe content → queues with
+    TREND ALERT priority → user gets notification for one-tap approval.
+
+    Speed is the moat. First-mover gets 10x engagement on trends.
+    """
+
+    class Status(models.TextChoices):
+        DETECTED = "detected", "Trend Detected"
+        GENERATING = "generating", "Generating Content"
+        READY = "ready", "Ready for Approval"
+        APPROVED = "approved", "Approved & Queued"
+        DISMISSED = "dismissed", "Dismissed"
+        EXPIRED = "expired", "Trend Expired"
+        FAILED = "failed", "Failed"
+
+    class TrendSource(models.TextChoices):
+        TWITTER = "twitter", "Twitter/X"
+        TIKTOK = "tiktok", "TikTok"
+        INSTAGRAM = "instagram", "Instagram"
+        NEWS = "news", "News"
+        GOOGLE = "google", "Google Trends"
+        MEME = "meme", "Meme Engine"
+        KENYAN_EVENT = "kenyan_event", "Kenyan Event Calendar"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE, related_name="trend_alerts",
+    )
+
+    # ── Trend info ──
+    trend_topic = models.CharField(
+        max_length=300,
+        help_text="The trending topic, hashtag, or event name",
+    )
+    trend_source = models.CharField(
+        max_length=15, choices=TrendSource.choices, blank=True,
+    )
+    trend_context = models.TextField(
+        blank=True,
+        help_text="Why this trend matches this user's industry/audience",
+    )
+    trend_score = models.PositiveIntegerField(
+        default=0,
+        help_text="Relevance score 0-100 (how well this trend matches the user)",
+    )
+    urgency_hours = models.PositiveIntegerField(
+        default=6,
+        help_text="Estimated hours before this trend dies — drives notification urgency",
+    )
+
+    # ── Link to existing meme/event ──
+    trending_meme = models.ForeignKey(
+        "memes.TrendingMeme", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="trend_alerts",
+    )
+    kenyan_event = models.ForeignKey(
+        "memes.KenyanEvent", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="trend_alerts",
+    )
+
+    status = models.CharField(
+        max_length=15, choices=Status.choices, default=Status.DETECTED, db_index=True,
+    )
+
+    # ── Generated content ──
+    brand_angle = models.TextField(
+        blank=True,
+        help_text="AI's explanation of the brand-safe angle for this trend",
+    )
+    content_seed = models.ForeignKey(
+        "content.ContentSeed", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="trend_alerts",
+        help_text="ContentSeed with trend-riding posts",
+    )
+    posts_generated = models.PositiveIntegerField(default=0)
+
+    # ── Timestamps ──
+    detected_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When this trend alert expires (detected_at + urgency_hours)",
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    error_message = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-detected_at"]
+        indexes = [
+            models.Index(fields=["user", "status"]),
+            models.Index(fields=["user", "-detected_at"]),
+            models.Index(fields=["status", "expires_at"]),
+        ]
+
+    def __str__(self):
+        return f"Trend: {self.trend_topic[:50]} ({self.get_status_display()})"
+
+    @property
+    def is_expired(self):
+        if self.expires_at:
+            from django.utils import timezone
+            return timezone.now() > self.expires_at
+        return False

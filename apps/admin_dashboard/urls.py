@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, campaigns, content, costs, emails, engage, feature_usage, help, llm, logs, media_queue, memes, overview, partners, partials, pixel, platforms, products, revenue, system, teams, user_health, users, whatsapp
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, campaigns, content, costs, emails, engage, feature_usage, help, innovations, llm, logs, media_queue, memes, overview, partners, partials, pixel, platforms, products, revenue, system, teams, user_health, users, whatsapp
 
 app_name = "admin_dashboard"
 
@@ -159,4 +159,17 @@ urlpatterns = [
     path("whatsapp/conversations/", whatsapp.whatsapp_conversations, name="whatsapp_conversations"),
     path("whatsapp/templates/", whatsapp.whatsapp_templates, name="whatsapp_templates"),
     path("whatsapp/broadcasts/", whatsapp.whatsapp_broadcasts, name="whatsapp_broadcasts"),
+
+    # Innovations
+    path("innovations/", innovations.innovations_overview, name="innovations_overview"),
+    path("innovations/voice/", innovations.voice_brief_list, name="voice_brief_list"),
+    path("innovations/voice/<uuid:pk>/", innovations.voice_brief_detail, name="voice_brief_detail"),
+    path("innovations/screenshots/", innovations.screenshot_list, name="screenshot_list"),
+    path("innovations/screenshots/<uuid:pk>/", innovations.screenshot_detail, name="screenshot_detail"),
+    path("innovations/restock/", innovations.restock_scan_list, name="restock_scan_list"),
+    path("innovations/restock/<uuid:pk>/", innovations.restock_scan_detail, name="restock_scan_detail"),
+    path("innovations/trends/", innovations.trend_alert_list, name="trend_alert_list"),
+    path("innovations/trends/<uuid:pk>/", innovations.trend_alert_detail, name="trend_alert_detail"),
+    path("innovations/recycle/", innovations.recycle_list, name="recycle_list"),
+    path("innovations/recycle/<uuid:pk>/", innovations.recycle_detail, name="recycle_detail"),
 ]

@@ -236,3 +236,96 @@ class StockAlert(models.Model):
 
     def __str__(self):
         return f"{self.get_alert_type_display()}: {self.product.name}"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# RECEIPT TO RESTOCK — Snap a receipt/invoice → AI extracts items → auto-restock + content
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class RestockScan(models.Model):
+    """
+    Receipt/invoice photo → AI vision extracts products + quantities →
+    auto-updates stock levels → triggers 'back in stock' content.
+
+    Bridges physical supply chain (paper receipt) to digital marketing in one snap.
+    """
+
+    class Status(models.TextChoices):
+        UPLOADED = "uploaded", "Uploaded"
+        ANALYZING = "analyzing", "AI Analyzing Receipt"
+        MATCHING = "matching", "Matching Products"
+        UPDATING = "updating", "Updating Stock"
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="restock_scans",
+    )
+    image = models.ImageField(
+        upload_to="restock_scans/%Y/%m/",
+        help_text="Photo of delivery receipt, invoice, or packing list",
+    )
+    status = models.CharField(
+        max_length=15, choices=Status.choices, default=Status.UPLOADED, db_index=True,
+    )
+
+    # ── AI extraction ──
+    extracted_items = models.JSONField(
+        default=list, blank=True,
+        help_text=(
+            "Items extracted from receipt by AI vision:\n"
+            '[{"name": "Samsung A54", "quantity": 10, "unit_price": 42000,\n'
+            '  "matched_product_id": "uuid-here", "match_confidence": 0.92},\n'
+            ' {"name": "iPhone 15 Case", "quantity": 50, "unit_price": 500,\n'
+            '  "matched_product_id": null, "match_confidence": 0}]'
+        ),
+    )
+    supplier_name = models.CharField(
+        max_length=200, blank=True,
+        help_text="Supplier/vendor name extracted from receipt",
+    )
+    receipt_date = models.DateField(
+        null=True, blank=True,
+        help_text="Date on the receipt (if extracted)",
+    )
+    receipt_total = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+        help_text="Total amount on the receipt (if extracted)",
+    )
+    receipt_currency = models.CharField(max_length=5, default="KES")
+
+    # ── Results ──
+    products_matched = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of extracted items matched to existing products",
+    )
+    products_updated = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of products whose stock was actually updated",
+    )
+    items_not_matched = models.JSONField(
+        default=list, blank=True,
+        help_text="Items that couldn't be matched to existing products",
+    )
+    content_seed = models.ForeignKey(
+        "content.ContentSeed", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="restock_scans",
+        help_text="ContentSeed for 'back in stock' posts (auto-generated)",
+    )
+
+    # ── Metadata ──
+    error_message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "status"]),
+            models.Index(fields=["user", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"RestockScan {self.pk} — {self.products_updated} updated ({self.get_status_display()})"

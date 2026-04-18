@@ -711,3 +711,172 @@ class PageView(models.Model):
 
     def __str__(self):
         return f"{self.user} → {self.section} @ {self.viewed_at:%Y-%m-%d %H:%M}"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SCREENSHOT TO COMPETE — Screenshot a competitor's post, AI builds counter-content
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class CompetitorScreenshot(models.Model):
+    """
+    Screenshot of competitor content → AI vision analysis → counter-post generation.
+
+    User screenshots a competitor's viral post or ad → AI extracts brand,
+    messaging strategy, visual style, CTA → generates counter-posts in
+    the user's brand voice that compete on the same topic with a flipped angle.
+    """
+
+    class Status(models.TextChoices):
+        UPLOADED = "uploaded", "Uploaded"
+        ANALYZING = "analyzing", "AI Analyzing Screenshot"
+        GENERATING = "generating", "Generating Counter-Posts"
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE, related_name="competitor_screenshots",
+    )
+    image = models.ImageField(
+        upload_to="competitor_screenshots/%Y/%m/",
+        help_text="Screenshot of competitor's post, ad, story, or page",
+    )
+    status = models.CharField(
+        max_length=15, choices=Status.choices, default=Status.UPLOADED, db_index=True,
+    )
+    user_notes = models.TextField(
+        blank=True,
+        help_text="Optional context from user: 'This is Jumia's Black Friday ad'",
+    )
+
+    # ── AI vision analysis ──
+    competitor_name = models.CharField(
+        max_length=200, blank=True,
+        help_text="Competitor brand name extracted from screenshot",
+    )
+    analysis = models.JSONField(
+        default=dict, blank=True,
+        help_text=(
+            "AI analysis of the screenshot:\n"
+            '{"platform": "instagram", "content_type": "ad",\n'
+            ' "messaging": "50% off sale — urgency + scarcity",\n'
+            ' "visual_style": "bright orange, product-focused, minimal text",\n'
+            ' "cta": "Shop Now", "estimated_engagement": "high",\n'
+            ' "strategy": "discount-led acquisition",\n'
+            ' "strengths": ["clear pricing", "strong visual"],\n'
+            ' "weaknesses": ["no social proof", "generic copy"],\n'
+            ' "hashtags": ["#BlackFriday", "#Deals"]}'
+        ),
+    )
+
+    # ── Link to existing competitor (if matched) ──
+    competitor = models.ForeignKey(
+        "analytics.Competitor", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="screenshots",
+        help_text="Auto-linked if competitor name matches an existing tracked competitor",
+    )
+
+    # ── Counter-strategy ──
+    counter_strategy = models.TextField(
+        blank=True,
+        help_text="AI's explanation of the recommended counter-strategy",
+    )
+    counter_seed = models.ForeignKey(
+        "content.ContentSeed", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="competitor_screenshots",
+        help_text="ContentSeed generated with counter-posts",
+    )
+    posts_generated = models.PositiveIntegerField(default=0)
+
+    # ── Metadata ──
+    error_message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "status"]),
+            models.Index(fields=["user", "-created_at"]),
+        ]
+
+    def __str__(self):
+        name = self.competitor_name or "Unknown competitor"
+        return f"Screenshot: {name} ({self.get_status_display()})"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PERFORMANCE TO EMAIL — Top-performing posts auto-recycled into email campaigns
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class PerformanceRecycle(models.Model):
+    """
+    Detects posts that exceed Nx average engagement → auto-generates
+    an email campaign expanding on that topic.
+
+    The best social content becomes email content — triggered by data, not guesswork.
+    """
+
+    class Status(models.TextChoices):
+        DETECTED = "detected", "Top Performer Detected"
+        GENERATING = "generating", "Generating Email Draft"
+        READY = "ready", "Ready for Review"
+        SENT = "sent", "Email Sent"
+        DISMISSED = "dismissed", "Dismissed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE, related_name="performance_recycles",
+    )
+
+    # ── Source post + metrics ──
+    source_post = models.ForeignKey(
+        "content.Post", on_delete=models.CASCADE, related_name="recycles",
+    )
+    post_metric = models.ForeignKey(
+        "analytics.PostMetric", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="recycles",
+    )
+    performance_multiplier = models.DecimalField(
+        max_digits=5, decimal_places=2,
+        help_text="How many times above average (e.g. 2.5 = 2.5x average engagement)",
+    )
+    trigger_metric = models.CharField(
+        max_length=30,
+        help_text="Which metric triggered this: engagement_rate, impressions, clicks, shares, etc.",
+    )
+
+    status = models.CharField(
+        max_length=15, choices=Status.choices, default=Status.DETECTED, db_index=True,
+    )
+
+    # ── Generated email content ──
+    email_campaign = models.ForeignKey(
+        "emails.EmailCampaign", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="performance_recycles",
+    )
+    email_subject = models.CharField(max_length=200, blank=True)
+    email_body_html = models.TextField(
+        blank=True,
+        help_text="AI-generated email expanding on the post's topic",
+    )
+    ai_reasoning = models.TextField(
+        blank=True,
+        help_text="Why AI thinks this post would make good email content",
+    )
+
+    # ── Metadata ──
+    detected_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-detected_at"]
+        indexes = [
+            models.Index(fields=["user", "status"]),
+            models.Index(fields=["user", "-detected_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.performance_multiplier}x performer → {self.get_status_display()}"

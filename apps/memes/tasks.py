@@ -605,3 +605,235 @@ def _adapt_meme_for_user(meme, user, profile, prefs):
     except Exception as e:
         logger.warning("Meme adaptation failed for '%s' x %s: %s", meme.title, user.email, e)
         return None
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TREND RIDE — Auto-detect relevant trends → generate content → notify user
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@shared_task(name="memes.scan_trends_for_users")
+def scan_trends_for_users():
+    """
+    Periodic task: check trending memes + Kenyan events against each user's
+    industry/audience → create TrendAlert for matches → generate content.
+
+    Run every 2 hours via Celery Beat.
+    """
+    from django.utils import timezone
+    from apps.memes.models import TrendingMeme, TrendAlert, KenyanEvent, MemePreferences
+    from apps.accounts.models import User
+
+    now = timezone.now()
+    detected = 0
+
+    # Get active trending memes (emerging or trending stage)
+    hot_memes = TrendingMeme.objects.filter(
+        lifecycle_stage__in=["emerging", "trending"],
+        brand_safety_score__gte=60,
+        is_active=True,
+    ).order_by("-virality_score")[:20]
+
+    # Get upcoming Kenyan events (next 3 days)
+    upcoming_events = KenyanEvent.objects.filter(
+        date__range=[now.date(), (now + timezone.timedelta(days=3)).date()],
+        meme_potential__in=["high", "viral"],
+        sensitivity__in=["safe", "mild"],
+    )
+
+    # Get users with meme preferences who haven't opted out
+    active_users = User.objects.filter(
+        is_active=True,
+    ).select_related("profile").exclude(
+        profile__plan="starter",  # Skip free tier
+    )
+
+    for user in active_users[:100]:  # Cap per run
+        profile = getattr(user, "profile", None)
+        if not profile:
+            continue
+
+        prefs = MemePreferences.objects.filter(user=user).first()
+        user_industry = (profile.industry or "").lower()
+
+        # Check each hot meme for relevance
+        for meme in hot_memes:
+            # Skip if user already has an active alert for this meme
+            if TrendAlert.objects.filter(user=user, trending_meme=meme).exists():
+                continue
+
+            # Skip if user's risk tolerance is conservative and meme is edgy
+            if prefs and prefs.risk_tolerance == "conservative" and meme.brand_safety_score < 80:
+                continue
+
+            # Basic relevance check: meme category vs user preferences
+            relevance_score = meme.cultural_relevance_kenya or 50
+            if prefs and meme.category in (prefs.excluded_categories or []):
+                continue
+
+            if relevance_score >= 60:
+                urgency = max(2, 24 - (meme.virality_score // 5))
+                alert = TrendAlert.objects.create(
+                    user=user,
+                    trend_topic=meme.title,
+                    trend_source=meme.source_platform or "meme",
+                    trend_context=f"Trending meme ({meme.lifecycle_stage}): {meme.description[:200]}",
+                    trend_score=relevance_score,
+                    urgency_hours=urgency,
+                    trending_meme=meme,
+                    expires_at=now + timezone.timedelta(hours=urgency),
+                )
+                generate_trend_ride_content.delay(str(alert.pk))
+                detected += 1
+
+        # Check upcoming Kenyan events
+        for event in upcoming_events:
+            if TrendAlert.objects.filter(user=user, kenyan_event=event).exists():
+                continue
+
+            days_until = (event.date - now.date()).days
+            alert = TrendAlert.objects.create(
+                user=user,
+                trend_topic=event.name,
+                trend_source="kenyan_event",
+                trend_context=(
+                    f"Upcoming event: {event.name} ({event.get_event_type_display()}) on {event.date}. "
+                    f"Meme angles: {', '.join(event.meme_angles or [])}."
+                ),
+                trend_score=80 if event.meme_potential == "viral" else 60,
+                urgency_hours=max(6, days_until * 12),
+                kenyan_event=event,
+                expires_at=now + timezone.timedelta(days=days_until + 1),
+            )
+            generate_trend_ride_content.delay(str(alert.pk))
+            detected += 1
+
+    logger.info("Trend scan: created %d alerts", detected)
+    return {"detected": detected}
+
+
+@shared_task(name="memes.generate_trend_ride_content")
+def generate_trend_ride_content(alert_id: str):
+    """Generate brand-safe trend-riding content for a TrendAlert."""
+    from django.utils import timezone
+    from apps.memes.models import TrendAlert
+    from apps.content.models import ContentSeed
+    from apps.agents.models import AgentAction
+
+    try:
+        alert = TrendAlert.objects.select_related(
+            "user", "user__profile", "trending_meme", "kenyan_event",
+        ).get(pk=alert_id)
+    except TrendAlert.DoesNotExist:
+        return {"error": "not_found"}
+
+    # Skip if expired
+    if alert.is_expired:
+        alert.status = TrendAlert.Status.EXPIRED
+        alert.save(update_fields=["status"])
+        return {"status": "expired"}
+
+    user = alert.user
+    profile = getattr(user, "profile", None)
+
+    try:
+        alert.status = TrendAlert.Status.GENERATING
+        alert.save(update_fields=["status"])
+
+        from apps.agents.llm_router import call_llm
+        import json
+
+        brand_context = ""
+        if profile:
+            brand_context = (
+                f"Brand: Industry={profile.industry or 'general'}, "
+                f"Voice={profile.brand_voice or 'professional'}, "
+                f"Audience={profile.target_audience or 'general'}."
+            )
+
+        prompt = (
+            "You are a social media trend expert. Generate a brand-safe angle for this trend.\n\n"
+            f"Trend: {alert.trend_topic}\n"
+            f"Context: {alert.trend_context}\n"
+            f"Urgency: {alert.urgency_hours} hours before trend dies\n"
+            f"{brand_context}\n\n"
+            "Return JSON with:\n"
+            "- brand_angle: 2-3 sentences explaining how this brand should ride this trend (specific, actionable)\n"
+            "- post_idea: a complete content seed idea (the actual post concept, not just the angle)\n"
+            "- platforms: which platforms to target (list)\n"
+            "- safety_note: any sensitivities to be aware of (or 'none')\n"
+            "Rules: NEVER be political, religious, or divisive. Keep it fun, relevant, and brand-safe.\n"
+            "Return ONLY valid JSON."
+        )
+
+        response = call_llm(prompt=prompt, task="trend_ride", user=user, json_mode=True)
+
+        try:
+            result = json.loads(response["text"])
+        except (json.JSONDecodeError, KeyError):
+            result = {
+                "brand_angle": f"Relevant trend: {alert.trend_topic}",
+                "post_idea": f"Join the conversation about {alert.trend_topic} with your brand's unique take.",
+                "platforms": ["instagram", "twitter"],
+                "safety_note": "none",
+            }
+
+        alert.brand_angle = result.get("brand_angle", "")
+        platforms = result.get("platforms", ["instagram", "twitter"])
+
+        # Create ContentSeed
+        seed = ContentSeed.objects.create(
+            user=user,
+            idea=(
+                f"🔥 TREND ALERT: {alert.trend_topic}\n\n"
+                f"{result.get('post_idea', alert.trend_topic)}\n\n"
+                f"Angle: {alert.brand_angle}\n"
+                f"This is time-sensitive — publish within {alert.urgency_hours} hours."
+            ),
+            notes=f"[Trend Ride] Auto-generated. Source: {alert.trend_source}",
+            target_platforms=platforms,
+        )
+        alert.content_seed = seed
+        alert.posts_generated = 1
+        alert.status = TrendAlert.Status.READY
+        alert.save()
+
+        # Trigger content generation
+        from apps.content.tasks import generate_from_seed
+        generate_from_seed.delay(str(seed.pk))
+
+        # Send notification
+        try:
+            from apps.notifications.models import Notification
+            Notification.objects.create(
+                user=user,
+                notification_type="agent_action",
+                title=f"🔥 Trend Alert: {alert.trend_topic[:50]}",
+                message=(
+                    f"A trending topic matches your brand! "
+                    f"{alert.brand_angle[:150]}. "
+                    f"Content ready for approval — act within {alert.urgency_hours}h."
+                ),
+            )
+        except Exception:
+            pass
+
+        AgentAction.objects.create(
+            user=user,
+            agent_type="research",
+            action_type="trend_ride",
+            input_data={"topic": alert.trend_topic, "source": alert.trend_source},
+            output_data={"angle": alert.brand_angle[:200], "seed_id": str(seed.pk)},
+            tokens_used=response.get("tokens_used", 0),
+            model_used=response.get("model", ""),
+        )
+
+        logger.info("Trend ride content generated for %s: %s", user.email, alert.trend_topic)
+        return {"status": "ready", "topic": alert.trend_topic, "seed_id": str(seed.pk)}
+
+    except Exception as e:
+        logger.exception("Trend ride generation failed for %s: %s", alert_id, e)
+        alert.status = TrendAlert.Status.FAILED
+        alert.error_message = str(e)[:1000]
+        alert.save(update_fields=["status", "error_message"])
+        return {"error": str(e)}

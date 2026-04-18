@@ -381,3 +381,100 @@ class PostVersion(models.Model):
 
     def __str__(self):
         return f"v{self.version_number} of {self.post_id}"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# VOICE TO CAMPAIGN — Record a voice memo, AI builds an entire campaign
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class VoiceBrief(models.Model):
+    """
+    Voice memo → AI transcription → intent extraction → full campaign.
+
+    A seller records a 30-second voice note ("I just restocked Samsung A54,
+    push it hard this week on IG and email my list") and Kova auto-generates:
+    Campaign + multi-platform ContentSeeds + optional EmailCampaign.
+    """
+
+    class Status(models.TextChoices):
+        UPLOADED = "uploaded", "Uploaded"
+        TRANSCRIBING = "transcribing", "Transcribing Audio"
+        EXTRACTING = "extracting", "Extracting Intent"
+        GENERATING = "generating", "Generating Campaign"
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="voice_briefs",
+    )
+    audio_file = models.FileField(
+        upload_to="voice_briefs/%Y/%m/",
+        help_text="Audio file (mp3, m4a, ogg, wav, webm) — max 5 minutes",
+    )
+    duration_seconds = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Duration extracted from audio metadata",
+    )
+    status = models.CharField(
+        max_length=15, choices=Status.choices, default=Status.UPLOADED, db_index=True,
+    )
+
+    # ── AI transcription ──
+    transcript = models.TextField(
+        blank=True,
+        help_text="Whisper-generated transcript of the voice memo",
+    )
+    language_detected = models.CharField(
+        max_length=10, blank=True,
+        help_text="Detected language code (en, sw, sheng, etc.)",
+    )
+
+    # ── AI intent extraction ──
+    ai_extraction = models.JSONField(
+        default=dict, blank=True,
+        help_text=(
+            "Structured extraction from transcript:\n"
+            '{"products": ["Samsung A54"], "platforms": ["instagram", "facebook"],\n'
+            ' "urgency": "this_week", "audience": "students",\n'
+            ' "cta_type": "whatsapp", "tone": "excited",\n'
+            ' "key_message": "Back in stock at KES 45,000",\n'
+            ' "include_email": true, "budget_hint": null}'
+        ),
+    )
+
+    # ── Generated outputs ──
+    campaign = models.ForeignKey(
+        "campaigns.Campaign", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="voice_briefs",
+        help_text="The campaign auto-generated from this voice brief",
+    )
+    seeds_created = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of content seeds generated",
+    )
+    email_campaign = models.ForeignKey(
+        "emails.EmailCampaign", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="voice_briefs",
+        help_text="Optional email campaign generated if user mentioned email/subscribers",
+    )
+
+    # ── Metadata ──
+    error_message = models.TextField(blank=True)
+    processing_time_ms = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Total wall-clock processing time in milliseconds",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "status"]),
+            models.Index(fields=["user", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"VoiceBrief {self.pk} ({self.get_status_display()})"

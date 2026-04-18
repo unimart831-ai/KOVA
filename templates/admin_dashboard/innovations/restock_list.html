@@ -1,0 +1,85 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}Restock Scans{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Receipt photos converted to stock updates</p>
+{% endblock %}
+
+{% block content %}
+
+{# ── Filters ──────────────────────────────────────────────────────────── #}
+<div class="flex items-center gap-2 mb-4">
+  <a href="{% url 'admin_dashboard:restock_scan_list' %}"
+     class="px-2.5 py-1 text-xs rounded-lg {% if not status_filter %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300{% endif %}">
+    All
+  </a>
+  {% for val, label in status_choices %}
+  <a href="?status={{ val }}"
+     class="px-2.5 py-1 text-xs rounded-lg {% if status_filter == val %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300{% endif %}">
+    {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+{# ── Table ────────────────────────────────────────────────────────────── #}
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <table class="w-full text-xs">
+    <thead class="bg-gray-50 dark:bg-gray-800/50">
+      <tr>
+        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400">User</th>
+        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400">Supplier</th>
+        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400">Total</th>
+        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400">Items</th>
+        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400">Matched</th>
+        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400">Updated</th>
+        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400">Status</th>
+        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400">Created</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for scan in page %}
+      <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30 cursor-pointer"
+          onclick="window.location='{% url 'admin_dashboard:restock_scan_detail' scan.pk %}'">
+        <td class="px-4 py-2.5 text-gray-900 dark:text-white font-medium">{{ scan.user.email|truncatechars:25 }}</td>
+        <td class="px-4 py-2.5 text-gray-500 dark:text-gray-400">{{ scan.supplier_name|default:"-" }}</td>
+        <td class="px-4 py-2.5 text-gray-500 dark:text-gray-400">
+          {% if scan.receipt_total %}{{ scan.receipt_currency|default:"" }} {{ scan.receipt_total }}{% else %}-{% endif %}
+        </td>
+        <td class="px-4 py-2.5 text-gray-500 dark:text-gray-400">{{ scan.extracted_items|length|default:0 }}</td>
+        <td class="px-4 py-2.5 text-gray-500 dark:text-gray-400">{{ scan.products_matched }}</td>
+        <td class="px-4 py-2.5 text-gray-500 dark:text-gray-400">{{ scan.products_updated }}</td>
+        <td class="px-4 py-2.5">
+          <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+            {% if scan.status == 'completed' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+            {% elif scan.status == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
+            {% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300{% endif %}">
+            {{ scan.get_status_display }}
+          </span>
+        </td>
+        <td class="px-4 py-2.5 text-gray-400">{{ scan.created_at|timesince }} ago</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="8" class="px-4 py-8 text-center text-gray-400">No restock scans found</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# ── Pagination ───────────────────────────────────────────────────────── #}
+{% if page.has_other_pages %}
+<div class="flex justify-center gap-1 mt-4">
+  {% if page.has_previous %}
+  <a href="?page={{ page.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}"
+     class="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">&laquo; Prev</a>
+  {% endif %}
+  <span class="px-3 py-1.5 text-xs text-gray-400">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+  {% if page.has_next %}
+  <a href="?page={{ page.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}"
+     class="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">Next &raquo;</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

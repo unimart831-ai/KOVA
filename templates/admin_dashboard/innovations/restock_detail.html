@@ -1,0 +1,104 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}Restock Scan Detail{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ scan.user.email }} · {{ scan.supplier_name|default:"Unknown Supplier" }}</p>
+{% endblock %}
+
+{% block content %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+  {# ── Left: Receipt Image + Status ──────────────────────────────────── #}
+  <div class="space-y-4">
+    {% if scan.image %}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+      <img src="{{ scan.image.url }}" alt="Receipt" class="w-full">
+    </div>
+    {% endif %}
+
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-4">
+      <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Receipt Info</h3>
+      <div class="space-y-2 text-xs">
+        <div class="flex justify-between">
+          <span class="text-gray-400">Status</span>
+          <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+            {% if scan.status == 'completed' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+            {% elif scan.status == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
+            {% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300{% endif %}">
+            {{ scan.get_status_display }}
+          </span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-400">Supplier</span>
+          <span class="text-gray-900 dark:text-white">{{ scan.supplier_name|default:"-" }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-400">Receipt Date</span>
+          <span class="text-gray-900 dark:text-white">{{ scan.receipt_date|default:"-" }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-400">Total</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{ scan.receipt_currency|default:"" }} {{ scan.receipt_total|default:"-" }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-400">Products Matched</span>
+          <span class="text-gray-900 dark:text-white">{{ scan.products_matched }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-400">Products Updated</span>
+          <span class="text-emerald-600 font-medium">{{ scan.products_updated }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Middle: Extracted Items ───────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-4">
+    <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Extracted Items</h3>
+    {% if scan.extracted_items %}
+    <div class="space-y-2">
+      {% for item in scan.extracted_items %}
+      <div class="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-xs">
+        <div class="flex justify-between">
+          <span class="font-medium text-gray-900 dark:text-white">{{ item.name|default:"Unknown" }}</span>
+          <span class="text-gray-500">x{{ item.quantity|default:1 }}</span>
+        </div>
+        {% if item.unit_price %}
+        <p class="text-[10px] text-gray-400 mt-0.5">Unit: {{ item.unit_price }} · Total: {{ item.total_price|default:"-" }}</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-xs text-gray-400">No items extracted yet</p>
+    {% endif %}
+  </div>
+
+  {# ── Right: Unmatched Items ────────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-4">
+    <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Unmatched Items</h3>
+    {% if scan.items_not_matched %}
+    <div class="space-y-2">
+      {% for item in scan.items_not_matched %}
+      <div class="p-2 bg-red-50 dark:bg-red-900/10 rounded-lg text-xs">
+        <p class="font-medium text-red-700 dark:text-red-400">{{ item.name|default:"Unknown" }}</p>
+        <p class="text-[10px] text-red-500 dark:text-red-500 mt-0.5">{{ item.reason|default:"No matching product found" }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-xs text-emerald-600">All items matched!</p>
+    {% endif %}
+  </div>
+
+</div>
+
+<div class="mt-4">
+  <a href="{% url 'admin_dashboard:restock_scan_list' %}"
+     class="inline-flex items-center text-xs text-kova-600 hover:text-kova-700 font-medium">
+    &larr; Back to Restock Scans
+  </a>
+</div>
+
+{% endblock %}
