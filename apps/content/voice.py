@@ -1,4 +1,4 @@
-"""Voice memo transcription via OpenAI Whisper API."""
+"""Voice memo transcription via Whisper API (Groq or OpenAI)."""
 
 import logging
 import tempfile
@@ -37,9 +37,25 @@ MIME_TO_EXT = {
 }
 
 
+def _get_whisper_provider():
+    """Return (api_key, base_url, model) for the best available Whisper provider.
+
+    Priority: GROQ_API_KEY (free, fastest) → OPENAI_API_KEY (paid).
+    """
+    groq_key = getattr(settings, "GROQ_API_KEY", "")
+    if groq_key:
+        return groq_key, "https://api.groq.com/openai/v1", "whisper-large-v3-turbo"
+
+    openai_key = getattr(settings, "OPENAI_API_KEY", "")
+    if openai_key:
+        return openai_key, None, "whisper-1"  # None = default OpenAI base URL
+
+    return None, None, None
+
+
 def transcribe_audio(audio_file, content_type="audio/webm") -> dict:
     """
-    Send an audio file to OpenAI Whisper and return the transcription.
+    Send an audio file to Whisper (Groq or OpenAI) and return the transcription.
 
     Args:
         audio_file: A file-like object (e.g., request.FILES['audio'])
@@ -49,10 +65,13 @@ def transcribe_audio(audio_file, content_type="audio/webm") -> dict:
         dict: {"text": "transcribed text", "duration": seconds}
               or {"error": "error message"}
     """
-    api_key = settings.OPENAI_API_KEY
+    api_key, base_url, model = _get_whisper_provider()
     if not api_key:
-        logger.error("OPENAI_API_KEY not set — cannot transcribe voice memo")
-        return {"error": "Voice transcription is not configured. Please set OPENAI_API_KEY."}
+        logger.error("No Whisper API key set — need GROQ_API_KEY or OPENAI_API_KEY")
+        return {
+            "error": "Voice transcription is not configured. "
+            "Set GROQ_API_KEY (free) or OPENAI_API_KEY."
+        }
 
     # Validate content type
     if content_type not in ALLOWED_AUDIO_TYPES:
@@ -70,11 +89,15 @@ def transcribe_audio(audio_file, content_type="audio/webm") -> dict:
         return {"error": "Audio too short. Please record at least a second."}
 
     ext = MIME_TO_EXT.get(content_type, ".webm")
+    provider_name = "Groq" if base_url else "OpenAI"
 
     try:
         from openai import OpenAI
 
-        client = OpenAI(api_key=api_key)
+        client_kwargs = {"api_key": api_key}
+        if base_url:
+            client_kwargs["base_url"] = base_url
+        client = OpenAI(**client_kwargs)
 
         # Write to temp file (Whisper needs a named file with extension)
         with tempfile.NamedTemporaryFile(suffix=ext, delete=True) as tmp:
@@ -84,7 +107,7 @@ def transcribe_audio(audio_file, content_type="audio/webm") -> dict:
             tmp.seek(0)
 
             response = client.audio.transcriptions.create(
-                model="whisper-1",
+                model=model,
                 file=tmp,
                 response_format="verbose_json",
             )
@@ -96,7 +119,8 @@ def transcribe_audio(audio_file, content_type="audio/webm") -> dict:
             return {"error": "Could not detect any speech. Try speaking louder or closer to the mic."}
 
         logger.info(
-            "Voice memo transcribed: %d chars, %.1fs duration",
+            "Voice memo transcribed via %s: %d chars, %.1fs duration",
+            provider_name,
             len(text),
             duration,
         )
@@ -104,5 +128,5 @@ def transcribe_audio(audio_file, content_type="audio/webm") -> dict:
         return {"text": text, "duration": round(duration, 1)}
 
     except Exception as e:
-        logger.exception("Whisper transcription failed: %s", e)
+        logger.exception("Whisper transcription failed (%s): %s", provider_name, e)
         return {"error": f"Transcription failed: {str(e)}"}

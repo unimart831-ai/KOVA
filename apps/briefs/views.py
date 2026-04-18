@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.utils import timezone
@@ -128,6 +129,133 @@ def _build_value_summary(user):
     }
 
 
+def _build_brief_streak(user):
+    """Calculate consecutive days the user has read their brief."""
+    from datetime import timedelta
+    briefs = (
+        DailyBrief.objects.filter(user=user, is_read=True)
+        .order_by("-date")
+        .values_list("date", flat=True)[:60]
+    )
+    if not briefs:
+        return 0
+
+    streak = 0
+    expected = timezone.now().date()
+    for d in briefs:
+        if d == expected:
+            streak += 1
+            expected -= timedelta(days=1)
+        elif d < expected:
+            break
+    return streak
+
+
+def _build_quick_actions(user, brief):
+    """Build a list of 1-3 most important morning actions from the brief."""
+    actions = []
+
+    # Posts awaiting approval
+    if brief and brief.posts_pending > 0:
+        actions.append({
+            "label": f"Approve {brief.posts_pending} post{'s' if brief.posts_pending != 1 else ''}",
+            "url_name": "content:studio",
+            "icon": "edit",
+            "priority": 1,
+        })
+
+    # Unanswered comments/messages
+    try:
+        from apps.engage.models import Interaction
+        unanswered = Interaction.objects.filter(
+            user=user, status__in=["new", "flagged"],
+        ).count()
+        if unanswered > 0:
+            actions.append({
+                "label": f"Reply to {unanswered} comment{'s' if unanswered != 1 else ''}",
+                "url_name": "engage:inbox",
+                "icon": "chat",
+                "priority": 2,
+            })
+    except Exception:
+        pass
+
+    # New leads
+    try:
+        from apps.leads.models import Lead
+        new_leads = Lead.objects.filter(user=user, status="new").count()
+        if new_leads > 0:
+            actions.append({
+                "label": f"Review {new_leads} new lead{'s' if new_leads != 1 else ''}",
+                "url_name": "leads:list",
+                "icon": "user",
+                "priority": 3,
+            })
+    except Exception:
+        pass
+
+    # Failed posts
+    failed = user.posts.filter(status="failed").count()
+    if failed > 0:
+        actions.append({
+            "label": f"Fix {failed} failed post{'s' if failed != 1 else ''}",
+            "url_name": "content:queue",
+            "icon": "alert",
+            "priority": 1,
+        })
+
+    return sorted(actions, key=lambda a: a["priority"])[:3]
+
+
+def _build_momentum_data(user):
+    """Build 14-day posting consistency + trend data for sparkline."""
+    from datetime import timedelta
+    from django.db.models.functions import TruncDate
+    from apps.content.models import Post
+
+    today = timezone.now().date()
+    fourteen_ago = today - timedelta(days=13)
+
+    # Posts published per day over 14 days
+    daily_posts = dict(
+        Post.objects.filter(
+            user=user,
+            status="published",
+            published_at__date__gte=fourteen_ago,
+        )
+        .annotate(day=TruncDate("published_at"))
+        .values("day")
+        .annotate(count=Count("id"))
+        .values_list("day", "count")
+    )
+
+    days = []
+    for i in range(14):
+        d = fourteen_ago + timedelta(days=i)
+        days.append({"date": d.strftime("%b %d"), "count": daily_posts.get(d, 0)})
+
+    # Calculate consistency
+    days_with_posts = sum(1 for d in days if d["count"] > 0)
+    consistency_pct = int((days_with_posts / 14) * 100)
+
+    # Weekly comparison
+    this_week = sum(d["count"] for d in days[7:])
+    last_week = sum(d["count"] for d in days[:7])
+    if last_week > 0:
+        trend_pct = int(((this_week - last_week) / last_week) * 100)
+    else:
+        trend_pct = 100 if this_week > 0 else 0
+
+    return {
+        "days": days,
+        "consistency_pct": consistency_pct,
+        "days_with_posts": days_with_posts,
+        "this_week_total": this_week,
+        "trend_pct": trend_pct,
+        "trend_direction": "up" if trend_pct > 0 else ("down" if trend_pct < 0 else "flat"),
+    }
+
+
 @login_required
 def brief_home(request):
     """Show today's daily brief, or the most recent one."""
@@ -173,6 +301,9 @@ def brief_home(request):
         "has_connected_platform": has_connected_platform,
         "setup_checklist": _build_setup_checklist(request.user),
         "value_summary": _build_value_summary(request.user),
+        "brief_streak": _build_brief_streak(request.user),
+        "quick_actions": _build_quick_actions(request.user, brief) if brief else [],
+        "momentum": _build_momentum_data(request.user),
         "page_title": "Daily Brief",
     })
 

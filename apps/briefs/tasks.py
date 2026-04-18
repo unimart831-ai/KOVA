@@ -31,6 +31,145 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
+# ─── Kova Score Calculation ──────────────────────────────────────────────────
+
+def calculate_kova_score(user, brief_data):
+    """Calculate a 0-100 social media health score.
+
+    Components (each weighted):
+    - Pipeline health (30): Do you have content scheduled / are you posting?
+    - Engagement health (25): Are people interacting with your content?
+    - Consistency (25): Have you posted regularly over the last 7 days?
+    - Agent activity (20): Are your AI agents active and working?
+    """
+    score = 0
+
+    # Pipeline health (0-30)
+    pending = brief_data.get("pending_approval", 0)
+    scheduled = brief_data.get("scheduled_today", 0)
+    failed = brief_data.get("failed_posts", 0)
+    week = brief_data.get("week_stats", {})
+    week_published = week.get("published", 0)
+
+    if scheduled > 0 or pending > 0:
+        score += 15  # Has content in pipeline
+    if week_published > 0:
+        score += min(15, week_published * 3)  # Published recently (max 15)
+    if failed > 0:
+        score -= min(10, failed * 5)  # Penalty for failures
+
+    # Engagement health (0-25)
+    engagement = brief_data.get("engagement", {})
+    interactions = engagement.get("total_interactions", 0)
+    if interactions > 0:
+        score += min(25, 10 + interactions)  # At least 10 for any engagement
+
+    # Consistency (0-25)
+    week_created = week.get("total_created", 0)
+    if week_created >= 7:
+        score += 25  # Daily content
+    elif week_created >= 4:
+        score += 18  # Regular
+    elif week_created >= 2:
+        score += 10  # Some activity
+    elif week_created >= 1:
+        score += 5
+
+    # Agent activity (0-20)
+    agent_actions = brief_data.get("agent_activity", [])
+    active_agents = len({a.get("agent_type") or a.get("type", "") for a in agent_actions})
+    completed_actions = sum(1 for a in agent_actions if a.get("status") == "completed")
+    if active_agents >= 3:
+        score += 12
+    elif active_agents >= 1:
+        score += 6
+    score += min(8, completed_actions)  # Bonus for completed work
+
+    return max(0, min(100, score))
+
+
+def _get_kova_score_delta(user, new_score):
+    """Get the change from the previous brief's score."""
+    from apps.briefs.models import DailyBrief
+    prev_brief = (
+        DailyBrief.objects.filter(user=user)
+        .order_by("-date")
+        .values_list("kova_score", flat=True)
+        .first()
+    )
+    if prev_brief is not None and prev_brief > 0:
+        return new_score - prev_brief
+    return 0
+
+
+# ─── While You Slept — overnight agent work ─────────────────────────────────
+
+def _gather_overnight_work(user):
+    """Summarize what agents did overnight (last 12 hours)."""
+    from apps.agents.models import AgentAction
+    from apps.content.models import Post, ContentSeed
+
+    cutoff = timezone.now() - timedelta(hours=12)
+
+    actions = AgentAction.objects.filter(
+        user=user, created_at__gte=cutoff,
+    )
+
+    posts_created = ContentSeed.objects.filter(
+        user=user, created_at__gte=cutoff,
+    ).count()
+
+    posts_drafted = Post.objects.filter(
+        user=user, created_at__gte=cutoff,
+        status__in=["draft", "pending_approval"],
+    ).count()
+
+    posts_published = Post.objects.filter(
+        user=user, published_at__gte=cutoff,
+        status="published",
+    ).count()
+
+    # Count by agent type
+    agent_counts = dict(
+        actions.values_list("agent_type")
+        .annotate(cnt=Count("id"))
+        .values_list("agent_type", "cnt")
+    )
+
+    # Trends discovered (research agent)
+    trends_found = actions.filter(
+        agent_type="research",
+        action_type="discover_trends",
+        status="completed",
+    ).count()
+
+    # Competitor analyses
+    competitors_analyzed = actions.filter(
+        agent_type__in=["research", "analyst"],
+        action_type__icontains="competitor",
+        status="completed",
+    ).count()
+
+    # Engagement handled
+    engagements_handled = actions.filter(
+        agent_type="engage",
+        status="completed",
+    ).count()
+
+    total_actions = actions.filter(status="completed").count()
+
+    return {
+        "posts_created": posts_created,
+        "posts_drafted": posts_drafted,
+        "posts_published": posts_published,
+        "trends_found": trends_found,
+        "competitors_analyzed": competitors_analyzed,
+        "engagements_handled": engagements_handled,
+        "total_actions": total_actions,
+        "active_agents": list(agent_counts.keys()),
+    }
+
+
 def _send_brief_email(user, brief):
     """Send the daily brief via email if the user's plan includes email briefs."""
     profile = getattr(user, "profile", None)
@@ -412,6 +551,11 @@ def generate_daily_brief(user, *, user_date=None):
             if ob.get("title")
         ]
 
+        # Calculate Kova Score and overnight work summary
+        kova_score = calculate_kova_score(user, brief_data)
+        score_delta = _get_kova_score_delta(user, kova_score)
+        overnight = _gather_overnight_work(user)
+
         brief = DailyBrief.objects.create(
             user=user,
             date=today,
@@ -435,6 +579,9 @@ def generate_daily_brief(user, *, user_date=None):
                 for a in brief_data.get("agent_activity", [])
             ],
             posts_pending=brief_data["pending_approval"],
+            kova_score=kova_score,
+            kova_score_delta=score_delta,
+            overnight_work=overnight,
         )
 
         # Create notification

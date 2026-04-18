@@ -16,6 +16,17 @@ class DailyBrief(models.Model):
     agent_activity = models.JSONField(default=list, blank=True, help_text="What agents did/plan to do.")
     posts_pending = models.PositiveIntegerField(default=0)
     is_read = models.BooleanField(default=False)
+
+    # Kova Score — 0-100 social media health score
+    kova_score = models.PositiveSmallIntegerField(default=0, help_text="Social health score 0-100")
+    kova_score_delta = models.SmallIntegerField(default=0, help_text="Change from previous brief")
+
+    # While You Slept — agent work summary
+    overnight_work = models.JSONField(
+        default=dict, blank=True,
+        help_text="What agents did overnight: {posts_created, trends_found, competitors_analyzed, engagements_handled}",
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -392,6 +392,7 @@ REST_FRAMEWORK = {
 # ─── AI / LLM CONFIG ────────────────────────────────────────────────────────
 OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
+GROQ_API_KEY = env("GROQ_API_KEY", default="")
 OPENROUTER_API_KEY = env("OPENROUTER_API_KEY", default="")
 DEFAULT_LLM_PROVIDER = env("DEFAULT_LLM_PROVIDER", default="openai")  # openai | anthropic | openrouter
 DEFAULT_LLM_MODEL = env("DEFAULT_LLM_MODEL", default="gpt-4o-mini")
