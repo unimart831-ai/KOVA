@@ -104,6 +104,14 @@ NON_LLM_PRICING = {
         "provider": "On-device (Pillow)",
         "types": ["Quote Cards", "Tip Graphics", "Stat Highlights", "CTA Banners"],
     },
+    "vision_gpt4o_mini": {
+        "label": "GPT-4o Mini Vision (Snap to Sell)",
+        "cost_per_call": 0.0003,
+        "avg_input_tokens": 1500,
+        "avg_output_tokens": 400,
+        "provider": "OpenAI",
+        "note": "Product/service photo analysis — ~800 input tokens for image + prompt, 400 output",
+    },
 }
 
 # Per-plan image cost (USD per image) — matches tier-routed models
@@ -476,6 +484,30 @@ def cost_overview(request):
         plan = pic["user__profile__plan"] or "starter"
         image_cost_30d += pic["count"] * PLAN_IMAGE_COST.get(plan, 0)
 
+    # ── 8. AI Vision stats (Snap to Sell) ────────────────────────────
+    vision_actions_30d = actions_30d.filter(action_type__startswith="snap.")
+    vision_stats = vision_actions_30d.aggregate(
+        calls=Count("id"),
+        total_input=Sum("input_tokens"),
+        total_output=Sum("output_tokens"),
+        total_tokens=Sum("tokens_used"),
+    )
+    vision_calls_30d = vision_stats["calls"] or 0
+    vision_tokens_30d = vision_stats["total_tokens"] or 0
+    # Vision cost: calculated from actual token usage
+    vision_cost_30d = 0.0
+    vision_model_usage = (
+        vision_actions_30d.exclude(model_used="")
+        .values("model_used")
+        .annotate(inp=Sum("input_tokens"), out=Sum("output_tokens"))
+    )
+    for row in vision_model_usage:
+        c, _ = _get_model_cost(row["model_used"], row["inp"] or 0, row["out"] or 0)
+        vision_cost_30d += c
+    # Vision breakdown: single vs batch
+    vision_single = vision_actions_30d.filter(action_type="snap.vision").count()
+    vision_batch = vision_actions_30d.filter(action_type="snap.vision_batch").count()
+
     context = {
         "page_title": "Cost Economics",
         # Summary cards
@@ -503,6 +535,12 @@ def cost_overview(request):
         "images_pending_30d": images_pending,
         "image_cost_30d": round(image_cost_30d, 4),
         "plan_image_cost": PLAN_IMAGE_COST,
+        # Vision AI stats (Snap to Sell)
+        "vision_calls_30d": vision_calls_30d,
+        "vision_tokens_30d": vision_tokens_30d,
+        "vision_cost_30d": round(vision_cost_30d, 4),
+        "vision_single": vision_single,
+        "vision_batch": vision_batch,
         # Charts
         "daily_cost_chart_json": daily_cost_chart,
         # Tables

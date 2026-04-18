@@ -459,6 +459,7 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = ""):
     and hits "Launch".
     """
     from apps.agents.llm import analyze_image, generate, parse_llm_json
+    from apps.agents.models import AgentAction
     from apps.content.models import ContentSeed
     from apps.content.tasks import generate_from_seed
     from apps.platforms.models import SocialAccount
@@ -533,6 +534,23 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = ""):
             max_tokens=800,
         )
         analysis = parse_llm_json(vision_resp.content)
+
+        # Log the vision call as an AgentAction so costs are tracked
+        AgentAction.objects.create(
+            user=user,
+            agent_type="create",
+            action_type="snap.vision",
+            description=f"Snap to Sell vision analysis: {product.name} ({offering_type})",
+            status=AgentAction.ActionStatus.COMPLETED,
+            model_used=vision_resp.model or "gpt-4o-mini",
+            input_tokens=vision_resp.input_tokens,
+            output_tokens=vision_resp.output_tokens,
+            tokens_used=vision_resp.total_tokens,
+            duration_ms=vision_resp.duration_ms,
+            input_data={"product_id": str(product.pk), "offering_type": offering_type, "num_images": num_images},
+            output_data={"analysis_keys": list(analysis.keys())},
+            completed_at=timezone.now(),
+        )
     except Exception as exc:
         logger.error("Snap to Sell vision failed for %s: %s", product_id, exc)
         analysis = {
@@ -637,6 +655,7 @@ def snap_batch_process(product_ids: list, contexts: list = None):
       4. Creates a ContentSeed and fires the content pipeline
     """
     from apps.agents.llm import analyze_image, parse_llm_json
+    from apps.agents.models import AgentAction
     from apps.content.models import ContentSeed
     from apps.content.tasks import generate_from_seed
     from apps.platforms.models import SocialAccount
@@ -723,6 +742,23 @@ def snap_batch_process(product_ids: list, contexts: list = None):
                 max_tokens=600,
             )
             analysis = parse_llm_json(vision_resp.content)
+
+            # Log the vision call for cost tracking
+            AgentAction.objects.create(
+                user=user,
+                agent_type="create",
+                action_type="snap.vision_batch",
+                description=f"Batch Snap vision: {product.name} ({offering_type})",
+                status=AgentAction.ActionStatus.COMPLETED,
+                model_used=vision_resp.model or "gpt-4o-mini",
+                input_tokens=vision_resp.input_tokens,
+                output_tokens=vision_resp.output_tokens,
+                tokens_used=vision_resp.total_tokens,
+                duration_ms=vision_resp.duration_ms,
+                input_data={"product_id": str(product.pk), "offering_type": offering_type, "batch": True},
+                output_data={"analysis_keys": list(analysis.keys())},
+                completed_at=timezone.now(),
+            )
         except Exception as exc:
             logger.error("Batch Snap vision failed for %s: %s", product_id, exc)
             fallback_desc = {

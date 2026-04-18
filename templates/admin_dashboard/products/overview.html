@@ -59,6 +59,94 @@
   </a>
 </div>
 
+{# ── Snap to Sell & Offering Types ────────────────────────────────────── #}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+  {# ── Snap to Sell Intelligence ─────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 shadow-sm p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">📸 Snap to Sell (AI Vision)</h2>
+      <span class="text-xs text-gray-400">gpt-4o-mini vision</span>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+      <div class="text-center">
+        <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ snap_total }}</p>
+        <p class="text-[10px] text-gray-500 dark:text-gray-400">Total Snaps</p>
+      </div>
+      <div class="text-center">
+        <p class="text-2xl font-bold text-kova-600 dark:text-kova-400">{{ snap_7d }}</p>
+        <p class="text-[10px] text-gray-500 dark:text-gray-400">This Week</p>
+      </div>
+      <div class="text-center">
+        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ snap_single }}</p>
+        <p class="text-[10px] text-gray-500 dark:text-gray-400">Single Snaps</p>
+      </div>
+      <div class="text-center">
+        <p class="text-2xl font-bold text-orange-600 dark:text-orange-400">{{ snap_batch }}</p>
+        <p class="text-[10px] text-gray-500 dark:text-gray-400">Batch Snaps</p>
+      </div>
+    </div>
+    <div class="border-t border-gray-100 dark:border-gray-800 pt-3">
+      <div class="flex items-center justify-between text-xs">
+        <span class="text-gray-500 dark:text-gray-400">Multi-image products</span>
+        <span class="font-semibold text-gray-900 dark:text-white">{{ multi_image_products }}</span>
+      </div>
+      <p class="text-[10px] text-gray-400 mt-1">Products with 2-6 photos for carousel content</p>
+    </div>
+  </div>
+
+  {# ── Offering Type Breakdown ───────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Offering Type Distribution</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+      <div class="rounded-lg border border-blue-200 dark:border-blue-900/50 p-3 text-center">
+        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ products_count }}</p>
+        <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">📦 Products</p>
+      </div>
+      <div class="rounded-lg border border-emerald-200 dark:border-emerald-900/50 p-3 text-center">
+        <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ services_count }}</p>
+        <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">🔧 Services</p>
+      </div>
+      <div class="rounded-lg border border-violet-200 dark:border-violet-900/50 p-3 text-center">
+        <p class="text-2xl font-bold text-violet-600 dark:text-violet-400">{{ digital_count }}</p>
+        <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">💎 Digital</p>
+      </div>
+    </div>
+    {% if total_products > 0 %}
+    <div class="space-y-2">
+      <div>
+        <div class="flex items-center justify-between text-xs mb-1">
+          <span class="text-gray-500">Products</span>
+          <span class="font-medium text-gray-900 dark:text-white">{% widthratio products_count total_products 100 %}%</span>
+        </div>
+        <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5">
+          <div class="bg-blue-500 h-1.5 rounded-full" style="width: {% widthratio products_count total_products 100 %}%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex items-center justify-between text-xs mb-1">
+          <span class="text-gray-500">Services</span>
+          <span class="font-medium text-gray-900 dark:text-white">{% widthratio services_count total_products 100 %}%</span>
+        </div>
+        <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5">
+          <div class="bg-emerald-500 h-1.5 rounded-full" style="width: {% widthratio services_count total_products 100 %}%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex items-center justify-between text-xs mb-1">
+          <span class="text-gray-500">Digital</span>
+          <span class="font-medium text-gray-900 dark:text-white">{% widthratio digital_count total_products 100 %}%</span>
+        </div>
+        <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5">
+          <div class="bg-violet-500 h-1.5 rounded-full" style="width: {% widthratio digital_count total_products 100 %}%"></div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
   {# ── Top Users by Product Count ────────────────────────────────────── #}
@@ -150,7 +238,12 @@
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
           <td class="px-4 py-2.5">
             <p class="text-xs font-medium text-gray-900 dark:text-white">{{ p.name }}</p>
-            {% if p.is_featured %}<span class="text-[10px] text-amber-600 dark:text-amber-400">Featured</span>{% endif %}
+            <div class="flex items-center gap-1 mt-0.5">
+              {% if p.offering_type == 'service' %}<span class="text-[10px] px-1 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">Service</span>
+              {% elif p.offering_type == 'digital' %}<span class="text-[10px] px-1 py-0.5 rounded bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">Digital</span>
+              {% endif %}
+              {% if p.is_featured %}<span class="text-[10px] text-amber-600 dark:text-amber-400">★ Featured</span>{% endif %}
+            </div>
           </td>
           <td class="px-4 py-2.5">
             <a href="{% url 'admin_dashboard:user_detail' p.user.pk %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">{{ p.user.email }}</a>

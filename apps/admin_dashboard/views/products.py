@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
 from apps.admin_dashboard.decorators import staff_required
+from apps.agents.models import AgentAction
 from apps.products.models import Product, ProductCategory, StockAlert, StockUpdate
 
 
@@ -88,6 +89,29 @@ def products_overview(request):
         created_at__gte=week_ago,
     ).count()
 
+    # ── Offering Type Breakdown ──────────────────────────────────────
+    offering_breakdown = dict(
+        Product.objects.filter(is_active=True)
+        .values_list("offering_type")
+        .annotate(c=Count("id"))
+        .values_list("offering_type", "c")
+    )
+    products_count = offering_breakdown.get("product", 0)
+    services_count = offering_breakdown.get("service", 0)
+    digital_count = offering_breakdown.get("digital", 0)
+
+    # ── Snap to Sell Stats ───────────────────────────────────────────
+    snap_actions = AgentAction.objects.filter(action_type__startswith="snap.")
+    snap_total = snap_actions.count()
+    snap_7d = snap_actions.filter(created_at__gte=week_ago).count()
+    snap_single = AgentAction.objects.filter(action_type="snap.vision").count()
+    snap_batch = AgentAction.objects.filter(action_type="snap.vision_batch").count()
+
+    # Multi-image products (have additional_images)
+    multi_image_products = Product.objects.filter(
+        is_active=True,
+    ).exclude(additional_images=[]).count()
+
     return render(request, "admin_dashboard/products/overview.html", {
         "page_title": "Product Intelligence",
         "total_products": total_products,
@@ -106,6 +130,16 @@ def products_overview(request):
         "recent_products": recent_products,
         "auto_promo_seeds": auto_promo_seeds,
         "auto_promo_7d": auto_promo_7d,
+        # Offering type breakdown
+        "products_count": products_count,
+        "services_count": services_count,
+        "digital_count": digital_count,
+        # Snap to Sell stats
+        "snap_total": snap_total,
+        "snap_7d": snap_7d,
+        "snap_single": snap_single,
+        "snap_batch": snap_batch,
+        "multi_image_products": multi_image_products,
     })
 
 

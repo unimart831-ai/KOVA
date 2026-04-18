@@ -61,6 +61,8 @@ TASK_KEYS = [
     ("adapt.schedule", "Adapt → Smart scheduling"),
     ("strategist.brief", "Strategist → Daily brief"),
     ("strategist.decide", "Strategist → Strategic decisions"),
+    ("snap.vision", "Snap → Vision AI analysis"),
+    ("snap.vision_batch", "Snap → Batch vision analysis"),
 ]
 
 # ── Plan tiers for per-plan config UI ────────────────────────────────────
@@ -126,7 +128,7 @@ POPULAR_MODELS = {
         ("deepseek/deepseek-r1", "DeepSeek R1 — $0.55/$2.19 per 1M"),
     ],
     "OpenAI": [
-        ("gpt-4o-mini", "GPT-4o Mini — $0.15/$0.60 per 1M"),
+        ("gpt-4o-mini", "GPT-4o Mini — $0.15/$0.60 per 1M (+ Vision)"),
         ("gpt-4o", "GPT-4o — $2.50/$10 per 1M"),
     ],
     "Anthropic": [
