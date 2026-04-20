@@ -175,7 +175,7 @@ def async_generate_image(post_id: str, image_prompt: str, visual_strategy_data: 
     return {"post_id": str(post_id), "status": post.media_status}
 
 
-@shared_task(name="content.generate_from_seed", soft_time_limit=120, time_limit=150)
+@shared_task(name="content.generate_from_seed", soft_time_limit=300, time_limit=360)
 def generate_from_seed(seed_id: str):
     """
     Run the Create Agent on a ContentSeed.
