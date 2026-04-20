@@ -131,18 +131,24 @@ def sync_subscription(user, subscription_id=None):
 
 
 def handle_webhook_event(event):
-    """Process a verified Stripe webhook event. Returns True if processed."""
+    """Process a verified Stripe webhook event. Returns True if processed.
 
-    # Idempotency: skip if already processed
-    if BillingEvent.objects.filter(stripe_event_id=event.id).exists():
+    Idempotency: uses an atomic get_or_create against stripe_event_id
+    (unique=True) to race-protect against simultaneous webhook retries.
+    The old pattern (exists() check then later save()) had a ~handler-runtime
+    window where duplicate emails / side-effects could fire.
+    """
+    billing_event, created = BillingEvent.objects.get_or_create(
+        stripe_event_id=event.id,
+        defaults={
+            "event_type": event.type,
+            "data": event.data.get("object", {}),
+            "provider": "stripe",
+        },
+    )
+    if not created:
         logger.info("Duplicate webhook event %s, skipping", event.id)
         return True
-
-    billing_event = BillingEvent(
-        stripe_event_id=event.id,
-        event_type=event.type,
-        data=event.data.get("object", {}),
-    )
 
     try:
         handler = EVENT_HANDLERS.get(event.type)
