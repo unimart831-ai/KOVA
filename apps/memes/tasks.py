@@ -500,7 +500,7 @@ def _adapt_meme_for_user(meme, user, profile, prefs):
             for name, cat, price, status in products:
                 product_context += f"  - {name} ({cat}) — KES {price} [{status}]\n"
     except Exception:
-        pass
+        logger.exception("memes: product_context enrichment failed for user=%s", user.pk)
 
     # Platform targets
     platforms = prefs.preferred_platforms
@@ -816,7 +816,7 @@ def generate_trend_ride_content(alert_id: str):
                 ),
             )
         except Exception:
-            pass
+            logger.exception("trend-alert notification failed for user=%s alert=%s", user.pk, alert.pk)
 
         AgentAction.objects.create(
             user=user,

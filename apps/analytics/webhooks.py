@@ -214,7 +214,7 @@ def mpesa_commerce_callback(request):
         if profile:
             user = profile.user
     except Exception:
-        pass
+        logger.exception("mpesa-commerce webhook: phone lookup failed for ...%s", phone[-4:])
 
     if not user:
         logger.info("M-Pesa commerce payment %s: no matching user for phone %s", receipt, phone[-4:])

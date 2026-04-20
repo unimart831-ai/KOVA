@@ -16,6 +16,10 @@ Playbooks are loaded during onboarding when user selects their industry.
 They feed into the Create Agent's system prompt via _get_industry_intelligence().
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 PLAYBOOKS = {
     # ──────────────────────────────────────────────────────────────────────
     # Food & Restaurant
@@ -452,7 +456,7 @@ def get_seed_suggestions(user) -> list[dict]:
                 if title:
                     suggestions.append({"text": title, "source": "trend"})
     except Exception:
-        pass
+        logger.exception("playbooks: research-trend suggestions failed for user=%s", user.pk)
 
     # 2. Competitor insights — unacted content gap ideas
     try:
@@ -473,7 +477,7 @@ def get_seed_suggestions(user) -> list[dict]:
         for idea in gap_ideas:
             suggestions.append({"text": idea, "source": "competitor"})
     except Exception:
-        pass
+        logger.exception("playbooks: competitor-gap suggestions failed for user=%s", user.pk)
 
     # 3. AI-generated suggestions from business goals, products & context (cached)
     if len(suggestions) < 6:
