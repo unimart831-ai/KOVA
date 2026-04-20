@@ -1,9 +1,12 @@
+import logging
 import uuid
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
 from apps.platforms.encryption import EncryptedTokenField
+
+logger = logging.getLogger(__name__)
 
 
 class SocialAccount(models.Model):
@@ -118,8 +121,22 @@ class SocialAccount(models.Model):
 
         if consecutive >= 3:
             # 3 strikes — deactivate and notify
+            was_active = self.is_active
             self.is_active = False
             fields.append("is_active")
+            if was_active:
+                logger.error(
+                    "SocialAccount deactivated after 3 strikes: "
+                    "account=%s platform=%s user=%s last_error=%s",
+                    self.id, self.platform, self.user_id,
+                    str(error_message)[:300],
+                )
+        else:
+            logger.warning(
+                "SocialAccount strike %d/3: account=%s platform=%s user=%s status=%s error=%s",
+                consecutive, self.id, self.platform, self.user_id,
+                status_code, str(error_message)[:300],
+            )
 
         self.save(update_fields=fields)
 
