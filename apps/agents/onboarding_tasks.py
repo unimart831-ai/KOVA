@@ -34,8 +34,21 @@ ONBOARDING_STEPS = {
 }
 
 
+# If the intelligence task hasn't finished within this window, assume Celery
+# dropped the job or it wedged. Surface a stuck state so the user can retry
+# instead of polling forever.
+STUCK_AFTER_SECONDS = 5 * 60
+
+
 def get_onboarding_progress(user):
-    """Check which onboarding intelligence steps are complete."""
+    """Check which onboarding intelligence steps are complete.
+
+    Returns a dict with:
+      steps     — list of {key, status} for each step
+      all_done  — True when every step is completed or failed
+      stuck     — True when STUCK_AFTER_SECONDS has elapsed since dispatch
+                  and the chain is still not all_done
+    """
     from apps.agents.models import AgentAction
 
     actions = AgentAction.objects.filter(
@@ -67,7 +80,15 @@ def get_onboarding_progress(user):
         steps.append({"key": key, "status": status})
 
     all_done = all(s["status"] in ("completed", "failed") for s in steps)
-    return {"steps": steps, "all_done": all_done}
+
+    stuck = False
+    started_at = getattr(getattr(user, "profile", None), "onboarding_intelligence_started_at", None)
+    if not all_done and started_at:
+        elapsed = (timezone.now() - started_at).total_seconds()
+        if elapsed > STUCK_AFTER_SECONDS:
+            stuck = True
+
+    return {"steps": steps, "all_done": all_done, "stuck": stuck}
 
 
 @shared_task(name="agents.run_onboarding_intelligence", soft_time_limit=300, time_limit=360)
@@ -193,6 +214,11 @@ def run_onboarding_intelligence(user_id):
         brief_action.error_message = str(e)
         brief_action.save(update_fields=["status", "error_message", "updated_at"])
         logger.error("Onboarding welcome brief failed for %s: %s", user.email, e)
+
+    try:
+        user.profile.record_onboarding_step("intelligence_completed")
+    except Exception:
+        logger.exception("record_onboarding_step failed for %s", user.email)
 
     logger.info("Onboarding intelligence complete for %s: %s", user.email, result)
     return result

@@ -72,6 +72,7 @@ def onboarding_view(request):
             # ── Complete onboarding ──────────────────────────────────
             request.user.onboarding_completed = True
             request.user.save(update_fields=["onboarding_completed"])
+            profile.record_onboarding_step("step_4_completed")
 
             # ── Auto-create all 6 agent configs ──────────────────────
             from apps.agents.models import AgentConfig
@@ -98,6 +99,9 @@ def onboarding_view(request):
             # Research → Starter Seeds → Content → Welcome Brief
             from apps.agents.onboarding_tasks import run_onboarding_intelligence
             from apps.utils import fire_task
+            profile.onboarding_intelligence_started_at = timezone.now()
+            profile.save(update_fields=["onboarding_intelligence_started_at"])
+            profile.record_onboarding_step("intelligence_started")
             fire_task(run_onboarding_intelligence, str(request.user.pk))
 
             messages.success(request, "Welcome to Kova Agent! Your AI agency is analyzing your industry now.")
@@ -130,6 +134,7 @@ def onboarding_view(request):
         form = form_class(request.POST, instance=profile, **extra_kwargs)
         if form.is_valid():
             form.save()
+            profile.record_onboarding_step(f"step_{step}_completed")
             return redirect(f"/accounts/onboarding/?step={step + 1}")
     else:
         form = form_class(instance=profile, **extra_kwargs)
@@ -296,6 +301,36 @@ def onboarding_complete(request):
         "brief": brief,
         "page_title": "Your AI Agency is Starting",
     })
+
+
+@login_required
+@require_POST
+def onboarding_retry(request):
+    """Re-dispatch the onboarding intelligence chain when the first run wedged.
+
+    Clears stale in-flight AgentAction rows so get_onboarding_progress stops
+    reporting them as "running" and resets the dispatch clock.
+    """
+    from apps.agents.models import AgentAction
+    from apps.agents.onboarding_tasks import run_onboarding_intelligence
+    from apps.utils import fire_task
+
+    # Remove any non-terminal onboarding actions so the poll UI resets cleanly.
+    AgentAction.objects.filter(
+        user=request.user,
+        action_type__startswith="onboarding_",
+    ).exclude(
+        status__in=[AgentAction.ActionStatus.COMPLETED, AgentAction.ActionStatus.FAILED],
+    ).delete()
+
+    profile = request.user.profile
+    profile.onboarding_intelligence_started_at = timezone.now()
+    profile.save(update_fields=["onboarding_intelligence_started_at"])
+    profile.record_onboarding_step("intelligence_retried")
+
+    fire_task(run_onboarding_intelligence, str(request.user.pk))
+    messages.info(request, "Retrying — your AI agency is starting again.")
+    return redirect("accounts:onboarding_complete")
 
 
 @login_required

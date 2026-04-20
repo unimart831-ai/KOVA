@@ -264,6 +264,18 @@ class UserProfile(models.Model):
         max_length=64, null=True, blank=True, unique=True, db_index=True,
         help_text="Unique token for Kova Pixel website tracking. Generated on first access.",
     )
+    # ── Onboarding funnel telemetry ──
+    onboarding_step_timestamps = models.JSONField(
+        default=dict, blank=True,
+        help_text="First-hit ISO timestamp per onboarding step. "
+                  "Keys: step_1_completed, step_2_completed, step_3_completed, "
+                  "step_4_completed, intelligence_started, intelligence_completed.",
+    )
+    onboarding_intelligence_started_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Dispatch time of run_onboarding_intelligence. "
+                  "Used by the completion screen to detect stuck polling.",
+    )
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -276,3 +288,12 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"Profile: {self.user}"
+
+    def record_onboarding_step(self, step_name):
+        """Stamp an onboarding step at its first occurrence. Idempotent."""
+        steps = self.onboarding_step_timestamps or {}
+        if step_name in steps:
+            return
+        steps[step_name] = tz.now().isoformat()
+        self.onboarding_step_timestamps = steps
+        self.save(update_fields=["onboarding_step_timestamps", "updated_at"])
