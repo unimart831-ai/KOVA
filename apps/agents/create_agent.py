@@ -24,6 +24,7 @@ from django.utils import timezone as dj_timezone
 
 from apps.agents.llm import generate, get_model_for_task, LLMResponse, parse_llm_json
 from apps.agents.models import AgentAction, AgentConfig
+from apps.agents.schemas import PostDraft
 from apps.content.models import ContentSeed, Post
 from apps.platforms.models import SocialAccount
 
@@ -969,7 +970,8 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                 logger.warning("LLM generated for platform '%s' but no account connected", platform)
                 continue
 
-            content_text = pd.get("content_text", "")
+            draft = PostDraft.from_llm_dict(pd)
+            content_text = draft.content_text
 
             # Diagnostic: warn if content seems suspiciously short
             # (may indicate LLM token-limit truncation salvaged by JSON repair)
@@ -987,13 +989,13 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                 social_account=account,
                 platform=account.platform,
                 content_text=content_text,
-                content_type=pd.get("content_type", "original"),
+                content_type=draft.content_type or "original",
                 status=initial_status,
                 generated_by_agent="create",
-                predicted_engagement_score=pd.get("predicted_score"),
-                ai_reasoning=pd.get("reasoning", ""),
-                ai_angle=pd.get("angle", ""),
-                ai_framework=pd.get("framework_used", ""),
+                predicted_engagement_score=draft.predicted_score,
+                ai_reasoning=draft.reasoning,
+                ai_angle=draft.angle,
+                ai_framework=draft.framework_used,
                 ai_original_text=content_text,
             )
 
@@ -1266,12 +1268,14 @@ Respond with a JSON object. No markdown code fences.
         )
 
         data = parse_llm_json(llm_response.content)
+        draft = PostDraft.from_llm_dict(data)
 
-        post.content_text = data.get("content_text", post.content_text)
-        post.ai_angle = data.get("angle", "")
-        post.ai_framework = data.get("framework_used", "")
-        post.ai_reasoning = data.get("reasoning", "")
-        post.predicted_engagement_score = data.get("predicted_score")
+        # Keep existing content_text if the LLM returned nothing usable
+        post.content_text = draft.content_text or post.content_text
+        post.ai_angle = draft.angle
+        post.ai_framework = draft.framework_used
+        post.ai_reasoning = draft.reasoning
+        post.predicted_engagement_score = draft.predicted_score
         post.save(update_fields=[
             "content_text", "ai_angle", "ai_framework", "ai_reasoning",
             "predicted_engagement_score", "updated_at",
@@ -1447,20 +1451,21 @@ Respond with a JSON object. No markdown code fences.
                 if _profile and _profile.auto_approve_posts
                 else Post.Status.PENDING_APPROVAL
             )
+            draft = PostDraft.from_llm_dict(pd)
             post = Post.objects.create(
                 user=user,
                 seed=source_post.seed,
                 product=source_post.product,
                 social_account=account,
                 platform=account.platform,
-                content_text=pd.get("content_text", ""),
+                content_text=draft.content_text,
                 content_type="repurposed",
                 status=_status,
                 generated_by_agent="create",
-                predicted_engagement_score=pd.get("predicted_score"),
-                ai_reasoning=pd.get("reasoning", ""),
-                ai_angle=pd.get("angle", ""),
-                ai_framework=pd.get("framework_used", ""),
+                predicted_engagement_score=draft.predicted_score,
+                ai_reasoning=draft.reasoning,
+                ai_angle=draft.angle,
+                ai_framework=draft.framework_used,
             )
             # Auto-populate UTM fields for revenue attribution
             post.populate_utm()
@@ -1615,6 +1620,7 @@ Generate exactly {n} variants labeled {', '.join(VARIANT_LABELS[:n])}.
 
         for i, vd in enumerate(variant_dicts[:n]):
             label = vd.get("label", VARIANT_LABELS[i] if i < len(VARIANT_LABELS) else str(i + 1))
+            draft = PostDraft.from_llm_dict(vd)
             post = Post.objects.create(
                 user=user,
                 seed=seed,
@@ -1623,14 +1629,14 @@ Generate exactly {n} variants labeled {', '.join(VARIANT_LABELS[:n])}.
                 platform=account.platform,
                 ab_test=ab_test,
                 variant_label=label,
-                content_text=vd.get("content_text", ""),
+                content_text=draft.content_text,
                 content_type="original",
                 status=initial_status,
                 generated_by_agent="create",
-                predicted_engagement_score=vd.get("predicted_score"),
-                ai_reasoning=vd.get("reasoning", ""),
-                ai_angle=vd.get("angle", ""),
-                ai_framework=vd.get("framework_used", ""),
+                predicted_engagement_score=draft.predicted_score,
+                ai_reasoning=draft.reasoning,
+                ai_angle=draft.angle,
+                ai_framework=draft.framework_used,
             )
             # Auto-populate UTM fields for revenue attribution
             post.populate_utm()

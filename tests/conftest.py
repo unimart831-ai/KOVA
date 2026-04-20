@@ -10,14 +10,20 @@ from apps.accounts.models import User, UserProfile
 
 @pytest.fixture
 def user(db):
-    """Create a test user with profile."""
+    """Create a test user with profile.
+
+    UserProfile is auto-created by a post_save signal on User
+    (apps/accounts/signals.py), so we update the auto-created row
+    instead of inserting a second one.
+    """
     u = User.objects.create_user(
         username="testuser",
         email="test@kova.ai",
         password="TestPass123!",
         full_name="Test User",
     )
-    UserProfile.objects.create(user=u, plan="growth")
+    UserProfile.objects.filter(user=u).update(plan="growth")
+    u.refresh_from_db()
     return u
 
 
