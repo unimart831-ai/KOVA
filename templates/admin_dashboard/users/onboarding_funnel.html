@@ -1,0 +1,126 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}Onboarding Funnel{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  {# ── Summary ── #}
+  <div class="card">
+    <div class="card-body">
+      <p class="text-sm text-gray-500 dark:text-gray-400">
+        Last {{ cohort_days }} days — {{ total_signups }} signups
+      </p>
+    </div>
+  </div>
+
+  {# ── Funnel ── #}
+  <div class="card">
+    <div class="card-body space-y-3">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Funnel</h2>
+      {% for stage in stage_counts %}
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-sm">
+            <span class="font-medium text-gray-700 dark:text-gray-200">{{ stage.label }}</span>
+            <span class="text-gray-500 dark:text-gray-400">
+              {{ stage.count }}
+              {% if not forloop.first %}
+                <span class="text-xs">({{ stage.retention_pct }}% of previous
+                {% if stage.dropped %}— {{ stage.dropped }} dropped{% endif %})</span>
+              {% endif %}
+            </span>
+          </div>
+          <div class="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+            {% if total_signups %}
+              <div class="h-full bg-kova-500" style="width: {% widthratio stage.count total_signups 100 %}%"></div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ── Stuck on agency chain ── #}
+  <div class="card {% if stuck_users %}border-amber-200 dark:border-amber-800/60{% endif %}">
+    <div class="card-body space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Stuck on agency chain</h2>
+        <span class="text-xs text-gray-500 dark:text-gray-400">dispatched &gt;5 min ago, never completed</span>
+      </div>
+      {% if stuck_users %}
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+              <tr>
+                <th class="py-2 pr-4">User</th>
+                <th class="py-2 pr-4">Dispatched</th>
+                <th class="py-2 pr-4">Minutes stuck</th>
+                <th class="py-2 pr-4">Retried?</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+              {% for row in stuck_users %}
+                <tr>
+                  <td class="py-2 pr-4">
+                    <a href="{% url 'admin_dashboard:user_detail' row.user.pk %}" class="text-kova-600 dark:text-kova-400 hover:underline">
+                      {{ row.user.email }}
+                    </a>
+                  </td>
+                  <td class="py-2 pr-4 text-gray-600 dark:text-gray-300">{{ row.started_at|date:"Y-m-d H:i" }}</td>
+                  <td class="py-2 pr-4 text-amber-700 dark:text-amber-400 font-medium">{{ row.minutes_stuck }}</td>
+                  <td class="py-2 pr-4">
+                    {% if row.retried %}<span class="text-gray-500 dark:text-gray-400">yes</span>{% else %}<span class="text-gray-400 dark:text-gray-600">no</span>{% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-sm text-gray-500 dark:text-gray-400">No users currently stuck.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Wizard abandoners ── #}
+  <div class="card">
+    <div class="card-body space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Wizard abandoners</h2>
+        <span class="text-xs text-gray-500 dark:text-gray-400">not completed, idle &gt;24 h</span>
+      </div>
+      {% if wizard_abandoners %}
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+              <tr>
+                <th class="py-2 pr-4">User</th>
+                <th class="py-2 pr-4">Last step reached</th>
+                <th class="py-2 pr-4">Last activity</th>
+                <th class="py-2 pr-4">Hours idle</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+              {% for row in wizard_abandoners %}
+                <tr>
+                  <td class="py-2 pr-4">
+                    <a href="{% url 'admin_dashboard:user_detail' row.user.pk %}" class="text-kova-600 dark:text-kova-400 hover:underline">
+                      {{ row.user.email }}
+                    </a>
+                  </td>
+                  <td class="py-2 pr-4 text-gray-600 dark:text-gray-300">{{ row.last_step }}</td>
+                  <td class="py-2 pr-4 text-gray-600 dark:text-gray-300">{{ row.last_stamp|date:"Y-m-d H:i" }}</td>
+                  <td class="py-2 pr-4 text-gray-500 dark:text-gray-400">{{ row.hours_idle }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-sm text-gray-500 dark:text-gray-400">No abandoners in the window.</p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
