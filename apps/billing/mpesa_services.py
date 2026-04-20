@@ -152,15 +152,31 @@ def process_mpesa_callback(callback_data):
         logger.warning("M-Pesa callback for unknown checkout: %s", checkout_id)
         return False
 
-    # Create billing event for audit trail
-    billing_event = BillingEvent.objects.create(
+    # Replay protection: reject callbacks for payments already in a terminal state.
+    # Daraja retries callbacks on 5xx, and a malicious replay of an old COMPLETED
+    # callback would otherwise re-activate the subscription + re-send confirmation email.
+    if payment.status in (MpesaPayment.Status.COMPLETED, MpesaPayment.Status.FAILED):
+        logger.info(
+            "M-Pesa callback replay ignored: checkout=%s status=%s",
+            checkout_id, payment.status,
+        )
+        return True
+
+    # Race-safe audit record — unique stripe_event_id prevents duplicate side-effects
+    # if two callbacks land simultaneously for the same CheckoutRequestID.
+    billing_event, created = BillingEvent.objects.get_or_create(
         stripe_event_id=f"mpesa_{checkout_id}",
-        event_type="mpesa.stk_callback",
-        provider="mpesa",
-        user=payment.user,
-        data=callback_data,
-        processed=True,
+        defaults={
+            "event_type": "mpesa.stk_callback",
+            "provider": "mpesa",
+            "user": payment.user,
+            "data": callback_data,
+            "processed": True,
+        },
     )
+    if not created:
+        logger.info("M-Pesa callback duplicate for checkout %s, skipping", checkout_id)
+        return True
 
     if parsed["success"]:
         # Payment successful

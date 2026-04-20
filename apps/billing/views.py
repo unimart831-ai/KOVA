@@ -1,3 +1,4 @@
+import hmac
 import json
 import logging
 
@@ -344,7 +345,7 @@ def mpesa_webhook(request):
     webhook_secret = getattr(settings, "MPESA_WEBHOOK_SECRET", "")
     if webhook_secret:
         provided_token = request.GET.get("token", "")
-        if provided_token != webhook_secret:
+        if not hmac.compare_digest(provided_token, webhook_secret):
             logger.warning("M-Pesa callback with invalid webhook secret from %s", client_ip)
             return HttpResponse(status=403)
 
