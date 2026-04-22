@@ -488,3 +488,64 @@ def track_audience_growth():
 
     logger.info("Growth tracking: %d snapshots created, %d skipped (already tracked)", created, skipped)
     return {"created": created, "skipped": skipped}
+
+
+# ── Educator agent (platform-level, not per-tenant) ─────────────────────────
+
+
+@shared_task(name="agents.educator_draft_weekly_article")
+def educator_draft_weekly_article():
+    """Weekly autonomous loop:
+      1. If the topic backlog is empty, the Educator proposes 5 new topics
+         (grounded in existing articles + category gaps + recent changelog).
+      2. It then drafts the highest-priority pending topic.
+    The drafted Article lands in DRAFT status and waits for founder review.
+    Founder never needs to seed topics manually."""
+    from apps.help.models import ArticleTopic
+    from apps.agents.educator_agent import draft_next_topic
+
+    backlog_before = ArticleTopic.objects.filter(status=ArticleTopic.Status.PENDING).count()
+    try:
+        result = draft_next_topic()
+    except Exception:
+        logger.exception("Educator weekly draft failed")
+        return {"ok": False}
+
+    backlog_after = ArticleTopic.objects.filter(status=ArticleTopic.Status.PENDING).count()
+    topics_added = max(0, backlog_after + (1 if result else 0) - backlog_before)
+
+    if result is None:
+        return {
+            "ok": True,
+            "drafted": False,
+            "topics_added": topics_added,
+            "reason": "topic suggestion produced no new candidates",
+        }
+    return {
+        "ok": True,
+        "drafted": True,
+        "topics_added": topics_added,
+        "article_id": str(result.article.id),
+        "slug": result.article.slug,
+        "audience": result.article.audience,
+        "tokens": result.llm_tokens,
+    }
+
+
+@shared_task(name="agents.educator_compile_weekly_digest")
+def educator_compile_weekly_digest():
+    """Weekly: compile the 'Kova This Week' digest from ChangelogEntry +
+    recent Articles. Sits in DRAFT until approved via admin."""
+    from apps.agents.educator_agent import compile_weekly_digest
+
+    try:
+        digest = compile_weekly_digest()
+    except Exception:
+        logger.exception("Educator weekly digest compile failed")
+        return {"ok": False}
+
+    return {
+        "ok": True,
+        "week_end": digest.week_end.isoformat(),
+        "status": digest.status,
+    }

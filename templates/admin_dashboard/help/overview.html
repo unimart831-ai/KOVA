@@ -4,6 +4,22 @@
 {% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ total_articles }} articles · {{ total_categories }} categories</p>{% endblock %}
 
 {% block content %}
+<!-- ── Educator quick-links ──────────────────────────────────────────── -->
+<div class="mb-6 bg-gradient-to-r from-kova-50 to-blue-50 dark:from-kova-950/30 dark:to-blue-950/30 border border-kova-200 dark:border-kova-900/50 rounded-xl p-4 sm:p-5">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Educator Agent</h3>
+      <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Articles, changelog entries, and the weekly Kova Report digest.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="/admin/help/articletopic/" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-700 dark:text-gray-200 hover:border-kova-300 dark:hover:border-kova-700 transition-colors">Topic backlog</a>
+      <a href="/admin/help/article/?status__exact=draft" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-700 dark:text-gray-200 hover:border-kova-300 dark:hover:border-kova-700 transition-colors">Drafts</a>
+      <a href="/admin/help/changelogentry/" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-700 dark:text-gray-200 hover:border-kova-300 dark:hover:border-kova-700 transition-colors">Changelog</a>
+      <a href="/admin/help/weeklydigest/" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-kova-600 text-white text-xs font-medium hover:bg-kova-700 transition-colors">Weekly digest &rarr;</a>
+    </div>
+  </div>
+</div>
+
 <!-- ── Stat Cards ─────────────────────────────────────────────────────── -->
 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">

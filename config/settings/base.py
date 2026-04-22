@@ -300,6 +300,15 @@ CELERY_BEAT_SCHEDULE = {
         "task": "leads.score_all_leads",
         "schedule": 24 * 3600.0,  # daily — re-score priorities, auto-enroll high-priority leads
     },
+    # Educator agent — platform-level content authoring
+    "educator-draft-weekly-article": {
+        "task": "agents.educator_draft_weekly_article",
+        "schedule": 7 * 24 * 3600.0,  # weekly — drafts one article from the topic backlog
+    },
+    "educator-compile-weekly-digest": {
+        "task": "agents.educator_compile_weekly_digest",
+        "schedule": 7 * 24 * 3600.0,  # weekly — assembles the Kova digest before Sunday send
+    },
 }
 
 # ─── AUTH ────────────────────────────────────────────────────────────────────
@@ -431,6 +440,13 @@ AGENT_MODELS = {
     # Strategist — reasoning + synthesis
     "strategist.brief": env("LLM_MODEL_STRATEGIST_BRIEF", default=LLM_MODEL_WORKHORSE),
     "strategist.decide": env("LLM_MODEL_STRATEGIST_DECIDE", default=LLM_MODEL_WORKHORSE),
+    # Educator — long-form authoring + digest summarisation (platform-level).
+    # Matches Create tier: articles and newsletters are customer-facing and land
+    # on public pages / every user's inbox, so quality is worth the premium cost.
+    # Volume is low (~3 calls/week) so budget impact is small.
+    "educator.draft_article": env("LLM_MODEL_EDUCATOR_DRAFT", default=LLM_MODEL_PREMIUM),
+    "educator.compile_digest": env("LLM_MODEL_EDUCATOR_DIGEST", default=LLM_MODEL_PREMIUM),
+    "educator.suggest_topics": env("LLM_MODEL_EDUCATOR_TOPICS", default=LLM_MODEL_PREMIUM),
 }
 
 # ─── TOKEN COST REGISTRY ─────────────────────────────────────────────────────

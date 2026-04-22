@@ -28,6 +28,13 @@
 <p style="margin:0 0 8px;font-size:13px;color:#6b7280;">
   Current plan: <strong style="color:#111827;">{{ report.plan|default:"Starter" }}</strong>
 </p>
+
+{% if report.kova_digest %}
+<hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0 16px;">
+<h2 style="margin:0 0 6px;font-size:17px;font-weight:700;color:#111827;">Kova this week</h2>
+<p style="margin:0 0 12px;font-size:12px;color:#6b7280;">What we shipped and what's worth reading.</p>
+{{ report.kova_digest|safe }}
+{% endif %}
 {% endblock %}
 
 {% block cta %}

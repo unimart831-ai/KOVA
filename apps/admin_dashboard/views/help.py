@@ -7,14 +7,21 @@ from django.shortcuts import render
 from django.utils import timezone
 
 from apps.admin_dashboard.decorators import staff_required
-from apps.help.views import ARTICLES, CATEGORIES
+from apps.help.models import Article, HelpPageView
+from apps.help.views import CATEGORY_META
+
+
+def _cat_name_map():
+    return {cid: meta["name"] for cid, meta in CATEGORY_META.items()}
+
+
+def _published_articles():
+    return Article.objects.filter(status=Article.Status.PUBLISHED)
 
 
 @staff_required
 def help_overview(request):
     """Help center usage overview — views, popular articles, trends."""
-    from apps.help.models import HelpPageView
-
     now = timezone.now()
     today = now.date()
     seven_days_ago = now - timedelta(days=7)
@@ -46,8 +53,7 @@ def help_overview(request):
         .annotate(views=Count("id"))
         .order_by("-views")[:10]
     )
-    # Map category IDs to names
-    cat_name_map = {c["id"]: c["name"] for c in CATEGORIES}
+    cat_name_map = _cat_name_map()
     for art in top_articles:
         art["category_name"] = cat_name_map.get(art["category"], art["category"])
 
@@ -82,7 +88,15 @@ def help_overview(request):
         HelpPageView.objects.filter(page_type="article")
         .values_list("article_slug", flat=True).distinct()
     )
-    unviewed_articles = [a for a in ARTICLES if a["slug"] not in viewed_slugs]
+    unviewed_articles = [
+        {
+            "slug": a.slug,
+            "title": a.title,
+            "category": a.category,
+            "category_name": cat_name_map.get(a.category, a.category),
+        }
+        for a in _published_articles().exclude(slug__in=viewed_slugs)
+    ]
 
     # ── Top Users (most help views, 30 days) ─────────────────────────────
     top_users = list(
@@ -105,8 +119,8 @@ def help_overview(request):
         "daily_views_json": daily_views,
         "unviewed_articles": unviewed_articles,
         "top_users": top_users,
-        "total_articles": len(ARTICLES),
-        "total_categories": len(CATEGORIES),
+        "total_articles": _published_articles().count(),
+        "total_categories": len(CATEGORY_META),
     }
     return render(request, "admin_dashboard/help/overview.html", context)
 
@@ -114,17 +128,14 @@ def help_overview(request):
 @staff_required
 def help_article_views(request):
     """Per-article view breakdown with search and pagination."""
-    from apps.help.models import HelpPageView
-
     thirty_days_ago = timezone.now() - timedelta(days=30)
 
-    # Build stats for every article
     view_counts = dict(
         HelpPageView.objects.filter(
             viewed_at__gte=thirty_days_ago, page_type="article",
         )
         .values("article_slug")
-        .annotate(views=Count("id"), unique_users=Count("user", distinct=True))
+        .annotate(views=Count("id"))
         .values_list("article_slug", "views")
     )
     unique_counts = dict(
@@ -136,17 +147,18 @@ def help_article_views(request):
         .values_list("article_slug", "unique_users")
     )
 
-    cat_name_map = {c["id"]: c["name"] for c in CATEGORIES}
-    article_list = []
-    for a in ARTICLES:
-        article_list.append({
-            "slug": a["slug"],
-            "title": a["title"],
-            "category": a["category"],
-            "category_name": cat_name_map.get(a["category"], a["category"]),
-            "views_30d": view_counts.get(a["slug"], 0),
-            "unique_users_30d": unique_counts.get(a["slug"], 0),
-        })
+    cat_name_map = _cat_name_map()
+    article_list = [
+        {
+            "slug": a.slug,
+            "title": a.title,
+            "category": a.category,
+            "category_name": cat_name_map.get(a.category, a.category),
+            "views_30d": view_counts.get(a.slug, 0),
+            "unique_users_30d": unique_counts.get(a.slug, 0),
+        }
+        for a in _published_articles()
+    ]
 
     # Search filter
     search = request.GET.get("q", "").strip()
@@ -172,7 +184,7 @@ def help_article_views(request):
         "page_obj": page,
         "search": search,
         "sort": sort,
-        "total_articles": len(ARTICLES),
+        "total_articles": _published_articles().count(),
     }
     return render(request, "admin_dashboard/help/article_views.html", context)
 
@@ -180,8 +192,6 @@ def help_article_views(request):
 @staff_required
 def help_view_log(request):
     """Recent help page view log with pagination."""
-    from apps.help.models import HelpPageView
-
     qs = HelpPageView.objects.select_related("user").order_by("-viewed_at")
 
     search = request.GET.get("q", "").strip()

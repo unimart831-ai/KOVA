@@ -61,6 +61,8 @@ urlpatterns = [
     path("campus-rep/", legal_page("campus_rep.html"), name="campus_rep"),
     # Public help / learn section (no login required)
     path("learn/", include("apps.help.urls_public")),
+    # Public SEO blog (Educator agent output — no login required)
+    path("blog/", include("apps.help.urls_blog")),
     # Growth Partners (public + authenticated)
     path("partners/", include("apps.partners.urls")),
     # Public Kova Link pages (no login required)

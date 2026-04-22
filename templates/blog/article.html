@@ -1,0 +1,232 @@
+{% extends "layouts/marketing.html" %}
+
+{% block title %}{{ article.meta_title|default:article.title }} — Kova Blog{% endblock %}
+{% block meta_description %}{{ article.meta_description|default:article.excerpt }}{% endblock %}
+
+{% block extra_head %}
+<link rel="canonical" href="{{ request.build_absolute_uri }}">
+<meta property="og:type" content="article">
+<meta property="og:title" content="{{ article.meta_title|default:article.title }}">
+<meta property="og:description" content="{{ article.meta_description|default:article.excerpt }}">
+<meta property="og:url" content="{{ request.build_absolute_uri }}">
+{% if article.hero_image %}<meta property="og:image" content="{{ article.hero_image }}">{% endif %}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ article.meta_title|default:article.title }}">
+<meta name="twitter:description" content="{{ article.meta_description|default:article.excerpt }}">
+{% if article.hero_image %}<meta name="twitter:image" content="{{ article.hero_image }}">{% endif %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{{ article.title|escapejs }}",
+  "description": "{{ article.excerpt|escapejs }}",
+  {% if article.hero_image %}"image": "{{ article.hero_image }}",{% endif %}
+  {% if article.published_at %}"datePublished": "{{ article.published_at|date:'c' }}",{% endif %}
+  "author": {"@type": "Organization", "name": "Kova Agent"},
+  "publisher": {"@type": "Organization", "name": "Kova Agent", "logo": {"@type": "ImageObject", "url": "{{ request.scheme }}://{{ request.get_host }}/static/images/icon-192.png"}},
+  "mainEntityOfPage": "{{ request.build_absolute_uri }}"
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Reading progress bar -->
+<div id="reading-progress" class="fixed top-0 left-0 right-0 h-0.5 z-[60] pointer-events-none">
+  <div class="h-full bg-gradient-to-r from-kova-500 via-violet-500 to-pink-500 origin-left transition-transform duration-100" style="transform: scaleX(0);" id="reading-progress-bar"></div>
+</div>
+
+<article class="relative">
+  <!-- ── Header ──────────────────────────────────────────────────────── -->
+  <header class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 pb-6">
+    <!-- Breadcrumb -->
+    <nav class="flex items-center gap-1.5 text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-6">
+      <a href="{% url 'blog:index' %}" class="hover:text-kova-600 dark:hover:text-kova-400 transition-colors">Blog</a>
+      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      <a href="{% url 'blog:index' %}?category={{ article.category }}" class="hover:text-kova-600 dark:hover:text-kova-400 transition-colors">{{ category.name }}</a>
+    </nav>
+
+    <!-- Category pill -->
+    <div class="mb-4">
+      <a href="{% url 'blog:index' %}?category={{ article.category }}"
+         class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-kova-50 dark:bg-kova-950/50 text-kova-700 dark:text-kova-300 text-xs font-semibold">
+        {{ category.name }}
+      </a>
+    </div>
+
+    <!-- Title -->
+    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white leading-[1.1] tracking-tight">{{ article.title }}</h1>
+
+    <!-- Excerpt -->
+    {% if article.excerpt %}
+    <p class="text-lg text-gray-600 dark:text-gray-300 mt-5 leading-relaxed">{{ article.excerpt }}</p>
+    {% endif %}
+
+    <!-- Byline + meta -->
+    <div class="mt-8 flex items-center justify-between gap-4 pt-6 border-t border-gray-100 dark:border-gray-800">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-kova-500 to-pink-500 flex items-center justify-center shrink-0">
+          <span class="text-white text-sm font-bold">K</span>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-gray-900 dark:text-white">The Kova Team</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            {% if article.published_at %}{{ article.published_at|date:"M j, Y" }} &middot; {% endif %}{{ article.reading_minutes }} min read
+          </p>
+        </div>
+      </div>
+
+      <!-- Share buttons -->
+      <div class="flex items-center gap-1" x-data="{ copied: false }">
+        <a href="https://twitter.com/intent/tweet?text={{ article.title|urlencode }}&url={{ request.build_absolute_uri|urlencode }}"
+           target="_blank" rel="noopener" aria-label="Share on Twitter"
+           class="p-2 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri|urlencode }}"
+           target="_blank" rel="noopener" aria-label="Share on LinkedIn"
+           class="p-2 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        </a>
+        <button type="button"
+                @click="navigator.clipboard.writeText(window.location.href); copied = true; setTimeout(() => copied = false, 2000)"
+                :aria-label="copied ? 'Link copied' : 'Copy link'"
+                class="p-2 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative">
+          <svg x-show="!copied" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+          <svg x-show="copied" x-cloak class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Hero image ──────────────────────────────────────────────────── -->
+  {% if article.hero_image %}
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+    <div class="rounded-2xl overflow-hidden">
+      <img src="{{ article.hero_image }}" alt="{{ article.title }}" class="w-full h-auto">
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Body ────────────────────────────────────────────────────────── -->
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+    <div class="article-content prose prose-lg prose-kova dark:prose-invert max-w-none
+                prose-headings:font-bold prose-headings:text-gray-900 dark:prose-headings:text-white
+                prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4
+                prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3
+                prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:leading-relaxed
+                prose-a:text-kova-600 dark:prose-a:text-kova-400 prose-a:no-underline hover:prose-a:underline
+                prose-strong:text-gray-900 dark:prose-strong:text-white
+                prose-code:text-pink-600 dark:prose-code:text-pink-400 prose-code:bg-gray-100 dark:prose-code:bg-gray-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:before:content-[''] prose-code:after:content-['']
+                prose-blockquote:border-l-kova-500 prose-blockquote:text-gray-700 dark:prose-blockquote:text-gray-300">
+      {% if article.legacy_template %}
+        {% include article.legacy_template %}
+      {% else %}
+        {{ article.body_html|safe }}
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── Inline newsletter CTA ───────────────────────────────────────── -->
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
+    <div class="rounded-2xl bg-gradient-to-br from-kova-50 to-pink-50 dark:from-kova-950/40 dark:to-pink-950/40 border border-kova-200 dark:border-kova-900/50 p-6 sm:p-8">
+      <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div class="flex-1">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white">Like this? Get one every Friday.</p>
+          <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Kova Weekly — one email, practical tactics for African SMBs. No spam.</p>
+        </div>
+        <form class="shrink-0"
+              hx-post="{% url 'blog:subscribe' %}"
+              hx-target="#inline-newsletter-result"
+              hx-swap="innerHTML"
+              hx-on::after-request="if(event.detail.successful) this.reset()">
+          {% csrf_token %}
+          <input type="hidden" name="source_slug" value="{{ article.slug }}">
+          <label for="inline-newsletter-email" class="sr-only">Email</label>
+          <div class="flex gap-2">
+            <input id="inline-newsletter-email" type="email" name="email" required placeholder="you@example.com"
+                   class="flex-1 min-w-0 sm:w-56 px-3 py-2 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-kova-500">
+            <button type="submit" class="shrink-0 px-4 py-2 rounded-lg bg-kova-600 text-white text-sm font-semibold hover:bg-kova-700 transition-colors">Subscribe</button>
+          </div>
+        </form>
+      </div>
+      <div id="inline-newsletter-result" class="mt-3" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <!-- ── Prev / Next ─────────────────────────────────────────────────── -->
+  {% if prev_article or next_article %}
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
+    <div class="flex items-stretch gap-4 border-t border-gray-200 dark:border-gray-800 pt-8">
+      {% if prev_article %}
+      <a href="{% url 'blog:article' prev_article.slug %}"
+         class="flex-1 group p-4 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-kova-300 dark:hover:border-kova-700 transition-colors">
+        <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mb-2">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          Previous
+        </div>
+        <p class="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-kova-600 dark:group-hover:text-kova-400 transition-colors line-clamp-2">{{ prev_article.title }}</p>
+      </a>
+      {% else %}<div class="flex-1"></div>{% endif %}
+      {% if next_article %}
+      <a href="{% url 'blog:article' next_article.slug %}"
+         class="flex-1 group p-4 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-kova-300 dark:hover:border-kova-700 transition-colors text-right">
+        <div class="flex items-center justify-end gap-1.5 text-xs text-gray-500 dark:text-gray-400 mb-2">
+          Next
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </div>
+        <p class="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-kova-600 dark:group-hover:text-kova-400 transition-colors line-clamp-2">{{ next_article.title }}</p>
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Related articles ────────────────────────────────────────────── -->
+  {% if related_articles %}
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
+    <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-5">More in {{ category.name }}</h2>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {% for r in related_articles %}
+      <a href="{% url 'blog:article' r.slug %}"
+         class="group p-5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-kova-300 dark:hover:border-kova-700 hover:shadow-sm transition-all">
+        <div class="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 mb-2">
+          <span>{{ r.reading_minutes }} min read</span>
+          {% if r.published_at %}<span>&middot;</span><span>{{ r.published_at|date:"M j" }}</span>{% endif %}
+        </div>
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-kova-600 dark:group-hover:text-kova-400 transition-colors line-clamp-2">{{ r.title }}</h3>
+        <p class="text-xs text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">{{ r.excerpt }}</p>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Bottom conversion CTA ───────────────────────────────────────── -->
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mb-24">
+    <div class="rounded-2xl bg-gradient-to-br from-gray-900 to-gray-800 dark:from-gray-950 dark:to-gray-900 border border-gray-800 p-8 sm:p-10 text-center">
+      <p class="text-xs font-semibold tracking-wider uppercase text-kova-400">Ready to automate?</p>
+      <h3 class="text-2xl sm:text-3xl font-bold text-white mt-2">Stop posting. Start winning.</h3>
+      <p class="text-sm text-gray-300 mt-3 max-w-lg mx-auto">Kova Agent runs your social media like an AI marketing team — content, scheduling, analytics, replies.</p>
+      <div class="mt-6 flex items-center justify-center gap-3 flex-wrap">
+        <a href="{% url 'account_signup' %}" class="inline-flex items-center px-5 py-2.5 rounded-lg bg-white text-gray-900 text-sm font-semibold hover:bg-gray-100 transition-colors">Start free 14-day trial</a>
+        <a href="{% url 'blog:index' %}" class="text-sm font-medium text-gray-300 hover:text-white transition-colors">or read more &rarr;</a>
+      </div>
+    </div>
+  </div>
+</article>
+
+<script>
+(function() {
+  var bar = document.getElementById('reading-progress-bar');
+  if (!bar) return;
+  function update() {
+    var doc = document.documentElement;
+    var total = doc.scrollHeight - doc.clientHeight;
+    var scrolled = total > 0 ? (doc.scrollTop / total) : 0;
+    bar.style.transform = 'scaleX(' + Math.min(1, Math.max(0, scrolled)) + ')';
+  }
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+})();
+</script>
+{% endblock %}

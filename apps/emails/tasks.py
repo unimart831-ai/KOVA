@@ -355,10 +355,15 @@ def send_weekly_reports_all():
         subscription_status__in=("active", "trialing"),
     ).select_related("user")
 
+    # Pull the approved Kova digest once; inlined into every recipient's email.
+    # If nothing has been approved for this cycle, personal section sends alone.
+    from apps.agents.educator_agent import get_latest_sendable_digest
+    digest = get_latest_sendable_digest()
+    digest_html = digest.combined_html() if digest else ""
+
     sent = 0
     for profile in profiles:
         user = profile.user
-        # Gather basic weekly stats
         posts = Post.objects.filter(user=user, created_at__gte=week_ago)
         published = posts.filter(status="published").count()
         total = posts.count()
@@ -369,12 +374,19 @@ def send_weekly_reports_all():
             "plan": profile.get_plan_display() if hasattr(profile, "get_plan_display") else profile.plan,
             "period_start": week_ago.strftime("%b %d"),
             "period_end": now.strftime("%b %d, %Y"),
+            "kova_digest": digest_html,
         }
 
         email_service.send_weekly_report(user, report_data)
         sent += 1
 
-    logger.info("Weekly reports sent: %d", sent)
+    if digest and digest_html:
+        from django.utils import timezone as _tz
+        digest.status = digest.Status.SENT
+        digest.sent_at = _tz.now()
+        digest.save(update_fields=["status", "sent_at", "updated_at"])
+
+    logger.info("Weekly reports sent: %d (digest=%s)", sent, digest.week_end if digest else None)
     return sent
 
 
