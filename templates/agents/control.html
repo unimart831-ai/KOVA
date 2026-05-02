@@ -7,30 +7,28 @@
 
 {% block content %}
 <div class="max-w-6xl mx-auto space-y-10">
-  <div class="overflow-hidden rounded-2xl border border-kova-200/70 bg-gradient-to-br from-kova-50 via-white to-indigo-50/40 shadow-sm dark:border-kova-900/40 dark:from-kova-950/40 dark:via-gray-900 dark:to-indigo-950/20">
-    <div class="p-6 sm:p-8">
-      <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-        <div class="max-w-2xl">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">How agents work</h2>
-          <p class="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-            Research and strategy feed creation; posts are adapted per platform, then engagement and analytics close the loop.
-            Turn agents off anytime — your queue and approvals stay under your control.
-          </p>
-        </div>
-        <div class="flex flex-wrap items-center gap-2 lg:max-w-md lg:justify-end" aria-hidden="true">
-          <span class="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-sky-700 shadow-sm ring-1 ring-sky-200/70 dark:bg-gray-800/80 dark:text-sky-300 dark:ring-sky-900/50">1 · Research</span>
-          <span class="text-gray-300 dark:text-gray-600">→</span>
-          <span class="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-violet-700 shadow-sm ring-1 ring-violet-200/70 dark:bg-gray-800/80 dark:text-violet-300 dark:ring-violet-900/50">2 · Create</span>
-          <span class="text-gray-300 dark:text-gray-600">→</span>
-          <span class="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-sm ring-1 ring-emerald-200/70 dark:bg-gray-800/80 dark:text-emerald-300 dark:ring-emerald-900/50">3 · Adapt</span>
-          <span class="text-gray-300 dark:text-gray-600 hidden sm:inline">→</span>
-          <span class="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-amber-700 shadow-sm ring-1 ring-amber-200/70 dark:bg-gray-800/80 dark:text-amber-300 dark:ring-amber-900/50">4 · Engage</span>
-          <span class="text-gray-300 dark:text-gray-600">→</span>
-          <span class="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-rose-700 shadow-sm ring-1 ring-rose-200/70 dark:bg-gray-800/80 dark:text-rose-300 dark:ring-rose-900/50">5 · Analyze</span>
-          <span class="text-gray-300 dark:text-gray-600">→</span>
-          <span class="rounded-full bg-kova-100 px-3 py-1 text-xs font-semibold text-kova-800 shadow-sm ring-1 ring-kova-300/70 dark:bg-kova-950/60 dark:text-kova-200 dark:ring-kova-800/50">6 · Strategist</span>
-        </div>
+  <div class="rounded-xl border border-gray-200 bg-white p-6 sm:p-8 dark:border-gray-800 dark:bg-gray-900">
+    <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+      <div class="max-w-2xl">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">How agents work</h2>
+        <p class="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+          Research and strategy feed creation; posts are adapted per platform, then engagement and analytics close the loop.
+          Turn agents off anytime — your queue and approvals stay under your control.
+        </p>
       </div>
+      <ol class="flex flex-wrap items-center gap-x-1.5 gap-y-2 lg:max-w-md lg:justify-end" aria-label="Pipeline order">
+        <li class="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"><span class="text-gray-400 dark:text-gray-500 tabular-nums">1</span>Research</li>
+        <span aria-hidden="true" class="text-gray-300 dark:text-gray-600">→</span>
+        <li class="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"><span class="text-gray-400 dark:text-gray-500 tabular-nums">2</span>Create</li>
+        <span aria-hidden="true" class="text-gray-300 dark:text-gray-600">→</span>
+        <li class="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"><span class="text-gray-400 dark:text-gray-500 tabular-nums">3</span>Adapt</li>
+        <span aria-hidden="true" class="text-gray-300 dark:text-gray-600 hidden sm:inline">→</span>
+        <li class="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"><span class="text-gray-400 dark:text-gray-500 tabular-nums">4</span>Engage</li>
+        <span aria-hidden="true" class="text-gray-300 dark:text-gray-600">→</span>
+        <li class="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"><span class="text-gray-400 dark:text-gray-500 tabular-nums">5</span>Analyze</li>
+        <span aria-hidden="true" class="text-gray-300 dark:text-gray-600">→</span>
+        <li class="inline-flex items-center gap-1.5 rounded-md border border-kova-200 bg-kova-50 px-2.5 py-1 text-xs font-medium text-kova-800 dark:border-kova-900 dark:bg-kova-950/40 dark:text-kova-300"><span class="text-kova-500 dark:text-kova-400 tabular-nums">6</span>Strategist</li>
+      </ol>
     </div>
   </div>
 

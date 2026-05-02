@@ -27,28 +27,28 @@
     </div>
   </div>
 
-  {# ═══ THE ANSWER — Hero Card ═══ #}
-  <div class="bg-gradient-to-br from-kova-600 via-kova-700 to-indigo-800 rounded-2xl p-8 text-white shadow-xl">
-    <p class="text-kova-200 text-sm font-medium mb-2">Last {{ days }} days — Social media brought you</p>
+  {# Hero summary — last N days #}
+  <div class="rounded-xl bg-kova-700 p-8 text-white">
+    <p class="text-kova-200 text-sm font-medium mb-4">Last {{ days }} days — social attribution</p>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
       <div>
-        <p class="text-5xl sm:text-6xl font-extrabold tracking-tight">
+        <p class="text-4xl sm:text-5xl font-semibold tracking-tight">
           {{ customers_from_social }}
-          <span class="text-2xl font-normal text-kova-200">customer{{ customers_from_social|pluralize }}</span>
+          <span class="text-xl font-normal text-kova-200">customer{{ customers_from_social|pluralize }}</span>
         </p>
         {% if deltas.sales is not None %}
-        <p class="text-sm mt-2 {% if deltas.sales > 0 %}text-green-300{% elif deltas.sales < 0 %}text-red-300{% else %}text-kova-300{% endif %}">
+        <p class="text-sm mt-2 {% if deltas.sales > 0 %}text-green-300{% elif deltas.sales < 0 %}text-red-300{% else %}text-kova-200{% endif %}">
           {% if deltas.sales > 0 %}+{% endif %}{{ deltas.sales }} vs previous {{ days }}d
         </p>
         {% endif %}
       </div>
       <div>
-        <p class="text-5xl sm:text-6xl font-extrabold tracking-tight">
+        <p class="text-4xl sm:text-5xl font-semibold tracking-tight">
           KES {{ revenue_from_social|floatformat:0 }}
         </p>
-        <p class="text-kova-200 text-lg mt-1">in attributed revenue</p>
+        <p class="text-kova-200 text-base mt-1">attributed revenue</p>
         {% if deltas.revenue is not None %}
-        <p class="text-sm mt-1 {% if deltas.revenue > 0 %}text-green-300{% elif deltas.revenue < 0 %}text-red-300{% else %}text-kova-300{% endif %}">
+        <p class="text-sm mt-1 {% if deltas.revenue > 0 %}text-green-300{% elif deltas.revenue < 0 %}text-red-300{% else %}text-kova-200{% endif %}">
           {% if deltas.revenue > 0 %}+{% endif %}KES {{ deltas.revenue|floatformat:0 }} vs previous {{ days }}d
         </p>
         {% endif %}

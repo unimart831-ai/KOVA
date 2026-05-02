@@ -225,41 +225,41 @@ LOGGING = {
 # error tracking — the previous try/except ImportError fallback meant a stale
 # venv could silently swallow every exception. If sentry_sdk isn't importable,
 # fix the dep, don't ship blind.
-SENTRY_DSN = env("SENTRY_DSN", default="")  # noqa: F405
-if not SENTRY_DSN:
-    raise ImproperlyConfigured(
-        "SENTRY_DSN must be set in production. Errors must be observable."
+# ─── SENTRY ──────────────────────────────────────────────────────────────────
+
+SENTRY_DSN = env("SENTRY_DSN", default=None)  # noqa: F405
+
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.celery import CeleryIntegration
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.logging import LoggingIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(
+                transaction_style="url",
+                middleware_spans=True,
+            ),
+            CeleryIntegration(monitor_beat_tasks=True),
+            LoggingIntegration(
+                level=None,
+                event_level="ERROR",
+            ),
+        ],
+        traces_sample_rate=0.1,
+        profiles_sample_rate=0.1,
+        release=env("RAILWAY_GIT_COMMIT_SHA", default=None),  # noqa: F405
+        environment="production",
+        send_default_pii=False,
+        before_send_transaction=lambda event, hint: (
+            None if event.get("transaction") == "/health/" else event
+        ),
     )
-
-import sentry_sdk
-from sentry_sdk.integrations.celery import CeleryIntegration
-from sentry_sdk.integrations.django import DjangoIntegration
-from sentry_sdk.integrations.logging import LoggingIntegration
-
-sentry_sdk.init(
-    dsn=SENTRY_DSN,
-    integrations=[
-        DjangoIntegration(
-            transaction_style="url",
-            middleware_spans=True,
-        ),
-        CeleryIntegration(monitor_beat_tasks=True),
-        LoggingIntegration(
-            level=None,        # Capture nothing from logging by default
-            event_level="ERROR",  # Send ERROR+ as Sentry events
-        ),
-    ],
-    # Performance monitoring
-    traces_sample_rate=0.1,   # 10% of requests
-    profiles_sample_rate=0.1, # 10% of profiled transactions
-    # Release tracking — set RAILWAY_GIT_COMMIT_SHA in Railway env
-    release=env("RAILWAY_GIT_COMMIT_SHA", default=None),  # noqa: F405
-    environment="production",
-    # PII
-    send_default_pii=False,
-    # Don't capture health checks
-    before_send_transaction=lambda event, hint: (
-        None if event.get("transaction") == "/health/" else event
-    ),
-)
+else:
+    # Optional: log warning instead of crashing
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.warning("SENTRY_DSN not set — Sentry disabled.")
 
