@@ -47,16 +47,14 @@
   {% if growth_assessment %}
   <div class="card">
     <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-        <span class="text-lg">🧠</span> AI Growth Assessment
-      </h3>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Growth Assessment</h3>
     </div>
     <div class="card-body space-y-3">
       <div class="flex items-center gap-3">
         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
           {% if growth_assessment.status == 'growing' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
           {% elif growth_assessment.status == 'declining' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
-          {% else %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400{% endif %}">
+          {% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400{% endif %}">
           {{ growth_assessment.status|default:"pending"|title }}
         </span>
         {% if growth_assessment.velocity %}
@@ -90,9 +88,7 @@
   {% if growth_summary %}
   <div class="card">
     <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-        <span class="text-lg">📈</span> Platform Growth (30 days)
-      </h3>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Platform Growth (30 days)</h3>
     </div>
     <div class="card-body">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -103,7 +99,6 @@
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
               {% if data.trend == 'accelerating' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
               {% elif data.trend == 'decelerating' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
-              {% elif data.trend == 'steady' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
               {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
               {% if data.trend %}{{ data.trend|title }}{% elif data.status %}{{ data.status|title }}{% endif %}
             </span>
@@ -147,7 +142,9 @@
   {% else %}
   <div class="card">
     <div class="card-body text-center py-12">
-      <div class="text-4xl mb-3">📊</div>
+      <div class="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+        <svg class="h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+      </div>
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Growth data collecting</h3>
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-md mx-auto">
         Follower snapshots are taken daily. Growth trends will appear here within 2-3 days of tracking.
@@ -160,9 +157,7 @@
   {% if content_growth %}
   <div class="card">
     <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-        <span class="text-lg">🔗</span> Content → Growth Correlation
-      </h3>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Content → Growth Correlation</h3>
       <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
         Which content types drive follower growth (avg followers gained 1-3 days after posting)
       </p>
@@ -210,9 +205,7 @@
   {% if revenue_signals %}
   <div class="card">
     <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-        <span class="text-lg">💰</span> Revenue Signals
-      </h3>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Revenue Signals</h3>
     </div>
     <div class="card-body">
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
@@ -257,9 +250,7 @@
   {% if strategy_data.recommendations %}
   <div class="card">
     <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-        <span class="text-lg">💡</span> Latest Recommendations
-      </h3>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Latest Recommendations</h3>
       {% if latest_strategy %}
       <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
         From strategy cycle on {{ latest_strategy.created_at|date:"M d, Y \a\t g:iA" }}
@@ -271,7 +262,7 @@
       <div class="flex items-start gap-3 py-2 {% if not forloop.last %}border-b border-gray-100 dark:border-gray-800{% endif %}">
         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 mt-0.5
           {% if rec.urgency == 'now' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
-          {% elif rec.urgency == 'this_week' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400
+          {% elif rec.urgency == 'this_week' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
           {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
           {{ rec.urgency|default:"ongoing" }}
         </span>
@@ -289,9 +280,7 @@
   {% if recent_cycles %}
   <div class="card">
     <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-        <span class="text-lg">📋</span> Recent Strategy Cycles
-      </h3>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Recent Strategy Cycles</h3>
     </div>
     <div class="card-body">
       <div class="space-y-2">
@@ -307,7 +296,7 @@
           {% if cycle.outcome_score is not None %}
           <span class="text-sm font-medium tabular-nums
             {% if cycle.outcome_score >= 70 %}text-green-600 dark:text-green-400
-            {% elif cycle.outcome_score >= 40 %}text-yellow-600 dark:text-yellow-400
+            {% elif cycle.outcome_score >= 40 %}text-amber-600 dark:text-amber-400
             {% else %}text-red-600 dark:text-red-400{% endif %}">
             {{ cycle.outcome_score }}/100
           </span>

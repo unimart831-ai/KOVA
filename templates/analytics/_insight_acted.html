@@ -5,7 +5,7 @@
      x-data="{ show: true }" x-init="setTimeout(() => { $el.style.opacity = '0'; setTimeout(() => $el.remove(), 300) }, 3000)">
   <p class="text-xs text-gray-500 dark:text-gray-400">
     {% if action == 'create_seed' %}
-      ✨ Content seed created from "{{ insight.title }}" — check your Studio.
+      Content seed created from "{{ insight.title }}" — check your Studio.
     {% elif action == 'act' %}
       ✓ Marked as noted.
     {% elif action == 'dismiss' %}

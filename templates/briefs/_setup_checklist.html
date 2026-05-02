@@ -1,7 +1,7 @@
 {# ── Compact setup progress bar ── #}
 {% if setup_checklist %}
 <div class="rounded-xl border border-kova-800/60 bg-gray-900/60 px-5 py-3 flex items-center gap-4">
-  <span class="text-sm font-medium text-white whitespace-nowrap">🚀 Setup</span>
+  <span class="text-sm font-medium text-white whitespace-nowrap">Setup</span>
 
   {% if setup_checklist.next_step %}
     <a href="{% url setup_checklist.next_step.url_name %}" class="text-xs text-kova-400 hover:text-kova-300 transition-colors whitespace-nowrap">

@@ -76,7 +76,9 @@
                  :class="open ? 'border-kova-500 bg-kova-50 dark:bg-kova-950/30 dark:border-kova-600' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/40'">
               <div class="flex items-center justify-between cursor-pointer" @click="open = !open">
                 <div class="flex items-center gap-2">
-                  <span class="text-lg">🤖</span>
+                  <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kova-100 dark:bg-kova-950/40">
+                    <svg class="h-4 w-4 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                  </div>
                   <div>
                     <h4 class="text-sm font-semibold text-gray-900 dark:text-white">AI Brand Builder</h4>
                     <p class="text-xs text-gray-500 dark:text-gray-400">Regenerate your voice &amp; audience with AI — all fields below will be updated</p>
@@ -106,7 +108,7 @@
                   Upgrade plan &rarr;
                 </a>
                 <p x-show="success" x-cloak class="text-xs text-green-600 dark:text-green-400 text-center font-medium">
-                  ✅ Fields updated below — review and hit Save settings when ready.
+                  Fields updated below — review and hit Save settings when ready.
                 </p>
               </div>
             </div>

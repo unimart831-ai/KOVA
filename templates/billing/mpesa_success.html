@@ -6,12 +6,12 @@
 <div class="max-w-md mx-auto mt-12">
   <div class="card overflow-hidden">
     {# Header #}
-    <div class="px-6 py-8 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-b border-gray-100 dark:border-gray-800 text-center">
-      <div class="w-16 h-16 mx-auto bg-green-100 dark:bg-green-900/50 rounded-2xl flex items-center justify-center mb-4">
-        <span class="text-3xl">🎉</span>
+    <div class="px-6 py-8 bg-kova-700 border-b border-gray-100 dark:border-gray-800 text-center">
+      <div class="w-14 h-14 mx-auto bg-kova-500 rounded-xl flex items-center justify-center mb-4">
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
       </div>
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Karibu sana!</h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">You're now on the <span class="font-semibold text-kova-600 dark:text-kova-400">{{ plan_name }}</span> plan</p>
+      <h2 class="text-2xl font-semibold text-white">Karibu sana!</h2>
+      <p class="text-sm text-kova-200 mt-1">You're now on the <span class="font-semibold text-white">{{ plan_name }}</span> plan</p>
     </div>
 
     {# Body #}
@@ -23,7 +23,7 @@
       {% if profile.subscription_status == 'trialing' %}
         <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg p-3">
           <p class="text-sm text-amber-700 dark:text-amber-400">
-            🎁 <span class="font-semibold">Free trial active!</span> Your trial runs until {{ profile.trial_ends_at|date:"M d, Y" }}.
+            <span class="font-semibold">Free trial active.</span> Your trial runs until {{ profile.trial_ends_at|date:"M d, Y" }}.
           </p>
         </div>
       {% endif %}

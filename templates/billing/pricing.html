@@ -110,15 +110,15 @@
 
   {# ── M-Pesa Phone Modal ── #}
   <div x-show="showPhone" x-transition.opacity x-cloak
-       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+       class="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
        @click.self="showPhone = false" @keydown.escape.window="showPhone = false">
     <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 w-full max-w-md mx-4 overflow-hidden"
          @click.stop>
       {# Header #}
-      <div class="px-6 py-5 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-b border-gray-100 dark:border-gray-800">
+      <div class="px-6 py-5 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
         <div class="flex items-center gap-3">
-          <div class="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded-xl flex items-center justify-center">
-            <span class="text-2xl">📱</span>
+          <div class="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
           </div>
           <div>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Pay with M-Pesa</h3>
@@ -140,7 +140,7 @@
             <input type="tel" name="phone_number" x-model="phone"
                    placeholder="0712 345 678"
                    required
-                   class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                   class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500 focus:border-kova-500">
           </div>
           <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">You'll receive an STK push notification on this number</p>
         </div>
@@ -169,7 +169,7 @@
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Discount Code (optional)</label>
             <input type="text" name="discount_code"
                    placeholder="e.g. LAUNCH50"
-                   class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 font-mono uppercase text-sm"
+                   class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500 focus:border-kova-500 font-mono uppercase text-sm"
                    maxlength="30">
             <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Have a promo code? Enter it here.</p>
           </div>

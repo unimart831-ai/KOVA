@@ -24,12 +24,12 @@
   <div class="flex items-center gap-2 flex-wrap">
     <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Filter:</span>
     <a href="{% url 'memes:trend_alerts' %}"
-       class="text-xs px-3 py-1.5 rounded-full border font-medium transition-colors {% if not status_filter %}bg-rose-600 text-white border-rose-600{% else %}bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-rose-300{% endif %}">
+       class="text-xs px-3 py-1.5 rounded-full border font-medium transition-colors {% if not status_filter %}bg-kova-600 text-white border-kova-600{% else %}bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-kova-300{% endif %}">
       All
     </a>
     {% for value, label in status_choices %}
     <a href="{% url 'memes:trend_alerts' %}?status={{ value }}"
-       class="text-xs px-3 py-1.5 rounded-full border font-medium transition-colors {% if status_filter == value %}bg-rose-600 text-white border-rose-600{% else %}bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-rose-300{% endif %}">
+       class="text-xs px-3 py-1.5 rounded-full border font-medium transition-colors {% if status_filter == value %}bg-kova-600 text-white border-kova-600{% else %}bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-kova-300{% endif %}">
       {{ label }}
     </a>
     {% endfor %}
@@ -97,7 +97,7 @@
               <form method="post" action="{% url 'memes:trend_alert_action' alert.pk %}">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="approve">
-                <button type="submit" class="btn-primary text-xs px-3 py-1 bg-rose-600 hover:bg-rose-700">🔥 Ride It</button>
+                <button type="submit" class="btn-primary text-xs px-3 py-1">Ride It</button>
               </form>
               <form method="post" action="{% url 'memes:trend_alert_action' alert.pk %}">
                 {% csrf_token %}

@@ -22,25 +22,25 @@
   </div>
 
   {# ROI Hero Card #}
-  <div class="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl p-6 text-white">
+  <div class="rounded-xl bg-kova-700 p-6 text-white">
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
       <div>
-        <p class="text-emerald-200 text-xs font-medium">Total Revenue</p>
-        <p class="text-3xl font-bold mt-1">KES {{ totals.total_revenue|floatformat:0 }}</p>
+        <p class="text-kova-200 text-xs font-medium">Total Revenue</p>
+        <p class="text-3xl font-semibold mt-1">KES {{ totals.total_revenue|floatformat:0 }}</p>
       </div>
       <div>
-        <p class="text-emerald-200 text-xs font-medium">Kova Cost</p>
-        <p class="text-3xl font-bold mt-1">KES {{ roi.monthly_cost_kes|floatformat:0 }}</p>
-        <p class="text-xs text-emerald-200 mt-0.5">{{ roi.plan|title }} plan</p>
+        <p class="text-kova-200 text-xs font-medium">Kova Cost</p>
+        <p class="text-3xl font-semibold mt-1">KES {{ roi.monthly_cost_kes|floatformat:0 }}</p>
+        <p class="text-xs text-kova-200 mt-0.5">{{ roi.plan|title }} plan</p>
       </div>
       <div>
-        <p class="text-emerald-200 text-xs font-medium">ROI</p>
-        <p class="text-3xl font-bold mt-1">{{ roi.roi_percentage }}%</p>
+        <p class="text-kova-200 text-xs font-medium">ROI</p>
+        <p class="text-3xl font-semibold mt-1">{{ roi.roi_percentage }}%</p>
       </div>
       <div>
-        <p class="text-emerald-200 text-xs font-medium">Conversions</p>
-        <p class="text-3xl font-bold mt-1">{{ totals.total_conversions }}</p>
-        <p class="text-xs text-emerald-200 mt-0.5">{{ totals.total_sales }} sales · {{ totals.total_leads }} leads</p>
+        <p class="text-kova-200 text-xs font-medium">Conversions</p>
+        <p class="text-3xl font-semibold mt-1">{{ totals.total_conversions }}</p>
+        <p class="text-xs text-kova-200 mt-0.5">{{ totals.total_sales }} sales · {{ totals.total_leads }} leads</p>
       </div>
     </div>
   </div>
@@ -61,7 +61,7 @@
           <p class="text-[10px] text-gray-400">{{ funnel.click_to_lead }}%</p>
         </div>
         <div class="text-center flex-1">
-          <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ funnel.leads }}</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ funnel.leads }}</p>
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Leads</p>
         </div>
         <div class="text-center text-gray-300 dark:text-gray-600">
@@ -208,7 +208,9 @@
       {% for store in shopify_stores %}
       <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
         <div class="flex items-center gap-3">
-          <span class="text-lg">🛒</span>
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-700">
+            <svg class="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+          </div>
           <div>
             <p class="text-sm font-medium text-gray-900 dark:text-white">{{ store.shop_domain }}</p>
             <p class="text-xs text-gray-500 dark:text-gray-400">{{ store.orders_tracked }} orders · KES {{ store.total_revenue|floatformat:0 }} tracked</p>
@@ -249,7 +251,9 @@
       {# M-Pesa info #}
       <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
         <div class="flex items-center gap-3">
-          <span class="text-lg">📱</span>
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-700">
+            <svg class="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          </div>
           <div>
             <p class="text-sm font-medium text-gray-900 dark:text-white">M-Pesa Commerce Tracking</p>
             <p class="text-xs text-gray-500 dark:text-gray-400">Automatic — M-Pesa payments are tracked when customers pay via your business till number.</p>
@@ -260,7 +264,9 @@
       {# API info #}
       <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
         <div class="flex items-center gap-3">
-          <span class="text-lg">🔌</span>
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-700">
+            <svg class="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+          </div>
           <div>
             <p class="text-sm font-medium text-gray-900 dark:text-white">API / Webhook</p>
             <p class="text-xs text-gray-500 dark:text-gray-400">
@@ -283,13 +289,11 @@
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2 mb-0.5">
             <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
-              {% if c.conversion_type == 'sale' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
-              {% elif c.conversion_type == 'lead' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300
-              {% elif c.conversion_type == 'click' %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400
-              {% else %}bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300{% endif %}">
+              {% if c.conversion_type == 'sale' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+              {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
               {{ c.get_conversion_type_display }}
             </span>
-            {% if c.product %}<span class="text-[10px] text-amber-600 dark:text-amber-400">{{ c.product.name }}</span>{% endif %}
+            {% if c.product %}<span class="text-[10px] text-gray-500 dark:text-gray-400">{{ c.product.name }}</span>{% endif %}
             {% if c.utm_campaign %}<span class="text-[10px] text-gray-400">{{ c.utm_campaign }}</span>{% endif %}
           </div>
           {% if c.post %}
@@ -305,7 +309,9 @@
       </div>
       {% empty %}
       <div class="px-5 py-12 text-center">
-        <div class="text-4xl mb-3">📊</div>
+        <div class="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+          <svg class="h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </div>
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">No conversions yet</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Connect Shopify, track M-Pesa payments, or use the API to start attributing revenue to your social content.</p>
       </div>

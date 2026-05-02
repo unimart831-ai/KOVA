@@ -10,7 +10,7 @@ Usage: {% url 'content:preview' post.id %}
      @click.self="this.remove()">
 
   {# Backdrop #}
-  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="document.getElementById('preview-overlay')?.remove()"></div>
+  <div class="absolute inset-0 bg-black/60" @click="document.getElementById('preview-overlay')?.remove()"></div>
 
   {# Preview panel #}
   <div class="relative w-full max-w-lg bg-white dark:bg-gray-900 rounded-2xl shadow-2xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden max-h-[90vh] flex flex-col">

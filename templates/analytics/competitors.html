@@ -151,14 +151,6 @@
                  class="card">
               <div class="card-body p-3">
                 <div class="flex items-start gap-2">
-                  <span class="mt-0.5 text-sm">
-                    {% if insight.insight_type == 'content_gap' %}🔲
-                    {% elif insight.insight_type == 'trend_ahead' %}🚀
-                    {% elif insight.insight_type == 'weakness' %}🎯
-                    {% elif insight.insight_type == 'strategy_shift' %}🔄
-                    {% elif insight.insight_type == 'viral_content' %}🔥
-                    {% else %}💡{% endif %}
-                  </span>
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-1.5">
                       {% if insight.priority == 'high' %}
@@ -166,7 +158,7 @@
                       {% elif insight.priority == 'medium' %}
                         <span class="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></span>
                       {% else %}
-                        <span class="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></span>
+                        <span class="w-2 h-2 rounded-full bg-gray-400 flex-shrink-0"></span>
                       {% endif %}
                       <p class="text-xs font-semibold text-gray-900 dark:text-white truncate">{{ insight.title }}</p>
                     </div>

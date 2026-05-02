@@ -37,7 +37,7 @@
           {% if broadcast.status == 'draft' or broadcast.status == 'scheduled' %}
             <form method="post" action="{% url 'whatsapp:broadcast_launch' broadcast.pk %}">
               {% csrf_token %}
-              <button type="submit" class="btn-primary btn-sm">🚀 Launch</button>
+              <button type="submit" class="btn-primary btn-sm">Launch</button>
             </form>
           {% endif %}
           {% if broadcast.status == 'sending' or broadcast.status == 'scheduled' %}

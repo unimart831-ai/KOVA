@@ -175,8 +175,7 @@
     {# Launch button #}
     <button type="submit"
             :disabled="photos.length === 0 || !name"
-            class="w-full btn-primary text-base py-3.5 rounded-xl font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20">
-      <span>🚀</span>
+            class="w-full btn-primary text-base py-3.5 rounded-xl font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
       <span x-text="photos.length <= 1
         ? 'Snap to Sell — Launch Campaign'
         : 'Snap to Sell — Launch with ' + photos.length + ' Photos'"></span>

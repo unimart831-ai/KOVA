@@ -1,4 +1,4 @@
-{% extends "layouts/app.html" %}
+﻿{% extends "layouts/app.html" %}
 
 {% block page_title %}Connect WhatsApp{% endblock %}
 
@@ -17,7 +17,7 @@
       </div>
 
       {% if embedded_signup_available %}
-      {# ══════ PRIMARY: Embedded Signup (one-click) ══════ #}
+      {# â•â•â•â•â•â• PRIMARY: Embedded Signup (one-click) â•â•â•â•â•â• #}
       <div class="space-y-4">
         <div class="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-lg p-4">
           <p class="text-xs font-semibold text-green-800 dark:text-green-200 mb-1">Recommended: One-click setup</p>
@@ -48,13 +48,13 @@
         <div class="text-center pt-2 border-t border-gray-100 dark:border-gray-800">
           <button type="button" @click="showManual = !showManual"
                   class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-            <span x-text="showManual ? 'Hide manual setup' : 'Already have a token? Manual setup →'"></span>
+            <span x-text="showManual ? 'Hide manual setup' : 'Already have a token? Manual setup â†’'"></span>
           </button>
         </div>
       </div>
       {% endif %}
 
-      {# ══════ MANUAL SETUP (fallback or only option) ══════ #}
+      {# â•â•â•â•â•â• MANUAL SETUP (fallback or only option) â•â•â•â•â•â• #}
       <div x-show="{% if embedded_signup_available %}showManual{% else %}true{% endif %}"
            {% if embedded_signup_available %}x-cloak{% endif %}
            class="space-y-4">
@@ -68,9 +68,9 @@
         <div class="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-lg p-4">
           <p class="text-xs font-semibold text-green-800 dark:text-green-200 mb-2">How to get your credentials:</p>
           <ol class="text-xs text-green-700 dark:text-green-300 space-y-1 list-decimal list-inside">
-            <li>Go to <a href="https://business.facebook.com/settings" target="_blank" class="underline font-medium">Meta Business Suite</a> → Settings</li>
-            <li>Navigate to <strong>WhatsApp → API Setup</strong> — copy your <strong>Phone Number ID</strong> and <strong>Business Account ID</strong></li>
-            <li>Go to <strong>Users → System Users</strong> → create one with <strong>Admin</strong> role</li>
+            <li>Go to <a href="https://business.facebook.com/settings" target="_blank" class="underline font-medium">Meta Business Suite</a> â†’ Settings</li>
+            <li>Navigate to <strong>WhatsApp â†’ API Setup</strong> â€” copy your <strong>Phone Number ID</strong> and <strong>Business Account ID</strong></li>
+            <li>Go to <strong>Users â†’ System Users</strong> â†’ create one with <strong>Admin</strong> role</li>
             <li>Click <strong>"Generate New Token"</strong> with <code class="bg-green-100 dark:bg-green-900 px-1 rounded">whatsapp_business_messaging</code> permission</li>
             <li>Paste all three values below</li>
           </ol>
@@ -82,21 +82,21 @@
           <div>
             <label for="phone_number_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number ID</label>
             <input type="text" id="phone_number_id" name="phone_number_id" placeholder="1234567890123456" required
-                   class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
-            <p class="text-[10px] text-gray-400 mt-1">Meta Business Suite → WhatsApp → API Setup → Phone Number ID</p>
+                   class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-kova-500 focus:border-kova-500">
+            <p class="text-[10px] text-gray-400 mt-1">Meta Business Suite â†’ WhatsApp â†’ API Setup â†’ Phone Number ID</p>
           </div>
 
           <div>
             <label for="waba_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Business Account ID</label>
             <input type="text" id="waba_id" name="waba_id" placeholder="1234567890123456" required
-                   class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
-            <p class="text-[10px] text-gray-400 mt-1">Meta Business Suite → WhatsApp → API Setup → Business Account ID</p>
+                   class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-kova-500 focus:border-kova-500">
+            <p class="text-[10px] text-gray-400 mt-1">Meta Business Suite â†’ WhatsApp â†’ API Setup â†’ Business Account ID</p>
           </div>
 
           <div>
             <label for="access_token" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Access Token</label>
             <input type="password" id="access_token" name="access_token" placeholder="EAAxxxxxxxx..." required
-                   class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                   class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-kova-500 focus:border-kova-500">
             <p class="text-[10px] text-gray-400 mt-1">System User permanent token from Meta Business Suite</p>
           </div>
 
@@ -111,7 +111,7 @@
 </div>
 
 {% if embedded_signup_available %}
-{# ── Facebook JS SDK for Embedded Signup ── #}
+{# â”€â”€ Facebook JS SDK for Embedded Signup â”€â”€ #}
 <div id="fb-root"></div>
 <script>
 (function(d, s, id) {
@@ -197,7 +197,7 @@ function whatsappConnect() {
         waba_id: session.waba_id || '',
       });
 
-      console.log('[Kova] Submitting to backend — code length:', code.length,
+      console.log('[Kova] Submitting to backend â€” code length:', code.length,
                    'phone_number_id:', session.phone_number_id || '(empty)',
                    'waba_id:', session.waba_id || '(empty)');
 

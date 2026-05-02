@@ -169,7 +169,7 @@
                     <span class="text-gray-400 dark:text-gray-500 ml-1">— {{ payment.created_at|date:"M d" }}</span>
                   </div>
                   <span class="{% if payment.status == 'completed' %}text-green-600 dark:text-green-400{% else %}text-red-500{% endif %} text-xs font-medium">
-                    {% if payment.status == 'completed' %}✓ Paid{% elif payment.status == 'pending' %}⏳ Pending{% else %}✗ Failed{% endif %}
+                    {% if payment.status == 'completed' %}Paid{% elif payment.status == 'pending' %}Pending{% else %}Failed{% endif %}
                   </span>
                 </div>
               {% endfor %}

@@ -27,15 +27,7 @@
               onclick="document.getElementById('idea-input').value = this.dataset.idea; document.getElementById('idea-input').focus(); document.getElementById('idea-input').scrollIntoView({behavior:'smooth', block:'center'})"
               data-idea="{{ suggestion.text }}"
               class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-kova-200 dark:border-kova-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-kova-400 hover:bg-kova-50 dark:hover:bg-kova-900/30 transition-colors cursor-pointer text-left">
-        {% if suggestion.source == "trend" %}
-          <span class="text-[10px]" title="Trending">🔬</span>
-        {% elif suggestion.source == "competitor" %}
-          <span class="text-[10px]" title="Competitor gap">🏆</span>
-        {% elif suggestion.source == "ai" %}
-          <span class="text-[10px]" title="AI — tailored to your goals">✨</span>
-        {% else %}
-          <span class="text-[10px]" title="Industry playbook">💡</span>
-        {% endif %}
+        <span class="text-[10px] text-gray-400 uppercase tracking-wide font-medium">{{ suggestion.source|default:"ai" }}</span>
         {{ suggestion.text|truncatewords:10 }}
       </button>
       {% endfor %}

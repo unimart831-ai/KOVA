@@ -25,10 +25,12 @@
   {% if not has_data %}
   {# Empty state #}
   <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-8 text-center">
-    <div class="text-5xl mb-4">🧠</div>
+    <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+      <svg class="h-6 w-6 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+    </div>
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Not enough data yet</h3>
     <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
-      Publish at least 5 posts so I can analyze what works best for your audience. I'll track formats, timing, themes, and give you specific recommendations.
+      Publish at least 5 posts so Kova can analyze what works best for your audience. Format, timing, themes, and specific recommendations will appear here.
     </p>
     <a href="{% url 'content:studio' %}" class="btn-primary text-sm px-4 py-2">Create Content</a>
   </div>
@@ -36,12 +38,12 @@
 
   {# ═══ Top Recommendations ═══ #}
   {% if recommendations %}
-  <div class="bg-gradient-to-br from-kova-600 via-kova-700 to-indigo-800 rounded-2xl p-6 text-white shadow-xl">
-    <h3 class="text-sm font-medium text-kova-200 mb-3">AI Recommendations — based on {{ total_posts }} posts</h3>
+  <div class="rounded-xl bg-kova-700 p-6 text-white">
+    <h3 class="text-sm font-medium text-kova-200 mb-3">Recommendations — based on {{ total_posts }} posts</h3>
     <div class="space-y-3">
       {% for rec in recommendations %}
       <div class="flex items-start gap-3">
-        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">{{ forloop.counter }}</span>
+        <span class="flex-shrink-0 w-5 h-5 rounded-full bg-kova-500 flex items-center justify-center text-xs font-semibold tabular-nums">{{ forloop.counter }}</span>
         <p class="text-sm leading-relaxed">{{ rec }}</p>
       </div>
       {% endfor %}
@@ -69,7 +71,7 @@
             <div class="flex items-center gap-2">
               <div class="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-2">
                 {% with max_eng=best_formats.0.avg_engagement %}
-                <div class="{% if forloop.first %}bg-kova-600{% elif forloop.counter == 2 %}bg-kova-500{% else %}bg-kova-400{% endif %} h-2 rounded-full transition-all"
+                <div class="bg-kova-500 h-2 rounded-full transition-all"
                      style="width: {% widthratio fmt.avg_engagement max_eng 100 %}%"></div>
                 {% endwith %}
               </div>
@@ -98,7 +100,7 @@
             <span class="w-16 text-sm font-mono text-gray-600 dark:text-gray-400">{{ h.label }}</span>
             <div class="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-3">
               {% with max_eng=best_hours.0.avg_engagement %}
-              <div class="{% if forloop.first %}bg-emerald-500{% elif forloop.counter == 2 %}bg-emerald-400{% else %}bg-emerald-300 dark:bg-emerald-600{% endif %} h-3 rounded-full transition-all"
+              <div class="bg-kova-500 h-3 rounded-full transition-all"
                    style="width: {% widthratio h.avg_engagement max_eng 100 %}%"></div>
               {% endwith %}
             </div>

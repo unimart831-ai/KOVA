@@ -44,9 +44,9 @@
         </select>
         <select name="priority" class="input text-sm w-auto" onchange="this.form.submit()">
           <option value="">All priorities</option>
-          <option value="high" {% if current_priority == 'high' %}selected{% endif %}>🔴 High</option>
-          <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>🟡 Medium</option>
-          <option value="low" {% if current_priority == 'low' %}selected{% endif %}>⚪ Low</option>
+          <option value="high" {% if current_priority == 'high' %}selected{% endif %}>High</option>
+          <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>Medium</option>
+          <option value="low" {% if current_priority == 'low' %}selected{% endif %}>Low</option>
         </select>
       </form>
     </div>

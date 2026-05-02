@@ -70,8 +70,8 @@
       {% if product.stock_status != 'out_of_stock' %}
       <form method="post" action="{% url 'products:promote' product_id=product.pk %}" class="inline">
         {% csrf_token %}
-        <button type="submit" class="btn-secondary text-sm px-4 py-1.5 bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-950 dark:text-green-300 dark:border-green-800 dark:hover:bg-green-900">
-          🚀 Promote
+        <button type="submit" class="btn-secondary text-sm px-4 py-1.5">
+          Promote
         </button>
       </form>
       {% endif %}
