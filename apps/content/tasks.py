@@ -9,8 +9,11 @@ import logging
 import re
 from urllib.parse import urlencode, urlparse, urlunparse, parse_qs
 
+import sentry_sdk
 from celery import shared_task
 from django.utils import timezone
+
+from apps.utils.locks import single_run
 
 logger = logging.getLogger(__name__)
 
@@ -190,8 +193,31 @@ def generate_from_seed(seed_id: str):
         logger.error("ContentSeed %s not found", seed_id)
         return {"error": "Seed not found"}
 
+    from apps.billing.exceptions import PlanLimitExceeded
+    from apps.notifications.models import Notification
+
     try:
         posts = run_create_agent(seed)
+    except PlanLimitExceeded as exc:
+        # Daily AI budget hit — this is a billing event, not a bug. Don't
+        # noise Sentry, but do tell the user with an actionable message.
+        logger.info(
+            "generate_from_seed budget-blocked for seed %s user=%s: %s",
+            seed_id, seed.user.email, exc.message,
+        )
+        seed.refresh_from_db()
+        if seed.status not in (ContentSeed.SeedStatus.COMPLETED, ContentSeed.SeedStatus.FAILED):
+            seed.status = ContentSeed.SeedStatus.FAILED
+            seed.error_message = exc.message
+            seed.save(update_fields=["status", "error_message", "updated_at"])
+        try:
+            Notification.create_for_user(
+                seed.user, "system",
+                f"AI budget reached: {exc.message} View Billing to upgrade.",
+            )
+        except Exception:
+            pass  # Notifications are best-effort.
+        return {"error": exc.message, "error_type": "plan_limit"}
     except Exception as exc:
         logger.error("generate_from_seed failed for seed %s: %s", seed_id, exc, exc_info=True)
         seed.refresh_from_db()
@@ -227,7 +253,7 @@ def generate_from_seed(seed_id: str):
     }
 
 
-@shared_task(name="content.regenerate_post_async")
+@shared_task(name="content.regenerate_post_async", soft_time_limit=180, time_limit=210)
 def regenerate_post_async(post_id: str):
     """
     Regenerate a single post asynchronously via the Create Agent.
@@ -270,7 +296,7 @@ def regenerate_post_async(post_id: str):
         return {"error": str(exc)}
 
 
-@shared_task(name="content.retry_image_generation")
+@shared_task(name="content.retry_image_generation", soft_time_limit=90, time_limit=120)
 def retry_image_generation(post_id: str):
     """Retry AI image generation for a post using its stored media_prompt."""
     from apps.content.models import Post
@@ -301,7 +327,13 @@ def retry_image_generation(post_id: str):
         return {"error": str(exc)}
 
 
-@shared_task(name="content.publish_post", bind=True, max_retries=3)
+@shared_task(
+    name="content.publish_post",
+    bind=True,
+    max_retries=3,
+    soft_time_limit=120,
+    time_limit=150,
+)
 def publish_post(self, post_id: str):
     """
     Publish a single post to its platform.
@@ -574,7 +606,12 @@ def _fail_post(post, error_message: str):
     logger.error("Post %s failed: %s", post.pk, error_message)
 
 
-@shared_task(name="content.check_and_publish_due_posts")
+@shared_task(
+    name="content.check_and_publish_due_posts",
+    soft_time_limit=4 * 60,
+    time_limit=5 * 60,
+)
+@single_run("content.check_and_publish_due_posts", timeout=4 * 60)
 def check_and_publish_due_posts():
     """
     Periodic task: find all posts due for publishing and fire publish tasks.
@@ -641,7 +678,7 @@ def check_and_publish_due_posts():
     return {"dispatched": count, "auto_scheduled": auto_scheduled}
 
 
-@shared_task(name="content.fetch_post_metrics")
+@shared_task(name="content.fetch_post_metrics", soft_time_limit=60, time_limit=90)
 def fetch_post_metrics(post_id: str):
     """
     Fetch engagement metrics for a published post from its platform.
@@ -755,7 +792,12 @@ def _calc_engagement_rate(metrics):
     return 0.0
 
 
-@shared_task(name="content.fetch_all_recent_metrics")
+@shared_task(
+    name="content.fetch_all_recent_metrics",
+    soft_time_limit=10 * 60,
+    time_limit=12 * 60,
+)
+@single_run("content.fetch_all_recent_metrics", timeout=15 * 60)
 def fetch_all_recent_metrics():
     """
     Periodic task: fetch metrics for all posts published in the last 7 days.
@@ -784,7 +826,7 @@ def fetch_all_recent_metrics():
 
 # ── A/B Testing Tasks ────────────────────────────────────────────────────────
 
-@shared_task(name="content.generate_ab_test_variants")
+@shared_task(name="content.generate_ab_test_variants", soft_time_limit=5 * 60, time_limit=6 * 60)
 def generate_ab_test_variants(ab_test_id: str):
     """
     Run the Create Agent to generate variants for an A/B test.
@@ -822,7 +864,8 @@ def generate_ab_test_variants(ab_test_id: str):
     }
 
 
-@shared_task(name="content.evaluate_ab_tests")
+@shared_task(name="content.evaluate_ab_tests", soft_time_limit=10 * 60, time_limit=12 * 60)
+@single_run("content.evaluate_ab_tests", timeout=15 * 60)
 def evaluate_ab_tests():
     """
     Periodic task: find running A/B tests past their duration and evaluate them.
@@ -854,7 +897,8 @@ def evaluate_ab_tests():
 
 # ── Content Recycling Engine ─────────────────────────────────────────────────
 
-@shared_task(name="content.recycle_top_content")
+@shared_task(name="content.recycle_top_content", soft_time_limit=15 * 60, time_limit=18 * 60)
+@single_run("content.recycle_top_content", timeout=20 * 60)
 def recycle_top_content():
     """
     Find high-performing published posts (30+ days old) and create
@@ -949,7 +993,7 @@ def recycle_top_content():
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-@shared_task(name="content.process_voice_brief")
+@shared_task(name="content.process_voice_brief", soft_time_limit=5 * 60, time_limit=6 * 60)
 def process_voice_brief(voice_brief_id: str):
     """
     Process a voice memo into a full campaign.

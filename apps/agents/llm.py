@@ -319,6 +319,7 @@ def generate(
     temperature: float = 0.7,
     max_tokens: int = 4096,
     json_mode: bool = False,
+    user=None,
 ) -> LLMResponse:
     """
     Generate a completion from the configured LLM provider.
@@ -335,10 +336,21 @@ def generate(
         temperature: Creativity control (0.0-1.0).
         max_tokens: Maximum response tokens.
         json_mode: If True, request JSON output format.
+        user: When provided, the call is metered against the user's daily
+            LLM token budget (PLAN_LIMITS[...]['daily_llm_tokens']).
+            Raises ``PlanLimitExceeded`` if the cap would be breached.
+            ``user=None`` skips enforcement — used by background system
+            tasks until they're migrated to per-user metering.
 
     Returns:
         LLMResponse with content, token counts, and timing.
     """
+    # Plan-budget gate. Runs before any external call so a capped user
+    # never costs us a single token on the upstream provider.
+    if user is not None:
+        from apps.agents.budget import check_budget
+        check_budget(user, max_tokens)
+
     # Load runtime config from DB (cached), fall back to settings
     config = _get_llm_config()
 
@@ -413,6 +425,16 @@ def generate(
             if resp.content and resp.content.strip():
                 if use_provider != provider:
                     logger.info("Paid fallback used: %s (original: %s/%s)", try_model, provider, model)
+                if user is not None:
+                    try:
+                        from apps.agents.budget import record_usage
+                        record_usage(
+                            user, resp.model or try_model,
+                            resp.input_tokens, resp.output_tokens,
+                        )
+                    except Exception as exc:
+                        # Metering must never break the user-facing flow.
+                        logger.warning("record_usage failed: %s", exc)
                 return resp
 
             logger.warning(

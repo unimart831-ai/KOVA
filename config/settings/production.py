@@ -3,14 +3,27 @@ Production settings for Kova Agent.
 Deployed on Railway.
 """
 
+from django.core.exceptions import ImproperlyConfigured
+
 from .base import *  # noqa: F401, F403
 
-# ─── ENFORCE SECRET_KEY ──────────────────────────────────────────────────────
+# ─── ENFORCE PRODUCTION SECRETS ──────────────────────────────────────────────
+# Refuse to boot in production if any of these are missing or set to a known
+# insecure default. Failing loudly here is far better than silently shipping
+# a broken trust boundary — these are the keys that protect every user's
+# session and every encrypted OAuth token.
 if SECRET_KEY == "INSECURE-dev-key-change-me-in-production":  # noqa: F405
-    import warnings
-    warnings.warn(
-        "SECRET_KEY is using the insecure default! Set SECRET_KEY in Railway environment variables.",
-        stacklevel=1,
+    raise ImproperlyConfigured(
+        "SECRET_KEY is set to the insecure default in production. "
+        "Set SECRET_KEY in Railway environment variables to a strong random value."
+    )
+
+# FIELD_ENCRYPTION_KEY must be a dedicated key — falling back to SECRET_KEY
+# means a session-secret leak would also expose every stored OAuth token.
+if not env("FIELD_ENCRYPTION_KEY", default=""):  # noqa: F405
+    raise ImproperlyConfigured(
+        "FIELD_ENCRYPTION_KEY must be set in production (separate from SECRET_KEY). "
+        "Generate one with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
     )
 
 # ─── SECURITY ────────────────────────────────────────────────────────────────
@@ -19,6 +32,11 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+# Lax is the right default for SaaS: protects against CSRF on cross-site
+# top-level POST requests while still allowing normal navigation flows
+# (e.g. clicking an email link to land in an authenticated session).
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
 SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_HSTS_SECONDS = 31536000
@@ -92,7 +110,9 @@ else:
 # ─── CONTENT SECURITY POLICY ────────────────────────────────────────────────
 # django-csp: Restrict what the browser can load to prevent XSS/injection.
 CSP_DEFAULT_SRC = ("'self'",)
-CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "'unsafe-eval'", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://js.stripe.com")
+# 'unsafe-eval' removed — Alpine.js 3+ does not need it, and HTMX never did.
+# If a future dep needs it, add a strict-dynamic nonce instead of re-allowing eval.
+CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://js.stripe.com")
 CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com")
 CSP_IMG_SRC = ("'self'", "data:", "https:", "blob:")  # Allow platform avatars, media
 CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net")
@@ -113,28 +133,25 @@ DATABASES["default"]["CONN_HEALTH_CHECKS"] = True  # noqa: F405
 # No changes needed unless you want a separate broker URL.
 
 # ─── EMAIL (Resend HTTP API via django-anymail) ──────────────────────────────
-# Uses Resend's REST API instead of SMTP — no port blocking on Railway.
-# Set RESEND_API_KEY in Railway env vars to enable.
+# Resend is the source of truth for transactional email in production. The
+# previous filebased fallback to /tmp on Railway silently lost every email
+# (ephemeral filesystem) including trial-expiry warnings and password resets.
+# Refuse to boot without it so the failure is visible at deploy time.
 RESEND_API_KEY = env("RESEND_API_KEY", default="")  # noqa: F405
-if RESEND_API_KEY:
-    INSTALLED_APPS += ["anymail"]  # noqa: F405
-    EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
-    ANYMAIL = {
-        "RESEND_API_KEY": RESEND_API_KEY,
-    }
-else:
-    # Silently discard emails rather than dumping HTML to stderr logs.
-    # Set RESEND_API_KEY in Railway env vars to enable real delivery.
-    EMAIL_BACKEND = "django.core.mail.backends.filebased.EmailBackend"
-    EMAIL_FILE_PATH = "/tmp/kova-emails"
-    import logging as _logging
-    _logging.getLogger(__name__).warning(
-        "RESEND_API_KEY not set — emails will be written to %s instead of sent",
-        EMAIL_FILE_PATH,
+if not RESEND_API_KEY:
+    raise ImproperlyConfigured(
+        "RESEND_API_KEY must be set in production. "
+        "Without it, password resets and trial emails would be silently dropped."
     )
+INSTALLED_APPS += ["anymail"]  # noqa: F405
+EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
+ANYMAIL = {
+    "RESEND_API_KEY": RESEND_API_KEY,
+}
 
-# Enforce email verification in production (Resend must be configured)
-ACCOUNT_EMAIL_VERIFICATION = "mandatory" if RESEND_API_KEY else "none"
+# Email verification is non-negotiable in production — gates trial abuse and
+# guarantees we have a deliverable address before billing the user.
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 
 # ─── LOGGING ─────────────────────────────────────────────────────────────────
 import logging as _logging
@@ -204,40 +221,45 @@ LOGGING = {
 }
 
 # ─── SENTRY ──────────────────────────────────────────────────────────────────
+# Sentry is mandatory in production. Silent error tracking is worse than no
+# error tracking — the previous try/except ImportError fallback meant a stale
+# venv could silently swallow every exception. If sentry_sdk isn't importable,
+# fix the dep, don't ship blind.
 SENTRY_DSN = env("SENTRY_DSN", default="")  # noqa: F405
-if SENTRY_DSN:
-    try:
-        import sentry_sdk
-        from sentry_sdk.integrations.celery import CeleryIntegration
-        from sentry_sdk.integrations.django import DjangoIntegration
-        from sentry_sdk.integrations.logging import LoggingIntegration
+if not SENTRY_DSN:
+    raise ImproperlyConfigured(
+        "SENTRY_DSN must be set in production. Errors must be observable."
+    )
 
-        sentry_sdk.init(
-            dsn=SENTRY_DSN,
-            integrations=[
-                DjangoIntegration(
-                    transaction_style="url",
-                    middleware_spans=True,
-                ),
-                CeleryIntegration(monitor_beat_tasks=True),
-                LoggingIntegration(
-                    level=None,        # Capture nothing from logging by default
-                    event_level="ERROR",  # Send ERROR+ as Sentry events
-                ),
-            ],
-            # Performance monitoring
-            traces_sample_rate=0.1,   # 10% of requests
-            profiles_sample_rate=0.1, # 10% of profiled transactions
-            # Release tracking — set RAILWAY_GIT_COMMIT_SHA in Railway env
-            release=env("RAILWAY_GIT_COMMIT_SHA", default=None),  # noqa: F405
-            environment="production",
-            # PII
-            send_default_pii=False,
-            # Don't capture health checks
-            before_send_transaction=lambda event, hint: (
-                None if event.get("transaction") == "/health/" else event
-            ),
-        )
-    except ImportError:
-        pass
+import sentry_sdk
+from sentry_sdk.integrations.celery import CeleryIntegration
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
+
+sentry_sdk.init(
+    dsn=SENTRY_DSN,
+    integrations=[
+        DjangoIntegration(
+            transaction_style="url",
+            middleware_spans=True,
+        ),
+        CeleryIntegration(monitor_beat_tasks=True),
+        LoggingIntegration(
+            level=None,        # Capture nothing from logging by default
+            event_level="ERROR",  # Send ERROR+ as Sentry events
+        ),
+    ],
+    # Performance monitoring
+    traces_sample_rate=0.1,   # 10% of requests
+    profiles_sample_rate=0.1, # 10% of profiled transactions
+    # Release tracking — set RAILWAY_GIT_COMMIT_SHA in Railway env
+    release=env("RAILWAY_GIT_COMMIT_SHA", default=None),  # noqa: F405
+    environment="production",
+    # PII
+    send_default_pii=False,
+    # Don't capture health checks
+    before_send_transaction=lambda event, hint: (
+        None if event.get("transaction") == "/health/" else event
+    ),
+)
 

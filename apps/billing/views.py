@@ -2,6 +2,7 @@ import hmac
 import json
 import logging
 
+import sentry_sdk
 import stripe
 from django.conf import settings
 from django.contrib import messages
@@ -44,6 +45,20 @@ def billing_overview(request):
             user=request.user,
         ).exclude(status=MpesaPayment.Status.EXPIRED).order_by("-created_at")[:5]
 
+    # Today's LLM token usage — surfaces the daily cap so users see where
+    # they stand before hitting PlanLimitExceeded.
+    from django.utils import timezone
+
+    from apps.agents.models import UserTokenBucket
+
+    today_bucket = UserTokenBucket.objects.filter(
+        user=request.user,
+        period_date=timezone.now().date(),
+    ).first()
+    tokens_used_today = today_bucket.total_tokens if today_bucket else 0
+    tokens_cap = int(limits.get("daily_llm_tokens", 0))
+    tokens_pct = int(min(100, (tokens_used_today / tokens_cap) * 100)) if tokens_cap else 0
+
     return render(request, "billing/overview.html", {
         "page_title": "Billing & Plan",
         "profile": profile,
@@ -51,6 +66,9 @@ def billing_overview(request):
         "all_plans": get_all_plan_limits(),
         "recent_payments": recent_payments,
         "stripe_publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
+        "tokens_used_today": tokens_used_today,
+        "tokens_cap": tokens_cap,
+        "tokens_pct": tokens_pct,
     })
 
 
@@ -374,6 +392,29 @@ def mpesa_webhook(request):
         )
         return HttpResponse(status=404)
 
-    success = process_mpesa_callback(callback_data)
-    # M-Pesa expects a 200 OK response — always acknowledge valid callbacks
+    # Daraja delivers each callback once and does not retry on 5xx responses,
+    # so we always acknowledge with 200 to avoid M-Pesa giving up on a payment
+    # we already have in our DB. But we MUST surface processing failures to
+    # Sentry — the previous "ignore the bool, return 200" pattern silently
+    # lost subscription activations whenever process_mpesa_callback raised.
+    try:
+        success = process_mpesa_callback(callback_data)
+    except Exception as exc:
+        logger.exception(
+            "M-Pesa callback processing crashed for checkout_id=%s", checkout_id
+        )
+        sentry_sdk.capture_exception(exc)
+        # Still return 200 so M-Pesa doesn't try again — reconciliation
+        # task will replay any payment whose subscription wasn't activated.
+        return HttpResponse(status=200)
+
+    if not success:
+        logger.error(
+            "M-Pesa callback returned failure for checkout_id=%s", checkout_id
+        )
+        sentry_sdk.capture_message(
+            f"M-Pesa callback returned False for {checkout_id}",
+            level="error",
+        )
+
     return HttpResponse(status=200)

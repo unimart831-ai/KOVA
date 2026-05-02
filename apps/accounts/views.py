@@ -236,6 +236,8 @@ def ai_brand_builder(request):
 
     user_prompt = "\n".join(user_prompt_parts)
 
+    from apps.billing.exceptions import PlanLimitExceeded
+
     try:
         response = generate(
             prompt=user_prompt,
@@ -243,6 +245,7 @@ def ai_brand_builder(request):
             temperature=0.8,
             max_tokens=1024,
             json_mode=True,
+            user=request.user,
         )
 
         if not response.content:
@@ -269,6 +272,19 @@ def ai_brand_builder(request):
             "brand_restrictions": result.get("brand_restrictions", ""),
         })
 
+    except PlanLimitExceeded as e:
+        # 402 Payment Required is the right semantic for "out of allowance".
+        # Front-end can show the message verbatim plus an upgrade CTA.
+        return JsonResponse(
+            {
+                "error": e.message,
+                "error_type": "plan_limit",
+                "limit_type": e.limit_type,
+                "suggested_plan": e.suggested_plan,
+                "upgrade_url": "/billing/pricing/",
+            },
+            status=402,
+        )
     except json.JSONDecodeError:
         logger.warning("AI brand builder returned invalid JSON: %s", response.content[:200])
         return JsonResponse({"error": "AI returned invalid data. Try again."}, status=500)

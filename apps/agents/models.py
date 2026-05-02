@@ -293,3 +293,49 @@ class LLMConfig(models.Model):
     def get_image_fallback_chain(self):
         """Return ordered list of fallback providers."""
         return self.image_fallback_chain or ["together", "huggingface", "pollinations"]
+
+
+class UserTokenBucket(models.Model):
+    """Per-user, per-day record of LLM token consumption and estimated cost.
+
+    Used by the budget enforcer in apps.agents.budget to prevent a single
+    user from burning the platform's LLM spend before being upgraded to a
+    higher plan. Cost is stored in micro-USD (1e-6) so atomic F() updates
+    stay integer-safe across many concurrent calls.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="token_buckets",
+    )
+    period_date = models.DateField(db_index=True)
+    input_tokens = models.PositiveBigIntegerField(default=0)
+    output_tokens = models.PositiveBigIntegerField(default=0)
+    cost_usd_micros = models.PositiveBigIntegerField(default=0)
+    call_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [("user", "period_date")]
+        ordering = ["-period_date"]
+        indexes = [
+            models.Index(fields=["user", "-period_date"]),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.user_id} {self.period_date}: "
+            f"{self.input_tokens + self.output_tokens} tokens "
+            f"(${self.cost_usd_micros / 1_000_000:.4f})"
+        )
+
+    @property
+    def total_tokens(self):
+        return self.input_tokens + self.output_tokens
+
+    @property
+    def cost_usd(self):
+        return self.cost_usd_micros / 1_000_000

@@ -58,7 +58,7 @@ class TestPlanLimits:
         assert "growth" in PLAN_LIMITS
         assert "pro" in PLAN_LIMITS
         assert "agency" in PLAN_LIMITS
-        assert PLAN_LIMITS["starter"]["posts_per_month"] < PLAN_LIMITS["agency"]["posts_per_month"]
+        assert PLAN_LIMITS["starter"]["max_posts_per_month"] < PLAN_LIMITS["agency"]["max_posts_per_month"]
 
     def test_user_profile_default_plan(self, user):
         profile = user.profile

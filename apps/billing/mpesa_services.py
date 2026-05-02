@@ -18,6 +18,7 @@ import logging
 from datetime import timedelta
 
 from django.conf import settings
+from django.db import transaction
 from django.utils import timezone
 
 from apps.billing.models import BillingEvent, MpesaPayment, get_plan_limits
@@ -134,6 +135,12 @@ def process_mpesa_callback(callback_data):
 
     Called when Daraja sends the payment result to our webhook endpoint.
 
+    The whole flow runs inside a single transaction with ``select_for_update``
+    on the payment row. This is the only way to make the read-modify-write
+    safe against two callbacks arriving for the same CheckoutRequestID
+    within milliseconds of each other (rare in practice, but the cost when
+    it happens is double-activation + duplicate confirmation emails).
+
     Args:
         callback_data: Raw JSON from M-Pesa callback POST
 
@@ -143,77 +150,84 @@ def process_mpesa_callback(callback_data):
     parsed = parse_stk_callback(callback_data)
     checkout_id = parsed["checkout_request_id"]
 
-    # Find the payment record
-    try:
-        payment = MpesaPayment.objects.select_related("user", "user__profile").get(
-            checkout_request_id=checkout_id,
+    with transaction.atomic():
+        # Lock the payment row for the duration of this transaction so a
+        # concurrent callback for the same checkout_id blocks instead of
+        # racing past our terminal-state check.
+        try:
+            payment = (
+                MpesaPayment.objects
+                .select_for_update()
+                .select_related("user", "user__profile")
+                .get(checkout_request_id=checkout_id)
+            )
+        except MpesaPayment.DoesNotExist:
+            logger.warning("M-Pesa callback for unknown checkout: %s", checkout_id)
+            return False
+
+        # Replay protection: reject callbacks for payments already in a
+        # terminal state. Holding the row lock above guarantees that this
+        # check is correct even with concurrent callbacks.
+        if payment.status in (MpesaPayment.Status.COMPLETED, MpesaPayment.Status.FAILED):
+            logger.info(
+                "M-Pesa callback replay ignored: checkout=%s status=%s",
+                checkout_id, payment.status,
+            )
+            return True
+
+        # Race-safe audit record — unique stripe_event_id makes the second
+        # winner of a race a no-op, in addition to the row lock above.
+        _, created = BillingEvent.objects.get_or_create(
+            stripe_event_id=f"mpesa_{checkout_id}",
+            defaults={
+                "event_type": "mpesa.stk_callback",
+                "provider": "mpesa",
+                "user": payment.user,
+                "data": callback_data,
+                "processed": True,
+            },
         )
-    except MpesaPayment.DoesNotExist:
-        logger.warning("M-Pesa callback for unknown checkout: %s", checkout_id)
-        return False
+        if not created:
+            logger.info("M-Pesa callback duplicate for checkout %s, skipping", checkout_id)
+            return True
 
-    # Replay protection: reject callbacks for payments already in a terminal state.
-    # Daraja retries callbacks on 5xx, and a malicious replay of an old COMPLETED
-    # callback would otherwise re-activate the subscription + re-send confirmation email.
-    if payment.status in (MpesaPayment.Status.COMPLETED, MpesaPayment.Status.FAILED):
-        logger.info(
-            "M-Pesa callback replay ignored: checkout=%s status=%s",
-            checkout_id, payment.status,
-        )
-        return True
+        succeeded = parsed["success"]
+        if succeeded:
+            payment.status = MpesaPayment.Status.COMPLETED
+            payment.result_code = parsed["result_code"]
+            payment.result_desc = parsed["result_desc"]
+            payment.receipt_number = parsed.get("receipt_number", "")
+            payment.completed_at = timezone.now()
+            activate_subscription(payment)
+            logger.info(
+                "M-Pesa payment SUCCESS: user=%s amount=%s receipt=%s",
+                payment.user.email, payment.amount, payment.receipt_number,
+            )
+        else:
+            payment.status = MpesaPayment.Status.FAILED
+            payment.result_code = parsed["result_code"]
+            payment.result_desc = parsed["result_desc"]
+            logger.warning(
+                "M-Pesa payment FAILED: user=%s code=%s desc=%s",
+                payment.user.email, parsed["result_code"], parsed["result_desc"],
+            )
 
-    # Race-safe audit record — unique stripe_event_id prevents duplicate side-effects
-    # if two callbacks land simultaneously for the same CheckoutRequestID.
-    billing_event, created = BillingEvent.objects.get_or_create(
-        stripe_event_id=f"mpesa_{checkout_id}",
-        defaults={
-            "event_type": "mpesa.stk_callback",
-            "provider": "mpesa",
-            "user": payment.user,
-            "data": callback_data,
-            "processed": True,
-        },
-    )
-    if not created:
-        logger.info("M-Pesa callback duplicate for checkout %s, skipping", checkout_id)
-        return True
+        payment.save()
 
-    if parsed["success"]:
-        # Payment successful
-        payment.status = MpesaPayment.Status.COMPLETED
-        payment.result_code = parsed["result_code"]
-        payment.result_desc = parsed["result_desc"]
-        payment.receipt_number = parsed.get("receipt_number", "")
-        payment.completed_at = timezone.now()
-
-        # Activate subscription
-        activate_subscription(payment)
-
-        # Send payment confirmation email
+    # Side-effects fire only after the transaction commits — sending the
+    # confirmation email mid-transaction would leak through if a later
+    # rollback fired. ``transaction.on_commit`` would be cleaner, but
+    # placing the email here (post-atomic block) is equivalent and avoids
+    # closure capture surprises.
+    if succeeded:
         from apps.emails.tasks import send_payment_confirmation_email
         send_payment_confirmation_email.delay(
             str(payment.user.pk),
-            payment.plan,
+            payment.plan_tier,
             str(payment.amount),
             "mpesa",
         )
 
-        logger.info(
-            "M-Pesa payment SUCCESS: user=%s amount=%s receipt=%s",
-            payment.user.email, payment.amount, payment.receipt_number,
-        )
-    else:
-        # Payment failed (user canceled, timeout, insufficient funds, etc.)
-        payment.status = MpesaPayment.Status.FAILED
-        payment.result_code = parsed["result_code"]
-        payment.result_desc = parsed["result_desc"]
-
-        logger.warning(
-            "M-Pesa payment FAILED: user=%s code=%s desc=%s",
-            payment.user.email, parsed["result_code"], parsed["result_desc"],
-        )
-
-    payment.save()
     return True
 
 
@@ -292,11 +306,67 @@ def expire_subscription(user):
     """
     Expire a subscription — revert to starter plan.
 
-    Called when payment is overdue after grace period.
+    Called when payment is overdue past the 3-day grace period. To avoid
+    cascading publish failures (where every queued post hits a plan-limit
+    error at publish time and the user sees a wall of red notifications),
+    we pause future-scheduled posts back to PENDING_APPROVAL. The user's
+    content isn't lost — they can re-approve once they renew or accept
+    being on Starter.
     """
     profile = user.profile
     profile.plan = "starter"
     profile.subscription_status = "canceled"
     profile.save(update_fields=["plan", "subscription_status"])
 
-    logger.info("Subscription expired: user=%s reverted to starter", user.email)
+    paused = _pause_scheduled_posts_on_downgrade(user)
+    logger.info(
+        "Subscription expired: user=%s reverted to starter (paused %d scheduled posts)",
+        user.email, paused,
+    )
+
+
+def _pause_scheduled_posts_on_downgrade(user) -> int:
+    """Move APPROVED/SCHEDULED posts with a future scheduled_at back to
+    PENDING_APPROVAL so they don't fail at publish time on the new plan.
+
+    Returns the number of posts paused. Best-effort — any failure here is
+    logged but never re-raised, since the downgrade itself has already
+    committed and a swallowed pause is far better than a stuck rollback.
+    """
+    try:
+        from apps.content.models import Post
+        from apps.notifications.models import Notification
+
+        now = timezone.now()
+        future_scheduled = Post.objects.filter(
+            user=user,
+            status__in=[Post.Status.APPROVED, Post.Status.SCHEDULED],
+            scheduled_at__gt=now,
+        )
+        count = future_scheduled.count()
+        if not count:
+            return 0
+
+        future_scheduled.update(
+            status=Post.Status.PENDING_APPROVAL,
+            ai_reasoning=(
+                "Paused: subscription expired and was downgraded to Starter. "
+                "Renew your plan or re-approve to schedule again."
+            ),
+            updated_at=now,
+        )
+        try:
+            Notification.create_for_user(
+                user, "system",
+                f"{count} scheduled posts were paused after your subscription "
+                f"expired. Renew your plan to keep autopublishing.",
+            )
+        except Exception:
+            pass  # Notifications are best-effort; don't break the pause flow.
+        return count
+    except Exception as exc:
+        logger.exception(
+            "Failed to pause scheduled posts on downgrade for %s: %s",
+            user.email, exc,
+        )
+        return 0

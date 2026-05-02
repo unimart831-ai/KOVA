@@ -66,6 +66,40 @@
         </div>
       </div>
 
+      {# ── Today's AI usage ── #}
+      {% if tokens_cap %}
+        <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <div class="flex items-baseline justify-between mb-2">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">AI usage today</p>
+              <p class="text-sm text-gray-700 dark:text-gray-200 mt-0.5">
+                <span class="font-bold tabular-nums">{{ tokens_used_today|stringformat:"i" }}</span>
+                <span class="text-gray-400 dark:text-gray-500"> / {{ tokens_cap|stringformat:"i" }} tokens</span>
+              </p>
+            </div>
+            <span class="text-xs text-gray-400 dark:text-gray-500 font-medium tabular-nums">{{ tokens_pct }}%</span>
+          </div>
+          <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all
+                        {% if tokens_pct >= 90 %}bg-red-500
+                        {% elif tokens_pct >= 70 %}bg-amber-500
+                        {% else %}bg-kova-500{% endif %}"
+                 style="width: {{ tokens_pct }}%"
+                 role="progressbar" aria-valuenow="{{ tokens_pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          {% if tokens_pct >= 90 %}
+            <p class="mt-2 text-xs text-red-600 dark:text-red-400">
+              You're close to today's AI cap. Resets at 00:00 UTC, or
+              <a href="{% url 'billing:pricing' %}" class="font-medium underline">upgrade for a bigger allowance</a>.
+            </p>
+          {% else %}
+            <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">
+              Counts every token your agents read or write. Resets daily at 00:00 UTC.
+            </p>
+          {% endif %}
+        </div>
+      {% endif %}
+
       <ul class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
         <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
           <svg class="w-4 h-4 {% if limits.daily_brief %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>

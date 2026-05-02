@@ -6,16 +6,20 @@ Periodic tasks that run agent operations on schedules.
 
 import logging
 
+import sentry_sdk
 from celery import shared_task
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils import timezone
 
+from apps.utils.locks import single_run
+
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
-@shared_task(name="agents.run_daily_research")
+@shared_task(name="agents.run_daily_research", soft_time_limit=10 * 60, time_limit=12 * 60)
+@single_run("agents.run_daily_research", timeout=30 * 60)
 def run_daily_research():
     """
     Periodic task: Run the Research Agent for all active users.
@@ -56,10 +60,17 @@ def run_daily_research():
     return dispatched
 
 
-@shared_task(name="agents.run_research_for_user", max_retries=1, acks_late=True)
+@shared_task(
+    name="agents.run_research_for_user",
+    max_retries=1,
+    acks_late=True,
+    soft_time_limit=120,
+    time_limit=150,
+)
 def _run_research_for_user(user_id):
     """Run the Research Agent for a single user (dispatched as sub-task)."""
     from apps.agents.research_agent import discover_trends
+    from apps.billing.exceptions import PlanLimitExceeded
 
     user = User.objects.get(pk=user_id)
     try:
@@ -70,11 +81,21 @@ def _run_research_for_user(user_id):
 
         # Pre-generate AI suggestions so Studio loads instantly
         refresh_seed_suggestions.apply_async(args=[user_id], countdown=10)
+    except PlanLimitExceeded as e:
+        # Budget hit — billing event, not a bug. Don't noise Sentry.
+        logger.info("Research Agent skipped (budget) for %s: %s", user.email, e.message)
     except Exception as e:
         logger.error("Research Agent failed for %s: %s", user.email, e)
+        sentry_sdk.capture_exception(e)
 
 
-@shared_task(name="agents.refresh_seed_suggestions", max_retries=1, acks_late=True)
+@shared_task(
+    name="agents.refresh_seed_suggestions",
+    max_retries=1,
+    acks_late=True,
+    soft_time_limit=60,
+    time_limit=90,
+)
 def refresh_seed_suggestions(user_id):
     """
     Pre-generate and cache AI-powered content suggestions for a user.
@@ -103,6 +124,7 @@ def refresh_seed_suggestions(user_id):
         return len(suggestions)
     except Exception as e:
         logger.error("Refresh suggestions failed for %s: %s", user.email, e)
+        sentry_sdk.capture_exception(e)
 
 
 def _auto_seed_from_trends(user, research_result):
@@ -196,7 +218,8 @@ def _auto_seed_from_trends(user, research_result):
         return  # Max 1 per run
 
 
-@shared_task(name="agents.run_engage_cycle")
+@shared_task(name="agents.run_engage_cycle", soft_time_limit=20 * 60, time_limit=22 * 60)
+@single_run("agents.run_engage_cycle", timeout=25 * 60)
 def run_engage_cycle():
     """
     Periodic task: Run the Engage Agent cycle for all active users.
@@ -225,7 +248,13 @@ def run_engage_cycle():
     return dispatched
 
 
-@shared_task(name="agents.run_engage_for_user", max_retries=1, acks_late=True)
+@shared_task(
+    name="agents.run_engage_for_user",
+    max_retries=1,
+    acks_late=True,
+    soft_time_limit=120,
+    time_limit=150,
+)
 def _run_engage_for_user(user_id):
     """Run the engage cycle for a single user (dispatched as sub-task)."""
     from apps.agents.engage_agent import run_engage_cycle as engage_cycle
@@ -245,19 +274,23 @@ def _run_engage_for_user(user_id):
                 user.email, result.get("fetched", 0), result.get("analyzed", 0),
             )
     except Exception as e:
-        logger.error("Engage cycle failed for %s: %s", user.email, e)
+        from apps.billing.exceptions import PlanLimitExceeded
+        if isinstance(e, PlanLimitExceeded):
+            logger.info("Engage cycle skipped (budget) for %s: %s", user.email, e.message)
+        else:
+            logger.error("Engage cycle failed for %s: %s", user.email, e)
+            sentry_sdk.capture_exception(e)
 
 
-@shared_task(name="agents.run_strategy_cycle")
+@shared_task(name="agents.run_strategy_cycle", soft_time_limit=10 * 60, time_limit=12 * 60)
+@single_run("agents.run_strategy_cycle", timeout=30 * 60)
 def run_strategy_cycle():
     """
-    Periodic task: Run the Chief Strategist Agent for all active users.
-    Gathers intelligence from all agents, makes strategic decisions,
-    and creates proactive content seeds.
-    Runs once daily (early morning, before daily briefs).
+    Periodic task: dispatch the Chief Strategist Agent for all eligible users.
+    Each user runs as its own sub-task with a staggered countdown so we
+    avoid blocking the worker process with time.sleep() between users
+    and naturally spread API load across the rate-limit window.
     """
-    from apps.agents.models import AgentConfig
-    from apps.agents.strategist_agent import run_strategy_cycle as strategist_cycle
     from apps.billing.models import get_plan_limits
 
     users_with_strategist = User.objects.filter(
@@ -266,34 +299,51 @@ def run_strategy_cycle():
         agent_configs__is_active=True,
     ).distinct()
 
-    processed = 0
+    dispatched = 0
     for idx, user in enumerate(users_with_strategist):
-        try:
-            plan = getattr(getattr(user, "profile", None), "plan", "starter")
-            if "strategist" not in get_plan_limits(plan).get("agents_enabled", []):
-                continue
-            # Stagger between users to avoid OpenRouter rate limits (429s)
-            if idx > 0:
-                import time
-                time.sleep(5)
-            result = strategist_cycle(user)
-            if result.get("status") == "completed":
-                processed += 1
-                logger.info(
-                    "Strategy cycle for %s: seeds=%d, recommendations=%d",
-                    user.email,
-                    result.get("seeds_created", 0),
-                    len(result.get("recommendations", [])),
-                )
-        except Exception as e:
+        plan = getattr(getattr(user, "profile", None), "plan", "starter")
+        if "strategist" not in get_plan_limits(plan).get("agents_enabled", []):
+            continue
+        _run_strategy_for_user.apply_async(args=[user.pk], countdown=idx * 5)
+        dispatched += 1
+
+    if dispatched:
+        logger.info("Strategy cycle dispatched %d user tasks", dispatched)
+    return dispatched
+
+
+@shared_task(
+    name="agents.run_strategy_for_user",
+    max_retries=1,
+    acks_late=True,
+    soft_time_limit=180,
+    time_limit=210,
+)
+def _run_strategy_for_user(user_id):
+    """Run the Strategist Agent for a single user (dispatched as sub-task)."""
+    from apps.agents.strategist_agent import run_strategy_cycle as strategist_cycle
+
+    user = User.objects.get(pk=user_id)
+    try:
+        result = strategist_cycle(user)
+        if result.get("status") == "completed":
+            logger.info(
+                "Strategy cycle for %s: seeds=%d, recommendations=%d",
+                user.email,
+                result.get("seeds_created", 0),
+                len(result.get("recommendations", [])),
+            )
+    except Exception as e:
+        from apps.billing.exceptions import PlanLimitExceeded
+        if isinstance(e, PlanLimitExceeded):
+            logger.info("Strategy cycle skipped (budget) for %s: %s", user.email, e.message)
+        else:
             logger.error("Strategy cycle failed for %s: %s", user.email, e)
-
-    if processed:
-        logger.info("Strategy cycle complete: %d users processed", processed)
-    return processed
+            sentry_sdk.capture_exception(e)
 
 
-@shared_task(name="agents.measure_agent_outcomes")
+@shared_task(name="agents.measure_agent_outcomes", soft_time_limit=15 * 60, time_limit=18 * 60)
+@single_run("agents.measure_agent_outcomes", timeout=20 * 60)
 def measure_agent_outcomes():
     """
     Periodic task: Score past agent actions against actual outcomes.
@@ -321,6 +371,7 @@ def measure_agent_outcomes():
             total_strategy += measure_strategist_outcomes(user)
         except Exception as e:
             logger.error("Outcome measurement failed for %s: %s", user.email, e)
+            sentry_sdk.capture_exception(e)
 
     logger.info(
         "Agent outcomes measured: %d create actions, %d strategy actions scored",
@@ -377,7 +428,8 @@ def _extract_follower_count(data, key):
         return 0
 
 
-@shared_task(name="agents.track_audience_growth")
+@shared_task(name="agents.track_audience_growth", soft_time_limit=15 * 60, time_limit=18 * 60)
+@single_run("agents.track_audience_growth", timeout=20 * 60)
 def track_audience_growth():
     """
     Daily task: Snapshot follower/audience counts for all active social accounts.
@@ -493,7 +545,12 @@ def track_audience_growth():
 # ── Educator agent (platform-level, not per-tenant) ─────────────────────────
 
 
-@shared_task(name="agents.educator_draft_weekly_article")
+@shared_task(
+    name="agents.educator_draft_weekly_article",
+    soft_time_limit=10 * 60,
+    time_limit=12 * 60,
+)
+@single_run("agents.educator_draft_weekly_article", timeout=15 * 60)
 def educator_draft_weekly_article():
     """Weekly autonomous loop:
       1. If the topic backlog is empty, the Educator proposes 5 new topics
@@ -532,7 +589,12 @@ def educator_draft_weekly_article():
     }
 
 
-@shared_task(name="agents.educator_compile_weekly_digest")
+@shared_task(
+    name="agents.educator_compile_weekly_digest",
+    soft_time_limit=5 * 60,
+    time_limit=6 * 60,
+)
+@single_run("agents.educator_compile_weekly_digest", timeout=10 * 60)
 def educator_compile_weekly_digest():
     """Weekly: compile the 'Kova This Week' digest from ChangelogEntry +
     recent Articles. Sits in DRAFT until approved via admin."""

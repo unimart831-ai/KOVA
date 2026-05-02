@@ -60,6 +60,12 @@
         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {% if plan.max_posts_per_month > 9999 %}Unlimited{% else %}{{ plan.max_posts_per_month }}{% endif %} AI posts/month</li>
         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {% if plan.max_seeds_per_month > 9999 %}Unlimited{% else %}{{ plan.max_seeds_per_month }}{% endif %} content seeds/month</li>
         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {{ plan.agents_enabled|length }} AI agents</li>
+        {% if plan.daily_llm_tokens %}
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span>
+            {% if plan.daily_llm_tokens >= 1000000 %}{{ plan.daily_llm_tokens|floatformat:0|slice:":-6" }}M{% else %}{{ plan.daily_llm_tokens|floatformat:0|slice:":-3" }}K{% endif %}
+            AI tokens/day
+          </li>
+        {% endif %}
         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Daily brief</li>
         {% if plan.ai_image_generation %}
           <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> AI images (Instagram, TikTok, Pinterest)</li>

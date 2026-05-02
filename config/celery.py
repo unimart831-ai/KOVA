@@ -44,7 +44,10 @@ app.conf.task_routes = {
     "agents.run_daily_research": {"queue": "default"},
     "agents.refresh_seed_suggestions": {"queue": "low"},
     "agents.run_engage_cycle": {"queue": "default"},
+    "agents.run_engage_for_user": {"queue": "default"},
+    "agents.run_research_for_user": {"queue": "default"},
     "agents.run_strategy_cycle": {"queue": "default"},
+    "agents.run_strategy_for_user": {"queue": "default"},
     "briefs.generate_all_daily_briefs": {"queue": "default"},
     # Low — analytics, metrics, background intelligence
     "content.fetch_post_metrics": {"queue": "low"},

@@ -96,12 +96,18 @@ class MpesaPayment(models.Model):
 # Defines what each plan tier can do. Used by middleware and views.
 # Jipange is deliberately capped to keep AI cost < KES 40/user/month.
 # It's a conversion funnel — not a revenue tier.
+# Daily LLM token budgets per plan. Sized so that a fully-used Starter user
+# costs roughly 25% of their KES 299 in inference (with DeepSeek V3.2 at
+# $0.26/$0.38 per 1M tokens), leaving margin for image gen and infrastructure.
+# These are enforced in apps.agents.budget before each call and trigger a
+# PlanLimitExceeded when exceeded — adjust per real usage data.
 PLAN_LIMITS = {
     "starter": {
         "label": "Jipange / Starter",
         "max_social_accounts": 1,
         "max_posts_per_month": 15,
         "max_seeds_per_month": 5,
+        "daily_llm_tokens": 50_000,
         "agents_enabled": ["create", "analyst"],
         "daily_brief": True,
         "email_brief": False,
@@ -140,6 +146,7 @@ PLAN_LIMITS = {
         "max_social_accounts": 3,
         "max_posts_per_month": 60,
         "max_seeds_per_month": 30,
+        "daily_llm_tokens": 200_000,
         "agents_enabled": ["create", "analyst", "research", "adapt"],
         "daily_brief": True,
         "email_brief": True,
@@ -178,6 +185,7 @@ PLAN_LIMITS = {
         "max_social_accounts": 10,
         "max_posts_per_month": 150,
         "max_seeds_per_month": 60,
+        "daily_llm_tokens": 500_000,
         "agents_enabled": ["create", "analyst", "research", "adapt", "engage", "strategist"],
         "daily_brief": True,
         "email_brief": True,
@@ -216,6 +224,7 @@ PLAN_LIMITS = {
         "max_social_accounts": 25,
         "max_posts_per_month": 999999,
         "max_seeds_per_month": 999999,
+        "daily_llm_tokens": 2_000_000,
         "agents_enabled": ["create", "analyst", "research", "adapt", "engage", "strategist"],
         "daily_brief": True,
         "email_brief": True,
