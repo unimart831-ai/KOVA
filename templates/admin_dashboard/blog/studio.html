@@ -1,0 +1,246 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+  {{ counts.published_blog }} published &middot; {{ counts.draft }} draft{{ counts.draft|pluralize }} &middot; {{ counts.topics }} topic{{ counts.topics|pluralize }} queued
+</p>
+{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'blog:index' %}" target="_blank" rel="noopener"
+   class="btn-secondary text-xs px-3 py-1.5">
+  View Live Blog
+  <svg class="ml-1 w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Stats Row ─────────────────────────────────────────────────────── -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-2xl font-bold text-kova-600 dark:text-kova-400">{{ counts.published_blog }}</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Published (Blog)</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-2xl font-bold {% if counts.draft > 0 %}text-amber-600 dark:text-amber-400{% else %}text-gray-400{% endif %}">{{ counts.draft }}</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Awaiting Review</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-2xl font-bold {% if counts.review > 0 %}text-blue-600 dark:text-blue-400{% else %}text-gray-400{% endif %}">{{ counts.review }}</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">In Review</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-2xl font-bold text-gray-700 dark:text-gray-300">{{ counts.topics }}</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Topics Queued</p>
+  </div>
+</div>
+
+<!-- ── Educator Actions ───────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-kova-200 dark:border-kova-900/60 p-5 mb-6">
+  <div class="flex items-start gap-4">
+    <div class="w-10 h-10 rounded-lg bg-kova-600 flex items-center justify-center shrink-0 shadow-kova">
+      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+      </svg>
+    </div>
+    <div class="flex-1 min-w-0">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Educator Agent</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">AI drafts the next queued topic, or generates fresh topic ideas for the backlog.</p>
+      <div id="educator-result" class="mt-3 empty:hidden"></div>
+    </div>
+    <div class="flex items-center gap-2 shrink-0">
+      <button type="button"
+              hx-post="{% url 'admin_dashboard:blog_suggest_topics' %}"
+              hx-target="#educator-result"
+              hx-swap="innerHTML"
+              hx-indicator="#educator-spinner"
+              class="btn-secondary text-xs px-3 py-1.5">
+        Generate Topics
+      </button>
+      <button type="button"
+              hx-post="{% url 'admin_dashboard:blog_draft_next' %}"
+              hx-target="#educator-result"
+              hx-swap="innerHTML"
+              hx-indicator="#educator-spinner"
+              class="btn-primary text-xs px-3 py-1.5">
+        <span id="educator-spinner" class="htmx-indicator mr-1">
+          <svg class="w-3 h-3 animate-spin inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        </span>
+        Draft Next Article
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+  <!-- ── Left: Drafts + Published ─────────────────────────────────────── -->
+  <div class="lg:col-span-3 space-y-6">
+
+    <!-- Awaiting Review -->
+    {% if pending_review %}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
+      <div class="px-5 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Awaiting Review</h3>
+        <span class="text-xs text-gray-500 dark:text-gray-400">{{ pending_review|length }} article{{ pending_review|length|pluralize }}</span>
+      </div>
+      <div class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for a in pending_review %}
+        <div class="px-5 py-4 flex items-start gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              {% if a.status == 'draft' %}
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300">DRAFT</span>
+              {% else %}
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">REVIEW</span>
+              {% endif %}
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                {% if a.audience == 'prospect' %}Blog{% elif a.audience == 'both' %}Blog + Help{% else %}Help only{% endif %}
+              </span>
+              <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ a.reading_minutes }} min</span>
+            </div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white leading-tight">{{ a.title }}</p>
+            {% if a.excerpt %}
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{{ a.excerpt }}</p>
+            {% endif %}
+            <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5">{{ a.get_category_display }} &middot; {{ a.created_at|date:"M j, Y" }}</p>
+          </div>
+          <div class="shrink-0 flex flex-col gap-1.5">
+            <a href="{% url 'admin_dashboard:blog_article_review' a.pk %}"
+               class="btn-primary text-xs px-3 py-1">Review</a>
+            <form method="post" action="{% url 'admin_dashboard:blog_article_delete' a.pk %}">
+              {% csrf_token %}
+              <button type="submit"
+                      onclick="return confirm('Delete this draft?')"
+                      class="w-full text-xs text-red-600 dark:text-red-400 hover:underline">Delete</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-8 text-center">
+      <svg class="w-10 h-10 text-gray-200 dark:text-gray-700 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      <p class="text-sm font-medium text-gray-500 dark:text-gray-400">No drafts waiting for review</p>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Click "Draft Next Article" to have the Educator write one.</p>
+    </div>
+    {% endif %}
+
+    <!-- Published Blog Articles -->
+    {% if published_blog %}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
+      <div class="px-5 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Published Blog</h3>
+        <a href="{% url 'blog:index' %}" target="_blank" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">View live &rarr;</a>
+      </div>
+      <div class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for a in published_blog %}
+        <div class="px-5 py-3 flex items-center gap-3">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ a.title }}</p>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ a.get_category_display }}</span>
+              <span class="text-[10px] text-gray-400 dark:text-gray-500">&middot;</span>
+              <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ a.published_at|date:"M j, Y" }}</span>
+              <span class="text-[10px] text-gray-400 dark:text-gray-500">&middot;</span>
+              <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ a.reading_minutes }} min</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <a href="{% url 'blog:article' a.slug %}" target="_blank" rel="noopener"
+               class="text-xs text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            </a>
+            <form method="post" action="{% url 'admin_dashboard:blog_article_unpublish' a.pk %}">
+              {% csrf_token %}
+              <button type="submit"
+                      onclick="return confirm('Unpublish this article?')"
+                      class="text-[10px] text-red-500 hover:text-red-700 dark:hover:text-red-400 hover:underline">Unpublish</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ── Right: Topic Backlog ──────────────────────────────────────────── -->
+  <div class="lg:col-span-2">
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 sticky top-6">
+      <div class="px-5 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Topic Backlog</h3>
+        <span class="text-xs text-gray-400 dark:text-gray-500">{{ counts.topics }} pending</span>
+      </div>
+
+      {% if topics_page.object_list %}
+      <div class="divide-y divide-gray-100 dark:divide-gray-800 max-h-[600px] overflow-y-auto">
+        {% for topic in topics_page %}
+        <div class="px-4 py-3 flex items-start gap-2" id="topic-{{ topic.pk }}">
+          <!-- Priority bar -->
+          <div class="shrink-0 mt-1 w-1 h-8 rounded-full
+            {% if topic.priority >= 80 %}bg-kova-500{% elif topic.priority >= 60 %}bg-amber-400{% else %}bg-gray-200 dark:bg-gray-700{% endif %}">
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-medium text-gray-900 dark:text-white leading-tight">{{ topic.title }}</p>
+            <div class="flex items-center gap-1.5 mt-1">
+              <span class="text-[10px] text-gray-400 dark:text-gray-500">
+                {% if topic.audience == 'prospect' %}Blog{% elif topic.audience == 'both' %}Blog+Help{% else %}Help{% endif %}
+              </span>
+              <span class="text-[10px] text-gray-400">·</span>
+              <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ topic.suggested_category }}</span>
+              <span class="text-[10px] text-gray-400">·</span>
+              <span class="text-[10px] font-semibold text-gray-500 dark:text-gray-400">p{{ topic.priority }}</span>
+            </div>
+          </div>
+          <div class="shrink-0 flex flex-col gap-1 items-end" id="topic-actions-{{ topic.pk }}">
+            <button type="button"
+                    hx-post="{% url 'admin_dashboard:blog_draft_topic' topic.pk %}"
+                    hx-target="#topic-actions-{{ topic.pk }}"
+                    hx-swap="innerHTML"
+                    class="text-[10px] font-medium text-kova-600 dark:text-kova-400 hover:underline">
+              Draft
+            </button>
+            <button type="button"
+                    hx-post="{% url 'admin_dashboard:blog_skip_topic' topic.pk %}"
+                    hx-target="#topic-{{ topic.pk }}"
+                    hx-swap="outerHTML"
+                    class="text-[10px] text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:underline">
+              Skip
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if topics_page.has_other_pages %}
+      <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        {% if topics_page.has_previous %}
+          <a href="?tp={{ topics_page.previous_page_number }}" class="hover:text-kova-600 dark:hover:text-kova-400">&larr; Prev</a>
+        {% else %}<span></span>{% endif %}
+        <span>{{ topics_page.number }}/{{ topics_page.paginator.num_pages }}</span>
+        {% if topics_page.has_next %}
+          <a href="?tp={{ topics_page.next_page_number }}" class="hover:text-kova-600 dark:hover:text-kova-400">Next &rarr;</a>
+        {% else %}<span></span>{% endif %}
+      </div>
+      {% endif %}
+
+      {% else %}
+      <div class="p-6 text-center">
+        <p class="text-xs text-gray-500 dark:text-gray-400">No topics in backlog.</p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+          Run <code class="bg-gray-100 dark:bg-gray-800 px-1 rounded text-[10px]">python manage.py seed_blog_topics</code>
+          or click "Generate Topics" above.
+        </p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

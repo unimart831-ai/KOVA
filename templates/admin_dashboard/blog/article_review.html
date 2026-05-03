@@ -1,0 +1,179 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+  {{ article.get_status_display }} &middot; {{ article.reading_minutes }} min read &middot; {{ article.get_category_display }}
+</p>
+{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'admin_dashboard:blog_studio' %}" class="btn-secondary text-xs px-3 py-1.5">&larr; Blog Studio</a>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- ── Article Preview ───────────────────────────────────────────────── -->
+  <div class="lg:col-span-2">
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 sm:p-8">
+
+      <!-- Category + meta -->
+      <div class="flex items-center gap-3 mb-4">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-kova-50 dark:bg-kova-950/50 text-kova-700 dark:text-kova-300 text-xs font-semibold">
+          {{ article.get_category_display }}
+        </span>
+        <span class="text-xs text-gray-400 dark:text-gray-500">{{ article.reading_minutes }} min read</span>
+        {% if article.tags %}
+          {% for tag in article.tags %}
+          <span class="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-1.5 py-0.5 rounded">{{ tag }}</span>
+          {% endfor %}
+        {% endif %}
+      </div>
+
+      <!-- Title -->
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white leading-tight mb-3">
+        {{ article.title }}
+      </h1>
+
+      <!-- Excerpt -->
+      {% if article.excerpt %}
+      <p class="text-base text-gray-600 dark:text-gray-300 leading-relaxed mb-6 pb-6 border-b border-gray-100 dark:border-gray-800">
+        {{ article.excerpt }}
+      </p>
+      {% endif %}
+
+      <!-- Body -->
+      <div class="article-content">
+        {{ article.body_html|safe }}
+      </div>
+
+      <!-- SEO meta preview -->
+      {% if article.meta_title or article.meta_description %}
+      <div class="mt-8 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">SEO Preview</p>
+        {% if article.meta_title %}
+        <p class="text-sm font-semibold text-blue-700 dark:text-blue-400">{{ article.meta_title }}</p>
+        {% endif %}
+        {% if article.meta_description %}
+        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ article.meta_description }}</p>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── Publish Controls ──────────────────────────────────────────────── -->
+  <div class="lg:col-span-1 space-y-4">
+
+    <!-- Publish Card -->
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Publish Controls</h3>
+
+      <form method="post" action="{% url 'admin_dashboard:blog_article_publish' article.pk %}" class="space-y-4">
+        {% csrf_token %}
+
+        <div>
+          <label for="audience-select" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Audience</label>
+          <select id="audience-select" name="audience"
+                  class="input text-sm w-full">
+            {% for value, label in audience_choices %}
+            <option value="{{ value }}" {% if article.audience == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-1">
+            "Public / prospects" or "Both" makes this article appear on the blog at /blog/.
+          </p>
+        </div>
+
+        <button type="submit"
+                class="w-full btn-primary py-2.5 text-sm font-semibold">
+          <svg class="w-4 h-4 mr-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          Publish Article
+        </button>
+      </form>
+
+      {% if article.status == 'published' %}
+      <form method="post" action="{% url 'admin_dashboard:blog_article_unpublish' article.pk %}" class="mt-2">
+        {% csrf_token %}
+        <button type="submit"
+                onclick="return confirm('Revert to draft?')"
+                class="w-full btn-secondary text-xs py-2">Revert to Draft</button>
+      </form>
+      {% endif %}
+    </div>
+
+    <!-- Meta Info -->
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 space-y-3">
+      <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Article Info</h3>
+      <dl class="space-y-2 text-xs">
+        <div class="flex justify-between">
+          <dt class="text-gray-500 dark:text-gray-400">Status</dt>
+          <dd class="font-semibold text-gray-900 dark:text-white">{{ article.get_status_display }}</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-gray-500 dark:text-gray-400">Audience</dt>
+          <dd class="font-semibold text-gray-900 dark:text-white">{{ article.get_audience_display }}</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-gray-500 dark:text-gray-400">Category</dt>
+          <dd class="font-semibold text-gray-900 dark:text-white">{{ article.get_category_display }}</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-gray-500 dark:text-gray-400">Reading time</dt>
+          <dd class="font-semibold text-gray-900 dark:text-white">{{ article.reading_minutes }} min</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-gray-500 dark:text-gray-400">Authored by</dt>
+          <dd class="font-semibold text-gray-900 dark:text-white">
+            {% if article.author_agent %}{{ article.author_agent }} agent{% else %}Human{% endif %}
+          </dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-gray-500 dark:text-gray-400">Created</dt>
+          <dd class="font-semibold text-gray-900 dark:text-white">{{ article.created_at|date:"M j, Y" }}</dd>
+        </div>
+        {% if article.published_at %}
+        <div class="flex justify-between">
+          <dt class="text-gray-500 dark:text-gray-400">Published</dt>
+          <dd class="font-semibold text-kova-600 dark:text-kova-400">{{ article.published_at|date:"M j, Y" }}</dd>
+        </div>
+        {% endif %}
+        <div class="flex justify-between">
+          <dt class="text-gray-500 dark:text-gray-400">Slug</dt>
+          <dd class="font-mono text-[10px] text-gray-600 dark:text-gray-400 truncate max-w-[120px]">{{ article.slug }}</dd>
+        </div>
+      </dl>
+    </div>
+
+    {% if article.tags %}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+      <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Tags</h3>
+      <div class="flex flex-wrap gap-1.5">
+        {% for tag in article.tags %}
+        <span class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-300">{{ tag }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Danger Zone -->
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-red-200 dark:border-red-900/50 p-5">
+      <h3 class="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wider mb-3">Danger Zone</h3>
+      {% if article.status != 'published' %}
+      <form method="post" action="{% url 'admin_dashboard:blog_article_delete' article.pk %}">
+        {% csrf_token %}
+        <button type="submit"
+                onclick="return confirm('Permanently delete this draft? This cannot be undone.')"
+                class="btn-danger text-xs px-3 py-1.5 w-full">Delete Draft</button>
+      </form>
+      {% else %}
+      <p class="text-xs text-gray-500 dark:text-gray-400">Unpublish the article first before deleting.</p>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

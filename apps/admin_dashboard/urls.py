@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, campaigns, content, costs, emails, engage, feature_usage, help, innovations, llm, logs, media_queue, memes, onboarding, overview, partners, partials, pixel, platforms, products, revenue, system, teams, user_health, users, whatsapp
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, campaigns, content, costs, emails, engage, feature_usage, help, innovations, llm, logs, media_queue, memes, onboarding, overview, partners, partials, pixel, platforms, products, revenue, system, teams, user_health, users, whatsapp
 
 app_name = "admin_dashboard"
 
@@ -133,6 +133,17 @@ urlpatterns = [
     path("help/", help.help_overview, name="help_overview"),
     path("help/articles/", help.help_article_views, name="help_article_views"),
     path("help/log/", help.help_view_log, name="help_view_log"),
+
+    # Blog Studio (Educator agent editorial dashboard)
+    path("blog/", blog.blog_studio, name="blog_studio"),
+    path("blog/draft-next/", blog.blog_draft_next, name="blog_draft_next"),
+    path("blog/suggest-topics/", blog.blog_suggest_topics, name="blog_suggest_topics"),
+    path("blog/articles/<uuid:pk>/", blog.blog_article_review, name="blog_article_review"),
+    path("blog/articles/<uuid:pk>/publish/", blog.blog_article_publish, name="blog_article_publish"),
+    path("blog/articles/<uuid:pk>/unpublish/", blog.blog_article_unpublish, name="blog_article_unpublish"),
+    path("blog/articles/<uuid:pk>/delete/", blog.blog_article_delete, name="blog_article_delete"),
+    path("blog/topics/<uuid:pk>/draft/", blog.blog_draft_topic, name="blog_draft_topic"),
+    path("blog/topics/<uuid:pk>/skip/", blog.blog_skip_topic, name="blog_skip_topic"),
 
     # Media Queue
     path("media-queue/", media_queue.media_queue_overview, name="media_queue_overview"),
