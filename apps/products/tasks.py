@@ -440,6 +440,101 @@ def _build_seed_idea(*, offering_type, name, display_price, features_text,
         )
 
 
+# ── Snap to Sell Carousel ────────────────────────────────────────────
+
+@shared_task(name="products.create_product_carousel_posts")
+def create_product_carousel_posts(product_id: str, seed_id: str, key_features: list):
+    """
+    Create carousel posts for a product after Snap to Sell analysis.
+    Fires automatically when a product has 2+ images and Instagram/Facebook/LinkedIn is connected.
+    """
+    from apps.agents.carousel import generate_product_carousel
+    from apps.agents.models import AgentAction
+    from apps.content.models import ContentSeed, Post
+    from apps.platforms.models import SocialAccount
+    from apps.products.models import Product
+
+    CAROUSEL_PLATFORMS = {"instagram", "facebook", "linkedin"}
+
+    try:
+        product = Product.objects.select_related("user").get(pk=product_id)
+    except Product.DoesNotExist:
+        logger.error("create_product_carousel_posts: product %s not found", product_id)
+        return
+
+    user = product.user
+
+    try:
+        seed = ContentSeed.objects.get(pk=seed_id)
+    except ContentSeed.DoesNotExist:
+        logger.warning("create_product_carousel_posts: seed %s not found — continuing without seed link", seed_id)
+        seed = None
+
+    accounts = SocialAccount.objects.filter(
+        user=user, is_active=True, platform__in=CAROUSEL_PLATFORMS,
+    )
+    if not accounts.exists():
+        logger.info("create_product_carousel_posts: no carousel-eligible accounts for user %s", user.email)
+        return
+
+    profile = getattr(user, "profile", None)
+    price_label = product.display_price or ""
+    caption = product.name
+    if key_features:
+        caption += "\n\n" + "\n".join(f"✅ {f}" for f in key_features[:3])
+    if price_label:
+        caption += f"\n\n💰 {price_label}"
+
+    posts_created = 0
+    for account in accounts:
+        initial_status = (
+            Post.Status.APPROVED
+            if profile and getattr(profile, "auto_approve_posts", False)
+            else Post.Status.PENDING_APPROVAL
+        )
+        post = Post.objects.create(
+            user=user,
+            seed=seed,
+            product=product,
+            social_account=account,
+            platform=account.platform,
+            content_text=caption,
+            content_type="original",
+            status=initial_status,
+            visual_strategy="carousel",
+            media_status="pending",
+            generated_by_agent="create",
+        )
+
+        media_urls = generate_product_carousel(
+            post, product,
+            key_features=key_features,
+            closing_cta="Shop Now",
+        )
+
+        if media_urls:
+            posts_created += 1
+        else:
+            post.media_status = "failed"
+            post.save(update_fields=["media_status", "updated_at"])
+
+    AgentAction.objects.create(
+        user=user,
+        agent_type="create",
+        action_type="snap.carousel",
+        description=f"Auto-carousel from Snap to Sell: {product.name} ({posts_created} post(s) created)",
+        status=AgentAction.ActionStatus.COMPLETED if posts_created else AgentAction.ActionStatus.FAILED,
+        input_data={"product_id": str(product.pk), "seed_id": seed_id, "features": key_features},
+        output_data={"posts_created": posts_created},
+        completed_at=timezone.now(),
+    )
+
+    logger.info(
+        "create_product_carousel_posts: %d carousel post(s) created for product %s",
+        posts_created, product_id,
+    )
+
+
 # ── Snap to Sell ─────────────────────────────────────────────────────
 
 @shared_task(name="products.snap_to_sell_analyze")
@@ -625,6 +720,16 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = ""):
     )
 
     fire_task(generate_from_seed, str(seed.id))
+
+    # Auto-generate a product carousel when 2+ photos are available
+    _CAROUSEL_PLATFORMS = {"instagram", "facebook", "linkedin"}
+    if num_images >= 2 and any(p in _CAROUSEL_PLATFORMS for p in platforms):
+        fire_task(
+            create_product_carousel_posts,
+            str(product.pk),
+            str(seed.pk),
+            analysis.get("key_features", []),
+        )
 
     logger.info(
         "Snap to Sell complete: product=%s, seed=%s, user=%s",
