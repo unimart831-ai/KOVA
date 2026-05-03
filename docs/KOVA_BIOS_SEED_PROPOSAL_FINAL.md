@@ -2,7 +2,31 @@
 
 ---
 
-### Problem
+## Business Canvas
+
+| **Problem** | **Impact** | **Market Size** |
+|---|---|---|
+| Small business owners need social media to find customers but have no time (3–5 hrs/day required), no money (KES 30,000+/month for a manager), and no expertise to do it consistently. | Fewer than 8% of Kenyan SMEs post on social media consistently. The result is an invisible online presence — lost customers, stalled growth, and missed revenue every single day. | 7.4M SMEs in Kenya. 44M MSMEs across Africa. $320M serviceable market in Kenya. $4.6B total addressable market across Africa. |
+
+| **Users** | **User Job** | **User Journey** |
+|---|---|---|
+| Small and medium business owners in Kenya: salon & beauty owners, restaurants, retailers, e-commerce sellers, consultants, and service providers. | Attract new customers and grow their business using social media — without spending hours every day creating content, engaging followers, and tracking results. | **Before Kova:** Post occasionally → go silent for weeks → try again → give up → hire a manager they can't afford → back to zero. **With Kova:** Drop an idea (3 mins) → AI creates content for every platform → posts at optimal time → engages followers automatically → captures leads → owner reviews results at breakfast. |
+
+| **Value Proposition** | **Product** | **Production** |
+|---|---|---|
+| An autonomous AI marketing team for KES 299/month. No skills needed. No credit card. No daily time investment. 6 AI agents run your social media, capture leads, and send marketing emails — 24 hours a day, 7 days a week. | **Kova BIOS** — a Business Intelligence Operating System with 6 AI agents (Create, Engage, Analyse, Research, Adapt, Strategist), 9 social media platform integrations, lead capture forms, email marketing, and a daily performance brief. | Cloud SaaS hosted on Railway (web, worker, scheduler, database). AI content via OpenRouter (50+ models). Media stored on Cloudflare R2. Payments via M-Pesa (Daraja API) + Stripe. Accessible via browser or installable PWA — no app store required. |
+
+| **Ecosystem** | **Unique Selling Proposition** | *(Production continued above)* |
+|---|---|---|
+| Safaricom M-Pesa (payments), Meta/Google/TikTok (social APIs), OpenRouter (AI models), MSME associations & university incubators, Growth Partners (earn 15–30% commission on referrals), digital marketing agencies (Wakala plan). | The only Business Intelligence Operating System built for African SMEs — AI-native, M-Pesa payments, KES pricing, and the only tool covering the complete loop: content → publishing → engagement → leads → email → analytics. All in one platform. Starting at KES 299/month. | |
+
+| **Team & Assets** | **Revenue Streams** | **Cost Structure** |
+|---|---|---|
+| **Team:** Iranzi Innocent — Founder & CTO. Ezekiel [Last Name] — Marketing Lead. **Assets:** Fully built platform (16 app modules, 6 AI agents, 9 social integrations), M-Pesa + Stripe billing live, tested and functional. | **Primary:** Subscriptions — Jipange KES 299/mo · Kazi KES 999/mo · Biashara KES 1,999/mo · Wakala KES 2,999/mo. **Secondary:** Growth Partner referral commissions (15–30%). **Future:** Agency white-label, template marketplace. | **Variable (per user/month):** AI API $0.25 · Hosting $0.10 · Email $0.05 = **$0.40/user**. **Fixed (per month):** Hosting $50 · AI API $50 · Marketing ops $30 · Email/domain $20 = **$150/month**. |
+
+---
+
+## Problem
 
 As small business owners try to attract customers, they cannot afford the time, money,
 or expertise to manage social media consistently. This problem affects **7.4 million
@@ -15,7 +39,7 @@ $25–$249/month — far beyond what most small businesses can afford.
 
 ---
 
-### Solution
+## Solution
 
 Our solution is Kova BIOS — an AI-powered Business Intelligence Operating System.
 It helps small business owners attract customers on social media more affordably and
@@ -23,7 +47,7 @@ consistently, starting at KES 299 per month via M-Pesa.
 
 ---
 
-### Scalability / Innovation
+## Scalability / Innovation
 
 There are other social media tools like Buffer, Hootsuite, and Sprout Social, but our
 offering will be more accessible because Kova is built Africa-first — KES pricing,
@@ -33,7 +57,7 @@ So, we could grow to reach all **44 million MSMEs across Africa**.
 
 ---
 
-### Business Model
+## Business Model
 
 We'll sell each **monthly subscription** for **KES 999 ($7)**.
 
@@ -60,7 +84,7 @@ To get started, we'll also have capital expenditure of **$1,200** on:
 
 ---
 
-### Social & Environmental Impact
+## Social & Environmental Impact
 
 Wider benefits of our solution's use will be stronger economic growth for Kenyan small
 businesses and more equal access to professional marketing tools. We'll measure these
@@ -73,7 +97,7 @@ with:
 
 ---
 
-### Market Validation / Risk Mitigation
+## Market Validation / Risk Mitigation
 
 The biggest assumptions behind our venture model have been validated with the
 following 4 prototyping tests:
@@ -94,7 +118,7 @@ following 4 prototyping tests:
       API). All 5 test payments completed successfully and auto-renewal triggered
       correctly — confirming the billing model works without a credit card.
 
-4. The platform is stable and handles real social media operations at scale.
+4. The platform is stable and handles real social media operations reliably.
    a. We ran the full Kova system for 30 days in a testing environment, processing
       200+ AI content requests, successfully publishing posts to 5 connected social
       media accounts, and triggering automated engagement responses — with zero
@@ -102,12 +126,12 @@ following 4 prototyping tests:
 
 ---
 
-### Team
+## Team
 
 - **Iranzi Innocent**, iranzi297@gmail.com, [Phone]
   Founder & CTO — Full-stack software engineer. Built the entire Kova platform
-  (16 app modules, 6 AI agents, 9 social media platform integrations, M-Pesa + Stripe
-  billing) as a solo developer. Mastercard Foundation Scholar, USIU-Africa.
+  (16 app modules, 6 AI agents, 9 social media platform integrations, M-Pesa +
+  Stripe billing) as a solo developer. Mastercard Foundation Scholar, USIU-Africa.
 
 - **Ezekiel [Last Name]**, [Email], [Phone]
   Marketing Lead — [Qualification]. [Relevant experience with Nairobi SMEs].
@@ -115,7 +139,7 @@ following 4 prototyping tests:
 
 ---
 
-### Budget for Funding
+## Budget for Funding
 
 We'll use the $3,000 to cover the $1,200 initial capital expenditure, onboard
 100 paying users, and cover 6 months of operations costs. The breakdown of the
@@ -130,7 +154,7 @@ budget is:
 
 ---
 
-### Goals
+## Goals
 
 With $3,000, we'll track performance against the following milestones/targets:
 
