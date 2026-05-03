@@ -436,13 +436,26 @@ def publish_post(self, post_id: str):
 
     # Publish
     try:
-        # For Facebook/Instagram, pass page_id and page_access_token from stored metadata
+        # Build platform-specific publish kwargs from stored OAuth metadata
         publish_kwargs = {"account": account}
-        if account.platform in ("facebook", "instagram"):
-            pages = (account.metadata or {}).get("pages", [])
+        meta = account.metadata or {}
+        if account.platform == "facebook":
+            pages = meta.get("pages", [])
             if pages:
                 publish_kwargs["page_id"] = pages[0]["id"]
                 publish_kwargs["page_access_token"] = pages[0].get("access_token", account.access_token)
+            else:
+                logger.warning(
+                    "Facebook account %s has no pages in metadata — "
+                    "user may need to reconnect with Pages permissions",
+                    account.pk,
+                )
+        elif account.platform == "instagram":
+            # Instagram stores its Business Account ID under ig_business_id,
+            # not in a "pages" list. The access_token on the account is already
+            # the page token (set during OAuth).
+            ig_user_id = meta.get("ig_business_id") or account.platform_user_id
+            publish_kwargs["ig_user_id"] = ig_user_id or ""
 
         # Add UTM tracking to any URLs in the content
         publish_content = add_utm_tracking(post.content_text, account.platform, str(post.id))
@@ -478,16 +491,21 @@ def publish_post(self, post_id: str):
         import mimetypes
         from django.core.files.storage import default_storage
 
+        # Carousel posts store ordered slide URLs in post.media_urls AND have matching
+        # MediaAttachment files. Adding attachment URLs on top would reverse the order
+        # and create duplicates. For carousels, trust post.media_urls as the URL source.
+        is_carousel_post = getattr(post, "visual_strategy", "") == "carousel"
+
         media_files = []   # [(filename, bytes, content_type), ...]
-        media_urls_list = list(post.media_urls or [])  # AI-generated (already public)
+        media_urls_list = list(post.media_urls or [])  # AI-generated / carousel slides (already public)
 
         for attachment in post.attachments.order_by("order"):
             if not attachment.file:
                 continue
-            # Build the public URL first (needed for URL-based fallback)
+            # Build the public URL (needed for URL-based APIs and fallback)
             url = _public_url_for_file(attachment.file.name)
 
-            # Read the file bytes from storage (works with S3, R2, local FS)
+            # Read file bytes from storage (works with S3, R2, local FS)
             try:
                 with default_storage.open(attachment.file.name, "rb") as fh:
                     data = fh.read()
@@ -496,7 +514,6 @@ def publish_post(self, post_id: str):
                 media_files.append((fname, data, ctype))
             except Exception as e:
                 logger.warning("Could not read attachment %s from storage: %s", attachment.pk, e)
-                # Fallback: download from the public R2 URL
                 if url:
                     try:
                         import httpx
@@ -513,13 +530,21 @@ def publish_post(self, post_id: str):
                     except Exception as dl_err:
                         logger.warning("Could not download attachment %s from %s: %s", attachment.pk, url, dl_err)
 
-            if url:
+            # Carousel: post.media_urls already has ordered slide URLs — don't prepend
+            # attachment URLs (same files, would duplicate and reverse order).
+            if url and not is_carousel_post:
                 media_urls_list.insert(0, url)
 
         absolute_media_urls = (
             [u for u in media_urls_list if u.startswith(("http://", "https://"))]
             or None
         )
+
+        # Instagram carousel: pass media_type kwarg so the provider uses the
+        # container carousel API instead of defaulting to single-image.
+        if account.platform == "instagram" and absolute_media_urls:
+            if is_carousel_post or len(absolute_media_urls) > 1:
+                publish_kwargs["media_type"] = "CAROUSEL"
 
         # Safety net: detect and fix encrypted tokens not decrypted by ORM
         token = account.access_token

@@ -939,6 +939,15 @@ def regenerate_image(request, post_id):
     if post.status not in (Post.Status.DRAFT, Post.Status.PENDING_APPROVAL):
         return HttpResponse("Cannot regenerate image for this post", status=400)
 
+    # Carousel posts use real product photos — there is no text prompt to regenerate from.
+    if post.visual_strategy == "carousel":
+        if request.headers.get("HX-Request"):
+            return HttpResponse(
+                '<span class="text-xs text-amber-600 dark:text-amber-400 px-1">'
+                'Update the product to change carousel images.</span>'
+            )
+        return redirect("content:edit", post_id=post.id)
+
     post.media_urls = []
     post.media_status = Post.MediaStatus.PENDING
     post.save(update_fields=["media_urls", "media_status", "updated_at"])
