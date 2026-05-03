@@ -10,17 +10,17 @@ module.exports = {
     extend: {
       colors: {
         kova: {
-          50: "#f0f4ff",
-          100: "#dbe4ff",
-          200: "#bac8ff",
-          300: "#91a7ff",
-          400: "#748ffc",
-          500: "#5c7cfa",
-          600: "#4c6ef5",
-          700: "#4263eb",
-          800: "#3b5bdb",
-          900: "#364fc7",
-          950: "#1e3a8a",
+          50:  "#edfcf8",
+          100: "#d0f4ec",
+          200: "#a3e8d7",
+          300: "#6dd4be",
+          400: "#37b8a0",
+          500: "#1a9d88",
+          600: "#0d8474",
+          700: "#0a6d60",
+          800: "#08564a",
+          900: "#065040",
+          950: "#02281f",
         },
         surface: {
           DEFAULT: "#f9fafb",
@@ -29,9 +29,9 @@ module.exports = {
         },
       },
       boxShadow: {
-        kova: "0 1px 2px rgba(76, 110, 245, 0.06), 0 4px 24px rgba(76, 110, 245, 0.08)",
-        "kova-lg": "0 4px 6px rgba(76, 110, 245, 0.07), 0 10px 40px rgba(76, 110, 245, 0.12)",
-        glow: "0 0 20px rgba(76, 110, 245, 0.15)",
+        kova: "0 1px 2px rgba(13, 132, 116, 0.06), 0 4px 24px rgba(13, 132, 116, 0.08)",
+        "kova-lg": "0 4px 6px rgba(13, 132, 116, 0.07), 0 10px 40px rgba(13, 132, 116, 0.12)",
+        glow: "0 0 20px rgba(13, 132, 116, 0.15)",
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
@@ -67,7 +67,7 @@ module.exports = {
         },
         "agent-glow": {
           "0%, 18%, 100%": { boxShadow: "0 1px 3px rgba(0,0,0,0.08)" },
-          "6%, 12%": { boxShadow: "0 0 0 2px rgba(92,124,250,0.15), 0 0 20px rgba(92,124,250,0.08)" },
+          "6%, 12%": { boxShadow: "0 0 0 2px rgba(26,157,136,0.15), 0 0 20px rgba(26,157,136,0.08)" },
         },
         "dash-flow": {
           "to": { strokeDashoffset: "-20" },
