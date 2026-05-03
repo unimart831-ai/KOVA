@@ -342,12 +342,12 @@
         <button @click="currency = 'kes'"
                 :class="currency === 'kes' ? 'bg-kova-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
                 class="px-5 py-2 rounded-full text-sm font-medium transition-all">
-          🇰🇪 KES
+          KES
         </button>
         <button @click="currency = 'usd'"
                 :class="currency === 'usd' ? 'bg-kova-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
                 class="px-5 py-2 rounded-full text-sm font-medium transition-all">
-          🌍 USD
+          USD
         </button>
       </div>
     </div>
@@ -464,7 +464,7 @@
     <!-- M-Pesa callout (KES only) -->
     <div x-show="currency === 'kes'" x-transition class="mt-10 text-center">
       <div class="inline-flex items-center gap-2 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-sm font-medium px-5 py-2.5 rounded-full border border-green-200 dark:border-green-900">
-        <span class="text-lg">📱</span>
+        
         Pay with M-Pesa — instant activation
       </div>
     </div>

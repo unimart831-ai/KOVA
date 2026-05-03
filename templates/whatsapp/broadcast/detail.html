@@ -43,7 +43,7 @@
           {% if broadcast.status == 'sending' or broadcast.status == 'scheduled' %}
             <form method="post" action="{% url 'whatsapp:broadcast_pause' broadcast.pk %}">
               {% csrf_token %}
-              <button type="submit" class="btn-secondary btn-sm">⏸ Pause</button>
+              <button type="submit" class="btn-secondary btn-sm">Pause</button>
             </form>
           {% endif %}
         </div>

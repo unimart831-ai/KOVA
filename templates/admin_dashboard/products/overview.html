@@ -65,7 +65,7 @@
   {# ── Snap to Sell Intelligence ─────────────────────────────────────── #}
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 shadow-sm p-5">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">📸 Snap to Sell (AI Vision)</h2>
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Snap to Sell (AI Vision)</h2>
       <span class="text-xs text-gray-400">gpt-4o-mini vision</span>
     </div>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
@@ -101,15 +101,15 @@
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
       <div class="rounded-lg border border-blue-200 dark:border-blue-900/50 p-3 text-center">
         <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ products_count }}</p>
-        <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">📦 Products</p>
+        <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Products</p>
       </div>
       <div class="rounded-lg border border-emerald-200 dark:border-emerald-900/50 p-3 text-center">
         <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ services_count }}</p>
-        <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">🔧 Services</p>
+        <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Services</p>
       </div>
       <div class="rounded-lg border border-violet-200 dark:border-violet-900/50 p-3 text-center">
         <p class="text-2xl font-bold text-violet-600 dark:text-violet-400">{{ digital_count }}</p>
-        <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">💎 Digital</p>
+        <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Digital</p>
       </div>
     </div>
     {% if total_products > 0 %}
@@ -242,7 +242,7 @@
               {% if p.offering_type == 'service' %}<span class="text-[10px] px-1 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">Service</span>
               {% elif p.offering_type == 'digital' %}<span class="text-[10px] px-1 py-0.5 rounded bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">Digital</span>
               {% endif %}
-              {% if p.is_featured %}<span class="text-[10px] text-amber-600 dark:text-amber-400">★ Featured</span>{% endif %}
+              {% if p.is_featured %}<span class="text-[10px] text-amber-600 dark:text-amber-400">Featured</span>{% endif %}
             </div>
           </td>
           <td class="px-4 py-2.5">

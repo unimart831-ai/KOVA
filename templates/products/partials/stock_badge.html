@@ -1,10 +1,10 @@
 {% if product.offering_type == 'service' %}
 <span class="inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
-  🔧 Service
+  Service
 </span>
 {% elif product.offering_type == 'digital' %}
 <span class="inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
-  💻 Digital
+  Digital
 </span>
 {% else %}
 <span class="inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium
@@ -13,7 +13,7 @@
   {% elif product.stock_status == 'out_of_stock' %}bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300
   {% elif product.stock_status == 'made_to_order' %}bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300
   {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
-  {% if product.stock_status == 'in_stock' %}🟢{% elif product.stock_status == 'low_stock' %}🟡{% elif product.stock_status == 'out_of_stock' %}🔴{% elif product.stock_status == 'made_to_order' %}🔵{% else %}⚪{% endif %}
+  {% if product.stock_status == 'in_stock' %}{% elif product.stock_status == 'low_stock' %}{% elif product.stock_status == 'out_of_stock' %}{% elif product.stock_status == 'made_to_order' %}{% else %}{% endif %}
   {{ product.get_stock_status_display }}
 </span>
 {% endif %}

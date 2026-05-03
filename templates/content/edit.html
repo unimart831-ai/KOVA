@@ -125,7 +125,7 @@
       <h3 class="font-semibold text-gray-900 dark:text-white">Media</h3>
       {% if post.media_status and post.media_status != 'none' %}
         <span class="text-[10px] font-medium px-2 py-0.5 rounded-md {% if post.media_status == 'generated' %}bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400{% elif post.media_status == 'uploaded' %}bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400{% elif post.media_status == 'failed' %}bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400{% elif post.media_status == 'pending' %}bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400{% endif %}">
-          {% if post.media_status == 'generated' %}🖼️ AI-generated{% elif post.media_status == 'uploaded' %}📎 Uploaded{% elif post.media_status == 'failed' %}⚠ Generation failed{% elif post.media_status == 'pending' %}⏳ Generating…{% endif %}
+          {% if post.media_status == 'generated' %}AI-generated{% elif post.media_status == 'uploaded' %}Uploaded{% elif post.media_status == 'failed' %}Generation failed{% elif post.media_status == 'pending' %}Generating…{% endif %}
         </span>
       {% endif %}
     </div>

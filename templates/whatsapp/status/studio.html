@@ -163,7 +163,7 @@
             {% endif %}
             {% if status.scheduled_for %}
               <p class="text-xs text-gray-400 mt-1">
-                📅 {{ status.scheduled_for|date:"D M j, g:i A" }}
+                {{ status.scheduled_for|date:"D M j, g:i A" }}
               </p>
             {% endif %}
           </div>

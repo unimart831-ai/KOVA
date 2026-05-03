@@ -4,7 +4,7 @@
 {% block page_subtitle %}
 <div class="flex items-center gap-2 mt-0.5">
   {% include "products/partials/stock_badge.html" %}
-  {% if product.is_featured %}<span class="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 font-medium">⭐ Featured</span>{% endif %}
+  {% if product.is_featured %}<span class="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 font-medium">Featured</span>{% endif %}
 </div>
 {% endblock %}
 
@@ -17,7 +17,7 @@
       {% if product.image %}
       <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-24 h-24 rounded-lg object-cover flex-shrink-0">
       {% else %}
-      <div class="w-24 h-24 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-3xl flex-shrink-0">📦</div>
+      <div class="w-24 h-24 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0"><svg class="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
       {% endif %}
 
       <div class="flex-1 min-w-0 space-y-3">
@@ -81,11 +81,11 @@
             hx-post="{% url 'products:update_stock' product_id=product.pk %}" hx-target="#stock-badge" hx-swap="innerHTML">
         {% csrf_token %}
         <select name="stock_status" class="input text-sm w-auto">
-          <option value="in_stock" {% if product.stock_status == 'in_stock' %}selected{% endif %}>🟢 In Stock</option>
-          <option value="low_stock" {% if product.stock_status == 'low_stock' %}selected{% endif %}>🟡 Low Stock</option>
-          <option value="out_of_stock" {% if product.stock_status == 'out_of_stock' %}selected{% endif %}>🔴 Out of Stock</option>
-          <option value="made_to_order" {% if product.stock_status == 'made_to_order' %}selected{% endif %}>🔵 Made to Order</option>
-          <option value="unlimited" {% if product.stock_status == 'unlimited' %}selected{% endif %}>⚪ Unlimited</option>
+          <option value="in_stock" {% if product.stock_status == 'in_stock' %}selected{% endif %}>In Stock</option>
+          <option value="low_stock" {% if product.stock_status == 'low_stock' %}selected{% endif %}>Low Stock</option>
+          <option value="out_of_stock" {% if product.stock_status == 'out_of_stock' %}selected{% endif %}>Out of Stock</option>
+          <option value="made_to_order" {% if product.stock_status == 'made_to_order' %}selected{% endif %}>Made to Order</option>
+          <option value="unlimited" {% if product.stock_status == 'unlimited' %}selected{% endif %}>Unlimited</option>
         </select>
         <button type="submit" class="btn-secondary text-sm px-3 py-1.5">Update</button>
       </form>

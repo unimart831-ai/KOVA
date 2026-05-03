@@ -32,9 +32,9 @@
       <form method="post" action="{% url 'whatsapp:sequence_toggle' sequence.pk %}">
         {% csrf_token %}
         {% if sequence.status == 'active' %}
-          <button type="submit" class="btn-secondary btn-sm">⏸ Pause</button>
+          <button type="submit" class="btn-secondary btn-sm">Pause</button>
         {% else %}
-          <button type="submit" class="btn-primary btn-sm">▶ Activate</button>
+          <button type="submit" class="btn-primary btn-sm">Activate</button>
         {% endif %}
       </form>
     </div>
@@ -78,9 +78,9 @@
               <p class="text-sm text-gray-500">No template assigned</p>
             {% endif %}
             <div class="flex items-center gap-3 mt-1 text-xs text-gray-400">
-              <span>⏱ {{ step.delay_hours }}h delay</span>
-              <span>✉ {{ step.sent_count }} sent</span>
-              <span>📖 {{ step.read_count }} read</span>
+              <span>{{ step.delay_hours }}h delay</span>
+              <span>{{ step.sent_count }} sent</span>
+              <span>{{ step.read_count }} read</span>
               <span>↩ {{ step.replied_count }} replies</span>
             </div>
           </div>

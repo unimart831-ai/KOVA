@@ -14,7 +14,7 @@
           {# Header #}
           <tr>
             <td style="background-color:#7c3aed;padding:24px 32px;">
-              <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:700;">☀️ Good morning{% if user.first_name %}, {{ user.first_name }}{% endif %}!</h1>
+              <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:700;">Good morning{% if user.first_name %}, {{ user.first_name }}{% endif %}!</h1>
               <p style="margin:4px 0 0;color:#ddd6fe;font-size:14px;">Your daily brief for {{ brief.date|date:"l, M d" }}</p>
             </td>
           </tr>
@@ -22,7 +22,7 @@
           {# Summary #}
           <tr>
             <td style="padding:24px 32px;">
-              <h2 style="margin:0 0 12px;font-size:16px;font-weight:600;color:#111827;">📋 Today's Summary</h2>
+              <h2 style="margin:0 0 12px;font-size:16px;font-weight:600;color:#111827;">Today's Summary</h2>
               <p style="margin:0;font-size:14px;line-height:1.6;color:#374151;">{{ brief.summary }}</p>
             </td>
           </tr>
@@ -56,7 +56,7 @@
           <tr>
             <td style="padding:0 32px 24px;">
               <div style="background-color:#f0fdf4;border-left:4px solid #22c55e;padding:16px;border-radius:0 8px 8px 0;">
-                <h3 style="margin:0 0 4px;font-size:13px;font-weight:600;color:#166534;">⭐ Performance Highlight</h3>
+                <h3 style="margin:0 0 4px;font-size:13px;font-weight:600;color:#166534;">Performance Highlight</h3>
                 <p style="margin:0;font-size:14px;color:#15803d;">{{ brief.performance_summary.highlight }}</p>
               </div>
             </td>
@@ -67,7 +67,7 @@
           {% if brief.suggested_posts %}
           <tr>
             <td style="padding:0 32px 24px;">
-              <h2 style="margin:0 0 12px;font-size:16px;font-weight:600;color:#111827;">💡 Content Ideas for Today</h2>
+              <h2 style="margin:0 0 12px;font-size:16px;font-weight:600;color:#111827;">Content Ideas for Today</h2>
               {% for post in brief.suggested_posts %}
               <div style="padding:12px 16px;background-color:#faf5ff;border-radius:8px;margin-bottom:8px;">
                 <p style="margin:0;font-size:14px;font-weight:600;color:#581c87;">{{ post.idea }}</p>
@@ -83,7 +83,7 @@
           {% if brief.trending_topics %}
           <tr>
             <td style="padding:0 32px 24px;">
-              <h2 style="margin:0 0 12px;font-size:16px;font-weight:600;color:#111827;">🔥 Trending Now</h2>
+              <h2 style="margin:0 0 12px;font-size:16px;font-weight:600;color:#111827;">Trending Now</h2>
               <div>
                 {% for topic in brief.trending_topics %}
                 <span style="display:inline-block;margin:0 6px 6px 0;font-size:13px;background-color:#fef3c7;color:#92400e;padding:4px 12px;border-radius:999px;">{% if topic.topic %}{{ topic.topic }}{% else %}{{ topic }}{% endif %}</span>
@@ -98,7 +98,7 @@
           <tr>
             <td style="padding:0 32px 24px;">
               <div style="background-color:#eff6ff;border-left:4px solid #3b82f6;padding:16px;border-radius:0 8px 8px 0;">
-                <h3 style="margin:0 0 4px;font-size:13px;font-weight:600;color:#1e40af;">🤖 Agent Activity</h3>
+                <h3 style="margin:0 0 4px;font-size:13px;font-weight:600;color:#1e40af;">Agent Activity</h3>
                 <p style="margin:0;font-size:14px;color:#1d4ed8;">{{ brief.performance_summary.agent_summary }}</p>
               </div>
             </td>

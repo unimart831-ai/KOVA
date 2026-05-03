@@ -23,7 +23,7 @@
       <!-- Edit caption -->
       <button @click="$refs['caption_{{ item.pk }}'].classList.toggle('hidden')"
               class="flex-1 px-1.5 py-1 text-[10px] font-medium bg-white rounded hover:bg-gray-100 text-gray-700 truncate">
-        ✏️ {{ item.caption|truncatechars:15|default:"Add caption" }}
+        {{ item.caption|truncatechars:15|default:"Add caption" }}
       </button>
       <!-- Delete -->
       <form method="post" action="{% url 'media_queue:item_delete' item_id=item.pk %}"
@@ -32,7 +32,7 @@
             hx-swap="outerHTML"
             hx-confirm="Remove this photo from the queue?">
         {% csrf_token %}
-        <button class="px-1.5 py-1 text-[10px] bg-red-500 text-white rounded hover:bg-red-600">🗑</button>
+        <button class="px-1.5 py-1 text-[10px] bg-red-500 text-white rounded hover:bg-red-600">Del</button>
       </form>
     </div>
   </div>

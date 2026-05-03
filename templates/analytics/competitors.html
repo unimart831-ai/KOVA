@@ -93,7 +93,7 @@
               <div class="flex flex-wrap gap-1.5 mt-3">
                 {% for platform, handle in comp.handles.items %}
                   <span class="inline-flex items-center text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-                    {% if platform == 'twitter' %}𝕏{% elif platform == 'instagram' %}📷{% elif platform == 'facebook' %}f{% elif platform == 'linkedin' %}in{% elif platform == 'tiktok' %}♪{% elif platform == 'youtube' %}▶{% elif platform == 'threads' %}@{% endif %}
+                    {% if platform == 'twitter' %}X{% elif platform == 'instagram' %}IG{% elif platform == 'facebook' %}FB{% elif platform == 'linkedin' %}LI{% elif platform == 'tiktok' %}TT{% elif platform == 'youtube' %}YT{% elif platform == 'threads' %}@{% endif %}
                     @{{ handle|truncatechars:15 }}
                   </span>
                 {% endfor %}

@@ -14,12 +14,12 @@
       <button @click="currency = 'kes'"
               :class="currency === 'kes' ? 'bg-kova-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
               class="px-5 py-2 rounded-full text-sm font-medium transition-all">
-        🇰🇪 KES
+        KES
       </button>
       <button @click="currency = 'usd'"
               :class="currency === 'usd' ? 'bg-kova-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
               class="px-5 py-2 rounded-full text-sm font-medium transition-all">
-        🌍 USD
+        USD
       </button>
     </div>
   </div>
@@ -136,7 +136,7 @@
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">M-Pesa Phone Number</label>
           <div class="relative">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🇰🇪</span>
+            
             <input type="tel" name="phone_number" x-model="phone"
                    placeholder="0712 345 678"
                    required
@@ -149,7 +149,7 @@
         <template x-if="isTrial">
           <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg p-3">
             <p class="text-sm text-amber-700 dark:text-amber-400">
-              <span class="font-semibold">🎉 14-day free trial</span> — no payment now. We'll remind you before it ends.
+              <span class="font-semibold">14-day free trial</span> — no payment now. We'll remind you before it ends.
             </p>
           </div>
         </template>
@@ -178,7 +178,7 @@
         <div class="flex gap-3">
           <button type="button" @click="showPhone = false" class="btn-secondary flex-1 justify-center">Cancel</button>
           <button type="submit" class="flex-1 justify-center inline-flex items-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors">
-            <span class="text-lg">📱</span>
+            
             <span x-text="isTrial ? 'Start Free Trial' : 'Pay with M-Pesa'"></span>
           </button>
         </div>
@@ -189,7 +189,7 @@
   {# M-Pesa callout #}
   <div x-show="currency === 'kes'" x-transition class="mt-8 text-center">
     <div class="inline-flex items-center gap-2 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-sm font-medium px-5 py-2.5 rounded-full border border-green-200 dark:border-green-900">
-      <span class="text-lg">📱</span>
+      
       Pay with M-Pesa — instant activation
     </div>
   </div>

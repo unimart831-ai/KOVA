@@ -11,7 +11,7 @@
         {% elif activity.activity_type == 'note_added' %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400
         {% elif activity.activity_type == 'tag_added' %}bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400
         {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
-        {% if activity.activity_type == 'form_submitted' %}📝{% elif activity.activity_type == 'email_sent' %}✉️{% elif activity.activity_type == 'email_opened' %}👁{% elif activity.activity_type == 'status_changed' %}🔄{% elif activity.activity_type == 'note_added' %}📌{% elif activity.activity_type == 'tag_added' %}🏷{% elif activity.activity_type == 'phone_called' %}📞{% elif activity.activity_type == 'whatsapp_sent' %}💬{% else %}•{% endif %}
+        {% if activity.activity_type == 'form_submitted' %}F{% elif activity.activity_type == 'email_sent' %}E{% elif activity.activity_type == 'email_opened' %}O{% elif activity.activity_type == 'status_changed' %}S{% elif activity.activity_type == 'note_added' %}N{% elif activity.activity_type == 'tag_added' %}T{% elif activity.activity_type == 'phone_called' %}C{% elif activity.activity_type == 'whatsapp_sent' %}W{% else %}•{% endif %}
       </div>
       <div class="min-w-0 flex-1">
         <p class="text-xs font-medium text-gray-700 dark:text-gray-300">{{ activity.get_activity_type_display }}</p>

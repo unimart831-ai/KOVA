@@ -1,7 +1,7 @@
 {% extends "emails/base_email.html" %}
 {# Daily brief email — wrapper for the existing brief template structure #}
 {% block title %}Your Daily Brief{% endblock %}
-{% block header_title %}☀️ Good morning{% if first_name %}, {{ first_name }}{% endif %}!{% endblock %}
+{% block header_title %}Good morning{% if first_name %}, {{ first_name }}{% endif %}!{% endblock %}
 {% block header_subtitle %}<p style="margin:4px 0 0;color:#ddd6fe;font-size:14px;">Your daily brief is ready</p>{% endblock %}
 
 {% block content %}

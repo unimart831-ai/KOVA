@@ -39,11 +39,11 @@
         <input type="text" name="q" value="{{ current_q }}" placeholder="Search products…" class="input text-sm w-full sm:w-48">
         <select name="status" class="input text-sm w-auto" onchange="this.form.submit()">
           <option value="">All statuses</option>
-          <option value="in_stock" {% if current_status == 'in_stock' %}selected{% endif %}>🟢 In Stock</option>
-          <option value="low_stock" {% if current_status == 'low_stock' %}selected{% endif %}>🟡 Low Stock</option>
-          <option value="out_of_stock" {% if current_status == 'out_of_stock' %}selected{% endif %}>🔴 Out of Stock</option>
-          <option value="made_to_order" {% if current_status == 'made_to_order' %}selected{% endif %}>🔵 Made to Order</option>
-          <option value="unlimited" {% if current_status == 'unlimited' %}selected{% endif %}>⚪ Unlimited</option>
+          <option value="in_stock" {% if current_status == 'in_stock' %}selected{% endif %}>In Stock</option>
+          <option value="low_stock" {% if current_status == 'low_stock' %}selected{% endif %}>Low Stock</option>
+          <option value="out_of_stock" {% if current_status == 'out_of_stock' %}selected{% endif %}>Out of Stock</option>
+          <option value="made_to_order" {% if current_status == 'made_to_order' %}selected{% endif %}>Made to Order</option>
+          <option value="unlimited" {% if current_status == 'unlimited' %}selected{% endif %}>Unlimited</option>
         </select>
         {% if categories %}
         <select name="category" class="input text-sm w-auto" onchange="this.form.submit()">
@@ -56,9 +56,9 @@
       </form>
     </div>
     <div class="flex items-center gap-2 flex-wrap">
-      <a href="{% url 'products:snap' %}" class="btn-primary text-sm px-4 py-1.5 bg-purple-600 hover:bg-purple-700">📸 Snap to Sell</a>
-      <a href="{% url 'products:restock' %}" class="btn-primary text-sm px-4 py-1.5 bg-orange-600 hover:bg-orange-700">🧾 Receipt to Restock</a>
-      <a href="{% url 'products:snap_batch' %}" class="btn-primary text-sm px-4 py-1.5 bg-orange-600 hover:bg-orange-700">📦 Batch Snap</a>
+      <a href="{% url 'products:snap' %}" class="btn-primary text-sm px-4 py-1.5 bg-purple-600 hover:bg-purple-700">Snap to Sell</a>
+      <a href="{% url 'products:restock' %}" class="btn-primary text-sm px-4 py-1.5 bg-orange-600 hover:bg-orange-700">Receipt to Restock</a>
+      <a href="{% url 'products:snap_batch' %}" class="btn-primary text-sm px-4 py-1.5 bg-orange-600 hover:bg-orange-700">Batch Snap</a>
       <a href="{% url 'products:categories' %}" class="btn-secondary text-sm px-3 py-1.5">Categories</a>
       <a href="{% url 'products:import' %}" class="btn-secondary text-sm px-3 py-1.5">Import</a>
       <a href="{% url 'products:add' %}" class="btn-primary text-sm px-4 py-1.5">+ Add to Catalog</a>
@@ -74,12 +74,12 @@
   </div>
   {% else %}
   <div class="card px-6 py-16 text-center">
-    <div class="text-4xl mb-3">📦</div>
+    <div class="flex justify-center mb-3"><svg class="w-10 h-10 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">Nothing in your catalog yet</h3>
     <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Add your products or services so Kova's AI can create smarter content about what you offer.</p>
     <div class="flex items-center justify-center gap-3 flex-wrap">
-      <a href="{% url 'products:snap' %}" class="btn-primary text-sm px-4 py-2 bg-purple-600 hover:bg-purple-700">📸 Snap to Sell</a>
-      <a href="{% url 'products:snap_batch' %}" class="btn-primary text-sm px-4 py-2 bg-orange-600 hover:bg-orange-700">📦 Batch Snap</a>
+      <a href="{% url 'products:snap' %}" class="btn-primary text-sm px-4 py-2 bg-purple-600 hover:bg-purple-700">Snap to Sell</a>
+      <a href="{% url 'products:snap_batch' %}" class="btn-primary text-sm px-4 py-2 bg-orange-600 hover:bg-orange-700">Batch Snap</a>
       <a href="{% url 'products:add' %}" class="btn-primary text-sm px-4 py-2">Add Your First Offering</a>
       <a href="{% url 'products:import' %}" class="btn-secondary text-sm px-4 py-2">Import Products</a>
     </div>
@@ -88,7 +88,7 @@
 
   {% if unread_alerts %}
   <div class="card border-l-4 border-amber-500 px-5 py-4">
-    <p class="text-sm font-medium text-amber-800 dark:text-amber-200">⚠️ You have {{ unread_alerts }} unread stock alert{{ unread_alerts|pluralize }}.</p>
+    <p class="text-sm font-medium text-amber-800 dark:text-amber-200">You have {{ unread_alerts }} unread stock alert{{ unread_alerts|pluralize }}.</p>
   </div>
   {% endif %}
 

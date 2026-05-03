@@ -10,14 +10,14 @@
 
   {# Hero #}
   <div class="card px-6 py-5 text-center border-2 border-dashed border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/20">
-    <div class="text-3xl mb-2">📦⚡</div>
+    
     <h2 class="text-lg font-bold text-gray-900 dark:text-white">Batch Snap — Multiple Offerings at Once</h2>
     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
       Snap up to 10 <strong>different offerings</strong>. AI will identify each one,
       create separate listings, and generate unique social media content for every item.
     </p>
     <a href="{% url 'products:snap' %}" class="inline-block mt-3 text-xs text-purple-600 dark:text-purple-400 hover:underline font-medium">
-      📸 Just one offering? Use Snap to Sell →
+      Just one offering? Use Snap to Sell →
     </a>
   </div>
 
@@ -30,21 +30,21 @@
               :class="offeringType === 'product'
                 ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
                 : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
-        📦 Products
+        Products
       </button>
       <button type="button" @click="offeringType = 'service'"
               class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
               :class="offeringType === 'service'
                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                 : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
-        🛠️ Services
+        Services
       </button>
       <button type="button" @click="offeringType = 'digital'"
               class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
               :class="offeringType === 'digital'
                 ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
                 : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
-        💻 Digital
+        Digital
       </button>
     </div>
     <p class="text-xs text-gray-500 dark:text-gray-400 mt-2" x-text="typeHints[offeringType]"></p>
@@ -81,7 +81,7 @@
               <template x-if="!item.preview">
                 <div class="w-24 h-24 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 transition-colors"
                      @click="captureForItem(index)">
-                  <div class="text-xl">📷</div>
+                  <svg class="w-6 h-6 text-gray-400 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                   <p class="text-[9px] text-gray-400 mt-0.5">Add photo</p>
                 </div>
               </template>
@@ -94,7 +94,7 @@
                       x-text="'#' + (index + 1)"></span>
                 <button type="button" @click="removeItem(index)"
                         class="text-red-400 hover:text-red-600 text-xs flex-shrink-0"
-                        x-show="items.length > 1">✕ Remove</button>
+                        x-show="items.length > 1">&times; Remove</button>
               </div>
               <input type="text" :name="'name_' + index"
                      class="input text-sm py-1.5"
@@ -134,11 +134,11 @@
         <div class="flex gap-3">
           <button type="button" @click="addItem(); $nextTick(() => captureForItem(items.length - 1))"
                   class="btn-secondary text-sm px-4 py-2.5 flex-1">
-            📷 + Snap Another Product
+            + Snap Another Product
           </button>
           <button type="button" @click="addFromGalleryBatch()"
                   class="btn-secondary text-sm px-4 py-2.5 flex-1">
-            🖼️ + From Gallery
+            + From Gallery
           </button>
         </div>
       </template>
@@ -170,7 +170,7 @@
     <button type="submit"
             :disabled="readyCount() === 0"
             class="w-full btn-primary text-base py-3.5 rounded-xl font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 bg-orange-600 hover:bg-orange-700">
-      <span>⚡</span>
+      
       <span x-text="readyCount() === 1
         ? 'Launch 1 Product Campaign'
         : 'Launch ' + readyCount() + ' Product Campaigns'"></span>

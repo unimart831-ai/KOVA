@@ -38,8 +38,8 @@
         {% endif %}
       </div>
       <div class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-        <span>📷 {{ queue.queued_count }} queued</span>
-        <span>✅ {{ queue.published_count }} published</span>
+        <span>{{ queue.queued_count }} queued</span>
+        <span>{{ queue.published_count }} published</span>
       </div>
       {% if queue.next_item and queue.next_item.scheduled_for %}
       <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">
@@ -69,7 +69,6 @@
                         {% elif account.platform == 'twitter' %}bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400
                         {% elif account.platform == 'linkedin' %}bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400
                         {% else %}bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400{% endif %}">
-            📷
           </span>
           {{ account.get_platform_display }}
           {% if account.username %}<span class="text-gray-400">@{{ account.username }}</span>{% endif %}

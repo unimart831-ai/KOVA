@@ -114,7 +114,7 @@
                 <input type="time" name="time_slots" :value="t" x-model="dailyTimes[i]"
                        class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm px-2 py-1">
                 <button type="button" @click="dailyTimes.splice(i, 1)" x-show="dailyTimes.length > 1"
-                        class="text-red-400 hover:text-red-600 text-xs">✕</button>
+                        class="text-red-400 hover:text-red-600 text-xs">&times;</button>
               </div>
             </template>
             <button type="button" @click="dailyTimes.push('12:00')"
@@ -161,7 +161,7 @@
             <input type="time" :name="'slot_time'" :value="slot.time" x-model="weeklySlots[i].time"
                    class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm px-2 py-1">
             <button type="button" @click="weeklySlots.splice(i, 1)" x-show="weeklySlots.length > 1"
-                    class="text-red-400 hover:text-red-600 text-xs">✕</button>
+                    class="text-red-400 hover:text-red-600 text-xs">&times;</button>
           </div>
         </template>
         <button type="button" @click="weeklySlots.push({day: '0', time: '09:00'})"

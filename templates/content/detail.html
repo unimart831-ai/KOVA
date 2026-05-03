@@ -99,7 +99,7 @@
             {% endif %}
             {% if post.media_status and post.media_status != 'none' %}
             <span class="inline-flex items-center gap-1 {% if post.media_status == 'generated' %}text-emerald-600 dark:text-emerald-400{% elif post.media_status == 'uploaded' %}text-blue-600 dark:text-blue-400{% elif post.media_status == 'failed' %}text-red-600 dark:text-red-400{% elif post.media_status == 'pending' %}text-yellow-600 dark:text-yellow-400{% endif %}">
-              {% if post.media_status == 'generated' %}🖼️ AI image{% elif post.media_status == 'uploaded' %}📎 Uploaded{% elif post.media_status == 'failed' %}⚠ Image failed{% elif post.media_status == 'pending' %}⏳ Generating…{% endif %}
+              {% if post.media_status == 'generated' %}AI image{% elif post.media_status == 'uploaded' %}Uploaded{% elif post.media_status == 'failed' %}Image failed{% elif post.media_status == 'pending' %}Generating…{% endif %}
             </span>
             {% endif %}
           </div>
@@ -120,7 +120,7 @@
             <div>
               <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Visual Strategy</p>
               <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300">
-                {% if post.visual_strategy == 'carousel' %}📑 Carousel{% elif post.visual_strategy == 'quote_card' %}💬 Quote Card{% elif post.visual_strategy == 'tip_graphic' %}💡 Tip Graphic{% elif post.visual_strategy == 'stat_highlight' %}📊 Stat Highlight{% elif post.visual_strategy == 'cta_banner' %}🎯 CTA Banner{% elif post.visual_strategy == 'ai_photo' %}🎨 AI Photo{% elif post.visual_strategy == 'story_graphic' %}📱 Story Graphic{% else %}{{ post.get_visual_strategy_display }}{% endif %}
+                {% if post.visual_strategy == 'carousel' %}Carousel{% elif post.visual_strategy == 'quote_card' %}Quote Card{% elif post.visual_strategy == 'tip_graphic' %}Tip Graphic{% elif post.visual_strategy == 'stat_highlight' %}Stat Highlight{% elif post.visual_strategy == 'cta_banner' %}CTA Banner{% elif post.visual_strategy == 'ai_photo' %}AI Photo{% elif post.visual_strategy == 'story_graphic' %}Story Graphic{% else %}{{ post.get_visual_strategy_display }}{% endif %}
               </span>
             </div>
           {% endif %}

@@ -117,8 +117,8 @@
             <p class="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">{{ post.text }}</p>
             {% if post.reach or post.reactions %}
               <div class="flex items-center gap-3 mt-1.5 text-xs text-gray-400">
-                {% if post.reach %}<span>👁 {{ post.reach }} reach</span>{% endif %}
-                {% if post.reactions %}<span>❤ {{ post.reactions }} reactions</span>{% endif %}
+                {% if post.reach %}<span>{{ post.reach }} reach</span>{% endif %}
+                {% if post.reactions %}<span>{{ post.reactions }} reactions</span>{% endif %}
               </div>
             {% endif %}
           </div>

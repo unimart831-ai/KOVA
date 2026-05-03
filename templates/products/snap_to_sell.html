@@ -10,11 +10,10 @@
 
   {# Hero / explainer #}
   <div class="card px-6 py-5 text-center border-2 border-dashed border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/20">
-    <div class="text-3xl mb-2" x-text="offeringConfig[offeringType].emoji">📸</div>
-    <h2 class="text-lg font-bold text-gray-900 dark:text-white" x-text="offeringConfig[offeringType].hero">Photos → Content → Sales</h2>
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white" x-text="offeringConfig[offeringType].hero">Photos → Content → Sales</h2>
     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1" x-text="offeringConfig[offeringType].subtitle"></p>
     <a href="{% url 'products:snap_batch' %}" class="inline-block mt-3 text-xs text-orange-600 dark:text-orange-400 hover:underline font-medium">
-      📦 Have multiple offerings? Try Batch Snap →
+      Have multiple offerings? Try Batch Snap →
     </a>
   </div>
 
@@ -27,21 +26,21 @@
               :class="offeringType === 'product'
                 ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
                 : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
-        📦 Product
+        Product
       </button>
       <button type="button" @click="offeringType = 'service'"
               class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
               :class="offeringType === 'service'
                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                 : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
-        🛠️ Service
+        Service
       </button>
       <button type="button" @click="offeringType = 'digital'"
               class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
               :class="offeringType === 'digital'
                 ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
                 : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
-        💻 Digital
+        Digital
       </button>
     </div>
     <p class="text-xs text-gray-500 dark:text-gray-400 mt-2" x-text="offeringConfig[offeringType].hint"></p>
@@ -70,7 +69,7 @@
                  class="w-full h-full object-cover">
             <button type="button" @click="removePhoto(index)"
                     class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 shadow-lg">
-              ✕
+              ×
             </button>
             <div x-show="index === 0"
                  class="absolute bottom-1 left-1 bg-purple-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium">
@@ -93,7 +92,7 @@
       {# Empty state #}
       <template x-if="photos.length === 0">
         <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center">
-          <div class="text-4xl mb-2">📷</div>
+          <svg class="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           <p class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="offeringConfig[offeringType].emptyTitle">Tap below to add product photos</p>
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-text="offeringConfig[offeringType].emptyHint">Multiple angles = better AI content. Up to 6 photos.</p>
         </div>
@@ -113,12 +112,12 @@
         <button type="button" @click="$refs.cameraInput.click()"
                 class="btn-secondary text-sm px-4 py-2 flex-1"
                 :disabled="photos.length >= 6">
-          📷 Camera
+          Camera
         </button>
         <button type="button" @click="$refs.galleryInput.click()"
                 class="btn-secondary text-sm px-4 py-2 flex-1"
                 :disabled="photos.length >= 6">
-          🖼️ Gallery
+          Gallery
         </button>
       </div>
     </div>
@@ -197,7 +196,7 @@ function snapToSell() {
 
     offeringConfig: {
       product: {
-        emoji: '📸',
+        emoji: '',
         hero: 'Photos → Content → Sales',
         subtitle: 'Take photos of your product, add a name & price — AI creates specialized marketing content in seconds.',
         hint: 'Physical items: clothes, food, electronics, crafts, etc.',
@@ -213,7 +212,7 @@ function snapToSell() {
         launchHint: 'AI will analyze your photos, write a product description, and generate specialized posts for each angle.',
       },
       service: {
-        emoji: '🛠️',
+        emoji: '',
         hero: 'Show Your Work → Build Authority',
         subtitle: 'Snap your portfolio work, client results, or projects — AI creates credibility-building content that attracts new clients.',
         hint: 'Web design, consulting, photography, events, training, beauty, etc.',
@@ -229,7 +228,7 @@ function snapToSell() {
         launchHint: 'AI will analyze your work, craft authority-building content, and generate posts that showcase your expertise.',
       },
       digital: {
-        emoji: '💻',
+        emoji: '',
         hero: 'Screenshots → Downloads & Sales',
         subtitle: 'Snap screenshots of your digital product — AI creates compelling content to drive downloads and sales.',
         hint: 'Templates, courses, ebooks, apps, presets, printables, etc.',

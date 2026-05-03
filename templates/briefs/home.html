@@ -12,7 +12,7 @@
   {# ── Platform connection nudge (show if no social accounts connected) ── #}
   {% if not has_connected_platform %}
   <div class="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl flex items-start gap-3">
-    <span class="text-xl mt-0.5" aria-hidden="true">⚡</span>
+    
     <div class="flex-1">
       <p class="text-sm font-medium text-amber-800 dark:text-amber-300">Connect a platform to activate your agents</p>
       <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">Your 6 AI agents are ready, but they need a social media account to create, schedule, and analyze content.</p>
@@ -36,7 +36,7 @@
         <div class="flex items-center gap-3">
           {% if brief_streak > 0 %}
           <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-kova-500/15 border border-kova-500/20">
-            <span class="text-lg" aria-hidden="true">🔥</span>
+            
             <span class="text-sm font-bold text-kova-400 tabular-nums">Day {{ brief_streak }}</span>
           </div>
           {% endif %}
@@ -106,7 +106,7 @@
     <div class="card border-indigo-200 dark:border-indigo-800/60 bg-gradient-to-br from-indigo-50/50 to-white dark:from-indigo-950/20 dark:to-gray-900">
       <div class="px-6 py-4 border-b border-indigo-100 dark:border-indigo-900/40">
         <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-          <span class="text-indigo-500 dark:text-indigo-400" aria-hidden="true">🌙</span>
+          
           While you slept
         </h3>
         <p class="text-xs text-indigo-600 dark:text-indigo-400 mt-0.5">Your AI team worked through the night — {{ ow.total_actions }} action{{ ow.total_actions|pluralize }} completed</p>
@@ -291,13 +291,13 @@
 
               {% if brief.performance_summary.product_update %}
               <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
-                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">📦 Product Pulse</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Product Pulse</p>
                 <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.product_update }}</p>
                 {% if brief.performance_summary.product_alerts %}
                 <div class="mt-2 space-y-1">
                   {% for alert in brief.performance_summary.product_alerts %}
                   <div class="flex items-start gap-2 text-sm {% if alert.severity == 'critical' %}text-red-600 dark:text-red-400{% elif alert.severity == 'warning' %}text-amber-600 dark:text-amber-400{% else %}text-blue-600 dark:text-blue-400{% endif %}">
-                    <span class="mt-0.5">{% if alert.severity == 'critical' %}🔴{% elif alert.severity == 'warning' %}⚠️{% else %}ℹ️{% endif %}</span>
+                    <span class="mt-0.5">{% if alert.severity == 'critical' %}<span class="inline-block w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span>{% elif alert.severity == 'warning' %}<span class="inline-block w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></span>{% else %}<span class="inline-block w-2 h-2 rounded-full bg-gray-400 flex-shrink-0"></span>{% endif %}</span>
                     <span>{{ alert.item }}{% if alert.action %} — <strong>{{ alert.action }}</strong>{% endif %}</span>
                   </div>
                   {% endfor %}
@@ -418,7 +418,7 @@
         <div class="card">
           <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
             <h3 class="font-semibold text-gray-900 dark:text-white text-sm flex items-center gap-2">
-              <span class="text-kova-500" aria-hidden="true">📈</span>
+              
               Momentum
             </h3>
           </div>
@@ -486,13 +486,13 @@
         {% if superfans %}
         <div class="card">
           <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2">
-            <span class="text-base" aria-hidden="true">⭐</span>
+            
             <h3 class="font-semibold text-gray-900 dark:text-white text-sm">Superfans to Acknowledge</h3>
           </div>
           <ul class="divide-y divide-gray-100 dark:divide-gray-800">
             {% for fan in superfans %}
             <li class="px-6 py-3 flex items-center gap-3">
-              <span class="text-sm" aria-hidden="true">{% if fan.tier == 'superfan' %}🌟{% elif fan.tier == 'loyal' %}💎{% else %}🔥{% endif %}</span>
+              
               <div class="min-w-0 flex-1">
                 <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ fan.author_name }}</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">{{ fan.interaction_count }} interactions · {{ fan.get_tier_display }}</p>

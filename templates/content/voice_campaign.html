@@ -26,7 +26,7 @@
                  class="input text-sm w-full file:mr-3 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-kova-50 file:text-kova-700 dark:file:bg-kova-900/40 dark:file:text-kova-300 hover:file:bg-kova-100">
           <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">MP3, WAV, OGG, WebM, or M4A · Max 25 MB</p>
         </div>
-        <button type="submit" class="btn-primary text-sm px-5 py-2">🎙️ Upload & Generate Campaign</button>
+        <button type="submit" class="btn-primary text-sm px-5 py-2">Upload & Generate Campaign</button>
       </form>
     </div>
   </div>
@@ -46,7 +46,7 @@
               {% elif brief.status == 'failed' %}
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">✗ Failed</span>
               {% else %}
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">⏳ {{ brief.get_status_display }}</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">Pending · {{ brief.get_status_display }}</span>
               {% endif %}
               {% if brief.language_detected %}
                 <span class="text-xs text-gray-400 dark:text-gray-500">{{ brief.language_detected }}</span>
@@ -94,7 +94,7 @@
   {% else %}
   <div class="card border-dashed">
     <div class="card-body text-center py-12">
-      <div class="text-4xl mb-3">🎙️</div>
+      <div class="flex justify-center mb-3"><svg class="w-10 h-10 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg></div>
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">No voice briefs yet</h3>
       <p class="text-sm text-gray-500 dark:text-gray-400">Upload a voice memo above to create your first AI-generated campaign.</p>
     </div>

@@ -31,13 +31,13 @@
             hx-target="#queue-status" hx-swap="innerHTML">
         {% csrf_token %}
         <button type="submit" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-          {% if queue.is_active %}⏸ Pause{% else %}▶ Resume{% endif %}
+          {% if queue.is_active %}Pause{% else %}Resume{% endif %}
         </button>
       </form>
       <!-- Settings -->
       <a href="{% url 'media_queue:settings' queue_id=queue.pk %}"
          class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-        ⚙️ Settings
+        Settings
       </a>
     </div>
   </div>

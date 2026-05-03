@@ -73,7 +73,7 @@
           <td class="px-4 py-2.5 text-right text-xs text-gray-600 dark:text-gray-400">{% if p.quantity is not None %}{{ p.quantity }}{% else %}—{% endif %}</td>
           <td class="px-4 py-2.5 text-right text-xs text-gray-600 dark:text-gray-400">{% if p.price %}{{ p.currency }} {{ p.price|floatformat:0 }}{% else %}—{% endif %}</td>
           <td class="px-4 py-2.5 text-center">
-            {% if p.is_featured %}<span class="text-amber-500">★</span>{% else %}<span class="text-gray-300 dark:text-gray-600">—</span>{% endif %}
+            {% if p.is_featured %}<span class="text-amber-500">Featured</span>{% else %}<span class="text-gray-300 dark:text-gray-600">—</span>{% endif %}
           </td>
           <td class="px-4 py-2.5 text-right text-xs text-gray-400">{{ p.created_at|date:"M d" }}</td>
         </tr>
