@@ -15,8 +15,10 @@
          @click="showSchedule = false"
          class="absolute inset-0 bg-black/50"></div>
 
-    {# Modal panel #}
+    {# Modal panel — nested x-data for image-approval step #}
     <div x-show="showSchedule"
+         x-data="{ imgOk: {% if not post.media_urls %}true{% else %}false{% endif %} }"
+         x-effect="if(!showSchedule) imgOk = {% if not post.media_urls %}true{% else %}false{% endif %}"
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0 scale-95 translate-y-2"
          x-transition:enter-end="opacity-100 scale-100 translate-y-0"
@@ -25,11 +27,13 @@
          x-transition:leave-end="opacity-0 scale-95"
          class="relative w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
 
-      {# Header #}
+      {# Header — label changes per step #}
       <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
         <div>
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Approve & Schedule</h3>
-          <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Choose when to publish this post</p>
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white"
+              x-text="imgOk ? 'Approve &amp; Schedule' : 'Review image'">{% if post.media_urls %}Review image{% else %}Approve &amp; Schedule{% endif %}</h3>
+          <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5"
+             x-text="imgOk ? 'Choose when to publish this post' : '{% if post.visual_strategy == 'carousel' %}{{ post.media_urls|length }} slide{{ post.media_urls|length|pluralize }} · looks good?{% else %}Looks good before we schedule it?{% endif %}'">{% if post.media_urls %}{% if post.visual_strategy == 'carousel' %}{{ post.media_urls|length }} slide{{ post.media_urls|length|pluralize }} · looks good?{% else %}Looks good before we schedule it?{% endif %}{% else %}Choose when to publish this post{% endif %}</p>
         </div>
         <button @click="showSchedule = false"
                 class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
@@ -37,59 +41,126 @@
         </button>
       </div>
 
-      {# Smart scheduling options #}
-      <div class="p-2">
-        <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'post_now'}); showSchedule = false"
-                class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-left transition-colors">
-          <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/50">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-amber-500" style="width:18px;height:18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-          </span>
-          <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Post Now</p><p class="text-xs text-gray-400 dark:text-gray-500">Publish immediately</p></div>
-        </button>
+      {% if post.media_urls %}
+      {# ── Step 1: Image review ─────────────────────────────────────── #}
+      <div x-show="!imgOk" x-cloak>
 
-        <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'next_best'}); showSchedule = false"
-                class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-left transition-colors">
-          <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-kova-50 dark:bg-kova-950/50">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-kova-500" style="width:18px;height:18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-          </span>
-          <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Best Slot</p><p class="text-xs text-gray-400 dark:text-gray-500">Peak time for {% if post.social_account %}{{ post.social_account.get_platform_display }}{% elif post.platform %}{{ post.platform|title }}{% endif %}</p></div>
-        </button>
+        {# Image preview #}
+        {% if post.visual_strategy == 'carousel' %}
+        {# Carousel: horizontal strip of up to 3 slides #}
+        <div class="flex gap-2 overflow-x-auto px-4 pt-4 pb-2 scrollbar-none snap-x">
+          {% for url in post.media_urls|slice:":4" %}
+          <div class="flex-shrink-0 w-[120px] snap-start rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <img src="{{ url }}" alt="Slide {{ forloop.counter }}" loading="lazy"
+                 class="w-[120px] h-[120px] object-cover">
+            <p class="text-[9px] text-center text-gray-400 py-1">{{ forloop.counter }}/{{ post.media_urls|length }}</p>
+          </div>
+          {% endfor %}
+          {% if post.media_urls|length > 4 %}
+          <div class="flex-shrink-0 w-[60px] snap-start flex items-center justify-center text-xs text-gray-400 dark:text-gray-500 font-medium">
+            +{{ post.media_urls|length|add:"-4" }} more
+          </div>
+          {% endif %}
+        </div>
+        {% else %}
+        {# Single image: large preview #}
+        <div class="px-4 pt-4 pb-2">
+          <div class="rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <img src="{{ post.media_urls.0 }}" alt="AI-generated image" loading="lazy"
+                 class="w-full max-h-[240px] object-contain"
+                 onerror="this.parentElement.style.display='none'">
+          </div>
+        </div>
+        {% endif %}
 
-        <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'smart_queue'}); showSchedule = false"
-                class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-left transition-colors">
-          <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-purple-50 dark:bg-purple-950/50">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-purple-500" style="width:18px;height:18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+        {# Strategy badge #}
+        {% if post.visual_strategy and post.visual_strategy != 'none' %}
+        <div class="px-4 pb-3 flex items-center gap-2">
+          <span class="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Strategy</span>
+          <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-kova-50 dark:bg-kova-950/50 text-kova-600 dark:text-kova-400">
+            {{ post.get_visual_strategy_display|default:post.visual_strategy|title }}
           </span>
-          <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Smart Queue</p><p class="text-xs text-gray-400 dark:text-gray-500">Auto-space with other posts</p></div>
-        </button>
-      </div>
+        </div>
+        {% endif %}
 
-      {# Quick picks #}
-      <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-800">
-        <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Quick Schedule</p>
-        <div class="flex flex-wrap gap-1.5">
-          <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:30min'}); showSchedule = false"
-                  class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">30 min</button>
-          <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:1hr'}); showSchedule = false"
-                  class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">1 hour</button>
-          <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:3hr'}); showSchedule = false"
-                  class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">3 hours</button>
-          <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:tomorrow_am'}); showSchedule = false"
-                  class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">Tomorrow 9AM</button>
-          <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:tomorrow_pm'}); showSchedule = false"
-                  class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">Tomorrow 6PM</button>
+        {# Action buttons #}
+        <div class="px-4 pb-4 flex items-center gap-2">
+          <button @click="imgOk = true"
+                  class="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-kova-600 hover:bg-kova-700 active:bg-kova-800 rounded-xl transition-colors shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Looks Good
+          </button>
+          <button hx-post="{% url 'content:regenerate_image' post.id %}"
+                  hx-target="#post-{{ post.id }}"
+                  hx-swap="outerHTML"
+                  @click="showSchedule = false"
+                  class="flex-shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                  title="Generate a new image">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            Redo
+          </button>
         </div>
       </div>
+      {% endif %}
 
-      {# Exact date/time #}
-      <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/50">
-        <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Pick exact time</p>
-        <div class="flex items-center gap-2">
-          <input type="datetime-local" x-ref="picker{{ post.id }}"
-                 class="flex-1 min-w-0 text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-kova-500 focus:border-kova-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-          <button @click="if($refs['picker{{ post.id }}'].value) { $dispatch('schedule-{{ post.id }}', {intent: 'exact', datetime: $refs['picker{{ post.id }}'].value}); showSchedule = false }"
-                  class="px-4 py-2 text-sm font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors shadow-sm">Set</button>
+      {# ── Step 2 (or only step): Scheduling options ────────────────── #}
+      <div x-show="imgOk">
+
+        {# Smart scheduling options #}
+        <div class="p-2">
+          <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'post_now'}); showSchedule = false"
+                  class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-left transition-colors">
+            <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/50">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-amber-500" style="width:18px;height:18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </span>
+            <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Post Now</p><p class="text-xs text-gray-400 dark:text-gray-500">Publish immediately</p></div>
+          </button>
+
+          <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'next_best'}); showSchedule = false"
+                  class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-left transition-colors">
+            <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-kova-50 dark:bg-kova-950/50">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-kova-500" style="width:18px;height:18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+            </span>
+            <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Best Slot</p><p class="text-xs text-gray-400 dark:text-gray-500">Peak time for {% if post.social_account %}{{ post.social_account.get_platform_display }}{% elif post.platform %}{{ post.platform|title }}{% endif %}</p></div>
+          </button>
+
+          <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'smart_queue'}); showSchedule = false"
+                  class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-left transition-colors">
+            <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-purple-50 dark:bg-purple-950/50">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-purple-500" style="width:18px;height:18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+            </span>
+            <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Smart Queue</p><p class="text-xs text-gray-400 dark:text-gray-500">Auto-space with other posts</p></div>
+          </button>
         </div>
+
+        {# Quick picks #}
+        <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-800">
+          <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Quick Schedule</p>
+          <div class="flex flex-wrap gap-1.5">
+            <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:30min'}); showSchedule = false"
+                    class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">30 min</button>
+            <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:1hr'}); showSchedule = false"
+                    class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">1 hour</button>
+            <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:3hr'}); showSchedule = false"
+                    class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">3 hours</button>
+            <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:tomorrow_am'}); showSchedule = false"
+                    class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">Tomorrow 9AM</button>
+            <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:tomorrow_pm'}); showSchedule = false"
+                    class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">Tomorrow 6PM</button>
+          </div>
+        </div>
+
+        {# Exact date/time #}
+        <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/50">
+          <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Pick exact time</p>
+          <div class="flex items-center gap-2">
+            <input type="datetime-local" x-ref="picker{{ post.id }}"
+                   class="flex-1 min-w-0 text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-kova-500 focus:border-kova-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+            <button @click="if($refs['picker{{ post.id }}'].value) { $dispatch('schedule-{{ post.id }}', {intent: 'exact', datetime: $refs['picker{{ post.id }}'].value}); showSchedule = false }"
+                    class="px-4 py-2 text-sm font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors shadow-sm">Set</button>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>

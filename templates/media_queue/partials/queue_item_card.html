@@ -17,13 +17,24 @@
     {{ item.order|add:1 }}
   </div>
 
+  <!-- Variant indicator badge (when a variant is selected) -->
+  {% if item.active_variant is not None and item.caption_variants %}
+  <div class="absolute top-1 right-7 px-1 py-0.5 rounded bg-kova-800/80 text-kova-300 text-[8px] font-semibold leading-none">
+    {{ item.caption_variants|length }}v
+  </div>
+  {% endif %}
+
   <!-- Hover actions -->
   <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end opacity-0 group-hover:opacity-100">
     <div class="w-full p-2 flex gap-1">
-      <!-- Edit caption -->
+      <!-- Edit caption / variants -->
       <button @click="$refs['caption_{{ item.pk }}'].classList.toggle('hidden')"
               class="flex-1 px-1.5 py-1 text-[10px] font-medium bg-white rounded hover:bg-gray-100 text-gray-700 truncate">
-        {{ item.caption|truncatechars:15|default:"Add caption" }}
+        {% if item.active_variant_text %}
+          ✦ {{ item.active_variant_text|truncatechars:12 }}
+        {% else %}
+          {{ item.caption|truncatechars:15|default:"Add caption" }}
+        {% endif %}
       </button>
       <!-- Delete -->
       <form method="post" action="{% url 'media_queue:item_delete' item_id=item.pk %}"
@@ -44,19 +55,42 @@
   </div>
   {% endif %}
 
-  <!-- Caption edit (hidden by default) -->
-  <div x-ref="caption_{{ item.pk }}" class="hidden absolute inset-0 bg-black/70 p-2 flex flex-col justify-center">
+  <!-- Caption + variants overlay (hidden by default) -->
+  <div x-ref="caption_{{ item.pk }}" class="hidden absolute inset-0 bg-black/80 p-2 flex flex-col overflow-y-auto">
     <form method="post" action="{% url 'media_queue:item_edit' item_id=item.pk %}"
           hx-post="{% url 'media_queue:item_edit' item_id=item.pk %}"
           hx-target="#item-{{ item.pk }}"
           hx-swap="outerHTML">
       {% csrf_token %}
-      <textarea name="caption" rows="3"
+      <textarea name="caption" rows="2"
                 class="w-full text-xs rounded border-gray-600 bg-gray-800 text-white placeholder-gray-400 resize-none"
-                placeholder="Optional caption...">{{ item.caption }}</textarea>
-      <button type="submit" class="mt-1 w-full px-2 py-1 text-xs bg-kova-600 text-white rounded hover:bg-kova-700 font-medium">
+                placeholder="Caption (or pick a style below)…">{{ item.caption }}</textarea>
+      <button type="submit" class="mt-1 w-full px-2 py-1 text-[10px] bg-kova-600 text-white rounded hover:bg-kova-700 font-medium">
         Save
       </button>
     </form>
+
+    <!-- Caption variants section -->
+    {% if item.caption_variants %}
+      {% include "media_queue/partials/caption_variants.html" with item=item %}
+    {% else %}
+      <div id="variants-{{ item.pk }}">
+        <form method="post" action="{% url 'media_queue:item_generate_variants' item_id=item.pk %}"
+              hx-post="{% url 'media_queue:item_generate_variants' item_id=item.pk %}"
+              hx-target="#variants-{{ item.pk }}"
+              hx-swap="outerHTML">
+          {% csrf_token %}
+          <button type="submit"
+                  class="mt-2 w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] font-medium
+                         text-kova-300 border border-dashed border-kova-600/50 rounded hover:border-kova-400 hover:text-kova-200 transition-colors">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+            Generate caption styles
+          </button>
+        </form>
+      </div>
+    {% endif %}
   </div>
 </div>

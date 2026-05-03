@@ -1,0 +1,28 @@
+{# Caption variant pills — rendered inside the item card's caption overlay. #}
+<div id="variants-{{ item.pk }}" class="mt-2">
+  {% if item.caption_variants %}
+  <p class="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Caption style</p>
+  <div class="flex flex-wrap gap-1 mb-1.5">
+    {% for v in item.caption_variants %}
+    <form method="post"
+          action="{% url 'media_queue:item_select_variant' item_id=item.pk variant_index=forloop.counter0 %}"
+          hx-post="{% url 'media_queue:item_select_variant' item_id=item.pk variant_index=forloop.counter0 %}"
+          hx-target="#variants-{{ item.pk }}"
+          hx-swap="outerHTML">
+      {% csrf_token %}
+      <button type="submit"
+              title="{{ v.text }}"
+              class="px-2 py-0.5 text-[9px] font-semibold rounded-full border transition-colors
+                     {% if item.active_variant == forloop.counter0 %}bg-kova-600 border-kova-600 text-white{% else %}bg-transparent border-gray-500 text-gray-300 hover:border-kova-400 hover:text-kova-300{% endif %}">
+        {{ v.angle }}
+      </button>
+    </form>
+    {% endfor %}
+  </div>
+  {% if item.active_variant_text %}
+  <p class="text-[9px] text-gray-300 leading-tight line-clamp-2 italic">{{ item.active_variant_text|truncatechars:90 }}</p>
+  {% endif %}
+  {% else %}
+  <p class="text-[9px] text-gray-400 italic">No variants.</p>
+  {% endif %}
+</div>

@@ -927,6 +927,32 @@ def clear_ai_media(request, post_id):
 
 @login_required
 @require_POST
+def regenerate_image(request, post_id):
+    """Discard the current AI image and generate a fresh one using the stored prompt."""
+    from apps.utils import fire_task
+
+    post = get_object_or_404(
+        Post.objects.select_related("user", "social_account", "user__profile"), id=post_id,
+    )
+    if not can_edit_post(request.user, post):
+        raise Http404
+    if post.status not in (Post.Status.DRAFT, Post.Status.PENDING_APPROVAL):
+        return HttpResponse("Cannot regenerate image for this post", status=400)
+
+    post.media_urls = []
+    post.media_status = Post.MediaStatus.PENDING
+    post.save(update_fields=["media_urls", "media_status", "updated_at"])
+
+    from apps.content.tasks import retry_image_generation
+    fire_task(retry_image_generation, str(post.id))
+
+    if request.headers.get("HX-Request"):
+        return render(request, "components/post_card.html", {"post": post, "show_angle": True})
+    return redirect("content:edit", post_id=post.id)
+
+
+@login_required
+@require_POST
 def card_upload_media(request, post_id):
     """Upload an image from the post card. Returns the updated card."""
     from io import BytesIO

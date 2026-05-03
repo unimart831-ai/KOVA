@@ -130,6 +130,15 @@ class QueueItem(models.Model):
         help_text="Auto-cropped version optimised for the target platform.",
     )
     caption = models.TextField(blank=True, help_text="Optional caption for this post.")
+    caption_variants = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='AI caption variants. Each: {"text": "...", "angle": "Hook|Value|Social|Promo"}.',
+    )
+    active_variant = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        help_text="Index of the user-selected variant. Null = auto-rotate by publish count.",
+    )
 
     # ── Ordering + scheduling ────────────────────────────────────
     order = models.PositiveIntegerField(default=0, db_index=True)
@@ -176,3 +185,11 @@ class QueueItem(models.Model):
         if self.image_cropped:
             return self.image_cropped.url
         return self.image.url
+
+    @property
+    def active_variant_text(self):
+        """Return the text of the currently selected caption variant, or None."""
+        variants = self.caption_variants or []
+        if variants and self.active_variant is not None and self.active_variant < len(variants):
+            return variants[self.active_variant]["text"]
+        return None

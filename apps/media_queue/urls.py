@@ -21,4 +21,9 @@ urlpatterns = [
     path("item/<uuid:item_id>/edit/", views.item_edit, name="item_edit"),
     path("item/<uuid:item_id>/delete/", views.item_delete, name="item_delete"),
     path("item/<uuid:item_id>/retry/", views.item_retry, name="item_retry"),
+
+    # Caption variants
+    path("item/<uuid:item_id>/variants/", views.item_generate_variants, name="item_generate_variants"),
+    path("item/<uuid:item_id>/variants/poll/", views.item_variants_poll, name="item_variants_poll"),
+    path("item/<uuid:item_id>/variants/<int:variant_index>/select/", views.item_select_variant, name="item_select_variant"),
 ]

@@ -204,9 +204,13 @@ def queue_upload(request, queue_id):
         item.save()
         created_items.append(item)
 
-    # Recalculate schedule with new items
+    # Recalculate schedule and kick off caption variant generation
     if created_items:
+        from apps.utils import fire_task
+        from apps.media_queue.tasks import generate_caption_variants
         recalculate_schedule(queue)
+        for new_item in created_items:
+            fire_task(generate_caption_variants, str(new_item.pk))
 
     if request.headers.get("HX-Request"):
         return render(request, "media_queue/partials/queue_items.html", {
@@ -295,5 +299,77 @@ def item_retry(request, item_id):
     if request.headers.get("HX-Request"):
         return render(request, "media_queue/partials/queue_item_card.html", {
             "item": item, "queue": item.queue,
+        })
+    return redirect("media_queue:detail", queue_id=item.queue_id)
+
+
+# ── Caption Variants ──────────────────────────────────────────────────────────
+
+@login_required
+@require_POST
+def item_generate_variants(request, item_id):
+    """Fire async generation of caption variants for an item."""
+    from apps.utils import fire_task
+    from apps.media_queue.tasks import generate_caption_variants
+
+    item = get_object_or_404(QueueItem, pk=item_id, queue__user=request.user)
+
+    fire_task(generate_caption_variants, str(item.pk))
+
+    if request.headers.get("HX-Request"):
+        # Return a spinner that polls for completion
+        return HttpResponse(
+            f'<div id="variants-{ item.pk }" '
+            f'hx-get="/media-queue/item/{ item.pk }/variants/poll/" '
+            f'hx-trigger="load delay:2s, every 3s" '
+            f'hx-swap="outerHTML" '
+            f'class="flex items-center gap-1.5 mt-1 text-[10px] text-kova-400 dark:text-kova-500">'
+            f'<svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">'
+            f'<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>'
+            f'<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>'
+            f'</svg>Generating variants…</div>'
+        )
+    return redirect("media_queue:detail", queue_id=item.queue_id)
+
+
+@login_required
+def item_variants_poll(request, item_id):
+    """Poll endpoint — returns variant pills once ready, keeps spinner while generating."""
+    item = get_object_or_404(QueueItem, pk=item_id, queue__user=request.user)
+
+    if not item.caption_variants:
+        # Still generating — return spinner to keep polling
+        return HttpResponse(
+            f'<div id="variants-{ item.pk }" '
+            f'hx-get="/media-queue/item/{ item.pk }/variants/poll/" '
+            f'hx-trigger="every 3s" '
+            f'hx-swap="outerHTML" '
+            f'class="flex items-center gap-1.5 mt-1 text-[10px] text-kova-400 dark:text-kova-500">'
+            f'<svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">'
+            f'<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>'
+            f'<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>'
+            f'</svg>Generating…</div>'
+        )
+
+    return render(request, "media_queue/partials/caption_variants.html", {
+        "item": item,
+    })
+
+
+@login_required
+@require_POST
+def item_select_variant(request, item_id, variant_index):
+    """Set the user's chosen caption variant for an item."""
+    item = get_object_or_404(QueueItem, pk=item_id, queue__user=request.user)
+    variants = item.caption_variants or []
+
+    if 0 <= variant_index < len(variants):
+        item.active_variant = variant_index
+        item.caption = variants[variant_index]["text"]
+        item.save(update_fields=["active_variant", "caption", "updated_at"])
+
+    if request.headers.get("HX-Request"):
+        return render(request, "media_queue/partials/caption_variants.html", {
+            "item": item,
         })
     return redirect("media_queue:detail", queue_id=item.queue_id)
