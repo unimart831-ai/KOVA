@@ -260,6 +260,48 @@ def _build_momentum_data(user):
     }
 
 
+def _parse_research_updated_at(brief):
+    """Parse the ISO string stored in performance_summary into a datetime object.
+    Django's timesince filter requires a datetime, not a string."""
+    if not brief:
+        return None
+    raw = (brief.performance_summary or {}).get("research_updated_at")
+    if not raw:
+        return None
+    try:
+        from datetime import datetime
+        return datetime.fromisoformat(raw)
+    except (ValueError, TypeError):
+        return None
+
+
+def _get_dismissed_decisions(brief):
+    """Return the dismissed decision indices as a list (never None).
+    Old briefs that pre-date this feature won't have the key — return [] so
+    template `in` checks work correctly."""
+    if not brief:
+        return []
+    return (brief.performance_summary or {}).get("dismissed_decisions") or []
+
+
+def _normalize_trending_topics(brief):
+    """Ensure each topic's `platforms` field is a list of strings.
+    LLMs occasionally return a single string instead of a list — normalize
+    so the template `{% for p in topic.platforms %}` always iterates safely."""
+    if not brief:
+        return []
+    topics = brief.trending_topics or []
+    normalized = []
+    for topic in topics:
+        if isinstance(topic, dict):
+            platforms = topic.get("platforms", [])
+            if isinstance(platforms, str):
+                platforms = [platforms] if platforms else []
+            topic = {**topic, "platforms": platforms}
+        normalized.append(topic)
+    return normalized
+
+
 @login_required
 def brief_home(request):
     """Show today's daily brief, or the most recent one."""
@@ -308,6 +350,9 @@ def brief_home(request):
         "brief_streak": _build_brief_streak(request.user),
         "quick_actions": _build_quick_actions(request.user, brief) if brief else [],
         "momentum": _build_momentum_data(request.user),
+        "research_updated_at": _parse_research_updated_at(brief),
+        "dismissed_decisions": _get_dismissed_decisions(brief),
+        "trending_topics": _normalize_trending_topics(brief),
         "page_title": "Daily Brief",
     })
 
@@ -357,6 +402,9 @@ def brief_detail(request, date):
         "momentum": _build_momentum_data(request.user),
         "value_summary": _build_value_summary(request.user),
         "brief_streak": _build_brief_streak(request.user),
+        "research_updated_at": _parse_research_updated_at(brief),
+        "dismissed_decisions": _get_dismissed_decisions(brief),
+        "trending_topics": _normalize_trending_topics(brief),
         "quick_actions": [],
         "setup_checklist": None,
         "page_title": f"Brief — {brief_date.strftime('%b %d, %Y')}",

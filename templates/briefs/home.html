@@ -192,7 +192,8 @@
         </div>
 
         {# ── Decisions needed — things that require human judgment ── #}
-        {% with decisions=brief.performance_summary.decisions_needed dismissed=brief.performance_summary.dismissed_decisions %}
+        {# dismissed_decisions comes from view (always a list, never None) #}
+        {% with decisions=brief.performance_summary.decisions_needed %}
         {% if decisions %}
           <div class="card border-amber-200 dark:border-amber-800/60">
             <div class="px-6 py-4 border-b border-amber-100 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20 rounded-t-xl">
@@ -206,7 +207,7 @@
             </div>
             <ul id="decisions-list" class="divide-y divide-amber-100 dark:divide-amber-900/30">
               {% for d in decisions %}
-                {% if forloop.counter0 not in dismissed %}
+                {% if forloop.counter0 not in dismissed_decisions %}
                 <li id="decision-{{ forloop.counter0 }}" class="px-6 py-4">
                   <div class="flex items-start gap-3">
                     {% if d.urgency == "now" %}
@@ -347,7 +348,8 @@
           </div>
         {% endif %}
 
-        {% if brief.trending_topics %}
+        {# trending_topics is normalized in the view (platforms always a list) #}
+        {% if trending_topics %}
           <div class="card">
             <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
               <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -358,11 +360,9 @@
               </h3>
               <div class="flex items-center justify-between mt-1">
                 <p class="text-xs text-gray-500 dark:text-gray-400">Topics your Research Agent is watching</p>
-                {# Research data freshness indicator #}
-                {% if brief.performance_summary.research_updated_at %}
-                  <span class="text-[10px] text-gray-400 dark:text-gray-500">
-                    Updated {{ brief.performance_summary.research_updated_at|timesince }} ago
-                  </span>
+                {# research_updated_at is a datetime object from the view (not a raw JSON string) #}
+                {% if research_updated_at %}
+                  <span class="text-[10px] text-gray-400 dark:text-gray-500">Updated {{ research_updated_at|timesince }} ago</span>
                 {% else %}
                   <span class="text-[10px] text-amber-500 dark:text-amber-400">Trend data pending refresh</span>
                 {% endif %}
@@ -370,7 +370,7 @@
             </div>
             <div class="card-body pt-4">
               <ul class="space-y-3">
-                {% for topic in brief.trending_topics %}
+                {% for topic in trending_topics %}
                   <li class="flex items-start gap-3">
                     {% if topic.urgency == "high" %}
                       <span class="mt-0.5 shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">Hot</span>
@@ -387,7 +387,7 @@
                       {% if topic.suggested_angle %}
                         <p class="text-xs text-kova-600 dark:text-kova-400 mt-1">Angle: {{ topic.suggested_angle }}</p>
                       {% endif %}
-                      {# Platform tags — shown when Research Agent specifies which platforms this trend fits #}
+                      {# Platform tags — topic.platforms is normalized to a list in the view #}
                       {% if topic.platforms %}
                         <div class="flex flex-wrap gap-1 mt-1.5">
                           {% for p in topic.platforms %}
