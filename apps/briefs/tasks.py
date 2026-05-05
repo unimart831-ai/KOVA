@@ -37,53 +37,72 @@ def calculate_kova_score(user, brief_data):
     """Calculate a 0-100 social media health score.
 
     Components (each weighted):
-    - Pipeline health (30): Do you have content scheduled / are you posting?
+    - Pipeline health (30): Do you have content scheduled / are you publishing?
     - Engagement health (25): Are people interacting with your content?
     - Consistency (25): Have you posted regularly over the last 7 days?
     - Agent activity (20): Are your AI agents active and working?
     """
     score = 0
 
-    # Pipeline health (0-30)
-    pending = brief_data.get("pending_approval", 0)
-    scheduled = brief_data.get("scheduled_today", 0)
-    failed = brief_data.get("failed_posts", 0)
     week = brief_data.get("week_stats", {})
     week_published = week.get("published", 0)
+    scheduled = brief_data.get("scheduled_today", 0)
+    pending = brief_data.get("pending_approval", 0)
+    failed = brief_data.get("failed_posts", 0)
 
-    if scheduled > 0 or pending > 0:
-        score += 15  # Has content in pipeline
-    if week_published > 0:
-        score += min(15, week_published * 3)  # Published recently (max 15)
+    # Pipeline health (0-30): requires ACTUAL publishing to score well.
+    # Having only pending/scheduled content without any published posts earns partial credit.
+    if week_published >= 5:
+        score += 30
+    elif week_published >= 3:
+        score += 22
+    elif week_published >= 1:
+        score += 14
+    elif scheduled > 0 or pending > 0:
+        score += 7  # Has pipeline but nothing published yet
     if failed > 0:
-        score -= min(10, failed * 5)  # Penalty for failures
+        score -= min(10, failed * 4)  # Penalty for failures
 
-    # Engagement health (0-25)
+    # Engagement health (0-25): logarithmic — first few interactions worth more.
     engagement = brief_data.get("engagement", {})
     interactions = engagement.get("total_interactions", 0)
-    if interactions > 0:
-        score += min(25, 10 + interactions)  # At least 10 for any engagement
+    if interactions >= 20:
+        score += 25
+    elif interactions >= 10:
+        score += 20
+    elif interactions >= 5:
+        score += 14
+    elif interactions >= 1:
+        score += 8
 
-    # Consistency (0-25)
+    # Consistency (0-25): based on days with at least one post in the last 7 days.
     week_created = week.get("total_created", 0)
     if week_created >= 7:
-        score += 25  # Daily content
-    elif week_created >= 4:
-        score += 18  # Regular
-    elif week_created >= 2:
-        score += 10  # Some activity
+        score += 25
+    elif week_created >= 5:
+        score += 20
+    elif week_created >= 3:
+        score += 13
     elif week_created >= 1:
-        score += 5
-
-    # Agent activity (0-20)
-    agent_actions = brief_data.get("agent_activity", [])
-    active_agents = len({a.get("agent_type") or a.get("type", "") for a in agent_actions})
-    completed_actions = sum(1 for a in agent_actions if a.get("status") == "completed")
-    if active_agents >= 3:
-        score += 12
-    elif active_agents >= 1:
         score += 6
-    score += min(8, completed_actions)  # Bonus for completed work
+
+    # Agent activity (0-20): counts distinct agent types active in last 24h.
+    # Uses full AgentAction queryset count rather than capped list.
+    agent_actions = brief_data.get("agent_activity", [])
+    active_agents = len({a.get("agent_type") or a.get("type", "") for a in agent_actions if (a.get("agent_type") or a.get("type", ""))})
+    completed_actions = brief_data.get("agent_completed_count", sum(1 for a in agent_actions if a.get("status") == "completed"))
+    if active_agents >= 4:
+        score += 12
+    elif active_agents >= 2:
+        score += 8
+    elif active_agents >= 1:
+        score += 4
+    if completed_actions >= 10:
+        score += 8
+    elif completed_actions >= 5:
+        score += 5
+    elif completed_actions >= 1:
+        score += 2
 
     return max(0, min(100, score))
 
@@ -232,10 +251,12 @@ def _gather_brief_data(user):
     ).count()
 
     # Recent agent activity (last 24 hours)
-    recent_actions = AgentAction.objects.filter(
+    recent_actions_qs = AgentAction.objects.filter(
         user=user,
         created_at__gte=timezone.now() - timedelta(hours=24),
-    ).values("agent_type", "action_type", "status").order_by("-created_at")[:20]
+    )
+    recent_actions = recent_actions_qs.values("agent_type", "action_type", "status").order_by("-created_at")[:20]
+    agent_completed_count = recent_actions_qs.filter(status="completed").count()
 
     # Performance analysis from Analyst Agent
     try:
@@ -252,9 +273,10 @@ def _gather_brief_data(user):
         dna_summary = {"winning_attributes": [], "total_analyzed": 0}
 
     # Trend research — use cached Research Agent results (avoid live LLM call)
+    research_updated_at = None
     try:
         from apps.agents.models import AgentAction as _AA
-        latest_research = (
+        latest_research_action = (
             _AA.objects.filter(
                 user=user,
                 agent_type="research",
@@ -262,10 +284,13 @@ def _gather_brief_data(user):
                 status=_AA.ActionStatus.COMPLETED,
             )
             .order_by("-created_at")
-            .values_list("output_data", flat=True)
             .first()
         )
-        trends = latest_research or {"trending_topics": [], "opportunity_briefs": []}
+        if latest_research_action:
+            trends = latest_research_action.output_data or {"trending_topics": [], "opportunity_briefs": []}
+            research_updated_at = latest_research_action.created_at
+        else:
+            trends = {"trending_topics": [], "opportunity_briefs": []}
     except Exception as e:
         logger.warning("Trend data retrieval failed: %s", e)
         trends = {"trending_topics": [], "opportunity_briefs": []}
@@ -371,7 +396,7 @@ def _gather_brief_data(user):
         "failed_posts": failed_posts,
     }
 
-    return {
+    data = {
         "today": today.isoformat(),
         "yesterday_published": yesterday_posts.count(),
         "yesterday_posts_summary": [
@@ -387,9 +412,11 @@ def _gather_brief_data(user):
         "failed_posts": failed_posts,
         "week_stats": week_stats,
         "agent_activity": list(recent_actions),
+        "agent_completed_count": agent_completed_count,
         "performance": perf,
         "content_dna": dna_summary,
         "trends": trends,
+        "research_updated_at": research_updated_at,
         "engagement": engagement,
         "competitor_intel": competitor_intel,
         "product_catalog": product_data,
@@ -397,13 +424,71 @@ def _gather_brief_data(user):
         "decisions_needed": decisions_needed,
     }
 
+    # Flag whether this user has meaningful data for the strategist LLM.
+    # New/inactive users with no posts or engagement produce hallucinated briefs.
+    week = week_stats or {}
+    has_meaningful_data = (
+        week.get("published", 0) > 0
+        or week.get("total_created", 0) > 0
+        or engagement.get("total_interactions", 0) > 0
+        or pending_posts > 0
+    )
+    data["has_meaningful_data"] = has_meaningful_data
+
+    return data
+
 
 def _generate_brief_with_llm(user, brief_data):
-    """Use LLM to compose a natural-language daily brief in agency-director tone."""
+    """Use LLM to compose a natural-language daily brief in agency-director tone.
+
+    When the user has no meaningful data yet (new account, no posts, no engagement),
+    switches to an onboarding-mode prompt that sets up next steps instead of
+    generating analysis from empty data.
+    """
     profile = getattr(user, "profile", None)
     company = getattr(profile, "company_name", "") if profile else ""
     first_name = user.first_name or "there"
 
+    # ── Onboarding mode: no real data yet ──────────────────────────────────────
+    if not brief_data.get("has_meaningful_data"):
+        from apps.platforms.models import SocialAccount
+        connected_platforms = list(
+            SocialAccount.objects.filter(user=user, is_active=True)
+            .values_list("platform", flat=True)
+        )
+        platform_list = ", ".join(connected_platforms) if connected_platforms else "none yet"
+
+        onboarding_system = (
+            "You are the Chief Strategist at Kova — an AI social media agency. "
+            f"Your client is {first_name}, who runs '{company or 'their business'}'. "
+            "They are brand new — no posts published, no engagement data yet. "
+            "Your job is to be their first morning check-in: welcoming, encouraging, "
+            "and giving them 2-3 concrete first steps to get momentum going. "
+            "DO NOT invent performance metrics or fake engagement numbers. "
+            "Respond in JSON with the same schema as always, but:\n"
+            '- "summary": 3-4 sentences. Acknowledge they\'re just starting. Give 2 concrete first steps. Sound like an excited, expert partner.\n'
+            '- "agent_plan": 2-3 things the agents will do today to set up for success (research, drafting first post ideas, etc)\n'
+            '- "decisions_needed": 1-2 items to focus on this week (connect platforms, set brand voice, publish first post)\n'
+            '- "trending_topics": [] (no trend data yet)\n'
+            '- "suggested_posts": 2 post ideas to get started with, even without real data\n'
+            '- "performance_highlight": "" (empty — no data yet)\n'
+            '- All other fields: empty strings or empty lists\n'
+        )
+        onboarding_prompt = (
+            f"Generate a welcoming first brief for {first_name}. "
+            f"Connected platforms: {platform_list}. "
+            "No posts published yet. No engagement data. Give them an energizing start."
+        )
+        return generate(
+            prompt=onboarding_prompt,
+            system=onboarding_system,
+            model=get_model_for_task("strategist.brief", user=user),
+            json_mode=True,
+            temperature=0.6,
+            max_tokens=1500,
+        )
+
+    # ── Standard strategist mode ───────────────────────────────────────────────
     system_prompt = (
         "You are the Chief Strategist at Kova — an AI social media agency. "
         "Every morning you sit down with your client for a 2-minute strategy check-in. "
@@ -571,8 +656,11 @@ def generate_daily_brief(user, *, user_date=None):
                 "product_update": llm_result.get("product_update", ""),
                 "revenue_update": llm_result.get("revenue_update", ""),
                 "decisions_needed": llm_result.get("decisions_needed", []),
+                "dismissed_decisions": [],
                 "agent_plan": llm_result.get("agent_plan", []),
                 "data": brief_data.get("performance", {}).get("performance_data", {}),
+                "research_updated_at": brief_data.get("research_updated_at").isoformat() if brief_data.get("research_updated_at") else None,
+                "is_onboarding_mode": not brief_data.get("has_meaningful_data", True),
             },
             agent_activity=[
                 {"type": a["agent_type"], "action": a["action_type"], "status": a["status"]}
@@ -621,15 +709,15 @@ def generate_all_daily_briefs():
 
     now_utc = timezone.now()
 
-    # Find users who MIGHT need a brief (haven't got one today, are active).
-    # We check the time condition per-user below because each user has their
-    # own timezone — we can't filter by a single UTC cutoff.
+    # Find users who MIGHT need a brief (active, onboarded or have published posts).
+    # We intentionally do NOT pre-filter by date here — each user has their own
+    # timezone, so UTC date is the wrong comparator. The per-user loop below
+    # checks the user's LOCAL date and skips if a brief already exists for it.
+    # This fixes a bug where users in UTC-N timezones could be incorrectly excluded
+    # when their local date differs from the UTC date.
     candidates = list(
         User.objects.filter(
             Q(onboarding_completed=True) | Q(posts__status="published"),
-        )
-        .exclude(
-            briefs__date=now_utc.date(),
         )
         .distinct()
     )

@@ -46,10 +46,26 @@
           </div>
         </div>
 
-        {# Kova Score #}
+        {# Kova Score with tooltip breakdown #}
         <div class="flex items-center gap-4">
           <div class="text-right">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Kova Score</p>
+            <div class="group relative inline-block">
+              <button type="button" class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-gray-300 cursor-help">
+                Kova Score
+                <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </button>
+              {# Tooltip #}
+              <div class="absolute right-0 bottom-full mb-2 w-56 bg-gray-900 border border-gray-700 rounded-xl shadow-xl p-3 text-left opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150 z-50">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Score breakdown (0–100)</p>
+                <ul class="space-y-1.5 text-xs text-gray-300">
+                  <li class="flex justify-between"><span>Pipeline health</span><span class="text-gray-500 font-mono">30 pts</span></li>
+                  <li class="flex justify-between"><span>Engagement</span><span class="text-gray-500 font-mono">25 pts</span></li>
+                  <li class="flex justify-between"><span>Consistency</span><span class="text-gray-500 font-mono">25 pts</span></li>
+                  <li class="flex justify-between"><span>Agent activity</span><span class="text-gray-500 font-mono">20 pts</span></li>
+                </ul>
+                <p class="text-[10px] text-gray-500 mt-2 border-t border-gray-700 pt-2">70+ healthy · 40–69 improving · &lt;40 needs attention</p>
+              </div>
+            </div>
             <div class="flex items-baseline gap-1.5 mt-0.5">
               <span class="text-3xl font-black text-white tabular-nums leading-none">{{ brief.kova_score }}</span>
               {% if brief.kova_score_delta > 0 %}
@@ -176,7 +192,7 @@
         </div>
 
         {# ── Decisions needed — things that require human judgment ── #}
-        {% with decisions=brief.performance_summary.decisions_needed %}
+        {% with decisions=brief.performance_summary.decisions_needed dismissed=brief.performance_summary.dismissed_decisions %}
         {% if decisions %}
           <div class="card border-amber-200 dark:border-amber-800/60">
             <div class="px-6 py-4 border-b border-amber-100 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20 rounded-t-xl">
@@ -186,11 +202,12 @@
                 </span>
                 Needs your decision
               </h3>
-              <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">Items only you can handle — we'll take care of the rest</p>
+              <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">Items only you can handle — dismiss when done</p>
             </div>
-            <ul class="divide-y divide-amber-100 dark:divide-amber-900/30">
+            <ul id="decisions-list" class="divide-y divide-amber-100 dark:divide-amber-900/30">
               {% for d in decisions %}
-                <li class="px-6 py-4">
+                {% if forloop.counter0 not in dismissed %}
+                <li id="decision-{{ forloop.counter0 }}" class="px-6 py-4">
                   <div class="flex items-start gap-3">
                     {% if d.urgency == "now" %}
                       <span class="mt-0.5 shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">Now</span>
@@ -208,8 +225,22 @@
                         <p class="text-xs text-kova-600 dark:text-kova-400 mt-1 font-medium">→ {{ d.recommended_action }}</p>
                       {% endif %}
                     </div>
+                    {# Dismiss button — HTMX removes this <li> and persists the dismissal #}
+                    <form hx-post="{% url 'brief:dismiss_decision' %}"
+                          hx-target="#decision-{{ forloop.counter0 }}"
+                          hx-swap="outerHTML"
+                          class="shrink-0">
+                      {% csrf_token %}
+                      <input type="hidden" name="brief_id" value="{{ brief.id }}">
+                      <input type="hidden" name="item_index" value="{{ forloop.counter0 }}">
+                      <button type="submit" title="Dismiss"
+                              class="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                      </button>
+                    </form>
                   </div>
                 </li>
+                {% endif %}
               {% endfor %}
             </ul>
           </div>
@@ -325,7 +356,17 @@
                 </span>
                 Trending in your niche
               </h3>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Topics your Research Agent is watching</p>
+              <div class="flex items-center justify-between mt-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400">Topics your Research Agent is watching</p>
+                {# Research data freshness indicator #}
+                {% if brief.performance_summary.research_updated_at %}
+                  <span class="text-[10px] text-gray-400 dark:text-gray-500">
+                    Updated {{ brief.performance_summary.research_updated_at|timesince }} ago
+                  </span>
+                {% else %}
+                  <span class="text-[10px] text-amber-500 dark:text-amber-400">Trend data pending refresh</span>
+                {% endif %}
+              </div>
             </div>
             <div class="card-body pt-4">
               <ul class="space-y-3">
@@ -346,11 +387,20 @@
                       {% if topic.suggested_angle %}
                         <p class="text-xs text-kova-600 dark:text-kova-400 mt-1">Angle: {{ topic.suggested_angle }}</p>
                       {% endif %}
+                      {# Platform tags — shown when Research Agent specifies which platforms this trend fits #}
+                      {% if topic.platforms %}
+                        <div class="flex flex-wrap gap-1 mt-1.5">
+                          {% for p in topic.platforms %}
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">{{ p }}</span>
+                          {% endfor %}
+                        </div>
+                      {% endif %}
                       <form hx-post="{% url 'brief:action' %}" hx-swap="outerHTML" class="mt-2">
                         {% csrf_token %}
                         <input type="hidden" name="idea" value="Trending topic: {{ topic.topic|default:topic }}{% if topic.suggested_angle %} — Angle: {{ topic.suggested_angle }}{% endif %}">
                         <input type="hidden" name="context" value="{{ topic.relevance|default:'' }}">
                         <input type="hidden" name="action_type" value="trend">
+                        <input type="hidden" name="platform_hint" value="{{ topic.platforms|join:',' }}">
                         <button type="submit" class="inline-flex items-center gap-1 text-xs font-medium text-kova-600 dark:text-kova-400 hover:text-kova-800 dark:hover:text-kova-300">
                           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                           Create content
@@ -397,6 +447,7 @@
                       <input type="hidden" name="idea" value="{{ suggestion.idea }}">
                       <input type="hidden" name="context" value="{{ suggestion.reasoning|default:'' }}">
                       <input type="hidden" name="action_type" value="suggestion">
+                      <input type="hidden" name="platform_hint" value="{{ suggestion.platform|default:'' }}">
                       <button type="submit" class="inline-flex items-center gap-1 text-xs font-medium text-kova-600 dark:text-kova-400 hover:text-kova-800 dark:hover:text-kova-300">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         Create this
@@ -435,7 +486,7 @@
               <div class="flex items-end gap-0.5 h-10">
                 {% for day in momentum.days %}
                   <div class="flex-1 rounded-t {% if day.count > 0 %}bg-kova-500 dark:bg-kova-400{% else %}bg-gray-200 dark:bg-gray-700{% endif %} transition-all"
-                       style="height: {% if day.count > 0 %}{% widthratio day.count 5 100 %}%{% else %}15%{% endif %}; min-height: 4px;"
+                       style="height: {% if day.count > 0 %}{% widthratio day.count momentum.max_count 100 %}%{% else %}15%{% endif %}; min-height: 4px;"
                        title="{{ day.date }}: {{ day.count }} post{{ day.count|pluralize }}">
                   </div>
                 {% endfor %}
@@ -513,14 +564,22 @@
             </div>
             <ul class="divide-y divide-gray-100 dark:divide-gray-800">
               {% for rb in recent_briefs %}
-                <li class="px-6 py-3 flex items-center justify-between gap-2 hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                  <span class="text-sm text-gray-700 dark:text-gray-300">{{ rb.date|date:"M j, Y" }}</span>
-                  <div class="flex items-center gap-2">
-                    {% if rb.kova_score > 0 %}
-                      <span class="text-xs font-bold tabular-nums {% if rb.kova_score >= 70 %}text-green-600 dark:text-green-400{% elif rb.kova_score >= 40 %}text-amber-600 dark:text-amber-400{% else %}text-red-600 dark:text-red-400{% endif %}">{{ rb.kova_score }}</span>
-                    {% endif %}
-                    <span class="text-xs text-gray-500 dark:text-gray-400 tabular-nums">{{ rb.posts_pending }} posts</span>
-                  </div>
+                <li>
+                  <a href="{% url 'brief:detail' rb.date|date:'Y-m-d' %}"
+                     class="flex items-center justify-between gap-2 px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ rb.date|date:"M j, Y" }}</span>
+                    <div class="flex items-center gap-2">
+                      {% if rb.kova_score > 0 %}
+                        <span class="text-xs font-bold tabular-nums {% if rb.kova_score >= 70 %}text-green-600 dark:text-green-400{% elif rb.kova_score >= 40 %}text-amber-600 dark:text-amber-400{% else %}text-red-600 dark:text-red-400{% endif %}">{{ rb.kova_score }}</span>
+                      {% endif %}
+                      {% if rb.kova_score_delta > 0 %}
+                        <span class="text-[10px] font-bold text-green-500">↑</span>
+                      {% elif rb.kova_score_delta < 0 %}
+                        <span class="text-[10px] font-bold text-red-400">↓</span>
+                      {% endif %}
+                      <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </div>
+                  </a>
                 </li>
               {% endfor %}
             </ul>

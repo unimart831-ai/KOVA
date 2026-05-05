@@ -246,6 +246,9 @@ def _build_momentum_data(user):
     else:
         trend_pct = 100 if this_week > 0 else 0
 
+    # Max count for bar chart scaling — prevents overflow when days have high counts
+    max_count = max((d["count"] for d in days), default=1) or 1
+
     return {
         "days": days,
         "consistency_pct": consistency_pct,
@@ -253,6 +256,7 @@ def _build_momentum_data(user):
         "this_week_total": this_week,
         "trend_pct": trend_pct,
         "trend_direction": "up" if trend_pct > 0 else ("down" if trend_pct < 0 else "flat"),
+        "max_count": max_count,
     }
 
 
@@ -309,6 +313,89 @@ def brief_home(request):
 
 
 @login_required
+def brief_detail(request, date):
+    """Show a historical daily brief by date (YYYY-MM-DD)."""
+    from datetime import date as date_type
+    try:
+        brief_date = date_type.fromisoformat(date)
+    except ValueError:
+        from django.http import Http404
+        raise Http404("Invalid date format")
+
+    brief = DailyBrief.objects.filter(user=request.user, date=brief_date).first()
+    if not brief:
+        from django.http import Http404
+        raise Http404("Brief not found")
+
+    today = timezone.now().date()
+    recent_briefs = (
+        DailyBrief.objects.filter(user=request.user)
+        .exclude(date=brief_date)
+        .order_by("-date")[:7]
+    )
+
+    published_today = request.user.posts.filter(status="published", published_at__date=today).count()
+    failed_count = request.user.posts.filter(status="failed").count()
+    scheduled_count = request.user.posts.filter(status__in=["approved", "scheduled"]).count()
+
+    superfans = Superfan.objects.filter(user=request.user)[:5]
+
+    from apps.platforms.models import SocialAccount
+    has_connected_platform = SocialAccount.objects.filter(user=request.user, is_active=True).exists()
+
+    return render(request, "briefs/detail.html", {
+        "brief": brief,
+        "brief_date": brief_date,
+        "is_historical": True,
+        "today": today,
+        "recent_briefs": recent_briefs,
+        "published_today": published_today,
+        "failed_count": failed_count,
+        "scheduled_count": scheduled_count,
+        "superfans": superfans,
+        "has_connected_platform": has_connected_platform,
+        "momentum": _build_momentum_data(request.user),
+        "value_summary": _build_value_summary(request.user),
+        "brief_streak": _build_brief_streak(request.user),
+        "quick_actions": [],
+        "setup_checklist": None,
+        "page_title": f"Brief — {brief_date.strftime('%b %d, %Y')}",
+    })
+
+
+@login_required
+@require_POST
+def brief_dismiss_decision(request):
+    """
+    HTMX endpoint: dismiss a decision item from the brief.
+    Stores the dismissed item index in performance_summary.dismissed_decisions
+    so it doesn't re-appear on page reload.
+    Returns empty 200 to remove the element via hx-swap="outerHTML".
+    """
+    brief_id = request.POST.get("brief_id", "").strip()
+    item_index = request.POST.get("item_index", "").strip()
+
+    if not brief_id or not item_index.isdigit():
+        return HttpResponse(status=400)
+
+    try:
+        brief = DailyBrief.objects.get(id=brief_id, user=request.user)
+        ps = brief.performance_summary or {}
+        dismissed = ps.get("dismissed_decisions", [])
+        idx = int(item_index)
+        if idx not in dismissed:
+            dismissed.append(idx)
+        ps["dismissed_decisions"] = dismissed
+        brief.performance_summary = ps
+        brief.save(update_fields=["performance_summary"])
+    except DailyBrief.DoesNotExist:
+        return HttpResponse(status=404)
+
+    # Return empty — HTMX will replace the <li> with nothing
+    return HttpResponse("", content_type="text/html")
+
+
+@login_required
 @require_POST
 def brief_action(request):
     """
@@ -321,6 +408,8 @@ def brief_action(request):
     idea = request.POST.get("idea", "").strip()
     context = request.POST.get("context", "").strip()
     action_type = request.POST.get("action_type", "suggestion")  # suggestion, trend, decision
+    # Platform hint from the suggestion (e.g. "linkedin" or "facebook,instagram")
+    platform_hint = request.POST.get("platform_hint", "").strip()
 
     if not idea:
         if request.headers.get("HX-Request"):
@@ -330,10 +419,17 @@ def brief_action(request):
             )
         return redirect("brief:home")
 
-    platforms = list(
+    # Use suggestion's platform(s) if provided and user has them connected;
+    # fall back to user's first 3 active platforms.
+    active_platforms = set(
         SocialAccount.objects.filter(user=request.user, is_active=True)
         .values_list("platform", flat=True)
     )
+    if platform_hint:
+        hint_platforms = [p.strip() for p in platform_hint.split(",") if p.strip()]
+        target_platforms = [p for p in hint_platforms if p in active_platforms] or list(active_platforms)[:3]
+    else:
+        target_platforms = list(active_platforms)[:3]
 
     seed_idea = idea
     if context:
@@ -345,7 +441,7 @@ def brief_action(request):
         user=request.user,
         idea=seed_idea,
         notes=notes,
-        target_platforms=platforms[:3],
+        target_platforms=target_platforms[:3],
     )
 
     if request.headers.get("HX-Request"):
