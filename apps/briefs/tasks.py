@@ -499,12 +499,23 @@ def _generate_brief_with_llm(user, brief_data):
         "- Be specific: name actual posts, actual numbers, actual people\n"
         "- Be strategic: connect dots between data (why something worked, what to do about it)\n"
         "- Be honest: if something failed or underperformed, say so and say what to change\n"
-        "- Be motivating: celebrate wins, highlight momentum\n"
-        "- Use 'we' for the agency team, 'you' for the client\n\n"
+        "- Be motivating: acknowledge effort and celebrate wins before delivering hard news\n"
+        "- Use 'we' for the agency team, 'you' for the client\n"
+        "- SHORT SENTENCES. Punchy. No corporate language. No run-ons.\n\n"
         "Respond in JSON with these keys:\n"
-        '- "summary": 4-6 sentences — the morning check-in. Start with the most important thing. '
-        'What happened, what needs attention NOW, and what we\'re doing about it. '
-        'Address the user by name. Sound like a trusted advisor, not a dashboard.\n'
+        '- "summary": exactly 3 short paragraphs separated by \\n\\n — this is the morning check-in '
+        f'that {first_name} reads before their first coffee. Structure it like this:\n'
+        f'  Paragraph 1 (opener): Start with "{first_name}," — then ONE sentence on the single most '
+        'important positive signal or win from the last 24 hours, even a small one. If there is genuinely '
+        'nothing positive, acknowledge the work put in (e.g. posts published, agents active). '
+        'Keep it to 1-2 short sentences. End on an energising note.\n'
+        '  Paragraph 2 (the signal): The most important thing that needs attention — '
+        'what is actually happening, why it matters, and what it tells us about strategy. '
+        'Be specific: use real numbers, real platform names, real patterns. 2-3 short sentences.\n'
+        '  Paragraph 3 (the move): One concrete action for today. Start with "Your move today:" or '
+        '"We\'re handling X — your one decision is Y." Give a clear, specific next step the client '
+        'can act on immediately. 1-2 sentences. No vague directives like "diagnose the issue" — '
+        'say WHAT to diagnose, HOW, and WHO does it (you vs the agents).\n'
         '- "decisions_needed": list of 1-4 items needing human judgment, each with '
         '{item, context, recommended_action, urgency: "now"|"today"|"this_week"}. '
         'E.g. "3 flagged comments need your review", "A lead asked about pricing — reply recommended". '
