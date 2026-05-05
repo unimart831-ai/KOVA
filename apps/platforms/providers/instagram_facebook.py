@@ -179,6 +179,16 @@ class FacebookProvider(BaseProvider):
         if "expires_in" in long_data:
             expires_at = datetime.now(timezone.utc) + timedelta(seconds=long_data["expires_in"])
 
+        page_list = [
+            {
+                "id": p["id"],
+                "name": p["name"],
+                "access_token": p["access_token"],
+                "picture_url": p.get("picture", {}).get("data", {}).get("url", ""),
+            }
+            for p in pages
+        ]
+
         return OAuthResult(
             platform_user_id=user.get("id", ""),
             username=user.get("name", "").lower().replace(" ", ""),
@@ -189,15 +199,11 @@ class FacebookProvider(BaseProvider):
             token_expires_at=expires_at,
             token_scope=FB_SCOPES,
             metadata={
-                "pages": [
-                    {
-                        "id": p["id"],
-                        "name": p["name"],
-                        "access_token": p["access_token"],
-                        "picture_url": p.get("picture", {}).get("data", {}).get("url", ""),
-                    }
-                    for p in pages
-                ],
+                "pages": page_list,
+                # selected_page_id: which Page Kova publishes to.
+                # Defaults to the first page. Users can change it via Settings → Platforms.
+                # Preserved across reconnects by the OAuth callback view.
+                "selected_page_id": page_list[0]["id"] if page_list else None,
             },
         )
 
@@ -505,6 +511,27 @@ class FacebookProvider(BaseProvider):
                 raise PlatformAuthError(f"Facebook token/permission error: {error_body[:300]}") from e
             return []
 
+    def post_comment(self, page_token: str, post_id: str, message: str) -> dict:
+        """
+        Post a first comment on a Page post immediately after publishing.
+
+        This is the link-in-comments strategy: Facebook penalises outbound
+        links in post body with 50-70% organic reach reduction. Posting the
+        link as the first comment preserves full reach while still surfacing
+        the URL to engaged readers.
+        """
+        try:
+            with httpx.Client(timeout=HTTP_TIMEOUT) as client:
+                resp = client.post(f"{FB_API_BASE}/{post_id}/comments", data={
+                    "message": message,
+                    "access_token": page_token,
+                })
+                resp.raise_for_status()
+                return {"id": resp.json().get("id", ""), "success": True}
+        except httpx.HTTPStatusError as e:
+            logger.error("Facebook first comment failed on post %s: %s", post_id, e.response.text)
+            return {"error": e.response.text[:300], "success": False}
+
     def reply_to_comment(self, access_token: str, comment_id: str,
                          message: str, **kwargs) -> dict:
         """Reply to a comment on a Page post. Requires pages_manage_engagement."""
@@ -734,9 +761,31 @@ class InstagramProvider(BaseProvider):
         )
 
     def refresh_access_token(self, refresh_token: str) -> dict:
-        raise NotImplementedError(
-            "Instagram tokens (via Facebook) last ~60 days. Re-authentication required."
-        )
+        """
+        Extend an Instagram long-lived token for another ~60 days.
+
+        Instagram tokens (via Facebook Graph API) use the same fb_exchange_token
+        mechanism as Facebook long-lived tokens. Must be called BEFORE expiry.
+        The ``refresh_token`` param is the current access_token (page token).
+        """
+        current_token = refresh_token  # for IG via FB, the task passes access_token here
+        if not current_token:
+            raise ValueError("No access token to extend")
+
+        with httpx.Client(timeout=HTTP_TIMEOUT) as client:
+            resp = client.get(FB_TOKEN_URL, params={
+                "grant_type": "fb_exchange_token",
+                "client_id": self.app_id,
+                "client_secret": self.app_secret,
+                "fb_exchange_token": current_token,
+            })
+            resp.raise_for_status()
+            data = resp.json()
+
+        return {
+            "access_token": data["access_token"],
+            "expires_in": data.get("expires_in", 5184000),  # default 60 days
+        }
 
     # ── Publishing ───────────────────────────────────────────────────────────
 
@@ -846,16 +895,45 @@ class InstagramProvider(BaseProvider):
         container.raise_for_status()
         container_id = container.json()["id"]
 
-        # Poll until video is processed
-        for _ in range(30):
-            status = client.get(f"{FB_API_BASE}/{container_id}", params={
-                "fields": "status_code",
+        # Poll until video is processed (max 60 seconds).
+        # Instagram status_code values: IN_PROGRESS → FINISHED | ERROR | EXPIRED
+        status_code = "IN_PROGRESS"
+        for attempt in range(30):
+            status_resp = client.get(f"{FB_API_BASE}/{container_id}", params={
+                "fields": "status_code,status",
                 "access_token": token,
             })
-            status.raise_for_status()
-            if status.json().get("status_code") == "FINISHED":
+            status_resp.raise_for_status()
+            status_data = status_resp.json()
+            status_code = status_data.get("status_code", "IN_PROGRESS")
+
+            if status_code == "FINISHED":
                 break
+            if status_code == "ERROR":
+                error_detail = status_data.get("status", "Video processing failed.")
+                logger.error(
+                    "Instagram Reel container %s processing ERROR after %d polls: %s",
+                    container_id, attempt + 1, error_detail,
+                )
+                return PublishResult(
+                    success=False,
+                    error=(
+                        f"Instagram could not process your video: {error_detail}. "
+                        "Check: H.264/AAC codec, 9:16 ratio, under 1GB, MP4 or MOV format."
+                    ),
+                )
+            if status_code == "EXPIRED":
+                return PublishResult(
+                    success=False,
+                    error="Reel container expired before publishing. Please try again.",
+                )
             time.sleep(2)
+        else:
+            # Loop exhausted without FINISHED — log but attempt publish anyway
+            logger.warning(
+                "Reel container %s still '%s' after 30 polls — attempting publish",
+                container_id, status_code,
+            )
 
         pub = client.post(f"{FB_API_BASE}/{ig_id}/media_publish", data={
             "creation_id": container_id,
@@ -886,13 +964,35 @@ class InstagramProvider(BaseProvider):
         container_id = container.json()["id"]
 
         if is_video:
-            for _ in range(30):
-                status = client.get(f"{FB_API_BASE}/{container_id}", params={
-                    "fields": "status_code", "access_token": token,
+            status_code = "IN_PROGRESS"
+            for attempt in range(30):
+                status_resp = client.get(f"{FB_API_BASE}/{container_id}", params={
+                    "fields": "status_code,status", "access_token": token,
                 })
-                status.raise_for_status()
-                if status.json().get("status_code") == "FINISHED":
+                status_resp.raise_for_status()
+                status_data = status_resp.json()
+                status_code = status_data.get("status_code", "IN_PROGRESS")
+
+                if status_code == "FINISHED":
                     break
+                if status_code == "ERROR":
+                    error_detail = status_data.get("status", "Video processing failed.")
+                    logger.error(
+                        "Instagram Story container %s ERROR after %d polls: %s",
+                        container_id, attempt + 1, error_detail,
+                    )
+                    return PublishResult(
+                        success=False,
+                        error=(
+                            f"Instagram could not process your Story video: {error_detail}. "
+                            "Check video format (MP4/MOV, H.264, AAC audio)."
+                        ),
+                    )
+                if status_code == "EXPIRED":
+                    return PublishResult(
+                        success=False,
+                        error="Story container expired before publishing. Please try again.",
+                    )
                 time.sleep(2)
 
         pub = client.post(f"{FB_API_BASE}/{ig_id}/media_publish", data={
@@ -996,6 +1096,27 @@ class InstagramProvider(BaseProvider):
             if e.response.status_code == 400 and ("OAuthException" in error_body or "code\":190" in error_body):
                 raise PlatformAuthError(f"Instagram token/permission error: {error_body[:300]}") from e
             return []
+
+    def post_comment(self, page_token: str, post_id: str, message: str) -> dict:
+        """
+        Post a first comment on an IG post immediately after publishing.
+
+        Used for save-prompts and link-in-bio CTAs — the first comment appears
+        right below the caption and gets high visibility from engaged readers.
+        Note: unlike Facebook, links in IG comments are also not clickable,
+        so this is best used for text CTAs ('💾 Save this!', 'Link in bio 👆').
+        """
+        try:
+            with httpx.Client(timeout=HTTP_TIMEOUT) as client:
+                resp = client.post(f"{FB_API_BASE}/{post_id}/comments", data={
+                    "message": message,
+                    "access_token": page_token,
+                })
+                resp.raise_for_status()
+                return {"id": resp.json().get("id", ""), "success": True}
+        except httpx.HTTPStatusError as e:
+            logger.error("Instagram first comment failed on post %s: %s", post_id, e.response.text)
+            return {"error": e.response.text[:300], "success": False}
 
     def reply_to_comment(self, access_token: str, comment_id: str,
                          message: str, **kwargs) -> dict:

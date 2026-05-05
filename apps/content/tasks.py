@@ -442,8 +442,19 @@ def publish_post(self, post_id: str):
         if account.platform == "facebook":
             pages = meta.get("pages", [])
             if pages:
-                publish_kwargs["page_id"] = pages[0]["id"]
-                publish_kwargs["page_access_token"] = pages[0].get("access_token", account.access_token)
+                # Honour the user's selected Page (set via Settings → Platforms).
+                # Falls back to the first page for accounts that haven't selected one.
+                selected_id = meta.get("selected_page_id")
+                selected_page = (
+                    next((p for p in pages if p["id"] == selected_id), None)
+                    if selected_id else None
+                ) or pages[0]
+                publish_kwargs["page_id"] = selected_page["id"]
+                publish_kwargs["page_access_token"] = selected_page.get("access_token", account.access_token)
+                logger.debug(
+                    "Facebook publish: using page '%s' (%s) for account %s",
+                    selected_page.get("name"), selected_page["id"], account.pk,
+                )
             else:
                 logger.warning(
                     "Facebook account %s has no pages in metadata — "
@@ -453,9 +464,12 @@ def publish_post(self, post_id: str):
         elif account.platform == "instagram":
             # Instagram stores its Business Account ID under ig_business_id,
             # not in a "pages" list. The access_token on the account is already
-            # the page token (set during OAuth).
+            # the page token (set during OAuth: access_token=page_token).
             ig_user_id = meta.get("ig_business_id") or account.platform_user_id
             publish_kwargs["ig_user_id"] = ig_user_id or ""
+            # Store page token explicitly so first-comment logic can retrieve it
+            # consistently, matching the same pattern as the Facebook branch.
+            publish_kwargs["page_access_token"] = meta.get("page_access_token") or account.access_token
 
         # Add UTM tracking to any URLs in the content
         publish_content = add_utm_tracking(post.content_text, account.platform, str(post.id))
@@ -604,6 +618,71 @@ def publish_post(self, post_id: str):
             result.url,
         )
 
+        # ── Facebook first-comment link strategy ─────────────────────────
+        # Facebook reduces organic reach 50-70% for posts with outbound links
+        # in the body. We post the CTA/product URL as the first comment
+        # immediately after publishing — full reach preserved, link visible
+        # to engaged readers who expand or scroll to comments.
+        if account.platform == "facebook" and result.platform_post_id:
+            first_comment_text = (post.first_comment or "").strip()
+            # Fall back to cta_url if no explicit first_comment was set
+            if not first_comment_text and post.cta_type == "link" and post.cta_url:
+                label = (post.cta_text or "Learn more").strip()
+                tracked_url = _add_utm_to_url(post.cta_url, "facebook", str(post.id))
+                first_comment_text = f"{label}: {tracked_url}"
+            if first_comment_text:
+                page_token = publish_kwargs.get("page_access_token", account.access_token)
+                try:
+                    fc_result = provider.post_comment(
+                        page_token=page_token,
+                        post_id=result.platform_post_id,
+                        message=first_comment_text,
+                    )
+                    if fc_result.get("success"):
+                        logger.info(
+                            "Facebook first comment posted on post %s (comment_id=%s)",
+                            result.platform_post_id, fc_result.get("id"),
+                        )
+                    else:
+                        logger.warning(
+                            "Facebook first comment failed on post %s: %s",
+                            result.platform_post_id, fc_result.get("error"),
+                        )
+                except Exception as fc_err:
+                    logger.warning(
+                        "Facebook first comment error for post %s: %s", post_id, fc_err,
+                    )
+
+        # ── Instagram first-comment: save/link-in-bio CTA ───────────────────
+        # Links in IG captions are not clickable — the bio link is the only
+        # working click path. A first comment immediately below the caption
+        # reinforces the CTA and prompts saves (the top IG algorithm signal).
+        if account.platform == "instagram" and result.platform_post_id:
+            ig_fc_text = (post.first_comment or "").strip()
+            if not ig_fc_text:
+                ig_fc_text = "💾 Save this for later!"
+            page_token = publish_kwargs.get("page_access_token", account.access_token)
+            try:
+                ig_fc_result = provider.post_comment(
+                    page_token=page_token,
+                    post_id=result.platform_post_id,
+                    message=ig_fc_text,
+                )
+                if ig_fc_result.get("success"):
+                    logger.info(
+                        "Instagram first comment posted on post %s (comment_id=%s)",
+                        result.platform_post_id, ig_fc_result.get("id"),
+                    )
+                else:
+                    logger.warning(
+                        "Instagram first comment failed on post %s: %s",
+                        result.platform_post_id, ig_fc_result.get("error"),
+                    )
+            except Exception as ig_fc_err:
+                logger.warning(
+                    "Instagram first comment error for post %s: %s", post_id, ig_fc_err,
+                )
+
         Notification.create_for_user(
             post.user, "post_published",
             f"Published to {account.get_platform_display()}: {post.content_text[:80]}...",
@@ -747,20 +826,43 @@ def fetch_post_metrics(post_id: str):
             pass  # Invalid timestamp, proceed normally
 
     try:
-        # For Facebook/Instagram, use page token — the user-level token
+        # For Facebook/Instagram, use the page token — the user-level token
         # does NOT have pages_read_engagement permission.
         token = account.access_token
-        if account.platform in ("facebook", "instagram"):
-            pages = (account.metadata or {}).get("pages", [])
-            page_token = pages[0].get("access_token") if pages else None
+        meta = account.metadata or {}
+        if account.platform == "facebook":
+            pages = meta.get("pages", [])
+            # Honour selected_page_id: fetch metrics for the page Kova publishes to.
+            selected_id = meta.get("selected_page_id")
+            selected_page = (
+                next((p for p in pages if p["id"] == selected_id), None)
+                if selected_id else None
+            ) or (pages[0] if pages else None)
+            page_token = selected_page.get("access_token") if selected_page else None
             if not page_token:
                 logger.warning(
-                    "No page access token for %s account %s (user %s) — "
+                    "No page access token for Facebook account %s (user %s) — "
                     "skipping metrics fetch. User needs to reconnect.",
-                    account.platform, account.id, account.user_id,
+                    account.id, account.user_id,
                 )
                 return {
-                    "error": f"No page token for {account.platform} — reconnect required",
+                    "error": "No page token for facebook — reconnect required",
+                    "post_id": post_id,
+                }
+            token = page_token
+        elif account.platform == "instagram":
+            # Instagram stores its page token at metadata["page_access_token"],
+            # NOT in metadata["pages"] (that's the Facebook structure).
+            # account.access_token is also the page token (set during OAuth).
+            page_token = meta.get("page_access_token") or account.access_token
+            if not page_token:
+                logger.warning(
+                    "No page access token for Instagram account %s (user %s) — "
+                    "skipping metrics fetch. User needs to reconnect.",
+                    account.id, account.user_id,
+                )
+                return {
+                    "error": "No page token for instagram — reconnect required",
                     "post_id": post_id,
                 }
             token = page_token

@@ -103,6 +103,9 @@ def refresh_expiring_tokens():
                 "Extended FB/IG token for %s (%s), new expiry: %s",
                 account, account.platform, account.token_expires_at,
             )
+            # Tell the user their connection was silently renewed. This builds
+            # trust — they see Kova actively maintaining their accounts.
+            _notify_token_renewed(account)
         except Exception as exc:
             failed += 1
             logger.error("FB token extension failed for %s: %s", account, exc)
@@ -119,10 +122,17 @@ def refresh_expiring_tokens():
 
 
 def _refresh_page_tokens(account, user_access_token):
-    """Re-fetch Facebook Page tokens after extending the user token."""
+    """
+    Re-fetch page tokens after extending the user token.
+
+    Facebook: rebuilds metadata["pages"] list with fresh per-page tokens.
+    Instagram: updates metadata["page_access_token"] for the linked FB Page.
+    Both: critical — page tokens are derived from the user token, so they
+    must be refreshed whenever the user token is extended.
+    """
     import httpx
 
-    FB_API_BASE = f"https://graph.facebook.com/v25.0"
+    FB_API_BASE = "https://graph.facebook.com/v25.0"
     try:
         with httpx.Client(timeout=30.0) as client:
             resp = client.get(f"{FB_API_BASE}/me/accounts", params={
@@ -131,8 +141,14 @@ def _refresh_page_tokens(account, user_access_token):
             })
             resp.raise_for_status()
             pages = resp.json().get("data", [])
-            if pages:
-                metadata = account.metadata or {}
+
+            if not pages:
+                logger.warning("No pages returned when refreshing tokens for %s", account)
+                return
+
+            metadata = account.metadata or {}
+
+            if account.platform == "facebook":
                 metadata["pages"] = [
                     {
                         "id": p["id"],
@@ -142,10 +158,63 @@ def _refresh_page_tokens(account, user_access_token):
                     }
                     for p in pages
                 ]
-                account.metadata = metadata
-                logger.info("Refreshed %d page tokens for %s", len(pages), account)
+                logger.info("Refreshed %d Facebook page token(s) for %s", len(pages), account)
+
+            elif account.platform == "instagram":
+                # Instagram stores the page token at metadata["page_access_token"].
+                # Find the linked page by matching metadata["page_id"] and update
+                # the token. The account.access_token is also the page token for IG.
+                linked_page_id = metadata.get("page_id", "")
+                for page in pages:
+                    if page["id"] == linked_page_id:
+                        metadata["page_access_token"] = page["access_token"]
+                        logger.info(
+                            "Refreshed Instagram page token for %s (page_id=%s)",
+                            account, linked_page_id,
+                        )
+                        break
+                else:
+                    # Fallback: use the first page if the linked page wasn't found
+                    if pages:
+                        metadata["page_access_token"] = pages[0]["access_token"]
+                        logger.warning(
+                            "Instagram linked page_id=%s not found after refresh — "
+                            "falling back to first page (%s) for %s",
+                            linked_page_id, pages[0]["id"], account,
+                        )
+
+            account.metadata = metadata
+
     except Exception as exc:
         logger.warning("Could not refresh page tokens for %s: %s", account, exc)
+
+
+def _notify_token_renewed(account):
+    """
+    Notify the user that Kova automatically renewed their platform connection.
+    Called after a successful token extension — builds trust by making Kova's
+    background work visible. Users should never have to think about token expiry.
+    """
+    try:
+        from apps.notifications.models import Notification
+
+        new_expiry = ""
+        if account.token_expires_at:
+            new_expiry = account.token_expires_at.strftime("%b %d, %Y")
+
+        platform_name = account.get_platform_display()
+        Notification.create_for_user(
+            user=account.user,
+            notification_type=Notification.NotificationType.SYSTEM,
+            message=(
+                f"✅ Your {platform_name} connection (@{account.username}) was "
+                f"automatically renewed by Kova"
+                + (f" and is active until {new_expiry}." if new_expiry else ".")
+                + " No action needed."
+            ),
+        )
+    except Exception:
+        pass  # Notifications are best-effort — never let this block token renewal
 
 
 def _notify_token_expiring(account, error):

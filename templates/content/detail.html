@@ -25,7 +25,7 @@
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ post.social_account.get_platform_display }} &middot; @{{ post.social_account.username }}
               {% if post.social_account.platform == 'facebook' and post.social_account.metadata.pages %}
-                &middot; {{ post.social_account.metadata.pages.0.name }}
+                &middot; {% if post.social_account.metadata.selected_page_id %}{% for page in post.social_account.metadata.pages %}{% if page.id == post.social_account.metadata.selected_page_id %}{{ page.name }}{% endif %}{% endfor %}{% else %}{{ post.social_account.metadata.pages.0.name }}{% endif %}
               {% elif post.social_account.platform == 'linkedin' %}
                 &middot; {{ post.social_account.display_name|default:post.social_account.username }}
               {% elif post.social_account.platform == 'tiktok' %}
@@ -48,6 +48,24 @@
         <div class="px-5 py-4">
           <div class="prose dark:prose-invert prose-sm max-w-none whitespace-pre-wrap text-gray-800 dark:text-gray-200">{{ post.content_text }}</div>
         </div>
+
+        <!-- First comment (Facebook / Instagram) -->
+        {% if post.first_comment %}
+          {% if post.social_account.platform == 'facebook' or post.social_account.platform == 'instagram' %}
+          <div class="px-5 pb-3">
+            <div class="p-3 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 rounded-lg">
+              <p class="text-[10px] font-semibold text-blue-500 dark:text-blue-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                First Comment
+              </p>
+              <p class="text-sm text-blue-800 dark:text-blue-200">{{ post.first_comment }}</p>
+              <p class="text-[10px] text-blue-400 dark:text-blue-500 mt-1.5">
+                {% if post.social_account.platform == 'instagram' %}Kova auto-posts this as the first comment — drives saves &amp; links traffic to your bio.{% else %}Kova auto-posts this as the first comment after publishing for better organic reach.{% endif %}
+              </p>
+            </div>
+          </div>
+          {% endif %}
+        {% endif %}
 
         <!-- Media warning -->
         {% if post.media_warning %}

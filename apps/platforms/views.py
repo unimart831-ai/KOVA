@@ -270,6 +270,44 @@ def oauth_callback(request, platform):
         action = "connected" if created else "reconnected"
         messages.success(request, f"Successfully {action} {account.get_platform_display()} — @{account.username}")
 
+        # Facebook: preserve the user's previously selected Page across reconnects.
+        # update_or_create overwrites metadata on every reconnect, which would
+        # silently reset their page choice. We restore it here if the page
+        # still exists in the new metadata.
+        if platform == "facebook" and not created:
+            prev_metadata = SocialAccount.objects.filter(
+                user=request.user, platform="facebook",
+                platform_user_id=result.platform_user_id,
+            ).values_list("metadata", flat=True).first()
+            if prev_metadata:
+                prev_selected = (prev_metadata or {}).get("selected_page_id")
+                new_pages = result.metadata.get("pages", [])
+                if prev_selected and any(p["id"] == prev_selected for p in new_pages):
+                    account.metadata["selected_page_id"] = prev_selected
+                    account.save(update_fields=["metadata", "updated_at"])
+
+        # Facebook: validate that at least one Page was fetched. Without a
+        # Page, Kova cannot publish — surface a clear, actionable warning
+        # immediately so the user knows what to do before their first post.
+        if platform == "facebook":
+            pages = result.metadata.get("pages", [])
+            if not pages:
+                messages.warning(
+                    request,
+                    "Facebook connected, but no Pages were found on your account. "
+                    "Kova publishes to Facebook Pages, not personal profiles. "
+                    "Make sure you are an admin of at least one Facebook Page, "
+                    "then reconnect and grant the 'Manage your Pages' permission."
+                )
+            elif len(pages) > 1:
+                page_names = ", ".join(p["name"] for p in pages[:3])
+                messages.info(
+                    request,
+                    f"Found {len(pages)} Facebook Pages ({page_names}). "
+                    f"Kova is publishing to '{pages[0]['name']}' by default. "
+                    "Contact support if you need to switch to a different Page."
+                )
+
         # If this was a LinkedIn org flow, redirect to page selection
         if platform == "linkedin" and request.session.pop("linkedin_org_flow", False):
             return redirect("platforms:linkedin_select_page")

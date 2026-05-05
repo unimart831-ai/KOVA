@@ -24,6 +24,70 @@ from apps.content.models import Post
 logger = logging.getLogger(__name__)
 
 
+# ── Platform-specific scheduling defaults ────────────────────────────────────
+# Used when a user has no historical engagement data (new accounts).
+# Based on aggregated industry research for each platform's peak audience
+# activity windows. All hours in 24h format (local time, converted to UTC
+# at schedule time using the user's timezone setting).
+#
+# Facebook: Business/community content performs best mid-morning and early
+#   afternoon on weekdays. Wednesday is consistently the top day.
+# Instagram: Audience peaks during commute (7AM), lunch (12PM), and evening
+#   wind-down (19PM). Strong Mon-Fri with Saturday performing well for lifestyle.
+# Twitter/X: Morning commute and lunch dominate. Fast-moving — early posting
+#   in the window matters more than day-of-week.
+# LinkedIn: Business hours only. Tuesday/Wednesday/Thursday are the power days.
+#   Avoid weekends — engagement drops 70-80%.
+# TikTok: Evening and night. Audience skews younger and is most active post-work.
+# YouTube: Late afternoon and early evening — people watch after school/work.
+#   Weekends are strong for long-form content.
+# Pinterest: Evenings and weekends. High Saturday engagement for lifestyle/DIY.
+# Threads/Bluesky: Similar to Twitter — morning and midday on weekdays.
+
+_PLATFORM_SCHEDULING_DEFAULTS: dict[str, dict] = {
+    "facebook": {
+        "best_hours": [9, 13, 15],
+        "best_days": ["Tuesday", "Wednesday", "Thursday"],
+    },
+    "instagram": {
+        "best_hours": [7, 12, 19],
+        "best_days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+    },
+    "twitter": {
+        "best_hours": [8, 12, 17],
+        "best_days": ["Tuesday", "Wednesday", "Thursday"],
+    },
+    "linkedin": {
+        "best_hours": [8, 10, 12],
+        "best_days": ["Tuesday", "Wednesday", "Thursday"],
+    },
+    "tiktok": {
+        "best_hours": [19, 20, 21],
+        "best_days": [],  # TikTok is 7-day consistent
+    },
+    "youtube": {
+        "best_hours": [15, 17, 20],
+        "best_days": ["Friday", "Saturday", "Sunday"],
+    },
+    "pinterest": {
+        "best_hours": [20, 21, 14],
+        "best_days": ["Saturday", "Sunday", "Friday"],
+    },
+    "threads": {
+        "best_hours": [8, 12, 17],
+        "best_days": ["Tuesday", "Wednesday", "Thursday"],
+    },
+    "bluesky": {
+        "best_hours": [9, 12, 16],
+        "best_days": ["Tuesday", "Wednesday", "Thursday"],
+    },
+    "whatsapp": {
+        "best_hours": [9, 13, 18],
+        "best_days": [],
+    },
+}
+
+
 def _analyze_time_performance(user, days=30):
     """
     Analyze engagement rates by hour-of-day and day-of-week
@@ -224,8 +288,13 @@ def auto_schedule_post(post):
     timing = suggest_optimal_times(user)
     platform_times = timing.get("optimal_times", {}).get(platform, {})
 
-    best_hours = platform_times.get("best_hours", [9, 12, 18])
-    best_days = platform_times.get("best_days", [])
+    # Use platform-specific industry defaults when no user history exists yet.
+    # These are research-backed peak windows per platform, not generic 9/12/18.
+    platform_defaults = _PLATFORM_SCHEDULING_DEFAULTS.get(
+        platform, {"best_hours": [9, 12, 18], "best_days": []}
+    )
+    best_hours = platform_times.get("best_hours") or platform_defaults["best_hours"]
+    best_days = platform_times.get("best_days") or platform_defaults["best_days"]
 
     now = timezone.now()
 

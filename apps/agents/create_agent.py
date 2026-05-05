@@ -255,34 +255,37 @@ PLATFORM_GUIDES = {
     "instagram": {
         "name": "Instagram",
         "max_chars": 2200,
-        "psychology": "Aspiration + education. Save-worthy content wins the algorithm. Carousels get 3x engagement. People save posts that teach them something they can reference later. DM shares are the #1 algorithm signal — content that gets sent to friends gets massive distribution.",
+        "psychology": "Visual-first + save-worthy education. DM shares are the #1 algorithm signal — content sent to friends gets massive Explore distribution. Saves are #2 — people save what they want to reference later. Comments and watch time (for Reels) round out the signals. Likes barely move distribution. The algorithm tests content with a small audience for 15-30 minutes: if saves + shares spike, it pushes to Explore. REELS get 3-5x the organic reach of feed posts — they're Instagram's growth engine and reach non-followers. Carousels get ~2-3x the reach of single photos because the swipe action is itself an engagement signal.",
         "winning_patterns": [
-            "Carousel-style: '5 things I wish I knew about X' (write as numbered list)",
-            "Micro-lesson: one specific tip explained in depth",
-            "Before/after transformation stories",
-            "Quote-style caption with deep context below",
-            "Behind-the-scenes with authentic storytelling",
+            "Carousel: numbered tip list ('5 mistakes that are killing your X') — highly saveable, drives swipes",
+            "Carousel: step-by-step framework people will screenshot and reference — put the payoff on slide 7-8 to maximise swipe-through",
+            "Reel hook + value bomb: 3-second text hook on screen, then rapid-fire useful info, then CTA to save",
+            "Before/after with the real numbers — relatable struggle → satisfying outcome, invites DM shares",
+            "Micro-lesson: one specific insight explained in depth — 'Here is the one thing that changed everything about X'",
+            "Behind-the-scenes with emotional honesty — the messy reality, not the polished highlight reel",
+            "Conversation-starting opinion: a bold take that makes people DM it to a friend going through the same thing",
         ],
-        "avoid": "Stock photo language, over-polished corporate tone, irrelevant hashtags, being preachy",
-        "cta_style": "Save this for later / Share with someone who needs this / Drop a 🔥 if you agree / Send this to a friend who...",
-        "formats": ["photo caption", "carousel caption", "reel script"],
-        "formatting_rules": "Instagram shows ~125 characters before 'more'. The first line MUST create a curiosity gap or bold statement that demands expansion. Never start with a hashtag or generic greeting. Front-load the hook."
+        "avoid": "Stock photo language, corporate polish, more than 5 hashtags (looks spammy, harms reach), irrelevant hashtags, URLs in captions (not clickable — always use 'link in bio' language instead), walls of text with no line breaks, starting with a hashtag or @mention, preachy or lecture-y tone",
+        "cta_style": "End with ONE strong CTA from: '💾 Save this before you forget' / '📤 Send this to someone who needs it' / '📌 Tap link in bio for [specific thing]' / 'Drop a 🔥 in the comments if this hit'. Never combine multiple CTAs — pick one and commit. For product/website links: ALWAYS say 'link in bio' — NEVER paste a URL in the caption (URLs in captions are not clickable and signal low-quality content to the algorithm).",
+        "formats": ["single photo caption", "carousel caption (write as numbered points, each point = one slide concept)", "reel script with visual cues"],
+        "formatting_rules": "CRITICAL CAPTION STRUCTURE: Instagram shows ~125 characters before 'more' — the first line is your entire hook. It must create an irresistible curiosity gap or bold claim. Use EMPTY LINES between paragraphs (press Enter twice) — this is essential for readability; wall-of-text captions lose readers immediately. Ideal structure: Hook line → empty line → 3-5 short punchy paragraphs → empty line → CTA → empty line → Hashtags (3-5 max, niche-specific, at the very end). HASHTAG STRATEGY: Use 3-5 highly specific hashtags over broad ones (#marketingstrategy beats #marketing). Broad hashtags (#love, #instagood) are saturated and send zero new traffic. REEL CAPTIONS: Keep short (50-150 chars) — Reel captions appear below the video and are often not read; the hook lives in the first 3 seconds of the video, not the caption. LINK RULE: NEVER include a URL in the caption — it won't be clickable and signals low quality. Use 'link in bio 👆' or 'tap the link in my bio' language instead.",
     },
     "facebook": {
         "name": "Facebook",
         "max_chars": 63206,
-        "psychology": "Community + conversation. Facebook rewards posts that generate long comment threads. Storytelling and relatable content get shared. People share content that makes them look thoughtful or helpful. Shares are the #1 signal — if someone shares your post to their timeline, you win.",
+        "psychology": "Community + conversation. Facebook rewards posts that spark long comment threads and shares. Stories, relatable moments, and genuinely helpful content get shared — people share what makes them look thoughtful or helpful to their network. SHARES are the #1 algorithmic signal. Long comment threads with back-and-forth replies are #2. Reactions are #3. The algorithm tests your post with a small sample audience in the first 30-60 minutes — if they engage heavily, the algorithm pushes it wider. If not, it dies in the feed. Native content (uploaded directly) always outperforms shared links.",
         "winning_patterns": [
-            "Story format: setup → tension → resolution → lesson",
-            "Opinion piece that invites debate (not controversy, but perspective)",
-            "Helpful resource or tip framed as 'Something I just learned'",
-            "Question that taps into shared experience",
-            "Longer-form storytelling with emotional hooks",
+            "Story arc: setup → tension → resolution → lesson — invites readers to comment their own version of the story",
+            "Opinion piece that opens a genuine perspective: 'Here's what I think about X — what's your take?' (debate, not controversy)",
+            "Helpful tip or resource framed as personal discovery: 'Something I just learned that changed how I...'",
+            "Open question tapping into shared experience: 'Has this ever happened to you?' or 'What would you do in this situation?'",
+            "Behind-the-scenes with emotional honesty — the real story with real numbers, not the polished version",
+            "Educational content in scannable short paragraphs: one idea per 2-3 lines, blank line between sections",
         ],
-        "avoid": "Clickbait, engagement bait ('Tag 3 friends'), overly promotional, link-only posts (links reduce reach — put links in comments instead)",
-        "cta_style": "Ask a genuine question. 'What's been your experience with X?' works better than 'Like if you agree'.",
-        "formats": ["text post", "link post with commentary", "photo post"],
-        "formatting_rules": "Facebook shows ~400 characters before 'See more'. Front-load the hook — the first 2-3 lines must be gripping enough to demand expansion. Never put external links in the main post text (it kills reach) — add links in the first comment instead.",
+        "avoid": "Clickbait headlines, engagement bait ('Tag 3 friends!', 'Like if you agree!', 'Comment YES if...'), overly promotional tone, ANY URLs or links in the post body (Facebook algorithmically reduces organic reach 50-70% for posts with outbound links — the system handles this automatically), walls of unbroken text, cross-posting identical Instagram captions, excessive hashtags (max 5)",
+        "cta_style": "End with a genuine open question that invites personal experience. 'What's been your experience with this?' outperforms 'Click the link below' by 4-5x. NEVER include URLs in the post body — if a product/website link is needed, it is posted automatically as the first comment after publishing, which preserves full organic reach.",
+        "formats": ["text story post", "photo post with storytelling caption", "native video or Reel (highest organic reach)", "carousel album (strong engagement, 2-10 images)"],
+        "formatting_rules": "Facebook shows ~400 characters before 'See more'. The first 2-3 lines MUST hook the reader — compelling enough that NOT clicking 'See more' feels like missing out. Use short paragraphs (2-3 lines max), one blank line between sections. Place 3-5 highly relevant hashtags at the very end only. CRITICAL: Do NOT include any URLs, product links, or website addresses in content_text. Facebook penalises outbound links in post body with 50-70% organic reach reduction. Any link to share must be omitted from content_text — the publishing system automatically posts it as the first comment immediately after the post goes live, which is the correct strategy for maximum reach.",
     },
     "tiktok": {
         "name": "TikTok",
@@ -634,6 +637,43 @@ IMPORTANT:
 - predicted_score is your honest assessment (0-100) of performance potential
 - Content must be READY TO PUBLISH — no placeholders, no [insert X here]
 """
+
+    # Facebook-specific link rule: enforce at prompt level so the AI never
+    # includes outbound URLs in the post body. Links are posted as a first
+    # comment by the publishing system after the post goes live, which
+    # protects organic reach (FB penalises links in body by 50-70%).
+    if any(p["platform"] == "facebook" for p in platforms):
+        prompt += """
+⚠️  FACEBOOK LINK RULE — NON-NEGOTIABLE:
+Facebook's algorithm reduces organic reach by 50-70% for any post that contains
+an outbound URL or link in the post body. For every Facebook post:
+  • Write content_text with NO URLs, product links, or website addresses
+  • Tell the story / share the tip / make the offer — all WITHOUT a link
+  • The publishing system automatically posts the product/CTA URL as the
+    first comment immediately after the post goes live (correct strategy)
+  • A Facebook post with no link in the body + a link in the first comment
+    gets FULL organic reach AND the link is visible to engaged readers
+Violating this rule is a critical failure — it destroys the reach of the post.
+"""
+
+    # Instagram-specific link rule: URLs in captions are NOT clickable.
+    # The only working link on Instagram is the bio link. Using "link in bio"
+    # language is the platform-native and algorithm-friendly approach.
+    if any(p["platform"] == "instagram" for p in platforms):
+        prompt += """
+⚠️  INSTAGRAM LINK RULE — NON-NEGOTIABLE:
+Instagram does NOT make URLs in captions clickable. Pasting a URL in a caption:
+  • Doesn't work (user can't tap it)
+  • Signals low-quality, spammy content to the algorithm
+  • Looks unprofessional to the audience
+For every Instagram post that references a product, website, or resource:
+  • NEVER paste a URL in content_text
+  • Use the platform-native language: "link in bio 👆", "tap the link in my bio",
+    or "full details at the link in my bio"
+  • The actual URL is stored in the profile bio and updated by the system
+Violating this rule produces content that literally doesn't work on the platform.
+"""
+
     return prompt
 
 
@@ -1069,6 +1109,38 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                     )
                 except Exception as img_exc:
                     logger.warning("Failed to attach product image to post %s: %s", post.id, img_exc)
+
+            # ── Facebook first-comment: populate link to be posted after publish ──
+            # Facebook reduces organic reach 50-70% for posts with outbound links
+            # in the body. We store the CTA link in first_comment so the
+            # publishing task can post it as a comment immediately after going live.
+            if platform == "facebook":
+                fc_text = ""
+                if seed and seed.product and getattr(seed.product, "product_url", ""):
+                    label = "Shop Now" if getattr(seed.product, "display_price", None) else "Learn More"
+                    fc_text = f"{label}: {seed.product.product_url}"
+                elif profile and getattr(profile, "website_url", ""):
+                    fc_text = f"Learn more: {profile.website_url}"
+                if fc_text:
+                    post.first_comment = fc_text
+                    post.save(update_fields=["first_comment", "updated_at"])
+
+            # ── Instagram first-comment: save/link-in-bio CTA ────────────────
+            # Links in IG captions are not clickable, so the bio link is the
+            # only working click path. A first comment immediately below the
+            # caption reinforces this CTA and prompts saves — a top algorithm
+            # signal. Keep it brief and action-oriented.
+            if platform == "instagram":
+                ig_fc = ""
+                if seed and seed.product and getattr(seed.product, "product_url", ""):
+                    name = seed.product.name or "this"
+                    ig_fc = f"💾 Save this! 🛍️ Shop {name} — link in bio 👆"
+                elif profile and getattr(profile, "website_url", ""):
+                    ig_fc = "💾 Save this post for later! 🔗 More at the link in bio 👆"
+                else:
+                    ig_fc = "💾 Save this for later!"
+                post.first_comment = ig_fc
+                post.save(update_fields=["first_comment", "updated_at"])
 
             # Store visual strategy on the Post for analytics tracking
             image_prompt = pd.get("image_prompt", "")
