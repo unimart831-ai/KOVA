@@ -683,6 +683,41 @@ def publish_post(self, post_id: str):
                     "Instagram first comment error for post %s: %s", post_id, ig_fc_err,
                 )
 
+        # ── LinkedIn first-comment: link strategy ───────────────────────────
+        # LinkedIn reduces organic reach ~50% for posts with outbound links
+        # in the body. We post the CTA/product URL as the first comment
+        # immediately after publishing — full reach preserved, link stays
+        # visible to readers who engage.
+        if account.platform == "linkedin" and result.platform_post_id:
+            li_fc_text = (post.first_comment or "").strip()
+            # Fall back to cta_url if no explicit first_comment was set
+            if not li_fc_text and post.cta_type == "link" and post.cta_url:
+                label = (post.cta_text or "Learn more").strip()
+                tracked_url = _add_utm_to_url(post.cta_url, "linkedin", str(post.id))
+                li_fc_text = f"{label}: {tracked_url}"
+            if li_fc_text:
+                try:
+                    li_fc_result = provider.post_comment(
+                        access_token=account.access_token,
+                        post_id=result.platform_post_id,
+                        message=li_fc_text,
+                        account=account,
+                    )
+                    if li_fc_result.get("success"):
+                        logger.info(
+                            "LinkedIn first comment posted on post %s (comment_id=%s)",
+                            result.platform_post_id, li_fc_result.get("id"),
+                        )
+                    else:
+                        logger.warning(
+                            "LinkedIn first comment failed on post %s: %s",
+                            result.platform_post_id, li_fc_result.get("error"),
+                        )
+                except Exception as li_fc_err:
+                    logger.warning(
+                        "LinkedIn first comment error for post %s: %s", post_id, li_fc_err,
+                    )
+
         Notification.create_for_user(
             post.user, "post_published",
             f"Published to {account.get_platform_display()}: {post.content_text[:80]}...",

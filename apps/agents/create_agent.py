@@ -239,17 +239,22 @@ PLATFORM_GUIDES = {
     "linkedin": {
         "name": "LinkedIn",
         "max_chars": 3000,
-        "psychology": "Professional credibility + vulnerability. People engage with frameworks they can steal and stories they relate to. The best posts teach something specific or share a hard-won lesson.",
+        "psychology": "Professional credibility + vulnerability. People engage with frameworks they can steal and stories they relate to. The best posts teach something specific or share a hard-won lesson. LinkedIn's algorithm rewards dwell time — comments that expand text, saves, and shares from outside your network. The feed is slower-moving than Twitter; quality beats volume.",
         "winning_patterns": [
             "Personal story → universal business lesson (the 'I failed at X and learned Y' format)",
-            "Numbered framework/list with actionable steps",
-            "Contrarian industry take backed by experience",
-            "Behind-the-scenes of a decision/process with real numbers",
-            "Hook line → single line break → punchy follow-up → then develop the story",
+            "Numbered framework/list with actionable steps (e.g. '5 things I wish I knew before...')",
+            "Contrarian industry take backed by real experience (opens debate, drives comments)",
+            "Behind-the-scenes of a decision/process with real numbers — vague claims get ignored",
+            "Hook line → single line break → punchy follow-up → develop the story",
+            "The '1-3-1' structure: 1 bold hook, 3 proof/insight lines, 1 closing question",
+            "'What nobody tells you about X' — promises insider knowledge, earns the click-through",
         ],
-        "avoid": "Humble-bragging, 'Agree?' as a CTA, fake stories, emoji walls, 'I'm thrilled to share' openings, excessive blank lines between short sentences in the opening",
-        "cta_style": "End with a genuine question that invites people to share their experience. Make it specific, not generic.",
-        "formats": ["text post", "article-style post", "carousel outline"],
+        "avoid": "Humble-bragging, 'Agree?' as a CTA, fake or obviously embellished stories, emoji walls, 'I'm thrilled to share' openings, excessive blank lines in the opening hook, URLs or links in the post body (reduces reach ~50% — use 'link in first comment ↓' instead), generic motivational fluff with no specific insight",
+        "cta_style": "End with a genuine specific question that invites people to share their own experience. Never 'Agree?' or 'Thoughts?'. If referencing a resource or product, write 'link in first comment ↓' — NEVER paste a URL in the post body.",
+        "formats": ["text post", "article-style post", "carousel outline (numbered slides)"],
+        "hashtag_strategy": "3-5 hashtags max, placed at the very end after a blank line. Mix: 1 broad (#Marketing), 1 niche (#B2BSaaS), 1 topic (#ContentStrategy). Never embed hashtags mid-sentence — it looks spammy and breaks the reading flow.",
+        "link_strategy": "NEVER include URLs in the post body. LinkedIn's algorithm actively penalises external links in body by ~50% reach reduction. Use the phrase 'link in first comment ↓' — the publishing system posts the actual URL as the first comment automatically.",
+        "optimal_length": "Under 1300 chars often outperforms longer posts as it fits above the fold without 'see more'. Aim 800-1800 chars for thought leadership. Never pad to hit a length target — every sentence must earn its place.",
         "formatting_rules": "CRITICAL: LinkedIn hides content behind 'see more' after ~5 visible lines. Blank lines count as visible lines. Front-load value in the first 5 lines — use SINGLE line breaks (not double) for the opening hook and first 2-3 sentences. Save double line breaks for structure AFTER the fold. The reader must see enough substance in those first 5 lines to WANT to click 'see more'. Never waste above-the-fold space on a title line followed by a blank line.",
     },
     "instagram": {
@@ -672,6 +677,28 @@ For every Instagram post that references a product, website, or resource:
     or "full details at the link in my bio"
   • The actual URL is stored in the profile bio and updated by the system
 Violating this rule produces content that literally doesn't work on the platform.
+"""
+
+    # LinkedIn-specific link rule: outbound URLs in post body suppress reach ~50%.
+    # LinkedIn's algorithm detects links and reduces distribution to keep users on-platform.
+    # The correct strategy is to write the full post body WITHOUT any URLs, then add the
+    # link as the first comment immediately after publishing (done automatically by Kova).
+    if any(p["platform"] == "linkedin" for p in platforms):
+        prompt += """
+⚠️  LINKEDIN LINK RULE — NON-NEGOTIABLE:
+LinkedIn's algorithm suppresses organic reach by ~50% for any post containing
+an outbound URL in the post body. This is well-documented and consistent.
+For every LinkedIn post:
+  • Write content_text with NO URLs, no "click here", no raw links
+  • End the post body with a CTA that hints at the link below, e.g.:
+      "I've put together a full guide — link in the first comment ↓"
+      "Full breakdown in the comments 👇"
+      "The resource is in the first comment below"
+  • Kova automatically posts the product/CTA URL as the first comment
+    immediately after the post goes live (this is the correct LinkedIn strategy)
+  • A LinkedIn post with no link in body + link in first comment gets
+    FULL organic reach AND the link is visible to engaged readers
+Violating this rule cuts the post's reach in half before anyone sees it.
 """
 
     return prompt
@@ -1141,6 +1168,24 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                     ig_fc = "💾 Save this for later!"
                 post.first_comment = ig_fc
                 post.save(update_fields=["first_comment", "updated_at"])
+
+            # ── LinkedIn first-comment: populate link to be posted after publish ──
+            # LinkedIn suppresses organic reach ~50% for posts with outbound links
+            # in the body. We store the CTA link in first_comment so the
+            # publishing task posts it as a comment immediately after going live.
+            # Only auto-populate if the user hasn't already written a custom first comment.
+            if platform == "linkedin" and not (post.first_comment or "").strip():
+                li_fc = ""
+                if seed and seed.product and getattr(seed.product, "product_url", ""):
+                    label = (getattr(seed.product, "cta_text", "") or "").strip()
+                    if not label:
+                        label = "Shop Now" if getattr(seed.product, "display_price", None) else "Learn More"
+                    li_fc = f"{label}: {seed.product.product_url}"
+                elif profile and getattr(profile, "website_url", ""):
+                    li_fc = f"Learn more: {profile.website_url}"
+                if li_fc:
+                    post.first_comment = li_fc
+                    post.save(update_fields=["first_comment", "updated_at"])
 
             # Store visual strategy on the Post for analytics tracking
             image_prompt = pd.get("image_prompt", "")

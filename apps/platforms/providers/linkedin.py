@@ -817,6 +817,45 @@ class LinkedInProvider(BaseProvider):
             logger.warning("LinkedIn get_comments failed: %s", e.response.text)
             return []
 
+    def post_comment(self, access_token: str, post_id: str,
+                     message: str, **kwargs) -> dict:
+        """Post a first comment on a LinkedIn post.
+
+        Used immediately after publishing to add the CTA/product link as the
+        first comment, which preserves organic reach (LinkedIn penalises
+        outbound links in the post body by ~50%).
+
+        post_id: The post URN returned by publish_post (urn:li:share:... or
+                 urn:li:ugcPost:...) — passed as x-restli-id from the API.
+        Requires w_member_social scope.
+        """
+        author_urn = self._get_author_urn(access_token, **kwargs)
+        if not author_urn:
+            return {"error": "Could not resolve author URN", "success": False}
+
+        encoded_post = quote(post_id, safe="")
+        payload = {
+            "actor": author_urn,
+            "object": post_id,
+            "message": {"text": message},
+        }
+
+        try:
+            with httpx.Client(timeout=30) as client:
+                resp = client.post(
+                    f"{LINKEDIN_REST_BASE}/socialActions/{encoded_post}/comments",
+                    json=payload,
+                    headers=self._rest_headers(access_token),
+                )
+                resp.raise_for_status()
+                return {
+                    "id": resp.headers.get("x-restli-id", ""),
+                    "success": True,
+                }
+        except httpx.HTTPStatusError as e:
+            logger.error("LinkedIn post_comment failed: %s", e.response.text)
+            return {"error": e.response.text[:300], "success": False}
+
     def reply_to_comment(self, access_token: str, comment_id: str,
                          message: str, **kwargs) -> dict:
         """Reply to a comment on a LinkedIn post.
