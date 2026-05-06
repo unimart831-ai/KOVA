@@ -117,14 +117,21 @@
   </div>
 {% endif %}
 
-{# ── First comment indicator (Facebook / Instagram) ── #}
+{# ── First comment indicator (Facebook / Instagram / LinkedIn) ── #}
 {% if post.first_comment %}
-  {% if post.social_account.platform == 'facebook' or post.social_account.platform == 'instagram' %}
-    <div class="flex items-start gap-1.5 mb-3 px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-100 dark:border-blue-900/40">
-      <svg class="w-3 h-3 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-      <span class="text-[11px] text-blue-600 dark:text-blue-400 font-medium truncate">{{ post.first_comment|truncatewords:8 }}</span>
+  {% with p=post.social_account.platform %}
+  {% if p == 'facebook' or p == 'instagram' or p == 'linkedin' %}
+    <div class="flex items-start gap-1.5 mb-3 px-2.5 py-1.5 {% if p == 'linkedin' %}bg-sky-50 dark:bg-sky-950/30 border border-sky-100 dark:border-sky-900/40{% else %}bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40{% endif %} rounded-lg">
+      <svg class="w-3 h-3 {% if p == 'linkedin' %}text-sky-400{% else %}text-blue-400{% endif %} flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+      <div class="min-w-0">
+        <span class="text-[10px] font-semibold {% if p == 'linkedin' %}text-sky-500 dark:text-sky-400{% else %}text-blue-500 dark:text-blue-400{% endif %} block leading-tight">
+          {% if p == 'linkedin' %}Link in first comment{% else %}First comment{% endif %}
+        </span>
+        <span class="text-[11px] {% if p == 'linkedin' %}text-sky-700 dark:text-sky-300{% else %}text-blue-600 dark:text-blue-400{% endif %} truncate block">{{ post.first_comment|truncatewords:8 }}</span>
+      </div>
     </div>
   {% endif %}
+  {% endwith %}
 {% endif %}
 
 {# ── Published state ── #}
