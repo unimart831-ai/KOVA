@@ -338,11 +338,18 @@ def brief_home(request):
     ).exists()
 
     # Upcoming holidays / cultural moments (calendar_intel app)
+    upcoming_moments = []
+    holiday_drafts_ready = 0
     try:
         from apps.calendar_intel.selectors import top_upcoming_for_brief
+        from apps.calendar_intel.models import HolidayDraft
         upcoming_moments = top_upcoming_for_brief(request.user, count=3)
+        holiday_drafts_ready = HolidayDraft.objects.filter(
+            user=request.user,
+            status=HolidayDraft.Status.DRAFTS_READY,
+        ).count()
     except Exception:
-        upcoming_moments = []
+        pass
 
     return render(request, "briefs/home.html", {
         "brief": brief,
@@ -361,6 +368,7 @@ def brief_home(request):
         "dismissed_decisions": _get_dismissed_decisions(brief),
         "trending_topics": _normalize_trending_topics(brief),
         "upcoming_moments": upcoming_moments,
+        "holiday_drafts_ready": holiday_drafts_ready,
         "page_title": "Daily Brief",
     })
 

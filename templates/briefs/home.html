@@ -535,8 +535,8 @@
         </div>
 
         {# ── Upcoming holidays / cultural moments (calendar_intel) ── #}
-        {% if upcoming_moments %}
-          {% include "calendar_intel/partials/_upcoming_widget.html" with moments=upcoming_moments %}
+        {% if upcoming_moments or holiday_drafts_ready %}
+          {% include "calendar_intel/partials/_upcoming_widget.html" with moments=upcoming_moments holiday_drafts_ready=holiday_drafts_ready %}
         {% endif %}
 
         {% if superfans %}

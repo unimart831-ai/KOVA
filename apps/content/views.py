@@ -23,6 +23,7 @@ def content_studio(request):
         status_filter=request.GET.get("status"),
         platform_filter=request.GET.get("platform"),
         search_query=request.GET.get("q"),
+        source_filter=request.GET.get("source"),
     )
 
     # Recent seeds for processing status — auto-fail any stuck longer than 5 min
@@ -69,11 +70,12 @@ def content_studio(request):
         "current_status": request.GET.get("status", ""),
         "current_platform": request.GET.get("platform", ""),
         "current_search": request.GET.get("q", ""),
+        "current_source": request.GET.get("source", ""),
         "page_title": "Content Studio",
     })
 
 
-def _get_studio_posts(user, status_filter=None, platform_filter=None, search_query=None):
+def _get_studio_posts(user, status_filter=None, platform_filter=None, search_query=None, source_filter=None):
     """Return (seed_groups, ungrouped, total_pending) for the studio."""
     visible_user_ids = get_teammate_ids(user)
 
@@ -89,6 +91,9 @@ def _get_studio_posts(user, status_filter=None, platform_filter=None, search_que
         posts = posts.filter(platform=platform_filter)
     if search_query:
         posts = posts.filter(content_text__icontains=search_query)
+    if source_filter == "holiday":
+        # Filter to only holiday-watcher generated posts
+        posts = posts.filter(generated_by_agent="holiday_watcher")
 
     seed_groups = []
     grouped = defaultdict(list)
@@ -124,6 +129,7 @@ def studio_posts(request):
         status_filter=request.GET.get("status"),
         platform_filter=request.GET.get("platform"),
         search_query=request.GET.get("q"),
+        source_filter=request.GET.get("source"),
     )
     return render(request, "content/_studio_posts.html", {
         "seed_groups": seed_groups,

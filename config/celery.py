@@ -76,6 +76,9 @@ app.conf.task_routes = {
     "leads.process_nurture_steps": {"queue": "default"},
     "leads.score_all_leads": {"queue": "low"},
     "emails.send_monthly_reports_all": {"queue": "low"},
+    # Calendar Intelligence — holiday awareness
+    "calendar_intel.run_holiday_watcher": {"queue": "low"},
+    "calendar_intel.generate_drafts_for_moment": {"queue": "default"},
 }
 
 # NOTE: Beat schedule is defined in CELERY_BEAT_SCHEDULE in config/settings/base.py

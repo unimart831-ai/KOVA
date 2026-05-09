@@ -207,6 +207,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "billing.check_mpesa_subscriptions",
         "schedule": 24 * 3600.0,  # daily — expiry checks, grace period, renewals
     },
+    "calendar-intel-holiday-watcher": {
+        "task": "calendar_intel.run_holiday_watcher",
+        "schedule": 24 * 3600.0,  # daily — find upcoming holidays + queue drafts
+    },
     "analyze-all-competitors": {
         "task": "analyze-all-competitors",
         "schedule": 7 * 24 * 3600.0,  # weekly — AI competitive analysis
