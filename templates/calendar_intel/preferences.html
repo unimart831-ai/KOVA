@@ -1,0 +1,119 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Holidays & Moments{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
+  Tell Kova which holidays, observances, and personal events to anticipate for you.
+</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+  {# ── Header card with country/industry context ── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+    <div class="flex items-start justify-between flex-wrap gap-4">
+      <div>
+        <h2 class="text-base font-semibold text-gray-900 dark:text-white">Your context</h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Holidays surfaced below are filtered by these. Update in
+          <a href="{% url 'accounts:settings' %}" class="text-kova-600 hover:underline">settings</a>.
+        </p>
+        <div class="flex flex-wrap gap-2 mt-3">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+            🌍 {{ country|default:"No country set" }}
+          </span>
+          {% if city %}
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+            📍 {{ city }}
+          </span>
+          {% endif %}
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+            🏷️ {{ industry|default:"No industry set" }}
+          </span>
+        </div>
+      </div>
+      <div class="text-right">
+        <p class="text-3xl font-bold text-kova-600 dark:text-kova-400">{{ total_moments }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">applicable moments<br>in next 12 months</p>
+      </div>
+    </div>
+  </div>
+
+  {# ── Country missing nudge ── #}
+  {% if not country %}
+  <div class="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl flex items-start gap-3">
+    <svg class="w-5 h-5 text-amber-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+    <div>
+      <p class="text-sm font-medium text-amber-800 dark:text-amber-300">Set your country to unlock local holidays</p>
+      <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">Without a country, only global moments appear. Add your country in <a href="{% url 'accounts:settings' %}" class="underline font-medium">settings</a> to see Liberation Day, Mashujaa Day, and more local events.</p>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Custom events section ── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="text-base font-semibold text-gray-900 dark:text-white">Your custom moments</h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Anniversaries, launches, milestones — moments only you care about.</p>
+      </div>
+      <a href="{% url 'calendar_intel:custom_event_add' %}" class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+        Add moment
+      </a>
+    </div>
+    {% if custom_events %}
+      <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for ce in custom_events %}
+          <li class="py-3 flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-900 dark:text-white">{{ ce.name }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {{ ce.date|date:"M j, Y" }} · {{ ce.get_recurrence_display }}
+              </p>
+            </div>
+            <form method="post" action="{% url 'calendar_intel:custom_event_delete' ce.id %}">
+              {% csrf_token %}
+              <button type="submit" class="text-xs text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" onclick="return confirm('Delete this moment?')">
+                Remove
+              </button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-sm text-gray-400 dark:text-gray-500 italic">No custom moments yet.</p>
+    {% endif %}
+  </div>
+
+  {# ── Holidays grouped by category ── #}
+  {% for category, items in grouped_moments.items %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+    <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-1 capitalize">
+      {{ category|cut:"_"|title }}
+    </h2>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+      {% if category == "religious" %}Religious observances. These are opt-in — toggle on the ones relevant to your business and audience.
+      {% elif category == "national_holiday" %}National & statutory holidays for your country.
+      {% elif category == "commercial" %}Shopping & commercial moments. Most retail/F&B businesses benefit from posting around these.
+      {% elif category == "awareness_day" %}Awareness days. Surfaced for context — no automatic drafts.
+      {% elif category == "cultural" %}Cultural moments observed in your market.
+      {% else %}Other moments.
+      {% endif %}
+    </p>
+    <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for item in items %}
+        {% include "calendar_intel/partials/_preference_row.html" with holiday=item.holiday preference=item.preference moment=item.moment %}
+      {% endfor %}
+    </ul>
+  </div>
+  {% empty %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center">
+    <p class="text-sm text-gray-500 dark:text-gray-400">No upcoming moments found for your settings.</p>
+    <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">Try setting your country in <a href="{% url 'accounts:settings' %}" class="text-kova-600 hover:underline">settings</a>.</p>
+  </div>
+  {% endfor %}
+
+</div>
+{% endblock %}

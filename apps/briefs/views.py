@@ -337,6 +337,13 @@ def brief_home(request):
         user=request.user, is_active=True
     ).exists()
 
+    # Upcoming holidays / cultural moments (calendar_intel app)
+    try:
+        from apps.calendar_intel.selectors import top_upcoming_for_brief
+        upcoming_moments = top_upcoming_for_brief(request.user, count=3)
+    except Exception:
+        upcoming_moments = []
+
     return render(request, "briefs/home.html", {
         "brief": brief,
         "recent_briefs": recent_briefs,
@@ -353,6 +360,7 @@ def brief_home(request):
         "research_updated_at": _parse_research_updated_at(brief),
         "dismissed_decisions": _get_dismissed_decisions(brief),
         "trending_topics": _normalize_trending_topics(brief),
+        "upcoming_moments": upcoming_moments,
         "page_title": "Daily Brief",
     })
 

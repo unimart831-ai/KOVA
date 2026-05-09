@@ -1,0 +1,111 @@
+{% comment %}
+  Single preference row for the holidays preferences page.
+
+  Inputs:
+    holiday    : Holiday instance
+    preference : UserHolidayPreference or None
+    moment     : ScoredMoment (optional — used in main page; not in HTMX swaps)
+    next_occ   : HolidayOccurrence (optional — used in HTMX swaps)
+    today      : date (optional — used in HTMX swaps)
+{% endcomment %}
+
+{% load humanize %}
+
+<li id="pref-row-{{ holiday.id }}" class="py-3 flex items-center justify-between gap-3">
+  <div class="flex items-start gap-3 min-w-0 flex-1">
+
+    {# Status indicator dot #}
+    {% if preference and not preference.is_enabled %}
+      <span class="w-2 h-2 mt-2 rounded-full bg-gray-300 dark:bg-gray-600 shrink-0" title="Disabled"></span>
+    {% elif preference and preference.muted_until %}
+      <span class="w-2 h-2 mt-2 rounded-full bg-amber-400 shrink-0" title="Muted until {{ preference.muted_until }}"></span>
+    {% elif holiday.requires_opt_in and not preference %}
+      <span class="w-2 h-2 mt-2 rounded-full bg-gray-300 dark:bg-gray-600 shrink-0" title="Opt-in"></span>
+    {% else %}
+      <span class="w-2 h-2 mt-2 rounded-full bg-green-500 shrink-0" title="Enabled"></span>
+    {% endif %}
+
+    <div class="min-w-0 flex-1">
+      <div class="flex items-center gap-2 flex-wrap">
+        <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ holiday.name }}</p>
+        {% if holiday.requires_opt_in and not preference %}
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 font-medium">opt-in</span>
+        {% endif %}
+        {% if holiday.sensitivity_level == "high" %}
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-medium">sensitive</span>
+        {% endif %}
+        {% if holiday.religion %}
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-medium">{{ holiday.get_religion_display }}</span>
+        {% endif %}
+      </div>
+      <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-2 flex-wrap">
+        {% if moment %}
+          <span>{{ moment.date|date:"M j, Y" }}</span>
+          <span>·</span>
+          {% if moment.days_until == 0 %}
+            <span class="text-kova-600 dark:text-kova-400 font-medium">today</span>
+          {% elif moment.days_until == 1 %}
+            <span class="text-kova-600 dark:text-kova-400 font-medium">tomorrow</span>
+          {% elif moment.days_until > 0 %}
+            <span>in {{ moment.days_until }} day{{ moment.days_until|pluralize }}</span>
+          {% endif %}
+          {% if moment.score > 0 %}
+            <span>·</span>
+            <span title="Relevance score 0-100">{{ moment.score }}/100</span>
+          {% endif %}
+        {% elif next_occ %}
+          <span>{{ next_occ.date|date:"M j, Y" }}</span>
+        {% endif %}
+        {% if preference and preference.muted_until %}
+          <span>·</span>
+          <span class="text-amber-600 dark:text-amber-400">muted until {{ preference.muted_until|date:"M j, Y" }}</span>
+        {% endif %}
+      </div>
+      {% if holiday.short_description %}
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 line-clamp-1">{{ holiday.short_description }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="flex items-center gap-2 shrink-0">
+
+    {# Toggle button #}
+    <button
+      hx-post="{% url 'calendar_intel:htmx_preference_toggle' holiday.id %}"
+      hx-target="#pref-row-{{ holiday.id }}"
+      hx-swap="outerHTML"
+      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+      type="button"
+      class="text-xs font-medium px-3 py-1.5 rounded-md transition-colors
+        {% if preference and preference.is_enabled and not preference.muted_until %}
+          bg-kova-600 text-white hover:bg-kova-700
+        {% elif holiday.requires_opt_in and not preference %}
+          bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50
+        {% else %}
+          bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700
+        {% endif %}">
+      {% if preference and preference.is_enabled and not preference.muted_until %}
+        Enabled
+      {% elif holiday.requires_opt_in and not preference %}
+        Opt in
+      {% else %}
+        Enable
+      {% endif %}
+    </button>
+
+    {# Mute button — only visible when enabled #}
+    {% if preference and preference.is_enabled and not preference.muted_until %}
+    <button
+      hx-post="{% url 'calendar_intel:htmx_preference_mute_year' holiday.id %}"
+      hx-target="#pref-row-{{ holiday.id }}"
+      hx-swap="outerHTML"
+      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+      type="button"
+      title="Mute this year"
+      class="text-xs font-medium px-2 py-1.5 rounded-md text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors">
+      Mute
+    </button>
+    {% endif %}
+
+  </div>
+</li>
