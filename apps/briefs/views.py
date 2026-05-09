@@ -404,6 +404,20 @@ def brief_detail(request, date):
     from apps.platforms.models import SocialAccount
     has_connected_platform = SocialAccount.objects.filter(user=request.user, is_active=True).exists()
 
+    # Upcoming holidays / cultural moments — same forward-looking widget as the home brief
+    upcoming_moments = []
+    holiday_drafts_ready = 0
+    try:
+        from apps.calendar_intel.selectors import top_upcoming_for_brief
+        from apps.calendar_intel.models import HolidayDraft
+        upcoming_moments = top_upcoming_for_brief(request.user, count=3)
+        holiday_drafts_ready = HolidayDraft.objects.filter(
+            user=request.user,
+            status=HolidayDraft.Status.DRAFTS_READY,
+        ).count()
+    except Exception:
+        pass
+
     return render(request, "briefs/detail.html", {
         "brief": brief,
         "brief_date": brief_date,
@@ -421,6 +435,8 @@ def brief_detail(request, date):
         "research_updated_at": _parse_research_updated_at(brief),
         "dismissed_decisions": _get_dismissed_decisions(brief),
         "trending_topics": _normalize_trending_topics(brief),
+        "upcoming_moments": upcoming_moments,
+        "holiday_drafts_ready": holiday_drafts_ready,
         "quick_actions": [],
         "setup_checklist": None,
         "page_title": f"Brief — {brief_date.strftime('%b %d, %Y')}",

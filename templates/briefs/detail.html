@@ -274,6 +274,11 @@
       </div>
       {% endif %}
 
+      {# Upcoming holidays / cultural moments (calendar_intel) #}
+      {% if upcoming_moments or holiday_drafts_ready %}
+        {% include "calendar_intel/partials/_upcoming_widget.html" with moments=upcoming_moments holiday_drafts_ready=holiday_drafts_ready %}
+      {% endif %}
+
       {# Recent briefs nav #}
       {% if recent_briefs %}
       <div class="card">

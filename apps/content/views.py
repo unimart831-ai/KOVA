@@ -135,6 +135,7 @@ def studio_posts(request):
         "seed_groups": seed_groups,
         "ungrouped_posts": ungrouped,
         "total_pending": total_pending,
+        "current_source": request.GET.get("source", ""),
     })
 
 

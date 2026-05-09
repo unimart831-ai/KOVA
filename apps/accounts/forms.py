@@ -146,6 +146,9 @@ class BrandProfileForm(forms.ModelForm):
             "website_url",
             "industry",
             "industry_other",
+            # Geographic / market context (drives holiday awareness)
+            "country",
+            "city",
             "brand_voice",
             "target_audience",
             "posting_frequency",
