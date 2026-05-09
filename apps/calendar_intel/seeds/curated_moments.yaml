@@ -1,0 +1,532 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Curated Moments — supplements python-holidays with commercial, cultural,
+# and regional days. Source of truth for Phase 1.
+#
+# See KOVA_HOLIDAY_AWARENESS.md §9 for schema details. Keys map 1:1 to
+# Holiday model fields. `slug` must be unique. Edit and re-run
+# `python manage.py seed_holidays` to apply changes.
+#
+# Industries: retail | f_and_b | services | b2b | creative | health
+# (mapped from UserProfile.industry — see seed_loader.py)
+# ─────────────────────────────────────────────────────────────────────────
+
+# ═════════════════════════════════════════════════════════════════════════
+# GLOBAL CULTURAL MOMENTS
+# ═════════════════════════════════════════════════════════════════════════
+
+- name: "Valentine's Day"
+  slug: valentines-day
+  short_description: "Day of romantic and platonic love."
+  date_type: fixed
+  date_config: { month: 2, day: 14 }
+  countries: []
+  category: cultural
+  sensitivity_level: safe
+  default_relevance_score: 75
+  suggested_post_count: 2
+  lead_time_days: 7
+  tone_hint: warm
+  industries: [retail, f_and_b, services, creative, health]
+  angles:
+    - "A specific gift idea that ties to your product"
+    - "Behind-the-scenes love letter to your community"
+    - "Pair-it offer (buy one, gift one)"
+    - "Last-minute Valentine's planning rescue"
+  avoid_phrases:
+    - "Happy Valentine's Day to all the lovers!"
+    - "Show your special someone"
+    - "On this day of love"
+
+- name: "Mother's Day (US/Global second Sunday May)"
+  slug: mothers-day-may
+  short_description: "Day to honor mothers and mother figures."
+  date_type: nth_weekday
+  date_config: { month: 5, weekday: 6, n: 2 }   # 2nd Sunday of May
+  countries: [US, CA, AU, NZ, RW, KE, TZ, UG, IN, ZA, NG, GH]
+  category: cultural
+  sensitivity_level: safe
+  default_relevance_score: 80
+  suggested_post_count: 2
+  lead_time_days: 9
+  tone_hint: warm
+  industries: [retail, f_and_b, services, creative, health]
+  angles:
+    - "Honor a specific mother in your community with a story"
+    - "A gift idea tied directly to your product/service"
+    - "Behind-the-scenes from a mother on your team"
+    - "Special offer or bundle for the day"
+  avoid_phrases:
+    - "Happy Mother's Day to all the moms!"
+    - "Celebrating the special woman in your life"
+    - "On this special day"
+
+- name: "Father's Day (US/Global third Sunday June)"
+  slug: fathers-day-june
+  short_description: "Day to honor fathers and father figures."
+  date_type: nth_weekday
+  date_config: { month: 6, weekday: 6, n: 3 }
+  countries: [US, CA, AU, NZ, RW, KE, TZ, UG, IN, ZA, NG, GH]
+  category: cultural
+  sensitivity_level: safe
+  default_relevance_score: 70
+  suggested_post_count: 2
+  lead_time_days: 7
+  tone_hint: warm
+  industries: [retail, f_and_b, services, creative, health]
+  angles:
+    - "Honor a specific father in your community"
+    - "Gift idea that suits a wide range of dads"
+    - "Story from a dad on your team"
+    - "Bundle or special offer for the day"
+
+- name: "International Women's Day"
+  slug: international-womens-day
+  short_description: "Global day celebrating women's achievements."
+  date_type: fixed
+  date_config: { month: 3, day: 8 }
+  countries: []
+  category: awareness_day
+  sensitivity_level: consider
+  default_relevance_score: 60
+  suggested_post_count: 1
+  lead_time_days: 5
+  tone_hint: respectful
+  industries: [retail, f_and_b, services, b2b, creative, health]
+  angles:
+    - "Spotlight a woman in your community/team"
+    - "Concrete commitment, not slogan"
+    - "Highlight a woman-led business you partner with"
+
+- name: "New Year's Day"
+  slug: new-years-day
+  short_description: "Start of the Gregorian calendar year."
+  date_type: fixed
+  date_config: { month: 1, day: 1 }
+  countries: []
+  category: national_holiday
+  sensitivity_level: safe
+  default_relevance_score: 75
+  suggested_post_count: 2
+  lead_time_days: 5
+  tone_hint: celebratory
+  industries: [retail, f_and_b, services, b2b, creative, health]
+  angles:
+    - "What you're committing to this year (specific)"
+    - "Thank-you to community for a real moment last year"
+    - "Sneak peek at what's coming"
+
+- name: "New Year's Eve"
+  slug: new-years-eve
+  short_description: "Last day of the Gregorian calendar year."
+  date_type: fixed
+  date_config: { month: 12, day: 31 }
+  countries: []
+  category: cultural
+  sensitivity_level: safe
+  default_relevance_score: 70
+  suggested_post_count: 1
+  lead_time_days: 4
+  tone_hint: celebratory
+  industries: [retail, f_and_b, services, creative]
+  angles:
+    - "Year in numbers — your real metrics"
+    - "One thank-you to a customer who shaped your year"
+    - "Late-night offer for NYE plans"
+
+# ═════════════════════════════════════════════════════════════════════════
+# CHRISTIAN RELIGIOUS HOLIDAYS (opt-in; surfaced for relevant countries)
+# ═════════════════════════════════════════════════════════════════════════
+
+- name: "Christmas Day"
+  slug: christmas-day
+  short_description: "Christian celebration of the birth of Jesus."
+  date_type: fixed
+  date_config: { month: 12, day: 25 }
+  countries: []
+  category: religious
+  religion: christian
+  sensitivity_level: safe
+  requires_opt_in: true
+  default_relevance_score: 85
+  suggested_post_count: 3
+  lead_time_days: 14
+  tone_hint: warm
+  industries: [retail, f_and_b, services, creative, health]
+  angles:
+    - "Holiday gift guide tied to your products"
+    - "Family-time recipe or service tie-in"
+    - "Year-end gratitude letter"
+    - "Last-day-to-order delivery cutoff"
+
+- name: "Christmas Eve"
+  slug: christmas-eve
+  date_type: fixed
+  date_config: { month: 12, day: 24 }
+  countries: []
+  category: religious
+  religion: christian
+  sensitivity_level: safe
+  requires_opt_in: true
+  default_relevance_score: 65
+  suggested_post_count: 1
+  lead_time_days: 5
+  tone_hint: warm
+  industries: [retail, f_and_b, services]
+
+- name: "Easter Sunday"
+  slug: easter-sunday
+  date_type: computed_easter
+  date_config: { offset_days: 0 }
+  countries: []
+  category: religious
+  religion: christian
+  sensitivity_level: safe
+  requires_opt_in: true
+  default_relevance_score: 70
+  suggested_post_count: 2
+  lead_time_days: 9
+  tone_hint: warm
+  industries: [retail, f_and_b, services, creative]
+  angles:
+    - "Easter gift or feast tie-in"
+    - "Spring-renewal angle on your product"
+    - "Family gathering recipe or service"
+
+- name: "Good Friday"
+  slug: good-friday
+  date_type: computed_easter
+  date_config: { offset_days: -2 }
+  countries: []
+  category: religious
+  religion: christian
+  sensitivity_level: safe
+  requires_opt_in: true
+  default_relevance_score: 50
+  suggested_post_count: 1
+  lead_time_days: 5
+  tone_hint: respectful
+  industries: [retail, f_and_b, services]
+
+# ═════════════════════════════════════════════════════════════════════════
+# MUSLIM RELIGIOUS HOLIDAYS (opt-in; surfaced for relevant countries)
+# Hijri lunar — dates approximate; surface caveat in UI
+# ═════════════════════════════════════════════════════════════════════════
+
+- name: "Eid al-Fitr"
+  slug: eid-al-fitr
+  short_description: "Festival marking the end of Ramadan. Date is approximate (lunar)."
+  date_type: lunar_islamic
+  date_config: { hijri_month: 10, hijri_day: 1 }
+  countries: []
+  category: religious
+  religion: muslim
+  sensitivity_level: safe
+  requires_opt_in: true
+  default_relevance_score: 80
+  suggested_post_count: 2
+  lead_time_days: 7
+  tone_hint: warm
+  industries: [retail, f_and_b, services, creative, health]
+  angles:
+    - "Eid Mubarak greeting tied to your community"
+    - "Festive gift / feast offer"
+    - "Family-gathering service or product idea"
+  avoid_phrases:
+    - "Happy Eid to all our Muslim friends"
+
+- name: "Eid al-Adha"
+  slug: eid-al-adha
+  short_description: "Festival of Sacrifice. Date is approximate (lunar)."
+  date_type: lunar_islamic
+  date_config: { hijri_month: 12, hijri_day: 10 }
+  countries: []
+  category: religious
+  religion: muslim
+  sensitivity_level: safe
+  requires_opt_in: true
+  default_relevance_score: 75
+  suggested_post_count: 2
+  lead_time_days: 7
+  tone_hint: respectful
+  industries: [retail, f_and_b, services, creative]
+
+# ═════════════════════════════════════════════════════════════════════════
+# COMMERCIAL / SHOPPING MOMENTS
+# ═════════════════════════════════════════════════════════════════════════
+
+- name: "Black Friday"
+  slug: black-friday
+  short_description: "Major shopping day — Friday after US Thanksgiving."
+  date_type: custom_function
+  date_config: { function_name: friday_after_thanksgiving }
+  countries: []
+  category: commercial
+  sensitivity_level: safe
+  default_relevance_score: 85
+  suggested_post_count: 3
+  lead_time_days: 14
+  tone_hint: urgent
+  industries: [retail, f_and_b, creative]
+  angles:
+    - "Pre-Friday teaser building anticipation"
+    - "Reveal the offer the night before"
+    - "Final-hours push the day of"
+    - "Doorbuster-style limited stock callout"
+
+- name: "Cyber Monday"
+  slug: cyber-monday
+  date_type: custom_function
+  date_config: { function_name: monday_after_friday_after_thanksgiving }
+  countries: []
+  category: commercial
+  sensitivity_level: safe
+  default_relevance_score: 75
+  suggested_post_count: 2
+  lead_time_days: 10
+  tone_hint: urgent
+  industries: [retail, b2b, creative]
+
+- name: "Small Business Saturday"
+  slug: small-business-saturday
+  short_description: "Saturday after US Thanksgiving — supports local businesses."
+  date_type: nth_weekday
+  date_config: { month: 11, weekday: 5, n: 4 }   # 4th Saturday of November
+  countries: [US, CA, GB]
+  category: commercial
+  sensitivity_level: safe
+  default_relevance_score: 65
+  suggested_post_count: 2
+  lead_time_days: 10
+  tone_hint: warm
+  industries: [retail, f_and_b, services, creative]
+
+# ═════════════════════════════════════════════════════════════════════════
+# AWARENESS DAYS (surfaced in calendar; Phase 2 may auto-draft)
+# ═════════════════════════════════════════════════════════════════════════
+
+- name: "Earth Day"
+  slug: earth-day
+  date_type: fixed
+  date_config: { month: 4, day: 22 }
+  countries: []
+  category: awareness_day
+  sensitivity_level: safe
+  default_relevance_score: 50
+  suggested_post_count: 1
+  lead_time_days: 5
+  tone_hint: informative
+  industries: [retail, f_and_b, services, b2b, creative, health]
+  angles:
+    - "A real sustainability move you've made (specific)"
+    - "Customer story showing environmental impact"
+    - "Concrete pledge with measurable goal"
+
+- name: "World Mental Health Day"
+  slug: world-mental-health-day
+  date_type: fixed
+  date_config: { month: 10, day: 10 }
+  countries: []
+  category: awareness_day
+  sensitivity_level: safe
+  default_relevance_score: 55
+  suggested_post_count: 1
+  lead_time_days: 5
+  tone_hint: respectful
+  industries: [services, b2b, health, creative]
+
+- name: "World Health Day"
+  slug: world-health-day
+  date_type: fixed
+  date_config: { month: 4, day: 7 }
+  countries: []
+  category: awareness_day
+  sensitivity_level: safe
+  default_relevance_score: 50
+  suggested_post_count: 1
+  lead_time_days: 5
+  tone_hint: informative
+  industries: [health, services, f_and_b]
+
+- name: "World Coffee Day"
+  slug: world-coffee-day
+  date_type: fixed
+  date_config: { month: 10, day: 1 }
+  countries: []
+  category: awareness_day
+  sensitivity_level: safe
+  default_relevance_score: 40
+  suggested_post_count: 1
+  lead_time_days: 3
+  tone_hint: playful
+  industries: [f_and_b, retail]
+
+# ═════════════════════════════════════════════════════════════════════════
+# EAST AFRICAN NATIONAL HOLIDAYS
+# (python-holidays covers some, but we add detail / overrides here)
+# ═════════════════════════════════════════════════════════════════════════
+
+- name: "Liberation Day (Rwanda)"
+  slug: rw-liberation-day
+  short_description: "Marks the end of the 1994 Genocide against the Tutsi."
+  date_type: fixed
+  date_config: { month: 7, day: 4 }
+  countries: [RW]
+  category: national_holiday
+  sensitivity_level: consider
+  default_relevance_score: 70
+  suggested_post_count: 1
+  lead_time_days: 5
+  tone_hint: respectful
+  industries: [retail, f_and_b, services, b2b, creative, health]
+  angles:
+    - "A respectful acknowledgement tied to your community work"
+    - "Honor an employee or partner's contribution to rebuilding"
+
+- name: "Heroes' Day (Rwanda)"
+  slug: rw-heroes-day
+  date_type: fixed
+  date_config: { month: 2, day: 1 }
+  countries: [RW]
+  category: national_holiday
+  sensitivity_level: consider
+  default_relevance_score: 60
+  suggested_post_count: 1
+  lead_time_days: 4
+  tone_hint: respectful
+
+- name: "Genocide Memorial Day (Rwanda)"
+  slug: rw-genocide-memorial
+  short_description: "Commemoration of the Genocide against the Tutsi. Restraint required."
+  date_type: fixed
+  date_config: { month: 4, day: 7 }
+  countries: [RW]
+  category: national_holiday
+  sensitivity_level: high
+  requires_opt_in: true
+  default_relevance_score: 60
+  suggested_post_count: 1
+  lead_time_days: 3
+  tone_hint: respectful
+  avoid_phrases:
+    - "Happy"
+    - "Celebrate"
+    - "Festive"
+
+- name: "Mashujaa Day (Kenya)"
+  slug: ke-mashujaa-day
+  short_description: "Heroes' Day — honors those who fought for independence."
+  date_type: fixed
+  date_config: { month: 10, day: 20 }
+  countries: [KE]
+  category: national_holiday
+  sensitivity_level: safe
+  default_relevance_score: 65
+  suggested_post_count: 1
+  lead_time_days: 4
+  tone_hint: respectful
+
+- name: "Madaraka Day (Kenya)"
+  slug: ke-madaraka-day
+  short_description: "Marks the day Kenya attained internal self-rule (1963)."
+  date_type: fixed
+  date_config: { month: 6, day: 1 }
+  countries: [KE]
+  category: national_holiday
+  sensitivity_level: safe
+  default_relevance_score: 60
+  suggested_post_count: 1
+  lead_time_days: 4
+  tone_hint: respectful
+
+- name: "Jamhuri Day (Kenya)"
+  slug: ke-jamhuri-day
+  short_description: "Independence Day — Kenya became a republic in 1964."
+  date_type: fixed
+  date_config: { month: 12, day: 12 }
+  countries: [KE]
+  category: national_holiday
+  sensitivity_level: safe
+  default_relevance_score: 65
+  suggested_post_count: 1
+  lead_time_days: 4
+  tone_hint: respectful
+
+- name: "Saba Saba Day (Tanzania)"
+  slug: tz-saba-saba
+  short_description: "Founding day of Tanzania's TANU — also marks Peasants Day."
+  date_type: fixed
+  date_config: { month: 7, day: 7 }
+  countries: [TZ]
+  category: national_holiday
+  sensitivity_level: safe
+  default_relevance_score: 60
+  suggested_post_count: 1
+  lead_time_days: 4
+  tone_hint: respectful
+
+- name: "Independence Day (Tanzania)"
+  slug: tz-independence-day
+  date_type: fixed
+  date_config: { month: 12, day: 9 }
+  countries: [TZ]
+  category: national_holiday
+  sensitivity_level: safe
+  default_relevance_score: 65
+  suggested_post_count: 1
+  lead_time_days: 4
+  tone_hint: respectful
+
+- name: "Independence Day (Uganda)"
+  slug: ug-independence-day
+  date_type: fixed
+  date_config: { month: 10, day: 9 }
+  countries: [UG]
+  category: national_holiday
+  sensitivity_level: safe
+  default_relevance_score: 65
+  suggested_post_count: 1
+  lead_time_days: 4
+  tone_hint: respectful
+
+# ═════════════════════════════════════════════════════════════════════════
+# US / GLOBAL ANCHOR HOLIDAYS (for users in those markets)
+# ═════════════════════════════════════════════════════════════════════════
+
+- name: "Independence Day (US)"
+  slug: us-independence-day
+  date_type: fixed
+  date_config: { month: 7, day: 4 }
+  countries: [US]
+  category: national_holiday
+  sensitivity_level: safe
+  default_relevance_score: 70
+  suggested_post_count: 1
+  lead_time_days: 4
+  tone_hint: celebratory
+  industries: [retail, f_and_b, services]
+
+- name: "Thanksgiving (US)"
+  slug: us-thanksgiving
+  date_type: nth_weekday
+  date_config: { month: 11, weekday: 3, n: 4 }
+  countries: [US]
+  category: cultural
+  sensitivity_level: safe
+  default_relevance_score: 75
+  suggested_post_count: 2
+  lead_time_days: 7
+  tone_hint: warm
+  industries: [retail, f_and_b, services]
+
+- name: "Halloween"
+  slug: halloween
+  date_type: fixed
+  date_config: { month: 10, day: 31 }
+  countries: [US, CA, GB, IE, AU, NZ]
+  category: cultural
+  sensitivity_level: safe
+  default_relevance_score: 60
+  suggested_post_count: 2
+  lead_time_days: 7
+  tone_hint: playful
+  industries: [retail, f_and_b, creative]

@@ -264,6 +264,26 @@ class UserProfile(models.Model):
         max_length=64, null=True, blank=True, unique=True, db_index=True,
         help_text="Unique token for Kova Pixel website tracking. Generated on first access.",
     )
+    # ── Geographic / market context (used by holiday awareness, regional content) ──
+    country = models.CharField(
+        max_length=2,
+        blank=True,
+        default="",
+        help_text="ISO 3166-1 alpha-2 country code (e.g., 'RW', 'KE', 'US'). "
+                  "Drives which holidays surface for this user.",
+    )
+    city = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Primary city — used for localized content references.",
+    )
+    secondary_markets = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Additional ISO 3166-1 alpha-2 codes the business serves. "
+                  "E.g., ['UG', 'TZ']. Phase 4 multi-market feature.",
+    )
     # ── Onboarding funnel telemetry ──
     onboarding_step_timestamps = models.JSONField(
         default=dict, blank=True,

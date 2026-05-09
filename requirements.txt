@@ -57,6 +57,11 @@ django-anymail[resend]>=12.0
 # Utilities
 Pillow>=10.4
 python-slugify>=8.0
+PyYAML>=6.0
+
+# Calendar intelligence (apps/calendar_intel)
+holidays>=0.55
+hijri-converter>=2.3
 
 # Production server
 gunicorn>=22.0

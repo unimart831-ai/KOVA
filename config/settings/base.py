@@ -81,6 +81,7 @@ LOCAL_APPS = [
     "apps.campaigns",
     "apps.whatsapp",
     "apps.memes",
+    "apps.calendar_intel",
     "apps.api",
 ]
 
