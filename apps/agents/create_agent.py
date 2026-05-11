@@ -1141,13 +1141,16 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
             # Facebook reduces organic reach 50-70% for posts with outbound links
             # in the body. We store the CTA link in first_comment so the
             # publishing task can post it as a comment immediately after going live.
+            # Composed via apps.utils.first_comments — varied, conversational,
+            # not the spammy "Learn More: <URL>" pattern.
             if platform == "facebook":
-                fc_text = ""
-                if seed and seed.product and getattr(seed.product, "product_url", ""):
-                    label = "Shop Now" if getattr(seed.product, "display_price", None) else "Learn More"
-                    fc_text = f"{label}: {seed.product.product_url}"
-                elif profile and getattr(profile, "website_url", ""):
-                    fc_text = f"Learn more: {profile.website_url}"
+                from apps.utils.first_comments import compose_first_comment
+                fc_text = compose_first_comment(
+                    platform="facebook",
+                    post=post,
+                    product=getattr(seed, "product", None) if seed else None,
+                    profile=profile,
+                )
                 if fc_text:
                     post.first_comment = fc_text
                     post.save(update_fields=["first_comment", "updated_at"])
@@ -1174,15 +1177,16 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
             # in the body. We store the CTA link in first_comment so the
             # publishing task posts it as a comment immediately after going live.
             # Only auto-populate if the user hasn't already written a custom first comment.
+            # Composed via apps.utils.first_comments — professional, varied,
+            # not the spammy "Learn More: <URL>" pattern.
             if platform == "linkedin" and not (post.first_comment or "").strip():
-                li_fc = ""
-                if seed and seed.product and getattr(seed.product, "product_url", ""):
-                    label = (getattr(seed.product, "cta_text", "") or "").strip()
-                    if not label:
-                        label = "Shop Now" if getattr(seed.product, "display_price", None) else "Learn More"
-                    li_fc = f"{label}: {seed.product.product_url}"
-                elif profile and getattr(profile, "website_url", ""):
-                    li_fc = f"Learn more: {profile.website_url}"
+                from apps.utils.first_comments import compose_first_comment
+                li_fc = compose_first_comment(
+                    platform="linkedin",
+                    post=post,
+                    product=getattr(seed, "product", None) if seed else None,
+                    profile=profile,
+                )
                 if li_fc:
                     post.first_comment = li_fc
                     post.save(update_fields=["first_comment", "updated_at"])

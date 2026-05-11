@@ -470,7 +470,10 @@ def _generate_brief_with_llm(user, brief_data):
     """
     profile = getattr(user, "profile", None)
     company = getattr(profile, "company_name", "") if profile else ""
-    first_name = user.first_name or "there"
+    # Use the centralized greeting helper — falls back to full_name's first
+    # word, then company name, then email handle. Never returns "there".
+    from apps.utils.greetings import greeting_name
+    first_name = greeting_name(user)
 
     # ── Onboarding mode: no real data yet ──────────────────────────────────────
     if not brief_data.get("has_meaningful_data"):

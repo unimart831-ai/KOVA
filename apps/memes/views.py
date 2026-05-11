@@ -65,6 +65,37 @@ def meme_discover(request):
         date__lte=today + timezone.timedelta(days=14),
     ).order_by("date")[:5]
 
+    # Weekly quota indicator (so users see budget before clicking adapt)
+    prefs, _ = MemePreferences.objects.get_or_create(user=request.user)
+    week_ago = timezone.now() - timezone.timedelta(days=7)
+    used_this_week = MemeAdaptation.objects.filter(
+        user=request.user, created_at__gte=week_ago,
+    ).count()
+    quota = {
+        "used": used_this_week,
+        "limit": prefs.max_memes_per_week,
+        "remaining": max(0, prefs.max_memes_per_week - used_this_week),
+        "percent": int(
+            (used_this_week / prefs.max_memes_per_week * 100)
+            if prefs.max_memes_per_week else 0
+        ),
+        "risk_tolerance": prefs.get_risk_tolerance_display(),
+    }
+
+    # Freshness signal: when was discovery last successful?
+    last_discovered = (
+        TrendingMeme.objects.filter(
+            lifecycle__in=[
+                TrendingMeme.Lifecycle.EMERGING,
+                TrendingMeme.Lifecycle.TRENDING,
+                TrendingMeme.Lifecycle.PEAKED,
+            ],
+        )
+        .order_by("-detected_at")
+        .values_list("detected_at", flat=True)
+        .first()
+    )
+
     return render(request, "memes/discover.html", {
         "memes": memes,
         "adapted_ids": adapted_ids,
@@ -73,6 +104,8 @@ def meme_discover(request):
         "current_lifecycle": lifecycle,
         "current_sort": sort,
         "categories": TrendingMeme.Category.choices,
+        "quota": quota,
+        "last_discovered": last_discovered,
         "page_title": "Meme Intelligence",
     })
 
@@ -100,10 +133,20 @@ def meme_detail(request, meme_id):
 @login_required
 @require_POST
 def meme_adapt(request, meme_id):
-    """Trigger AI adaptation of a meme for the current user's brand."""
+    """Trigger AI adaptation of a meme for the current user's brand.
+    Gated by lifecycle (no dead/expired) and risk-tolerance vs brand_safety_score."""
     meme = get_object_or_404(TrendingMeme, id=meme_id)
 
-    # Check if already adapted
+    # ── Lifecycle gate ───────────────────────────────────────────────────
+    if not meme.is_usable:
+        messages.warning(
+            request,
+            f"\"{meme.title}\" is no longer usable — it's "
+            f"{meme.get_lifecycle_display().lower()}. Pick a fresher trend.",
+        )
+        return redirect("memes:detail", meme_id=meme.id)
+
+    # ── Existing-adaptation guard ────────────────────────────────────────
     existing = MemeAdaptation.objects.filter(
         user=request.user, trending_meme=meme,
     ).first()
@@ -111,13 +154,35 @@ def meme_adapt(request, meme_id):
         messages.info(request, "You already have an adaptation of this meme.")
         return redirect("memes:detail", meme_id=meme.id)
 
-    # Check weekly quota
+    # ── Risk-tolerance gate ──────────────────────────────────────────────
     prefs, _ = MemePreferences.objects.get_or_create(user=request.user)
+    safety_floor = {
+        MemePreferences.RiskTolerance.CONSERVATIVE: 75,
+        MemePreferences.RiskTolerance.MODERATE: 50,
+        MemePreferences.RiskTolerance.BOLD: 25,
+    }.get(prefs.risk_tolerance, 50)
+    if meme.brand_safety_score < safety_floor:
+        messages.warning(
+            request,
+            f"This meme's brand-safety score ({meme.brand_safety_score}) is below "
+            f"your '{prefs.get_risk_tolerance_display()}' threshold ({safety_floor}). "
+            "Loosen your risk tolerance in settings if you want to try it anyway.",
+        )
+        return redirect("memes:detail", meme_id=meme.id)
+
+    # ── Category exclusions ──────────────────────────────────────────────
+    if prefs.excluded_categories and meme.category in prefs.excluded_categories:
+        messages.warning(
+            request,
+            f"You've excluded '{meme.get_category_display()}' memes in settings.",
+        )
+        return redirect("memes:detail", meme_id=meme.id)
+
+    # ── Weekly quota ─────────────────────────────────────────────────────
     week_ago = timezone.now() - timezone.timedelta(days=7)
     this_week = MemeAdaptation.objects.filter(
         user=request.user, created_at__gte=week_ago,
     ).count()
-
     if this_week >= prefs.max_memes_per_week:
         messages.warning(
             request,
@@ -126,10 +191,12 @@ def meme_adapt(request, meme_id):
         )
         return redirect("memes:detail", meme_id=meme.id)
 
-    # Fire the adaptation task
+    # All gates passed — fire the adaptation task
     fire_task(adapt_single_meme, str(meme.id), request.user.id)
-    messages.success(request, f"Adapting \"{meme.title}\" for your brand — check back in a moment!")
-
+    messages.success(
+        request,
+        f"Adapting \"{meme.title}\" for your brand — check back in a moment!",
+    )
     return redirect("memes:queue")
 
 
@@ -195,8 +262,12 @@ def meme_reject(request, adaptation_id):
 @login_required
 @require_POST
 def meme_to_post(request, adaptation_id):
-    """Convert an approved adaptation into a Post in the content pipeline."""
+    """Convert an approved adaptation into Post row(s) in the content pipeline.
+    Creates one Post per targeted platform (if the user has that account
+    connected). Links the adaptation to the first Post; the others are
+    independent siblings."""
     from apps.content.models import Post
+    from apps.platforms.models import SocialAccount
 
     adaptation = get_object_or_404(
         MemeAdaptation, id=adaptation_id, user=request.user,
@@ -206,31 +277,74 @@ def meme_to_post(request, adaptation_id):
         messages.warning(request, "Only approved adaptations can be sent to the content pipeline.")
         return redirect("memes:queue")
 
-    # Determine platform from targets
-    platform = "twitter"
-    if adaptation.platform_targets:
-        platform = adaptation.platform_targets[0]
+    # Build content body: adapted_text plus caption (if distinct)
+    content_text = adaptation.adapted_text
+    if adaptation.adapted_caption and adaptation.adapted_caption.strip() not in content_text:
+        content_text = f"{content_text}\n\n{adaptation.adapted_caption}".strip()
 
-    # Create the Post — combine adapted text and caption
-    content = adaptation.adapted_text
-    if adaptation.adapted_caption:
-        content += f"\n\n{adaptation.adapted_caption}"
+    # Resolve platforms — fall back to user's first active account if no targets
+    targets = list(adaptation.platform_targets or [])
+    if not targets:
+        first_account = SocialAccount.objects.filter(
+            user=request.user, is_active=True,
+        ).first()
+        if first_account:
+            targets = [first_account.platform]
+        else:
+            messages.warning(
+                request,
+                "Connect a social account first — there's nowhere to send this meme.",
+            )
+            return redirect("memes:queue")
 
-    post = Post.objects.create(
-        user=request.user,
-        content=content,
-        platform=platform,
-        content_type="original",
-        status="pending_approval",
+    # Map platform -> first matching active account
+    accounts_by_platform = {
+        sa.platform: sa
+        for sa in SocialAccount.objects.filter(user=request.user, is_active=True)
+    }
+
+    created_posts = []
+    skipped = []
+    for plat in targets:
+        sa = accounts_by_platform.get(plat)
+        if not sa:
+            skipped.append(plat)
+            continue
+        post = Post.objects.create(
+            user=request.user,
+            social_account=sa,
+            platform=plat,
+            content_text=content_text,
+            content_type="original",
+            status=Post.Status.PENDING_APPROVAL,
+            generated_by_agent="meme_engine",
+            ai_angle=f"Meme adaptation: {adaptation.trending_meme.title}"[:255],
+            ai_reasoning=(adaptation.ai_reasoning or "")[:5000],
+        )
+        created_posts.append(post)
+
+    if not created_posts:
+        messages.warning(
+            request,
+            "No matching connected accounts for the targeted platforms. "
+            "Connect one first or adjust targets in settings.",
+        )
+        return redirect("memes:queue")
+
+    # Link the first Post to the adaptation, keep status APPROVED until the
+    # actual Post is published. PUBLISHED on the adaptation should reflect
+    # downstream publication, not the queue step.
+    adaptation.post = created_posts[0]
+    adaptation.save(update_fields=["post", "updated_at"])
+
+    success = (
+        f"Sent to content pipeline as {len(created_posts)} {'posts' if len(created_posts) != 1 else 'post'} "
+        f"({', '.join(p.platform for p in created_posts)}) — review in Studio."
     )
-
-    # Link the adaptation to the post
-    adaptation.post = post
-    adaptation.status = MemeAdaptation.Status.PUBLISHED
-    adaptation.save(update_fields=["post", "status", "updated_at"])
-
-    messages.success(request, f"Meme sent to content pipeline as a {platform} post!")
-    return redirect("content:post_detail", post_id=post.id)
+    if skipped:
+        success += f" Skipped: {', '.join(skipped)} (no connected account)."
+    messages.success(request, success)
+    return redirect("content:post_detail", post_id=created_posts[0].id)
 
 
 # ─── SETTINGS ────────────────────────────────────────────────────────────────

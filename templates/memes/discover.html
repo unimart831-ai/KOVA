@@ -35,6 +35,50 @@
 </div>
 {% endif %}
 
+{# ── Weekly quota + freshness card ───────────────────────────────────── #}
+{% if quota %}
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+    <div class="flex items-start justify-between mb-2">
+      <div>
+        <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">This week</p>
+        <p class="text-sm font-medium text-gray-900 dark:text-white mt-1">
+          {{ quota.used }} / {{ quota.limit }} memes adapted
+        </p>
+      </div>
+      <span class="text-[10px] px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-medium">
+        {{ quota.risk_tolerance }}
+      </span>
+    </div>
+    <div class="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+      <div class="h-full rounded-full transition-all
+        {% if quota.percent >= 100 %}bg-red-500{% elif quota.percent >= 75 %}bg-amber-500{% else %}bg-kova-500{% endif %}"
+        style="width: {{ quota.percent }}%;"></div>
+    </div>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5">
+      {% if quota.remaining == 0 %}
+        Weekly quota reached. Adjust in <a href="{% url 'memes:settings' %}" class="text-kova-600 hover:underline">settings</a> or wait for reset.
+      {% else %}
+        {{ quota.remaining }} more this week
+      {% endif %}
+    </p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+    <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trend freshness</p>
+    <p class="text-sm font-medium text-gray-900 dark:text-white mt-1">
+      {% if last_discovered %}
+        Discovered {{ last_discovered|timesince }} ago
+      {% else %}
+        No trends discovered yet
+      {% endif %}
+    </p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5">
+      Kova scans for new trends every few hours. Sort by <em>Newest</em> to see the freshest finds.
+    </p>
+  </div>
+</div>
+{% endif %}
+
 {# ── Filters ─────────────────────────────────────────────────────────── #}
 <div class="flex flex-wrap items-center gap-3 mb-6">
   <form method="get" class="flex items-center gap-2">
