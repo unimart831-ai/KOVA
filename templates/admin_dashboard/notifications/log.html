@@ -1,0 +1,74 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">All notifications across users — filter by type or read state</p>{% endblock %}
+
+{% block content %}
+
+<div class="flex flex-wrap items-center gap-3 mb-4">
+  <form method="get" class="flex items-center gap-2">
+    <select name="type" class="rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs">
+      <option value="">All types</option>
+      {% for value, label in types %}
+      <option value="{{ value }}" {% if current_type == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="read" class="rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs">
+      <option value="">All states</option>
+      <option value="unread" {% if current_read == 'unread' %}selected{% endif %}>Unread</option>
+      <option value="read" {% if current_read == 'read' %}selected{% endif %}>Read</option>
+    </select>
+    <button type="submit" class="px-3 py-1.5 text-xs font-medium bg-kova-600 hover:bg-kova-700 text-white rounded-md">Apply</button>
+    {% if current_type or current_read %}
+    <a href="{% url 'admin_dashboard:notification_log' %}" class="text-xs text-gray-400 hover:text-gray-600">Clear</a>
+    {% endif %}
+  </form>
+  <a href="{% url 'admin_dashboard:notifications_overview' %}" class="ml-auto text-xs text-gray-500 hover:text-kova-600 dark:hover:text-kova-400">← Notifications overview</a>
+</div>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <table class="w-full text-xs">
+    <thead class="bg-gray-50 dark:bg-gray-900/50">
+      <tr class="text-left text-gray-500">
+        <th class="px-4 py-2.5 font-medium"></th>
+        <th class="px-3 py-2.5 font-medium">User</th>
+        <th class="px-3 py-2.5 font-medium">Type</th>
+        <th class="px-3 py-2.5 font-medium">Message</th>
+        <th class="px-3 py-2.5 font-medium text-right">Sent</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for n in page_obj %}
+      <tr>
+        <td class="px-4 py-2">
+          <span class="block w-2 h-2 rounded-full {% if n.is_read %}bg-gray-300{% else %}bg-kova-500{% endif %}"></span>
+        </td>
+        <td class="px-3 py-2 text-gray-900 dark:text-white">
+          <a href="{% url 'admin_dashboard:user_detail' n.user.id %}" class="hover:text-kova-600 dark:hover:text-kova-400">{{ n.user.email }}</a>
+        </td>
+        <td class="px-3 py-2"><code class="text-[10px]">{{ n.notification_type }}</code></td>
+        <td class="px-3 py-2 text-gray-700 dark:text-gray-300 max-w-[400px] truncate">{{ n.message }}</td>
+        <td class="px-3 py-2 text-right text-gray-500">{{ n.created_at|timesince }} ago</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="px-4 py-10 text-center text-gray-400 italic">No notifications match this filter.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page_obj.has_other_pages %}
+<div class="flex items-center justify-between mt-4 text-xs">
+  <p class="text-gray-500">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} · {{ page_obj.paginator.count }} notifications</p>
+  <div class="flex items-center gap-2">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_read %}&read={{ current_read }}{% endif %}" class="px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">Previous</a>
+    {% endif %}
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_read %}&read={{ current_read }}{% endif %}" class="px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">Next</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

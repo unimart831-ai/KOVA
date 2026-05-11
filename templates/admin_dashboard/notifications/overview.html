@@ -1,0 +1,119 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">In-app notifications — volume, types, recipients, recent stream</p>{% endblock %}
+
+{% block content %}
+
+{# ── Top stat cards ────────────────────────────────────────────────── #}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Sent (7d)</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ sent_7d|format_number }}</p>
+    <p class="text-xs text-gray-400 mt-0.5">{{ sent_30d }} in last 30d</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">All-time sent</p>
+    <p class="text-2xl font-bold text-kova-600 dark:text-kova-400 mt-1">{{ total|format_number }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Unread (all-time)</p>
+    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{{ unread|format_number }}</p>
+    <p class="text-xs text-gray-400 mt-0.5">{{ unread_7d }} from last 7 days</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Users with prefs</p>
+    <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{{ total_pref_rows|format_number }}</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+  {# ── Type breakdown (30d) ─────────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+    <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">By type (last 30 days)</h2>
+    </div>
+    <table class="w-full text-xs">
+      <thead class="bg-gray-50 dark:bg-gray-900/50">
+        <tr class="text-left text-gray-500">
+          <th class="px-5 py-2 font-medium">Type</th>
+          <th class="px-3 py-2 font-medium text-right">Total</th>
+          <th class="px-3 py-2 font-medium text-right">Unread</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for row in type_breakdown %}
+        <tr>
+          <td class="px-5 py-2 text-gray-900 dark:text-white">
+            <code class="text-[11px]">{{ row.notification_type }}</code>
+          </td>
+          <td class="px-3 py-2 text-right tabular-nums">{{ row.total }}</td>
+          <td class="px-3 py-2 text-right tabular-nums {% if row.unread > 0 %}text-amber-600 dark:text-amber-400{% else %}text-gray-400{% endif %}">{{ row.unread }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="px-5 py-6 text-center text-gray-400 italic">No notifications in the last 30 days.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# ── Top recipients ──────────────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+    <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Top recipients (last 30 days)</h2>
+    </div>
+    <table class="w-full text-xs">
+      <thead class="bg-gray-50 dark:bg-gray-900/50">
+        <tr class="text-left text-gray-500">
+          <th class="px-5 py-2 font-medium">User</th>
+          <th class="px-3 py-2 font-medium text-right">Sent</th>
+          <th class="px-3 py-2 font-medium text-right">Unread</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for u in top_recipients %}
+        <tr>
+          <td class="px-5 py-2 text-gray-900 dark:text-white">
+            <a href="{% url 'admin_dashboard:user_detail' u.user__id %}" class="hover:text-kova-600 dark:hover:text-kova-400">{{ u.user__full_name|default:u.user__email }}</a>
+          </td>
+          <td class="px-3 py-2 text-right tabular-nums">{{ u.total }}</td>
+          <td class="px-3 py-2 text-right tabular-nums {% if u.unread > 0 %}text-amber-600{% else %}text-gray-400{% endif %}">{{ u.unread }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="px-5 py-6 text-center text-gray-400 italic">No recipients yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# ── Recent stream ──────────────────────────────────────────────────── #}
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+  <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Recent notifications</h2>
+    <a href="{% url 'admin_dashboard:notification_log' %}" class="text-xs font-medium text-kova-600 dark:text-kova-400 hover:underline">View full log →</a>
+  </div>
+  <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+    {% for n in recent %}
+    <li class="px-5 py-3 flex items-start gap-3">
+      <span class="mt-1.5 w-2 h-2 rounded-full shrink-0 {% if n.is_read %}bg-gray-300{% else %}bg-kova-500{% endif %}"></span>
+      <div class="min-w-0 flex-1">
+        <p class="text-sm text-gray-900 dark:text-white">{{ n.message|truncatechars:120 }}</p>
+        <div class="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500 dark:text-gray-400">
+          <code>{{ n.notification_type }}</code>
+          <span>·</span>
+          <span>{{ n.user.email }}</span>
+          <span>·</span>
+          <span>{{ n.created_at|timesince }} ago</span>
+        </div>
+      </div>
+    </li>
+    {% empty %}
+    <li class="px-5 py-6 text-center text-gray-400 italic">No notifications yet.</li>
+    {% endfor %}
+  </ul>
+</div>
+
+{% endblock %}

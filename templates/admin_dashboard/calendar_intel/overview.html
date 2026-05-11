@@ -1,0 +1,277 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Holiday awareness — catalog, occurrences, auto-drafts, user opt-ins</p>{% endblock %}
+
+{% block content %}
+
+{# ── Top stat cards ────────────────────────────────────────────────── #}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Active holidays</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ active_holidays|format_number }}</p>
+    <p class="text-xs text-gray-400 mt-0.5">{{ total_holidays }} in catalog</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Upcoming (30d)</p>
+    <p class="text-2xl font-bold text-kova-600 dark:text-kova-400 mt-1">{{ occ_next_30|format_number }}</p>
+    <p class="text-xs text-gray-400 mt-0.5">{{ occ_next_90 }} in next 90d</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Drafts (7d)</p>
+    <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{{ drafts_7d|format_number }}</p>
+    <p class="text-xs text-gray-400 mt-0.5">{{ total_drafts }} all-time</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Active opt-ins</p>
+    <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{{ enabled_prefs|format_number }}</p>
+    <p class="text-xs text-gray-400 mt-0.5">{{ total_prefs }} preference rows ({{ muted_prefs }} muted)</p>
+  </div>
+</div>
+
+{# ── Draft status breakdown (clickable to filtered list) ──────────── #}
+<div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
+  <a href="{% url 'admin_dashboard:calendar_drafts' %}?status=queued" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-amber-300 dark:hover:border-amber-700 transition-colors">
+    <p class="text-lg font-bold text-amber-600 dark:text-amber-400">{{ draft_queued }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Queued</p>
+  </a>
+  <a href="{% url 'admin_dashboard:calendar_drafts' %}?status=generating" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+    <p class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ draft_generating }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Generating</p>
+  </a>
+  <a href="{% url 'admin_dashboard:calendar_drafts' %}?status=drafts_ready" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-green-300 dark:hover:border-green-700 transition-colors">
+    <p class="text-lg font-bold text-green-600 dark:text-green-400">{{ draft_ready }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Ready</p>
+  </a>
+  <a href="{% url 'admin_dashboard:calendar_drafts' %}?status=approved" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-kova-300 dark:hover:border-kova-700 transition-colors">
+    <p class="text-lg font-bold text-kova-600 dark:text-kova-400">{{ draft_approved }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Approved</p>
+  </a>
+  <a href="{% url 'admin_dashboard:calendar_drafts' %}?status=dismissed" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-gray-300 dark:hover:border-gray-700 transition-colors">
+    <p class="text-lg font-bold text-gray-500">{{ draft_dismissed }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Dismissed</p>
+  </a>
+  <a href="{% url 'admin_dashboard:calendar_drafts' %}?status=failed" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-red-300 dark:hover:border-red-700 transition-colors">
+    <p class="text-lg font-bold text-red-600 dark:text-red-400">{{ draft_failed }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Failed</p>
+  </a>
+  <a href="{% url 'admin_dashboard:calendar_drafts' %}?status=expired" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-yellow-300 dark:hover:border-yellow-700 transition-colors">
+    <p class="text-lg font-bold text-yellow-600 dark:text-yellow-400">{{ draft_expired }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Expired</p>
+  </a>
+</div>
+
+{# ── Watcher health banner ──────────────────────────────────────────── #}
+{% if last_draft_created %}
+<div class="mb-6 p-3 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 flex items-center gap-2">
+  <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+  <p class="text-xs text-gray-600 dark:text-gray-300">
+    Holiday Watcher — last draft queued <span class="font-medium text-gray-900 dark:text-white">{{ last_draft_created|timesince }} ago</span>
+    {% if drafts_7d == 0 %}<span class="ml-2 text-red-600 dark:text-red-400 font-medium">No drafts in last 7 days — check Celery beat schedule</span>{% endif %}
+  </p>
+</div>
+{% else %}
+<div class="mb-6 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+  <p class="text-xs text-amber-700 dark:text-amber-400">
+    <span class="font-medium">No drafts have ever been created.</span> The Holiday Watcher Celery task (<code>calendar_intel.run_holiday_watcher</code>) runs daily at 02:00 UTC — verify Celery beat is running and users have <code>country</code> set.
+  </p>
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+  {# ── Category breakdown ──────────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Holidays by category</h2>
+    <ul class="space-y-2">
+      {% for row in category_breakdown %}
+      <li class="flex items-center justify-between text-xs">
+        <span class="text-gray-700 dark:text-gray-300 capitalize">{{ row.category|cut:"_"|title }}</span>
+        <span class="font-medium text-gray-900 dark:text-white tabular-nums">{{ row.count }}</span>
+      </li>
+      {% empty %}
+      <li class="text-xs text-gray-400 italic">No holidays seeded yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  {# ── Source breakdown ────────────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Catalog sources</h2>
+    <ul class="space-y-2">
+      {% for row in source_breakdown %}
+      <li class="flex items-center justify-between text-xs">
+        <span class="text-gray-700 dark:text-gray-300">{{ row.source|default:"unknown" }}</span>
+        <span class="font-medium text-gray-900 dark:text-white tabular-nums">{{ row.count }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    <p class="text-[10px] text-gray-400 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+      Sensitivity: safe={{ sensitivity_breakdown.safe|default:0 }} · consider={{ sensitivity_breakdown.consider|default:0 }} · high={{ sensitivity_breakdown.high|default:0 }}
+    </p>
+  </div>
+</div>
+
+{# ── Upcoming + Top opt-ins ─────────────────────────────────────────── #}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+  {# ── Upcoming next 14 days ────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+    <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Upcoming next 14 days</h2>
+    </div>
+    <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for occ in upcoming_global %}
+      <li class="px-5 py-2.5 flex items-center justify-between">
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ occ.holiday.name }}</p>
+          <p class="text-[11px] text-gray-500 dark:text-gray-400">{{ occ.holiday.get_category_display }}</p>
+        </div>
+        <div class="text-right shrink-0 ml-3">
+          <p class="text-xs font-medium text-gray-900 dark:text-white tabular-nums">{{ occ.date|date:"M j" }}</p>
+        </div>
+      </li>
+      {% empty %}
+      <li class="px-5 py-6 text-center text-xs text-gray-400 italic">No occurrences in the next 14 days.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  {# ── Top opt-in holidays ─────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+    <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Top opt-in holidays</h2>
+      <p class="text-[10px] text-gray-400 mt-0.5">How many users have explicitly enabled each holiday</p>
+    </div>
+    <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for row in top_optin_holidays %}
+      <li class="px-5 py-2.5 flex items-center justify-between">
+        <p class="text-sm text-gray-900 dark:text-white truncate min-w-0 flex-1">{{ row.holiday__name }}</p>
+        <span class="text-xs font-medium text-kova-600 dark:text-kova-400 tabular-nums shrink-0 ml-3">{{ row.optins }} users</span>
+      </li>
+      {% empty %}
+      <li class="px-5 py-6 text-center text-xs text-gray-400 italic">No opt-ins yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+{# ── Top draft users ────────────────────────────────────────────────── #}
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6">
+  <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Top users by holiday drafts (30 days)</h2>
+  </div>
+  <table class="w-full text-xs">
+    <thead class="bg-gray-50 dark:bg-gray-900/50">
+      <tr class="text-left text-gray-500 dark:text-gray-400">
+        <th class="px-5 py-2 font-medium">User</th>
+        <th class="px-3 py-2 font-medium text-right">Drafts</th>
+        <th class="px-3 py-2 font-medium text-right">Ready</th>
+        <th class="px-3 py-2 font-medium text-right">Approved</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for u in top_users %}
+      <tr>
+        <td class="px-5 py-2 text-gray-900 dark:text-white">
+          <a href="{% url 'admin_dashboard:user_detail' u.user__id %}" class="hover:text-kova-600 dark:hover:text-kova-400">
+            {{ u.user__full_name|default:u.user__email }}
+          </a>
+        </td>
+        <td class="px-3 py-2 text-right tabular-nums">{{ u.draft_count }}</td>
+        <td class="px-3 py-2 text-right tabular-nums text-green-600 dark:text-green-400">{{ u.ready }}</td>
+        <td class="px-3 py-2 text-right tabular-nums text-kova-600 dark:text-kova-400">{{ u.approved }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="px-5 py-6 text-center text-gray-400 italic">No draft activity yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# ── Recent failures requiring attention ──────────────────────────────── #}
+{% if failed_drafts %}
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-red-200 dark:border-red-900/50 shadow-sm mb-6">
+  <div class="px-5 py-4 border-b border-red-100 dark:border-red-900/40 flex items-center justify-between">
+    <h2 class="text-sm font-semibold text-red-700 dark:text-red-300 flex items-center gap-2">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+      Recent failures needing attention
+    </h2>
+    <a href="{% url 'admin_dashboard:calendar_drafts' %}?status=failed" class="text-xs font-medium text-red-600 dark:text-red-400 hover:underline">See all →</a>
+  </div>
+  <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+    {% for d in failed_drafts %}
+    <li class="px-5 py-3">
+      <div class="flex items-center justify-between gap-3 mb-1">
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ d.moment_name }}</p>
+          <p class="text-[11px] text-gray-500 dark:text-gray-400">
+            {{ d.user.email }} · target {{ d.target_date|date:"M j, Y" }} · failed {{ d.updated_at|timesince }} ago
+          </p>
+        </div>
+        <form method="post" action="{% url 'admin_dashboard:calendar_draft_retry' d.id %}" class="shrink-0">
+          {% csrf_token %}
+          <button type="submit" class="text-xs font-medium px-3 py-1.5 rounded-md bg-kova-600 hover:bg-kova-700 text-white">Retry</button>
+        </form>
+      </div>
+      {% if d.generation_error %}
+      <p class="text-[10px] text-red-600 dark:text-red-400 font-mono bg-red-50 dark:bg-red-950/30 px-2 py-1 rounded mt-1 truncate">{{ d.generation_error|truncatechars:160 }}</p>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{# ── Recent drafts stream ────────────────────────────────────────────── #}
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6">
+  <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Recent drafts</h2>
+    <a href="{% url 'admin_dashboard:calendar_drafts' %}" class="text-xs font-medium text-kova-600 dark:text-kova-400 hover:underline">View all →</a>
+  </div>
+  <table class="w-full text-xs">
+    <thead class="bg-gray-50 dark:bg-gray-900/50">
+      <tr class="text-left text-gray-500 dark:text-gray-400">
+        <th class="px-5 py-2 font-medium">User</th>
+        <th class="px-3 py-2 font-medium">Moment</th>
+        <th class="px-3 py-2 font-medium">Target date</th>
+        <th class="px-3 py-2 font-medium">Status</th>
+        <th class="px-3 py-2 font-medium text-right">Score</th>
+        <th class="px-3 py-2 font-medium text-right">Created</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for d in recent_drafts %}
+      <tr>
+        <td class="px-5 py-2 text-gray-900 dark:text-white truncate max-w-[160px]">{{ d.user.email }}</td>
+        <td class="px-3 py-2 text-gray-700 dark:text-gray-300 truncate max-w-[200px]">{{ d.moment_name }}</td>
+        <td class="px-3 py-2 text-gray-500 tabular-nums">{{ d.target_date|date:"M j" }}</td>
+        <td class="px-3 py-2">
+          <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+            {% if d.status == 'drafts_ready' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
+            {% elif d.status == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
+            {% elif d.status == 'approved' %}bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-300
+            {% elif d.status == 'dismissed' %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400
+            {% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300{% endif %}">
+            {{ d.get_status_display }}
+          </span>
+        </td>
+        <td class="px-3 py-2 text-right tabular-nums">{{ d.relevance_score }}</td>
+        <td class="px-3 py-2 text-right text-gray-500">{{ d.created_at|timesince }} ago</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="px-5 py-6 text-center text-gray-400 italic">No drafts yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# ── Custom events footer ──────────────────────────────────────────── #}
+<div class="text-xs text-gray-500 dark:text-gray-400 px-1">
+  Custom events: <span class="font-medium text-gray-700 dark:text-gray-300">{{ active_custom_events }}</span> active /
+  <span>{{ total_custom_events }} total</span> ·
+  <span class="font-medium text-gray-700 dark:text-gray-300">{{ upcoming_custom }}</span> upcoming in next 30 days
+</div>
+
+{% endblock %}

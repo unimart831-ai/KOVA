@@ -1,0 +1,96 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">All HolidayDrafts across users — filter by status to drill in</p>{% endblock %}
+
+{% block content %}
+
+{# ── Filter bar ──────────────────────────────────────────────────── #}
+<div class="flex flex-wrap items-center gap-3 mb-4">
+  <form method="get" class="flex items-center gap-2">
+    <select name="status" class="rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs">
+      <option value="">All statuses</option>
+      {% for value, label in statuses %}
+      <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="px-3 py-1.5 text-xs font-medium bg-kova-600 hover:bg-kova-700 text-white rounded-md">Apply</button>
+    {% if current_status %}
+    <a href="{% url 'admin_dashboard:calendar_drafts' %}" class="text-xs text-gray-400 hover:text-gray-600">Clear</a>
+    {% endif %}
+  </form>
+  <a href="{% url 'admin_dashboard:calendar_overview' %}" class="ml-auto text-xs text-gray-500 hover:text-kova-600 dark:hover:text-kova-400">← Calendar overview</a>
+</div>
+
+{# ── Drafts table ───────────────────────────────────────────────── #}
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <table class="w-full text-xs">
+    <thead class="bg-gray-50 dark:bg-gray-900/50">
+      <tr class="text-left text-gray-500 dark:text-gray-400">
+        <th class="px-4 py-2.5 font-medium">User</th>
+        <th class="px-3 py-2.5 font-medium">Moment</th>
+        <th class="px-3 py-2.5 font-medium">Target date</th>
+        <th class="px-3 py-2.5 font-medium">Status</th>
+        <th class="px-3 py-2.5 font-medium text-right">Score</th>
+        <th class="px-3 py-2.5 font-medium text-right">Posts</th>
+        <th class="px-3 py-2.5 font-medium text-right">Created</th>
+        <th class="px-3 py-2.5 font-medium text-right">Action</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for d in page_obj %}
+      <tr>
+        <td class="px-4 py-2 text-gray-900 dark:text-white">
+          <a href="{% url 'admin_dashboard:user_detail' d.user.id %}" class="hover:text-kova-600 dark:hover:text-kova-400">{{ d.user.email }}</a>
+        </td>
+        <td class="px-3 py-2 text-gray-700 dark:text-gray-300 max-w-[220px] truncate">{{ d.moment_name }}</td>
+        <td class="px-3 py-2 text-gray-500 tabular-nums">{{ d.target_date|date:"M j, Y" }}</td>
+        <td class="px-3 py-2">
+          <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+            {% if d.status == 'drafts_ready' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
+            {% elif d.status == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
+            {% elif d.status == 'approved' %}bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-300
+            {% elif d.status == 'dismissed' %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400
+            {% elif d.status == 'expired' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300
+            {% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300{% endif %}">
+            {{ d.get_status_display }}
+          </span>
+          {% if d.generation_error %}
+          <span class="block text-[10px] text-red-500 dark:text-red-400 mt-1 truncate max-w-[260px]" title="{{ d.generation_error }}">{{ d.generation_error|truncatechars:60 }}</span>
+          {% endif %}
+        </td>
+        <td class="px-3 py-2 text-right tabular-nums text-gray-700 dark:text-gray-300">{{ d.relevance_score }}</td>
+        <td class="px-3 py-2 text-right tabular-nums text-gray-700 dark:text-gray-300">{{ d.posts_generated.count }}</td>
+        <td class="px-3 py-2 text-right text-gray-500">{{ d.created_at|timesince }} ago</td>
+        <td class="px-3 py-2 text-right">
+          {% if d.status == 'failed' or d.status == 'expired' %}
+          <form method="post" action="{% url 'admin_dashboard:calendar_draft_retry' d.id %}" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="text-[10px] font-medium px-2 py-1 rounded bg-kova-600 hover:bg-kova-700 text-white">Retry</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="px-4 py-10 text-center text-gray-400 italic">No drafts match this filter.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# ── Pagination ──────────────────────────────────────────────────── #}
+{% if page_obj.has_other_pages %}
+<div class="flex items-center justify-between mt-4 text-xs">
+  <p class="text-gray-500">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} · {{ page_obj.paginator.count }} drafts</p>
+  <div class="flex items-center gap-2">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}" class="px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">Previous</a>
+    {% endif %}
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}" class="px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">Next</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

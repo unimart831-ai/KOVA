@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, campaigns, content, costs, emails, engage, feature_usage, help, innovations, llm, logs, media_queue, memes, onboarding, overview, partners, partials, pixel, platforms, products, revenue, system, teams, user_health, users, whatsapp
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, calendar_intel, campaigns, content, costs, emails, engage, feature_usage, help, innovations, llm, logs, media_queue, memes, notifications, onboarding, overview, partners, partials, pixel, platforms, products, revenue, system, teams, user_health, users, whatsapp
 
 app_name = "admin_dashboard"
 
@@ -165,6 +165,15 @@ urlpatterns = [
     path("memes/", memes.memes_overview, name="memes_overview"),
     path("memes/list/", memes.meme_list_admin, name="meme_list_admin"),
     path("memes/adaptations/", memes.adaptation_list_admin, name="adaptation_list_admin"),
+
+    # Calendar Intelligence (holiday awareness)
+    path("calendar/", calendar_intel.calendar_overview, name="calendar_overview"),
+    path("calendar/drafts/", calendar_intel.draft_list_admin, name="calendar_drafts"),
+    path("calendar/drafts/<int:pk>/retry/", calendar_intel.draft_retry, name="calendar_draft_retry"),
+
+    # Notifications
+    path("notifications/", notifications.notifications_overview, name="notifications_overview"),
+    path("notifications/log/", notifications.notification_log, name="notification_log"),
 
     # WhatsApp
     path("whatsapp/", whatsapp.whatsapp_overview, name="whatsapp_overview"),
