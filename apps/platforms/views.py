@@ -94,6 +94,35 @@ def platform_list(request):
             "provider_available": get_provider(p["key"]) is not None,
         })
 
+    # Latest profile audit per account — attached directly so the template
+    # can do `account.profile_audit`. Failures here must never break the
+    # platforms page; wrap in try.
+    try:
+        from django.db.models import Max
+        from apps.profile_audit.models import ProfileAudit
+        latest_ids = list(
+            ProfileAudit.objects
+            .filter(user=request.user)
+            .values("social_account_id")
+            .annotate(latest_id=Max("id"))
+            .values_list("latest_id", flat=True)
+        )
+        audit_map = {
+            a.social_account_id: a
+            for a in ProfileAudit.objects.filter(id__in=latest_ids)
+        }
+        for acc in accounts:
+            acc.profile_audit = audit_map.get(acc.id)
+            acc.profile_audit_gap_count = (
+                len(acc.profile_audit.fields_missing or []) +
+                len(acc.profile_audit.fields_thin or [])
+                if acc.profile_audit else 0
+            )
+    except Exception:
+        for acc in accounts:
+            acc.profile_audit = None
+            acc.profile_audit_gap_count = 0
+
     return render(request, "platforms/list.html", {
         "accounts": accounts,
         "platforms": platforms,

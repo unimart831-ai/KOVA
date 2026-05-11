@@ -447,6 +447,33 @@ def brief_detail(request, date):
     except Exception:
         pass
 
+    # Profile health alerts — same as home brief
+    profile_health_alerts = []
+    try:
+        from apps.profile_audit.models import ProfileAudit, ProfileUpdateSuggestion
+        from django.db.models import Max
+        latest_ids = list(
+            ProfileAudit.objects.filter(user=request.user)
+            .values("social_account_id")
+            .annotate(latest_id=Max("id"))
+            .values_list("latest_id", flat=True)
+        )
+        for audit in (
+            ProfileAudit.objects
+            .filter(id__in=latest_ids, completeness_score__lt=70, error="")
+            .select_related("social_account")[:3]
+        ):
+            profile_health_alerts.append({
+                "platform": audit.social_account.platform,
+                "score": audit.completeness_score,
+                "pending": audit.suggestions.filter(
+                    status=ProfileUpdateSuggestion.Status.PENDING,
+                ).count(),
+                "account_id": audit.social_account_id,
+            })
+    except Exception:
+        pass
+
     return render(request, "briefs/detail.html", {
         "brief": brief,
         "brief_date": brief_date,
@@ -466,6 +493,7 @@ def brief_detail(request, date):
         "trending_topics": _normalize_trending_topics(brief),
         "upcoming_moments": upcoming_moments,
         "holiday_drafts_ready": holiday_drafts_ready,
+        "profile_health_alerts": profile_health_alerts,
         "quick_actions": [],
         "setup_checklist": None,
         "page_title": f"Brief — {brief_date.strftime('%b %d, %Y')}",
