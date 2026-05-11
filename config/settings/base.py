@@ -82,6 +82,7 @@ LOCAL_APPS = [
     "apps.whatsapp",
     "apps.memes",
     "apps.calendar_intel",
+    "apps.profile_audit",
     "apps.api",
 ]
 
@@ -210,6 +211,10 @@ CELERY_BEAT_SCHEDULE = {
     "calendar-intel-holiday-watcher": {
         "task": "calendar_intel.run_holiday_watcher",
         "schedule": 24 * 3600.0,  # daily — find upcoming holidays + queue drafts
+    },
+    "profile-audit-nightly": {
+        "task": "profile_audit.run_profile_audits",
+        "schedule": 24 * 3600.0,  # daily — audit FB/IG/LinkedIn profile completeness
     },
     "analyze-all-competitors": {
         "task": "analyze-all-competitors",

@@ -50,7 +50,8 @@ import httpx
 from django.conf import settings
 
 from apps.platforms.providers.base import (
-    BaseProvider, OAuthResult, PostMetrics, PublishResult,
+    BaseProvider, OAuthResult, PlatformAuthError, PostMetrics,
+    ProfileSnapshot, ProfileUpdateResult, PublishResult,
 )
 from apps.platforms.providers.registry import register_provider
 
@@ -971,6 +972,238 @@ class LinkedInProvider(BaseProvider):
     def revoke_token(self, access_token: str) -> bool:
         """LinkedIn does not provide a public token revocation endpoint."""
         return False
+
+    # ──────────────────────────────────────────────────────────────────
+    # PROFILE AUDIT — LinkedIn (member + organization page)
+    # ──────────────────────────────────────────────────────────────────
+    # We support TWO modes:
+    #   - Organization page audits (when an org_urn is passed via kwargs) —
+    #     full read/write via /organizations/{id}
+    #   - Member profile audits (default) — READ-ONLY via /userinfo +
+    #     /people/(id:{id}) lite fields. LinkedIn's API does not permit
+    #     writing to member profiles, so update_profile returns a not-supported
+    #     error for member accounts.
+    _LI_ORG_AUDIT_FIELDS = {
+        "name": 10,
+        "vanityName": 5,
+        "description": 25,
+        "localizedDescription": 25,  # alias when description is localized dict
+        "specialties": 15,
+        "website": 15,
+        "logoV2": 10,
+        "industries": 8,
+        "primaryOrganizationType": 7,
+    }
+    _LI_THIN_THRESHOLDS = {
+        "description": 100,
+        "localizedDescription": 100,
+        "name": 3,
+        "website": 10,
+    }
+
+    _LI_MEMBER_AUDIT_FIELDS = {
+        "name": 25,
+        "headline": 30,  # most member profiles miss this
+        "picture": 25,
+        "locale": 10,
+        "email_verified": 10,
+    }
+
+    def audit_profile(self, access_token: str, **kwargs) -> ProfileSnapshot:
+        org_urn = kwargs.get("org_urn") or kwargs.get("organization_id")
+        if org_urn:
+            return self._audit_organization(access_token, org_urn)
+        return self._audit_member(access_token)
+
+    def _audit_organization(self, access_token: str, org_urn: str) -> ProfileSnapshot:
+        """Audit a LinkedIn Company Page."""
+        snap = ProfileSnapshot()
+        org_id = org_urn.split(":")[-1] if ":" in org_urn else org_urn
+
+        try:
+            with httpx.Client(timeout=30.0) as client:
+                resp = client.get(
+                    f"{LINKEDIN_REST_BASE}/organizations/{org_id}",
+                    headers={
+                        "Authorization": f"Bearer {access_token}",
+                        "LinkedIn-Version": LINKEDIN_VERSION,
+                        "X-Restli-Protocol-Version": "2.0.0",
+                    },
+                )
+                if resp.status_code in (401, 403):
+                    raise PlatformAuthError(f"LinkedIn auth error: {resp.text[:200]}")
+                resp.raise_for_status()
+                data = resp.json()
+        except PlatformAuthError:
+            raise
+        except Exception as exc:
+            snap.error = f"LinkedIn org audit failed: {exc}"
+            return snap
+
+        snap.raw_profile = self._li_truncate(data)
+        present, missing, thin = {}, [], []
+        score = 0
+        total_weight = sum(self._LI_ORG_AUDIT_FIELDS.values())
+
+        for field_name, weight in self._LI_ORG_AUDIT_FIELDS.items():
+            value = self._li_extract_field(field_name, data)
+            if value:
+                present[field_name] = value
+                threshold = self._LI_THIN_THRESHOLDS.get(field_name)
+                if threshold and isinstance(value, str) and len(value.strip()) < threshold:
+                    thin.append(field_name)
+                    score += weight * 0.5
+                else:
+                    score += weight
+            else:
+                missing.append(field_name)
+
+        snap.fields_present = present
+        snap.fields_missing = missing
+        snap.fields_thin = thin
+        snap.completeness_score = int(round((score / total_weight) * 100)) if total_weight else 0
+        return snap
+
+    def _audit_member(self, access_token: str) -> ProfileSnapshot:
+        """Audit a LinkedIn member profile (read-only)."""
+        snap = ProfileSnapshot()
+        try:
+            with httpx.Client(timeout=30.0) as client:
+                resp = client.get(
+                    LINKEDIN_USERINFO_URL,
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
+                if resp.status_code in (401, 403):
+                    raise PlatformAuthError(f"LinkedIn auth error: {resp.text[:200]}")
+                resp.raise_for_status()
+                data = resp.json()
+        except PlatformAuthError:
+            raise
+        except Exception as exc:
+            snap.error = f"LinkedIn member audit failed: {exc}"
+            return snap
+
+        snap.raw_profile = self._li_truncate(data)
+        present, missing = {}, []
+        score = 0
+        total_weight = sum(self._LI_MEMBER_AUDIT_FIELDS.values())
+
+        for field_name, weight in self._LI_MEMBER_AUDIT_FIELDS.items():
+            value = data.get(field_name) or data.get(field_name.replace("_", ""))
+            if isinstance(value, bool):
+                norm = "yes" if value else ""
+            else:
+                norm = str(value).strip() if value else ""
+            if norm:
+                present[field_name] = norm
+                score += weight
+            else:
+                missing.append(field_name)
+
+        snap.fields_present = present
+        snap.fields_missing = missing
+        snap.completeness_score = int(round((score / total_weight) * 100)) if total_weight else 0
+        return snap
+
+    @staticmethod
+    def _li_extract_field(field_name: str, data: dict) -> str:
+        """LinkedIn returns localized strings as {'localized': {'en_US': '...'},
+        'preferredLocale': {...}}. Normalize to a flat string."""
+        if field_name == "localizedDescription":
+            desc = data.get("description") or {}
+            if isinstance(desc, dict):
+                return list(desc.get("localized", {}).values())[:1][0] if desc.get("localized") else ""
+            return str(desc) if desc else ""
+        if field_name == "logoV2":
+            return "set" if data.get("logoV2") else ""
+        if field_name == "industries":
+            v = data.get("industries") or []
+            return ", ".join(str(x) for x in v) if v else ""
+        if field_name == "specialties":
+            v = data.get("specialties") or []
+            return ", ".join(v) if isinstance(v, list) and v else ""
+        if field_name == "website":
+            v = (data.get("website") or {}).get("localized", {}) if isinstance(data.get("website"), dict) else {}
+            if v:
+                return list(v.values())[0]
+            return ""
+        value = data.get(field_name)
+        return str(value).strip() if value else ""
+
+    @staticmethod
+    def _li_truncate(data: dict, max_chars: int = 4000) -> dict:
+        try:
+            import json
+            s = json.dumps(data, default=str)
+            return data if len(s) <= max_chars else {"_truncated": True, "_preview": s[:max_chars]}
+        except Exception:
+            return {"_unserializable": True}
+
+    # Org page fields LinkedIn's organizations API accepts via PATCH.
+    # Member profile writes are NOT supported (API restriction).
+    _LI_ORG_WRITABLE_FIELDS = {"description", "specialties", "website"}
+
+    def update_profile(
+        self, access_token: str, updates: dict, **kwargs,
+    ) -> ProfileUpdateResult:
+        if not updates:
+            return ProfileUpdateResult(success=False, error="No updates provided.")
+        field_name, new_value = next(iter(updates.items()))
+        org_urn = kwargs.get("org_urn") or kwargs.get("organization_id")
+        if not org_urn:
+            return ProfileUpdateResult(
+                success=False, field_name=field_name,
+                error="LinkedIn member profiles cannot be updated via API. "
+                      "Only company pages support updates.",
+            )
+        if field_name not in self._LI_ORG_WRITABLE_FIELDS:
+            return ProfileUpdateResult(
+                success=False, field_name=field_name,
+                error=f"Field '{field_name}' is not writable on LinkedIn org page via API.",
+            )
+
+        org_id = org_urn.split(":")[-1] if ":" in org_urn else org_urn
+
+        # LinkedIn's PATCH uses RestLi 2.0 with the body as
+        # {"patch": {"$set": {field: value}}}. For 'website' the value
+        # must be a localized object; for 'description' similarly.
+        patch_value = new_value
+        if field_name in ("description", "website"):
+            patch_value = {"localized": {"en_US": new_value}, "preferredLocale": {"country": "US", "language": "en"}}
+        body = {"patch": {"$set": {field_name: patch_value}}}
+
+        try:
+            with httpx.Client(timeout=30.0) as client:
+                resp = client.post(
+                    f"{LINKEDIN_REST_BASE}/organizations/{org_id}",
+                    headers={
+                        "Authorization": f"Bearer {access_token}",
+                        "LinkedIn-Version": LINKEDIN_VERSION,
+                        "X-Restli-Protocol-Version": "2.0.0",
+                        "Content-Type": "application/json",
+                        "X-RestLi-Method": "partial_update",
+                    },
+                    json=body,
+                )
+                if resp.status_code in (401, 403):
+                    raise PlatformAuthError(f"LinkedIn auth error: {resp.text[:200]}")
+                if not resp.is_success:
+                    return ProfileUpdateResult(
+                        success=False, field_name=field_name,
+                        error=f"HTTP {resp.status_code}: {resp.text[:300]}",
+                    )
+        except PlatformAuthError:
+            raise
+        except Exception as exc:
+            return ProfileUpdateResult(
+                success=False, field_name=field_name,
+                error=f"LinkedIn update failed: {exc}",
+            )
+
+        return ProfileUpdateResult(
+            success=True, field_name=field_name,
+            applied_value=str(new_value),
+        )
 
 
 # ── Auto-register ────────────────────────────────────────────────────────────

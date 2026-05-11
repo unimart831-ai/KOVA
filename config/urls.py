@@ -96,6 +96,7 @@ urlpatterns = [
     path("whatsapp/", include("apps.whatsapp.urls")),
     path("memes/", include("apps.memes.urls")),
     path("calendar/", include("apps.calendar_intel.urls")),
+    path("profile-health/", include("apps.profile_audit.urls")),
     path("dashboard/", include("apps.admin_dashboard.urls")),
     path("api/v1/", include("apps.api.urls")),
     path("api/v1/partner/", include("apps.api.partner_urls")),

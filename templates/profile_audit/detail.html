@@ -1,0 +1,127 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">{{ account.username|default:account.display_name }} · review and apply Kova's suggestions</p>{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+  <a href="{% url 'profile_audit:list' %}" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-kova-600 dark:hover:text-kova-400">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    Profile Health
+  </a>
+
+  {# ── Score header ───────────────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h2 class="text-base font-semibold text-gray-900 dark:text-white capitalize">{{ account.platform }} · {{ account.username|default:account.display_name }}</h2>
+        {% if audit %}
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Audited {{ audit.audited_at|timesince }} ago
+        </p>
+        {% endif %}
+      </div>
+      {% if audit %}
+      <div class="text-right">
+        <p class="text-4xl font-bold tabular-nums
+          {% if audit.severity == 'good' %}text-green-600 dark:text-green-400
+          {% elif audit.severity == 'ok' %}text-amber-600 dark:text-amber-400
+          {% elif audit.severity == 'low' %}text-orange-600 dark:text-orange-400
+          {% else %}text-red-600 dark:text-red-400{% endif %}">{{ audit.completeness_score }}</p>
+        <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">/ 100</p>
+      </div>
+      {% endif %}
+    </div>
+    {% if audit and audit.error %}
+    <div class="mt-3 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40">
+      <p class="text-xs text-red-700 dark:text-red-300">{{ audit.error }}</p>
+    </div>
+    {% endif %}
+    <div class="mt-3 flex items-center gap-2">
+      <form method="post" action="{% url 'profile_audit:reaudit' account.id %}">
+        {% csrf_token %}
+        <button type="submit" class="text-xs font-medium px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700">Re-audit now</button>
+      </form>
+    </div>
+  </div>
+
+  {# ── Pending suggestions ───────────────────────────────────────── #}
+  {% if pending %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Suggestions awaiting your review</h3>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Each one will only push to {{ account.platform|capfirst }} after you approve it.</p>
+    <ul class="space-y-3">
+      {% for s in pending %}
+        {% include "profile_audit/partials/_suggestion_row.html" with s=s %}
+      {% endfor %}
+    </ul>
+  </div>
+  {% elif audit and not audit.fields_missing and not audit.fields_thin %}
+  <div class="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/40 rounded-xl p-5">
+    <p class="text-sm font-medium text-green-700 dark:text-green-300">All checked fields look good — nothing to suggest right now.</p>
+  </div>
+  {% elif audit %}
+  <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-xl p-5">
+    <p class="text-sm text-amber-700 dark:text-amber-300 mb-2">
+      Kova spotted gaps but couldn't generate suggestions automatically.
+    </p>
+    <p class="text-xs text-amber-700 dark:text-amber-300">
+      Missing: {{ audit.fields_missing|join:", " }}<br>
+      Set your brand voice + company name in <a href="{% url 'accounts:settings' %}" class="font-medium underline">settings</a> so Kova has enough context to generate suggestions on the next audit.
+    </p>
+  </div>
+  {% endif %}
+
+  {# ── Recently applied ──────────────────────────────────────────── #}
+  {% if applied %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Recently applied</h3>
+    <ul class="space-y-2">
+      {% for s in applied %}
+        <li class="text-xs flex items-start gap-2">
+          <span class="text-green-500 mt-0.5">✓</span>
+          <div class="min-w-0 flex-1">
+            <span class="font-medium text-gray-900 dark:text-white">{{ s.field_name }}</span>
+            <span class="text-gray-500"> — applied {{ s.applied_at|timesince }} ago</span>
+            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{{ s.applied_value|default:s.suggested_value }}</p>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {# ── Failed attempts ──────────────────────────────────────────── #}
+  {% if failed %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-red-200 dark:border-red-900/40 p-5">
+    <h3 class="text-sm font-semibold text-red-700 dark:text-red-300 mb-3">Failed attempts</h3>
+    <ul class="space-y-3">
+      {% for s in failed %}
+        {% include "profile_audit/partials/_suggestion_row.html" with s=s %}
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {# ── Audit history ──────────────────────────────────────────── #}
+  {% if audit_history|length > 1 %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Score history</h3>
+    <ul class="space-y-1.5">
+      {% for h in audit_history %}
+        <li class="flex items-center justify-between text-xs">
+          <span class="text-gray-500">{{ h.audited_at|date:"M j, Y · H:i" }}</span>
+          <span class="font-medium tabular-nums
+            {% if h.severity == 'good' %}text-green-600 dark:text-green-400
+            {% elif h.severity == 'ok' %}text-amber-600 dark:text-amber-400
+            {% elif h.severity == 'low' %}text-orange-600 dark:text-orange-400
+            {% else %}text-red-600 dark:text-red-400{% endif %}">{{ h.completeness_score }}/100</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

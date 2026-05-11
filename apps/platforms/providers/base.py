@@ -65,6 +65,41 @@ class PostMetrics:
     metadata: dict = field(default_factory=dict)
 
 
+@dataclass
+class ProfileSnapshot:
+    """
+    Snapshot of a connected profile's current state, returned by
+    BaseProvider.audit_profile(). Maps cleanly onto the ProfileAudit model.
+
+    `fields_present` keys are platform-agnostic where possible:
+       bio, description, website, phone, email, address, hours, category,
+       page_button, profile_picture_url, cover_url, location
+
+    The audit caller is responsible for persisting this into ProfileAudit
+    rows and triggering suggestion generation for gaps.
+    """
+    completeness_score: int = 0
+    fields_present: dict = field(default_factory=dict)
+    fields_missing: list = field(default_factory=list)
+    fields_thin: list = field(default_factory=list)
+    raw_profile: dict = field(default_factory=dict)
+    error: str = ""
+
+    @property
+    def total_checked(self) -> int:
+        return len(self.fields_present) + len(self.fields_missing)
+
+
+@dataclass
+class ProfileUpdateResult:
+    """Result of pushing a profile field update through to the platform."""
+    success: bool
+    field_name: str = ""
+    applied_value: str = ""
+    error: str = ""
+    api_response: dict = field(default_factory=dict)
+
+
 class BaseProvider(ABC):
     """
     Abstract base class for all social platform providers.
@@ -238,3 +273,42 @@ class BaseProvider(ABC):
         Returns True if revocation was successful.
         """
         return False
+
+    # ──────────────────────────────────────────────────────────────────
+    # Profile audit & update (optional — providers without write access
+    # to profile fields can leave these as the default no-op).
+    # ──────────────────────────────────────────────────────────────────
+    def audit_profile(self, access_token: str, **kwargs) -> ProfileSnapshot:
+        """
+        Read the connected profile's current state. Returns a ProfileSnapshot.
+
+        Providers that don't expose profile data return an empty snapshot
+        with `error` set to a friendly explanation — this lets the audit
+        engine record that the platform was checked and intentionally skipped.
+
+        Default: not supported.
+        """
+        return ProfileSnapshot(
+            error=f"{self.platform_name} does not support profile audits via API."
+        )
+
+    def update_profile(
+        self, access_token: str, updates: dict, **kwargs,
+    ) -> ProfileUpdateResult:
+        """
+        Push field updates to the platform.
+
+        Args:
+            access_token: Page/account access token with write scope
+            updates: {field_name: new_value} — keys MUST match what
+                     audit_profile() returned (bio, description, etc.)
+            **kwargs: provider-specific (e.g., page_id for Facebook)
+
+        Returns:
+            ProfileUpdateResult with success flag + applied value
+            (which may be normalized/truncated by the platform).
+        """
+        return ProfileUpdateResult(
+            success=False,
+            error=f"{self.platform_name} does not support profile updates via API.",
+        )

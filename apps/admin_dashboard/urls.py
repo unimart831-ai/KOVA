@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, calendar_intel, campaigns, content, costs, emails, engage, feature_usage, help, innovations, llm, logs, media_queue, memes, notifications, onboarding, overview, partners, partials, pixel, platforms, products, revenue, system, teams, user_health, users, whatsapp
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, calendar_intel, campaigns, content, costs, emails, engage, feature_usage, help, innovations, llm, logs, media_queue, memes, notifications, onboarding, overview, partners, partials, pixel, platforms, products, profile_audit, revenue, system, teams, user_health, users, whatsapp
 
 app_name = "admin_dashboard"
 
@@ -170,6 +170,9 @@ urlpatterns = [
     path("calendar/", calendar_intel.calendar_overview, name="calendar_overview"),
     path("calendar/drafts/", calendar_intel.draft_list_admin, name="calendar_drafts"),
     path("calendar/drafts/<int:pk>/retry/", calendar_intel.draft_retry, name="calendar_draft_retry"),
+
+    # Profile Audits (connected-account health)
+    path("profile-audits/", profile_audit.profile_audit_overview, name="profile_audit_overview"),
 
     # Notifications
     path("notifications/", notifications.notifications_overview, name="notifications_overview"),

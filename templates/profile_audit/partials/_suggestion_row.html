@@ -1,0 +1,69 @@
+{% comment %}
+Single suggestion row — used both in the main list and as the HTMX swap target
+after approve/dismiss. Self-contained (includes its own outer <li> with id).
+{% endcomment %}
+
+<li id="suggestion-{{ s.id }}" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+  <div class="flex items-start justify-between gap-3 mb-2">
+    <div class="min-w-0 flex-1">
+      <p class="text-sm font-semibold text-gray-900 dark:text-white">
+        {{ s.field_name|cut:"_"|title }}
+        {% if s.status == 'applied' %}
+          <span class="ml-2 text-[10px] font-medium text-green-600 dark:text-green-400">✓ Applied</span>
+        {% elif s.status == 'failed' %}
+          <span class="ml-2 text-[10px] font-medium text-red-600 dark:text-red-400">✗ Failed</span>
+        {% elif s.status == 'approved' %}
+          <span class="ml-2 text-[10px] font-medium text-amber-600 dark:text-amber-400">Applying…</span>
+        {% endif %}
+      </p>
+      {% if s.reasoning %}
+        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">{{ s.reasoning }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if s.current_value %}
+  <div class="mb-2 p-2.5 rounded-md bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-700/60">
+    <p class="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-0.5">Current</p>
+    <p class="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-line">{{ s.current_value }}</p>
+  </div>
+  {% else %}
+  <div class="mb-2 text-[11px] text-gray-400 dark:text-gray-500 italic">Currently empty</div>
+  {% endif %}
+
+  <div class="mb-3 p-2.5 rounded-md bg-kova-50 dark:bg-kova-950/30 border border-kova-200 dark:border-kova-800">
+    <p class="text-[10px] font-medium text-kova-700 dark:text-kova-300 uppercase tracking-wider mb-0.5">Suggested</p>
+    <p class="text-sm text-kova-900 dark:text-kova-100 whitespace-pre-line">{{ s.suggested_value }}</p>
+  </div>
+
+  {% if s.status == 'failed' and s.error_message %}
+  <div class="mb-3 p-2 rounded-md bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40">
+    <p class="text-[11px] text-red-700 dark:text-red-300 font-mono">{{ s.error_message|truncatechars:240 }}</p>
+  </div>
+  {% endif %}
+
+  {% if s.is_actionable %}
+  <div class="flex items-center gap-2 pt-1">
+    <button
+      hx-post="{% url 'profile_audit:approve' s.id %}"
+      hx-target="#suggestion-{{ s.id }}"
+      hx-swap="outerHTML"
+      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+      type="button"
+      class="text-xs font-medium px-3 py-1.5 rounded-md bg-kova-600 hover:bg-kova-700 text-white">
+      {% if s.status == 'failed' %}Retry apply{% else %}Apply to {{ s.social_account.platform|capfirst }}{% endif %}
+    </button>
+    {% if s.status == 'pending' %}
+    <button
+      hx-post="{% url 'profile_audit:dismiss' s.id %}"
+      hx-target="#suggestion-{{ s.id }}"
+      hx-swap="outerHTML"
+      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+      type="button"
+      class="text-xs font-medium px-3 py-1.5 rounded-md text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30">
+      Dismiss
+    </button>
+    {% endif %}
+  </div>
+  {% endif %}
+</li>

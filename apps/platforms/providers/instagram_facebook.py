@@ -53,7 +53,8 @@ import httpx
 from django.conf import settings
 
 from apps.platforms.providers.base import (
-    BaseProvider, OAuthResult, PlatformAuthError, PostMetrics, PublishResult,
+    BaseProvider, OAuthResult, PlatformAuthError, PostMetrics,
+    ProfileSnapshot, ProfileUpdateResult, PublishResult,
 )
 from apps.platforms.providers.registry import register_provider
 
@@ -635,6 +636,210 @@ class FacebookProvider(BaseProvider):
                 return resp.json().get("data", {}).get("is_valid", False)
         except Exception:
             return False
+
+    # ──────────────────────────────────────────────────────────────────
+    # PROFILE AUDIT — Facebook Page
+    # ──────────────────────────────────────────────────────────────────
+    # Fields we audit (FB Page Graph API field names). Weights sum to 100.
+    # See https://developers.facebook.com/docs/graph-api/reference/page
+    _FB_AUDIT_FIELDS = {
+        "about": 18,
+        "description": 12,
+        "phone": 10,
+        "emails": 8,
+        "single_line_address": 10,
+        "website": 12,
+        "hours": 10,
+        "category": 8,
+        "picture": 7,
+        "cover": 5,
+    }
+
+    # If a string field's stripped length is below this we consider it "thin".
+    _FB_THIN_THRESHOLDS = {
+        "about": 30,
+        "description": 80,
+        "website": 8,
+    }
+
+    def audit_profile(self, access_token: str, **kwargs) -> ProfileSnapshot:
+        """Audit a Facebook Page's profile completeness.
+
+        Requires a Page-scoped access_token (NOT the user token) and the
+        page_id is implicit in the token. We fetch all field values, score
+        completeness, identify gaps and 'thin' values."""
+        snap = ProfileSnapshot()
+
+        page_id = kwargs.get("page_id") or kwargs.get("platform_user_id") or "me"
+        fields_param = ",".join(self._FB_AUDIT_FIELDS.keys())
+        try:
+            with httpx.Client(timeout=HTTP_TIMEOUT) as client:
+                resp = client.get(
+                    f"{FB_API_BASE}/{page_id}",
+                    params={"fields": fields_param, "access_token": access_token},
+                )
+                if resp.status_code in (401, 403):
+                    raise PlatformAuthError(f"Facebook auth error: {resp.text[:200]}")
+                resp.raise_for_status()
+                data = resp.json()
+        except PlatformAuthError:
+            raise
+        except Exception as exc:
+            snap.error = f"Facebook audit failed: {exc}"
+            return snap
+
+        snap.raw_profile = self._truncate_raw(data)
+
+        present = {}
+        missing = []
+        thin = []
+        score = 0
+        total_weight = sum(self._FB_AUDIT_FIELDS.values())
+
+        for field_name, weight in self._FB_AUDIT_FIELDS.items():
+            value = data.get(field_name)
+            normalized = self._fb_normalize_field(field_name, value)
+            if normalized:
+                present[field_name] = normalized
+                # Thin check
+                threshold = self._FB_THIN_THRESHOLDS.get(field_name)
+                if threshold and isinstance(normalized, str) and len(normalized.strip()) < threshold:
+                    thin.append(field_name)
+                    score += weight * 0.5  # half-credit for thin
+                else:
+                    score += weight
+            else:
+                missing.append(field_name)
+
+        snap.fields_present = present
+        snap.fields_missing = missing
+        snap.fields_thin = thin
+        snap.completeness_score = int(round((score / total_weight) * 100)) if total_weight else 0
+        return snap
+
+    @staticmethod
+    def _fb_normalize_field(field_name: str, value) -> str:
+        """Coerce raw Graph API values into displayable strings.
+        Returns '' for empty / missing values."""
+        # Treat None, empty string, empty dict, empty list all as missing
+        if value is None or value == "" or value == {} or value == []:
+            return ""
+        # Default-FB picture comes back as {"data": {"url": "..."}} and is
+        # 'silhouette' for un-customized pages. We treat absence of a real
+        # photo as missing.
+        if field_name == "picture":
+            data = (value or {}).get("data", {}) if isinstance(value, dict) else {}
+            url = data.get("url", "")
+            if not url or "silhouette" in url:
+                return ""
+            return url
+        if field_name == "cover":
+            source = (value or {}).get("source", "") if isinstance(value, dict) else ""
+            return source or ""
+        if field_name == "emails":
+            if isinstance(value, list):
+                value = ", ".join(value)
+            return str(value or "")
+        if field_name == "hours" and isinstance(value, dict):
+            # Hours is a complex dict like {"mon_1_open": "09:00", ...}
+            return "set" if value else ""
+        return str(value).strip()
+
+    @staticmethod
+    def _truncate_raw(data: dict, max_chars: int = 4000) -> dict:
+        """Trim raw profile dump to avoid huge JSON rows."""
+        try:
+            import json
+            s = json.dumps(data, default=str)
+            if len(s) <= max_chars:
+                return data
+            return {"_truncated": True, "_preview": s[:max_chars]}
+        except Exception:
+            return {"_unserializable": True}
+
+    # ──────────────────────────────────────────────────────────────────
+    # PROFILE UPDATE — Facebook Page
+    # ──────────────────────────────────────────────────────────────────
+    # Graph API field-name mapping for updates. Most fields update via
+    # POST /{page-id} with field=value in the body. Some (picture/cover)
+    # need separate endpoints — those are handled with _FB_UPDATE_HANDLERS.
+    _FB_WRITABLE_FIELDS = {
+        "about",
+        "description",
+        "phone",
+        "emails",
+        "website",
+        "hours",
+        "single_line_address",
+        "category_list",
+    }
+
+    def update_profile(
+        self, access_token: str, updates: dict, **kwargs,
+    ) -> ProfileUpdateResult:
+        """Apply field updates to a Facebook Page. One field per call —
+        Graph API accepts multiple in one POST but failures are easier to
+        debug field-by-field, and we only ever apply one suggestion at a time."""
+        if not updates:
+            return ProfileUpdateResult(success=False, error="No updates provided.")
+
+        # We apply ONE field per call; callers iterate
+        field_name, new_value = next(iter(updates.items()))
+        page_id = kwargs.get("page_id") or kwargs.get("platform_user_id") or "me"
+
+        if field_name not in self._FB_WRITABLE_FIELDS:
+            return ProfileUpdateResult(
+                success=False, field_name=field_name,
+                error=f"Field '{field_name}' is not writable via API.",
+            )
+
+        try:
+            with httpx.Client(timeout=HTTP_TIMEOUT) as client:
+                resp = client.post(
+                    f"{FB_API_BASE}/{page_id}",
+                    data={field_name: new_value, "access_token": access_token},
+                )
+                if resp.status_code in (401, 403):
+                    raise PlatformAuthError(f"Facebook auth error: {resp.text[:200]}")
+                if not resp.is_success:
+                    return ProfileUpdateResult(
+                        success=False, field_name=field_name,
+                        error=f"HTTP {resp.status_code}: {resp.text[:300]}",
+                        api_response=self._truncate_raw(self._safe_json(resp)),
+                    )
+                body = self._safe_json(resp)
+        except PlatformAuthError:
+            raise
+        except Exception as exc:
+            return ProfileUpdateResult(
+                success=False, field_name=field_name,
+                error=f"Facebook update failed: {exc}",
+            )
+
+        # Re-fetch the field to confirm what the platform actually stored
+        # (FB may trim / normalize). Use the audit method to keep parity.
+        try:
+            with httpx.Client(timeout=HTTP_TIMEOUT) as client:
+                resp = client.get(
+                    f"{FB_API_BASE}/{page_id}",
+                    params={"fields": field_name, "access_token": access_token},
+                )
+                resp.raise_for_status()
+                applied = self._fb_normalize_field(field_name, resp.json().get(field_name))
+        except Exception:
+            applied = str(new_value)
+
+        return ProfileUpdateResult(
+            success=True, field_name=field_name,
+            applied_value=applied, api_response=body,
+        )
+
+    @staticmethod
+    def _safe_json(resp) -> dict:
+        try:
+            return resp.json()
+        except Exception:
+            return {"text": resp.text[:500]}
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -1264,6 +1469,133 @@ class InstagramProvider(BaseProvider):
                 return resp.json().get("data", {}).get("is_valid", False)
         except Exception:
             return False
+
+    # ──────────────────────────────────────────────────────────────────
+    # PROFILE AUDIT — Instagram Business
+    # ──────────────────────────────────────────────────────────────────
+    # IG Graph API exposes: username, name, biography, website,
+    # profile_picture_url, ig_id, followers_count, media_count.
+    # Of those, biography and website are user-editable via PATCH.
+    _IG_AUDIT_FIELDS = {
+        "biography": 35,        # The bio — most important
+        "website": 25,
+        "name": 15,             # Display name
+        "profile_picture_url": 15,
+        "username": 10,
+    }
+    _IG_THIN_THRESHOLDS = {
+        "biography": 30,
+        "website": 8,
+        "name": 3,
+    }
+
+    def audit_profile(self, access_token: str, **kwargs) -> ProfileSnapshot:
+        snap = ProfileSnapshot()
+        ig_user_id = kwargs.get("ig_user_id") or kwargs.get("platform_user_id")
+        if not ig_user_id:
+            snap.error = "Instagram audit requires ig_user_id."
+            return snap
+
+        fields_param = ",".join(self._IG_AUDIT_FIELDS.keys())
+        try:
+            with httpx.Client(timeout=HTTP_TIMEOUT) as client:
+                resp = client.get(
+                    f"{FB_API_BASE}/{ig_user_id}",
+                    params={"fields": fields_param, "access_token": access_token},
+                )
+                if resp.status_code in (401, 403):
+                    raise PlatformAuthError(f"Instagram auth error: {resp.text[:200]}")
+                resp.raise_for_status()
+                data = resp.json()
+        except PlatformAuthError:
+            raise
+        except Exception as exc:
+            snap.error = f"Instagram audit failed: {exc}"
+            return snap
+
+        snap.raw_profile = FacebookProvider._truncate_raw(data)
+
+        present, missing, thin = {}, [], []
+        score = 0
+        total_weight = sum(self._IG_AUDIT_FIELDS.values())
+
+        for field_name, weight in self._IG_AUDIT_FIELDS.items():
+            value = data.get(field_name) or ""
+            value = str(value).strip()
+            if value:
+                present[field_name] = value
+                threshold = self._IG_THIN_THRESHOLDS.get(field_name)
+                if threshold and len(value) < threshold:
+                    thin.append(field_name)
+                    score += weight * 0.5
+                else:
+                    score += weight
+            else:
+                missing.append(field_name)
+
+        snap.fields_present = present
+        snap.fields_missing = missing
+        snap.fields_thin = thin
+        snap.completeness_score = int(round((score / total_weight) * 100)) if total_weight else 0
+        return snap
+
+    # IG Graph API supports updating biography + website via POST
+    # (multipart not required for these scalar fields). profile_picture_url
+    # cannot be updated via API — Meta restricts it to the mobile app.
+    _IG_WRITABLE_FIELDS = {"biography", "website"}
+
+    def update_profile(
+        self, access_token: str, updates: dict, **kwargs,
+    ) -> ProfileUpdateResult:
+        if not updates:
+            return ProfileUpdateResult(success=False, error="No updates provided.")
+        field_name, new_value = next(iter(updates.items()))
+        ig_user_id = kwargs.get("ig_user_id") or kwargs.get("platform_user_id")
+        if not ig_user_id:
+            return ProfileUpdateResult(
+                success=False, field_name=field_name,
+                error="Instagram update requires ig_user_id.",
+            )
+        if field_name not in self._IG_WRITABLE_FIELDS:
+            return ProfileUpdateResult(
+                success=False, field_name=field_name,
+                error=f"Field '{field_name}' is not writable on Instagram via API "
+                      "(profile picture must be changed in the mobile app).",
+            )
+
+        try:
+            with httpx.Client(timeout=HTTP_TIMEOUT) as client:
+                resp = client.post(
+                    f"{FB_API_BASE}/{ig_user_id}",
+                    data={field_name: new_value, "access_token": access_token},
+                )
+                if resp.status_code in (401, 403):
+                    raise PlatformAuthError(f"Instagram auth error: {resp.text[:200]}")
+                if not resp.is_success:
+                    return ProfileUpdateResult(
+                        success=False, field_name=field_name,
+                        error=f"HTTP {resp.status_code}: {resp.text[:300]}",
+                        api_response=FacebookProvider._safe_json(resp),
+                    )
+                body = FacebookProvider._safe_json(resp)
+                # Re-fetch to see what IG actually stored
+                check = client.get(
+                    f"{FB_API_BASE}/{ig_user_id}",
+                    params={"fields": field_name, "access_token": access_token},
+                )
+                applied = str(check.json().get(field_name, new_value)) if check.is_success else str(new_value)
+        except PlatformAuthError:
+            raise
+        except Exception as exc:
+            return ProfileUpdateResult(
+                success=False, field_name=field_name,
+                error=f"Instagram update failed: {exc}",
+            )
+
+        return ProfileUpdateResult(
+            success=True, field_name=field_name,
+            applied_value=applied, api_response=body,
+        )
 
 
 # ── Auto-register both providers ─────────────────────────────────────────────
