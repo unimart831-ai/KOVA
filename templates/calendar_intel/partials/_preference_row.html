@@ -107,5 +107,12 @@
     </button>
     {% endif %}
 
+    {# Refine link — opens per-holiday detail page #}
+    <a href="{% url 'calendar_intel:holiday_refine' holiday.id %}"
+       title="Refine settings"
+       class="text-xs font-medium px-2 py-1.5 rounded-md text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 hover:bg-kova-50 dark:hover:bg-kova-950/30 transition-colors">
+      Refine
+    </a>
+
   </div>
 </li>

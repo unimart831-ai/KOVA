@@ -66,19 +66,25 @@
     {% if custom_events %}
       <ul class="divide-y divide-gray-100 dark:divide-gray-800">
         {% for ce in custom_events %}
-          <li class="py-3 flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-900 dark:text-white">{{ ce.name }}</p>
+          <li class="py-3 flex items-center justify-between gap-3">
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ ce.name }}</p>
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                 {{ ce.date|date:"M j, Y" }} · {{ ce.get_recurrence_display }}
               </p>
             </div>
-            <form method="post" action="{% url 'calendar_intel:custom_event_delete' ce.id %}">
-              {% csrf_token %}
-              <button type="submit" class="text-xs text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" onclick="return confirm('Delete this moment?')">
-                Remove
-              </button>
-            </form>
+            <div class="flex items-center gap-2 shrink-0">
+              <a href="{% url 'calendar_intel:custom_event_edit' ce.id %}"
+                 class="text-xs font-medium px-2 py-1 rounded-md text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 hover:bg-kova-50 dark:hover:bg-kova-950/30 transition-colors">
+                Edit
+              </a>
+              <form method="post" action="{% url 'calendar_intel:custom_event_delete' ce.id %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="text-xs text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" onclick="return confirm('Delete this moment?')">
+                  Remove
+                </button>
+              </form>
+            </div>
           </li>
         {% endfor %}
       </ul>

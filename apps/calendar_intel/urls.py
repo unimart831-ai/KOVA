@@ -7,6 +7,11 @@ app_name = "calendar_intel"
 urlpatterns = [
     # Preferences dashboard
     path("preferences/", views.preferences, name="preferences"),
+    path(
+        "preferences/<int:holiday_id>/refine/",
+        views.holiday_refine,
+        name="holiday_refine",
+    ),
 
     # HTMX endpoints — preference toggles
     path(
@@ -25,6 +30,11 @@ urlpatterns = [
 
     # Custom events
     path("custom/add/", views.custom_event_add, name="custom_event_add"),
+    path(
+        "custom/<int:event_id>/edit/",
+        views.custom_event_edit,
+        name="custom_event_edit",
+    ),
     path(
         "custom/<int:event_id>/delete/",
         views.custom_event_delete,

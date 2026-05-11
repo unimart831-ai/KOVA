@@ -88,7 +88,27 @@ def generate_drafts_for_holiday_draft(draft_id: int) -> int:
 
     draft.status = HolidayDraft.Status.DRAFTS_READY
     draft.save(update_fields=["status", "updated_at"])
+
+    # Notify the user — best-effort. Never let notification failure break the cycle.
+    try:
+        _notify_drafts_ready(draft, posts_created)
+    except Exception:
+        logger.exception("Failed to create draft-ready notification for HolidayDraft %s", draft.id)
+
     return posts_created
+
+
+def _notify_drafts_ready(draft: HolidayDraft, count: int) -> None:
+    """Send an in-app notification when drafts are ready for review."""
+    from apps.notifications.models import Notification
+
+    name = draft.moment_name
+    plural = "s" if count != 1 else ""
+    Notification.create_for_user(
+        user=draft.user,
+        notification_type=Notification.NotificationType.POSTS_GENERATED,
+        message=f"{count} {name} draft{plural} ready for review",
+    )
 
 
 # ──────────────────────────────────────────────────────────────────────────

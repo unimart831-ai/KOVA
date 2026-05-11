@@ -134,6 +134,100 @@ def htmx_upcoming(request):
 # Custom events — Phase 1 minimal CRUD (form-based, no HTMX yet)
 # ──────────────────────────────────────────────────────────────────────────
 @login_required
+def holiday_refine(request, holiday_id):
+    """Per-holiday detail page. Edit custom lead time, post count, relevance,
+    and personal angles. Shows past performance for this holiday × user."""
+    holiday = get_object_or_404(Holiday, id=holiday_id, is_active=True)
+    pref = UserHolidayPreference.objects.filter(
+        user=request.user, holiday=holiday,
+    ).first()
+
+    if request.method == "POST":
+        if not pref:
+            pref = UserHolidayPreference(user=request.user, holiday=holiday)
+
+        # is_enabled: posted as form field
+        pref.is_enabled = request.POST.get("is_enabled") == "on"
+        pref.auto_draft_posts = request.POST.get("auto_draft_posts") == "on"
+
+        # Sliders — optional, blank means use Holiday defaults
+        lead = request.POST.get("custom_lead_time_days", "").strip()
+        pref.custom_lead_time_days = int(lead) if lead.isdigit() else None
+
+        post_count = request.POST.get("custom_post_count", "").strip()
+        pref.custom_post_count = int(post_count) if post_count.isdigit() else None
+
+        relevance = request.POST.get("custom_relevance_score", "").strip()
+        pref.custom_relevance_score = (
+            max(0, min(100, int(relevance))) if relevance.isdigit() else None
+        )
+
+        # Personal angles (newline-separated textarea -> JSON list)
+        personal_angles_text = request.POST.get("personal_angles", "").strip()
+        if personal_angles_text:
+            angles_list = [
+                a.strip() for a in personal_angles_text.splitlines() if a.strip()
+            ]
+            pref.notes = "\n".join(angles_list)[:200]
+        else:
+            pref.notes = ""
+
+        pref.save()
+        return redirect("calendar_intel:holiday_refine", holiday_id=holiday.id)
+
+    # Past performance for THIS holiday for this user
+    past_performance = _gather_past_performance(request.user, holiday)
+    next_occ = holiday.occurrences.filter(
+        date__gte=timezone.now().date(),
+    ).order_by("date").first()
+
+    context = {
+        "holiday": holiday,
+        "preference": pref,
+        "next_occ": next_occ,
+        "past_performance": past_performance,
+        "personal_angles_text": pref.notes if pref else "",
+        "page_title": f"{holiday.name} — refine",
+    }
+    return render(request, "calendar_intel/holiday_refine.html", context)
+
+
+def _gather_past_performance(user, holiday) -> dict:
+    """Stats on past holiday-watcher posts for this user × holiday."""
+    from django.db.models import Avg
+    from apps.content.models import Post
+
+    past_qs = Post.objects.filter(
+        user=user,
+        generated_by_agent="holiday_watcher",
+        holiday_drafts__holiday_occurrence__holiday=holiday,
+    ).distinct()
+
+    published_count = past_qs.filter(status="published").count()
+    if not published_count:
+        return {
+            "post_count": past_qs.count(),
+            "published_count": 0,
+            "avg_score": None,
+            "baseline_avg": None,
+        }
+
+    avg_score = past_qs.filter(status="published").aggregate(
+        avg=Avg("metrics__actual_score"),
+    )["avg"]
+    baseline = Post.objects.filter(
+        user=user, status="published",
+    ).aggregate(avg=Avg("metrics__actual_score"))["avg"]
+
+    return {
+        "post_count": past_qs.count(),
+        "published_count": published_count,
+        "avg_score": round(avg_score, 1) if avg_score is not None else None,
+        "baseline_avg": round(baseline, 1) if baseline is not None else None,
+    }
+
+
+@login_required
 def custom_event_add(request):
     """Add a custom moment (anniversary, launch, etc.)."""
     if request.method == "POST":
@@ -169,6 +263,55 @@ def custom_event_add(request):
         return redirect("calendar_intel:preferences")
 
     return render(request, "calendar_intel/custom_event_form.html", {})
+
+
+@login_required
+def custom_event_edit(request, event_id):
+    """Edit an existing custom event. Same template as add (reuse form)."""
+    from apps.calendar_intel.models import CustomEvent
+    from datetime import date as date_cls
+
+    event = get_object_or_404(CustomEvent, id=event_id, user=request.user)
+
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        date_str = request.POST.get("date", "").strip()
+        recurrence = request.POST.get("recurrence", "yearly")
+        description = request.POST.get("description", "").strip()
+
+        if not name or not date_str:
+            return render(request, "calendar_intel/custom_event_form.html", {
+                "error": "Name and date are required.",
+                "form_data": request.POST,
+                "event": event,
+            })
+
+        try:
+            event_date = date_cls.fromisoformat(date_str)
+        except ValueError:
+            return render(request, "calendar_intel/custom_event_form.html", {
+                "error": "Invalid date format. Use YYYY-MM-DD.",
+                "form_data": request.POST,
+                "event": event,
+            })
+
+        event.name = name
+        event.date = event_date
+        event.recurrence = recurrence
+        event.description = description
+        event.save()
+        return redirect("calendar_intel:preferences")
+
+    # GET — render form pre-filled
+    return render(request, "calendar_intel/custom_event_form.html", {
+        "event": event,
+        "form_data": {
+            "name": event.name,
+            "date": event.date.isoformat(),
+            "recurrence": event.recurrence,
+            "description": event.description,
+        },
+    })
 
 
 @login_required

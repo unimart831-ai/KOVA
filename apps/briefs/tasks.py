@@ -396,6 +396,28 @@ def _gather_brief_data(user):
         "failed_posts": failed_posts,
     }
 
+    # Holiday awareness — upcoming moments + drafts already prepared
+    holiday_context = {"upcoming": [], "drafts_ready": 0}
+    try:
+        from apps.calendar_intel.models import HolidayDraft
+        from apps.calendar_intel.selectors import top_upcoming_for_brief
+        upcoming = top_upcoming_for_brief(user, count=3)
+        holiday_context["upcoming"] = [
+            {
+                "name": m.name,
+                "date": m.date.isoformat(),
+                "days_until": m.days_until,
+                "score": m.score,
+            }
+            for m in upcoming
+        ]
+        holiday_context["drafts_ready"] = HolidayDraft.objects.filter(
+            user=user,
+            status=HolidayDraft.Status.DRAFTS_READY,
+        ).count()
+    except Exception as e:
+        logger.warning("Holiday context for brief failed: %s", e)
+
     data = {
         "today": today.isoformat(),
         "yesterday_published": yesterday_posts.count(),
@@ -422,6 +444,7 @@ def _gather_brief_data(user):
         "product_catalog": product_data,
         "revenue_attribution": revenue_data,
         "decisions_needed": decisions_needed,
+        "holiday_context": holiday_context,
     }
 
     # Flag whether this user has meaningful data for the strategist LLM.
@@ -546,12 +569,33 @@ def _generate_brief_with_llm(user, brief_data):
         '- "revenue_update": 1-2 sentences if revenue data exists, empty string otherwise.\n'
     )
 
+    holiday_hint = ""
+    hctx = brief_data.get("holiday_context") or {}
+    upcoming = hctx.get("upcoming") or []
+    drafts_ready = hctx.get("drafts_ready") or 0
+    close_moments = [m for m in upcoming if m.get("days_until", 999) <= 7]
+    if drafts_ready > 0 or close_moments:
+        bits = []
+        if drafts_ready > 0:
+            bits.append(f"{drafts_ready} holiday draft(s) are already prepared and waiting in Content Studio")
+        if close_moments:
+            top = close_moments[0]
+            bits.append(
+                f"{top['name']} is in {top['days_until']} day(s)"
+            )
+        holiday_hint = (
+            "\n\nHOLIDAY CONTEXT (weave naturally into Paragraph 1 or 3 if relevant): "
+            + "; ".join(bits) + ". "
+            "If drafts are ready, the move today should reference reviewing them."
+        )
+
     prompt = (
         f"Compile today's morning check-in based on this data:\n\n"
         f"{json.dumps(brief_data, indent=2, default=str)}\n\n"
         "Generate a strategic, personalized morning briefing. "
         "Be direct — tell the client what matters, what to do, and what we're handling. "
         "If something needs their decision, flag it clearly."
+        f"{holiday_hint}"
     )
 
     response = generate(

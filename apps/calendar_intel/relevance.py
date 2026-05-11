@@ -121,9 +121,52 @@ def user_preference_multiplier(holiday, user) -> float:
 
 
 def engagement_history_multiplier(holiday, user) -> float:
-    """Past holiday post performance. Boosts wins, dampens flops, neutral if no signal.
-    Phase 1: Returns 1.0 (no signal). Phase 2 will hook into HolidayDraft history."""
-    return 1.0
+    """
+    Past holiday post performance for THIS holiday × user. Boosts wins,
+    dampens flops, neutral if no signal.
+
+    Looks at posts created from prior HolidayDraft cycles for the same holiday
+    slug, joins to PostMetric.actual_score (0-100), and compares the average
+    to the user's overall published-post average:
+
+      - past avg >= user_avg + 15 -> 1.3x  (clear win)
+      - past avg <= user_avg - 15 -> 0.7x  (clear flop)
+      - otherwise                 -> 1.0x  (no strong signal)
+
+    Returns 1.0 when there's no past data, no metrics, or fewer than 1
+    completed cycle.
+    """
+    try:
+        from django.db.models import Avg
+
+        # Past published posts from holiday-watcher cycles for THIS holiday
+        past_qs = user.posts.filter(
+            generated_by_agent="holiday_watcher",
+            status="published",
+            holiday_drafts__holiday_occurrence__holiday=holiday,
+        ).distinct()
+
+        past_avg = past_qs.aggregate(avg=Avg("metrics__actual_score"))["avg"]
+        if past_avg is None:
+            return 1.0
+
+        # Baseline: user's overall published-post average
+        baseline = user.posts.filter(
+            status="published",
+        ).aggregate(avg=Avg("metrics__actual_score"))["avg"]
+        if baseline is None:
+            baseline = 50.0   # neutral fallback when no baseline yet
+
+        delta = past_avg - baseline
+        if delta >= 15:
+            return 1.3
+        if delta <= -15:
+            return 0.7
+        return 1.0
+    except Exception:
+        # Never let scoring break on a metrics edge case
+        logger.exception("engagement_history_multiplier failed; falling back to 1.0")
+        return 1.0
 
 
 def seasonal_multiplier(days_until: int) -> float:

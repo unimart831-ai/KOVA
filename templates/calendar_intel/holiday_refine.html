@@ -1,0 +1,189 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}{{ holiday.name }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Refine how Kova handles this moment for your business.</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+  <a href="{% url 'calendar_intel:preferences' %}" class="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    Holidays & moments
+  </a>
+
+  {# ── Header card ── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+    <div class="flex items-start gap-4 flex-wrap">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap mb-1">
+          <h2 class="text-base font-semibold text-gray-900 dark:text-white">{{ holiday.name }}</h2>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-medium">
+            {{ holiday.get_category_display }}
+          </span>
+          {% if holiday.religion %}
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-medium">{{ holiday.get_religion_display }}</span>
+          {% endif %}
+          {% if holiday.sensitivity_level == "high" %}
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-medium">sensitive</span>
+          {% endif %}
+        </div>
+        {% if holiday.short_description %}
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ holiday.short_description }}</p>
+        {% endif %}
+        {% if next_occ %}
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          Next occurrence: <span class="font-medium text-gray-700 dark:text-gray-300">{{ next_occ.date|date:"F j, Y" }}</span>
+          {% if next_occ.notes %}<br><span class="italic text-amber-600 dark:text-amber-400">{{ next_occ.notes }}</span>{% endif %}
+        </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# ── Past performance card ── #}
+  {% if past_performance.published_count > 0 %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Your past performance for this moment</h3>
+    <div class="grid grid-cols-3 gap-4">
+      <div>
+        <p class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{{ past_performance.published_count }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">posts published</p>
+      </div>
+      {% if past_performance.avg_score is not None %}
+      <div>
+        <p class="text-2xl font-bold tabular-nums {% if past_performance.avg_score >= 70 %}text-green-600 dark:text-green-400{% elif past_performance.avg_score >= 40 %}text-amber-600 dark:text-amber-400{% else %}text-gray-500{% endif %}">
+          {{ past_performance.avg_score }}
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">avg engagement</p>
+      </div>
+      {% endif %}
+      {% if past_performance.baseline_avg is not None %}
+      <div>
+        <p class="text-2xl font-bold text-gray-500 dark:text-gray-400 tabular-nums">{{ past_performance.baseline_avg }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">your overall avg</p>
+      </div>
+      {% endif %}
+    </div>
+    {% if past_performance.avg_score is not None and past_performance.baseline_avg is not None %}
+      {% with delta=past_performance.avg_score|add:0 %}
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+        {% if past_performance.avg_score > past_performance.baseline_avg|add:15 %}
+          <span class="text-green-600 dark:text-green-400 font-medium">Strong signal:</span> this moment outperforms your baseline — Kova will boost its priority next year.
+        {% elif past_performance.avg_score|add:15 < past_performance.baseline_avg %}
+          <span class="text-amber-600 dark:text-amber-400 font-medium">Underperformed:</span> last cycle's posts did worse than your average — Kova will dampen priority unless you opt-out.
+        {% else %}
+          Performance is in line with your overall average.
+        {% endif %}
+      </p>
+      {% endwith %}
+    {% endif %}
+  </div>
+  {% elif past_performance.post_count > 0 %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+    <p class="text-sm text-gray-600 dark:text-gray-400">
+      <span class="font-medium text-gray-900 dark:text-white">{{ past_performance.post_count }}</span> draft{{ past_performance.post_count|pluralize }} created for this moment in the past, but none published yet.
+    </p>
+  </div>
+  {% endif %}
+
+  {# ── Default angles (read-only) ── #}
+  {% if holiday.angles %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Default angles Kova uses</h3>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">These are the angle prompts the AI draws from when drafting posts for this moment.</p>
+    <ul class="space-y-1.5">
+      {% for angle in holiday.angles %}
+      <li class="text-sm text-gray-700 dark:text-gray-300 flex items-start gap-2">
+        <span class="text-kova-500 dark:text-kova-400 mt-1">•</span>
+        <span>{{ angle }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {# ── Settings form ── #}
+  <form method="post" class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-5">
+    {% csrf_token %}
+
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Your settings for this moment</h3>
+
+    {# Enable / disable #}
+    <label class="flex items-start gap-3 cursor-pointer">
+      <input type="checkbox" name="is_enabled"
+             {% if not preference or preference.is_enabled %}checked{% endif %}
+             class="mt-0.5 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-kova-600 focus:ring-kova-500">
+      <div class="min-w-0 flex-1">
+        <p class="text-sm font-medium text-gray-900 dark:text-white">Enabled</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">Kova surfaces this moment in your Daily Brief and may auto-draft posts.</p>
+      </div>
+    </label>
+
+    {# Auto-draft #}
+    <label class="flex items-start gap-3 cursor-pointer">
+      <input type="checkbox" name="auto_draft_posts"
+             {% if not preference or preference.auto_draft_posts %}checked{% endif %}
+             class="mt-0.5 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-kova-600 focus:ring-kova-500">
+      <div class="min-w-0 flex-1">
+        <p class="text-sm font-medium text-gray-900 dark:text-white">Auto-draft posts</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">When ready, Kova drafts posts in your voice for you to approve. Disable to only see the moment in your Brief.</p>
+      </div>
+    </label>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-gray-100 dark:border-gray-800">
+      <div>
+        <label for="custom_lead_time_days" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Lead time (days)
+        </label>
+        <input type="number" id="custom_lead_time_days" name="custom_lead_time_days"
+               min="0" max="30"
+               value="{{ preference.custom_lead_time_days|default:'' }}"
+               placeholder="{{ holiday.lead_time_days }}"
+               class="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-sm">
+        <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Default: {{ holiday.lead_time_days }}</p>
+      </div>
+      <div>
+        <label for="custom_post_count" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Posts to draft
+        </label>
+        <input type="number" id="custom_post_count" name="custom_post_count"
+               min="1" max="3"
+               value="{{ preference.custom_post_count|default:'' }}"
+               placeholder="{{ holiday.suggested_post_count }}"
+               class="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-sm">
+        <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Default: {{ holiday.suggested_post_count }} (max 3)</p>
+      </div>
+      <div>
+        <label for="custom_relevance_score" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Relevance (0-100)
+        </label>
+        <input type="number" id="custom_relevance_score" name="custom_relevance_score"
+               min="0" max="100"
+               value="{{ preference.custom_relevance_score|default:'' }}"
+               placeholder="{{ holiday.default_relevance_score }}"
+               class="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-sm">
+        <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Default: {{ holiday.default_relevance_score }}</p>
+      </div>
+    </div>
+
+    <div class="pt-2 border-t border-gray-100 dark:border-gray-800">
+      <label for="personal_angles" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+        Your personal angles <span class="text-gray-400 font-normal">(optional)</span>
+      </label>
+      <textarea id="personal_angles" name="personal_angles" rows="3"
+                placeholder="One angle per line. E.g.:&#10;Spotlight a specific mother in our community&#10;Tie to our most popular product"
+                class="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-sm">{{ personal_angles_text }}</textarea>
+      <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Override the default angles above with your own. One per line.</p>
+    </div>
+
+    <div class="flex items-center justify-end pt-2 border-t border-gray-100 dark:border-gray-800">
+      <button type="submit" class="inline-flex items-center gap-1.5 h-9 px-4 text-sm font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors">
+        Save settings
+      </button>
+    </div>
+  </form>
+
+</div>
+{% endblock %}
