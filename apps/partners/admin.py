@@ -1,7 +1,16 @@
 from django.contrib import admin
 from django.utils import timezone
 
-from .models import Commission, MilestoneAward, Partner, PartnerApplication, Referral, generate_referral_code
+from .models import (
+    Commission,
+    MarketplacePartner,
+    MarketplaceSellerAccount,
+    MilestoneAward,
+    Partner,
+    PartnerApplication,
+    Referral,
+    generate_referral_code,
+)
 
 
 @admin.register(PartnerApplication)
@@ -137,3 +146,74 @@ class MilestoneAwardAdmin(admin.ModelAdmin):
     list_display = ["partner", "label", "clients_required", "bonus_kes", "paid", "awarded_at"]
     list_filter = ["paid"]
     search_fields = ["partner__referral_code"]
+
+
+@admin.register(MarketplacePartner)
+class MarketplacePartnerAdmin(admin.ModelAdmin):
+    """B2B marketplace integration partners. Each has an API key and a
+    pool of seller accounts (MarketplaceSellerAccount)."""
+
+    list_display = [
+        "name", "slug", "billing_model", "max_sellers",
+        "is_active", "auto_activate_sellers", "created_at",
+    ]
+    list_filter = ["is_active", "billing_model", "auto_activate_sellers", "sync_direction"]
+    search_fields = ["name", "slug", "contact_email", "contact_name", "notes"]
+    readonly_fields = [
+        "created_at", "updated_at", "api_key_prefix",
+        "api_key_created_at", "api_key_last_used",
+    ]
+    prepopulated_fields = {"slug": ("name",)}
+    raw_id_fields = ["partner"]
+    fieldsets = (
+        ("Identity", {
+            "fields": ("name", "slug", "partner", "logo_url", "website", "is_active"),
+        }),
+        ("Contact", {"fields": ("contact_name", "contact_email")}),
+        ("API access", {
+            "fields": ("api_key_prefix", "api_key_created_at", "api_key_last_used"),
+            "description": "API key itself is stored as a hash and not displayable. Rotate via the partner API.",
+        }),
+        ("Seller provisioning", {
+            "fields": (
+                "seller_identity_field", "auto_activate_sellers",
+                "seller_default_plan", "max_sellers",
+                "seller_welcome_email", "seller_data_mapping",
+            ),
+        }),
+        ("Sync & products", {
+            "fields": (
+                "sync_direction", "auto_snap_on_sync",
+                "enforce_marketplace_cta", "product_field_mapping",
+                "default_product_currency", "enrich_descriptions",
+            ),
+        }),
+        ("Billing & commercials", {
+            "fields": (
+                "billing_model", "rate_per_seller_kes",
+                "flat_fee_kes", "revenue_share_pct", "pilot_expires_at",
+            ),
+        }),
+        ("Webhooks", {"fields": ("webhook_url", "webhook_secret"), "classes": ("collapse",)}),
+        ("Internal", {"fields": ("notes", "settings", "created_at", "updated_at"), "classes": ("collapse",)}),
+    )
+
+
+@admin.register(MarketplaceSellerAccount)
+class MarketplaceSellerAccountAdmin(admin.ModelAdmin):
+    """A single seller's account inside a marketplace. Links a User to the
+    parent MarketplacePartner with external_seller_id for cross-referencing."""
+
+    list_display = [
+        "external_seller_id", "marketplace", "user", "status",
+        "business_name", "products_synced", "content_generated",
+        "provisioned_at",
+    ]
+    list_filter = ["status", "marketplace"]
+    search_fields = ["external_seller_id", "business_name", "business_url", "user__email"]
+    readonly_fields = [
+        "provisioned_at", "activated_at", "suspended_at",
+        "last_product_sync",
+    ]
+    raw_id_fields = ["marketplace", "user"]
+    date_hierarchy = "provisioned_at"

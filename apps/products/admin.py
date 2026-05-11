@@ -1,6 +1,12 @@
 from django.contrib import admin
 
-from apps.products.models import Product, ProductCategory, StockAlert, StockUpdate
+from apps.products.models import (
+    Product,
+    ProductCategory,
+    RestockScan,
+    StockAlert,
+    StockUpdate,
+)
 
 
 class StockUpdateInline(admin.TabularInline):
@@ -39,3 +45,19 @@ class StockAlertAdmin(admin.ModelAdmin):
     list_filter = ("alert_type", "is_read")
     search_fields = ("product__name", "user__email")
     readonly_fields = ("created_at",)
+
+
+@admin.register(RestockScan)
+class RestockScanAdmin(admin.ModelAdmin):
+    """User uploads a restock receipt/photo, AI extracts items and matches to
+    the catalog. Admin used to debug extraction failures and unmatched items."""
+
+    list_display = (
+        "user", "status", "supplier_name", "receipt_date",
+        "products_matched", "products_updated", "created_at",
+    )
+    list_filter = ("status", "receipt_currency")
+    search_fields = ("user__email", "supplier_name", "error_message")
+    readonly_fields = ("created_at", "completed_at")
+    raw_id_fields = ("user", "content_seed")
+    date_hierarchy = "created_at"

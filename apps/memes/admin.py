@@ -1,6 +1,12 @@
 from django.contrib import admin
 
-from .models import KenyanEvent, MemeAdaptation, MemePreferences, TrendingMeme
+from .models import (
+    KenyanEvent,
+    MemeAdaptation,
+    MemePreferences,
+    TrendAlert,
+    TrendingMeme,
+)
 
 
 @admin.register(TrendingMeme)
@@ -39,3 +45,25 @@ class MemePreferencesAdmin(admin.ModelAdmin):
     list_display = ["user", "is_active", "risk_tolerance", "max_memes_per_week", "auto_queue"]
     list_filter = ["is_active", "risk_tolerance"]
     raw_id_fields = ["user"]
+
+
+@admin.register(TrendAlert)
+class TrendAlertAdmin(admin.ModelAdmin):
+    """15-minute trend response system: auto-detected trends + one-tap
+    brand-safe content generation. Admin used for cross-user trend audits
+    and debugging expiry/generation issues."""
+
+    list_display = [
+        "trend_topic_short", "user", "trend_source", "status",
+        "trend_score", "urgency_hours", "posts_generated", "detected_at",
+    ]
+    list_filter = ["status", "trend_source"]
+    search_fields = ["trend_topic", "trend_context", "brand_angle", "user__email"]
+    readonly_fields = ["detected_at", "approved_at"]
+    raw_id_fields = ["user", "trending_meme", "kenyan_event", "content_seed"]
+    date_hierarchy = "detected_at"
+
+    def trend_topic_short(self, obj):
+        t = obj.trend_topic or ""
+        return (t[:60] + "...") if len(t) > 60 else t
+    trend_topic_short.short_description = "Trend topic"

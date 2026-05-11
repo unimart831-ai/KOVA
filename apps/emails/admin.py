@@ -64,3 +64,15 @@ class EmailSequenceAdmin(admin.ModelAdmin):
 class SequenceEnrollmentAdmin(admin.ModelAdmin):
     list_display = ("subscriber", "sequence", "current_step", "status", "enrolled_at")
     list_filter = ("status",)
+
+
+@admin.register(EmailSequenceStep)
+class EmailSequenceStepAdmin(admin.ModelAdmin):
+    """Individual step in an EmailSequence. Usually managed via inline on
+    the parent sequence — this view supports cross-sequence search and
+    fixing a single broken step."""
+
+    list_display = ("sequence", "step_number", "subject", "delay_days", "delay_hours", "ai_generated")
+    list_filter = ("ai_generated",)
+    search_fields = ("sequence__name", "subject")
+    raw_id_fields = ("sequence",)

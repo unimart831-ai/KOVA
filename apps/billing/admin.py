@@ -1,6 +1,13 @@
 from django.contrib import admin
 
-from apps.billing.models import BillingEvent, DiscountCode, DiscountRedemption, MpesaPayment, PlanPrice
+from apps.billing.models import (
+    BillingEvent,
+    DiscountCode,
+    DiscountRedemption,
+    MpesaPayment,
+    PlanPrice,
+    SubscriptionOverride,
+)
 
 
 @admin.register(BillingEvent)
@@ -45,3 +52,19 @@ class DiscountRedemptionAdmin(admin.ModelAdmin):
     list_filter = ["currency", "redeemed_at"]
     search_fields = ["user__email", "discount_code__code"]
     readonly_fields = ["id", "discount_code", "user", "plan_tier", "original_amount", "discounted_amount", "amount_saved", "currency", "redeemed_at"]
+
+
+@admin.register(SubscriptionOverride)
+class SubscriptionOverrideAdmin(admin.ModelAdmin):
+    """Audit trail of manual plan changes — comp accounts, trial extensions,
+    refunds, plan migrations. Critical for support & finance reconciliation."""
+
+    list_display = [
+        "user", "action", "previous_plan", "new_plan",
+        "days_granted", "admin", "expires_at", "created_at",
+    ]
+    list_filter = ["action", "new_plan", "previous_plan", "created_at"]
+    search_fields = ["user__email", "admin__email", "reason", "batch_id"]
+    readonly_fields = ["created_at"]
+    raw_id_fields = ["user", "admin"]
+    date_hierarchy = "created_at"
