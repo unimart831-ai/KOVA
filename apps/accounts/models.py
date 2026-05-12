@@ -83,6 +83,7 @@ class UserProfile(models.Model):
         REAL_ESTATE = "real_estate", "Real Estate"
         FOOD_RESTAURANT = "food_restaurant", "Food & Restaurant"
         WHOLESALE_RETAIL = "wholesale_retail", "Wholesale & Retail"
+        SALON_BEAUTY = "salon_beauty", "Salon & Beauty Services"
         FASHION_BEAUTY = "fashion_beauty", "Fashion & Beauty"
         TRAVEL_TOURISM = "travel_tourism", "Travel & Tourism"
         MEDIA_ENTERTAINMENT = "media_entertainment", "Media & Entertainment"

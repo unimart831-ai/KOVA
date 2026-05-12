@@ -60,11 +60,102 @@ def cta_settings_view(request):
 
 
 @login_required
+def onboarding_choose_path(request):
+    """Path-choice screen — shown to fresh users before Step 1.
+
+    Three options:
+      1. Auto-fill from a social account (Magic Fill via profile_audit)
+      2. Paste a website URL (Phase D: AI infers brand from page content)
+      3. Set up manually (jump straight to Step 1)
+    """
+    # If the user has already completed Step 1, skip the path-choice — they're
+    # past the point where pre-fill helps.
+    profile = request.user.profile
+    if (profile.company_name or "").strip() or (profile.industry or "").strip():
+        return redirect("/accounts/onboarding/?step=1")
+
+    return render(request, "accounts/onboarding_choose_path.html", {
+        "page_title": "How would you like to set up?",
+    })
+
+
+@login_required
+def onboarding_magic_connect(request):
+    """Magic-Fill platform grid — connect a social account so we can auto-fill.
+
+    Only shows platforms where `profile_audit` returns meaningful data:
+    Instagram, Facebook, LinkedIn. Other platforms (X, TikTok, etc.) don't
+    expose enough profile metadata to be worth pulling.
+
+    The session flag is set so the OAuth callback knows to redirect into the
+    Magic-Fill handoff (handled in onboarding_view step=4 below).
+    """
+    request.session["onboarding_magic_fill"] = True
+
+    from apps.platforms.models import SocialAccount
+    connected = SocialAccount.objects.filter(user=request.user, is_active=True)
+
+    return render(request, "accounts/onboarding_magic_connect.html", {
+        "page_title": "Connect to auto-fill your brand",
+        "connected_accounts": connected,
+    })
+
+
+@login_required
 def onboarding_view(request):
     """Multi-step onboarding wizard."""
     profile = request.user.profile
+
+    # Fresh user with no step param → show the path-choice screen first.
+    # Once a user has completed step 1 (industry/company set), we let them
+    # land directly on whichever step they navigate to.
+    if "step" not in request.GET:
+        if not (profile.company_name or profile.industry):
+            return redirect("accounts:onboarding_choose_path")
+
     step = int(request.GET.get("step", 1))
     total_steps = 4
+
+    # ── Magic-Fill handoff ────────────────────────────────────────────
+    # If the user came from the path-choice screen via the Magic-Fill path,
+    # the OAuth callback dropped them at step=4 with `onboarding_magic_fill`
+    # set in session. Pull metadata from the newly-connected account, populate
+    # the profile, and bounce them back to Step 1 (now pre-filled).
+    if step == 4 and request.session.get("onboarding_magic_fill"):
+        from apps.platforms.models import SocialAccount
+        # Pick the most recently connected/active account — typically the
+        # one the user just authorised.
+        latest = (
+            SocialAccount.objects.filter(user=request.user, is_active=True)
+            .order_by("-updated_at")
+            .first()
+        )
+        if latest:
+            from apps.accounts.magic_fill import apply_magic_fill
+            try:
+                applied = apply_magic_fill(request.user, latest)
+            except Exception as exc:
+                # Don't fail the user — Magic Fill is opportunistic.
+                import logging
+                logging.getLogger(__name__).exception(
+                    "Magic Fill failed for %s: %s", request.user.email, exc
+                )
+                applied = []
+            request.session.pop("onboarding_magic_fill", None)
+            if applied:
+                messages.success(
+                    request,
+                    f"We've pre-filled {len(applied)} fields from your "
+                    f"{latest.get_platform_display()} profile. Review and edit anything below.",
+                )
+            else:
+                messages.info(
+                    request,
+                    "We couldn't pull much from your profile — set up manually below.",
+                )
+            return redirect("/accounts/onboarding/?step=1")
+        # No account connected yet — clear flag and fall through to step 4.
+        request.session.pop("onboarding_magic_fill", None)
 
     # Step 4 is a template-only step (connect platforms)
     if step == 4:
@@ -135,6 +226,17 @@ def onboarding_view(request):
         if form.is_valid():
             form.save()
             profile.record_onboarding_step(f"step_{step}_completed")
+
+            # If Step 1's industry pack filled defaults, tell the user so they
+            # know what's pre-populated when they hit Step 2 / Step 3.
+            applied = getattr(form, "applied_pack_fields", None)
+            if step == 1 and applied:
+                messages.info(
+                    request,
+                    f"We've pre-filled {len(applied)} brand defaults based on your "
+                    f"industry. You can adjust any of them in the next steps.",
+                )
+
             return redirect(f"/accounts/onboarding/?step={step + 1}")
     else:
         form = form_class(instance=profile, **extra_kwargs)
@@ -291,6 +393,209 @@ def ai_brand_builder(request):
     except Exception as e:
         logger.error("AI brand builder failed (%s): %s", type(e).__name__, e, exc_info=True)
         return JsonResponse({"error": f"AI error: {type(e).__name__}. Try again in a moment."}, status=500)
+
+
+@login_required
+@require_POST
+def infer_brand_from_url(request):
+    """Fetch a public URL, infer brand attributes via LLM, return as JSON.
+
+    HTMX-friendly endpoint called from Step 1 when the user pastes a website
+    URL and clicks "Auto-fill from this URL." The view:
+
+      1. Validates the URL (must be http/https).
+      2. Fetches the page with a tight timeout and 1 MB cap.
+      3. Strips HTML to title + meta description + visible text (truncated).
+      4. Calls the LLM with a JSON-mode prompt that maps content to our
+         Industry choices + voice/audience/pillars/offerings.
+      5. Returns a JSON dict that the front-end pours into form fields.
+
+    No fields are persisted server-side — the user reviews and submits the
+    Step 1 form normally.
+    """
+    import json
+    import logging
+    import re
+    import urllib.parse
+
+    import requests
+
+    from apps.agents.llm import generate, _get_llm_config
+    from apps.accounts.models import UserProfile
+    from apps.billing.exceptions import PlanLimitExceeded
+
+    logger = logging.getLogger(__name__)
+
+    url = (request.POST.get("url") or "").strip()
+    if not url:
+        return JsonResponse({"error": "Paste a URL first."}, status=400)
+
+    # Accept bare domains — prepend https:// if scheme missing.
+    parsed = urllib.parse.urlparse(url)
+    if not parsed.scheme:
+        url = "https://" + url
+        parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        return JsonResponse({"error": "That URL doesn't look right."}, status=400)
+
+    # Pre-flight: ensure an LLM provider is configured.
+    config = _get_llm_config()
+    if not (config and config.pk):
+        from django.conf import settings as s
+        provider = getattr(s, "DEFAULT_LLM_PROVIDER", "openai")
+        has_key = bool(
+            (provider == "openai" and getattr(s, "OPENAI_API_KEY", ""))
+            or (provider == "anthropic" and getattr(s, "ANTHROPIC_API_KEY", ""))
+            or (provider == "openrouter" and getattr(s, "OPENROUTER_API_KEY", ""))
+        )
+        if not has_key:
+            return JsonResponse(
+                {"error": f"AI isn't configured ({provider}). Contact support."},
+                status=503,
+            )
+
+    # ── Fetch the page with strict caps ──────────────────────────────
+    try:
+        resp = requests.get(
+            url,
+            timeout=8,
+            headers={"User-Agent": "KovaBot/1.0 (+https://kova.ai)"},
+            allow_redirects=True,
+            stream=True,
+        )
+        resp.raise_for_status()
+        # Cap at 1 MB so a giant page can't OOM us.
+        raw = resp.raw.read(1024 * 1024, decode_content=True)
+        html = raw.decode(resp.encoding or "utf-8", errors="replace")
+    except requests.Timeout:
+        return JsonResponse({"error": "That site took too long to respond."}, status=504)
+    except requests.RequestException as exc:
+        logger.info("URL inference fetch failed for %s: %s", url, exc)
+        return JsonResponse(
+            {"error": "Couldn't reach that site. Check the URL and try again."},
+            status=502,
+        )
+
+    # ── Extract a compact text representation for the LLM ────────────
+    def _meta(name: str, *, prop: bool = False) -> str:
+        pattern = (
+            rf'<meta\s+[^>]*?property=["\']{re.escape(name)}["\'][^>]*?content=["\']([^"\']+)["\']'
+            if prop else
+            rf'<meta\s+[^>]*?name=["\']{re.escape(name)}["\'][^>]*?content=["\']([^"\']+)["\']'
+        )
+        m = re.search(pattern, html, flags=re.IGNORECASE)
+        return m.group(1).strip() if m else ""
+
+    title_match = re.search(r"<title[^>]*>([^<]+)</title>", html, flags=re.IGNORECASE)
+    title = (title_match.group(1).strip() if title_match else "")
+    og_title = _meta("og:title", prop=True)
+    og_description = _meta("og:description", prop=True)
+    og_site_name = _meta("og:site_name", prop=True)
+    meta_description = _meta("description")
+    h1_match = re.search(r"<h1[^>]*>([^<]+)</h1>", html, flags=re.IGNORECASE)
+    h1 = (h1_match.group(1).strip() if h1_match else "")
+
+    # Strip tags for body content, truncate aggressively.
+    text_only = re.sub(r"<(script|style)[^>]*>.*?</\1>", " ", html, flags=re.IGNORECASE | re.DOTALL)
+    text_only = re.sub(r"<[^>]+>", " ", text_only)
+    text_only = re.sub(r"\s+", " ", text_only).strip()
+    body_excerpt = text_only[:4000]
+
+    # ── LLM inference ────────────────────────────────────────────────
+    industry_choices = ", ".join(
+        f'"{value}" ({label})' for value, label in UserProfile.Industry.choices
+    )
+
+    system_prompt = (
+        "You are a brand strategist analysing a business website for an onboarding "
+        "tool. From the page content below, infer the business's brand profile. "
+        "Be specific. Prefer evidence from the page over generic guesses. "
+        "If the page is too thin to infer a field confidently, return an empty "
+        "string or empty list for that field — DO NOT fabricate.\n\n"
+        f"Industry MUST be one of these exact values: {industry_choices}.\n\n"
+        "Tone attributes MUST be from this set (pick 3-4): confident, approachable, "
+        "witty, professional, casual, bold, educational, inspirational, empathetic, "
+        "authoritative, playful, minimalist.\n\n"
+        "Respond with valid JSON only:\n"
+        "{\n"
+        '  "company_name": "...",\n'
+        '  "industry": "one_of_the_values_above_or_empty",\n'
+        '  "brand_voice": "2-3 sentences describing how the brand sounds",\n'
+        '  "target_audience": "specific demographic + psychographic description",\n'
+        '  "content_pillars": ["pillar 1", "pillar 2", "pillar 3", "pillar 4"],\n'
+        '  "tone_attributes": ["tone1", "tone2", "tone3"],\n'
+        '  "key_offerings": ["product or service 1", "product or service 2"]\n'
+        "}"
+    )
+
+    user_prompt = (
+        f"URL: {url}\n"
+        f"Title: {title}\n"
+        f"og:title: {og_title}\n"
+        f"og:site_name: {og_site_name}\n"
+        f"og:description: {og_description}\n"
+        f"meta description: {meta_description}\n"
+        f"H1: {h1}\n\n"
+        f"Page text (truncated):\n{body_excerpt}"
+    )
+
+    try:
+        response = generate(
+            prompt=user_prompt,
+            system=system_prompt,
+            temperature=0.4,
+            max_tokens=1024,
+            json_mode=True,
+            user=request.user,
+        )
+        if not response.content:
+            return JsonResponse({"error": "AI couldn't read that page."}, status=502)
+
+        result = json.loads(response.content)
+
+        # Validate industry against choices
+        valid_industries = {v for v, _ in UserProfile.Industry.choices}
+        if result.get("industry") not in valid_industries:
+            result["industry"] = ""
+
+        # Validate tone_attributes
+        allowed_tones = {
+            "confident", "approachable", "witty", "professional", "casual",
+            "bold", "educational", "inspirational", "empathetic",
+            "authoritative", "playful", "minimalist",
+        }
+        result["tone_attributes"] = [
+            t for t in result.get("tone_attributes", []) if t in allowed_tones
+        ]
+
+        return JsonResponse({
+            "company_name": result.get("company_name", "") or "",
+            "industry": result.get("industry", "") or "",
+            "brand_voice": result.get("brand_voice", "") or "",
+            "target_audience": result.get("target_audience", "") or "",
+            "content_pillars": result.get("content_pillars", []) or [],
+            "tone_attributes": result.get("tone_attributes", []) or [],
+            "key_offerings": result.get("key_offerings", []) or [],
+            "website_url": url,
+        })
+
+    except PlanLimitExceeded as exc:
+        return JsonResponse(
+            {
+                "error": exc.message,
+                "error_type": "plan_limit",
+                "limit_type": exc.limit_type,
+                "suggested_plan": exc.suggested_plan,
+                "upgrade_url": "/billing/pricing/",
+            },
+            status=402,
+        )
+    except json.JSONDecodeError:
+        logger.warning("URL inference returned invalid JSON: %s", response.content[:200])
+        return JsonResponse({"error": "AI returned an unexpected response. Try again."}, status=500)
+    except Exception as exc:
+        logger.error("URL inference failed (%s): %s", type(exc).__name__, exc, exc_info=True)
+        return JsonResponse({"error": "AI error. Try again in a moment."}, status=500)
 
 
 @login_required

@@ -571,6 +571,16 @@ WHATSAPP_VERIFY_TOKEN = env("WHATSAPP_VERIFY_TOKEN", default="kova-whatsapp-veri
 WHATSAPP_APP_SECRET = env("WHATSAPP_APP_SECRET", default="")            # For webhook signature validation
 FB_WA_CONFIG_ID = env("FB_WA_CONFIG_ID", default="")                    # Facebook Login for Business config ID (Embedded Signup)
 
+# Onboarding completion ping — fires from agents.onboarding_tasks once the
+# "agency first meeting" task chain finishes. Requires an approved Meta
+# template; leave empty to disable (graceful no-op).
+#
+# Template body suggestion (1 variable for first_name):
+#   "Karibu {{1}}! Your AI agency just finished setting up. Tap to see your
+#   first posts → kova.ai/studio"
+KOVA_ONBOARDING_TEMPLATE_NAME = env("KOVA_ONBOARDING_TEMPLATE_NAME", default="")
+KOVA_ONBOARDING_TEMPLATE_LANG = env("KOVA_ONBOARDING_TEMPLATE_LANG", default="en")
+
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
 
 # ─── SITE URL ────────────────────────────────────────────────────────────────

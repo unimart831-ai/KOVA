@@ -57,7 +57,7 @@
         {% endif %}
 
         <div class="grid grid-cols-2 gap-3 mb-6">
-          {% with platforms="facebook,instagram,twitter,linkedin,tiktok,youtube,pinterest,threads,bluesky" %}
+          {% with platforms="whatsapp,instagram,facebook,tiktok,linkedin,twitter,youtube,pinterest,threads,bluesky" %}
           {% for platform in platforms.split %}
             <a href="{% url 'platforms:connect' platform %}"
                class="flex items-center gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-kova-400 dark:hover:border-kova-500 hover:shadow-sm transition-all group">
@@ -105,6 +105,52 @@
           <div class="mb-6">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">About you & your brand</h2>
             <p class="text-gray-600 dark:text-gray-400 mt-1">This helps our AI agents create content that fits your brand perfectly.</p>
+          </div>
+
+          {# ── URL inference (Magic Fill from website) ─────────────────────── #}
+          <div id="auto-from-url" x-data="urlInfer()" class="mb-6">
+            <div class="flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300"
+                 :class="urlMode ? 'border-kova-500 bg-kova-50 dark:bg-kova-950/30 dark:border-kova-600' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/40'">
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <svg class="w-5 h-5 shrink-0" :class="urlMode ? 'text-kova-600 dark:text-kova-400' : 'text-gray-400 dark:text-gray-500'"
+                       fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                  </svg>
+                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Auto-fill from your website</h3>
+                </div>
+                <p class="text-xs mt-0.5" :class="urlMode ? 'text-kova-600 dark:text-kova-400' : 'text-gray-500 dark:text-gray-400'">
+                  Paste a URL — we'll read the page and pre-fill the fields below.
+                </p>
+              </div>
+              <button type="button" @click="urlMode = !urlMode"
+                      class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200"
+                      :class="urlMode ? 'bg-kova-600' : 'bg-gray-300 dark:bg-gray-600'">
+                <span class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200"
+                      :class="urlMode ? 'translate-x-6' : 'translate-x-1'"></span>
+              </button>
+            </div>
+
+            <div x-show="urlMode" x-cloak class="mt-4 space-y-3">
+              <div class="flex gap-2">
+                <input type="url" x-model="url" class="input flex-1"
+                       placeholder="https://yoursite.com or yourshop.co.ke" />
+                <button type="button" @click="inferFromUrl()"
+                        :disabled="loading || !url.trim()"
+                        class="btn-primary px-4 whitespace-nowrap flex items-center gap-2">
+                  <template x-if="loading">
+                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                  </template>
+                  <span x-text="loading ? 'Reading…' : 'Auto-fill'"></span>
+                </button>
+              </div>
+              <p x-show="error" x-text="error" class="text-xs text-red-500"></p>
+              <p x-show="success" x-cloak class="text-xs text-green-600 dark:text-green-400 font-medium"
+                 x-text="success"></p>
+            </div>
           </div>
         {% elif step == 2 %}
           <div class="mb-6">
@@ -522,6 +568,90 @@ function brandBuilder() {
         } else {
           this.error = 'Network error. Check your connection and try again.';
         }
+      } finally {
+        this.loading = false;
+      }
+    }
+  };
+}
+
+function urlInfer() {
+  return {
+    urlMode: false,
+    url: '',
+    loading: false,
+    error: '',
+    success: '',
+
+    async inferFromUrl() {
+      this.loading = true;
+      this.error = '';
+      this.success = '';
+
+      try {
+        const formData = new FormData();
+        formData.append('url', this.url.trim());
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 60000);
+
+        const response = await fetch('{% url "accounts:infer_brand_from_url" %}', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+          body: formData,
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        let data;
+        try { data = await response.json(); }
+        catch (e) { this.error = `Server error (${response.status}). Try again.`; return; }
+
+        if (!response.ok) {
+          this.error = data.error || 'Could not read that page.';
+          return;
+        }
+
+        // Pour inferred values into Step 1 form fields. Only set if currently empty
+        // so we never overwrite something the user just typed.
+        const setIfEmpty = (id, value) => {
+          const el = document.getElementById(id);
+          if (el && value && !el.value) el.value = value;
+        };
+        setIfEmpty('id_company_name', data.company_name);
+        setIfEmpty('id_website_url', data.website_url);
+
+        // Industry is a <select> — set it directly if a valid choice came back.
+        if (data.industry) {
+          const sel = document.getElementById('id_industry');
+          if (sel && !sel.value) sel.value = data.industry;
+        }
+
+        // key_offerings is rendered as a textarea (one per line).
+        const offerings = document.getElementById('id_key_offerings_text');
+        if (offerings && Array.isArray(data.key_offerings) && data.key_offerings.length && !offerings.value) {
+          offerings.value = data.key_offerings.join('\n');
+        }
+
+        // Step 2 fields — if the user's UserProfile is shared across steps,
+        // values persist when they advance. We stash them in window scope so
+        // Step 2 can pick them up if user navigates forward without saving.
+        window.__kovaInferredVoice = data.brand_voice || '';
+        window.__kovaInferredAudience = data.target_audience || '';
+        window.__kovaInferredPillars = data.content_pillars || [];
+        window.__kovaInferredTones = data.tone_attributes || [];
+
+        const filledCount = [
+          data.company_name, data.industry, data.website_url,
+          (data.key_offerings || []).length ? 'offerings' : null,
+          data.brand_voice, data.target_audience,
+        ].filter(Boolean).length;
+        this.success = `Read the page — pre-filled ${filledCount} field${filledCount === 1 ? '' : 's'}. Review below and continue when ready.`;
+
+      } catch (err) {
+        this.error = err.name === 'AbortError'
+          ? 'That site took too long. Try again or skip.'
+          : 'Network error. Check your connection.';
       } finally {
         this.loading = false;
       }

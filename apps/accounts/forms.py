@@ -37,7 +37,18 @@ class KovaSignupForm(forms.Form):
         phone = self.cleaned_data.get("phone_number", "")
         if phone:
             user.phone_number = phone
-            user.save(update_fields=["phone_number"])
+            # Kenyan phone implies Kenyan timezone — saves a Step-1 click
+            # through 500+ zones for the dominant user segment.
+            user.timezone = "Africa/Nairobi"
+            user.save(update_fields=["phone_number", "timezone"])
+
+            # Mirror the phone into the profile as the M-Pesa number + KE country.
+            # User can override later in billing if a different M-Pesa line is used.
+            profile = getattr(user, "profile", None)
+            if profile is not None:
+                profile.mpesa_phone = phone
+                profile.country = "KE"
+                profile.save(update_fields=["mpesa_phone", "country"])
 
 
 class UserSettingsForm(forms.ModelForm):
@@ -304,15 +315,34 @@ class OnboardingStep1Form(forms.ModelForm):
             "content_language": forms.Select(attrs={"class": "input"}),
         }
 
+    # Common African timezones surfaced first — Kova's primary market.
+    AFRICA_TZ_PRIORITY = [
+        "Africa/Nairobi",
+        "Africa/Kampala",
+        "Africa/Dar_es_Salaam",
+        "Africa/Kigali",
+        "Africa/Lagos",
+        "Africa/Accra",
+        "Africa/Cairo",
+        "Africa/Johannesburg",
+        "Africa/Casablanca",
+        "Africa/Addis_Ababa",
+    ]
+
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = user
         import zoneinfo
-        tz_list = sorted(zoneinfo.available_timezones())
-        self.fields["timezone"].choices = [(tz, tz) for tz in tz_list]
+        all_tz = zoneinfo.available_timezones()
+        priority = [tz for tz in self.AFRICA_TZ_PRIORITY if tz in all_tz]
+        rest = sorted(all_tz - set(priority))
+        self.fields["timezone"].choices = [
+            ("Common African timezones", [(tz, tz) for tz in priority]),
+            ("All timezones", [(tz, tz) for tz in rest]),
+        ]
         if user:
             self.fields["full_name"].initial = user.full_name
-            self.fields["timezone"].initial = user.timezone or "UTC"
+            self.fields["timezone"].initial = user.timezone or "Africa/Nairobi"
         if self.instance and self.instance.key_offerings:
             self.fields["key_offerings_text"].initial = "\n".join(self.instance.key_offerings)
 
@@ -323,6 +353,11 @@ class OnboardingStep1Form(forms.ModelForm):
         profile.key_offerings = [o.strip() for o in offerings_text.split("\n") if o.strip()]
         if commit:
             profile.save()
+            # Industry-aware starter pack — fills tone, pillars, goals, posting
+            # cadence, CTA, and visual style with sensible defaults if the user
+            # hasn't picked anything yet. Never overwrites user-supplied values.
+            from apps.accounts.industry_packs import apply_pack
+            self.applied_pack_fields = apply_pack(profile, profile.industry)
         if self.user:
             self.user.full_name = self.cleaned_data["full_name"]
             self.user.timezone = self.cleaned_data["timezone"]

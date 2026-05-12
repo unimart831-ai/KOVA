@@ -1,0 +1,75 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}How would you like to set up?{% endblock %}
+{% block page_title %}Welcome to Kova{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Pick the fastest setup for your business</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-8">
+  <div class="mb-8 text-center">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">How would you like to set up?</h1>
+    <p class="text-gray-600 dark:text-gray-400">Three options. Pick the one that needs the least typing.</p>
+  </div>
+
+  <div class="space-y-3">
+
+    {# ── Option 1: Connect a social account ────────────────────────── #}
+    <a href="{% url 'accounts:onboarding_magic_connect' %}"
+       class="block p-5 bg-white dark:bg-gray-900 border-2 border-kova-200 dark:border-kova-800 hover:border-kova-500 dark:hover:border-kova-400 rounded-xl shadow-sm hover:shadow transition-all group">
+      <div class="flex items-start gap-4">
+        <div class="shrink-0 w-12 h-12 rounded-xl bg-kova-100 dark:bg-kova-900/40 flex items-center justify-center group-hover:scale-105 transition-transform">
+          <svg class="w-6 h-6 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <h2 class="font-bold text-gray-900 dark:text-white">Auto-fill from social</h2>
+            <span class="text-[10px] font-semibold uppercase tracking-wide bg-kova-100 dark:bg-kova-900/40 text-kova-700 dark:text-kova-300 px-2 py-0.5 rounded">Fastest · 30s</span>
+          </div>
+          <p class="text-sm text-gray-600 dark:text-gray-400">Connect Instagram, Facebook, or LinkedIn. We'll read your profile and fill in your brand info for you. You just confirm.</p>
+        </div>
+      </div>
+    </a>
+
+    {# ── Option 2: Paste a website URL ──────────────────────────────── #}
+    <a href="/accounts/onboarding/?step=1#auto-from-url"
+       class="block p-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:border-kova-400 dark:hover:border-kova-500 rounded-xl shadow-sm hover:shadow transition-all group">
+      <div class="flex items-start gap-4">
+        <div class="shrink-0 w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center group-hover:scale-105 transition-transform">
+          <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <h2 class="font-bold text-gray-900 dark:text-white mb-1">Paste my website</h2>
+          <p class="text-sm text-gray-600 dark:text-gray-400">Got a website? We'll read it and figure out your industry, voice, and audience automatically. About 1 minute.</p>
+        </div>
+      </div>
+    </a>
+
+    {# ── Option 3: Manual setup ─────────────────────────────────────── #}
+    <a href="/accounts/onboarding/?step=1"
+       class="block p-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 rounded-xl shadow-sm hover:shadow transition-all group">
+      <div class="flex items-start gap-4">
+        <div class="shrink-0 w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center group-hover:scale-105 transition-transform">
+          <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <h2 class="font-bold text-gray-900 dark:text-white mb-1">Set up manually</h2>
+          <p class="text-sm text-gray-600 dark:text-gray-400">Fill in the form yourself. Best if you want full control over every detail. About 3 minutes.</p>
+        </div>
+      </div>
+    </a>
+
+  </div>
+
+  <p class="text-center text-xs text-gray-500 dark:text-gray-400 mt-8">
+    You can always edit any of this later in Settings.
+  </p>
+</div>
+{% endblock %}

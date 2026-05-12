@@ -1,0 +1,172 @@
+"""Tests for the onboarding automation layer:
+
+- industry_packs.apply_pack — fills empty profile fields based on industry
+- magic_fill._infer_industry — maps platform category strings to Industry choices
+- KovaSignupForm.signup — sets KE-defaults from a Kenyan phone number
+
+These are the load-bearing pieces of the Tier-1/Tier-2 onboarding rework. If
+any of them regress, new users get a worse first-run experience.
+"""
+
+import pytest
+from django.test import RequestFactory
+
+from apps.accounts.models import User, UserProfile
+from apps.accounts.industry_packs import apply_pack, get_pack, PACKS
+from apps.accounts.magic_fill import _infer_industry
+from apps.accounts.forms import KovaSignupForm
+
+
+# ── industry_packs ──────────────────────────────────────────────────────────
+
+class TestIndustryPacks:
+    def test_get_pack_returns_valid_shape_for_every_industry(self):
+        required = {"tone_attributes", "content_pillars", "goals",
+                    "posting_frequency", "default_cta_type", "visual_style"}
+        for industry in PACKS:
+            pack = get_pack(industry)
+            assert required <= set(pack), f"{industry} missing keys"
+            assert isinstance(pack["tone_attributes"], list)
+            assert isinstance(pack["posting_frequency"], int)
+
+    def test_get_pack_falls_back_for_unknown_industry(self):
+        pack = get_pack("not_an_industry")
+        assert pack["tone_attributes"]  # has defaults
+        assert pack["posting_frequency"] > 0
+
+    def test_get_pack_normalizes_warm_alias(self):
+        # Salon pack uses "warm" internally — should surface as "empathetic"
+        pack = get_pack("salon_beauty")
+        assert "warm" not in pack["tone_attributes"]
+        assert "empathetic" in pack["tone_attributes"]
+
+    def test_every_pack_tone_is_in_valid_vocabulary(self):
+        valid = {
+            "confident", "approachable", "witty", "professional", "casual",
+            "bold", "educational", "inspirational", "empathetic",
+            "authoritative", "playful", "minimalist",
+        }
+        for industry in PACKS:
+            tones = get_pack(industry)["tone_attributes"]
+            assert set(tones) <= valid, f"{industry} has invalid tones: {tones}"
+
+
+@pytest.mark.django_db
+class TestApplyPack:
+    def _fresh_user(self, *, industry="salon_beauty"):
+        u = User.objects.create_user(
+            username="apply-pack", email="ap@b.com", password="P1!",
+        )
+        # The post_save signal already created UserProfile.
+        p = u.profile
+        p.industry = industry
+        p.save(update_fields=["industry"])
+        return u, p
+
+    def test_apply_pack_fills_empty_fields(self):
+        u, p = self._fresh_user()
+        applied = apply_pack(p, p.industry)
+
+        assert "tone_attributes" in applied
+        assert "content_pillars" in applied
+        assert "goals" in applied
+        assert p.tone_attributes  # populated
+        assert p.content_pillars
+        assert p.goals
+        # Salon-specific expectations
+        assert p.default_cta_type == "whatsapp"
+
+    def test_apply_pack_does_not_overwrite_user_data(self):
+        u, p = self._fresh_user()
+        p.tone_attributes = ["bold"]
+        p.content_pillars = ["My existing pillar"]
+        p.save(update_fields=["tone_attributes", "content_pillars"])
+
+        applied = apply_pack(p, p.industry)
+
+        assert "tone_attributes" not in applied
+        assert "content_pillars" not in applied
+        assert p.tone_attributes == ["bold"]
+        assert p.content_pillars == ["My existing pillar"]
+
+    def test_apply_pack_treats_default_cta_none_as_empty(self):
+        # default_cta_type defaults to "none" — pack should overwrite it
+        u, p = self._fresh_user()
+        assert p.default_cta_type == "none"
+
+        apply_pack(p, p.industry)
+
+        assert p.default_cta_type != "none"
+
+
+# ── magic_fill industry inference ───────────────────────────────────────────
+
+class TestInferIndustry:
+    @pytest.mark.parametrize("category,expected", [
+        ("Hair Salon", "salon_beauty"),
+        ("Beauty, Cosmetic & Personal Care", "salon_beauty"),
+        ("Nail Bar", "salon_beauty"),
+        ("Restaurant", "food_restaurant"),
+        ("Coffee Shop", "food_restaurant"),
+        ("Bakery", "food_restaurant"),
+        ("Hotel & Lodge", "travel_tourism"),
+        ("Safari Tours", "travel_tourism"),
+        ("Health Clinic", "health"),
+        ("Dental Practice", "health"),
+        ("Law Firm", "legal"),
+        ("Marketing Agency", "agency"),
+        ("Software Company", "saas"),
+        ("Boutique", "wholesale_retail"),
+        ("Fashion Designer", "fashion_beauty"),
+        ("School", "education"),
+        ("NGO", "nonprofit"),
+        ("", None),
+        ("Random gibberish", None),
+    ])
+    def test_inference(self, category, expected):
+        assert _infer_industry(category) == expected
+
+
+# ── signup form Kenya defaults ──────────────────────────────────────────────
+
+@pytest.mark.django_db
+class TestSignupDefaults:
+    def test_kenyan_phone_sets_timezone_and_country(self):
+        # The signup() method runs after allauth creates the user.
+        u = User.objects.create_user(
+            username="sd", email="sd@b.com", password="P1!",
+        )
+        form = KovaSignupForm(data={"phone_number": "0712345678"})
+        assert form.is_valid(), form.errors
+
+        rf = RequestFactory().get("/")
+        form.signup(rf, u)
+
+        u.refresh_from_db()
+        assert u.phone_number == "0712345678"
+        assert u.timezone == "Africa/Nairobi"
+        assert u.profile.country == "KE"
+        # mpesa_phone is an encrypted field — read via descriptor
+        assert u.profile.mpesa_phone == "0712345678"
+
+    def test_signup_with_no_phone_skips_defaults(self):
+        u = User.objects.create_user(
+            username="np", email="np@b.com", password="P1!",
+        )
+        original_tz = u.timezone
+        form = KovaSignupForm(data={"phone_number": ""})
+        assert form.is_valid()
+
+        rf = RequestFactory().get("/")
+        form.signup(rf, u)
+
+        u.refresh_from_db()
+        assert u.phone_number == ""
+        # timezone untouched
+        assert u.timezone == original_tz
+        assert u.profile.country == ""
+
+    def test_invalid_phone_rejected(self):
+        form = KovaSignupForm(data={"phone_number": "+1-555-1234"})
+        assert not form.is_valid()
+        assert "phone_number" in form.errors

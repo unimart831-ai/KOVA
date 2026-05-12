@@ -220,8 +220,76 @@ def run_onboarding_intelligence(user_id):
     except Exception:
         logger.exception("record_onboarding_step failed for %s", user.email)
 
+    # Fire-and-forget completion ping (WhatsApp template). Soft-fails — never
+    # blocks the chain on a messaging error.
+    try:
+        _send_completion_whatsapp_ping(user)
+    except Exception:
+        logger.exception("WhatsApp completion ping failed for %s", user.email)
+
     logger.info("Onboarding intelligence complete for %s: %s", user.email, result)
     return result
+
+
+def _send_completion_whatsapp_ping(user) -> bool:
+    """Send a 'your AI agency is ready' WhatsApp template to the user's phone.
+
+    All three of these must be true or we no-op silently:
+      * `settings.KOVA_ONBOARDING_TEMPLATE_NAME` is set
+      * `settings.WHATSAPP_PHONE_NUMBER_ID` and `WHATSAPP_ACCESS_TOKEN` are set
+      * the user has a phone_number we can route to E.164
+
+    Returns True if a message was actually dispatched, False otherwise.
+    """
+    from django.conf import settings
+
+    template_name = getattr(settings, "KOVA_ONBOARDING_TEMPLATE_NAME", "") or ""
+    if not template_name:
+        logger.debug("Onboarding ping: KOVA_ONBOARDING_TEMPLATE_NAME not set — skipping")
+        return False
+
+    phone_id = getattr(settings, "WHATSAPP_PHONE_NUMBER_ID", "") or ""
+    token = getattr(settings, "WHATSAPP_ACCESS_TOKEN", "") or ""
+    if not (phone_id and token):
+        logger.debug("Onboarding ping: master WhatsApp creds missing — skipping")
+        return False
+
+    raw_phone = (getattr(user, "phone_number", "") or "").strip()
+    if not raw_phone:
+        logger.debug("Onboarding ping: user %s has no phone_number — skipping", user.email)
+        return False
+
+    # Convert Kenyan local (0XX...) to E.164 without the "+" — WhatsApp API
+    # wants the bare digits, e.g. "254712345678".
+    if raw_phone.startswith("0") and len(raw_phone) == 10:
+        to_number = "254" + raw_phone[1:]
+    elif raw_phone.startswith("+"):
+        to_number = raw_phone[1:]
+    else:
+        to_number = raw_phone
+
+    # Build template parameters — single body variable: the user's first name.
+    first_name = (user.full_name or user.email or "there").split(" ")[0]
+    components = [{
+        "type": "body",
+        "parameters": [{"type": "text", "text": first_name}],
+    }]
+
+    from apps.platforms.providers.whatsapp import WhatsAppProvider
+    provider = WhatsAppProvider()
+    result = provider.send_template_message(
+        access_token=token,
+        to=to_number,
+        template_name=template_name,
+        language_code=getattr(settings, "KOVA_ONBOARDING_TEMPLATE_LANG", "en"),
+        components=components,
+        phone_number_id=phone_id,
+    )
+    if result.get("success"):
+        logger.info("Onboarding ping sent to %s (%s)", user.email, to_number)
+        return True
+    logger.warning("Onboarding ping send failed for %s: %s", user.email, result.get("error"))
+    return False
 
 
 def _create_starter_seeds(user, research):
