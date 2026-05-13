@@ -170,3 +170,106 @@ class TestSignupDefaults:
         form = KovaSignupForm(data={"phone_number": "+1-555-1234"})
         assert not form.is_valid()
         assert "phone_number" in form.errors
+
+
+# ── Merged Step 2 "Review your brand" form ──────────────────────────────────
+
+@pytest.mark.django_db
+class TestMergedReviewForm:
+    """The merged form replaces old Step 2 (voice/visuals) + Step 3 (goals/
+    autonomy/CTA). It must save fields from both halves and persist the helper
+    fields (tone_selection, content_pillars_text, etc.) back onto the model."""
+
+    def _user_with_profile(self):
+        u = User.objects.create_user(
+            username="rev", email="rev@b.com", password="P1!",
+            daily_brief_time="07:00",
+        )
+        return u, u.profile
+
+    def test_form_renders_with_all_section_fields(self):
+        from apps.accounts.forms import OnboardingStep2ReviewForm
+        u, p = self._user_with_profile()
+        form = OnboardingStep2ReviewForm(instance=p, user=u)
+
+        expected_fields = {
+            # Voice & audience
+            "brand_voice", "target_audience", "tone_selection",
+            "brand_voice_examples_text",
+            # Content
+            "content_pillars_text", "brand_restrictions",
+            # Visuals
+            "visual_style", "brand_colors_text",
+            # Goals & cadence
+            "goals_selection", "posting_frequency", "daily_brief_time",
+            # Autonomy
+            "auto_approve_posts", "auto_engage",
+            # CTA
+            "default_cta_type", "default_cta_url", "cta_whatsapp",
+        }
+        assert expected_fields <= set(form.fields)
+
+    def test_form_saves_voice_and_goals_in_one_pass(self):
+        from apps.accounts.forms import OnboardingStep2ReviewForm
+        u, p = self._user_with_profile()
+
+        data = {
+            "brand_voice": "Friendly and direct.",
+            "target_audience": "Nairobi salon owners aged 25-45.",
+            "tone_selection": ["warm" if False else "approachable", "playful"],
+            "content_pillars_text": "Transformations\nClient stories\nTips",
+            "brand_voice_examples_text": "",
+            "brand_colors_text": "#FF5733, #1A1A2E",
+            "brand_restrictions": "",
+            "visual_style": "photography",
+            "goals_selection": ["grow_followers", "generate_leads"],
+            "posting_frequency": 5,
+            "daily_brief_time": "07:00",
+            "auto_approve_posts": False,
+            "auto_engage": True,
+            "default_cta_type": "whatsapp",
+            "default_cta_url": "",
+            "cta_whatsapp": "254712345678",
+        }
+        form = OnboardingStep2ReviewForm(data=data, instance=p, user=u)
+        assert form.is_valid(), form.errors
+        form.save()
+
+        p.refresh_from_db()
+        # Voice fields persisted
+        assert p.brand_voice == "Friendly and direct."
+        assert p.target_audience.startswith("Nairobi salon")
+        assert "approachable" in p.tone_attributes
+        assert "playful" in p.tone_attributes
+        # Pillars split from textarea
+        assert p.content_pillars == ["Transformations", "Client stories", "Tips"]
+        # Colors split from comma-string
+        assert p.brand_colors == ["#FF5733", "#1A1A2E"]
+        # Goals + autonomy + CTA — proves old Step 3 fields save too
+        assert "grow_followers" in p.goals
+        assert p.posting_frequency == 5
+        assert p.auto_engage is True
+        assert p.default_cta_type == "whatsapp"
+
+    def test_form_preserves_user_pillars_on_redisplay(self):
+        from apps.accounts.forms import OnboardingStep2ReviewForm
+        u, p = self._user_with_profile()
+        p.content_pillars = ["Pillar A", "Pillar B"]
+        p.tone_attributes = ["bold"]
+        p.save(update_fields=["content_pillars", "tone_attributes"])
+
+        form = OnboardingStep2ReviewForm(instance=p, user=u)
+        assert "Pillar A\nPillar B" == form.fields["content_pillars_text"].initial
+        assert form.fields["tone_selection"].initial == ["bold"]
+
+    def test_field_order_is_review_friendly(self):
+        """Voice should appear before goals, autonomy before CTA — so the
+        reviewer scrolls in a logical reading order."""
+        from apps.accounts.forms import OnboardingStep2ReviewForm
+        u, p = self._user_with_profile()
+        form = OnboardingStep2ReviewForm(instance=p, user=u)
+        names = list(form.fields.keys())
+
+        assert names.index("brand_voice") < names.index("goals_selection")
+        assert names.index("tone_selection") < names.index("posting_frequency")
+        assert names.index("auto_approve_posts") < names.index("default_cta_type")

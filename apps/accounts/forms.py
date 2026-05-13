@@ -495,6 +495,182 @@ class OnboardingStep2Form(forms.ModelForm):
         return instance
 
 
+class OnboardingStep2ReviewForm(forms.ModelForm):
+    """Single 'Review your brand' page — combines what used to be Step 2 + Step 3.
+
+    Pre-filled when Magic Fill / URL inference / industry pack populated the
+    profile during Step 1. User skims sections (Voice · Visuals · Goals ·
+    Agent autonomy · Default CTA) and edits only what's off.
+    """
+
+    TONE_CHOICES = [
+        ("confident", "Confident"),
+        ("approachable", "Approachable"),
+        ("witty", "Witty / Humorous"),
+        ("professional", "Professional"),
+        ("casual", "Casual / Relaxed"),
+        ("bold", "Bold / Provocative"),
+        ("educational", "Educational"),
+        ("inspirational", "Inspirational"),
+        ("empathetic", "Empathetic / Warm"),
+        ("authoritative", "Authoritative / Expert"),
+        ("playful", "Playful / Fun"),
+        ("minimalist", "Minimalist / Direct"),
+    ]
+
+    GOAL_CHOICES = [
+        ("grow_followers", "Grow followers"),
+        ("drive_traffic", "Drive website traffic"),
+        ("generate_leads", "Generate leads"),
+        ("build_community", "Build community"),
+        ("brand_awareness", "Increase brand awareness"),
+        ("thought_leadership", "Establish thought leadership"),
+        ("customer_support", "Customer support & engagement"),
+    ]
+
+    # ── Voice / visuals (was Step 2) ────────────────────────────────────────
+    tone_selection = forms.MultipleChoiceField(
+        choices=TONE_CHOICES,
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "rounded text-kova-600"}),
+        required=False,
+        label="Brand tone (pick 3-5)",
+        help_text="Tones that best describe how your brand communicates.",
+    )
+    content_pillars_text = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            "class": "input", "rows": 3,
+            "placeholder": "One topic per line. E.g.:\nProduct updates\nIndustry trends\nCustomer stories",
+        }),
+        help_text="Main content topics/themes, one per line.",
+    )
+    brand_voice_examples_text = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            "class": "input", "rows": 4,
+            "placeholder": "Paste 2-3 posts that represent your brand voice.\nSeparate each example with a blank line.",
+        }),
+        label="Voice examples (optional)",
+        help_text="Sample posts that match your brand voice. Separate examples with a blank line (max 5).",
+    )
+    brand_colors_text = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={"class": "input", "placeholder": "#FF5733, #1A1A2E, #FFFFFF"}),
+        label="Brand colors",
+        help_text="Hex codes separated by commas. Used for graphics and AI image prompts.",
+    )
+
+    # ── Goals & autonomy (was Step 3) ───────────────────────────────────────
+    goals_selection = forms.MultipleChoiceField(
+        choices=GOAL_CHOICES,
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "rounded text-kova-600"}),
+        required=False,
+    )
+    daily_brief_time = forms.TimeField(
+        widget=forms.TimeInput(attrs={"class": "input", "type": "time"}),
+        help_text="When should your daily AI brief be compiled? (In your timezone)",
+    )
+
+    class Meta:
+        model = UserProfile
+        fields = [
+            # Voice / visuals
+            "brand_voice", "target_audience", "brand_restrictions",
+            "visual_style",
+            # Goals / autonomy
+            "posting_frequency", "auto_approve_posts", "auto_engage",
+            "default_cta_type", "default_cta_url", "cta_whatsapp",
+        ]
+        widgets = {
+            "brand_voice": forms.Textarea(attrs={
+                "class": "input", "rows": 3,
+                "placeholder": "Describe how your brand sounds on social media.",
+            }),
+            "target_audience": forms.Textarea(attrs={
+                "class": "input", "rows": 3,
+                "placeholder": "Who are you talking to? Age range, location, interests, pain points.",
+            }),
+            "brand_restrictions": forms.Textarea(attrs={
+                "class": "input", "rows": 2,
+                "placeholder": "Topics or words to avoid. E.g.: Never mention competitors by name.",
+            }),
+            "visual_style": forms.Select(attrs={"class": "input"}),
+            "posting_frequency": forms.NumberInput(attrs={"class": "input", "min": 1, "max": 50}),
+            "default_cta_type": forms.Select(attrs={"class": "input", "x-model": "ctaType"}),
+            "default_cta_url": forms.TextInput(attrs={"class": "input", "placeholder": "https://yoursite.com"}),
+            "cta_whatsapp": forms.TextInput(attrs={"class": "input", "placeholder": "254712345678"}),
+        }
+
+    # Render in a logical "review" order — voice first, then audience, content,
+    # visuals, goals, cadence, autonomy, CTA at the end (collapsible).
+    field_order = [
+        "brand_voice",
+        "target_audience",
+        "tone_selection",
+        "brand_voice_examples_text",
+        "content_pillars_text",
+        "brand_restrictions",
+        "visual_style",
+        "brand_colors_text",
+        "goals_selection",
+        "posting_frequency",
+        "daily_brief_time",
+        "auto_approve_posts",
+        "auto_engage",
+        "default_cta_type",
+        "default_cta_url",
+        "cta_whatsapp",
+    ]
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+        if self.instance:
+            if self.instance.content_pillars:
+                self.fields["content_pillars_text"].initial = "\n".join(self.instance.content_pillars)
+            if self.instance.tone_attributes:
+                self.fields["tone_selection"].initial = self.instance.tone_attributes
+            if self.instance.brand_voice_examples:
+                self.fields["brand_voice_examples_text"].initial = "\n\n".join(self.instance.brand_voice_examples)
+            if self.instance.brand_colors:
+                self.fields["brand_colors_text"].initial = ", ".join(self.instance.brand_colors)
+            if self.instance.goals:
+                self.fields["goals_selection"].initial = self.instance.goals
+        if user:
+            self.fields["daily_brief_time"].initial = user.daily_brief_time
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Pillars
+        pillars_text = self.cleaned_data.get("content_pillars_text", "")
+        instance.content_pillars = [p.strip() for p in pillars_text.split("\n") if p.strip()]
+        # Tones
+        instance.tone_attributes = self.cleaned_data.get("tone_selection", [])
+        # Voice examples (split on blank lines, cap at 5)
+        examples_text = self.cleaned_data.get("brand_voice_examples_text", "")
+        if examples_text.strip():
+            instance.brand_voice_examples = [
+                ex.strip() for ex in examples_text.split("\n\n") if ex.strip()
+            ][:5]
+        else:
+            instance.brand_voice_examples = []
+        # Colors
+        colors_text = self.cleaned_data.get("brand_colors_text", "")
+        if colors_text.strip():
+            instance.brand_colors = [c.strip() for c in colors_text.split(",") if c.strip()]
+        else:
+            instance.brand_colors = []
+        # Goals
+        instance.goals = self.cleaned_data.get("goals_selection", [])
+        if commit:
+            instance.save()
+        if self.user:
+            self.user.daily_brief_time = self.cleaned_data["daily_brief_time"]
+            if commit:
+                self.user.save(update_fields=["daily_brief_time"])
+        return instance
+
+
 class OnboardingStep3Form(forms.ModelForm):
     """Goals & preferences."""
 

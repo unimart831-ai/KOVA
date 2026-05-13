@@ -10,8 +10,7 @@ from apps.accounts.forms import (
     BrandProfileForm,
     CTASettingsForm,
     OnboardingStep1Form,
-    OnboardingStep2Form,
-    OnboardingStep3Form,
+    OnboardingStep2ReviewForm,
 )
 
 
@@ -88,7 +87,7 @@ def onboarding_magic_connect(request):
     expose enough profile metadata to be worth pulling.
 
     The session flag is set so the OAuth callback knows to redirect into the
-    Magic-Fill handoff (handled in onboarding_view step=4 below).
+    Magic-Fill handoff (handled in onboarding_view step=3 below).
     """
     request.session["onboarding_magic_fill"] = True
 
@@ -114,14 +113,14 @@ def onboarding_view(request):
             return redirect("accounts:onboarding_choose_path")
 
     step = int(request.GET.get("step", 1))
-    total_steps = 4
+    total_steps = 3
 
     # ── Magic-Fill handoff ────────────────────────────────────────────
     # If the user came from the path-choice screen via the Magic-Fill path,
-    # the OAuth callback dropped them at step=4 with `onboarding_magic_fill`
+    # the OAuth callback dropped them at step=3 with `onboarding_magic_fill`
     # set in session. Pull metadata from the newly-connected account, populate
     # the profile, and bounce them back to Step 1 (now pre-filled).
-    if step == 4 and request.session.get("onboarding_magic_fill"):
+    if step == 3 and request.session.get("onboarding_magic_fill"):
         from apps.platforms.models import SocialAccount
         # Pick the most recently connected/active account — typically the
         # one the user just authorised.
@@ -157,8 +156,11 @@ def onboarding_view(request):
         # No account connected yet — clear flag and fall through to step 4.
         request.session.pop("onboarding_magic_fill", None)
 
-    # Step 4 is a template-only step (connect platforms)
-    if step == 4:
+    # Step 3 is a template-only step (connect platforms) — was Step 4 in
+    # the old four-step wizard. We still fire `step_4_completed` so the
+    # admin analytics funnel (which keys off that marker) works for both
+    # old users (pre-merge) and new users (post-merge).
+    if step == 3:
         if request.method == "POST":
             # ── Complete onboarding ──────────────────────────────────
             request.user.onboarding_completed = True
@@ -201,7 +203,7 @@ def onboarding_view(request):
         from apps.platforms.models import SocialAccount
         connected = SocialAccount.objects.filter(user=request.user, is_active=True)
         return render(request, "accounts/onboarding.html", {
-            "step": 4,
+            "step": 3,
             "total_steps": total_steps,
             "connected_accounts": connected,
             "page_title": "Connect a Platform",
@@ -210,31 +212,32 @@ def onboarding_view(request):
     if step == 1:
         form_class = OnboardingStep1Form
     elif step == 2:
-        form_class = OnboardingStep2Form
-    elif step == 3:
-        form_class = OnboardingStep3Form
+        form_class = OnboardingStep2ReviewForm
     else:
         return redirect("accounts:onboarding")
 
     # Forms that also update User fields receive `user` kwarg
-    extra_kwargs = {}
-    if step in (1, 3):
-        extra_kwargs["user"] = request.user
+    extra_kwargs = {"user": request.user}
 
     if request.method == "POST":
         form = form_class(request.POST, instance=profile, **extra_kwargs)
         if form.is_valid():
             form.save()
             profile.record_onboarding_step(f"step_{step}_completed")
+            # Step 2 is the merged review page (old Step 2 + Step 3). Also
+            # record step_3_completed so the admin analytics funnel stays
+            # comparable across the old/new wizard.
+            if step == 2:
+                profile.record_onboarding_step("step_3_completed")
 
             # If Step 1's industry pack filled defaults, tell the user so they
-            # know what's pre-populated when they hit Step 2 / Step 3.
+            # know what's pre-populated when they hit the review page.
             applied = getattr(form, "applied_pack_fields", None)
             if step == 1 and applied:
                 messages.info(
                     request,
                     f"We've pre-filled {len(applied)} brand defaults based on your "
-                    f"industry. You can adjust any of them in the next steps.",
+                    f"industry. Review and adjust them on the next page.",
                 )
 
             return redirect(f"/accounts/onboarding/?step={step + 1}")

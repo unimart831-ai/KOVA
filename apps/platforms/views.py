@@ -345,9 +345,10 @@ def oauth_callback(request, platform):
         logger.error("OAuth callback failed for %s: %s", platform, exc, exc_info=True)
         messages.error(request, f"Failed to connect: {exc}")
 
-    # If user is still in onboarding, send them back to step 4
+    # If user is still in onboarding, send them back to the platform-connect
+    # step (Step 3 in the merged wizard).
     if not request.user.onboarding_completed:
-        return redirect("/accounts/onboarding/?step=4")
+        return redirect("/accounts/onboarding/?step=3")
     return redirect("platforms:list")
 
 
@@ -417,7 +418,7 @@ def whatsapp_embedded_callback(request):
         messages.error(request, f"Failed to connect WhatsApp: {exc}")
 
     if not request.user.onboarding_completed:
-        return redirect("/accounts/onboarding/?step=4")
+        return redirect("/accounts/onboarding/?step=3")
     return redirect("platforms:list")
 
 

@@ -5,9 +5,8 @@
 {% block page_subtitle %}
 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Step {{ step }} of {{ total_steps }} —
   {% if step == 1 %}tell us about yourself
-  {% elif step == 2 %}define your voice
-  {% elif step == 3 %}set your goals
-  {% elif step == 4 %}connect a platform
+  {% elif step == 2 %}review your brand
+  {% elif step == 3 %}connect a platform
   {% endif %}
 </p>
 {% endblock %}
@@ -20,9 +19,8 @@
       <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Step {{ step }} of {{ total_steps }}</span>
       <span class="text-sm text-gray-500 dark:text-gray-400">
         {% if step == 1 %}About you & brand
-        {% elif step == 2 %}Voice & audience
-        {% elif step == 3 %}Goals & preferences
-        {% elif step == 4 %}Connect a platform
+        {% elif step == 2 %}Review your brand
+        {% elif step == 3 %}Connect a platform
         {% endif %}
       </span>
     </div>
@@ -35,8 +33,8 @@
   <div class="card">
     <div class="card-body">
 
-      {% if step == 4 %}
-        {# ── Step 4: Connect a platform ────────────────────────────── #}
+      {% if step == 3 %}
+        {# ── Step 3: Connect a platform (was Step 4) ───────────────── #}
         <div class="mb-6">
           <h2 class="text-xl font-bold text-gray-900 dark:text-white">Connect your first platform</h2>
           <p class="text-gray-600 dark:text-gray-400 mt-1">
@@ -85,7 +83,7 @@
         <form method="post">
           {% csrf_token %}
           <div class="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
-            <a href="?step=3" class="btn-secondary">Back</a>
+            <a href="?step=2" class="btn-secondary">Back</a>
             <button type="submit" class="btn-primary">
               {% if connected_accounts %}
                 Let's Go!
@@ -154,9 +152,10 @@
           </div>
         {% elif step == 2 %}
           <div class="mb-6">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Define your voice & visual identity</h2>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Review your brand</h2>
             <p class="text-gray-600 dark:text-gray-400 mt-1">
-              The more detail you give here, the better your AI agents will sound and look from day one.
+              We've pre-filled what we could from your industry, profile, or website. Skim each section
+              and edit anything that's off. Anything you skip stays at a sensible default.
             </p>
           </div>
 
@@ -217,17 +216,38 @@
               </p>
             </div>
           </div>
-        {% elif step == 3 %}
-          <div class="mb-6">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Set your goals & agent preferences</h2>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">Choose what matters most — your agents will optimize for these objectives.</p>
-          </div>
         {% endif %}
 
         <form method="post" class="space-y-5" x-data="{ industry: '{{ form.industry.value|default:'' }}' }">
           {% csrf_token %}
 
           {% for field in form %}
+            {# ── Section dividers for the merged Step 2 "Review your brand" page ── #}
+            {% if step == 2 %}
+              {% if field.name == 'brand_voice' %}
+                <div class="pt-2 pb-1 border-t border-gray-100 dark:border-gray-800 first:border-0 first:pt-0">
+                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Voice & audience</h3>
+                </div>
+              {% elif field.name == 'content_pillars_text' %}
+                <div class="pt-3 pb-1 border-t border-gray-100 dark:border-gray-800">
+                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Content & guardrails</h3>
+                </div>
+              {% elif field.name == 'visual_style' %}
+                <div class="pt-3 pb-1 border-t border-gray-100 dark:border-gray-800">
+                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Visuals</h3>
+                </div>
+              {% elif field.name == 'goals_selection' %}
+                <div class="pt-3 pb-1 border-t border-gray-100 dark:border-gray-800">
+                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Goals & cadence</h3>
+                </div>
+              {% elif field.name == 'auto_approve_posts' %}
+                <div class="pt-3 pb-1 border-t border-gray-100 dark:border-gray-800">
+                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Agent autonomy</h3>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">How much should agents act on their own?</p>
+                </div>
+              {% endif %}
+            {% endif %}
+
             {# ── Tone selection (Step 2) — visual grid ── #}
             {% if field.name == 'tone_selection' %}
               <div>

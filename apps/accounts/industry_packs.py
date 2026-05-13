@@ -10,11 +10,11 @@ fall back to `_DEFAULT_PACK`.
 
 Field meanings:
     tone_attributes: list[str]
-        Subset of the 12 tone choices from OnboardingStep2Form.TONE_CHOICES.
+        Subset of the 12 tone choices from OnboardingStep2ReviewForm.TONE_CHOICES.
     content_pillars: list[str]
         Topic themes the Create agent uses as content axes.
     goals: list[str]
-        Subset of the 7 goal choices from OnboardingStep3Form.GOAL_CHOICES.
+        Subset of the 7 goal choices from OnboardingStep2ReviewForm.GOAL_CHOICES.
     posting_frequency: int
         Target posts per week. Restaurants > consultants > legal services.
     default_cta_type: str
@@ -342,7 +342,7 @@ PACKS: dict[str, dict[str, Any]] = {
 
 
 # Replace warm/bold/etc. that aren't in the 12-tone vocabulary with valid ones.
-# The OnboardingStep2Form vocabulary is:
+# The OnboardingStep2ReviewForm vocabulary is:
 # confident, approachable, witty, professional, casual, bold, educational,
 # inspirational, empathetic, authoritative, playful, minimalist.
 # "warm" is not in that list — fold to "empathetic" or "approachable".
