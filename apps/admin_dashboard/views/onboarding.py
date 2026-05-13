@@ -19,12 +19,21 @@ from apps.agents.onboarding_tasks import STUCK_AFTER_SECONDS
 
 
 # Funnel stages, ordered. Each key maps to a predicate over UserProfile.
+#
+# Wizard structure is now 3 UI steps (was 4): Step 1 basics → Step 2 review
+# (merged voice + goals) → Step 3 connect platform. The merged Step 2 page
+# fires BOTH `step_2_completed` and `step_3_completed` so historical user
+# data still maps cleanly onto the funnel. For new users you'll see those
+# two stages tied — that's expected, the form saves them together. For users
+# who signed up before the merge, `step_2_completed` and `step_3_completed`
+# represent two distinct form submits and may show real drop-off between
+# them.
 FUNNEL_STAGES = [
     ("signed_up", "Signed up", None),
     ("step_1_completed", "Step 1 — Basics", "step_1_completed"),
-    ("step_2_completed", "Step 2 — Voice & identity", "step_2_completed"),
-    ("step_3_completed", "Step 3 — Goals & CTA", "step_3_completed"),
-    ("step_4_completed", "Step 4 — Connect platform", "step_4_completed"),
+    ("step_2_completed", "Step 2 — Review (voice saved)", "step_2_completed"),
+    ("step_3_completed", "Step 2 — Review (full saved)", "step_3_completed"),
+    ("step_4_completed", "Step 3 — Connect platform", "step_4_completed"),
     ("intelligence_completed", "Agency chain finished", "intelligence_completed"),
 ]
 
