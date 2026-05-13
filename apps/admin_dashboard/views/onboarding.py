@@ -5,13 +5,27 @@ Surfaces where signups drop out of the onboarding wizard and flags users
 whose post-onboarding agency chain appears wedged (celery dropped, LLM
 provider outage, etc.). Reads the UserProfile.onboarding_step_timestamps
 map populated by apps/accounts/views.py:onboarding_view.
+
+Also surfaces Tier-1/Tier-2 automation adoption — how many users took the
+Magic Fill / URL inference / industry pack paths, plus the industry and
+country mix of the recent cohort. The instrumentation markers it reads:
+
+    path_choice_magic               user picked "auto-fill from social"
+    path_choice_url                 user picked "paste my website"
+    path_choice_manual              user picked "set up manually"
+    magic_fill_applied:<platform>   profile_audit filled fields, by source
+    url_inference_applied           LLM filled fields from a pasted URL
+    industry_pack_applied:<ind>     starter pack filled defaults, by industry
 """
 
+from collections import Counter
 from datetime import timedelta
+from statistics import median
 
 from django.db.models import Q
 from django.shortcuts import render
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 
 from apps.accounts.models import User
 from apps.admin_dashboard.decorators import staff_required
@@ -129,6 +143,100 @@ def onboarding_funnel(request):
                 })
     wizard_abandoners.sort(key=lambda r: r["hours_idle"], reverse=True)
 
+    # ── Tier 1/2 automation adoption ─────────────────────────────────────
+    #
+    # Each profile carries instrumentation markers in onboarding_step_timestamps
+    # so we can count how the new onboarding paths are actually being used.
+    path_counts = {"magic": 0, "url": 0, "manual": 0, "unknown": 0}
+    magic_provider_counts: Counter = Counter()
+    url_success_count = 0
+    industry_pack_count = 0
+
+    industry_distribution: Counter = Counter()
+    country_distribution: Counter = Counter()
+
+    time_to_complete_seconds: list[int] = []
+
+    for u in users:
+        stamps = u.profile.onboarding_step_timestamps or {}
+
+        # Path-choice: classify into one bucket; if user touched multiple
+        # paths, the first one they recorded wins (earliest timestamp).
+        path_keys = [
+            ("magic", stamps.get("path_choice_magic")),
+            ("url", stamps.get("path_choice_url")),
+            ("manual", stamps.get("path_choice_manual")),
+        ]
+        earliest = None
+        chosen = "unknown"
+        for name, ts in path_keys:
+            if not ts:
+                continue
+            parsed_ts = parse_datetime(ts)
+            if parsed_ts and (earliest is None or parsed_ts < earliest):
+                earliest = parsed_ts
+                chosen = name
+        path_counts[chosen] += 1
+
+        # Magic-fill provider breakdown — keys look like
+        # "magic_fill_applied:facebook".
+        for key in stamps:
+            if key.startswith("magic_fill_applied:"):
+                magic_provider_counts[key.split(":", 1)[1]] += 1
+
+        if "url_inference_applied" in stamps:
+            url_success_count += 1
+
+        if any(k.startswith("industry_pack_applied:") for k in stamps):
+            industry_pack_count += 1
+
+        # Industry / country distribution — only for users who got past Step 1.
+        industry = (u.profile.industry or "").strip()
+        if industry:
+            industry_distribution[industry] += 1
+        country = (u.profile.country or "").strip().upper()
+        if country:
+            country_distribution[country] += 1
+
+        # Time-to-complete: signup -> step_4_completed (platform connect).
+        # Excludes never-finished users so the median doesn't get pulled down
+        # by abandoners.
+        s4 = stamps.get("step_4_completed")
+        if s4:
+            parsed_s4 = parse_datetime(s4)
+            if parsed_s4:
+                delta = (parsed_s4 - u.date_joined).total_seconds()
+                if delta > 0:
+                    time_to_complete_seconds.append(int(delta))
+
+    automation_summary = {
+        "path_counts": path_counts,
+        "magic_providers": magic_provider_counts.most_common(),
+        "url_success": url_success_count,
+        "industry_pack_hits": industry_pack_count,
+        # Percent of completed users for each automation path. "completed"
+        # here = step_4_completed fired, so the user actually reached the
+        # platform-connect step.
+        "completed_count": sum(1 for u in users if _has_step(u.profile, "step_4_completed")),
+    }
+    completed = automation_summary["completed_count"] or 1
+    automation_summary["magic_pct"] = round(100 * path_counts["magic"] / completed)
+    automation_summary["url_pct"] = round(100 * path_counts["url"] / completed)
+    automation_summary["manual_pct"] = round(100 * path_counts["manual"] / completed)
+    automation_summary["industry_pack_pct"] = round(100 * industry_pack_count / completed)
+
+    median_seconds = median(time_to_complete_seconds) if time_to_complete_seconds else 0
+    automation_summary["median_minutes_to_complete"] = round(median_seconds / 60, 1)
+    automation_summary["completion_sample_size"] = len(time_to_complete_seconds)
+
+    # Top-10 industry mix and top-5 country mix for the cohort.
+    industry_mix = [
+        {"key": key, "label": dict(_industry_label_map())[key] if key in _industry_label_map() else key,
+         "count": count}
+        for key, count in industry_distribution.most_common(10)
+    ]
+    country_mix = country_distribution.most_common(5)
+
     return render(request, "admin_dashboard/users/onboarding_funnel.html", {
         "page_title": "Onboarding Funnel",
         "total_signups": len(users),
@@ -136,4 +244,13 @@ def onboarding_funnel(request):
         "stuck_users": stuck_users[:50],
         "wizard_abandoners": wizard_abandoners[:50],
         "cohort_days": 60,
+        "automation": automation_summary,
+        "industry_mix": industry_mix,
+        "country_mix": country_mix,
     })
+
+
+def _industry_label_map():
+    """UserProfile.Industry.choices as a dict, for human-readable funnel rows."""
+    from apps.accounts.models import UserProfile
+    return dict(UserProfile.Industry.choices)

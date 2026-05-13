@@ -143,6 +143,11 @@ def apply_magic_fill(user, account) -> list[str]:
             "Magic Fill applied %d fields for %s from %s: %s",
             len(applied), user.email, account.platform, applied,
         )
+        # Funnel marker: lets the admin dashboard count Magic Fill successes
+        # and break them down by source platform.
+        profile.record_onboarding_step(
+            f"magic_fill_applied:{account.platform}"
+        )
 
     # ── Apply the industry starter pack now that we (maybe) have one ─
     # apply_pack is idempotent — only fills fields still empty.

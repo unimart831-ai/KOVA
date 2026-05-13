@@ -9,8 +9,140 @@
   <div class="card">
     <div class="card-body">
       <p class="text-sm text-gray-500 dark:text-gray-400">
-        Last {{ cohort_days }} days — {{ total_signups }} signups
+        Last {{ cohort_days }} days — {{ total_signups }} signups, {{ automation.completed_count }} reached platform connect
+        {% if automation.completion_sample_size %}
+          · median time-to-complete <span class="font-medium text-gray-700 dark:text-gray-200">{{ automation.median_minutes_to_complete }} min</span>
+          <span class="text-xs">(n={{ automation.completion_sample_size }})</span>
+        {% endif %}
       </p>
+    </div>
+  </div>
+
+  {# ── Onboarding paths (Tier 1/2 adoption) ─────────────────────────── #}
+  <div class="card">
+    <div class="card-body space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Path choice</h2>
+        <span class="text-xs text-gray-500 dark:text-gray-400">% of users who reached platform-connect</span>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+
+        <div class="p-3 rounded-xl border border-kova-200 dark:border-kova-800/60 bg-kova-50/40 dark:bg-kova-950/20">
+          <p class="text-xs font-medium uppercase tracking-wide text-kova-700 dark:text-kova-300">Magic Fill</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ automation.path_counts.magic }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ automation.magic_pct }}% of completed</p>
+        </div>
+
+        <div class="p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+          <p class="text-xs font-medium uppercase tracking-wide text-gray-600 dark:text-gray-400">URL inference</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ automation.path_counts.url }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ automation.url_pct }}% of completed</p>
+        </div>
+
+        <div class="p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+          <p class="text-xs font-medium uppercase tracking-wide text-gray-600 dark:text-gray-400">Manual</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ automation.path_counts.manual }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ automation.manual_pct }}% of completed</p>
+        </div>
+
+        <div class="p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+          <p class="text-xs font-medium uppercase tracking-wide text-gray-600 dark:text-gray-400">Unknown</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ automation.path_counts.unknown }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">pre-instrumentation or direct nav</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  {# ── Automation hit rates ─────────────────────────────────────────── #}
+  <div class="card">
+    <div class="card-body space-y-3">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Automation hits</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+
+        {# Magic Fill — show provider breakdown #}
+        <div class="p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+          <p class="text-xs font-medium uppercase tracking-wide text-gray-600 dark:text-gray-400">Magic Fill — by source</p>
+          {% if automation.magic_providers %}
+            <ul class="mt-1 space-y-1">
+              {% for platform, count in automation.magic_providers %}
+                <li class="flex items-center justify-between text-sm">
+                  <span class="text-gray-700 dark:text-gray-200 capitalize">{{ platform }}</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ count }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">No Magic Fills yet.</p>
+          {% endif %}
+        </div>
+
+        {# URL inference success #}
+        <div class="p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+          <p class="text-xs font-medium uppercase tracking-wide text-gray-600 dark:text-gray-400">URL inference — success</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ automation.url_success }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">LLM filled brand fields from a pasted URL</p>
+        </div>
+
+        {# Industry pack hits #}
+        <div class="p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+          <p class="text-xs font-medium uppercase tracking-wide text-gray-600 dark:text-gray-400">Industry pack — applied</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ automation.industry_pack_hits }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ automation.industry_pack_pct }}% of completed got defaults</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  {# ── Industry & country mix ───────────────────────────────────────── #}
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="card">
+      <div class="card-body space-y-3">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Industry mix (top 10)</h2>
+        {% if industry_mix %}
+          <ul class="space-y-1.5">
+            {% for row in industry_mix %}
+              <li>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-700 dark:text-gray-200">{{ row.label }}</span>
+                  <span class="text-gray-500 dark:text-gray-400">{{ row.count }}</span>
+                </div>
+                <div class="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mt-0.5">
+                  <div class="h-full bg-kova-500" style="width: {% widthratio row.count total_signups 100 %}%"></div>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-sm text-gray-500 dark:text-gray-400">No industry data in cohort.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body space-y-3">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Country mix (top 5)</h2>
+        {% if country_mix %}
+          <ul class="space-y-1.5">
+            {% for country, count in country_mix %}
+              <li>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-700 dark:text-gray-200 font-mono">{{ country }}</span>
+                  <span class="text-gray-500 dark:text-gray-400">{{ count }}</span>
+                </div>
+                <div class="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mt-0.5">
+                  <div class="h-full bg-kova-500" style="width: {% widthratio count total_signups 100 %}%"></div>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-sm text-gray-500 dark:text-gray-400">No country data in cohort.</p>
+        {% endif %}
+      </div>
     </div>
   </div>
 

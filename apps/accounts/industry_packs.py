@@ -405,4 +405,14 @@ def apply_pack(profile, industry: str | None) -> list[str]:
 
     if applied:
         profile.save(update_fields=applied)
+        # Funnel marker — counted in admin dashboard adoption metrics.
+        # `record_onboarding_step` is no-op on duplicate so it's safe to call
+        # every time apply_pack runs (Magic Fill can call it a second time).
+        try:
+            profile.record_onboarding_step(f"industry_pack_applied:{industry or 'default'}")
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception(
+                "Failed to record industry_pack_applied for %s", profile.user.email
+            )
     return applied

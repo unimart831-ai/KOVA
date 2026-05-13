@@ -273,3 +273,79 @@ class TestMergedReviewForm:
         assert names.index("brand_voice") < names.index("goals_selection")
         assert names.index("tone_selection") < names.index("posting_frequency")
         assert names.index("auto_approve_posts") < names.index("default_cta_type")
+
+
+# ── Admin instrumentation markers ────────────────────────────────────────────
+
+@pytest.mark.django_db
+class TestInstrumentation:
+    """The admin Onboarding Funnel reads these markers from
+    UserProfile.onboarding_step_timestamps. If they stop firing, the admin
+    dashboard's Tier 1/2 adoption panels go blank."""
+
+    def _fresh_user(self):
+        return User.objects.create_user(
+            username="instr", email="instr@b.com", password="P1!",
+        )
+
+    def test_industry_pack_apply_records_marker(self):
+        from apps.accounts.industry_packs import apply_pack
+        u = self._fresh_user()
+        p = u.profile
+        p.industry = "salon_beauty"
+        p.save(update_fields=["industry"])
+
+        apply_pack(p, "salon_beauty")
+
+        p.refresh_from_db()
+        assert any(
+            k.startswith("industry_pack_applied:") for k in (p.onboarding_step_timestamps or {})
+        ), p.onboarding_step_timestamps
+
+    def test_industry_pack_marker_includes_industry_key(self):
+        from apps.accounts.industry_packs import apply_pack
+        u = self._fresh_user()
+        p = u.profile
+        p.industry = "food_restaurant"
+        p.save(update_fields=["industry"])
+
+        apply_pack(p, "food_restaurant")
+
+        p.refresh_from_db()
+        assert "industry_pack_applied:food_restaurant" in (p.onboarding_step_timestamps or {})
+
+    def test_magic_fill_records_marker_with_platform(self, monkeypatch):
+        """Magic Fill should record `magic_fill_applied:<platform>` when at
+        least one field is populated. This is what powers the provider
+        breakdown panel."""
+        from apps.accounts.magic_fill import apply_magic_fill
+        from apps.platforms.models import SocialAccount
+
+        u = self._fresh_user()
+
+        account = SocialAccount.objects.create(
+            user=u, platform="instagram", platform_user_id="123",
+            username="testbiz", display_name="Test Biz",
+            access_token="dummy", is_active=True,
+        )
+
+        # Stub the audit to return a real-looking ProfileSnapshot.
+        class FakeAudit:
+            error = ""
+            fields_present = {
+                "bio": "We make great coffee in Nairobi.",
+                "website": "https://testbiz.co.ke",
+                "category": "Coffee Shop",
+            }
+
+        monkeypatch.setattr(
+            "apps.profile_audit.auditor.audit_social_account",
+            lambda *args, **kwargs: FakeAudit(),
+        )
+
+        applied = apply_magic_fill(u, account)
+        assert applied, "Magic Fill should have populated at least one field"
+
+        u.profile.refresh_from_db()
+        stamps = u.profile.onboarding_step_timestamps or {}
+        assert "magic_fill_applied:instagram" in stamps

@@ -90,6 +90,10 @@ def onboarding_magic_connect(request):
     Magic-Fill handoff (handled in onboarding_view step=3 below).
     """
     request.session["onboarding_magic_fill"] = True
+    # Record the path-choice selection for admin funnel analytics. Only fires
+    # the first time the user lands here so it reflects the user's initial
+    # decision, not a later mid-flow back-button.
+    request.user.profile.record_onboarding_step("path_choice_magic")
 
     from apps.platforms.models import SocialAccount
     connected = SocialAccount.objects.filter(user=request.user, is_active=True)
@@ -114,6 +118,15 @@ def onboarding_view(request):
 
     step = int(request.GET.get("step", 1))
     total_steps = 3
+
+    # Record the path-choice decision when the user arrives at Step 1 via one
+    # of the path-choice links (`?via=url` or `?via=manual`). The Magic-Fill
+    # path is already recorded in `onboarding_magic_connect`. Only fires once.
+    via = request.GET.get("via")
+    if via in ("url", "manual"):
+        marker = f"path_choice_{via}"
+        if not (profile.onboarding_step_timestamps or {}).get(marker):
+            profile.record_onboarding_step(marker)
 
     # ── Magic-Fill handoff ────────────────────────────────────────────
     # If the user came from the path-choice screen via the Magic-Fill path,
@@ -570,6 +583,12 @@ def infer_brand_from_url(request):
         result["tone_attributes"] = [
             t for t in result.get("tone_attributes", []) if t in allowed_tones
         ]
+
+        # Funnel marker — counted in admin dashboard adoption metrics.
+        try:
+            request.user.profile.record_onboarding_step("url_inference_applied")
+        except Exception:
+            logger.exception("Failed to record url_inference_applied for %s", request.user.email)
 
         return JsonResponse({
             "company_name": result.get("company_name", "") or "",
