@@ -254,6 +254,48 @@ BUSINESSES: list[dict] = [
             ("Bridal Hair & Makeup Package", "12000"),
         ],
     },
+    # ── 13. Bridge Academy — Growth, education, manual (pre-launch) ──
+    #     Ideation-stage EdTech. No website, no live socials, no products.
+    #     Tests AI voice style transfer via brand_voice_examples — the
+    #     primary mechanism Kova has for matching a distinctive voice.
+    {
+        "slug": "bridge",
+        "email": "hello@bridgeacademy.co.ke",
+        "phone": "0712345013",
+        "full_name": "Brian Mokaya",
+        "company_name": "Bridge Academy",
+        "industry": "education",
+        "plan": "growth",
+        "website_url": "",  # ideation stage — no live site yet
+        "target_audience": "Kenyans 18-30 disillusioned by traditional education; looking for practical skills that pay; many in towns with patchy internet.",
+        "brand_voice": (
+            "Direct, story-first, brutally honest with care. Mixes English with "
+            "Swahili and Sheng naturally. Anti-credentialism, pro-action. Skills "
+            "over grades. Every post grounded in a concrete Kenyan scene. Sharp "
+            "aphorisms close each idea. Short paragraphs, lots of white space, "
+            "single-sentence lines for emphasis."
+        ),
+        "key_offerings": [
+            "Mission-based skill courses (30-90 days to first paying client)",
+            "Peer learning network (learners teach learners)",
+            "Digital learner profiles for global opportunities",
+        ],
+        "brand_voice_examples": [
+            "You sat in a lecture hall for 4 years memorizing definitions. Bridge will teach you to land your first paying client in 30 days. The market does not grade on papers. It grades on what you ship.",
+            "Peer learning is not a buzzword on our deck. It is how Mary in Eastleigh learned video editing — from another student in Embu she had never met. The teacher and the learner sharing one Zoom screen and a Canva project. That is the model.",
+            "Your transcript says you got an A in microeconomics. Cool. Now show me what you have built. That is the only question the market is asking in 2026.",
+            "Low bandwidth is not a problem to apologize for. It is a constraint to design around. Bridge runs on 2G. That is on purpose. Because the next great Kenyan freelancer is not in Kilimani. She is in Garissa. She is in Kakuma. She is in Marsabit. And Bridge meets her where she is.",
+        ],
+        "content_pillars": [
+            "Peer learning in action (real learner-to-learner stories)",
+            "Mission-based outcomes — receipts not theory",
+            "Accessibility & low-bandwidth wins",
+            "Digital learner profiles -> global opportunities",
+            "Skills > credentials hot takes",
+        ],
+        "path": "manual",
+        "products": [],
+    },
 ]
 
 
@@ -403,6 +445,16 @@ class Command(BaseCommand):
         profile.target_audience = biz["target_audience"]
         profile.brand_voice = biz["brand_voice"]
         profile.key_offerings = list(biz["key_offerings"])
+
+        # Optional fields — only present on businesses that need them. Bridge
+        # Academy uses brand_voice_examples to make AI match a distinctive
+        # non-corporate voice, and content_pillars to override the
+        # education-pack defaults with venture-specific themes.
+        if biz.get("brand_voice_examples"):
+            profile.brand_voice_examples = list(biz["brand_voice_examples"])
+        if biz.get("content_pillars"):
+            profile.content_pillars = list(biz["content_pillars"])
+
         # Smart-default mimicry from signup
         profile.country = "KE"
         profile.mpesa_phone = biz["phone"]

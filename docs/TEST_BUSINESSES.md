@@ -1,6 +1,6 @@
-# Kova AI — 12 Test Businesses for Full Platform Testing
+# Kova AI — 13 Test Businesses for Full Platform Testing
 
-> **Purpose:** 12 fictional businesses across different industries to onboard onto Kova and test every feature end-to-end.
+> **Purpose:** 13 fictional businesses across different industries to onboard onto Kova and test every feature end-to-end.
 > Each business has a unique profile, plan, platforms, and testing focus.
 
 ---
@@ -21,6 +21,7 @@
 | 10 | PesaPal Finance | Fintech / Financial Services | Growth | LinkedIn, Twitter, FB, Threads | Compliance Tone, Competitor Tracking, Campaigns |
 | 11 | Kakuma Wholesale | Wholesale / Mtumba & Retail | Pro | WhatsApp, FB, TikTok, Instagram | WhatsApp Commerce, Products, Refugee Market, Media Queue |
 | 12 | Kawaida Hair & Beauty | Salon & Beauty Services | Growth | WhatsApp, Instagram, Facebook | Salon persona, WhatsApp-first SME, Magic Fill + Industry Pack |
+| 13 | Bridge Academy | EdTech / Skills Training (ideation stage) | Growth | LinkedIn, Twitter, Instagram | Distinctive voice style transfer, code-switch (English+Swahili+Sheng), Manual onboarding path |
 
 ---
 
@@ -772,6 +773,98 @@ defaults, smart Kenya signup defaults, the WhatsApp completion ping.
 
 ---
 
+## Business 13: Bridge Academy
+
+**Category:** EdTech / Skills Training — Ideation Stage
+**Plan:** Growth (KES 999/mo)
+**Website:** (none yet — development started, no public site)
+
+Bridge Academy is a pre-launch venture focused on practical, mission-based skills
+training for Kenyans 18–30 who feel let down by traditional education. The product
+is in active development but not ready for demo. The marketing voice, however,
+is already very clear — and that's what this test account exercises.
+
+**Why this business is unusual:** the voice is the test target, not the wizard
+flow. Bridge has no live social presence (nothing for Magic Fill to read) and
+no shippable website (nothing for URL inference to scrape). It walks through
+the wizard manually, leans entirely on `brand_voice_examples` to lock in style,
+and then validates that the AI agents can write in that style across content
+and campaigns.
+
+### Brand Profile
+
+| Field | Value |
+|-------|-------|
+| Company Name | Bridge Academy |
+| Industry | Education (`education`) |
+| Stage | Ideation — development started, demo not ready |
+| Target Audience | Kenyans 18–30 disillusioned by traditional education; looking for practical skills that pay; many in towns with patchy internet and limited bandwidth |
+| Brand Voice | Direct, story-first, brutally honest with care. Mixes English with Swahili and Sheng naturally. Anti-credentialism, pro-action. Skills over grades. Every post grounded in a concrete Kenyan scene. Sharp aphorisms close each idea. |
+| Tone | Confident, educational, bold, approachable |
+| Content Pillars | Peer learning in action, Mission-based outcomes (receipts, not theory), Accessibility & low-bandwidth wins, Digital learner profiles → global opportunities, Skills > credentials hot takes |
+
+### The Four Product Pillars (also content pillars)
+
+1. **Peer learning network** — show how knowledge spreads laterally between learners; the kid in Kibera who taught 12 others Canva in a weekend
+2. **Mission-based learning** — practical outcomes over theory; "30 days, one client, KES 5,000 paid. Here's the project he shipped."
+3. **Low-bandwidth system** — works on patchy 2G/3G; designed for towns where uni-style platforms time out
+4. **Digital profile for learners** — portfolio, not transcript; opens doors to global opportunities
+
+### Platforms to Connect
+
+| Platform | Handle | Content Type |
+|----------|--------|-------------|
+| LinkedIn | Bridge Academy | Long-form posts in the Elvis-W. style — thought leadership, founder POV, learner stories |
+| Twitter | @bridgeacademyke | Punchy threads, hot takes on Kenyan education, daily one-liners |
+| Instagram | @bridge.academy | Photo-led posts of real learners; carousel posts breaking down the long-form points |
+
+*Growth plan allows 3 social accounts — perfect fit*
+
+### Brand Voice Examples (CRITICAL — this is what trains the AI)
+
+These are seeded onto the profile via `seed_test_businesses` so the agents have
+real exemplars to pattern-match. The AI should produce content that reads in
+this voice — short paragraphs, code-switching, concrete Kenyan places, sharp
+closers, signing off with the founder's first name where it fits.
+
+> *"You sat in a lecture hall for 4 years memorizing definitions. Bridge will teach you to land your first paying client in 30 days. The market does not grade on papers. It grades on what you ship."*
+
+> *"Peer learning is not a buzzword on our deck. It is how Mary in Eastleigh learned video editing — from another student in Embu she had never met. The teacher and the learner sharing one Zoom screen and a Canva project. That is the model."*
+
+> *"Your transcript says you got an A in microeconomics. Cool. Now show me what you have built. That is the only question the market is asking in 2026."*
+
+> *"Low bandwidth is not a problem to apologize for. It is a constraint to design around. Bridge runs on 2G. That is on purpose. Because the next great Kenyan freelancer is not in Kilimani. She is in Garissa. She is in Kakuma. She is in Marsabit. And Bridge meets her where she is."*
+
+### Features to Test (Voice & Pre-Launch FOCUS)
+
+- [ ] **Brand Voice Examples** — Verify the 4 examples are saved on the profile and surface in the Step 2 review page
+- [ ] **AI Voice Match** — Generate 5 posts from seeds; check the output reads like Elvis-W. (short paragraphs, code-switch, concrete scenes, no corporate-speak)
+- [ ] **Manual Onboarding Path** — Confirm the manual route works when both Magic Fill and URL inference are unavailable
+- [ ] **Industry Pack — education** — Verify defaults applied; check that the bolder bespoke `brand_voice` overrides the pack's softer default tones
+- [ ] **Code-Switch Content** — Verify AI keeps English/Swahili/Sheng mix in generated posts (not pure English, not pure Swahili)
+- [ ] **Pre-Launch Mode** — Test the platform with no products, no website, no live socials — does it still feel useful?
+- [ ] **Content Pillars** — Verify the 5 pillars seed the AI's topic axes correctly
+- [ ] **Daily Brief** — Should be sparse pre-launch (nothing to measure yet); does the dashboard handle this gracefully?
+- [ ] **Industry Pack Collision** — Two `education` businesses (Elimu Hub and Bridge Academy) with deliberately different voices. Confirm Step 2 Review lets users diverge.
+
+### Test Seeds to Create
+
+1. "You do not need a degree to change your life. You need 30 days and discipline. Bridge teaches what universities skip."
+2. "Mary learned video editing from a stranger in Embu. They never met. That is peer learning. That is Bridge."
+3. "Your CV is dead. Your portfolio is alive. Bridge gives you the second one."
+4. "The kid in Garissa with one bar of internet just landed a client in Lisbon. Low bandwidth is not a limitation here. It is the design."
+5. "Stop waiting for HELB. Stop waiting for January. Stop waiting for a lecturer to give you permission. Open YouTube. Pick a skill. Start today. Bridge is for the ones who already did."
+
+### Unique Testing Angles
+
+- **Voice Style Transfer:** The strongest test of whether Kova's AI can match a distinctive non-corporate voice given strong `brand_voice_examples`.
+- **Pre-Launch Use Case:** Bridge has no website, no products, no socials connected. Stress-tests the platform for founders who use Kova as part of going to market — not after launch.
+- **Code-Switching Content:** Specifically tests AI handling of English + Swahili + Sheng mix, the way the founder actually writes.
+- **Manual Path Validation:** The cleanest test of the manual onboarding path — Bridge can't use Magic Fill (no socials) or URL inference (no site). If the manual flow doesn't feel good here, it doesn't feel good for any new founder.
+- **Industry Pack Collision:** Pairs with Elimu Hub. Both `education`, deliberately different voices, both Growth plan. Validates that strong voice examples override pack defaults.
+
+---
+
 ## Onboarding Sequence
 
 ### Phase 1: Setup (Day 1)
@@ -931,43 +1024,46 @@ After running the full test cohort, the admin funnel at
 
 ## Test Coverage Matrix
 
-| Feature | Mara&Moto | PixelCraft | Elimu | Nyama | CloudStack | Makao | Amara | GreenRoots | NeonWave | PesaPal | KakumaWS | Kawaida |
-|---------|:---------:|:----------:|:-----:|:-----:|:----------:|:-----:|:-----:|:----------:|:--------:|:-------:|:--------:|:-------:|
-| **Plan** | Agency | Pro | Growth | Pro | Agency | Pro | Starter | Growth | Agency | Growth | Pro | Growth |
-| Content Creation | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Products | ✅ | | | ✅ | | | ✅ | | | | ✅ | ✅ |
-| Shopify + Pixel | ✅ | | | | ✅ | | | | | | | |
-| Revenue Attribution | ✅ | | | | ✅ | | | | | | | |
-| WhatsApp Full | ✅ | | | ✅ | | ✅ | | | ✅ | | ✅ | ✅ |
-| Memes | ✅ | | | ✅ | | ✅ | | | ✅ | | ✅ | ✅ |
-| Teams | | ✅ | | | ✅ | | | | ✅ | | | |
-| Multi-Brand | | | | | | | | | ✅ | | | |
-| Lead Capture | | ✅ | ✅ | | | ✅ | ✅ | ✅ | | ✅ | | ✅ |
-| Email Marketing | ✅ | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | | ✅ |
-| Email Sequences | | | ✅ | ✅ | | | | ✅ | | ✅ | | |
-| Campaigns | ✅ | ✅ | | | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | |
-| A/B Testing | ✅ | ✅ | ✅ | | ✅ | | | ✅ | ✅ | ✅ | | |
-| Competitor Intel | | ✅ | | | ✅ | | | | | ✅ | | |
-| Media Queue | ✅ | | | ✅ | | | | | ✅ | | ✅ | ✅ |
-| AI Images | ✅ | | | ✅ | | | | | ✅ | | ✅ | ✅ |
-| All 6 Agents | ✅ | | | | ✅ | | | | ✅ | | | |
-| REST API | | | | | ✅ | | | | ✅ | | | |
-| Kova Pages | | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | | ✅ | | |
-| Partner Program | | | | | | | | ✅ | | | | |
-| Plan Limits | | | ✅ | | | | ✅ | ✅ | | ✅ | | ✅ |
-| Starter Ceiling | | | | | | | ✅ | | | | | |
-| Multi-Language | | | | | | | | | | | ✅ | ✅ |
-| Wholesale/Bulk | | | | | | | | | | | ✅ | |
-| **Path Choice — Magic** | ✅ | | | ✅ | | ✅ | | | | | | ✅ |
-| **Path Choice — URL** | | ✅ | ✅ | | ✅ | | | ✅ | | ✅ | | |
-| **Path Choice — Manual** | | | | | | | ✅ | | | | ✅ | |
-| **Industry Pack** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Smart KE Defaults** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Salon Persona** | | | | | | | | | | | | ✅ |
-| **WhatsApp Completion Ping** | | | | ✅ | | ✅ | | | | | ✅ | ✅ |
+| Feature | Mara&Moto | PixelCraft | Elimu | Nyama | CloudStack | Makao | Amara | GreenRoots | NeonWave | PesaPal | KakumaWS | Kawaida | Bridge |
+|---------|:---------:|:----------:|:-----:|:-----:|:----------:|:-----:|:-----:|:----------:|:--------:|:-------:|:--------:|:-------:|:------:|
+| **Plan** | Agency | Pro | Growth | Pro | Agency | Pro | Starter | Growth | Agency | Growth | Pro | Growth | Growth |
+| Content Creation | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Products | ✅ | | | ✅ | | | ✅ | | | | ✅ | ✅ | |
+| Shopify + Pixel | ✅ | | | | ✅ | | | | | | | | |
+| Revenue Attribution | ✅ | | | | ✅ | | | | | | | | |
+| WhatsApp Full | ✅ | | | ✅ | | ✅ | | | ✅ | | ✅ | ✅ | |
+| Memes | ✅ | | | ✅ | | ✅ | | | ✅ | | ✅ | ✅ | |
+| Teams | | ✅ | | | ✅ | | | | ✅ | | | | |
+| Multi-Brand | | | | | | | | | ✅ | | | | |
+| Lead Capture | | ✅ | ✅ | | | ✅ | ✅ | ✅ | | ✅ | | ✅ | ✅ |
+| Email Marketing | ✅ | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | | ✅ | ✅ |
+| Email Sequences | | | ✅ | ✅ | | | | ✅ | | ✅ | | | ✅ |
+| Campaigns | ✅ | ✅ | | | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | | |
+| A/B Testing | ✅ | ✅ | ✅ | | ✅ | | | ✅ | ✅ | ✅ | | | ✅ |
+| Competitor Intel | | ✅ | | | ✅ | | | | | ✅ | | | |
+| Media Queue | ✅ | | | ✅ | | | | | ✅ | | ✅ | ✅ | |
+| AI Images | ✅ | | | ✅ | | | | | ✅ | | ✅ | ✅ | |
+| All 6 Agents | ✅ | | | | ✅ | | | | ✅ | | | | |
+| REST API | | | | | ✅ | | | | ✅ | | | | |
+| Kova Pages | | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | | ✅ | | | ✅ |
+| Partner Program | | | | | | | | ✅ | | | | | |
+| Plan Limits | | | ✅ | | | | ✅ | ✅ | | ✅ | | ✅ | ✅ |
+| Starter Ceiling | | | | | | | ✅ | | | | | | |
+| Multi-Language | | | | | | | | | | | ✅ | ✅ | ✅ |
+| Wholesale/Bulk | | | | | | | | | | | ✅ | | |
+| **Path Choice — Magic** | ✅ | | | ✅ | | ✅ | | | | | | ✅ | |
+| **Path Choice — URL** | | ✅ | ✅ | | ✅ | | | ✅ | | ✅ | | | |
+| **Path Choice — Manual** | | | | | | | ✅ | | | | ✅ | | ✅ |
+| **Industry Pack** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Smart KE Defaults** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Salon Persona** | | | | | | | | | | | | ✅ | |
+| **WhatsApp Completion Ping** | | | | ✅ | | ✅ | | | | | ✅ | ✅ | |
+| **Voice Style Transfer** | | | | | | | | | | | | | ✅ |
+| **Pre-Launch / Ideation** | | | | | | | | | | | | | ✅ |
+| **Industry Pack Collision** | | | ✅ | | | | | | ✅ | | | | ✅ |
 
-**Every feature is covered by at least 2 businesses. Every plan tier is tested by at least 2 businesses. Every Tier-1/Tier-2 onboarding automation is exercised by at least 1 business.**
+**Every feature is covered by at least 2 businesses. Every plan tier is tested by at least 2 businesses. Every Tier-1/Tier-2 onboarding automation is exercised by at least 1 business. Voice style transfer and pre-launch / ideation flows are now covered by Bridge Academy.**
 
 ---
 
-*Kova AI — 12 businesses, 4 plan tiers, every feature tested.*
+*Kova AI — 13 businesses, 4 plan tiers, every feature tested.*
