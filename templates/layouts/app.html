@@ -33,15 +33,18 @@
     </div>
 
     <!-- Navigation -->
-    {# ── Nav reshape 21 → 9 (Phase 3 W10-11 of KOVA_MASTER_PLAN.md) ──
-       Grouped by user job, not by feature category:
-         HOME          — Daily Brief (the AI runs it, you check it)
-         CREATE        — Studio (Trending + Visual Publisher live inside)
-         SCHEDULE      — Queue (Timeline + A/B Tests + Memes live inside)
-         CONVERSATIONS — Inbox / WhatsApp (Engage agent surfaces here)
-         MONEY         — Revenue (Leads + Products + Pixel + Links + Campaigns)
-         INSIGHTS      — Performance (Competitors as a view)
-         SETTINGS      — Platforms / Agents / Teams / Billing / Help / AI Learning #}
+    {% comment %}
+      Nav reshape 21 → 9 (Phase 3 W10-11 of KOVA_MASTER_PLAN.md).
+      Grouped by user job, not by feature category:
+        HOME          — Daily Brief (the AI runs it, you check it)
+        WORK          — Create (Studio + Trending + Visual Publisher)
+                        Schedule (Queue + Timeline + A/B Tests + Campaigns)
+        CUSTOMERS     — Inbox / WhatsApp / Leads
+        MONEY         — Revenue / Products (industry-gated) / Links
+        INSIGHTS      — Performance
+        SETTINGS      — Settings (Platforms, Agents, Pixel, Teams,
+                        Billing, Help collapse into subnav)
+    {% endcomment %}
     <nav class="flex-1 px-3 py-4 overflow-y-auto" aria-label="Primary">
 
       <a href="{% url 'brief:home' %}"
@@ -126,9 +129,11 @@
         Revenue
       </a>
 
-      {# Products tab — only show when the user's industry actually needs a
-         product catalog. Salons, restaurants, retail, e-commerce do. SaaS,
-         consulting, nonprofit, NGO don't. Adapt list as new industries land. #}
+      {% comment %}
+        Products tab — only show when the user's industry actually needs a
+        product catalog. Salons, restaurants, retail, e-commerce do. SaaS,
+        consulting, nonprofit, NGO don't. Adapt list as new industries land.
+      {% endcomment %}
       {% with industry=request.user.profile.industry %}
       {% if industry in 'fashion_beauty,salon_beauty,food_restaurant,wholesale_retail,ecommerce,health,real_estate,travel_tourism,agriculture' %}
       <a href="{% url 'products:list' %}"
