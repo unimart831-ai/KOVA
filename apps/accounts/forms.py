@@ -399,7 +399,13 @@ class OnboardingStep1Form(forms.ModelForm):
 
 
 class OnboardingStep2Form(forms.ModelForm):
-    """Brand voice & audience — with guided tone selection and examples."""
+    """Brand voice & audience — with guided tone selection and examples.
+
+    DEPRECATED — kept for one release cycle. Replaced by
+    OnboardingStep2ReviewForm (the merged voice + goals review page).
+    Don't add features here. Remove once external API clients have
+    migrated.
+    """
 
     TONE_CHOICES = [
         ("confident", "Confident"),
@@ -704,7 +710,14 @@ class OnboardingStep2ReviewForm(forms.ModelForm):
 
 
 class OnboardingStep3Form(forms.ModelForm):
-    """Goals & preferences."""
+    """Goals & preferences.
+
+    DEPRECATED — kept for one release cycle. The wizard now uses
+    OnboardingStep2ReviewForm (the merged voice + goals page from W2).
+    Don't add features here; remove this class once external API clients
+    have migrated. References `auto_engage` because the model still has
+    it for backward compat — new code should use engage_autonomy_level.
+    """
 
     GOAL_CHOICES = [
         ("grow_followers", "Grow followers"),

@@ -67,14 +67,38 @@
         Create
       </a>
 
+      {# Create subnav — appears when on any Create-family path so the merged
+         tabs (Visual Publisher, Trending/Memes) stay discoverable. #}
+      {% if '/content/studio' in request.path or '/memes/' in request.path or '/media-queue/' in request.path or '/content/' in request.path and '/edit/' in request.path %}
+      <div class="ml-8 space-y-0.5 mb-1">
+        <a href="{% url 'content:studio' %}" class="block text-xs py-1 px-2 rounded {% if '/content/studio' in request.path or '/content/' in request.path and '/edit/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Studio</a>
+        <a href="{% url 'media_queue:list' %}" class="block text-xs py-1 px-2 rounded {% if '/media-queue/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Visual Publisher</a>
+        {% if request.plan_limits.memes_enabled %}
+        <a href="{% url 'memes:discover' %}" class="block text-xs py-1 px-2 rounded {% if '/memes/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Trending / Memes</a>
+        {% endif %}
+      </div>
+      {% endif %}
+
       <a href="{% url 'content:queue' %}"
-         {% if '/content/queue' in request.path or '/content/calendar' in request.path or '/content/ab-tests' in request.path or '/campaigns/' in request.path %}aria-current="page"{% endif %}
-         class="{% if '/content/queue' in request.path or '/content/calendar' in request.path or '/content/ab-tests' in request.path or '/campaigns/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+         {% if '/content/queue' in request.path or '/content/calendar' in request.path or '/content/ab-tests' in request.path or '/campaigns/' in request.path or '/emails/' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/content/queue' in request.path or '/content/calendar' in request.path or '/content/ab-tests' in request.path or '/campaigns/' in request.path or '/emails/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if '/content/queue' in request.path or '/content/calendar' in request.path or '/campaigns/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
         </svg>
         Schedule
       </a>
+
+      {# Schedule subnav — Timeline / A/B Tests / Campaigns. #}
+      {% if '/content/queue' in request.path or '/content/calendar' in request.path or '/content/ab-tests' in request.path or '/campaigns/' in request.path or '/emails/' in request.path %}
+      <div class="ml-8 space-y-0.5 mb-1">
+        <a href="{% url 'content:queue' %}" class="block text-xs py-1 px-2 rounded {% if '/content/queue' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Queue</a>
+        <a href="{% url 'content:calendar' %}" class="block text-xs py-1 px-2 rounded {% if '/content/calendar' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Calendar</a>
+        {% if request.plan_limits.ab_testing %}
+        <a href="{% url 'content:ab_test_list' %}" class="block text-xs py-1 px-2 rounded {% if '/content/ab-tests' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">A/B Tests</a>
+        {% endif %}
+        <a href="{% url 'campaigns:list' %}" class="block text-xs py-1 px-2 rounded {% if '/campaigns/' in request.path or '/emails/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Campaigns</a>
+      </div>
+      {% endif %}
 
       <p class="nav-section">Customers</p>
 
@@ -87,6 +111,16 @@
         Inbox
         {% if not request.plan_limits.engagement_agent %}<span class="ml-auto text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">PRO</span>{% endif %}
       </a>
+
+      {# Inbox subnav — surfaces the "AI auto-sent replies" review surface
+         (Engage Agent v2, /engage/auto-sent/) only when the user's on an
+         Engage path so it doesn't clutter the default nav. #}
+      {% if request.plan_limits.engagement_agent and '/engage/' in request.path %}
+      <div class="ml-8 space-y-0.5 mb-1">
+        <a href="{% url 'engage:inbox' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'inbox' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Conversations</a>
+        <a href="{% url 'engage:auto_sent_list' %}" class="block text-xs py-1 px-2 rounded {% if 'auto_sent' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">AI auto-sent</a>
+      </div>
+      {% endif %}
 
       <a href="{% if request.plan_limits.whatsapp_enabled %}{% url 'whatsapp:inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}"
          {% if '/whatsapp/' in request.path %}aria-current="page"{% endif %}
@@ -166,6 +200,17 @@
         </svg>
         Performance
       </a>
+
+      {# Insights subnav — surfaces Competitors (Pro+) when on Insights paths
+         so the feature isn't undiscoverable. #}
+      {% if '/analytics/' in request.path and '/analytics/revenue' not in request.path and '/analytics/attribution' not in request.path and '/analytics/pixel' not in request.path %}
+      <div class="ml-8 space-y-0.5 mb-1">
+        <a href="{% url 'analytics:insights' %}" class="block text-xs py-1 px-2 rounded {% if '/analytics/competitors' not in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Performance</a>
+        {% if request.plan_limits.competitor_tracking %}
+        <a href="{% url 'analytics:competitors' %}" class="block text-xs py-1 px-2 rounded {% if '/analytics/competitors' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Competitors</a>
+        {% endif %}
+      </div>
+      {% endif %}
 
       <p class="nav-section">Settings</p>
 
