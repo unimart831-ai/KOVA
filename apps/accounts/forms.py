@@ -610,7 +610,7 @@ class OnboardingStep2ReviewForm(forms.ModelForm):
             "brand_voice", "target_audience", "brand_restrictions",
             "visual_style",
             # Goals / autonomy
-            "posting_frequency", "auto_approve_posts", "auto_engage",
+            "posting_frequency", "auto_approve_posts", "engage_autonomy_level",
             "default_cta_type", "default_cta_url", "cta_whatsapp",
         ]
         widgets = {
@@ -648,7 +648,7 @@ class OnboardingStep2ReviewForm(forms.ModelForm):
         "posting_frequency",
         "daily_brief_time",
         "auto_approve_posts",
-        "auto_engage",
+        "engage_autonomy_level",
         "default_cta_type",
         "default_cta_url",
         "cta_whatsapp",

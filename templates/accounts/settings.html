@@ -215,7 +215,7 @@
                 {% if field.help_text %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ field.help_text }}</p>{% endif %}
               </div>
 
-            {% elif field.name == 'auto_approve_posts' or field.name == 'auto_engage' %}
+            {% elif field.name == 'auto_approve_posts' %}
               <div class="flex items-start space-x-3 mb-4 p-4 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-100 dark:border-gray-700">
                 <input type="checkbox" name="{{ field.html_name }}" id="id_brand_{{ field.name }}"
                        {% if field.value %}checked{% endif %}
@@ -224,6 +224,25 @@
                   <label for="id_brand_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">{{ field.label }}</label>
                   {% if field.help_text %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ field.help_text }}</p>{% endif %}
                 </div>
+              </div>
+
+            {% elif field.name == 'engage_autonomy_level' %}
+              {# Engage Agent v2 graduated-autonomy dropdown — plan-tier-gated.
+                 The form's __init__ already narrows the choices to whatever
+                 the user's plan allows; we just render. #}
+              <div class="mb-4">
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                <select name="{{ field.html_name }}" id="id_brand_{{ field.name }}"
+                        class="input w-full">
+                  {% for value, label in field.field.choices %}
+                    <option value="{{ value }}" {% if value == field.value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                {% if field.help_text %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ field.help_text }}</p>{% endif %}
+                {% for error in field.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Recent auto-sent replies → <a href="{% url 'engage:auto_sent_list' %}" class="text-kova-600 dark:text-kova-400 underline">view + correct</a>
+                </p>
               </div>
             {% endif %}
           {% endfor %}

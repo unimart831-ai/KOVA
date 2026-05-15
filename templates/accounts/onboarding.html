@@ -300,9 +300,25 @@
                 </div>
               </div>
 
-            {# ── Auto-engage toggle (Step 3) ── #}
-            {% elif field.name == 'auto_engage' %}
-              <div class="flex items-start space-x-3 p-4 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-100 dark:border-gray-700">
+            {# ── Engage autonomy level (Step 2 — was the old auto_engage toggle) ── #}
+            {% elif field.name == 'engage_autonomy_level' %}
+              <div class="p-4 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-100 dark:border-gray-700">
+                <label for="id_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white block mb-1">
+                  How much should the Engage Agent reply on its own?
+                </label>
+                <select name="{{ field.html_name }}" id="id_{{ field.name }}" class="input w-full">
+                  {% for value, label in field.field.choices %}
+                    <option value="{{ value }}" {% if value == field.value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                <p class="text-xs text-gray-500 mt-2">
+                  Suggest = AI drafts every reply, you approve. Graduated = AI auto-sends safe replies (≥0.85 confidence), drafts tricky ones. Available levels depend on your plan.
+                </p>
+              </div>
+
+            {# ── (Legacy auto_engage checkbox removed — replaced by engage_autonomy_level above) ── #}
+            {% elif field.name == 'auto_engage_legacy_removed' %}
+              <div style="display:none;">
                 <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
                        {% if field.value %}checked{% endif %}
                        class="mt-0.5 rounded border-gray-300 text-kova-600 focus:ring-kova-500">

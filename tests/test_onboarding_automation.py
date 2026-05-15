@@ -203,7 +203,7 @@ class TestMergedReviewForm:
             # Goals & cadence
             "goals_selection", "posting_frequency", "daily_brief_time",
             # Autonomy
-            "auto_approve_posts", "auto_engage",
+            "auto_approve_posts", "engage_autonomy_level",
             # CTA
             "default_cta_type", "default_cta_url", "cta_whatsapp",
         }
@@ -226,7 +226,7 @@ class TestMergedReviewForm:
             "posting_frequency": 5,
             "daily_brief_time": "07:00",
             "auto_approve_posts": False,
-            "auto_engage": True,
+            "engage_autonomy_level": "suggest",
             "default_cta_type": "whatsapp",
             "default_cta_url": "",
             "cta_whatsapp": "254712345678",
@@ -248,7 +248,7 @@ class TestMergedReviewForm:
         # Goals + autonomy + CTA — proves old Step 3 fields save too
         assert "grow_followers" in p.goals
         assert p.posting_frequency == 5
-        assert p.auto_engage is True
+        assert p.engage_autonomy_level == "suggest"
         assert p.default_cta_type == "whatsapp"
 
     def test_form_preserves_user_pillars_on_redisplay(self):
