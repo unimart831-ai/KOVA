@@ -238,19 +238,49 @@ class Post(SoftDeleteMixin, models.Model):
     @property
     def full_tracked_url(self):
         """Builds the CTA URL with UTM parameters appended."""
-        if not self.cta_url or self.cta_type in ("none", "phone", "email", "whatsapp"):
-            return self.cta_url
+        return self.tracked_url(self.cta_url) if self.cta_url and self.cta_type not in (
+            "none", "phone", "email", "whatsapp"
+        ) else self.cta_url
+
+    def tracked_url(self, url):
+        """Canonical UTM injector — append THIS post's UTM fields to any URL.
+
+        Used by the publishing pipeline (apps/content/tasks.py) so every link
+        in the post body, first comment, and CTA gets attributed back to this
+        post and the campaign that owns it. This is the load-bearing function
+        for revenue attribution.
+
+        Idempotent: returns the URL unchanged if it's empty, not http(s), or
+        already carries any `utm_*` parameter. Auto-fills the Post's UTM
+        fields from context (platform, seed, post id) if they aren't set yet,
+        but does NOT save them — the caller should `populate_utm()` + save
+        before publish if it wants the values persisted.
+        """
+        if not url:
+            return url
+        if not (url.startswith("http://") or url.startswith("https://")):
+            return url
         from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
-        parsed = urlparse(self.cta_url)
+        parsed = urlparse(url)
         params = parse_qs(parsed.query)
-        if self.utm_source:
-            params["utm_source"] = [self.utm_source]
-        if self.utm_medium:
-            params["utm_medium"] = [self.utm_medium]
-        if self.utm_campaign:
-            params["utm_campaign"] = [self.utm_campaign]
-        if self.utm_content:
-            params["utm_content"] = [self.utm_content]
+        # Don't overwrite if any UTM is already present on the URL.
+        if any(k.startswith("utm_") for k in params):
+            return url
+
+        # Use the Post's UTM if present, else derive from context.
+        utm_source = self.utm_source or (
+            self.platform or (self.social_account.platform if self.social_account_id else "") or "direct"
+        )
+        utm_medium = self.utm_medium or "social"
+        utm_campaign = self.utm_campaign or (str(self.seed_id)[:8] if self.seed_id else f"kova_{str(self.pk)[:8]}")
+        # utm_content is the post id prefix — used by Pixel attribution at
+        # apps/analytics/pixel.py:_attribute_to_post to range-query Post.id.
+        utm_content = self.utm_content or str(self.pk)[:8]
+
+        params["utm_source"] = [utm_source]
+        params["utm_medium"] = [utm_medium]
+        params["utm_campaign"] = [utm_campaign]
+        params["utm_content"] = [utm_content]
         flat = {k: v[0] for k, v in params.items()}
         new_query = urlencode(flat)
         return urlunparse(parsed._replace(query=new_query))

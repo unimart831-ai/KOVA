@@ -85,8 +85,16 @@ def _public_url_for_file(file_name: str):
 _URL_RE = re.compile(r'(https?://[^\s<>"\']+)')
 
 
-def _add_utm_to_url(url: str, platform: str, post_id: str) -> str:
-    """Add UTM parameters to a single URL, preserving existing query params."""
+def _add_utm_to_url(url: str, platform: str, post_id: str, post=None) -> str:
+    """Add UTM parameters to a single URL, preserving existing query params.
+
+    When ``post`` is provided, delegates to ``Post.tracked_url`` so the link
+    carries the post's actual UTM context (including campaign assignment).
+    Falls back to the legacy platform/post-id-prefix scheme when no post is
+    available (e.g. for callers outside the publish pipeline).
+    """
+    if post is not None:
+        return post.tracked_url(url)
     parsed = urlparse(url)
     existing = parse_qs(parsed.query)
     # Don't overwrite if UTM already present
@@ -103,13 +111,21 @@ def _add_utm_to_url(url: str, platform: str, post_id: str) -> str:
     return urlunparse(parsed._replace(query=new_query))
 
 
-def add_utm_tracking(content: str, platform: str, post_id: str) -> str:
+def add_utm_tracking(content: str, platform: str, post_id: str, post=None) -> str:
+    """Find all URLs in post content and append UTM parameters.
+
+    Returns the content with UTM-tagged URLs. Pass a ``post`` object when
+    you want campaign-aware tagging; the function will use the Post's own
+    utm_source / utm_medium / utm_campaign / utm_content fields instead of
+    the legacy hardcoded platform/post-id-prefix scheme. This is what wires
+    Kova-published posts to the Pixel attribution chain in
+    apps/analytics/pixel.py:_attribute_to_post.
     """
-    Find all URLs in post content and append UTM parameters.
-    Returns the content with UTM-tagged URLs.
-    """
+    if not content:
+        return content
+
     def replace_url(match):
-        return _add_utm_to_url(match.group(0), platform, str(post_id))
+        return _add_utm_to_url(match.group(0), platform, str(post_id), post=post)
     return _URL_RE.sub(replace_url, content)
 
 
@@ -471,8 +487,15 @@ def publish_post(self, post_id: str):
             # consistently, matching the same pattern as the Facebook branch.
             publish_kwargs["page_access_token"] = meta.get("page_access_token") or account.access_token
 
-        # Add UTM tracking to any URLs in the content
-        publish_content = add_utm_tracking(post.content_text, account.platform, str(post.id))
+        # ── UTM tracking — campaign-aware ───────────────────────────────
+        # Make sure the Post's own utm_* fields are populated so the URL
+        # tagger uses them (campaign attribution depends on it). This is
+        # cheap, idempotent, and a no-op for re-runs.
+        post.populate_utm()
+        post.save(update_fields=["utm_source", "utm_medium", "utm_campaign", "utm_content", "updated_at"])
+
+        # Add UTM tracking to any URLs in the content body
+        publish_content = add_utm_tracking(post.content_text, account.platform, str(post.id), post=post)
 
         # ── Diagnostic: content audit at publish time ─────────────────
         _db_len = len(post.content_text) if post.content_text else 0
@@ -628,8 +651,13 @@ def publish_post(self, post_id: str):
             # Fall back to cta_url if no explicit first_comment was set
             if not first_comment_text and post.cta_type == "link" and post.cta_url:
                 label = (post.cta_text or "Learn more").strip()
-                tracked_url = _add_utm_to_url(post.cta_url, "facebook", str(post.id))
+                tracked_url = post.tracked_url(post.cta_url)
                 first_comment_text = f"{label}: {tracked_url}"
+            # Tag any URLs the user (or AI) already embedded in first_comment
+            elif first_comment_text:
+                first_comment_text = add_utm_tracking(
+                    first_comment_text, "facebook", str(post.id), post=post,
+                )
             if first_comment_text:
                 page_token = publish_kwargs.get("page_access_token", account.access_token)
                 try:
@@ -659,7 +687,19 @@ def publish_post(self, post_id: str):
         # reinforces the CTA and prompts saves (the top IG algorithm signal).
         if account.platform == "instagram" and result.platform_post_id:
             ig_fc_text = (post.first_comment or "").strip()
-            if not ig_fc_text:
+            if not ig_fc_text and post.cta_type == "link" and post.cta_url:
+                # IG caption links aren't clickable, but first-comment links are
+                # still tappable on mobile and copy-pasteable. Surface the CTA
+                # here when no first_comment was authored — and tag it so the
+                # click flows back through Pixel attribution.
+                label = (post.cta_text or "Tap link in bio").strip()
+                tracked_url = post.tracked_url(post.cta_url)
+                ig_fc_text = f"{label}: {tracked_url}"
+            elif ig_fc_text:
+                ig_fc_text = add_utm_tracking(
+                    ig_fc_text, "instagram", str(post.id), post=post,
+                )
+            else:
                 ig_fc_text = "💾 Save this for later!"
             page_token = publish_kwargs.get("page_access_token", account.access_token)
             try:
@@ -693,8 +733,13 @@ def publish_post(self, post_id: str):
             # Fall back to cta_url if no explicit first_comment was set
             if not li_fc_text and post.cta_type == "link" and post.cta_url:
                 label = (post.cta_text or "Learn more").strip()
-                tracked_url = _add_utm_to_url(post.cta_url, "linkedin", str(post.id))
+                tracked_url = post.tracked_url(post.cta_url)
                 li_fc_text = f"{label}: {tracked_url}"
+            # Tag any URLs the user (or AI) already embedded in first_comment
+            elif li_fc_text:
+                li_fc_text = add_utm_tracking(
+                    li_fc_text, "linkedin", str(post.id), post=post,
+                )
             if li_fc_text:
                 try:
                     li_fc_result = provider.post_comment(
