@@ -571,6 +571,21 @@ WHATSAPP_VERIFY_TOKEN = env("WHATSAPP_VERIFY_TOKEN", default="kova-whatsapp-veri
 WHATSAPP_APP_SECRET = env("WHATSAPP_APP_SECRET", default="")            # For webhook signature validation
 FB_WA_CONFIG_ID = env("FB_WA_CONFIG_ID", default="")                    # Facebook Login for Business config ID (Embedded Signup)
 
+# Engage Agent v2 — graduated autonomy rollout flag.
+#
+# Default False so a code-only deploy doesn't surprise prod by auto-sending
+# replies. Flip to True (per user or globally) when the W2 work has been
+# observed safe on internal test accounts (Kawaida / Nyama / Mara).
+#
+# Spec: docs/specs/ENGAGE_AGENT_V2_SPEC.md
+#
+# Even when this is False, the new routing layer is still exercised — every
+# AI reply runs through `engage_routing.route_reply()` and gets confidence,
+# intent, and safety_flags persisted on the Interaction. The only thing
+# this flag gates is whether AUTO_SEND decisions actually post to platforms
+# vs. fall back to DRAFT_FOR_REVIEW.
+ENGAGE_GRADUATED_AUTONOMY_ENABLED = env.bool("ENGAGE_GRADUATED_AUTONOMY_ENABLED", default=False)
+
 # Onboarding completion ping — fires from agents.onboarding_tasks once the
 # "agency first meeting" task chain finishes. Requires an approved Meta
 # template; leave empty to disable (graceful no-op).

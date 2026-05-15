@@ -275,3 +275,247 @@ class TestSingleReplyPayload:
         out = _parse_reply_payload("")
         assert out["action"] == "no_reply"
         assert out["confidence"] == 0.0
+
+
+# ── auto_respond — the wiring (Commit 2) ────────────────────────────────────
+
+
+@pytest.fixture
+def engage_user(db):
+    """A Growth-tier user with a connected social account and a candidate
+    interaction. Returns (user, interaction)."""
+    from apps.platforms.models import SocialAccount
+    from apps.engage.models import Interaction
+
+    u = User.objects.create_user(
+        username="engage", email="engage@b.com", password="P1!",
+    )
+    # Growth plan so GRADUATED is allowed
+    u.profile.plan = "growth"
+    u.profile.engage_autonomy_level = "graduated"
+    u.profile.save(update_fields=["plan", "engage_autonomy_level"])
+
+    account = SocialAccount.objects.create(
+        user=u, platform="instagram", platform_user_id="ig123",
+        username="testbiz", display_name="Test Biz",
+        access_token="dummy", is_active=True,
+    )
+
+    interaction = Interaction.objects.create(
+        user=u, social_account=account, platform="instagram",
+        interaction_type=Interaction.InteractionType.COMMENT,
+        author_name="Customer", content="What time are you open today?",
+        ai_suggested_reply="Open till 11pm 🙏",
+        ai_confidence=0.92, ai_intent="hours", safety_flags=[],
+        platform_interaction_id="igcomment_123",
+    )
+    return u, account, interaction
+
+
+@pytest.mark.django_db
+class TestAutoRespondRouting:
+    """Phase 1 W2 Commit 2 — auto_respond now uses engage_routing instead
+    of always queuing for review. With the global flag off, AUTO_SEND
+    decisions fall back to DRAFT_FOR_REVIEW so we test the routing logic
+    without actually hitting platform APIs."""
+
+    def test_high_confidence_auto_sends_when_flag_on(self, engage_user, settings, monkeypatch):
+        from apps.engage.models import Interaction
+        u, account, interaction = engage_user
+
+        settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED = True
+
+        # Stub the actual platform send so we don't hit Instagram in tests.
+        monkeypatch.setattr(
+            "apps.agents.engage_agent._send_reply_to_platform",
+            lambda i: True,
+        )
+
+        from apps.agents.engage_agent import auto_respond
+        counts = auto_respond(u)
+        assert counts["auto_sent"] == 1
+        interaction.refresh_from_db()
+        assert interaction.status == Interaction.Status.AI_REPLIED
+        assert interaction.ai_reply_sent == "Open till 11pm 🙏"
+        assert interaction.responded_at is not None
+
+    def test_high_confidence_falls_back_to_draft_when_flag_off(self, engage_user, settings):
+        from apps.engage.models import Interaction
+        u, account, interaction = engage_user
+
+        settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED = False
+
+        from apps.agents.engage_agent import auto_respond
+        counts = auto_respond(u)
+        assert counts["auto_sent"] == 0
+        assert counts["drafted"] == 1
+        interaction.refresh_from_db()
+        assert interaction.status == Interaction.Status.FLAGGED
+        # Did NOT auto-send (no ai_reply_sent)
+        assert interaction.ai_reply_sent == ""
+
+    def test_low_confidence_escalates(self, engage_user, settings):
+        from apps.engage.models import Interaction
+        u, _, interaction = engage_user
+        interaction.ai_confidence = 0.30
+        interaction.save(update_fields=["ai_confidence"])
+
+        settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED = True
+
+        from apps.agents.engage_agent import auto_respond
+        counts = auto_respond(u)
+        assert counts["escalated"] == 1
+        assert counts["auto_sent"] == 0
+
+    def test_safety_flag_blocks_auto_send(self, engage_user, settings, monkeypatch):
+        u, _, interaction = engage_user
+        interaction.safety_flags = ["intent_complaint"]
+        interaction.save(update_fields=["safety_flags"])
+
+        settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED = True
+        # If the platform send WERE called, this would crash the test.
+        # Stays uncalled because safety flag forces DRAFT_FOR_REVIEW.
+        monkeypatch.setattr(
+            "apps.agents.engage_agent._send_reply_to_platform",
+            lambda i: pytest.fail("Should not have auto-sent with safety flag"),
+        )
+
+        from apps.agents.engage_agent import auto_respond
+        counts = auto_respond(u)
+        assert counts["auto_sent"] == 0
+        assert counts["drafted"] == 1
+
+    def test_off_level_skips_everything(self, engage_user, settings):
+        u, _, _ = engage_user
+        u.profile.engage_autonomy_level = "off"
+        u.profile.save(update_fields=["engage_autonomy_level"])
+        settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED = True
+
+        from apps.agents.engage_agent import auto_respond
+        counts = auto_respond(u)
+        assert counts == {"auto_sent": 0, "drafted": 0, "escalated": 0, "skipped": 0}
+
+    def test_emergency_pause_halts_everything(self, engage_user, settings):
+        u, _, _ = engage_user
+        u.profile.emergency_pause = True
+        u.profile.save(update_fields=["emergency_pause"])
+        settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED = True
+
+        from apps.agents.engage_agent import auto_respond
+        counts = auto_respond(u)
+        assert counts == {"auto_sent": 0, "drafted": 0, "escalated": 0, "skipped": 0}
+
+    def test_plan_downgrade_clamps_autonomy_level(self, engage_user, settings, monkeypatch):
+        """A Growth user set to GRADUATED, then downgraded to Starter, must
+        not keep auto-sending. clamp_level_to_plan downgrades them
+        in-memory at routing time."""
+        u, _, _ = engage_user
+        # User had graduated set when on Growth; admin downgrades to starter
+        u.profile.plan = "starter"
+        u.profile.save(update_fields=["plan"])
+        settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED = True
+        monkeypatch.setattr(
+            "apps.agents.engage_agent._send_reply_to_platform",
+            lambda i: pytest.fail("Should not have auto-sent after plan downgrade"),
+        )
+
+        from apps.agents.engage_agent import auto_respond
+        counts = auto_respond(u)
+        # Effective level becomes SUGGEST, so draft (not auto-send)
+        assert counts["auto_sent"] == 0
+        assert counts["drafted"] == 1
+
+    def test_dm_never_auto_sends_v2(self, engage_user, settings, monkeypatch):
+        """DM auto-send is deliberately deferred. Even at confidence 1.0
+        with the flag on, _send_reply_to_platform returns False for DMs."""
+        from apps.engage.models import Interaction
+        u, _, interaction = engage_user
+        interaction.interaction_type = Interaction.InteractionType.DM
+        interaction.ai_confidence = 1.0
+        interaction.save(update_fields=["interaction_type", "ai_confidence"])
+
+        settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED = True
+
+        from apps.agents.engage_agent import auto_respond
+        counts = auto_respond(u)
+        # _send_reply_to_platform returns False for DMs -> drafted (fallback)
+        assert counts["auto_sent"] == 0
+        assert counts["drafted"] == 1
+
+
+# ── BrandProfileForm tier-gating ────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestSettingsFormTierGating:
+    """Plan-tier-gating in the settings form. Starter users can't see
+    GRADUATED; Growth can't see AGGRESSIVE; Agency sees all."""
+
+    def _make_user(self, plan="starter"):
+        u = User.objects.create_user(
+            username=f"tier_{plan}", email=f"{plan}@b.com", password="P1!",
+        )
+        u.profile.plan = plan
+        u.profile.save(update_fields=["plan"])
+        return u
+
+    def test_starter_only_sees_off_and_suggest(self):
+        from apps.accounts.forms import BrandProfileForm
+        u = self._make_user("starter")
+        form = BrandProfileForm(instance=u.profile)
+        choices = dict(form.fields["engage_autonomy_level"].choices)
+        assert set(choices.keys()) == {"off", "suggest"}
+
+    def test_growth_sees_through_graduated(self):
+        from apps.accounts.forms import BrandProfileForm
+        u = self._make_user("growth")
+        form = BrandProfileForm(instance=u.profile)
+        choices = dict(form.fields["engage_autonomy_level"].choices)
+        assert set(choices.keys()) == {"off", "suggest", "graduated"}
+        assert "aggressive" not in choices
+
+    def test_agency_sees_all_levels(self):
+        from apps.accounts.forms import BrandProfileForm
+        u = self._make_user("agency")
+        form = BrandProfileForm(instance=u.profile)
+        choices = dict(form.fields["engage_autonomy_level"].choices)
+        assert set(choices.keys()) == {"off", "suggest", "graduated", "aggressive"}
+
+    def test_starter_post_with_graduated_rejected(self):
+        """Defence in depth: even if the form is tampered, the server-side
+        clean rejects an out-of-plan level."""
+        from apps.accounts.forms import BrandProfileForm
+        u = self._make_user("starter")
+        # Build a minimal valid form data POST
+        form = BrandProfileForm(
+            instance=u.profile,
+            data={
+                "company_name": "T",
+                "engage_autonomy_level": "graduated",
+                "posting_frequency": 5,
+                "content_language": "en",
+                "default_cta_type": "none",
+                "industry": "",
+                "industry_other": "",
+                "country": "",
+                "city": "",
+                "brand_voice": "",
+                "target_audience": "",
+                "brand_restrictions": "",
+                "visual_style": "auto",
+                "brand_logo_url": "",
+                "default_cta_url": "",
+                "cta_phone": "",
+                "cta_email": "",
+                "cta_whatsapp": "",
+                "auto_approve_posts": False,
+                "tone_selection": [],
+                "content_pillars_text": "",
+                "brand_voice_examples_text": "",
+                "brand_colors_text": "",
+                "key_offerings_text": "",
+                "goals_selection": [],
+            },
+        )
+        assert not form.is_valid()
+        assert "engage_autonomy_level" in form.errors

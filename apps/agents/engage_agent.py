@@ -875,70 +875,192 @@ def reply_payload_to_text(payload):
 # ─── Auto-Respond ────────────────────────────────────────────────────────────
 
 def auto_respond(user):
+    """Route AI replies through engage_routing — Engage Agent v2 (W2 May 2026).
+
+    Replaces the old "always queue for review" behavior. Each candidate
+    interaction's confidence + safety_flags + the user's autonomy level
+    decide whether to auto-send, draft for review, or escalate.
+
+    Gated by `settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED` — even when the
+    routing returns AUTO_SEND, we fall back to DRAFT_FOR_REVIEW until that
+    flag flips. The new code path is exercised on every cycle either way
+    so bugs surface before the flag goes live.
+
+    Returns a dict summary: {"auto_sent", "drafted", "escalated", "skipped"}.
     """
-    Queue AI-suggested replies for user review instead of auto-sending.
+    from django.conf import settings
+    from apps.agents.engage_routing import (
+        RoutingAction,
+        route_reply,
+        clamp_level_to_plan,
+    )
 
-    When auto_engage=True, replies are staged as PENDING_REVIEW so the user
-    can approve/reject in the Engage inbox. A notification summary is sent
-    so the user knows replies are waiting.
-
-    This ensures NO reply goes to a real person without human approval,
-    protecting the user's brand reputation.
-
-    Criteria:
-      - Sentiment is positive
-      - Interaction is a comment or reply (not DM — too personal)
-      - Reply has been generated
-      - Interaction is still in NEW status
-
-    Returns count of replies queued for review.
-    """
     profile = user.profile
-    if not profile.auto_engage:
-        return 0
 
-    # ── Emergency pause — halt all autonomous engagement ──────────────
+    # OFF disables the agent entirely — same as the legacy auto_engage=False
+    if profile.engage_autonomy_level == "off":
+        return {"auto_sent": 0, "drafted": 0, "escalated": 0, "skipped": 0}
+
+    # Emergency pause halts all autonomous agent activity
     if profile.emergency_pause:
         logger.info("EMERGENCY PAUSE: Engage agent skipping auto-respond for %s", user.email)
-        return 0
+        return {"auto_sent": 0, "drafted": 0, "escalated": 0, "skipped": 0}
 
     config = AgentConfig.objects.filter(user=user, agent_type="engage").first()
     if config and not config.is_active:
-        return 0
+        return {"auto_sent": 0, "drafted": 0, "escalated": 0, "skipped": 0}
 
-    # Only auto-reply to positive comments (safest)
+    # Defence in depth: clamp the user's level to whatever their plan allows.
+    # A plan downgrade between cycles must not let a stale AGGRESSIVE flag
+    # keep auto-sending.
+    effective_level = clamp_level_to_plan(
+        profile.engage_autonomy_level, (profile.plan or "starter").lower(),
+    )
+
+    autonomy_globally_enabled = bool(
+        getattr(settings, "ENGAGE_GRADUATED_AUTONOMY_ENABLED", False)
+    )
+
+    # Candidates: comments + DMs with a draft reply ready. Sentiment filter
+    # dropped — the routing layer + safety rails handle that better than the
+    # old positive-only heuristic (complaints route to draft via safety
+    # rails, praise can auto-send via high confidence).
     candidates = Interaction.objects.filter(
         user=user,
-        sentiment="positive",
-        interaction_type__in=["comment", "reply"],
+        interaction_type__in=["comment", "reply", "dm"],
         status=Interaction.Status.NEW,
     ).exclude(
         ai_suggested_reply="",
-    ).select_related("social_account")[:5]  # Cap at 5 per cycle
+    ).select_related("social_account", "post")[:10]
 
-    queued = 0
+    counts = {"auto_sent": 0, "drafted": 0, "escalated": 0, "skipped": 0}
+
     for interaction in candidates:
-        # Stage the reply for human review — do NOT send to platform
-        interaction.status = Interaction.Status.FLAGGED  # "flagged" = needs user review
-        interaction.save(update_fields=["status"])
-        queued += 1
+        confidence = interaction.ai_confidence or 0.0
+        safety_flags = list(interaction.safety_flags or [])
 
-        logger.info(
-            "Queued AI reply for review: %s comment from %s on %s",
-            interaction.sentiment, interaction.author_name,
-            interaction.social_account.platform,
+        action = route_reply(
+            autonomy_level=effective_level,
+            confidence=confidence,
+            safety_flags=safety_flags,
         )
 
-    # Notify user that replies are waiting for their approval
-    if queued:
+        # When the global flag is off, AUTO_SEND decisions soft-fall through
+        # to DRAFT_FOR_REVIEW. The new routing layer still ran so we catch
+        # any bugs before flipping the flag.
+        if action == RoutingAction.AUTO_SEND and not autonomy_globally_enabled:
+            action = RoutingAction.DRAFT_FOR_REVIEW
+
+        if action == RoutingAction.AUTO_SEND:
+            sent_ok = _send_reply_to_platform(interaction)
+            if sent_ok:
+                interaction.status = Interaction.Status.AI_REPLIED
+                interaction.ai_reply_sent = interaction.ai_suggested_reply
+                interaction.responded_at = timezone.now()
+                interaction.save(update_fields=[
+                    "status", "ai_reply_sent", "responded_at",
+                ])
+                counts["auto_sent"] += 1
+                logger.info(
+                    "ENGAGE auto-sent reply (conf=%.2f, level=%s) on %s/%s",
+                    confidence, effective_level,
+                    interaction.social_account.platform if interaction.social_account else "?",
+                    interaction.id,
+                )
+            else:
+                # Send failed — fall back to draft so the user can retry
+                interaction.status = Interaction.Status.FLAGGED
+                interaction.save(update_fields=["status"])
+                counts["drafted"] += 1
+
+        elif action == RoutingAction.DRAFT_FOR_REVIEW:
+            interaction.status = Interaction.Status.FLAGGED
+            interaction.save(update_fields=["status"])
+            counts["drafted"] += 1
+
+        elif action == RoutingAction.ESCALATE:
+            interaction.status = Interaction.Status.FLAGGED
+            interaction.save(update_fields=["status"])
+            counts["escalated"] += 1
+
+        else:  # RoutingAction.SKIP
+            counts["skipped"] += 1
+
+    # Single summary notification per cycle, only when there's something to
+    # surface to the user.
+    notify_count = counts["drafted"] + counts["escalated"]
+    if notify_count or counts["auto_sent"]:
         from apps.notifications.models import Notification
-        Notification.create_for_user(
-            user, "agent_action",
-            f"💬 {queued} AI-suggested replies ready for your review in the Engage inbox.",
+        if counts["auto_sent"]:
+            body_parts = [f"💬 {counts['auto_sent']} reply(s) auto-sent"]
+            if notify_count:
+                body_parts.append(f"{notify_count} need review")
+            body = " · ".join(body_parts) + "."
+        else:
+            body = f"💬 {notify_count} AI-suggested replies ready for your review in the Engage inbox."
+        Notification.create_for_user(user, "agent_action", body)
+        logger.info(
+            "Engage cycle for %s: %d auto-sent, %d drafted, %d escalated, %d skipped",
+            user.email,
+            counts["auto_sent"], counts["drafted"], counts["escalated"], counts["skipped"],
         )
-        logger.info("Queued %d replies for review for %s", queued, user.email)
 
-    return queued
+    return counts
+
+
+def _send_reply_to_platform(interaction):
+    """Actually post the reply to the social platform.
+
+    Returns True if the platform API succeeded. False on any failure (no
+    provider, expired token, API error). The caller falls back to
+    DRAFT_FOR_REVIEW on False so the user can retry from the inbox.
+
+    Only supports comment + reply auto-send for now. DMs are queued for
+    review in v2 — full DM auto-send lands in Phase 3 work once the per-
+    platform DM APIs are wired (some need elevated app review).
+    """
+    account = interaction.social_account
+    if not account or not account.is_active:
+        logger.warning("ENGAGE auto-send: no active social_account on %s", interaction.id)
+        return False
+
+    # DMs are draft-only for now — surface to user even on AUTO_SEND verdict.
+    if interaction.interaction_type == "dm":
+        return False
+
+    from apps.platforms.providers import get_provider
+    provider = get_provider(account.platform)
+    if not provider or not hasattr(provider, "post_comment"):
+        logger.warning(
+            "ENGAGE auto-send: provider %s has no post_comment method",
+            account.platform,
+        )
+        return False
+
+    try:
+        # Provider signatures vary slightly per platform; pass the most
+        # common shape and let the platform-specific code take what it
+        # needs. (Mirrors the pattern used in first-comment posting in
+        # apps/content/tasks.py.)
+        result = provider.post_comment(
+            access_token=account.access_token,
+            post_id=interaction.platform_interaction_id,
+            message=interaction.ai_suggested_reply,
+            account=account,
+        )
+        if result and result.get("success"):
+            return True
+        logger.warning(
+            "ENGAGE auto-send failed on %s/%s: %s",
+            account.platform, interaction.id, (result or {}).get("error", "no result"),
+        )
+        return False
+    except Exception as exc:
+        logger.exception(
+            "ENGAGE auto-send crashed on %s/%s: %s",
+            account.platform, interaction.id, exc,
+        )
+        return False
 
 
 # ─── Orchestrator: Full Engage Cycle ─────────────────────────────────────────

@@ -164,7 +164,7 @@ class BrandProfileForm(forms.ModelForm):
             "target_audience",
             "posting_frequency",
             "auto_approve_posts",
-            "auto_engage",
+            "engage_autonomy_level",
             "content_language",
             "brand_restrictions",
             "visual_style",
@@ -230,6 +230,38 @@ class BrandProfileForm(forms.ModelForm):
                 self.fields["key_offerings_text"].initial = "\n".join(self.instance.key_offerings)
             if self.instance.goals:
                 self.fields["goals_selection"].initial = self.instance.goals
+
+            # ── Plan-tier-gate engage_autonomy_level ─────────────────────
+            # Per docs/specs/ENGAGE_AGENT_V2_SPEC.md: Starter caps at
+            # SUGGEST, Growth/Pro at GRADUATED, Agency unlocks AGGRESSIVE.
+            # We narrow the field's choices to the levels this plan allows
+            # so the user can't even see options they cannot select.
+            from apps.agents.engage_routing import is_level_allowed
+            from apps.accounts.models import UserProfile
+            plan = (self.instance.plan or "starter").lower()
+            allowed_levels = [
+                (val, label) for val, label in UserProfile.EngageAutonomyLevel.choices
+                if is_level_allowed(val, plan)
+            ]
+            self.fields["engage_autonomy_level"].choices = allowed_levels
+
+    def clean_engage_autonomy_level(self):
+        """Defence-in-depth: reject levels above the plan's cap.
+
+        The __init__ narrows the dropdown, but a tampered form POST could
+        still submit a higher level. Validate server-side.
+        """
+        from apps.agents.engage_routing import is_level_allowed
+        level = (self.cleaned_data.get("engage_autonomy_level") or "suggest").lower()
+        plan = (self.instance.plan or "starter").lower() if self.instance else "starter"
+        if not is_level_allowed(level, plan):
+            from django.forms import ValidationError
+            from apps.agents.engage_routing import max_level_for_plan
+            raise ValidationError(
+                f"Your plan ({plan.title()}) does not allow {level.title()} "
+                f"autonomy. Maximum allowed: {max_level_for_plan(plan).title()}."
+            )
+        return level
 
     def save(self, commit=True):
         instance = super().save(commit=False)
