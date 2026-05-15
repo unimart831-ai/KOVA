@@ -854,7 +854,29 @@ class LinkedInProvider(BaseProvider):
                     "success": True,
                 }
         except httpx.HTTPStatusError as e:
-            logger.error("LinkedIn post_comment failed: %s", e.response.text)
+            logger.error("LinkedIn comment post failed: %s", e.response.text[:300])
+            return {"error": e.response.text[:300], "success": False}
+
+    def delete_comment(self, access_token: str = "", comment_id: str = "",
+                       **kwargs) -> dict:
+        """Delete a LinkedIn comment by URN.
+
+        Used by the Engage Agent undo flow (W2 May 2026). The comment_id
+        here is the comment URN returned by post_comment in the
+        x-restli-id header (urn:li:comment:...). Requires
+        w_member_social scope on the original token.
+        """
+        encoded_comment = quote(comment_id, safe="")
+        try:
+            with httpx.Client(timeout=30) as client:
+                resp = client.delete(
+                    f"{LINKEDIN_REST_BASE}/socialActions/{encoded_comment}",
+                    headers=self._rest_headers(access_token),
+                )
+                resp.raise_for_status()
+                return {"success": True}
+        except httpx.HTTPStatusError as e:
+            logger.warning("LinkedIn delete_comment failed on %s: %s", comment_id, e.response.text[:200])
             return {"error": e.response.text[:300], "success": False}
 
     def reply_to_comment(self, access_token: str, comment_id: str,

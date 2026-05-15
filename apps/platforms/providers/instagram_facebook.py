@@ -512,25 +512,58 @@ class FacebookProvider(BaseProvider):
                 raise PlatformAuthError(f"Facebook token/permission error: {error_body[:300]}") from e
             return []
 
-    def post_comment(self, page_token: str, post_id: str, message: str) -> dict:
-        """
-        Post a first comment on a Page post immediately after publishing.
+    def post_comment(self, page_token: str = "", post_id: str = "",
+                     message: str = "", **kwargs) -> dict:
+        """Post a comment on a Page post.
 
-        This is the link-in-comments strategy: Facebook penalises outbound
-        links in post body with 50-70% organic reach reduction. Posting the
-        link as the first comment preserves full reach while still surfacing
-        the URL to engaged readers.
+        Originally written for the first-comment link-in-comments strategy.
+        Also used by the Engage Agent (v2 May 2026) to auto-reply to
+        comments on Pages. Accepts both ``page_token`` (canonical) and
+        ``access_token`` (engage_agent's call site) as the token kwarg.
         """
+        token = page_token or kwargs.get("access_token", "")
+        # Allow callers to pass the Page object on `account` and look up the
+        # selected Page's token from metadata. Falls back to whatever token
+        # was passed.
+        account = kwargs.get("account")
+        if account is not None and not token:
+            token = account.access_token
         try:
             with httpx.Client(timeout=HTTP_TIMEOUT) as client:
                 resp = client.post(f"{FB_API_BASE}/{post_id}/comments", data={
                     "message": message,
-                    "access_token": page_token,
+                    "access_token": token,
                 })
                 resp.raise_for_status()
                 return {"id": resp.json().get("id", ""), "success": True}
         except httpx.HTTPStatusError as e:
-            logger.error("Facebook first comment failed on post %s: %s", post_id, e.response.text)
+            logger.error("Facebook comment post failed on %s: %s", post_id, e.response.text)
+            return {"error": e.response.text[:300], "success": False}
+
+    def delete_comment(self, access_token: str = "", comment_id: str = "",
+                       **kwargs) -> dict:
+        """Delete a comment by its FB comment ID.
+
+        Used by the Engage Agent undo flow (W2 May 2026) — the user has
+        5 minutes after an AI auto-send to retract. Returns
+        ``{"success": True}`` on a 200/204 and ``{"success": False, "error": ...}``
+        otherwise. Idempotent on the caller's side — re-calling on an
+        already-deleted comment surfaces the API's 404.
+        """
+        token = access_token or kwargs.get("page_token", "")
+        account = kwargs.get("account")
+        if account is not None and not token:
+            token = account.access_token
+        try:
+            with httpx.Client(timeout=HTTP_TIMEOUT) as client:
+                resp = client.delete(
+                    f"{FB_API_BASE}/{comment_id}",
+                    params={"access_token": token},
+                )
+                resp.raise_for_status()
+                return {"success": True}
+        except httpx.HTTPStatusError as e:
+            logger.warning("Facebook delete_comment failed on %s: %s", comment_id, e.response.text[:200])
             return {"error": e.response.text[:300], "success": False}
 
     def reply_to_comment(self, access_token: str, comment_id: str,
@@ -1311,16 +1344,39 @@ class InstagramProvider(BaseProvider):
         Note: unlike Facebook, links in IG comments are also not clickable,
         so this is best used for text CTAs ('💾 Save this!', 'Link in bio 👆').
         """
+        token = page_token or kwargs.get("access_token", "")
+        account = kwargs.get("account")
+        if account is not None and not token:
+            token = account.access_token
         try:
             with httpx.Client(timeout=HTTP_TIMEOUT) as client:
                 resp = client.post(f"{FB_API_BASE}/{post_id}/comments", data={
                     "message": message,
-                    "access_token": page_token,
+                    "access_token": token,
                 })
                 resp.raise_for_status()
                 return {"id": resp.json().get("id", ""), "success": True}
         except httpx.HTTPStatusError as e:
-            logger.error("Instagram first comment failed on post %s: %s", post_id, e.response.text)
+            logger.error("Instagram comment post failed on %s: %s", post_id, e.response.text)
+            return {"error": e.response.text[:300], "success": False}
+
+    def delete_comment(self, access_token: str = "", comment_id: str = "",
+                       **kwargs) -> dict:
+        """Delete an Instagram comment by ID (Engage Agent undo, W2 May 2026)."""
+        token = access_token or kwargs.get("page_token", "")
+        account = kwargs.get("account")
+        if account is not None and not token:
+            token = account.access_token
+        try:
+            with httpx.Client(timeout=HTTP_TIMEOUT) as client:
+                resp = client.delete(
+                    f"{FB_API_BASE}/{comment_id}",
+                    params={"access_token": token},
+                )
+                resp.raise_for_status()
+                return {"success": True}
+        except httpx.HTTPStatusError as e:
+            logger.warning("Instagram delete_comment failed on %s: %s", comment_id, e.response.text[:200])
             return {"error": e.response.text[:300], "success": False}
 
     def reply_to_comment(self, access_token: str, comment_id: str,

@@ -182,3 +182,142 @@ def send_reply(request, pk):
             f'<div class="text-sm text-red-600 px-4 py-2">Failed to send: {exc}</div>',
             status=500,
         )
+
+
+# ── Engage Agent v2 — Auto-sent log + Undo + Correction (W2 May 2026) ──────
+
+
+@login_required
+def auto_sent_list(request):
+    """Recent Engage Agent auto-sends, with inline undo + correction.
+
+    The user gets to see exactly what the AI said on their behalf, undo
+    within 5 minutes, and post a correction even after the window closes.
+    Corrections feed back into the Engage Agent's prompt as few-shot
+    examples (see apps/agents/engage_agent.py:_recent_corrections_for_brand).
+    """
+    from datetime import timedelta
+    from apps.engage.models import EngageReply
+
+    recent = (
+        EngageReply.objects
+        .filter(interaction__user=request.user)
+        .select_related("interaction", "interaction__social_account")
+        .order_by("-sent_at")[:50]
+    )
+    return render(request, "engage/auto_sent_list.html", {
+        "replies": recent,
+        "page_title": "AI auto-sent replies",
+    })
+
+
+@login_required
+def auto_sent_undo(request, pk):
+    """Try to retract an auto-sent reply via the platform's delete API.
+
+    Idempotent against re-clicks. If the undo window has closed, returns
+    422 with a friendly message and points the user at the correction
+    flow as the remaining option.
+    """
+    from apps.engage.models import EngageReply
+    from apps.engage.models import Interaction
+    from apps.platforms.providers.registry import get_provider
+
+    reply = get_object_or_404(
+        EngageReply, pk=pk, interaction__user=request.user,
+    )
+    if reply.undone_at:
+        return HttpResponse(
+            "Already undone.", status=200, content_type="text/plain",
+        )
+    if not reply.can_undo():
+        return HttpResponse(
+            "Undo window closed (5 minutes). You can still leave a correction below.",
+            status=422, content_type="text/plain",
+        )
+
+    account = reply.interaction.social_account
+    if not account or not reply.platform_reply_id:
+        reply.undo_error = "Missing account or platform_reply_id"
+        reply.save(update_fields=["undo_error"])
+        return HttpResponse("Couldn't reach the platform. Try again later.", status=502)
+
+    provider = get_provider(account.platform)
+    if not provider or not hasattr(provider, "delete_comment"):
+        reply.undo_error = f"Provider {account.platform} has no delete_comment"
+        reply.save(update_fields=["undo_error"])
+        return HttpResponse(
+            f"{account.get_platform_display()} doesn't support remote delete from Kova yet. "
+            "Delete the comment manually and leave a correction below.",
+            status=422,
+        )
+
+    try:
+        result = provider.delete_comment(
+            access_token=account.access_token,
+            comment_id=reply.platform_reply_id,
+            account=account,
+        ) or {}
+    except Exception as exc:
+        reply.undo_error = str(exc)
+        reply.save(update_fields=["undo_error"])
+        logger.exception("Undo crashed for EngageReply %s: %s", reply.pk, exc)
+        return HttpResponse("Undo failed — try again in a moment.", status=502)
+
+    if not result.get("success"):
+        reply.undo_error = result.get("error", "unknown error")[:500]
+        reply.save(update_fields=["undo_error"])
+        return HttpResponse(
+            f"Platform rejected the delete: {result.get('error', 'unknown error')[:200]}",
+            status=502,
+        )
+
+    reply.undone_at = timezone.now()
+    reply.undo_error = ""
+    reply.save(update_fields=["undone_at", "undo_error"])
+
+    # Bump the interaction back to FLAGGED so the user can replace the reply
+    reply.interaction.status = Interaction.Status.FLAGGED
+    reply.interaction.ai_reply_sent = ""
+    reply.interaction.responded_at = None
+    reply.interaction.save(update_fields=["status", "ai_reply_sent", "responded_at"])
+
+    return HttpResponse("Undone — the reply was retracted.", status=200, content_type="text/plain")
+
+
+@login_required
+def auto_sent_correct(request, pk):
+    """Record a user correction on an auto-sent reply.
+
+    Persists the user's "I would have said this instead" text. The next
+    Engage Agent run picks it up via _recent_corrections_for_brand and
+    biases future replies toward the user's style. Available even after
+    the undo window has closed — the platform reply stays but the AI
+    learns.
+    """
+    from apps.engage.models import EngageReply
+
+    if request.method != "POST":
+        return HttpResponse(status=405)
+
+    reply = get_object_or_404(
+        EngageReply, pk=pk, interaction__user=request.user,
+    )
+
+    correction_text = (request.POST.get("correction_text") or "").strip()
+    reason = (request.POST.get("correction_reason") or "other").lower()
+    if reason not in dict(EngageReply.CorrectionReason.choices):
+        reason = "other"
+
+    if not correction_text:
+        return HttpResponse("Correction text required.", status=400, content_type="text/plain")
+
+    reply.correction_text = correction_text[:2000]
+    reply.correction_reason = reason
+    reply.corrected_at = timezone.now()
+    reply.save(update_fields=["correction_text", "correction_reason", "corrected_at"])
+
+    return HttpResponse(
+        "Thanks — Kova will use this to learn your style.",
+        status=200, content_type="text/plain",
+    )

@@ -86,6 +86,103 @@ class Interaction(models.Model):
         return None
 
 
+class EngageReply(models.Model):
+    """Audit log of every Engage Agent auto-sent reply (Phase 1 W2 May 2026).
+
+    One row per AUTO_SEND verdict from `engage_routing.route_reply`. Carries
+    the snapshots needed for:
+
+      * The 5-minute undo window — `can_undo_until` + the platform's
+        comment_id stored in `platform_reply_id` so we can call the
+        provider's delete_comment.
+      * Post-window corrections — the user can still say "I would have
+        replied differently" even after undo expires; that correction
+        becomes a few-shot example for future replies to the same contact.
+      * Adapt Agent v2 (W3-4) — corrections lower the weight of the LLM
+        patterns that produced them.
+
+    Spec: docs/specs/ENGAGE_AGENT_V2_SPEC.md
+    """
+
+    class CorrectionReason(models.TextChoices):
+        TONE = "tone", "Wrong tone"
+        FACTS = "facts", "Wrong facts"
+        LENGTH = "length", "Wrong length"
+        TIMING = "timing", "Wrong timing / should have escalated"
+        OTHER = "other", "Other"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    interaction = models.OneToOneField(
+        "engage.Interaction",
+        on_delete=models.CASCADE,
+        related_name="engage_reply",
+    )
+    sent_text = models.TextField(
+        help_text="The exact text that was auto-sent to the platform.",
+    )
+    confidence = models.FloatField(
+        help_text="LLM confidence at send time (0.0-1.0).",
+    )
+    autonomy_level = models.CharField(
+        max_length=20,
+        help_text=(
+            "Snapshot of the user's engage_autonomy_level when this reply "
+            "was sent. Lets us audit later if a plan downgrade should have "
+            "blocked it."
+        ),
+    )
+    safety_flags_snapshot = models.JSONField(
+        default=list, blank=True,
+        help_text="The safety_flags list at send time (empty when clean).",
+    )
+    platform_reply_id = models.CharField(
+        max_length=255, blank=True, db_index=True,
+        help_text=(
+            "The platform's comment/reply ID returned from post_comment. "
+            "Used by undo to call provider.delete_comment."
+        ),
+    )
+    sent_at = models.DateTimeField(auto_now_add=True)
+    can_undo_until = models.DateTimeField(
+        help_text="5 minutes after sent_at by default. After this, only the correction flow remains.",
+    )
+
+    # ── Undo ────────────────────────────────────────────────────────
+    undone_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the user successfully undid the auto-send.",
+    )
+    undo_error = models.TextField(
+        blank=True,
+        help_text="If the platform delete API failed during undo, the error text.",
+    )
+
+    # ── Correction (few-shot learning signal) ───────────────────────
+    correction_text = models.TextField(
+        blank=True,
+        help_text="What the user would have said instead.",
+    )
+    correction_reason = models.CharField(
+        max_length=20,
+        blank=True,
+        choices=CorrectionReason.choices,
+        help_text="High-level reason the auto-send was wrong.",
+    )
+    corrected_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-sent_at"]
+        indexes = [
+            models.Index(fields=["interaction"]),
+            models.Index(fields=["sent_at"]),
+        ]
+
+    def can_undo(self):
+        """True if the 5-minute undo window is still open and not yet undone."""
+        from django.utils import timezone
+        return self.undone_at is None and timezone.now() < self.can_undo_until
+
+
 class Superfan(models.Model):
     """
     Tracked repeat engager — someone who interacts with the brand frequently.

@@ -290,6 +290,10 @@ def engage_user(db):
     u = User.objects.create_user(
         username="engage", email="engage@b.com", password="P1!",
     )
+    # Completed onboarding so the redirect middleware doesn't intercept
+    # client.post calls in TestUndoView / TestCorrectionView
+    u.onboarding_completed = True
+    u.save(update_fields=["onboarding_completed"])
     # Growth plan so GRADUATED is allowed
     u.profile.plan = "growth"
     u.profile.engage_autonomy_level = "graduated"
@@ -328,7 +332,7 @@ class TestAutoRespondRouting:
         # Stub the actual platform send so we don't hit Instagram in tests.
         monkeypatch.setattr(
             "apps.agents.engage_agent._send_reply_to_platform",
-            lambda i: True,
+            lambda i: {"ok": True, "platform_reply_id": "stub_reply_id", "error": ""},
         )
 
         from apps.agents.engage_agent import auto_respond
@@ -377,7 +381,7 @@ class TestAutoRespondRouting:
         # Stays uncalled because safety flag forces DRAFT_FOR_REVIEW.
         monkeypatch.setattr(
             "apps.agents.engage_agent._send_reply_to_platform",
-            lambda i: pytest.fail("Should not have auto-sent with safety flag"),
+            lambda i: pytest.fail("Should not have auto-sent with safety flag"),  # noqa
         )
 
         from apps.agents.engage_agent import auto_respond
@@ -519,3 +523,247 @@ class TestSettingsFormTierGating:
         )
         assert not form.is_valid()
         assert "engage_autonomy_level" in form.errors
+
+
+# ── W2 Commit 3 — EngageReply, Undo, Correction, Few-Shot ───────────────────
+
+
+@pytest.mark.django_db
+class TestEngageReplyCreation:
+    """When auto_respond AUTO_SENDs, an EngageReply row must exist with the
+    confidence snapshot and the platform_reply_id needed for later undo."""
+
+    def test_auto_send_creates_engage_reply_with_undo_window(self, engage_user, settings, monkeypatch):
+        from datetime import timedelta
+        from apps.engage.models import EngageReply
+        u, _, interaction = engage_user
+        settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED = True
+
+        # Stub the platform send to return a real comment_id
+        monkeypatch.setattr(
+            "apps.agents.engage_agent._send_reply_to_platform",
+            lambda i: {"ok": True, "platform_reply_id": "fb_comment_42", "error": ""},
+        )
+
+        from apps.agents.engage_agent import auto_respond
+        counts = auto_respond(u)
+        assert counts["auto_sent"] == 1
+
+        reply = EngageReply.objects.get(interaction=interaction)
+        assert reply.sent_text == "Open till 11pm 🙏"
+        assert reply.confidence == 0.92
+        assert reply.autonomy_level == "graduated"
+        assert reply.platform_reply_id == "fb_comment_42"
+        # 5-minute undo window
+        import datetime as dt
+        from django.utils import timezone as tz
+        delta = reply.can_undo_until - reply.sent_at
+        # Allow a few seconds slop for the timestamp differential
+        assert dt.timedelta(seconds=290) <= delta <= dt.timedelta(seconds=310)
+        assert reply.can_undo() is True
+
+    def test_send_failure_creates_no_engage_reply(self, engage_user, settings, monkeypatch):
+        from apps.engage.models import EngageReply
+        u, _, _ = engage_user
+        settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED = True
+
+        monkeypatch.setattr(
+            "apps.agents.engage_agent._send_reply_to_platform",
+            lambda i: {"ok": False, "platform_reply_id": "", "error": "API 500"},
+        )
+
+        from apps.agents.engage_agent import auto_respond
+        counts = auto_respond(u)
+        # Failed send falls back to drafted, no audit row written
+        assert counts["auto_sent"] == 0
+        assert counts["drafted"] == 1
+        assert EngageReply.objects.count() == 0
+
+
+@pytest.mark.django_db
+class TestUndoWindow:
+    """The 5-minute undo window — can_undo() is the source of truth."""
+
+    def _make_reply(self, engage_user, *, minutes_ago=0):
+        from datetime import timedelta
+        from apps.engage.models import EngageReply
+        from django.utils import timezone as tz
+        _, _, interaction = engage_user
+        reply = EngageReply.objects.create(
+            interaction=interaction,
+            sent_text="Auto reply",
+            confidence=0.9,
+            autonomy_level="graduated",
+            safety_flags_snapshot=[],
+            platform_reply_id="comment_abc",
+            can_undo_until=tz.now() + timedelta(minutes=5 - minutes_ago),
+        )
+        # Backdate sent_at if needed
+        if minutes_ago:
+            EngageReply.objects.filter(pk=reply.pk).update(
+                sent_at=tz.now() - timedelta(minutes=minutes_ago),
+            )
+            reply.refresh_from_db()
+        return reply
+
+    def test_can_undo_within_window(self, engage_user):
+        reply = self._make_reply(engage_user, minutes_ago=2)
+        assert reply.can_undo() is True
+
+    def test_cannot_undo_after_window(self, engage_user):
+        reply = self._make_reply(engage_user, minutes_ago=10)
+        assert reply.can_undo() is False
+
+    def test_cannot_undo_when_already_undone(self, engage_user):
+        from django.utils import timezone as tz
+        reply = self._make_reply(engage_user, minutes_ago=1)
+        reply.undone_at = tz.now()
+        reply.save(update_fields=["undone_at"])
+        assert reply.can_undo() is False
+
+
+@pytest.mark.django_db
+class TestUndoView:
+    """The /engage/auto-sent/<pk>/undo/ endpoint."""
+
+    def test_undo_within_window_calls_provider_delete(self, engage_user, client, monkeypatch):
+        from datetime import timedelta
+        from apps.engage.models import EngageReply, Interaction
+        from django.utils import timezone as tz
+        u, _, interaction = engage_user
+        reply = EngageReply.objects.create(
+            interaction=interaction,
+            sent_text="Auto reply",
+            confidence=0.9,
+            autonomy_level="graduated",
+            platform_reply_id="comment_xyz",
+            can_undo_until=tz.now() + timedelta(minutes=4),
+        )
+        # Set the interaction to AI_REPLIED so undo bumps it back to FLAGGED
+        interaction.status = Interaction.Status.AI_REPLIED
+        interaction.save(update_fields=["status"])
+
+        # Stub the provider's delete_comment to succeed
+        called = {"hits": 0}
+        def fake_delete(**kw):
+            called["hits"] += 1
+            assert kw["comment_id"] == "comment_xyz"
+            return {"success": True}
+
+        class FakeProvider:
+            delete_comment = staticmethod(fake_delete)
+
+        monkeypatch.setattr(
+            "apps.platforms.providers.registry.get_provider",
+            lambda platform: FakeProvider,
+        )
+
+        client.force_login(u)
+        resp = client.post(f"/engage/auto-sent/{reply.pk}/undo/")
+
+        assert resp.status_code == 200
+        assert called["hits"] == 1
+        reply.refresh_from_db()
+        assert reply.undone_at is not None
+        interaction.refresh_from_db()
+        assert interaction.status == Interaction.Status.FLAGGED
+
+    def test_undo_after_window_returns_422(self, engage_user, client):
+        from datetime import timedelta
+        from apps.engage.models import EngageReply
+        from django.utils import timezone as tz
+        u, _, interaction = engage_user
+        reply = EngageReply.objects.create(
+            interaction=interaction,
+            sent_text="Old reply",
+            confidence=0.9,
+            autonomy_level="graduated",
+            platform_reply_id="comment_old",
+            can_undo_until=tz.now() - timedelta(minutes=1),  # already closed
+        )
+        client.force_login(u)
+        resp = client.post(f"/engage/auto-sent/{reply.pk}/undo/")
+        assert resp.status_code == 422
+
+
+@pytest.mark.django_db
+class TestCorrectionView:
+    """The /engage/auto-sent/<pk>/correct/ endpoint."""
+
+    def test_correction_persists_text_and_reason(self, engage_user, client):
+        from datetime import timedelta
+        from apps.engage.models import EngageReply
+        from django.utils import timezone as tz
+        u, _, interaction = engage_user
+        reply = EngageReply.objects.create(
+            interaction=interaction,
+            sent_text="AI's bad reply",
+            confidence=0.9,
+            autonomy_level="graduated",
+            platform_reply_id="c1",
+            can_undo_until=tz.now() + timedelta(minutes=4),
+        )
+        client.force_login(u)
+
+        resp = client.post(f"/engage/auto-sent/{reply.pk}/correct/", {
+            "correction_text": "I would have said: We're open till 10pm 🙏",
+            "correction_reason": "tone",
+        })
+        assert resp.status_code == 200
+        reply.refresh_from_db()
+        assert reply.correction_text.startswith("I would have said")
+        assert reply.correction_reason == "tone"
+        assert reply.corrected_at is not None
+
+    def test_empty_correction_text_rejected(self, engage_user, client):
+        from datetime import timedelta
+        from apps.engage.models import EngageReply
+        from django.utils import timezone as tz
+        u, _, interaction = engage_user
+        reply = EngageReply.objects.create(
+            interaction=interaction,
+            sent_text="Auto reply",
+            confidence=0.9,
+            autonomy_level="graduated",
+            platform_reply_id="c1",
+            can_undo_until=tz.now() + timedelta(minutes=4),
+        )
+        client.force_login(u)
+        resp = client.post(f"/engage/auto-sent/{reply.pk}/correct/", {
+            "correction_text": "",
+            "correction_reason": "tone",
+        })
+        assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+class TestCorrectionFewShot:
+    """Past corrections must feed back into the next Engage Agent prompt."""
+
+    def test_recent_corrections_for_brand_returns_recent_corrections(self, engage_user):
+        from datetime import timedelta
+        from apps.engage.models import EngageReply
+        from django.utils import timezone as tz
+        u, _, interaction = engage_user
+        EngageReply.objects.create(
+            interaction=interaction,
+            sent_text="AI said: Hey thanks!",
+            confidence=0.9,
+            autonomy_level="graduated",
+            platform_reply_id="c1",
+            can_undo_until=tz.now(),
+            correction_text="Tunaomba subira tafadhali",
+            correction_reason="tone",
+            corrected_at=tz.now(),
+        )
+        from apps.agents.engage_agent import _recent_corrections_for_brand
+        out = _recent_corrections_for_brand(u)
+        assert "Tunaomba subira" in out
+        assert "Wrong tone" in out  # the get_correction_reason_display
+
+    def test_no_corrections_returns_empty_string(self, engage_user):
+        from apps.agents.engage_agent import _recent_corrections_for_brand
+        u, _, _ = engage_user
+        assert _recent_corrections_for_brand(u) == ""
+
+

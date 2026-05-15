@@ -1,0 +1,120 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}AI auto-sent replies{% endblock %}
+{% block page_title %}AI auto-sent replies{% endblock %}
+{% block page_subtitle %}
+  <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+    What Kova has sent on your behalf in the last 7 days. Undo within 5 minutes. Correct anytime.
+  </p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-6 space-y-4">
+
+  {% if not replies %}
+    <div class="card">
+      <div class="card-body text-center py-12">
+        <p class="text-gray-500 dark:text-gray-400">
+          No auto-sent replies yet.
+        </p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
+          Enable graduated autonomy in <a href="{% url 'accounts:settings' %}" class="text-kova-600 dark:text-kova-400 underline">Settings</a> to let the Engage Agent reply on your behalf.
+        </p>
+      </div>
+    </div>
+  {% endif %}
+
+  {% for r in replies %}
+    <div class="card" id="reply-{{ r.pk }}">
+      <div class="card-body space-y-3">
+
+        {# Header — platform + when + status #}
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 capitalize">
+              {{ r.interaction.social_account.platform|default:"social" }}
+            </span>
+            <span class="text-xs text-gray-500 dark:text-gray-400">
+              {{ r.sent_at|date:"M j · H:i" }}
+            </span>
+            <span class="text-xs text-gray-400 dark:text-gray-500">
+              · confidence {{ r.confidence|floatformat:2 }}
+            </span>
+            <span class="text-xs text-gray-400 dark:text-gray-500 capitalize">
+              · {{ r.autonomy_level }}
+            </span>
+          </div>
+          {% if r.undone_at %}
+            <span class="text-xs font-medium text-amber-700 dark:text-amber-400">Undone {{ r.undone_at|date:"H:i" }}</span>
+          {% elif r.can_undo %}
+            <button type="button"
+                    hx-post="{% url 'engage:auto_sent_undo' r.pk %}"
+                    hx-swap="outerHTML"
+                    hx-target="#reply-{{ r.pk }}"
+                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                    class="text-xs font-medium text-red-600 dark:text-red-400 hover:underline">
+              Undo
+            </button>
+          {% else %}
+            <span class="text-xs text-gray-400 dark:text-gray-500">Undo window closed</span>
+          {% endif %}
+        </div>
+
+        {# What the customer said #}
+        {% if r.interaction.content %}
+        <div class="bg-gray-50 dark:bg-gray-800/60 rounded-lg p-3">
+          <p class="text-[10px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 mb-1">{{ r.interaction.author_name|default:"They said" }}</p>
+          <p class="text-sm text-gray-700 dark:text-gray-300">{{ r.interaction.content|truncatechars:280 }}</p>
+        </div>
+        {% endif %}
+
+        {# What the AI sent #}
+        <div class="bg-kova-50/40 dark:bg-kova-950/20 rounded-lg p-3 border border-kova-100 dark:border-kova-900/40">
+          <p class="text-[10px] uppercase tracking-wide font-semibold text-kova-700 dark:text-kova-300 mb-1">AI sent</p>
+          <p class="text-sm text-gray-900 dark:text-white">{{ r.sent_text }}</p>
+        </div>
+
+        {# Correction surface #}
+        {% if r.correction_text %}
+          <div class="rounded-lg p-3 border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/30">
+            <p class="text-[10px] uppercase tracking-wide font-semibold text-emerald-700 dark:text-emerald-300 mb-1">
+              Your correction · {{ r.get_correction_reason_display|default:"recorded" }}
+            </p>
+            <p class="text-sm text-gray-900 dark:text-white">{{ r.correction_text }}</p>
+            <p class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1.5">Logged {{ r.corrected_at|date:"M j · H:i" }} — Kova will learn from this.</p>
+          </div>
+        {% else %}
+          <details class="text-sm">
+            <summary class="cursor-pointer text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+              ✏️ I would have replied differently
+            </summary>
+            <form hx-post="{% url 'engage:auto_sent_correct' r.pk %}"
+                  hx-target="#reply-{{ r.pk }}"
+                  hx-swap="outerHTML"
+                  class="mt-2 space-y-2">
+              {% csrf_token %}
+              <textarea name="correction_text"
+                        rows="2"
+                        class="input w-full text-sm"
+                        placeholder="What would you have said?"
+                        required></textarea>
+              <div class="flex items-center justify-between gap-2">
+                <select name="correction_reason" class="input text-xs">
+                  <option value="tone">Wrong tone</option>
+                  <option value="facts">Wrong facts</option>
+                  <option value="length">Wrong length</option>
+                  <option value="timing">Should have escalated</option>
+                  <option value="other">Other</option>
+                </select>
+                <button type="submit" class="btn-primary text-xs px-3 py-1">Save correction</button>
+              </div>
+            </form>
+          </details>
+        {% endif %}
+
+      </div>
+    </div>
+  {% endfor %}
+
+</div>
+{% endblock %}

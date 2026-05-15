@@ -32,6 +32,42 @@ logger = logging.getLogger(__name__)
 
 # ─── Reply Learning (feedback from user-edited replies) ──────────────────────
 
+def _recent_corrections_for_brand(user, limit=5):
+    """Recent user-provided corrections, formatted as few-shot examples.
+
+    These are pulled from EngageReply rows where the user said
+    "I would have replied differently." We surface them to the Engage
+    Agent's system prompt so the next reply learns from real corrections
+    instead of the original AI's untouched output.
+
+    Returns a string ready to drop into the prompt, or "" if no
+    corrections exist yet. Bounded at `limit` so the prompt doesn't
+    bloat past the model's effective context.
+    """
+    from apps.engage.models import EngageReply
+
+    recent = (
+        EngageReply.objects
+        .filter(interaction__user=user, corrected_at__isnull=False)
+        .exclude(correction_text="")
+        .order_by("-corrected_at")
+        [:limit]
+    )
+    if not recent:
+        return ""
+    lines = [
+        "PAST CORRECTIONS — the user has previously rewritten these AI replies. "
+        "Match the user's style, not the original AI's:",
+    ]
+    for r in recent:
+        reason = f" ({r.get_correction_reason_display()})" if r.correction_reason else ""
+        lines.append(
+            f"- AI sent: \"{r.sent_text[:200]}\"\n"
+            f"  User would have said: \"{r.correction_text[:200]}\"{reason}"
+        )
+    return "\n".join(lines)
+
+
 def _get_reply_edit_patterns(user):
     """
     Analyze past AI-suggested replies that the user edited before sending.
@@ -725,6 +761,8 @@ def _generate_single_reply(interaction, brand_voice, company):
 
     # Intelligence: learn from past reply edits
     reply_learning = _get_reply_edit_patterns(interaction.user)
+    # Intelligence: learn from past auto-send corrections (W2 May 2026)
+    corrections = _recent_corrections_for_brand(interaction.user)
 
     # Product catalog awareness
     from apps.products.utils import get_product_context
@@ -750,6 +788,7 @@ def _generate_single_reply(interaction, brand_voice, company):
         "- NEVER be defensive or dismissive.\n"
         "- Don't use corporate phrases like 'We appreciate your feedback' or 'Thanks for reaching out'.\n\n"
         f"{product_instruction}"
+        f"{corrections + chr(10) + chr(10) if corrections else ''}"
         "Respond with valid JSON only — no markdown, no preamble:\n"
         "{\n"
         '  "reply":      "<the actual reply text ready to send>",\n'
@@ -952,14 +991,30 @@ def auto_respond(user):
             action = RoutingAction.DRAFT_FOR_REVIEW
 
         if action == RoutingAction.AUTO_SEND:
-            sent_ok = _send_reply_to_platform(interaction)
-            if sent_ok:
+            send_result = _send_reply_to_platform(interaction)
+            if send_result.get("ok"):
                 interaction.status = Interaction.Status.AI_REPLIED
                 interaction.ai_reply_sent = interaction.ai_suggested_reply
                 interaction.responded_at = timezone.now()
                 interaction.save(update_fields=[
                     "status", "ai_reply_sent", "responded_at",
                 ])
+
+                # Record the auto-send for audit + undo (W2 commit 3).
+                # Single source of truth for the "what did the AI send for me"
+                # surface and for Adapt Agent's correction-learning loop.
+                from datetime import timedelta
+                from apps.engage.models import EngageReply
+                EngageReply.objects.create(
+                    interaction=interaction,
+                    sent_text=interaction.ai_suggested_reply,
+                    confidence=confidence,
+                    autonomy_level=effective_level,
+                    safety_flags_snapshot=safety_flags,
+                    platform_reply_id=send_result.get("platform_reply_id", ""),
+                    can_undo_until=timezone.now() + timedelta(minutes=5),
+                )
+
                 counts["auto_sent"] += 1
                 logger.info(
                     "ENGAGE auto-sent reply (conf=%.2f, level=%s) on %s/%s",
@@ -1008,25 +1063,29 @@ def auto_respond(user):
     return counts
 
 
-def _send_reply_to_platform(interaction):
+def _send_reply_to_platform(interaction) -> dict:
     """Actually post the reply to the social platform.
 
-    Returns True if the platform API succeeded. False on any failure (no
-    provider, expired token, API error). The caller falls back to
-    DRAFT_FOR_REVIEW on False so the user can retry from the inbox.
+    Returns a dict {"ok": bool, "platform_reply_id": str, "error": str}.
+    ``ok=True`` means the reply landed on the platform and ``platform_reply_id``
+    carries the comment ID needed for later undo via provider.delete_comment.
+    ``ok=False`` means the caller should fall back to DRAFT_FOR_REVIEW so the
+    user can retry from the inbox.
 
     Only supports comment + reply auto-send for now. DMs are queued for
     review in v2 — full DM auto-send lands in Phase 3 work once the per-
     platform DM APIs are wired (some need elevated app review).
     """
+    fail = lambda err: {"ok": False, "platform_reply_id": "", "error": err}
+
     account = interaction.social_account
     if not account or not account.is_active:
         logger.warning("ENGAGE auto-send: no active social_account on %s", interaction.id)
-        return False
+        return fail("No active social_account")
 
     # DMs are draft-only for now — surface to user even on AUTO_SEND verdict.
     if interaction.interaction_type == "dm":
-        return False
+        return fail("DM auto-send deferred until Phase 3")
 
     from apps.platforms.providers import get_provider
     provider = get_provider(account.platform)
@@ -1035,32 +1094,36 @@ def _send_reply_to_platform(interaction):
             "ENGAGE auto-send: provider %s has no post_comment method",
             account.platform,
         )
-        return False
+        return fail(f"Provider {account.platform} has no post_comment")
 
     try:
-        # Provider signatures vary slightly per platform; pass the most
-        # common shape and let the platform-specific code take what it
-        # needs. (Mirrors the pattern used in first-comment posting in
-        # apps/content/tasks.py.)
+        # All providers' post_comment accept **kwargs after W2 commit 3.
+        # We pass account so the FB / IG provider can resolve a Page-scoped
+        # token if needed.
         result = provider.post_comment(
             access_token=account.access_token,
             post_id=interaction.platform_interaction_id,
             message=interaction.ai_suggested_reply,
             account=account,
-        )
-        if result and result.get("success"):
-            return True
+        ) or {}
+        if result.get("success"):
+            return {
+                "ok": True,
+                "platform_reply_id": result.get("id", ""),
+                "error": "",
+            }
+        err = result.get("error", "no result")
         logger.warning(
             "ENGAGE auto-send failed on %s/%s: %s",
-            account.platform, interaction.id, (result or {}).get("error", "no result"),
+            account.platform, interaction.id, err,
         )
-        return False
+        return fail(err)
     except Exception as exc:
         logger.exception(
             "ENGAGE auto-send crashed on %s/%s: %s",
             account.platform, interaction.id, exc,
         )
-        return False
+        return fail(str(exc))
 
 
 # ─── Orchestrator: Full Engage Cycle ─────────────────────────────────────────
