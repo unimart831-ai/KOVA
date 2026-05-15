@@ -275,3 +275,65 @@ class TestDailyBriefRevenueContext:
         assert insight is not None
         assert insight["kind"] == "top_post"
         assert "8,500" in insight["headline"]
+
+
+# ── Phase 1 W1.4 — Home page revenue stat card ──────────────────────────────
+
+@pytest.mark.django_db
+class TestRevenueStatCard:
+    """The 7-day attributed revenue stat with week-over-week delta that
+    sits on the Daily Brief home page. If has_data goes False, the
+    template hides the card entirely so a new user sees nothing
+    misleading."""
+
+    def test_brand_new_user_has_no_data(self, user):
+        from apps.analytics.revenue import get_revenue_stat_card
+        stat = get_revenue_stat_card(user)
+        assert stat["has_data"] is False
+        assert stat["current_kes"] == 0
+        assert stat["previous_kes"] == 0
+        assert stat["direction"] == "flat"
+
+    def test_up_direction_when_current_beats_previous(self, user, post):
+        from apps.analytics.models import Conversion
+        from django.utils import timezone
+        from datetime import timedelta
+        from decimal import Decimal
+        # KES 5000 last week
+        Conversion.objects.create(
+            user=user, post=post,
+            conversion_type="sale", event_name="purchase",
+            revenue=Decimal("5000"),
+        )
+        # KES 2000 the week before (backdate)
+        c = Conversion.objects.create(
+            user=user, post=post,
+            conversion_type="sale", event_name="purchase",
+            revenue=Decimal("2000"),
+        )
+        Conversion.objects.filter(pk=c.pk).update(
+            created_at=timezone.now() - timedelta(days=10)
+        )
+        from apps.analytics.revenue import get_revenue_stat_card
+        stat = get_revenue_stat_card(user)
+        assert stat["has_data"] is True
+        assert stat["current_kes"] == 5000.0
+        assert stat["previous_kes"] == 2000.0
+        assert stat["direction"] == "up"
+        assert stat["delta_pct"] == 150.0  # (5000-2000)/2000 * 100
+
+    def test_first_week_revenue_is_100_pct_up(self, user, post):
+        # No previous-week data — current=KES X should read as +100% "new"
+        from apps.analytics.models import Conversion
+        from decimal import Decimal
+        Conversion.objects.create(
+            user=user, post=post,
+            conversion_type="sale", event_name="purchase",
+            revenue=Decimal("3500"),
+        )
+        from apps.analytics.revenue import get_revenue_stat_card
+        stat = get_revenue_stat_card(user)
+        assert stat["current_kes"] == 3500.0
+        assert stat["previous_kes"] == 0
+        assert stat["delta_pct"] == 100.0
+        assert stat["direction"] == "up"

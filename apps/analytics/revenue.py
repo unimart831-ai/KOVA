@@ -262,6 +262,64 @@ def get_revenue_headline_insight(user, days=7, summary=None):
     }
 
 
+def get_revenue_stat_card(user):
+    """Compact stat block for the Daily Brief home page (W1.4).
+
+    Returns last-7-day attributed revenue + the WoW delta and direction, so
+    the home page can glance the headline number without the user having to
+    open the Revenue Dashboard:
+
+        {
+            "current_kes": 12400.00,
+            "previous_kes": 4800.00,
+            "delta_pct": 158.3,
+            "direction": "up" | "down" | "flat",
+            "has_data": True,
+        }
+
+    `has_data=False` means both windows are zero — the template should hide
+    or show an install-Pixel hint instead of a misleading "—" card.
+    """
+    from apps.analytics.models import Conversion
+    from django.db.models import Sum
+
+    now = timezone.now()
+    last_7_start = now - timedelta(days=7)
+    prev_7_start = now - timedelta(days=14)
+
+    current = Conversion.objects.filter(
+        user=user, created_at__gte=last_7_start,
+    ).aggregate(rev=Sum("revenue"))["rev"] or Decimal("0")
+
+    previous = Conversion.objects.filter(
+        user=user,
+        created_at__gte=prev_7_start,
+        created_at__lt=last_7_start,
+    ).aggregate(rev=Sum("revenue"))["rev"] or Decimal("0")
+
+    if previous > 0:
+        delta_pct = float((current - previous) / previous * 100)
+    elif current > 0:
+        delta_pct = 100.0  # No baseline; show as +100% (a "new" win)
+    else:
+        delta_pct = 0.0
+
+    if delta_pct > 5:
+        direction = "up"
+    elif delta_pct < -5:
+        direction = "down"
+    else:
+        direction = "flat"
+
+    return {
+        "current_kes": float(current),
+        "previous_kes": float(previous),
+        "delta_pct": round(delta_pct, 1),
+        "direction": direction,
+        "has_data": bool(current > 0 or previous > 0),
+    }
+
+
 def get_revenue_brief_data(user, days=7):
     """
     Revenue data for Daily Brief injection.

@@ -398,8 +398,27 @@ def brief_home(request):
         "upcoming_moments": upcoming_moments,
         "holiday_drafts_ready": holiday_drafts_ready,
         "profile_health_alerts": profile_health_alerts,
+        "revenue_stat": _safe_revenue_stat(request.user),
         "page_title": "Daily Brief",
     })
+
+
+def _safe_revenue_stat(user):
+    """Wrapper around get_revenue_stat_card that never raises into the view.
+
+    Revenue stats are eye-candy on the home page — a query error here must
+    not break the daily brief render. Returns None on any failure so the
+    template can hide the card.
+    """
+    try:
+        from apps.analytics.revenue import get_revenue_stat_card
+        return get_revenue_stat_card(user)
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception(
+            "Revenue stat card failed for %s — hiding card", user.email,
+        )
+        return None
 
 
 @login_required
