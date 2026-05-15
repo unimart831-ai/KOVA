@@ -1,6 +1,6 @@
-# Kova AI — 13 Test Businesses for Full Platform Testing
+# Kova AI — 14 Test Businesses for Full Platform Testing
 
-> **Purpose:** 13 fictional businesses across different industries to onboard onto Kova and test every feature end-to-end.
+> **Purpose:** 14 fictional businesses across different industries to onboard onto Kova and test every feature end-to-end.
 > Each business has a unique profile, plan, platforms, and testing focus.
 
 ---
@@ -22,6 +22,7 @@
 | 11 | Kakuma Wholesale | Wholesale / Mtumba & Retail | Pro | WhatsApp, FB, TikTok, Instagram | WhatsApp Commerce, Products, Refugee Market, Media Queue |
 | 12 | Kawaida Hair & Beauty | Salon & Beauty Services | Growth | WhatsApp, Instagram, Facebook | Salon persona, WhatsApp-first SME, Magic Fill + Industry Pack |
 | 13 | Bridge Academy | EdTech / Skills Training (ideation stage) | Growth | LinkedIn, Twitter, Instagram | Distinctive voice style transfer, code-switch (English+Swahili+Sheng), Manual onboarding path |
+| 14 | Django Sasa | Developer Education — 30-Day Django Track | Growth | LinkedIn, Facebook, Twitter | Sequential curriculum content, Email sequence backbone, Cohort campaigns, 6-pillar discipline |
 
 ---
 
@@ -865,6 +866,146 @@ closers, signing off with the founder's first name where it fits.
 
 ---
 
+## Business 14: Django Sasa
+
+**Category:** Developer Education — 30-Day Django Track
+**Plan:** Growth (KES 999/mo)
+**Website:** (none yet — link-in-bio acts as homepage)
+**Tagline:** *Sasa = "now" in Swahili. Start today, not someday.*
+
+Django Sasa is a curriculum-driven developer-education account: every social
+post is **Day N of a 30-day Django track**, in dependency order, restarted
+every 30 days as a fresh cohort. This test business validates **sequential /
+curriculum-style content** — the hardest content pattern to keep on the
+rails as AI generates posts over weeks.
+
+The unique testing angle: most accounts publish topic-random content. Django
+Sasa publishes topic-ORDERED content. If Kova's pillar discipline,
+campaigns, and email sequences work together correctly here, they work for
+any course / cohort / curriculum-based educator.
+
+### Brand Profile
+
+| Field | Value |
+|-------|-------|
+| Company Name | Django Sasa |
+| Industry | Education (`education`) |
+| Stage | Pre-launch (no website, link-in-bio is the homepage) |
+| Target Audience | Aspiring African developers 18–32 who want a real, sequenced path into Django backend work — not random YouTube tutorials. CS students who graduated but feel they cannot ship. Self-taught coders stuck at "I built a to-do app, now what?" |
+| Brand Voice | Senior dev who teaches like Elvis W. Direct, practical, shows code, no theory dumps. Every post grounded in a numbered day of a real curriculum. Every post ends with **"Tomorrow we cover X."** That single closing line is what keeps followers on the track. |
+| Tone | Confident, educational, direct, practical |
+| Content Pillars | **Six modules of the 30-day track** (one pillar per 5-day module — this discipline is what stops the AI from inventing random Django tips) |
+
+### The 30-Day Curriculum (mapped to the 6 content pillars)
+
+| Days | Pillar | Topics covered |
+|------|--------|---------------|
+| 1–5 | **Foundations** | install Django, project vs app, settings.py, runserver, virtualenv |
+| 6–10 | **Models & ORM** | define models, migrations, admin registration, querysets, relationships |
+| 11–15 | **Views & URLs** | function views, class-based views, URL routing, namespacing, redirects |
+| 16–20 | **Templates** | DTL, template inheritance, static files, filters, includes |
+| 21–25 | **Forms & Auth** | Django forms, model forms, validation, login/signup, permissions |
+| 26–30 | **Ship It** | testing, env vars, Postgres, deploy to Railway, post-deploy debugging |
+
+### Platforms to Connect
+
+| Platform | Handle | Content Type |
+|----------|--------|-------------|
+| LinkedIn | Django Sasa | Numbered carousel lessons (5-10 slides), code screenshots, professional tone |
+| Facebook | Django Sasa | Same numbered lessons as LinkedIn but as image + caption; community Q&A in comments |
+| Twitter | @djangosasa | Threads for the long lessons; one-liners for hot takes; daily "Day N just dropped" |
+
+*Growth plan allows 3 social accounts — perfect fit*
+
+### The Three Mechanisms That Keep Followers On Track
+
+1. **Numbered Curriculum (the spine).** Every post titled "Django Day N — [topic]". Followers always know what day they're on.
+2. **Restart Cycle (the discovery fix).** Every 30 days, Day 1 comes around again. A follower who joins on Day 17 waits 13 days for the next Day 1. Framed as "Cohort N starting Monday" — urgency + community.
+3. **Email Sequence (the on-rails delivery).** When a user opts in via link-in-bio, they enter a **30-email drip** delivering Days 1–30 *in order from their signup date*, not from where the public feed currently is. **Social is the recruitment funnel; email is the curriculum.**
+
+### Daily Cadence (7 posts/week)
+
+| Day | Post type | Format |
+|-----|-----------|--------|
+| Mon–Fri | Numbered lesson (Day N) | Carousel on LinkedIn, image+caption on FB, thread on Twitter |
+| Sat | "This week we covered Days X–Y" recap | Single image with checklist |
+| Sun | "Stuck on Day N? Common bug + fix" or learner Q&A | Text + code screenshot |
+
+### Brand Voice Examples (CRITICAL — the AI pattern lock)
+
+> *"Django Day 7. URLs and routing.*
+>
+> *Stop hardcoding `/products/1/` into your templates. That's how your app breaks the day a designer changes a path.*
+>
+> *Name your URLs. `path('products/<int:pk>/', detail, name='product_detail')`.*
+>
+> *Now in your templates: `{% url 'product_detail' pk=product.id %}`. Done.*
+>
+> *Tomorrow we cover URL namespacing — what happens when two apps both have a 'detail' view."*
+
+> *"Django Day 14. Template inheritance.*
+>
+> *If you are copying the same nav into every page you are doing it wrong. There is a reason Django teaches DRY.*
+>
+> *Make a `base.html`. Put your nav there. Then in `product_list.html`:*
+>
+> *`{% extends 'base.html' %}{% block content %}…{% endblock %}`.*
+>
+> *That is it.*
+>
+> *Tomorrow: static files. The reason your CSS keeps not loading."*
+
+> *"Django Day 22. Model forms.*
+>
+> *You are not supposed to write `forms.CharField()` for every field on your model. That is what `ModelForm` is for.*
+>
+> *Subclass it. Point at your model. Pick the fields. Django writes the form for you.*
+>
+> *`class ProductForm(forms.ModelForm): class Meta: model = Product; fields = ['name', 'price', 'description']`.*
+>
+> *Tomorrow: validation. How to refuse a form before it ruins your data."*
+
+> *"Django Day 29. Deploy to Railway.*
+>
+> *Stop calling your app done because it works on localhost. localhost is not a market. Railway is.*
+>
+> *Push to GitHub. Connect repo to Railway. Add Postgres. Set `DEBUG=False`. Set `ALLOWED_HOSTS`. Hit deploy.*
+>
+> *If it crashes, read the logs. Do not panic. Logs always tell you what broke.*
+>
+> *Tomorrow we wrap the track with post-deploy debugging — the 5 errors every Django dev sees their first week in production."*
+
+### Features to Test (Curriculum-Style Content FOCUS)
+
+- [ ] **Six-Pillar Discipline** — Generate 30 seeds in one batch. Verify each gets assigned to ONE of the 6 module pillars in cycle order, not random
+- [ ] **Brand Voice Examples** — Verify AI-generated posts include the closing "Tomorrow we cover X" line
+- [ ] **Email Sequences** — Build the 30-email Django drip; verify Day-1 user gets Day 1 on signup day 1, Day 2 on signup day 2, etc., regardless of which Day the public feed is on
+- [ ] **Campaigns** — Create "Django Sasa — Cohort 1" campaign holding 30 posts; verify analytics attribute signups to the cohort
+- [ ] **Posting Cadence (7/wk)** — Verify the Mon–Fri lesson / Sat recap / Sun Q&A rhythm is producible by the AI when given the structure
+- [ ] **A/B Testing** — Test two different Day-1 hooks; lock the winner into the canonical Day 1 for future cohorts
+- [ ] **Daily Brief** — Verify the brief tells the founder which Day drops today + which cohort it belongs to
+- [ ] **Lead Capture** — "Get the free 30-Day Django Track in your inbox" form → enrols subscriber in email sequence
+- [ ] **Kova Pages** — Link-in-bio page lists all 30 Days + email signup
+- [ ] **Industry Pack Collision (3-way)** — Three education businesses now (Elimu Hub, Bridge Academy, Django Sasa). All Growth plan. All `education` industry. Three very different voices. Confirms voice examples decisively override pack defaults.
+
+### Test Seeds to Create (Days 1, 7, 14, 21, 29 — one per pillar)
+
+1. **Day 1 — Foundations:** "Install Django. Make your first project. Run the server. See the green rocket. That is the entire goal of today. Tomorrow we cover the difference between a project and an app."
+2. **Day 7 — Views & URLs:** "Stop hardcoding URLs. Name them. `{% url 'product_detail' pk=product.id %}`. Tomorrow we cover URL namespacing."
+3. **Day 14 — Templates:** "Stop copy-pasting your nav into every page. Use `{% extends 'base.html' %}`. Tomorrow: static files."
+4. **Day 22 — Forms & Auth:** "Stop writing `forms.CharField()` for every model field. ModelForm exists. Use it. Tomorrow: validation."
+5. **Day 29 — Ship It:** "localhost is not a market. Deploy to Railway. Tomorrow we wrap the track with post-deploy debugging."
+
+### Unique Testing Angles
+
+- **Curriculum/Sequential Content:** The hardest content pattern. If pillar discipline + email sequences + campaigns work here, they work for any educator running a course on Kova.
+- **Email-Backboned Content:** Most accounts use email as a side channel. Django Sasa makes email the SPINE and social the funnel. Tests whether Kova actually treats email as a first-class output.
+- **Cohort Campaign Cycle:** Tests campaigns as 30-day repeating containers, not one-off promos.
+- **Voice Discipline:** Every post must close with "Tomorrow we cover X." Tests whether AI respects a brand-mandated closer.
+- **3-Way Industry Pack Collision:** Elimu Hub + Bridge Academy + Django Sasa = three Growth-plan education businesses with deliberately different voices. Strongest validation that voice examples override pack defaults.
+
+---
+
 ## Onboarding Sequence
 
 ### Phase 1: Setup (Day 1)
@@ -1024,46 +1165,49 @@ After running the full test cohort, the admin funnel at
 
 ## Test Coverage Matrix
 
-| Feature | Mara&Moto | PixelCraft | Elimu | Nyama | CloudStack | Makao | Amara | GreenRoots | NeonWave | PesaPal | KakumaWS | Kawaida | Bridge |
-|---------|:---------:|:----------:|:-----:|:-----:|:----------:|:-----:|:-----:|:----------:|:--------:|:-------:|:--------:|:-------:|:------:|
-| **Plan** | Agency | Pro | Growth | Pro | Agency | Pro | Starter | Growth | Agency | Growth | Pro | Growth | Growth |
-| Content Creation | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Products | ✅ | | | ✅ | | | ✅ | | | | ✅ | ✅ | |
-| Shopify + Pixel | ✅ | | | | ✅ | | | | | | | | |
-| Revenue Attribution | ✅ | | | | ✅ | | | | | | | | |
-| WhatsApp Full | ✅ | | | ✅ | | ✅ | | | ✅ | | ✅ | ✅ | |
-| Memes | ✅ | | | ✅ | | ✅ | | | ✅ | | ✅ | ✅ | |
-| Teams | | ✅ | | | ✅ | | | | ✅ | | | | |
-| Multi-Brand | | | | | | | | | ✅ | | | | |
-| Lead Capture | | ✅ | ✅ | | | ✅ | ✅ | ✅ | | ✅ | | ✅ | ✅ |
-| Email Marketing | ✅ | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | | ✅ | ✅ |
-| Email Sequences | | | ✅ | ✅ | | | | ✅ | | ✅ | | | ✅ |
-| Campaigns | ✅ | ✅ | | | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | | |
-| A/B Testing | ✅ | ✅ | ✅ | | ✅ | | | ✅ | ✅ | ✅ | | | ✅ |
-| Competitor Intel | | ✅ | | | ✅ | | | | | ✅ | | | |
-| Media Queue | ✅ | | | ✅ | | | | | ✅ | | ✅ | ✅ | |
-| AI Images | ✅ | | | ✅ | | | | | ✅ | | ✅ | ✅ | |
-| All 6 Agents | ✅ | | | | ✅ | | | | ✅ | | | | |
-| REST API | | | | | ✅ | | | | ✅ | | | | |
-| Kova Pages | | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | | ✅ | | | ✅ |
-| Partner Program | | | | | | | | ✅ | | | | | |
-| Plan Limits | | | ✅ | | | | ✅ | ✅ | | ✅ | | ✅ | ✅ |
-| Starter Ceiling | | | | | | | ✅ | | | | | | |
-| Multi-Language | | | | | | | | | | | ✅ | ✅ | ✅ |
-| Wholesale/Bulk | | | | | | | | | | | ✅ | | |
-| **Path Choice — Magic** | ✅ | | | ✅ | | ✅ | | | | | | ✅ | |
-| **Path Choice — URL** | | ✅ | ✅ | | ✅ | | | ✅ | | ✅ | | | |
-| **Path Choice — Manual** | | | | | | | ✅ | | | | ✅ | | ✅ |
-| **Industry Pack** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Smart KE Defaults** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Salon Persona** | | | | | | | | | | | | ✅ | |
-| **WhatsApp Completion Ping** | | | | ✅ | | ✅ | | | | | ✅ | ✅ | |
-| **Voice Style Transfer** | | | | | | | | | | | | | ✅ |
-| **Pre-Launch / Ideation** | | | | | | | | | | | | | ✅ |
-| **Industry Pack Collision** | | | ✅ | | | | | | ✅ | | | | ✅ |
+| Feature | Mara&Moto | PixelCraft | Elimu | Nyama | CloudStack | Makao | Amara | GreenRoots | NeonWave | PesaPal | KakumaWS | Kawaida | Bridge | Django |
+|---------|:---------:|:----------:|:-----:|:-----:|:----------:|:-----:|:-----:|:----------:|:--------:|:-------:|:--------:|:-------:|:------:|:------:|
+| **Plan** | Agency | Pro | Growth | Pro | Agency | Pro | Starter | Growth | Agency | Growth | Pro | Growth | Growth | Growth |
+| Content Creation | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Products | ✅ | | | ✅ | | | ✅ | | | | ✅ | ✅ | | |
+| Shopify + Pixel | ✅ | | | | ✅ | | | | | | | | | |
+| Revenue Attribution | ✅ | | | | ✅ | | | | | | | | | |
+| WhatsApp Full | ✅ | | | ✅ | | ✅ | | | ✅ | | ✅ | ✅ | | |
+| Memes | ✅ | | | ✅ | | ✅ | | | ✅ | | ✅ | ✅ | | |
+| Teams | | ✅ | | | ✅ | | | | ✅ | | | | | |
+| Multi-Brand | | | | | | | | | ✅ | | | | | |
+| Lead Capture | | ✅ | ✅ | | | ✅ | ✅ | ✅ | | ✅ | | ✅ | ✅ | ✅ |
+| Email Marketing | ✅ | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | | ✅ | ✅ | ✅ |
+| Email Sequences | | | ✅ | ✅ | | | | ✅ | | ✅ | | | ✅ | ✅ |
+| Campaigns | ✅ | ✅ | | | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | | | ✅ |
+| A/B Testing | ✅ | ✅ | ✅ | | ✅ | | | ✅ | ✅ | ✅ | | | ✅ | ✅ |
+| Competitor Intel | | ✅ | | | ✅ | | | | | ✅ | | | | |
+| Media Queue | ✅ | | | ✅ | | | | | ✅ | | ✅ | ✅ | | |
+| AI Images | ✅ | | | ✅ | | | | | ✅ | | ✅ | ✅ | | |
+| All 6 Agents | ✅ | | | | ✅ | | | | ✅ | | | | | |
+| REST API | | | | | ✅ | | | | ✅ | | | | | |
+| Kova Pages | | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | | ✅ | | | ✅ | ✅ |
+| Partner Program | | | | | | | | ✅ | | | | | | |
+| Plan Limits | | | ✅ | | | | ✅ | ✅ | | ✅ | | ✅ | ✅ | |
+| Starter Ceiling | | | | | | | ✅ | | | | | | | |
+| Multi-Language | | | | | | | | | | | ✅ | ✅ | ✅ | |
+| Wholesale/Bulk | | | | | | | | | | | ✅ | | | |
+| **Path Choice — Magic** | ✅ | | | ✅ | | ✅ | | | | | | ✅ | | |
+| **Path Choice — URL** | | ✅ | ✅ | | ✅ | | | ✅ | | ✅ | | | | |
+| **Path Choice — Manual** | | | | | | | ✅ | | | | ✅ | | ✅ | ✅ |
+| **Industry Pack** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Smart KE Defaults** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Salon Persona** | | | | | | | | | | | | ✅ | | |
+| **WhatsApp Completion Ping** | | | | ✅ | | ✅ | | | | | ✅ | ✅ | | |
+| **Voice Style Transfer** | | | | | | | | | | | | | ✅ | ✅ |
+| **Pre-Launch / Ideation** | | | | | | | | | | | | | ✅ | ✅ |
+| **Industry Pack Collision** | | | ✅ | | | | | | ✅ | | | | ✅ | ✅ |
+| **Sequential / Curriculum Content** | | | | | | | | | | | | | | ✅ |
+| **Email Sequence Backbone** | | | ✅ | | | | | ✅ | | ✅ | | | | ✅ |
+| **Cohort Campaign Cycle** | | | | | | | | | | | | | | ✅ |
 
-**Every feature is covered by at least 2 businesses. Every plan tier is tested by at least 2 businesses. Every Tier-1/Tier-2 onboarding automation is exercised by at least 1 business. Voice style transfer and pre-launch / ideation flows are now covered by Bridge Academy.**
+**Every feature is covered by at least 2 businesses. Every plan tier is tested by at least 2 businesses. Every Tier-1/Tier-2 onboarding automation is exercised by at least 1 business. Sequential / curriculum content, email-backboned content, and cohort campaign cycles are covered by Django Sasa.**
 
 ---
 
-*Kova AI — 13 businesses, 4 plan tiers, every feature tested.*
+*Kova AI — 14 businesses, 4 plan tiers, every feature tested.*

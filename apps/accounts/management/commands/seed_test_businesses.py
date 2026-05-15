@@ -296,6 +296,92 @@ BUSINESSES: list[dict] = [
         "path": "manual",
         "products": [],
     },
+    # ── 14. Django Sasa — Growth, education, manual (curriculum-driven) ─
+    #     Sequential 30-day Django teaching account. Tests pillar
+    #     discipline, email sequences as a curriculum backbone, cohort
+    #     campaigns, and the "every post ends with Tomorrow we cover X"
+    #     brand-mandated closer.
+    {
+        "slug": "django",
+        "email": "hello@djangosasa.co.ke",
+        "phone": "0712345014",
+        "full_name": "Faith Nyokabi",
+        "company_name": "Django Sasa",
+        "industry": "education",
+        "plan": "growth",
+        "website_url": "",  # link-in-bio is the homepage at this stage
+        "target_audience": (
+            "Aspiring African developers 18-32 who want a sequenced path "
+            "into Django backend work, not random YouTube tutorials. CS "
+            "graduates who feel they cannot ship. Self-taught coders stuck "
+            "at 'I built a to-do app, now what?'"
+        ),
+        "brand_voice": (
+            "Senior dev who teaches like Elvis W. Direct, practical, shows "
+            "code, no theory dumps. Every post grounded in a numbered day of "
+            "a real curriculum. Every post ends with \"Tomorrow we cover X.\" "
+            "That closing line is non-negotiable — it is what keeps followers "
+            "on the track."
+        ),
+        "key_offerings": [
+            "30-Day Django Track (free, delivered via email)",
+            "Django Cohort Program (paid, live sessions + code review)",
+            "1-on-1 Django code review",
+        ],
+        # Six pillars matching the six 5-day modules of the curriculum.
+        # This discipline is what stops the AI from inventing random
+        # Django tips. Every generated post must fit into one of these.
+        "content_pillars": [
+            "Foundations (Days 1-5) — install Django, project vs app, settings, runserver, virtualenv",
+            "Models & ORM (Days 6-10) — define models, migrations, admin, querysets, relationships",
+            "Views & URLs (Days 11-15) — function views, class views, URL routing, namespacing, redirects",
+            "Templates (Days 16-20) — DTL, template inheritance, static files, filters, includes",
+            "Forms & Auth (Days 21-25) — forms, model forms, validation, login/signup, permissions",
+            "Ship It (Days 26-30) — testing, env vars, Postgres, deploy to Railway, post-deploy debugging",
+        ],
+        "brand_voice_examples": [
+            (
+                "Django Day 7. URLs and routing.\n\n"
+                "Stop hardcoding /products/1/ into your templates. That's how your app breaks "
+                "the day a designer changes a path.\n\n"
+                "Name your URLs. path('products/<int:pk>/', detail, name='product_detail').\n\n"
+                "Now in your templates: {% url 'product_detail' pk=product.id %}. Done.\n\n"
+                "Tomorrow we cover URL namespacing — what happens when two apps both have a 'detail' view."
+            ),
+            (
+                "Django Day 14. Template inheritance.\n\n"
+                "If you are copying the same nav into every page you are doing it wrong. There is a "
+                "reason Django teaches DRY.\n\n"
+                "Make a base.html. Put your nav there. Then in product_list.html:\n"
+                "{% extends 'base.html' %}{% block content %}…{% endblock %}.\n\n"
+                "That is it.\n\n"
+                "Tomorrow: static files. The reason your CSS keeps not loading."
+            ),
+            (
+                "Django Day 22. Model forms.\n\n"
+                "You are not supposed to write forms.CharField() for every field on your model. "
+                "That is what ModelForm is for.\n\n"
+                "Subclass it. Point at your model. Pick the fields. Django writes the form for you.\n\n"
+                "class ProductForm(forms.ModelForm):\n"
+                "    class Meta:\n"
+                "        model = Product\n"
+                "        fields = ['name', 'price', 'description']\n\n"
+                "Tomorrow: validation. How to refuse a form before it ruins your data."
+            ),
+            (
+                "Django Day 29. Deploy to Railway.\n\n"
+                "Stop calling your app done because it works on localhost. localhost is not a market. "
+                "Railway is.\n\n"
+                "Push to GitHub. Connect repo to Railway. Add Postgres. Set DEBUG=False. Set ALLOWED_HOSTS. "
+                "Hit deploy.\n\n"
+                "If it crashes, read the logs. Do not panic. Logs always tell you what broke.\n\n"
+                "Tomorrow we wrap the track with post-deploy debugging — the 5 errors every Django dev "
+                "sees their first week in production."
+            ),
+        ],
+        "path": "manual",
+        "products": [],
+    },
 ]
 
 
