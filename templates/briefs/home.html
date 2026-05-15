@@ -355,6 +355,13 @@
               </div>
               {% endif %}
 
+              {% if brief.performance_summary.adapt_update %}
+                <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-kova-700 dark:text-kova-300 mb-1">AI learned</p>
+                  <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.adapt_update }}</p>
+                </div>
+              {% endif %}
+
               {% if brief.performance_summary.agent_summary %}
                 <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
                   <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Agent activity</p>

@@ -218,6 +218,82 @@ def _send_brief_email(user, brief):
         logger.warning("Failed to send email brief to %s: %s", user.email, e)
 
 
+def _build_adapt_summary(user) -> dict:
+    """Aggregate recent Adapt Agent v2 actions into a Daily-Brief-shaped summary.
+
+    Reads AgentAction rows with agent_type="adapt" written in the last 24
+    hours (or since the last brief, whichever is shorter) and produces:
+
+        {
+            "changes_count": int,
+            "promotions": list[str],     # human-readable descriptors
+            "retirements": list[str],
+            "frequency_change": str,     # "+1 posts/week" or None
+            "pillar_changes": list[str], # "+0.5 weight on Transformations"
+        }
+
+    The LLM uses these strings verbatim or paraphrases them — the
+    prompt forbids generic "I'm learning your style" language.
+    """
+    from datetime import timedelta
+    from apps.agents.models import AgentAction
+
+    cutoff = timezone.now() - timedelta(hours=24)
+    actions = list(
+        AgentAction.objects
+        .filter(user=user, agent_type="adapt", created_at__gte=cutoff)
+        .order_by("-created_at")[:20]
+    )
+    summary = {
+        "changes_count": 0,
+        "promotions": [],
+        "retirements": [],
+        "frequency_change": None,
+        "pillar_changes": [],
+    }
+    for a in actions:
+        action_type = (a.action_type or "")
+        input_data = a.input_data or {}
+        output_data = a.output_data or {}
+        if action_type == "promote_dna":
+            combo = input_data.get("combo") or output_data.get("after_appends", {}).get("combo", {})
+            descriptor = ", ".join(f"{k}={v}" for k, v in combo.items() if v)
+            ratio = input_data.get("ratio")
+            line = (
+                f"{descriptor} ({ratio:.1f}× your average)"
+                if isinstance(ratio, (int, float)) else descriptor
+            )
+            summary["promotions"].append(line)
+        elif action_type == "retire_dna":
+            combo = input_data.get("combo") or output_data.get("after_appends", {}).get("combo", {})
+            descriptor = ", ".join(f"{k}={v}" for k, v in combo.items() if v)
+            n = input_data.get("sample_size") or "?"
+            rate = input_data.get("mean_engagement")
+            tail = f" ({n} posts, {rate:.1%} avg)" if isinstance(rate, (int, float)) else ""
+            summary["retirements"].append(f"{descriptor}{tail}")
+        elif action_type == "reweight_pillar":
+            pillar = input_data.get("pillar", "")
+            before = output_data.get("before")
+            after = output_data.get("after")
+            if before is not None and after is not None:
+                delta = round(float(after) - float(before), 2)
+                sign = "+" if delta >= 0 else ""
+                summary["pillar_changes"].append(f"{sign}{delta} weight on {pillar}")
+        elif action_type == "adjust_frequency":
+            before = output_data.get("before")
+            after = output_data.get("after")
+            if before is not None and after is not None:
+                delta = int(after) - int(before)
+                sign = "+" if delta > 0 else ""
+                summary["frequency_change"] = f"{sign}{delta} posts/week (now {after})"
+
+    summary["changes_count"] = (
+        len(summary["promotions"]) + len(summary["retirements"])
+        + len(summary["pillar_changes"]) + (1 if summary["frequency_change"] else 0)
+    )
+    return summary
+
+
 def _gather_brief_data(user):
     """Collect all data needed for the daily brief."""
     today = timezone.now().date()
@@ -329,6 +405,16 @@ def _gather_brief_data(user):
     except Exception as e:
         logger.warning("Revenue data for brief failed: %s", e)
         revenue_data = {}
+
+    # Adapt Agent v2 — what did the learning loop change since the last brief?
+    # Reads recent AgentAction rows with agent_type="adapt" and bundles
+    # them into a compact summary the LLM can paraphrase as a single
+    # `adapt_update` line in the brief.
+    try:
+        adapt_summary = _build_adapt_summary(user)
+    except Exception as e:
+        logger.warning("Adapt summary for brief failed: %s", e)
+        adapt_summary = {}
 
     # Posts created this week
     week_stats = Post.objects.filter(
@@ -448,6 +534,7 @@ def _gather_brief_data(user):
         "competitor_intel": competitor_intel,
         "product_catalog": product_data,
         "revenue_attribution": revenue_data,
+        "adapt_summary": adapt_summary,
         "decisions_needed": decisions_needed,
         "holiday_context": holiday_context,
     }
@@ -574,6 +661,17 @@ def _generate_brief_with_llm(user, brief_data):
         'E.g. {item: "Scheduled posts promote an out-of-stock product", severity: "critical", '
         'action: "Pause or edit 2 posts mentioning Product X"}. '
         'Check product_catalog data for stock_content_mismatches, demand_signals, and never_promoted items.\n'
+        '- "adapt_update": ONE concrete sentence about what the AI learning '
+        'loop changed since the last brief. Use the `adapt_summary` block '
+        'as the source of truth. If `adapt_summary.changes_count == 0`, '
+        'return an empty string (do not fabricate learning). If there are '
+        'changes, paraphrase the most impactful one. Format examples: '
+        '"I\'ve started favouring [pattern X] — your last 3 posts using it '
+        'got 2.4× your average."  OR  "I retired [pattern Y] — 5 recent '
+        'posts averaged 0.2%."  Pick promotions over retirements over '
+        'pillar reweights over frequency changes when multiple exist. '
+        'NEVER say generic things like "I\'m learning your style" — name '
+        'specifics or say nothing.\n'
         '- "revenue_update": ONE concrete sentence about money. Use the '
         '`revenue_attribution.headline_insight` block as the source of truth. '
         'If `headline_insight.kind == "top_post"`, paraphrase its `headline` '

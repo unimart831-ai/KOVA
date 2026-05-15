@@ -545,7 +545,55 @@ def build_system_prompt(user) -> str:
     if playbook_intel:
         parts.append(playbook_intel)
 
+    # Adapt Agent v2 learnings — bias toward proven winners, exclude
+    # retired losers. The Adapt cycle writes these every 12h based on
+    # the user's last 30 days of performance.
+    adapt_intel = _adapt_preferences_for_prompt(profile)
+    if adapt_intel:
+        parts.append(adapt_intel)
+
     return "\n".join(parts)
+
+
+def _adapt_preferences_for_prompt(profile) -> str:
+    """Render the Adapt Agent v2's promoted / retired DNA patterns as a
+    prompt section. Returns "" if no preferences set yet (warming up).
+
+    Spec: docs/specs/ADAPT_AGENT_V2_SPEC.md — Decision 1 + Decision 2.
+    """
+    prefs = profile.dna_preferences or {}
+    promoted = prefs.get("promoted", []) or []
+    retired = prefs.get("retired", []) or []
+
+    if not promoted and not retired:
+        return ""
+
+    lines = ["## AI-LEARNED PATTERNS (from your post performance)"]
+
+    if promoted:
+        lines.append("**Patterns that work for this brand — bias toward these:**")
+        for p in promoted[-5:]:  # latest 5 to keep prompt tight
+            combo = p.get("combo", {})
+            descriptor = ", ".join(
+                f"{k}={v}" for k, v in combo.items() if v is not None
+            )
+            lines.append(f"  - {descriptor}")
+
+    if retired:
+        lines.append("**Patterns that under-performed — AVOID these:**")
+        for r in retired[-5:]:
+            combo = r.get("combo", {})
+            descriptor = ", ".join(
+                f"{k}={v}" for k, v in combo.items() if v is not None
+            )
+            lines.append(f"  - {descriptor}")
+
+    lines.append(
+        "These were learned automatically from your last 30 days of posts. "
+        "When generating, lean into the working patterns and steer clear of "
+        "the retired ones unless the seed explicitly calls for them."
+    )
+    return "\n".join(lines)
 
 
 def build_generation_prompt(seed: ContentSeed, platforms: list[dict]) -> str:

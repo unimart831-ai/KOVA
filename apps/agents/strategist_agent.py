@@ -170,6 +170,12 @@ def _gather_strategy_inputs(user):
             "goals": getattr(profile, "goals", []) if profile else [],
             "auto_approve": getattr(profile, "auto_approve_posts", False) if profile else False,
             "posting_frequency": getattr(profile, "posting_frequency", "daily") if profile else "daily",
+            # Adapt Agent v2 — pillar rotation weights (default 1.0 per
+            # pillar, 0.2-2.0 range). The Strategist uses these to bias
+            # which pillar to draw a seed from when choosing topics.
+            # Spec: docs/specs/ADAPT_AGENT_V2_SPEC.md — Decision 3.
+            "content_pillars": getattr(profile, "content_pillars", []) if profile else [],
+            "pillar_weights": getattr(profile, "pillar_weights", {}) if profile else {},
         },
     }
 
@@ -466,6 +472,14 @@ def _make_strategic_decisions(user, inputs):
         "- If a product is NEVER PROMOTED but in stock, flag it as a content opportunity.\n"
         "- If demand signals show audience interest, create content to match.\n"
         "- Flag stock-content mismatches as CRITICAL alerts (scheduled posts for OOS products).\n\n"
+        "PILLAR ROTATION (Adapt Agent v2):\n"
+        "- The user's `pillar_weights` (in user_context) reflect the AI's "
+        "learned bias toward proven-winning pillars. Default 1.0 per pillar; "
+        "0.2-2.0 range. Higher = post more often from this pillar.\n"
+        "- When choosing which pillar a new seed maps to, give heavier-"
+        "weighted pillars proportionally more representation in the content_plan.\n"
+        "- If a pillar's weight is < 0.5, generate from it sparingly (one in five seeds at most).\n"
+        "- Weights of 0.0 / missing mean uniform — pick pillars freely.\n\n"
         f"The user needs approximately {seeds_needed} new content ideas "
         f"(they have {already_queued} already queued, target is ~{target_posts}/day).\n"
         f"If {seeds_needed} is 0, focus on recommendations and insights instead.\n\n"

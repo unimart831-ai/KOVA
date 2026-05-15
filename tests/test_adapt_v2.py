@@ -464,3 +464,230 @@ class TestEndToEndCycle:
         )
         assert any_long_form_action
         assert any_transformations_promotion
+
+
+# ── W3 Commit 3 — Close the loop: downstream agents read Adapt mutations ──
+
+
+@pytest.mark.django_db
+class TestCreateAgentReadsAdaptPreferences:
+    """The Create Agent system prompt must surface promoted + retired DNA
+    patterns from the Adapt loop. Without this wiring, the Adapt mutations
+    are invisible to content generation — the loop doesn't close."""
+
+    def test_no_preferences_returns_empty_string(self):
+        from apps.agents.create_agent import _adapt_preferences_for_prompt
+        u = User.objects.create_user(
+            username="ad_pref1", email="ad1@b.com", password="P1!",
+        )
+        # Default empty dna_preferences
+        assert _adapt_preferences_for_prompt(u.profile) == ""
+
+    def test_promoted_pattern_surfaces_in_prompt(self):
+        from apps.agents.create_agent import _adapt_preferences_for_prompt
+        u = User.objects.create_user(
+            username="ad_pref2", email="ad2@b.com", password="P1!",
+        )
+        u.profile.dna_preferences = {
+            "promoted": [{
+                "combo": {"pillar": "Transformations", "format": "question",
+                          "tone": "inspirational"},
+                "boost": 1.5,
+                "set_at": "2026-05-16T09:00:00Z",
+            }],
+            "retired": [],
+        }
+        u.profile.save(update_fields=["dna_preferences"])
+
+        out = _adapt_preferences_for_prompt(u.profile)
+        assert "AI-LEARNED PATTERNS" in out
+        assert "bias toward" in out
+        assert "Transformations" in out
+        assert "question" in out
+        assert "inspirational" in out
+
+    def test_retired_pattern_surfaces_in_prompt(self):
+        from apps.agents.create_agent import _adapt_preferences_for_prompt
+        u = User.objects.create_user(
+            username="ad_pref3", email="ad3@b.com", password="P1!",
+        )
+        u.profile.dna_preferences = {
+            "promoted": [],
+            "retired": [{
+                "combo": {"pillar": "Long-form", "format": "testimonial",
+                          "tone": "sad", "length": "long"},
+                "set_at": "2026-05-15T00:00:00Z",
+            }],
+        }
+        u.profile.save(update_fields=["dna_preferences"])
+
+        out = _adapt_preferences_for_prompt(u.profile)
+        assert "AVOID" in out
+        assert "Long-form" in out
+        assert "testimonial" in out
+
+    def test_build_system_prompt_includes_adapt_section(self):
+        """Integration: the full system prompt builder must invoke the
+        Adapt preferences when they exist."""
+        from apps.agents.create_agent import build_system_prompt
+        u = User.objects.create_user(
+            username="ad_pref4", email="ad4@b.com", password="P1!",
+        )
+        u.profile.company_name = "Test Biz"
+        u.profile.brand_voice = "Friendly and clear"
+        u.profile.dna_preferences = {
+            "promoted": [{
+                "combo": {"pillar": "Transformations", "format": "question",
+                          "tone": "inspirational"},
+                "boost": 1.5,
+                "set_at": "2026-05-16T09:00:00Z",
+            }],
+            "retired": [],
+        }
+        u.profile.save()
+
+        prompt = build_system_prompt(u)
+        assert "AI-LEARNED PATTERNS" in prompt
+        assert "Transformations" in prompt
+
+
+@pytest.mark.django_db
+class TestStrategistReadsPillarWeights:
+    """The Strategist's user_context must include pillar_weights so the
+    LLM can bias its content_plan toward heavier-weighted pillars."""
+
+    def test_user_context_includes_pillar_weights(self):
+        from apps.agents.strategist_agent import _gather_strategy_inputs
+        u = User.objects.create_user(
+            username="strat_w1", email="sw1@b.com", password="P1!",
+        )
+        u.profile.pillar_weights = {"Transformations": 1.5, "Long-form": 0.5}
+        u.profile.content_pillars = ["Transformations", "Long-form", "Tips"]
+        u.profile.save()
+
+        inputs = _gather_strategy_inputs(u)
+        ctx = inputs["user_context"]
+        assert ctx["pillar_weights"] == {"Transformations": 1.5, "Long-form": 0.5}
+        assert "Transformations" in ctx["content_pillars"]
+
+    def test_user_context_defaults_empty_weights_when_unset(self):
+        from apps.agents.strategist_agent import _gather_strategy_inputs
+        u = User.objects.create_user(
+            username="strat_w2", email="sw2@b.com", password="P1!",
+        )
+        inputs = _gather_strategy_inputs(u)
+        # New user — empty dict (the spec's "uniform" sentinel)
+        assert inputs["user_context"]["pillar_weights"] == {}
+
+
+# ── W3 Commit 3 — Daily Brief adapt_summary ────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestBriefAdaptSummary:
+    """The Daily Brief must aggregate recent Adapt AgentActions into a
+    `adapt_summary` block the LLM prompt knows to paraphrase as one
+    concrete `adapt_update` sentence."""
+
+    def test_no_adapt_actions_returns_empty_summary(self):
+        from apps.briefs.tasks import _build_adapt_summary
+        u = User.objects.create_user(
+            username="brf1", email="brf1@b.com", password="P1!",
+        )
+        s = _build_adapt_summary(u)
+        assert s["changes_count"] == 0
+        assert s["promotions"] == []
+        assert s["retirements"] == []
+
+    def test_recent_promote_appears_in_summary(self):
+        from apps.briefs.tasks import _build_adapt_summary
+        from apps.agents.models import AgentAction
+        u = User.objects.create_user(
+            username="brf2", email="brf2@b.com", password="P1!",
+        )
+        AgentAction.objects.create(
+            user=u,
+            agent_type="adapt",
+            action_type="promote_dna",
+            input_data={
+                "combo": {"pillar": "Transformations", "format": "question"},
+                "ratio": 2.4,
+                "sample_size": 4,
+            },
+            output_data={
+                "field": "dna_preferences.promoted",
+                "after_appends": {
+                    "combo": {"pillar": "Transformations", "format": "question"},
+                    "boost": 1.5,
+                    "set_at": "2026-05-16T09:00:00Z",
+                },
+            },
+            status=AgentAction.ActionStatus.COMPLETED,
+        )
+        s = _build_adapt_summary(u)
+        assert s["changes_count"] >= 1
+        assert any("Transformations" in p for p in s["promotions"])
+        # The ratio must surface so the LLM can use the "2.4× your average" form
+        assert any("2.4" in p for p in s["promotions"])
+
+    def test_recent_pillar_reweight_appears(self):
+        from apps.briefs.tasks import _build_adapt_summary
+        from apps.agents.models import AgentAction
+        u = User.objects.create_user(
+            username="brf3", email="brf3@b.com", password="P1!",
+        )
+        AgentAction.objects.create(
+            user=u,
+            agent_type="adapt",
+            action_type="reweight_pillar",
+            input_data={"pillar": "Transformations"},
+            output_data={"field": "pillar_weights.Transformations", "before": 1.0, "after": 1.5},
+            status=AgentAction.ActionStatus.COMPLETED,
+        )
+        s = _build_adapt_summary(u)
+        assert any("Transformations" in c for c in s["pillar_changes"])
+        # +0.5 delta should be in the descriptor
+        assert any("+0.5" in c for c in s["pillar_changes"])
+
+    def test_frequency_change_appears(self):
+        from apps.briefs.tasks import _build_adapt_summary
+        from apps.agents.models import AgentAction
+        u = User.objects.create_user(
+            username="brf4", email="brf4@b.com", password="P1!",
+        )
+        AgentAction.objects.create(
+            user=u,
+            agent_type="adapt",
+            action_type="adjust_frequency",
+            input_data={"current_target": 4},
+            output_data={"field": "posting_frequency", "before": 4, "after": 5},
+            status=AgentAction.ActionStatus.COMPLETED,
+        )
+        s = _build_adapt_summary(u)
+        assert s["frequency_change"] is not None
+        assert "+1" in s["frequency_change"]
+
+    def test_older_than_24h_ignored(self):
+        """Only LAST-CYCLE changes should surface in today's brief."""
+        from datetime import timedelta
+        from django.utils import timezone as tz
+        from apps.briefs.tasks import _build_adapt_summary
+        from apps.agents.models import AgentAction
+        u = User.objects.create_user(
+            username="brf5", email="brf5@b.com", password="P1!",
+        )
+        a = AgentAction.objects.create(
+            user=u,
+            agent_type="adapt",
+            action_type="promote_dna",
+            input_data={"combo": {"pillar": "Old"}, "ratio": 2.0},
+            output_data={"field": "dna_preferences.promoted",
+                          "after_appends": {"combo": {"pillar": "Old"}}},
+            status=AgentAction.ActionStatus.COMPLETED,
+        )
+        # Backdate 2 days
+        AgentAction.objects.filter(pk=a.pk).update(
+            created_at=tz.now() - timedelta(days=2),
+        )
+        s = _build_adapt_summary(u)
+        assert s["changes_count"] == 0
