@@ -1,6 +1,6 @@
-# Kova AI — 11 Test Businesses for Full Platform Testing
+# Kova AI — 12 Test Businesses for Full Platform Testing
 
-> **Purpose:** 11 fictional businesses across different industries to onboard onto Kova and test every feature end-to-end.
+> **Purpose:** 12 fictional businesses across different industries to onboard onto Kova and test every feature end-to-end.
 > Each business has a unique profile, plan, platforms, and testing focus.
 
 ---
@@ -20,6 +20,7 @@
 | 9 | Neon Wave Agency | Creative / Marketing Agency | Agency | All 10 Platforms | Multi-Brand Teams, Media Queue, Full Agent Suite |
 | 10 | PesaPal Finance | Fintech / Financial Services | Growth | LinkedIn, Twitter, FB, Threads | Compliance Tone, Competitor Tracking, Campaigns |
 | 11 | Kakuma Wholesale | Wholesale / Mtumba & Retail | Pro | WhatsApp, FB, TikTok, Instagram | WhatsApp Commerce, Products, Refugee Market, Media Queue |
+| 12 | Kawaida Hair & Beauty | Salon & Beauty Services | Growth | WhatsApp, Instagram, Facebook | Salon persona, WhatsApp-first SME, Magic Fill + Industry Pack |
 
 ---
 
@@ -689,13 +690,113 @@ Kakuma Wholesale bridges Nairobi's biggest markets to one of East Africa's large
 
 ---
 
+## Business 12: Kawaida Hair & Beauty
+
+**Category:** Salon & Beauty Services
+**Plan:** Growth (KES 999/mo)
+**Website:** kawaidabeauty.co.ke
+**Location:** Eastlands, Nairobi
+
+This is **Kova's flagship persona** — the Eastlands salon owner referenced in the
+seed proposal and Business Canvas. Kawaida exercises every Tier-1/Tier-2
+onboarding automation we shipped: Magic Fill from Instagram, industry pack
+defaults, smart Kenya signup defaults, the WhatsApp completion ping.
+
+### Brand Profile
+
+| Field | Value |
+|-------|-------|
+| Company Name | Kawaida Hair & Beauty |
+| Industry | Salon & Beauty Services (`salon_beauty`) |
+| Target Audience | Working women aged 22–40 in Eastlands, South B, Embakasi, and Donholm; busy professionals booking around work hours; brides-to-be |
+| Brand Voice | Warm and confident — like the senior stylist you trust to know what works for your hair. Mixes English and Swahili naturally ("twende, kuna deal mzuri") |
+| Tone | Warm, approachable, playful, confident |
+| Content Pillars | Transformations & before/after, Service spotlights (braids, treatments, bridal), Beauty tips & care advice (especially for natural and relaxed hair), Behind-the-scenes / team, Client love & testimonials |
+
+### Platforms to Connect
+
+| Platform | Handle | Content Type |
+|----------|--------|-------------|
+| WhatsApp | +254 712 345 012 | Booking confirmations, price lists, daily availability, VIP broadcasts |
+| Instagram | @kawaidabeauty | Transformation Reels, service photos, Stories |
+| Facebook | Kawaida Hair & Beauty | Community engagement, promotions, page reviews |
+
+*Growth plan allows 3 social accounts — perfect fit*
+
+### Products / Services to Add
+
+| Service | Price (KES) | Duration | Category |
+|---------|-------------|----------|----------|
+| Box Braids (Medium) | 3,500 | 4 hrs | Braiding |
+| Knotless Braids (Long) | 5,000 | 6 hrs | Braiding |
+| Cornrows + Beads | 1,500 | 2 hrs | Braiding |
+| Silk Press (Natural Hair) | 2,500 | 2 hrs | Styling |
+| Deep Conditioning Treatment | 1,200 | 1 hr | Hair Care |
+| Bridal Hair & Makeup Package | 12,000 | 3 hrs | Bridal |
+| Wash + Blow Dry | 800 | 1 hr | Styling |
+| Manicure + Gel Polish | 1,000 | 1 hr | Nails |
+
+### Features to Test (Tier-1/Tier-2 Automation FOCUS)
+
+- [ ] **Path Choice — Magic Fill** — Pick "Auto-fill from social" → connect Instagram → verify bio, profile pic, website pre-filled
+- [ ] **Industry Pack — Salon defaults** — Verify warm/approachable/playful tones applied, WhatsApp CTA defaulted, 5 posts/week cadence set
+- [ ] **Smart Kenya Signup Defaults** — Verify timezone=Africa/Nairobi, country=KE, M-Pesa phone auto-set from signup
+- [ ] **3-Step Wizard** — Confirm new wizard structure (Path Choice → Step 1 → Step 2 Review → Step 3 Connect)
+- [ ] **Step 2 Review Page** — Verify all sections (Voice, Content, Visuals, Goals, Autonomy, CTA) pre-filled
+- [ ] **WhatsApp Completion Ping** — Verify the WhatsApp template message lands on signup phone (if template configured)
+- [ ] **Admin Funnel — Path Choice Panel** — Salon should show under "Magic Fill" in admin dashboard
+- [ ] **Admin Funnel — Industry Mix** — Salon should appear in top 10 industries
+- [ ] **Admin Funnel — Country Mix** — KE should dominate
+- [ ] **Growth plan limits** — 3 platforms, 60 posts/month, 30 seeds/month
+- [ ] **WhatsApp Booking** — Inbox conversations for appointment requests
+- [ ] **WhatsApp Broadcasts** — Weekend availability broadcasts to client list
+- [ ] **AI Image Generation** — Hair transformation photos, service price cards
+- [ ] **Memes** — Salon humor (braid pain memes, post-salon glow content)
+- [ ] **Email Marketing** — Monthly "What's New" newsletter (max 2,500 subscribers on Growth)
+
+### Test Seeds to Create
+
+1. "Knotless braids in 4 hours flat — book your weekend slot, slots filling fast 🔥"
+2. "Before & after: Wanjiku came in with damaged hair, left glowing. Our deep treatment + silk press combo, KES 3,700"
+3. "Bridal season is here — book your bridal trial 2 weeks before the big day. Package includes hair, makeup & touch-up kit"
+4. "Salon truth: Your braids should last 8 weeks, not 3. Here's what we do differently (and why your scalp will thank you)"
+5. "Twende! Saturday flash deal: Cornrows + beads KES 1,200 (normally 1,500). Walk-ins from 8am, WhatsApp +254 712 345 012 to book"
+
+### Unique Testing Angles
+
+- **Flagship Persona:** This is the salon owner the marketing materials describe. If onboarding works smoothly for Kawaida, the Kova promise holds.
+- **WhatsApp-First Service Business:** Bookings, broadcasts, conversations — all WhatsApp. Validates that our WhatsApp-first reorder pays off.
+- **Magic Fill End-to-End:** The ONE business where the test plan explicitly walks through Magic Fill. If anything regresses, this catches it.
+- **Industry Pack Validation:** The salon_beauty pack is the most opinionated (5 posts/week, WhatsApp CTA, warm tones). Easy to spot regressions.
+- **Code-Switching Content:** Tests AI voice on mixed English/Swahili — the way real Eastlands SMEs actually communicate.
+
+---
+
 ## Onboarding Sequence
 
 ### Phase 1: Setup (Day 1)
 
-1. Create all 11 user accounts with correct plan tiers
-2. Complete onboarding wizard for each (brand voice, industry, audience, pillars)
-3. Connect platforms per the tables above
+1. **Bulk-seed accounts (recommended):** run `python manage.py seed_test_businesses`.
+   This creates all 12 users with the right plan, profile (industry, voice,
+   audience, pillars, tones, goals, CTA, brand colors), and a starter set of
+   products. Pass `--complete-onboarding` to skip the wizard entirely for
+   businesses you don't need to manually walk through.
+2. **Manual onboarding (for QA coverage of the new wizard):** sign up each
+   business through the public UI to exercise the 3-step wizard end-to-end.
+   The new flow is:
+   * **Path-choice screen** — pick Magic Fill (auto-fill from a social account),
+     URL inference (paste a website), or manual setup.
+   * **Step 1 — Basics:** company name, industry, audience, key offerings,
+     timezone, website. If Magic Fill or URL inference fired, fields arrive
+     pre-populated.
+   * **Step 2 — Review your brand:** merged voice + visuals + goals + autonomy
+     + CTA. Industry pack values are already filled in; the user skims and
+     edits anything off.
+   * **Step 3 — Connect a platform.**
+   Phase 1 of the test plan only takes one or two businesses through the
+   manual route; the rest go through `seed_test_businesses`.
+3. Connect platforms per the tables above (OAuth — still required even when
+   the rest of the profile was bulk-seeded).
 
 ### Phase 2: Content & Products (Day 2-3)
 
@@ -732,38 +833,141 @@ Kakuma Wholesale bridges Nairobi's biggest markets to one of East Africa's large
 
 ---
 
-## Test Coverage Matrix
+## Onboarding Automation (Tier 1 / Tier 2)
 
-| Feature | Mara&Moto | PixelCraft | Elimu | Nyama | CloudStack | Makao | Amara | GreenRoots | NeonWave | PesaPal | KakumaWS |
-|---------|:---------:|:----------:|:-----:|:-----:|:----------:|:-----:|:-----:|:----------:|:--------:|:-------:|:--------:|
-| **Plan** | Agency | Pro | Growth | Pro | Agency | Pro | Starter | Growth | Agency | Growth | Pro |
-| Content Creation | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Products | ✅ | | | ✅ | | | ✅ | | | | ✅ |
-| Shopify + Pixel | ✅ | | | | ✅ | | | | | | |
-| Revenue Attribution | ✅ | | | | ✅ | | | | | | |
-| WhatsApp Full | ✅ | | | ✅ | | ✅ | | | ✅ | | ✅ |
-| Memes | ✅ | | | ✅ | | ✅ | | | ✅ | | ✅ |
-| Teams | | ✅ | | | ✅ | | | | ✅ | | |
-| Multi-Brand | | | | | | | | | ✅ | | |
-| Lead Capture | | ✅ | ✅ | | | ✅ | ✅ | ✅ | | ✅ | |
-| Email Marketing | ✅ | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | |
-| Email Sequences | | | ✅ | ✅ | | | | ✅ | | ✅ | |
-| Campaigns | ✅ | ✅ | | | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ |
-| A/B Testing | ✅ | ✅ | ✅ | | ✅ | | | ✅ | ✅ | ✅ | |
-| Competitor Intel | | ✅ | | | ✅ | | | | | ✅ | |
-| Media Queue | ✅ | | | ✅ | | | | | ✅ | | ✅ |
-| AI Images | ✅ | | | ✅ | | | | | ✅ | | ✅ |
-| All 6 Agents | ✅ | | | | ✅ | | | | ✅ | | |
-| REST API | | | | | ✅ | | | | ✅ | | |
-| Kova Pages | | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | | ✅ | |
-| Partner Program | | | | | | | | ✅ | | | |
-| Plan Limits | | | ✅ | | | | ✅ | ✅ | | ✅ | |
-| Starter Ceiling | | | | | | | ✅ | | | | |
-| Multi-Language | | | | | | | | | | | ✅ |
-| Wholesale/Bulk | | | | | | | | | | | ✅ |
+The features below were added during the onboarding rework and are not exercised
+by the per-business feature lists above. Run through this section explicitly to
+confirm the new automation paths work end-to-end and surface correctly in the
+admin Onboarding Funnel.
 
-**Every feature is covered by at least 2 businesses. Every plan tier is tested by at least 2 businesses.**
+### Path Choice
+
+Each new user lands on a 3-option screen before Step 1:
+
+| Path | Test with business | Expected admin marker |
+|------|---------------------|------------------------|
+| Magic Fill (auto-fill from social) | **Kawaida Hair & Beauty** (#12), **Mara & Moto** (#1), **Nyama Mama** (#4) | `path_choice_magic` |
+| URL inference (paste a website) | **CloudStack Africa** (#5), **PixelCraft Studios** (#2), **Elimu Hub** (#3) | `path_choice_url` |
+| Manual setup | **Kakuma Wholesale** (#11), **Coach Amara** (#7) | `path_choice_manual` |
+
+Verify in admin `/admin/users/onboarding-funnel/` → **Path choice** panel shows
+the counts and percentages.
+
+### Magic Fill (profile_audit → UserProfile)
+
+- [ ] Connect Instagram for Kawaida → audit pulls bio, profile pic, website, phone
+- [ ] Connect Facebook Page for Nyama Mama → audit pulls category, hours, address
+- [ ] Connect LinkedIn for PixelCraft → audit pulls org description, website
+- [ ] Verify admin marker: `magic_fill_applied:<platform>` recorded per audit success
+- [ ] Verify provider breakdown panel shows IG / FB / LinkedIn counts
+
+### URL Inference (paste a URL → LLM fills fields)
+
+- [ ] CloudStack: paste `cloudstackafrica.com` → industry inferred as `saas`, voice + pillars filled
+- [ ] PixelCraft: paste `pixelcraftstudios.com` → industry inferred as `agency`
+- [ ] PesaPal: paste `pesapalfinance.co.ke` → industry inferred as `finance`
+- [ ] Verify malformed URLs return a friendly error (404, no scheme, etc.)
+- [ ] Verify admin marker: `url_inference_applied` recorded
+
+### Industry Pack Defaults
+
+Each business should see its industry-specific defaults applied after Step 1.
+Spot-check at least these:
+
+| Business | Industry | Expected pack defaults |
+|----------|---------|------------------------|
+| Kawaida | `salon_beauty` | WhatsApp CTA, 5 posts/wk, warm/playful tones, "Transformations & before/after" pillar |
+| Nyama Mama | `food_restaurant` | Phone CTA, 6 posts/wk, warm/playful tones, "Menu highlights" pillar |
+| Coach Amara | `health` | WhatsApp CTA, 3 posts/wk, empathetic/educational tones |
+| Mara & Moto | `fashion_beauty` | Link CTA, 5 posts/wk, bold/playful tones, vibrant visuals |
+| Makao Homes | `real_estate` | WhatsApp CTA, 4 posts/wk, confident/professional tones |
+| Kakuma | `wholesale_retail` | WhatsApp CTA, 4 posts/wk, approachable tones |
+
+- [ ] Verify admin marker: `industry_pack_applied:<industry>` recorded
+- [ ] Verify "Industry pack — applied" stat shows count + % of completed users
+- [ ] Verify "Industry mix (top 10)" panel shows the 12-business distribution
+
+### Smart Kenya Defaults (signup)
+
+All 12 businesses use Kenyan phone numbers, so all should auto-set:
+
+- [ ] `user.timezone == "Africa/Nairobi"`
+- [ ] `profile.country == "KE"`
+- [ ] `profile.mpesa_phone` matches the signup phone
+- [ ] Verify "Country mix" panel shows **KE** dominating (should be 12/12)
+
+### Wizard Structure
+
+- [ ] Confirm wizard is **3 steps**, not 4 (progress bar shows "Step X of 3")
+- [ ] Step 2 is a single "Review your brand" page (no separate goals page)
+- [ ] Step 2 has all section dividers: Voice & audience, Content & guardrails,
+      Visuals, Goals & cadence, Agent autonomy, Default CTA
+- [ ] African timezones surfaced at top of the timezone dropdown in Step 1
+- [ ] Mid-flow OAuth callback returns user to `?step=3` (not `?step=4`)
+
+### WhatsApp Completion Ping
+
+- [ ] Verify `KOVA_ONBOARDING_TEMPLATE_NAME` env var is set in test env
+- [ ] Complete onboarding for Kawaida (Kenyan phone) → verify WhatsApp template
+      message arrives on the signup phone
+- [ ] Complete onboarding for a user with no phone → verify no error, soft no-op
+- [ ] Check logs for "Onboarding ping sent to ..." or skip message
+
+### Admin Onboarding Funnel — End-to-End
+
+After running the full test cohort, the admin funnel at
+`/admin/users/onboarding-funnel/` should show:
+
+- [ ] **Funnel** — drop-off shape from Signup → Step 1 → Step 2 (voice/full) → Step 3 → Agency chain
+- [ ] **Top summary line** — median time-to-complete in minutes
+- [ ] **Path choice** — Magic / URL / Manual / Unknown breakdown
+- [ ] **Automation hits** — Magic Fill providers, URL inference count, industry pack hits
+- [ ] **Industry mix** — top 10 industries
+- [ ] **Country mix** — KE dominant
+- [ ] **Stuck users** — empty (or accurate if you intentionally break a celery worker to test)
+- [ ] **Wizard abandoners** — accurate if you sign up + abandon a test user >24h
 
 ---
 
-*Kova AI — 11 businesses, 4 plan tiers, every feature tested.*
+## Test Coverage Matrix
+
+| Feature | Mara&Moto | PixelCraft | Elimu | Nyama | CloudStack | Makao | Amara | GreenRoots | NeonWave | PesaPal | KakumaWS | Kawaida |
+|---------|:---------:|:----------:|:-----:|:-----:|:----------:|:-----:|:-----:|:----------:|:--------:|:-------:|:--------:|:-------:|
+| **Plan** | Agency | Pro | Growth | Pro | Agency | Pro | Starter | Growth | Agency | Growth | Pro | Growth |
+| Content Creation | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Products | ✅ | | | ✅ | | | ✅ | | | | ✅ | ✅ |
+| Shopify + Pixel | ✅ | | | | ✅ | | | | | | | |
+| Revenue Attribution | ✅ | | | | ✅ | | | | | | | |
+| WhatsApp Full | ✅ | | | ✅ | | ✅ | | | ✅ | | ✅ | ✅ |
+| Memes | ✅ | | | ✅ | | ✅ | | | ✅ | | ✅ | ✅ |
+| Teams | | ✅ | | | ✅ | | | | ✅ | | | |
+| Multi-Brand | | | | | | | | | ✅ | | | |
+| Lead Capture | | ✅ | ✅ | | | ✅ | ✅ | ✅ | | ✅ | | ✅ |
+| Email Marketing | ✅ | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | | ✅ |
+| Email Sequences | | | ✅ | ✅ | | | | ✅ | | ✅ | | |
+| Campaigns | ✅ | ✅ | | | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | |
+| A/B Testing | ✅ | ✅ | ✅ | | ✅ | | | ✅ | ✅ | ✅ | | |
+| Competitor Intel | | ✅ | | | ✅ | | | | | ✅ | | |
+| Media Queue | ✅ | | | ✅ | | | | | ✅ | | ✅ | ✅ |
+| AI Images | ✅ | | | ✅ | | | | | ✅ | | ✅ | ✅ |
+| All 6 Agents | ✅ | | | | ✅ | | | | ✅ | | | |
+| REST API | | | | | ✅ | | | | ✅ | | | |
+| Kova Pages | | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ | | ✅ | | |
+| Partner Program | | | | | | | | ✅ | | | | |
+| Plan Limits | | | ✅ | | | | ✅ | ✅ | | ✅ | | ✅ |
+| Starter Ceiling | | | | | | | ✅ | | | | | |
+| Multi-Language | | | | | | | | | | | ✅ | ✅ |
+| Wholesale/Bulk | | | | | | | | | | | ✅ | |
+| **Path Choice — Magic** | ✅ | | | ✅ | | ✅ | | | | | | ✅ |
+| **Path Choice — URL** | | ✅ | ✅ | | ✅ | | | ✅ | | ✅ | | |
+| **Path Choice — Manual** | | | | | | | ✅ | | | | ✅ | |
+| **Industry Pack** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Smart KE Defaults** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Salon Persona** | | | | | | | | | | | | ✅ |
+| **WhatsApp Completion Ping** | | | | ✅ | | ✅ | | | | | ✅ | ✅ |
+
+**Every feature is covered by at least 2 businesses. Every plan tier is tested by at least 2 businesses. Every Tier-1/Tier-2 onboarding automation is exercised by at least 1 business.**
+
+---
+
+*Kova AI — 12 businesses, 4 plan tiers, every feature tested.*
