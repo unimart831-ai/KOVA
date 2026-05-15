@@ -1,7 +1,22 @@
-"""
-Adapt Agent — Smart Scheduling & Platform Optimization.
+"""Adapt Agent — Learning Loop (v2, Phase 1 W3-4, May 2026).
 
-Responsibilities:
+The autonomous learning loop. v1 of this agent was a smart scheduler —
+it only mutated `Post.scheduled_at`. v2 makes the marketing claim of
+"AI learns and adjusts" real:
+
+  1. Reads each user's last 30 days of post performance
+  2. Decides which Content DNA combos / pillars / cadences to promote
+     or retire
+  3. Mutates `UserProfile.pillar_weights`, `dna_preferences`,
+     `posting_frequency`, `optimal_schedule` so future content is biased
+     toward winners
+  4. Surfaces every change in the Daily Brief
+  5. Audits every mutation in AgentAction with before/after JSON so it's
+     reversible
+
+Spec: docs/specs/ADAPT_AGENT_V2_SPEC.md
+
+v1 scheduling responsibilities (preserved):
   1. Analyze historical posting performance by time-of-day / day-of-week
   2. Suggest optimal posting times per platform
   3. Auto-schedule posts to optimal slots
@@ -359,3 +374,46 @@ def auto_schedule_post(post):
     post.scheduled_at = fallback
     post.save(update_fields=["scheduled_at"])
     return fallback
+
+
+# ── Adapt v2 — Learning Loop (W3-4 May 2026) ───────────────────────────────
+#
+# Spec: docs/specs/ADAPT_AGENT_V2_SPEC.md
+#
+# This Commit-1 stub only updates `adapt_last_run_at` so the Celery Beat
+# entry can run without erroring. The actual decision logic (eligibility
+# gates, 5 mutation classes, dry-run audit, AgentAction logging) lands in
+# W3 Commit 2. The flag ADAPT_AGENT_V2_ENABLED stays False until Commit 2
+# is observed safe on internal test accounts.
+
+
+def run_for_user(user) -> dict:
+    """Run one Adapt v2 cycle for a single user.
+
+    Returns a summary dict with the shape:
+        {
+            "skipped": bool,
+            "skip_reason": str,
+            "decisions": list[dict],   # what we would have / did mutate
+            "applied": bool,           # True iff ADAPT_AGENT_V2_ENABLED
+        }
+
+    Commit-1 stub: always returns skipped=True with reason "stub —
+    Commit 2 implements the loop." Marks adapt_last_run_at anyway so the
+    12h cadence is exercised. The Celery beat entry can land in prod
+    immediately without surprising anyone.
+    """
+    profile = getattr(user, "profile", None)
+    if profile is None:
+        return {"skipped": True, "skip_reason": "no_profile", "decisions": [], "applied": False}
+
+    profile.adapt_last_run_at = timezone.now()
+    profile.save(update_fields=["adapt_last_run_at", "updated_at"])
+
+    logger.info("Adapt v2 stub ran for %s (cycle 1/many)", user.email)
+    return {
+        "skipped": True,
+        "skip_reason": "stub_commit_1_decision_logic_in_commit_2",
+        "decisions": [],
+        "applied": False,
+    }

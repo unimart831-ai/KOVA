@@ -282,6 +282,60 @@ def _run_engage_for_user(user_id):
             sentry_sdk.capture_exception(e)
 
 
+@shared_task(name="agents.run_adapt_cycle", soft_time_limit=15 * 60, time_limit=18 * 60)
+@single_run("agents.run_adapt_cycle", timeout=30 * 60)
+def run_adapt_cycle():
+    """Periodic Adapt Agent v2 cycle — the autonomous learning loop.
+
+    Iterates eligible users and runs `apps.agents.adapt_agent.run_for_user`
+    on each. Eligibility gates (per spec):
+      - >= 7 days since first published post
+      - >= 5 published posts in last 30 days
+      - profile.adapt_paused is False
+      - profile.adapt_last_run_at is None or older than 11h
+
+    Spec: docs/specs/ADAPT_AGENT_V2_SPEC.md
+    """
+    from datetime import timedelta
+    from django.utils import timezone
+
+    # The user iteration + per-user dispatch is implemented in W3 Commit 2.
+    # This commit only wires the Celery Beat entry + the task name so the
+    # scheduler doesn't error on missing task. The cycle is a no-op until
+    # adapt_agent.run_for_user lands.
+    from apps.agents.adapt_agent import run_for_user
+
+    eligible = User.objects.filter(
+        onboarding_completed=True,
+        profile__adapt_paused=False,
+    ).exclude(
+        # Skip users who ran within the last 11h (we cadence at 12h)
+        profile__adapt_last_run_at__gt=timezone.now() - timedelta(hours=11),
+    ).distinct()
+
+    dispatched = 0
+    for idx, user in enumerate(eligible):
+        # Stagger 3s per user so we don't hammer the LLM / DB in one burst
+        run_adapt_for_user.apply_async(args=[user.pk], countdown=idx * 3)
+        dispatched += 1
+
+    if dispatched:
+        logger.info("Adapt cycle dispatched %d user tasks", dispatched)
+    return dispatched
+
+
+@shared_task(name="agents.run_adapt_for_user", soft_time_limit=120, time_limit=180)
+def run_adapt_for_user(user_id):
+    """Single-user Adapt v2 cycle (per-user dispatch from run_adapt_cycle)."""
+    from apps.agents.adapt_agent import run_for_user
+    try:
+        user = User.objects.select_related("profile").get(pk=user_id)
+    except User.DoesNotExist:
+        logger.warning("Adapt: user %s not found", user_id)
+        return
+    return run_for_user(user)
+
+
 @shared_task(name="agents.run_strategy_cycle", soft_time_limit=10 * 60, time_limit=12 * 60)
 @single_run("agents.run_strategy_cycle", timeout=30 * 60)
 def run_strategy_cycle():

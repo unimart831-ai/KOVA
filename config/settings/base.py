@@ -244,6 +244,13 @@ CELERY_BEAT_SCHEDULE = {
         "task": "content.recycle_top_content",
         "schedule": 24 * 3600.0,  # daily — repurpose high-performing old content
     },
+    # Adapt Agent v2 — the autonomous learning loop. Reads each user's
+    # last 30 days of post performance and mutates their UserProfile to
+    # bias future content toward winners. Spec: docs/specs/ADAPT_AGENT_V2_SPEC.md.
+    "run-adapt-cycle": {
+        "task": "agents.run_adapt_cycle",
+        "schedule": 12 * 3600.0,  # every 12h — match Engage / Strategist drum
+    },
     "track-audience-growth": {
         "task": "agents.track_audience_growth",
         "schedule": 24 * 3600.0,  # daily — snapshot follower counts for growth intelligence
@@ -585,6 +592,22 @@ FB_WA_CONFIG_ID = env("FB_WA_CONFIG_ID", default="")                    # Facebo
 # this flag gates is whether AUTO_SEND decisions actually post to platforms
 # vs. fall back to DRAFT_FOR_REVIEW.
 ENGAGE_GRADUATED_AUTONOMY_ENABLED = env.bool("ENGAGE_GRADUATED_AUTONOMY_ENABLED", default=False)
+
+# Adapt Agent v2 — learning loop rollout flag.
+#
+# Spec: docs/specs/ADAPT_AGENT_V2_SPEC.md
+#
+# Default False so the new loop runs in DRY-RUN MODE for a week before
+# any user profile actually changes. In dry-run, the agent still computes
+# what mutations it WOULD make and writes them to AgentAction with
+# action_status="dry_run" — but UserProfile is untouched. Lets us audit
+# the threshold calibration on real data before flipping.
+#
+# Two-stage rollout:
+#   Week 1: code lands, flag False, mutations LOGGED ONLY
+#   Week 2: audit dry-run logs, tune thresholds, flip True for internal
+#           users (Kawaida / Nyama / Mara), then global
+ADAPT_AGENT_V2_ENABLED = env.bool("ADAPT_AGENT_V2_ENABLED", default=False)
 
 # Onboarding completion ping — fires from agents.onboarding_tasks once the
 # "agency first meeting" task chain finishes. Requires an approved Meta

@@ -265,6 +265,46 @@ class UserProfile(models.Model):
         help_text="If True, ALL autonomous agent actions are halted immediately. "
                   "No publishing, no seeds, no replies, no media queue processing.",
     )
+
+    # ── Adapt Agent v2 (Phase 1 W3-4, May 2026) ──
+    # The autonomous learning loop. Reads per-user post performance every
+    # 12h and mutates these fields to bias future content toward winners.
+    # Spec: docs/specs/ADAPT_AGENT_V2_SPEC.md
+    pillar_weights = models.JSONField(
+        default=dict, blank=True,
+        help_text=(
+            "Per-pillar rotation weights (0.2-2.0, default 1.0). Adapt "
+            "Agent v2 mutates these based on per-pillar engagement. The "
+            "Strategist + Create agents pull from pillars proportionally."
+        ),
+    )
+    dna_preferences = models.JSONField(
+        default=dict, blank=True,
+        help_text=(
+            "Promoted / retired Content DNA patterns from the Adapt loop. "
+            'Shape: {"promoted": [{"combo": {...}, "boost": 1.5, ...}, ...], '
+            '"retired": [{"combo": {...}, "set_at": "..."}, ...]}'
+        ),
+    )
+    optimal_schedule = models.JSONField(
+        default=dict, blank=True,
+        help_text=(
+            "Per-platform optimal posting hours/days from Adapt v1's "
+            'scheduling optimiser. Shape: {"instagram": {"best_hours": '
+            '[9, 18], "best_days": ["mon", "tue"]}, ...}'
+        ),
+    )
+    adapt_paused = models.BooleanField(
+        default=False,
+        help_text=(
+            "If True, Adapt Agent v2 skips this user. Manual override for "
+            "users who want to lock their settings in place."
+        ),
+    )
+    adapt_last_run_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Timestamp of the most recent Adapt v2 cycle for this user.",
+    )
     # ── Default CTA settings (Sprint 6B) ──
     default_cta_type = models.CharField(
         max_length=20,
