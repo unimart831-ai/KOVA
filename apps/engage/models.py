@@ -40,6 +40,28 @@ class Interaction(models.Model):
         default=False,
         help_text="Whether the user modified the AI-suggested reply before sending.",
     )
+    # ── Engage Agent v2 (Phase 1 W2 May 2026) ──
+    # The LLM produces these alongside the reply text; engage_routing.route_reply
+    # uses confidence + safety_flags to decide auto-send vs draft vs escalate.
+    ai_confidence = models.FloatField(
+        null=True, blank=True,
+        help_text="Engage Agent LLM confidence in the suggested reply (0.0-1.0).",
+    )
+    ai_intent = models.CharField(
+        max_length=30, blank=True, db_index=True,
+        help_text=(
+            "Classified intent: hours, booking, pricing, complaint, praise, "
+            "spam, other. Used by safety rails to gate auto-send."
+        ),
+    )
+    safety_flags = models.JSONField(
+        default=list, blank=True,
+        help_text=(
+            "Reasons the reply must NOT auto-send regardless of confidence. "
+            "Populated by engage_routing.safety_check (complaint, long_reply, "
+            "refund_keyword, cold_first_contact, pricing_without_cta, etc.)."
+        ),
+    )
     platform_interaction_id = models.CharField(max_length=255, blank=True, db_index=True)
     sentiment = models.CharField(max_length=20, blank=True, db_index=True)  # positive, neutral, negative
     created_at = models.DateTimeField(auto_now_add=True)

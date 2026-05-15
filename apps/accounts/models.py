@@ -235,7 +235,30 @@ class UserProfile(models.Model):
     )
     auto_engage = models.BooleanField(
         default=False,
-        help_text="If True, engage agent can respond to comments automatically.",
+        help_text=(
+            "DEPRECATED — use engage_autonomy_level instead. Kept for two "
+            "release cycles to avoid breaking admin tools / external API "
+            "clients that haven't migrated yet. Phase 1 W2 (May 2026)."
+        ),
+    )
+
+    class EngageAutonomyLevel(models.TextChoices):
+        OFF = "off", "Off — no AI replies"
+        SUGGEST = "suggest", "Suggest — AI drafts, I approve every one"
+        GRADUATED = "graduated", "Graduated — auto-send safe replies, queue tricky ones"
+        AGGRESSIVE = "aggressive", "Aggressive — auto-send aggressively (Agency only)"
+
+    engage_autonomy_level = models.CharField(
+        max_length=20,
+        choices=EngageAutonomyLevel.choices,
+        default=EngageAutonomyLevel.SUGGEST,
+        help_text=(
+            "How much social media autonomy to give the Engage Agent. "
+            "OFF disables AI replies entirely. SUGGEST queues every AI reply "
+            "for review. GRADUATED auto-sends at confidence ≥ 0.85 and queues "
+            "0.50-0.85 as drafts. AGGRESSIVE auto-sends at ≥ 0.70. "
+            "Plan-tier-gated — see docs/specs/ENGAGE_AGENT_V2_SPEC.md."
+        ),
     )
     emergency_pause = models.BooleanField(
         default=False,

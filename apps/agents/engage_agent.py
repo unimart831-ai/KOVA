@@ -485,14 +485,38 @@ def generate_replies(user, batch_size=10):
         total_generated = 0
         batch_interactions = list(needs_reply)
 
-        # Batch generate replies in a single LLM call instead of N individual calls
-        replies = _generate_replies_batch(batch_interactions, brand_voice, company)
+        # Batch generate replies in a single LLM call instead of N individual calls.
+        # Returns structured payloads now (Engage v2) — persist confidence,
+        # intent, and safety_flags onto the Interaction so the engage_routing
+        # layer can decide auto-send vs draft.
+        payloads = _generate_replies_batch(batch_interactions, brand_voice, company)
 
-        for interaction, reply in zip(batch_interactions, replies):
-            if reply:
-                interaction.ai_suggested_reply = reply
-                interaction.save(update_fields=["ai_suggested_reply"])
-                total_generated += 1
+        # Lazy import to keep this module free of routing logic during pure
+        # generation. Routing decisions belong in auto_respond / engage tasks.
+        from apps.agents.engage_routing import safety_check, SafetyContext
+
+        for interaction, payload in zip(batch_interactions, payloads):
+            reply_text = payload.get("reply") or ""
+            if not reply_text:
+                continue
+
+            ctx = SafetyContext(
+                reply_text=reply_text,
+                intent=payload.get("intent", "other"),
+                post_has_cta_url=bool(
+                    interaction.post and (interaction.post.cta_url or "").strip()
+                ),
+            )
+            flags = safety_check(ctx)
+
+            interaction.ai_suggested_reply = reply_text
+            interaction.ai_confidence = payload.get("confidence", 0.0)
+            interaction.ai_intent = payload.get("intent", "other")
+            interaction.safety_flags = flags
+            interaction.save(update_fields=[
+                "ai_suggested_reply", "ai_confidence", "ai_intent", "safety_flags",
+            ])
+            total_generated += 1
 
         action.status = AgentAction.ActionStatus.COMPLETED
         action.output_data = {"replies_generated": total_generated}
@@ -543,9 +567,12 @@ def _reply_priority_ordering():
 
 
 def _generate_replies_batch(interactions, brand_voice, company):
-    """
-    Generate replies for multiple interactions in a single LLM call.
-    Returns a list of reply strings (same order as interactions).
+    """Generate replies for multiple interactions in a single LLM call.
+
+    Returns a list of payload dicts (same order as interactions). Each
+    payload has the shape returned by `_generate_single_reply` —
+    {reply, confidence, intent, action, reasoning} (Engage v2, Phase 1 W2).
+
     Falls back to per-interaction generation on parse failure.
     """
     if not interactions:
@@ -555,7 +582,7 @@ def _generate_replies_batch(interactions, brand_voice, company):
             return [_generate_single_reply(interactions[0], brand_voice, company)]
         except Exception as e:
             logger.warning("Single reply gen failed: %s", e)
-            return [""]
+            return [_empty_payload()]
 
     reply_learning = _get_reply_edit_patterns(interactions[0].user)
 
@@ -582,9 +609,23 @@ def _generate_replies_batch(interactions, brand_voice, company):
         "- If it's a question, answer directly. If praise, acknowledge.\n"
         "- NEVER be defensive or dismissive.\n\n"
         f"{product_instruction}"
-        "Generate a reply for EACH interaction below. "
-        'Respond with a JSON array of objects: [{"reply": "..."}, ...] '
-        "One per interaction, in the same order."
+        "Generate a reply for EACH interaction below. Respond with a JSON "
+        "array of objects, one per interaction in the same order:\n"
+        "[\n"
+        "  {\n"
+        '    "reply":      "<the actual reply text>",\n'
+        '    "confidence": <float 0.0-1.0>,\n'
+        '    "intent":     "<hours | booking | pricing | complaint | praise | spam | other>",\n'
+        '    "action":     "<reply | escalate | no_reply>",\n'
+        '    "reasoning":  "<one sentence>"\n'
+        "  },\n"
+        "  ...\n"
+        "]\n\n"
+        "Confidence calibration:\n"
+        "- 0.90+: factual question with clear answer (hours, location)\n"
+        "- 0.70-0.89: clear praise/booking you can answer in brand voice\n"
+        "- 0.50-0.69: ambiguous — recommend draft\n"
+        "- <0.50: complex / sensitive — escalate"
     )
 
     interaction_descriptions = []
@@ -616,13 +657,39 @@ def _generate_replies_batch(interactions, brand_voice, company):
         results = parse_llm_json(response.content)
 
         if isinstance(results, list) and len(results) == len(interactions):
-            replies = []
+            payloads = []
             for r in results:
-                reply = r.get("reply", "").strip() if isinstance(r, dict) else str(r).strip()
+                if not isinstance(r, dict):
+                    # Older models may have returned a bare string per item.
+                    payloads.append({
+                        "reply": str(r).strip(),
+                        "confidence": 0.3,
+                        "intent": "other",
+                        "action": "reply",
+                        "reasoning": "Non-dict element in batch response",
+                    })
+                    continue
+                reply = (r.get("reply") or "").strip()
                 if reply.startswith('"') and reply.endswith('"'):
                     reply = reply[1:-1]
-                replies.append(reply)
-            return replies
+                try:
+                    confidence = max(0.0, min(1.0, float(r.get("confidence", 0.5))))
+                except (TypeError, ValueError):
+                    confidence = 0.5
+                intent = (r.get("intent") or "other").lower().strip()
+                if intent not in {"hours", "booking", "pricing", "complaint", "praise", "spam", "other"}:
+                    intent = "other"
+                action = (r.get("action") or "reply").lower().strip()
+                if action not in {"reply", "escalate", "no_reply"}:
+                    action = "reply"
+                payloads.append({
+                    "reply": reply,
+                    "confidence": confidence,
+                    "intent": intent,
+                    "action": action,
+                    "reasoning": (r.get("reasoning") or "").strip(),
+                })
+            return payloads
 
         logger.warning("Batch replies returned %d for %d interactions, falling back",
                        len(results) if isinstance(results, list) else 0, len(interactions))
@@ -630,18 +697,27 @@ def _generate_replies_batch(interactions, brand_voice, company):
         logger.warning("Batch reply generation failed: %s, falling back to per-interaction", e)
 
     # Fallback: per-interaction
-    replies = []
+    payloads = []
     for interaction in interactions:
         try:
-            replies.append(_generate_single_reply(interaction, brand_voice, company))
+            payloads.append(_generate_single_reply(interaction, brand_voice, company))
         except Exception as e:
             logger.warning("Reply gen failed for interaction %s: %s", interaction.id, e)
-            replies.append("")
-    return replies
+            payloads.append(_empty_payload())
+    return payloads
 
 
 def _generate_single_reply(interaction, brand_voice, company):
-    """Generate a reply for a single interaction."""
+    """Generate a reply for a single interaction.
+
+    Returns dict {reply, confidence, intent, action, reasoning} (Engage v2,
+    Phase 1 W2 May 2026). Callers that previously expected a plain string
+    should pass the result through `reply_payload_to_text()` for backwards
+    compat, or read `result["reply"]` directly.
+
+    The structured response feeds `engage_routing.route_reply` to decide
+    whether the reply auto-sends, queues as a draft, or escalates.
+    """
     platform = interaction.social_account.platform if interaction.social_account else "social media"
     post_context = ""
     if interaction.post:
@@ -674,7 +750,19 @@ def _generate_single_reply(interaction, brand_voice, company):
         "- NEVER be defensive or dismissive.\n"
         "- Don't use corporate phrases like 'We appreciate your feedback' or 'Thanks for reaching out'.\n\n"
         f"{product_instruction}"
-        "Respond with ONLY the reply text. No JSON, no explanation — just the reply ready to send."
+        "Respond with valid JSON only — no markdown, no preamble:\n"
+        "{\n"
+        '  "reply":      "<the actual reply text ready to send>",\n'
+        '  "confidence": <float 0.0-1.0 — how sure are you this reply is correct?>,\n'
+        '  "intent":     "<one of: hours, booking, pricing, complaint, praise, spam, other>",\n'
+        '  "action":     "<one of: reply, escalate, no_reply>",\n'
+        '  "reasoning":  "<one sentence explaining your confidence>"\n'
+        "}\n\n"
+        "Confidence calibration:\n"
+        "- 0.90+: factual question with clear answer in brand profile (hours, location)\n"
+        "- 0.70-0.89: clear praise/booking request you can answer in brand voice\n"
+        "- 0.50-0.69: ambiguous but salvageable — recommend draft\n"
+        "- <0.50: complex / sensitive / off-topic — escalate to human"
     )
 
     prompt = (
@@ -696,16 +784,92 @@ def _generate_single_reply(interaction, brand_voice, company):
         prompt=prompt,
         system=system_prompt,
         model=get_model_for_task("engage.reply", user=interaction.user),
-        json_mode=False,
+        json_mode=True,
         temperature=0.6,
-        max_tokens=300,
+        max_tokens=400,
     )
 
-    reply = response.content.strip()
-    # Remove quotes if LLM wrapped the reply
+    return _parse_reply_payload(response.content)
+
+
+def _parse_reply_payload(raw):
+    """Defensively parse the LLM JSON. Always returns a usable dict.
+
+    If the LLM didn't return valid JSON (rare with json_mode=True but happens
+    on degraded models), fall back to treating the whole content as the reply
+    text with low confidence so the routing escalates it.
+    """
+    import json
+
+    if not raw:
+        return _empty_payload()
+
+    text = raw.strip()
+    # Some models still wrap JSON in ```json ... ``` fences — strip them.
+    if text.startswith("```"):
+        text = text.strip("`")
+        if text.lower().startswith("json"):
+            text = text[4:].lstrip()
+
+    try:
+        parsed = json.loads(text)
+    except (json.JSONDecodeError, ValueError):
+        # Not JSON — assume the whole thing is the reply, low confidence
+        return {
+            "reply": text[:400],
+            "confidence": 0.3,
+            "intent": "other",
+            "action": "reply",
+            "reasoning": "LLM returned non-JSON; routed as low-confidence draft",
+        }
+
+    reply = (parsed.get("reply") or "").strip()
     if reply.startswith('"') and reply.endswith('"'):
         reply = reply[1:-1]
-    return reply
+
+    try:
+        confidence = float(parsed.get("confidence", 0.5))
+    except (TypeError, ValueError):
+        confidence = 0.5
+    confidence = max(0.0, min(1.0, confidence))
+
+    intent = (parsed.get("intent") or "other").lower().strip()
+    if intent not in {"hours", "booking", "pricing", "complaint", "praise", "spam", "other"}:
+        intent = "other"
+
+    action = (parsed.get("action") or "reply").lower().strip()
+    if action not in {"reply", "escalate", "no_reply"}:
+        action = "reply"
+
+    return {
+        "reply": reply,
+        "confidence": confidence,
+        "intent": intent,
+        "action": action,
+        "reasoning": (parsed.get("reasoning") or "").strip(),
+    }
+
+
+def _empty_payload():
+    return {
+        "reply": "",
+        "confidence": 0.0,
+        "intent": "other",
+        "action": "no_reply",
+        "reasoning": "Empty LLM response",
+    }
+
+
+def reply_payload_to_text(payload):
+    """Backwards-compat shim — extract just the reply text from a payload.
+
+    Use this anywhere old code assumed `_generate_single_reply` returned a
+    plain string. New code should read the full dict so it can pass
+    confidence + intent into `engage_routing.route_reply`.
+    """
+    if isinstance(payload, str):
+        return payload
+    return (payload or {}).get("reply", "")
 
 
 # ─── Auto-Respond ────────────────────────────────────────────────────────────
