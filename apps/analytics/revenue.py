@@ -154,6 +154,114 @@ def get_revenue_summary(user, days=30):
     }
 
 
+def get_revenue_headline_insight(user, days=7, summary=None):
+    """The single-sentence "what should I tell the owner?" insight.
+
+    Used at the top of the Revenue Dashboard and as the Daily Brief revenue
+    line. Returns a small dict the template / LLM can render:
+
+        {
+            "kind": "top_post" | "no_revenue" | "no_pixel" | "no_pipeline",
+            "headline": "Your IG post about silk-press drove KES 12,400…",
+            "subline": "That's 67% of your total revenue this week.",
+            "cta_url": "...",  # optional next-action link
+            "cta_text": "...",
+        }
+
+    The template branches on `kind` for empty-state vs. data-state visuals.
+    """
+    from apps.analytics.models import Conversion, WebsiteEvent
+    from apps.content.models import Post
+    from django.db.models import Sum
+
+    if summary is None:
+        summary = get_revenue_summary(user, days=days)
+
+    total_revenue = float(summary["totals"]["total_revenue"] or 0)
+    top_posts = summary.get("top_posts") or []
+
+    # ── Happy path: we have a winning post with attributed revenue ─────
+    if total_revenue > 0 and top_posts:
+        top = top_posts[0]
+        post_revenue = float(top["revenue"])
+        share = (post_revenue / total_revenue * 100) if total_revenue > 0 else 0
+        # Take first 8 words as the "about" phrase — same trick the brief uses
+        content_preview = " ".join(
+            (top.get("post__content_text") or "").split()[:8]
+        ).rstrip(".,!?")
+        platform = (top.get("post__social_account__platform") or "social").title()
+        headline = (
+            f"Your {platform} post about \"{content_preview}\" drove "
+            f"KES {post_revenue:,.0f} in the last {days} days."
+        )
+        subline = (
+            f"That's {share:.0f}% of your total revenue across all channels."
+            if share >= 5 else
+            f"Across {len(top_posts)} earning posts, {summary['totals']['total_sales']} sale(s) attributed."
+        )
+        return {
+            "kind": "top_post",
+            "headline": headline,
+            "subline": subline,
+            "cta_url": "",
+            "cta_text": "",
+            "post_id": top.get("post__id"),
+            "post_revenue": post_revenue,
+            "platform": top.get("post__social_account__platform") or "",
+        }
+
+    # ── No revenue yet — check if data pipeline is wired at all ────────
+    # Has the Pixel ever fired? Has any Conversion ever existed?
+    pixel_events_count = WebsiteEvent.objects.filter(user=user).count()
+    has_any_conversion = Conversion.objects.filter(user=user).exists()
+    has_published_posts = Post.objects.filter(
+        user=user, status="published",
+    ).exists()
+
+    if has_any_conversion:
+        # Pipeline works, just nothing in the window
+        return {
+            "kind": "no_revenue_in_window",
+            "headline": f"No revenue attributed in the last {days} days.",
+            "subline": "Try a longer window — or check the Top Posts feed for what drove conversions earlier.",
+            "cta_url": "?days=90",
+            "cta_text": "View 90 days",
+        }
+
+    if pixel_events_count > 0:
+        # Pixel firing but no Conversions — most likely UTM weren't tagging
+        # before today. The W1.1 fix means new posts now will attribute.
+        return {
+            "kind": "pipeline_warming",
+            "headline": "Your Pixel is firing — revenue attribution is warming up.",
+            "subline": (
+                f"{pixel_events_count} website events captured so far. "
+                "New posts will tag clicks back to revenue automatically."
+            ),
+            "cta_url": "/analytics/pixel/",
+            "cta_text": "Pixel settings",
+        }
+
+    if has_published_posts:
+        # Posts are publishing but no Pixel installed — typical SME state
+        return {
+            "kind": "no_pixel",
+            "headline": "Your posts are live — install the Kova Pixel to start tracking what makes money.",
+            "subline": "One snippet on your site. We'll show you which post drove each sale.",
+            "cta_url": "/analytics/pixel/",
+            "cta_text": "Install Pixel →",
+        }
+
+    # Brand new account — no posts, no pixel, nothing
+    return {
+        "kind": "no_pipeline",
+        "headline": "No data yet — start by publishing your first post.",
+        "subline": "Once posts are live and the Pixel is installed, revenue will land here.",
+        "cta_url": "/studio/",
+        "cta_text": "Open Studio →",
+    }
+
+
 def get_revenue_brief_data(user, days=7):
     """
     Revenue data for Daily Brief injection.

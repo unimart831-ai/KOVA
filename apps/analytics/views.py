@@ -324,7 +324,7 @@ def insight_action(request, pk):
 @login_required
 def revenue_dashboard(request):
     """Revenue attribution dashboard — enhanced with ROI, trends, funnel, product attribution."""
-    from apps.analytics.revenue import get_revenue_summary
+    from apps.analytics.revenue import get_revenue_summary, get_revenue_headline_insight
     from apps.analytics.models import ShopifyStore
 
     days = int(request.GET.get("days", 30))
@@ -332,6 +332,10 @@ def revenue_dashboard(request):
         days = 30
 
     summary = get_revenue_summary(request.user, days=days)
+    # Headline insight — the single-sentence "what should we tell the owner?"
+    # surface at the top of the dashboard. Computed from the same summary so
+    # no extra queries.
+    insight = get_revenue_headline_insight(request.user, days=days, summary=summary)
 
     # Recent conversions for the feed
     conversions = Conversion.objects.filter(
@@ -355,6 +359,7 @@ def revenue_dashboard(request):
         "funnel": summary["funnel"],
         "shopify_stores": shopify_stores,
         "days": days,
+        "insight": insight,
     })
 
 

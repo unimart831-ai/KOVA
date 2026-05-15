@@ -21,6 +21,43 @@
     </div>
   </div>
 
+  {# ── Headline Insight (W1.2 — the single-sentence "what happened") ── #}
+  {% if insight %}
+  <div class="rounded-xl border
+    {% if insight.kind == 'top_post' %}border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30
+    {% elif insight.kind == 'no_revenue_in_window' %}border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900
+    {% elif insight.kind == 'pipeline_warming' %}border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30
+    {% else %}border-kova-300 dark:border-kova-800 bg-kova-50 dark:bg-kova-950/30
+    {% endif %} p-5">
+    <div class="flex items-start gap-3">
+      <div class="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center
+        {% if insight.kind == 'top_post' %}bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300
+        {% elif insight.kind == 'pipeline_warming' %}bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300
+        {% else %}bg-kova-100 dark:bg-kova-900/50 text-kova-700 dark:text-kova-300
+        {% endif %}">
+        {% if insight.kind == 'top_post' %}
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        {% elif insight.kind == 'pipeline_warming' %}
+          <svg class="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        {% else %}
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        {% endif %}
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="text-base font-semibold text-gray-900 dark:text-white leading-snug">{{ insight.headline }}</p>
+        {% if insight.subline %}
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ insight.subline }}</p>
+        {% endif %}
+        {% if insight.cta_url and insight.cta_text %}
+          <a href="{{ insight.cta_url }}" class="inline-flex items-center text-sm font-medium text-kova-700 dark:text-kova-300 hover:underline mt-2">
+            {{ insight.cta_text }}
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   {# ROI Hero Card #}
   <div class="rounded-xl bg-kova-700 p-6 text-white">
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">

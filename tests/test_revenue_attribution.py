@@ -160,3 +160,80 @@ class TestAttributionChain:
         # The 8-char prefix that pixel.py uses to range-query Post.id.
         expected_prefix = str(post.pk)[:8]
         assert f"utm_content={expected_prefix}" in out
+
+
+# ── Phase 1 W1.2 — Revenue Headline Insight ─────────────────────────────────
+#
+# The single-sentence "what happened" surface on the Revenue Dashboard.
+# 5 distinct kinds based on data state; each must produce a usable headline.
+
+@pytest.mark.django_db
+class TestRevenueHeadlineInsight:
+    """Locks the headline insight contract used by both the Revenue
+    Dashboard and (W1.3) the Daily Brief."""
+
+    def test_no_pipeline_kind_for_brand_new_user(self, user):
+        # Brand new user — no posts, no pixel, no conversions
+        from apps.analytics.revenue import get_revenue_headline_insight
+        insight = get_revenue_headline_insight(user, days=7)
+        assert insight["kind"] == "no_pipeline"
+        assert insight["cta_url"]  # has a next-action
+        assert "Open Studio" in insight["cta_text"]
+
+    def test_no_pixel_kind_when_posts_published_no_events(self, user, social_account):
+        # Has published posts but no Pixel events fired
+        Post.objects.create(
+            user=user, social_account=social_account, platform="instagram",
+            content_text="Live post", status="published",
+        )
+        from apps.analytics.revenue import get_revenue_headline_insight
+        insight = get_revenue_headline_insight(user, days=7)
+        assert insight["kind"] == "no_pixel"
+        assert "Pixel" in insight["headline"]
+
+    def test_pipeline_warming_when_events_but_no_conversions(self, user, social_account):
+        from apps.analytics.models import WebsiteEvent
+        WebsiteEvent.objects.create(
+            user=user, event_type="page_view",
+            visitor_id="v1", session_id="s1",
+            page_url="https://shop.co.ke/",
+        )
+        from apps.analytics.revenue import get_revenue_headline_insight
+        insight = get_revenue_headline_insight(user, days=7)
+        assert insight["kind"] == "pipeline_warming"
+        assert "Pixel is firing" in insight["headline"]
+
+    def test_top_post_kind_when_revenue_attributed(self, user, social_account, post):
+        from apps.analytics.models import Conversion
+        from decimal import Decimal
+        Conversion.objects.create(
+            user=user, post=post, social_account=social_account,
+            conversion_type="sale", event_name="purchase",
+            revenue=Decimal("12400"),
+        )
+        from apps.analytics.revenue import get_revenue_headline_insight
+        insight = get_revenue_headline_insight(user, days=7)
+        assert insight["kind"] == "top_post"
+        # The Instagram post content was "Try our new dress! Shop now …"
+        assert "Instagram" in insight["headline"]
+        assert "12,400" in insight["headline"]
+        assert insight["post_revenue"] == 12400.0
+
+    def test_no_revenue_in_window_when_old_conversion_exists(self, user, post):
+        from apps.analytics.models import Conversion
+        from django.utils import timezone
+        from datetime import timedelta
+        from decimal import Decimal
+        # Create a conversion outside the 7-day window
+        c = Conversion.objects.create(
+            user=user, post=post,
+            conversion_type="sale", event_name="purchase",
+            revenue=Decimal("5000"),
+        )
+        Conversion.objects.filter(pk=c.pk).update(
+            created_at=timezone.now() - timedelta(days=30)
+        )
+        from apps.analytics.revenue import get_revenue_headline_insight
+        insight = get_revenue_headline_insight(user, days=7)
+        assert insight["kind"] == "no_revenue_in_window"
+        assert "?days=90" in insight["cta_url"]
