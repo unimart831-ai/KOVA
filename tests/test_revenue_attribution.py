@@ -237,3 +237,41 @@ class TestRevenueHeadlineInsight:
         insight = get_revenue_headline_insight(user, days=7)
         assert insight["kind"] == "no_revenue_in_window"
         assert "?days=90" in insight["cta_url"]
+
+
+# ── Phase 1 W1.3 — Daily Brief revenue context ──────────────────────────────
+
+@pytest.mark.django_db
+class TestDailyBriefRevenueContext:
+    """The Daily Brief LLM prompt now branches on
+    revenue_attribution.headline_insight.kind. If the helper stops getting
+    into the brief context, the prompt falls back to generic language and
+    the W1.2 work goes invisible."""
+
+    def test_revenue_data_in_brief_includes_headline_insight(self, user):
+        from apps.briefs.tasks import _gather_brief_data
+        data = _gather_brief_data(user)
+
+        assert "revenue_attribution" in data
+        ra = data["revenue_attribution"] or {}
+        assert "headline_insight" in ra, (
+            "Daily Brief LLM context must carry the headline_insight block "
+            "or the W1.3 prompt rewrite has nothing to read."
+        )
+        # Brand-new user should land on no_pipeline kind
+        assert ra["headline_insight"]["kind"] == "no_pipeline"
+
+    def test_headline_insight_carries_through_with_revenue(self, user, social_account, post):
+        from apps.analytics.models import Conversion
+        from decimal import Decimal
+        Conversion.objects.create(
+            user=user, post=post, social_account=social_account,
+            conversion_type="sale", event_name="purchase",
+            revenue=Decimal("8500"),
+        )
+        from apps.briefs.tasks import _gather_brief_data
+        data = _gather_brief_data(user)
+        insight = (data.get("revenue_attribution") or {}).get("headline_insight")
+        assert insight is not None
+        assert insight["kind"] == "top_post"
+        assert "8,500" in insight["headline"]

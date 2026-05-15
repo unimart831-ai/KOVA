@@ -319,8 +319,13 @@ def _gather_brief_data(user):
 
     # Revenue attribution intelligence
     try:
-        from apps.analytics.revenue import get_revenue_brief_data
+        from apps.analytics.revenue import get_revenue_brief_data, get_revenue_headline_insight
         revenue_data = get_revenue_brief_data(user, days=7)
+        # Headline insight is the single-sentence "what to tell the owner"
+        # — same logic as the Revenue Dashboard top card. Used by the LLM
+        # prompt so the brief surfaces "Post X drove KES Y" instead of a
+        # generic "revenue is up" line.
+        revenue_data["headline_insight"] = get_revenue_headline_insight(user, days=7)
     except Exception as e:
         logger.warning("Revenue data for brief failed: %s", e)
         revenue_data = {}
@@ -569,7 +574,22 @@ def _generate_brief_with_llm(user, brief_data):
         'E.g. {item: "Scheduled posts promote an out-of-stock product", severity: "critical", '
         'action: "Pause or edit 2 posts mentioning Product X"}. '
         'Check product_catalog data for stock_content_mismatches, demand_signals, and never_promoted items.\n'
-        '- "revenue_update": 1-2 sentences if revenue data exists, empty string otherwise.\n'
+        '- "revenue_update": ONE concrete sentence about money. Use the '
+        '`revenue_attribution.headline_insight` block as the source of truth. '
+        'If `headline_insight.kind == "top_post"`, paraphrase its `headline` '
+        'naturally — name the platform, the post topic (in quotes), and the '
+        'KES amount. Add a second sentence ONLY if it gives the owner an '
+        'action (e.g. "Consider 2 more like it this week."). '
+        'If `kind == "no_revenue_in_window"`, say "No revenue attributed this '
+        'window — open 90 days for the longer view." '
+        'If `kind == "pipeline_warming"`, say "Pixel firing but no '
+        'conversions yet — first attributed sale will land here." '
+        'If `kind == "no_pixel"`, say "Install the Kova Pixel to start '
+        'tracking which posts make money." '
+        'If `kind == "no_pipeline"`, return an EMPTY string (do not mention '
+        'revenue when there is literally no pipeline). '
+        'NEVER use generic phrases like "revenue is up" or "great week" — '
+        'always name specifics or say nothing.\n'
     )
 
     holiday_hint = ""
