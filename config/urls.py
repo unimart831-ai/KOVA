@@ -100,6 +100,8 @@ urlpatterns = [
     # QR codes + walk-in attribution (Phase 2 W5-6). Mounted at root
     # because it owns both /qr/ and /walkin/ namespaces.
     path("", include("apps.qr_attribution.urls")),
+    # Booking integration (Phase 2 W7-8). Owns /bookings/ and /book/.
+    path("", include("apps.bookings.urls")),
     path("dashboard/", include("apps.admin_dashboard.urls")),
     path("api/v1/", include("apps.api.urls")),
     path("api/v1/partner/", include("apps.api.partner_urls")),

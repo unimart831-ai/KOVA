@@ -1,0 +1,35 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}{{ link.label }} · Calendar{% endblock %}
+{% block page_title %}{{ link.label }} · Calendar{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-6 space-y-4">
+  <div class="flex items-center justify-between">
+    <p class="text-sm text-gray-500 dark:text-gray-400">Next 14 days</p>
+    <a href="{% url 'bookings:link_detail' link.pk %}" class="text-sm text-kova-600 dark:text-kova-400 hover:underline">Edit page →</a>
+  </div>
+
+  <div class="card"><div class="card-body p-0">
+    <div class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for d in days %}
+        <div class="py-3 px-4">
+          <p class="text-sm font-medium text-gray-900 dark:text-white">{{ d.date|date:"l · M j" }}</p>
+          {% if d.bookings %}
+            <div class="mt-2 space-y-1">
+              {% for b in d.bookings %}
+                <a href="{% url 'bookings:booking_detail' b.pk %}"
+                   class="block text-xs py-1 px-2 rounded {% if b.status == 'confirmed' %}bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300{% elif b.status == 'completed' %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400{% else %}bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300{% endif %} hover:underline">
+                  {{ b.scheduled_at|date:"H:i" }} · {{ b.customer_name }} · {{ b.service_name }}
+                </a>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">No bookings</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div></div>
+</div>
+{% endblock %}

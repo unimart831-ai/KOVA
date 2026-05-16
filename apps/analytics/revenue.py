@@ -19,6 +19,25 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
+def _get_bookings_queryset(user, cutoff):
+    """Confirmed/completed bookings in the active window."""
+    try:
+        from apps.bookings.models import Booking
+    except Exception:
+        return _EmptyQS()
+    try:
+        return Booking.objects.filter(
+            booking_link__user=user,
+            status__in=[
+                Booking.Status.CONFIRMED,
+                Booking.Status.COMPLETED,
+            ],
+            scheduled_at__gte=cutoff,
+        )
+    except Exception:
+        return _EmptyQS()
+
+
 def _get_walkins_queryset(user, cutoff):
     """Walk-ins in the active window. Falls back to empty if the app/table
     isn't installed yet (lets analytics run on instances that haven't migrated)."""
@@ -60,6 +79,7 @@ def get_revenue_summary(user, days=30):
     conversions = Conversion.objects.filter(user=user, created_at__gte=cutoff)
 
     walkins = _get_walkins_queryset(user, cutoff)
+    bookings = _get_bookings_queryset(user, cutoff)
 
     # Core totals
     totals = conversions.aggregate(
@@ -77,10 +97,20 @@ def get_revenue_summary(user, days=30):
     )
     walkin_revenue = walkin_totals["revenue"] or Decimal("0")
     walkin_count = walkin_totals["count"] or 0
+
+    booking_totals = bookings.aggregate(
+        revenue=Sum("price_kes"),
+        count=Count("id"),
+    )
+    booking_revenue = booking_totals["revenue"] or Decimal("0")
+    booking_count = booking_totals["count"] or 0
+
     totals["walkin_revenue"] = walkin_revenue
     totals["walkin_count"] = walkin_count
+    totals["booking_revenue"] = booking_revenue
+    totals["booking_count"] = booking_count
     totals["digital_revenue"] = totals["total_revenue"]
-    totals["total_revenue"] = totals["total_revenue"] + walkin_revenue
+    totals["total_revenue"] = totals["total_revenue"] + walkin_revenue + booking_revenue
 
     # Revenue by platform
     platform_revenue = list(

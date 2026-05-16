@@ -142,15 +142,15 @@ retail), 70%+ of conversions are walk-ins.
 For Kawaida (salon), Makao (real estate), Amara (fitness) — the conversion
 is a booking, not a click.
 
-- [ ] **W7.1** New `bookings` app
-- [ ] **W7.2** `BookingLink` + `Booking` models
-- [ ] **W7.3** Industry-aware booking templates (salon = service+stylist+time; real estate = property+date+agent; consultant = 30/60-min slot)
-- [ ] **W7.4** Kova-hosted booking page at `kova.link/book/<slug>`
-- [ ] **W7.5** WhatsApp template integration — booking confirmation auto-message
-- [ ] **W7.6** Embed booking link in Engage Agent replies when intent detected ("book," "reserve," "appointment")
-- [ ] **W7.7** Booking → Lead → Revenue Dashboard linkage
-- [ ] **W7.8** Calendly OAuth provider as a `platforms/providers/calendly.py` for users who already use it
-- [ ] **W7.9** Tests + commit/push
+- [x] **W7.1** New `bookings` app
+- [x] **W7.2** `BookingLink` + `Booking` models
+- [x] **W7.3** Industry templates (salon / real_estate / fitness / consultant / clinic / generic)
+- [x] **W7.4** Kova-hosted booking page at `/book/<slug>/` (mobile-first, slot picker)
+- [x] **W7.5** WhatsApp template signals for customer + owner confirmations (soft-fail on send error)
+- [x] **W7.6** Engage Agent booking intent detection + auto-link augmentation (`apps/agents/booking_intent.py`)
+- [x] **W7.7** Booking revenue rolls into `get_revenue_summary` (totals.booking_revenue + total_revenue)
+- [ ] **W7.8** Calendly OAuth provider — deferred to Phase 3 backlog (v2 ships Kova-hosted only)
+- [x] **W7.9** 38 tests passing (`tests/test_bookings.py`)
 
 **Deliverable:** Kawaida's customer DMs "can I book braids Saturday?" Engage Agent replies "Yes — Saturday 10am or 2pm work. Tap to confirm: kova.link/book/kawaida". Customer taps, picks 2pm, booking created, customer + Kawaida both get WhatsApp confirmation. Revenue Dashboard tracks it as Engage Agent → Booking conversion.
 

@@ -1,0 +1,118 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}{% if is_edit %}{{ link.label }}{% else %}New booking page{% endif %}{% endblock %}
+{% block page_title %}{% if is_edit %}{{ link.label }}{% else %}New booking page{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-6">
+  {% if is_edit %}
+  <div class="card mb-4"><div class="card-body space-y-2">
+    <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Public URL</p>
+    <code class="block text-sm bg-gray-50 dark:bg-gray-800 rounded p-3 break-all">{{ public_url }}</code>
+    <div class="flex gap-3">
+      <a href="{{ public_url }}" target="_blank" class="text-sm text-kova-600 dark:text-kova-400 hover:underline">Preview →</a>
+      <a href="{% url 'bookings:link_calendar' link.pk %}" class="text-sm text-kova-600 dark:text-kova-400 hover:underline">Calendar →</a>
+    </div>
+  </div></div>
+  {% endif %}
+
+  <form method="post" class="card">
+    {% csrf_token %}
+    <div class="card-body space-y-5">
+
+      <div>
+        <label class="label">Name this page</label>
+        <input type="text" name="label" class="input w-full"
+               value="{% if link %}{{ link.label }}{% endif %}"
+               placeholder="e.g. Book braids with Kawaida" required maxlength="200">
+      </div>
+
+      {% if not is_edit %}
+      <div>
+        <label class="label">Industry template</label>
+        <select name="industry_template" class="input w-full">
+          {% for value, label in industries %}
+            <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <div>
+        <label class="label">Owner WhatsApp (for booking notifications)</label>
+        <input type="text" name="owner_whatsapp" class="input w-full"
+               value="{% if link %}{{ link.owner_whatsapp }}{% endif %}"
+               placeholder="254712345678">
+      </div>
+
+      <div>
+        <label class="label">Owner email (fallback)</label>
+        <input type="email" name="owner_email" class="input w-full"
+               value="{% if link %}{{ link.owner_email }}{% endif %}">
+      </div>
+
+      <div>
+        <label class="label">Services</label>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+          One row per bookable service. Duration is minutes; price is KES.
+        </p>
+        <div id="services-rows" class="space-y-2">
+          {% if link.services %}
+            {% for s in link.services %}
+            <div class="grid grid-cols-12 gap-2">
+              <input type="text" name="service_name[]" placeholder="Service name" class="input col-span-6" value="{{ s.name }}">
+              <input type="number" name="service_duration[]" placeholder="Mins" class="input col-span-3" min="15" max="600" value="{{ s.duration_minutes }}">
+              <input type="number" name="service_price[]" placeholder="KES" class="input col-span-3" min="0" value="{{ s.price_kes }}">
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="grid grid-cols-12 gap-2">
+              <input type="text" name="service_name[]" placeholder="Service name" class="input col-span-6">
+              <input type="number" name="service_duration[]" placeholder="Mins" class="input col-span-3" min="15" max="600" value="60">
+              <input type="number" name="service_price[]" placeholder="KES" class="input col-span-3" min="0">
+            </div>
+          {% endif %}
+        </div>
+        <button type="button" id="add-service" class="text-xs text-kova-600 dark:text-kova-400 hover:underline mt-2">+ Add another service</button>
+      </div>
+
+      {% if is_edit %}
+      <div>
+        <label class="label">Advance notice (minutes)</label>
+        <input type="number" name="advance_notice_minutes" class="input w-full" min="0" max="10080"
+               value="{{ link.advance_notice_minutes }}">
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Customers can't book within this many minutes of now.</p>
+      </div>
+      <div>
+        <label class="label">Max advance days</label>
+        <input type="number" name="max_advance_days" class="input w-full" min="1" max="365"
+               value="{{ link.max_advance_days }}">
+      </div>
+      <div>
+        <label class="label">Working hours (JSON)</label>
+        <textarea name="working_hours_json" rows="6" class="input w-full font-mono text-xs">{{ link.working_hours|safe }}</textarea>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Keys: mon/tue/.../sun. Each = list of {"start", "end"} in HH:MM.</p>
+      </div>
+      {% endif %}
+
+      <div class="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-800">
+        <a href="{% url 'bookings:list' %}" class="text-sm text-gray-500 dark:text-gray-400 hover:underline">Cancel</a>
+        <button type="submit" class="btn-primary">{% if is_edit %}Save{% else %}Create →{% endif %}</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+document.getElementById("add-service")?.addEventListener("click", () => {
+  const row = document.createElement("div");
+  row.className = "grid grid-cols-12 gap-2";
+  row.innerHTML = `
+    <input type="text" name="service_name[]" placeholder="Service name" class="input col-span-6">
+    <input type="number" name="service_duration[]" placeholder="Mins" class="input col-span-3" min="15" max="600" value="60">
+    <input type="number" name="service_price[]" placeholder="KES" class="input col-span-3" min="0">
+  `;
+  document.getElementById("services-rows").appendChild(row);
+});
+</script>
+{% endblock %}

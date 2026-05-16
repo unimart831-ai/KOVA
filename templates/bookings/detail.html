@@ -1,0 +1,66 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Booking · {{ booking.customer_name }}{% endblock %}
+{% block page_title %}Booking · {{ booking.customer_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-6 space-y-4">
+  <div class="card"><div class="card-body space-y-3">
+    <div class="flex items-center justify-between">
+      <span class="text-xs font-medium px-2 py-1 rounded {% if booking.status == 'confirmed' %}bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300{% elif booking.status == 'completed' %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400{% else %}bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300{% endif %}">
+        {{ booking.get_status_display }}
+      </span>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Created {{ booking.created_at|date:"M j H:i" }}</p>
+    </div>
+
+    <dl class="grid grid-cols-3 gap-2 text-sm">
+      <dt class="text-gray-500 dark:text-gray-400">When</dt>
+      <dd class="col-span-2 text-gray-900 dark:text-white">{{ booking.scheduled_at|date:"l M j · H:i" }} ({{ booking.duration_minutes }} min)</dd>
+
+      <dt class="text-gray-500 dark:text-gray-400">Service</dt>
+      <dd class="col-span-2 text-gray-900 dark:text-white">{{ booking.service_name }}{% if booking.price_kes %} · KES {{ booking.price_kes|floatformat:0 }}{% endif %}</dd>
+
+      <dt class="text-gray-500 dark:text-gray-400">Customer</dt>
+      <dd class="col-span-2 text-gray-900 dark:text-white">{{ booking.customer_name }}</dd>
+
+      <dt class="text-gray-500 dark:text-gray-400">Phone</dt>
+      <dd class="col-span-2 text-gray-900 dark:text-white">
+        <a href="https://wa.me/{{ booking.customer_phone }}" target="_blank" class="hover:underline">{{ booking.customer_phone }}</a>
+      </dd>
+
+      {% if booking.customer_email %}
+      <dt class="text-gray-500 dark:text-gray-400">Email</dt>
+      <dd class="col-span-2 text-gray-900 dark:text-white">{{ booking.customer_email }}</dd>
+      {% endif %}
+
+      {% if booking.source_channel %}
+      <dt class="text-gray-500 dark:text-gray-400">Source</dt>
+      <dd class="col-span-2 text-gray-900 dark:text-white">{{ booking.source_channel }}</dd>
+      {% endif %}
+    </dl>
+
+    {% if booking.notes %}
+    <div class="pt-2 border-t border-gray-100 dark:border-gray-800">
+      <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Notes</p>
+      <p class="text-sm text-gray-700 dark:text-gray-300">{{ booking.notes }}</p>
+    </div>
+    {% endif %}
+
+    {% if booking.status != 'completed' and booking.status != 'cancelled' %}
+    <div class="pt-3 border-t border-gray-100 dark:border-gray-800 flex gap-2">
+      <form method="post" action="{% url 'bookings:booking_complete' booking.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-primary text-sm">Mark completed</button>
+      </form>
+      <form method="post" action="{% url 'bookings:booking_cancel' booking.pk %}"
+            onsubmit="return confirm('Cancel this booking?');">
+        {% csrf_token %}
+        <button type="submit" class="text-sm text-red-600 dark:text-red-400 hover:underline">Cancel</button>
+      </form>
+    </div>
+    {% endif %}
+  </div></div>
+
+  <a href="{% url 'bookings:link_calendar' booking.booking_link.pk %}" class="text-sm text-gray-500 dark:text-gray-400 hover:underline">← Back to calendar</a>
+</div>
+{% endblock %}

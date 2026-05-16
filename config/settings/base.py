@@ -84,6 +84,7 @@ LOCAL_APPS = [
     "apps.calendar_intel",
     "apps.profile_audit",
     "apps.qr_attribution",
+    "apps.bookings",
     "apps.api",
 ]
 
