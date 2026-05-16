@@ -24,6 +24,7 @@ urlpatterns = [
     path("ab-tests/<uuid:test_id>/cancel/", views.ab_test_cancel, name="ab_test_cancel"),
     # Post actions
     path("<uuid:post_id>/edit/", views.edit_post, name="edit"),
+    path("<uuid:post_id>/reschedule/", views.reschedule_post, name="reschedule"),
     path("<uuid:post_id>/approve/", views.approve_post, name="approve"),
     path("<uuid:post_id>/reject/", views.reject_post, name="reject"),
     path("<uuid:post_id>/delete/", views.delete_post, name="delete_post"),

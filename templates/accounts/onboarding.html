@@ -130,20 +130,18 @@
             </div>
 
             <div x-show="urlMode" x-cloak class="mt-4 space-y-3">
-              <div class="flex gap-2">
-                <input type="url" x-model="url" class="input flex-1"
-                       placeholder="https://yoursite.com or yourshop.co.ke" />
-                <button type="button" @click="inferFromUrl()"
-                        :disabled="loading || !url.trim()"
-                        class="btn-primary px-4 whitespace-nowrap flex items-center gap-2">
-                  <template x-if="loading">
-                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                    </svg>
-                  </template>
-                  <span x-text="loading ? 'Reading…' : 'Auto-fill'"></span>
-                </button>
+              {# P4.1 — silent inference on blur. Paste URL → tab out → we fill. #}
+              <div class="relative">
+                <input type="url" x-model="url" class="input w-full pr-10"
+                       @blur="autoInferIfReady()"
+                       @keydown.enter.prevent="autoInferIfReady()"
+                       placeholder="https://yoursite.com — paste and tab out" />
+                <template x-if="loading">
+                  <svg class="absolute right-3 top-1/2 -translate-y-1/2 animate-spin h-4 w-4 text-kova-600 dark:text-kova-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                  </svg>
+                </template>
               </div>
               <p x-show="error" x-text="error" class="text-xs text-red-500"></p>
               <p x-show="success" x-cloak class="text-xs text-green-600 dark:text-green-400 font-medium"
@@ -618,6 +616,21 @@ function urlInfer() {
     loading: false,
     error: '',
     success: '',
+    lastInferredUrl: '',
+
+    // P4.1 — silent inference on blur. Only fires if URL looks valid
+    // and we haven't already inferred from it.
+    autoInferIfReady() {
+      const raw = (this.url || '').trim();
+      if (!raw) return;
+      // Accept bare domains too — the server prepends https://
+      const looksValid = raw.includes('.') && raw.length >= 5;
+      if (!looksValid) return;
+      if (raw === this.lastInferredUrl) return;
+      if (this.loading) return;
+      this.lastInferredUrl = raw;
+      this.inferFromUrl();
+    },
 
     async inferFromUrl() {
       this.loading = true;

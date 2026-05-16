@@ -60,6 +60,13 @@ def insights(request):
         .distinct()
     )
 
+    # P4.4 — plain-English insights, not just numbers
+    try:
+        from apps.analytics.plain_english import get_plain_english_insights
+        plain_insights = get_plain_english_insights(request.user)
+    except Exception:
+        plain_insights = []
+
     ctx = {
         "page_title": "Insights & Analytics",
         "totals": totals,
@@ -68,6 +75,7 @@ def insights(request):
         "has_data": bool(top_posts),
         "connected_platforms": connected_platforms,
         "current_platform": platform,
+        "plain_insights": plain_insights,
     }
     cache.set(cache_key, ctx, 300)  # 5 min
 

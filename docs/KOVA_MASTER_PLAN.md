@@ -199,11 +199,11 @@ From the nav audit, with autonomy now real behind it:
 
 Less urgent than the central work but committed to:
 
-- [ ] **P4.1** Silent URL inference on `website_url` field blur (no opt-in button)
-- [ ] **P4.2** WhatsApp into Magic Fill — `audit_profile` for WABA provider
-- [ ] **P4.3** Queue → calendar view (drag-to-reschedule, per-platform preview)
-- [ ] **P4.4** Performance → plain-English insights, not charts
-- [ ] **P4.5** Founder bandwidth: WhatsApp template approval for completion ping (currently no-op without it)
+- [x] **P4.1** Silent inference on website URL — `@blur` auto-fires `inferFromUrl`, button removed (form input self-serves)
+- [x] **P4.2** `WhatsAppProvider.audit_profile` — fetches WABA business_profile (about, websites, vertical, address); Magic Fill now works for WA
+- [x] **P4.3** `content:reschedule` POST endpoint — calendar drag-to-reschedule wires to `/content/<id>/reschedule/` with ISO `scheduled_at`
+- [x] **P4.4** Performance page now leads with plain-English insights (`apps/analytics/plain_english.py`) — best channel, best day, content-type wins, save rate, volume nag
+- [x] **P4.5** `docs/WHATSAPP_TEMPLATES.md` catalog — every template Kova sends, env var name, body string, variables. Approval is the founder's manual step but the catalog removes "what templates do we even need" friction
 
 ---
 

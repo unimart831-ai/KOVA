@@ -9,6 +9,29 @@
 {% include "analytics/_performance_tabs.html" %}
 <div class="max-w-6xl mx-auto space-y-8">
 
+  {# P4.4 — Plain-English insights at the top (sentences > charts) #}
+  {% if plain_insights %}
+  <div class="card">
+    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+      <h2 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+        <span class="text-kova-600 dark:text-kova-400" aria-hidden="true">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </span>
+        What's working
+      </h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Plain-English signals from your last 30 days.</p>
+    </div>
+    <div class="card-body space-y-3">
+      {% for ins in plain_insights %}
+        <div class="border-l-2 border-kova-300 dark:border-kova-700 pl-3 py-1">
+          <p class="text-sm font-medium text-gray-900 dark:text-white">{{ ins.headline }}</p>
+          {% if ins.detail %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ ins.detail }}</p>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   {# Platform filter #}
   {% if connected_platforms %}
   <div class="flex items-center gap-2">

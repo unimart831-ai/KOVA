@@ -415,6 +415,64 @@ def calendar_view(request):
 
 
 @login_required
+@login_required
+@require_POST
+def reschedule_post(request, post_id):
+    """P4.3 — Move a scheduled post to a new time. JSON or form POST.
+
+    Body: `scheduled_at` — ISO datetime (or any parseable format).
+    Returns: JSON {ok, scheduled_at} on success.
+
+    The calendar UI drives this from drag-and-drop; the queue card has
+    a simple inline form fallback.
+    """
+    from datetime import datetime as dt
+    from django.http import JsonResponse, HttpResponseBadRequest
+    from django.utils import timezone
+
+    post = get_object_or_404(
+        Post.objects.select_related("user"), id=post_id,
+    )
+    if post.user_id != request.user.id and not _has_team_access(request.user, post):
+        raise Http404
+    if post.status not in (
+        Post.Status.APPROVED, Post.Status.SCHEDULED, Post.Status.DRAFT,
+        Post.Status.PENDING_APPROVAL,
+    ):
+        return HttpResponseBadRequest("Cannot reschedule a published or failed post.")
+
+    raw = (request.POST.get("scheduled_at") or "").strip()
+    if not raw:
+        return HttpResponseBadRequest("scheduled_at required")
+    try:
+        when = dt.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return HttpResponseBadRequest("scheduled_at must be ISO datetime")
+    if timezone.is_naive(when):
+        when = timezone.make_aware(when, timezone.get_current_timezone())
+    if when < timezone.now():
+        return HttpResponseBadRequest("scheduled_at must be in the future")
+
+    post.scheduled_at = when
+    if post.status == Post.Status.APPROVED:
+        post.status = Post.Status.SCHEDULED
+    post.save(update_fields=["scheduled_at", "status", "updated_at"])
+
+    return JsonResponse({
+        "ok": True,
+        "scheduled_at": post.scheduled_at.isoformat(),
+        "status": post.status,
+    })
+
+
+def _has_team_access(user, post):
+    try:
+        from apps.teams.models import get_teammate_ids
+        return post.user_id in get_teammate_ids(user)
+    except Exception:
+        return False
+
+
 def approve_post(request, post_id):
     """Approve a post with intent-based scheduling."""
     from datetime import datetime as dt

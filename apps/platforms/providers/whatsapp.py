@@ -27,6 +27,7 @@ from apps.platforms.providers.base import (
     OAuthResult,
     PlatformAuthError,
     PostMetrics,
+    ProfileSnapshot,
     PublishResult,
 )
 from apps.platforms.providers.registry import register_provider
@@ -259,6 +260,42 @@ class WhatsAppProvider(BaseProvider):
                 logger.warning("Phone number lookup failed: %s", e)
 
         return waba_id, phone_number_id
+
+    # ── Profile audit (P4.2 — WhatsApp into Magic Fill) ──────────────────
+
+    def audit_profile(self, access_token: str, **kwargs) -> ProfileSnapshot:
+        """Fetch the WABA business profile so Magic Fill can pre-populate
+        company name, website, email, vertical (industry), and address."""
+        token = self._get_token(access_token)
+        phone_id = self._get_phone_id(access_token, **kwargs)
+        if not token or not phone_id:
+            return ProfileSnapshot(
+                error="WhatsApp business profile audit requires a connected phone number.",
+            )
+        url = (
+            f"https://graph.facebook.com/v18.0/{phone_id}/whatsapp_business_profile"
+            "?fields=about,address,description,email,profile_picture_url,vertical,websites"
+        )
+        try:
+            resp = self.client.get(url, headers={"Authorization": f"Bearer {token}"})
+            if resp.status_code != 200:
+                return ProfileSnapshot(error=f"WhatsApp API {resp.status_code}: {resp.text[:120]}")
+            payload = resp.json().get("data", [{}])
+            data = payload[0] if isinstance(payload, list) and payload else {}
+        except Exception as e:  # pragma: no cover
+            return ProfileSnapshot(error=f"WhatsApp profile fetch failed: {e}")
+
+        websites = data.get("websites") or []
+        website = websites[0] if websites else ""
+        return ProfileSnapshot(
+            bio=(data.get("about") or "").strip(),
+            description=(data.get("description") or "").strip(),
+            email=(data.get("email") or "").strip(),
+            website=website,
+            address=(data.get("address") or "").strip(),
+            category=(data.get("vertical") or "").strip(),
+            profile_picture_url=(data.get("profile_picture_url") or "").strip(),
+        )
 
     # ── Messaging ────────────────────────────────────────────────────────
 
