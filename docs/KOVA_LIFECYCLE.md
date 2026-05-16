@@ -97,7 +97,7 @@ Each agent is a specialized AI module with a distinct role. They share the 3-tie
 | 1 | **Create Agent** | `apps/agents/create_agent.py` | Generate platform-optimized content from seeds | On-demand (user submits seed) |
 | 2 | **Analyst Agent** | `apps/agents/analyst_agent.py` | Analyze performance, extract Content DNA, predict engagement | After each post is created + on-demand |
 | 3 | **Research Agent** | `apps/agents/research_agent.py` | Discover trending topics and content opportunities | Every 12 hours |
-| 4 | **Adapt Agent** | `apps/agents/adapt_agent.py` | Optimize posting times based on historical performance | When scheduling posts |
+| 4 | **Adapt Agent** | `apps/agents/adapt_agent.py` | **Learning loop** — auto-promotes winning Content DNA patterns, retires losers, reweights pillars, adjusts cadence, optimizes posting times | Every 12h cycle + on-demand scheduling |
 | 5 | **Engage Agent** | `apps/agents/engage_agent.py` | Fetch comments/mentions, analyze sentiment, generate/send replies | Every 30 minutes |
 | 6 | **Chief Strategist** | `apps/agents/strategist_agent.py` | Orchestrate all agents, create proactive content seeds | Every 8 hours |
 
@@ -587,9 +587,31 @@ analyze_performance(user, days=7):
 
 ---
 
-## Scheduling Optimization
+## Adapt Agent — Learning Loop
 
-### Adapt Agent
+The Adapt Agent has two jobs since the v2 rework (Phase 1 W3-4, May 2026):
+
+1. **Learning loop** (every 12h, autonomous) — reads the user's last
+   30 days of post performance, classifies Content DNA combos as
+   winners or losers, mutates `UserProfile.pillar_weights` /
+   `dna_preferences` / `posting_frequency` so future Create + Strategist
+   output is biased toward what's working. Every mutation is audited
+   in `AgentAction` with before/after JSON. Reversible from
+   `/accounts/settings/ai-learning/`.
+
+2. **Scheduling optimization** (on-demand, when a post needs scheduling)
+   — analyzes time-of-day + day-of-week engagement to recommend
+   optimal posting hours per platform. Persists to
+   `UserProfile.optimal_schedule`.
+
+Gated by `settings.ADAPT_AGENT_V2_ENABLED`. When False, the loop runs
+in dry-run mode — computes mutations + writes them to AgentAction with
+no profile change — so the rollout team can audit threshold
+calibration on real data before flipping.
+
+Spec: [docs/specs/ADAPT_AGENT_V2_SPEC.md](specs/ADAPT_AGENT_V2_SPEC.md).
+
+### Scheduling Optimization
 
 Analyzes 30 days of posting history to find optimal times:
 

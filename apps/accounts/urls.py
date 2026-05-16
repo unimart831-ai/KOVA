@@ -8,6 +8,11 @@ urlpatterns = [
     path("settings/", views.settings_view, name="settings"),
     path("settings/cta/", views.cta_settings_view, name="cta_settings"),
     path("settings/emergency-pause/", views.toggle_emergency_pause, name="emergency_pause"),
+    # AI Learning — Adapt Agent v2 mutations: revert / pause / reset
+    path("settings/ai-learning/", views.ai_learning_view, name="ai_learning"),
+    path("settings/ai-learning/<uuid:action_id>/revert/", views.ai_learning_revert, name="ai_learning_revert"),
+    path("settings/ai-learning/toggle-pause/", views.ai_learning_toggle_pause, name="ai_learning_toggle_pause"),
+    path("settings/ai-learning/reset/", views.ai_learning_reset, name="ai_learning_reset"),
     path("onboarding/", views.onboarding_view, name="onboarding"),
     path("onboarding/start/", views.onboarding_choose_path, name="onboarding_choose_path"),
     path("onboarding/magic/", views.onboarding_magic_connect, name="onboarding_magic_connect"),

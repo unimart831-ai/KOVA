@@ -667,7 +667,165 @@ class TestBriefAdaptSummary:
         assert s["frequency_change"] is not None
         assert "+1" in s["frequency_change"]
 
-    def test_older_than_24h_ignored(self):
+    def test_older_than_24h_ignored(self):  # noqa: D401
+        from datetime import timedelta
+        from django.utils import timezone as tz
+        from apps.briefs.tasks import _build_adapt_summary
+        from apps.agents.models import AgentAction
+        u = User.objects.create_user(
+            username="brf_old", email="brfold@b.com", password="P1!",
+        )
+        a = AgentAction.objects.create(
+            user=u,
+            agent_type="adapt",
+            action_type="promote_dna",
+            input_data={"combo": {"pillar": "Old"}, "ratio": 2.0},
+            output_data={"field": "dna_preferences.promoted",
+                          "after_appends": {"combo": {"pillar": "Old"}}},
+            status=AgentAction.ActionStatus.COMPLETED,
+        )
+        # Backdate 2 days
+        AgentAction.objects.filter(pk=a.pk).update(
+            created_at=tz.now() - timedelta(days=2),
+        )
+        s = _build_adapt_summary(u)
+        assert s["changes_count"] == 0
+
+
+# ── W3 Commit 4 — AI Learning settings page ────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestAILearningPage:
+    """The /accounts/settings/ai-learning/ page: lists Adapt mutations,
+    lets the user revert individually, pause the loop, or reset."""
+
+    def _make_user(self):
+        u = User.objects.create_user(
+            username="ai_learn", email="ai_learn@b.com", password="P1!",
+        )
+        u.onboarding_completed = True
+        u.save(update_fields=["onboarding_completed"])
+        return u
+
+    def test_page_renders_for_logged_in_user(self, client):
+        u = self._make_user()
+        client.force_login(u)
+        resp = client.get("/accounts/settings/ai-learning/")
+        assert resp.status_code == 200
+
+    def test_revert_undoes_reweight_pillar(self, client):
+        from apps.agents.models import AgentAction
+        u = self._make_user()
+        u.profile.pillar_weights = {"Transformations": 1.5}
+        u.profile.save(update_fields=["pillar_weights"])
+        action = AgentAction.objects.create(
+            user=u, agent_type="adapt", action_type="reweight_pillar",
+            input_data={"pillar": "Transformations"},
+            output_data={"field": "pillar_weights.Transformations", "before": 1.0, "after": 1.5},
+            status=AgentAction.ActionStatus.COMPLETED,
+        )
+
+        client.force_login(u)
+        resp = client.post(f"/accounts/settings/ai-learning/{action.pk}/revert/")
+        assert resp.status_code in (200, 302)
+
+        u.profile.refresh_from_db()
+        action.refresh_from_db()
+        # Weight reverted to "before"
+        assert u.profile.pillar_weights.get("Transformations") == 1.0
+        # Action marked reverted
+        assert action.input_data.get("reverted") is True
+
+    def test_revert_undoes_promote_dna(self, client):
+        """Promote/retire append to a list — revert removes the entry."""
+        from apps.agents.models import AgentAction
+        u = self._make_user()
+        combo = {"pillar": "Transformations", "format": "question"}
+        u.profile.dna_preferences = {
+            "promoted": [{"combo": combo, "boost": 1.5, "set_at": "2026-05-16T09:00:00Z"}],
+            "retired": [],
+        }
+        u.profile.save(update_fields=["dna_preferences"])
+        action = AgentAction.objects.create(
+            user=u, agent_type="adapt", action_type="promote_dna",
+            input_data={"combo": combo, "ratio": 2.4},
+            output_data={"field": "dna_preferences.promoted",
+                         "after_appends": {"combo": combo, "boost": 1.5,
+                                            "set_at": "2026-05-16T09:00:00Z"}},
+            status=AgentAction.ActionStatus.COMPLETED,
+        )
+
+        client.force_login(u)
+        client.post(f"/accounts/settings/ai-learning/{action.pk}/revert/")
+
+        u.profile.refresh_from_db()
+        promoted = u.profile.dna_preferences.get("promoted", [])
+        assert all(p["combo"] != combo for p in promoted)
+
+    def test_toggle_pause_flips_adapt_paused(self, client):
+        u = self._make_user()
+        assert u.profile.adapt_paused is False
+        client.force_login(u)
+        client.post("/accounts/settings/ai-learning/toggle-pause/")
+        u.profile.refresh_from_db()
+        assert u.profile.adapt_paused is True
+        # Toggle again
+        client.post("/accounts/settings/ai-learning/toggle-pause/")
+        u.profile.refresh_from_db()
+        assert u.profile.adapt_paused is False
+
+    def test_reset_reverts_all_outstanding_mutations(self, client):
+        from apps.agents.models import AgentAction
+        u = self._make_user()
+        # Two pillar reweights to revert
+        u.profile.pillar_weights = {"A": 1.5, "B": 0.5}
+        u.profile.save(update_fields=["pillar_weights"])
+        AgentAction.objects.create(
+            user=u, agent_type="adapt", action_type="reweight_pillar",
+            input_data={"pillar": "A"},
+            output_data={"field": "pillar_weights.A", "before": 1.0, "after": 1.5},
+            status=AgentAction.ActionStatus.COMPLETED,
+        )
+        AgentAction.objects.create(
+            user=u, agent_type="adapt", action_type="reweight_pillar",
+            input_data={"pillar": "B"},
+            output_data={"field": "pillar_weights.B", "before": 1.0, "after": 0.5},
+            status=AgentAction.ActionStatus.COMPLETED,
+        )
+
+        client.force_login(u)
+        client.post("/accounts/settings/ai-learning/reset/")
+
+        u.profile.refresh_from_db()
+        # Both pillars restored to 1.0
+        assert u.profile.pillar_weights["A"] == 1.0
+        assert u.profile.pillar_weights["B"] == 1.0
+        # Both actions marked reverted
+        assert AgentAction.objects.filter(
+            user=u, agent_type="adapt",
+        ).count() == 2  # rows still exist
+        for a in AgentAction.objects.filter(user=u, agent_type="adapt"):
+            assert (a.input_data or {}).get("reverted") is True
+
+    def test_revert_already_reverted_is_idempotent(self, client):
+        """Revert button shouldn't double-fire if pressed twice fast."""
+        from apps.agents.models import AgentAction
+        u = self._make_user()
+        u.profile.posting_frequency = 6
+        u.profile.save(update_fields=["posting_frequency"])
+        action = AgentAction.objects.create(
+            user=u, agent_type="adapt", action_type="adjust_frequency",
+            input_data={"reverted": True, "reverted_at": "2026-05-16T09:00:00Z"},
+            output_data={"field": "posting_frequency", "before": 5, "after": 6},
+            status=AgentAction.ActionStatus.COMPLETED,
+        )
+        client.force_login(u)
+        resp = client.post(f"/accounts/settings/ai-learning/{action.pk}/revert/")
+        assert resp.status_code in (200, 302)
+        u.profile.refresh_from_db()
+        # Profile UNCHANGED because the action was already reverted
+        assert u.profile.posting_frequency == 6
         """Only LAST-CYCLE changes should surface in today's brief."""
         from datetime import timedelta
         from django.utils import timezone as tz

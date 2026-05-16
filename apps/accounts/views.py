@@ -720,3 +720,262 @@ def toggle_emergency_pause(request):
         messages.success(request, "✅ Emergency pause deactivated — agents are running again.")
 
     return redirect(request.META.get("HTTP_REFERER", "accounts:settings"))
+
+
+# ── AI Learning — Adapt Agent v2 controls (W3 Commit 4) ────────────────────
+#
+# The settings page that lets a user see what Adapt v2 has learned about
+# their business, revert individual mutations, pause the loop entirely,
+# or wipe all mutations and start fresh.
+#
+# Reads AgentAction rows with agent_type="adapt" — the same audit trail
+# that the dry-run / live cycle writes in apps/agents/adapt_agent.py.
+# Reversal is just applying the inverse of output_data["before"/"after"]
+# back to UserProfile, then marking the AgentAction as reverted.
+
+
+@login_required
+def ai_learning_view(request):
+    """List recent Adapt Agent mutations with revert / pause / reset UI."""
+    from apps.agents.models import AgentAction
+
+    actions = list(
+        AgentAction.objects.filter(
+            user=request.user, agent_type="adapt",
+        ).order_by("-created_at")[:50]
+    )
+
+    # Annotate each action with a human-readable description for the table
+    annotated = []
+    for a in actions:
+        annotated.append({
+            "obj": a,
+            "title": _adapt_action_title(a),
+            "evidence": _adapt_action_evidence(a),
+            "is_reverted": "reverted" in (a.input_data or {}),
+        })
+
+    return render(request, "accounts/ai_learning.html", {
+        "actions": annotated,
+        "profile": request.user.profile,
+        "page_title": "AI Learning",
+    })
+
+
+def _adapt_action_title(action):
+    """Human-readable headline for an adapt AgentAction row."""
+    t = action.action_type
+    inp = action.input_data or {}
+    out = action.output_data or {}
+    if t == "promote_dna":
+        combo = inp.get("combo") or out.get("after_appends", {}).get("combo", {})
+        descriptor = ", ".join(f"{k}={v}" for k, v in combo.items() if v)
+        return f"Promoted pattern: {descriptor}"
+    if t == "retire_dna":
+        combo = inp.get("combo") or out.get("after_appends", {}).get("combo", {})
+        descriptor = ", ".join(f"{k}={v}" for k, v in combo.items() if v)
+        return f"Retired pattern: {descriptor}"
+    if t == "reweight_pillar":
+        pillar = inp.get("pillar", "")
+        before = out.get("before", 1.0)
+        after = out.get("after", 1.0)
+        return f"Pillar reweight: {pillar} ({before} → {after})"
+    if t == "adjust_frequency":
+        before = out.get("before")
+        after = out.get("after")
+        return f"Posting frequency: {before} → {after} posts/week"
+    if t == "shift_schedule":
+        plat = inp.get("platform", "")
+        return f"Optimal posting hours updated for {plat}"
+    return t.replace("_", " ").title()
+
+
+def _adapt_action_evidence(action):
+    """Short evidence string explaining why this mutation fired."""
+    inp = action.input_data or {}
+    ratio = inp.get("ratio")
+    sample = inp.get("sample_size")
+    bits = []
+    if isinstance(ratio, (int, float)):
+        bits.append(f"{ratio:.1f}× median engagement")
+    if isinstance(sample, int):
+        bits.append(f"{sample} post{'s' if sample != 1 else ''}")
+    return " · ".join(bits) if bits else ""
+
+
+@login_required
+@require_POST
+def ai_learning_revert(request, action_id):
+    """Revert a single Adapt mutation.
+
+    Inverts the output_data["before"]/["after"] for in-place fields, or
+    removes the appended item for append-style fields (promote_dna,
+    retire_dna).
+    """
+    from apps.agents.models import AgentAction
+    from django.shortcuts import get_object_or_404
+
+    action = get_object_or_404(
+        AgentAction, pk=action_id, user=request.user, agent_type="adapt",
+    )
+    if "reverted" in (action.input_data or {}):
+        messages.info(request, "Already reverted.")
+        return redirect("accounts:ai_learning")
+
+    profile = request.user.profile
+    out = action.output_data or {}
+    t = action.action_type
+
+    try:
+        if t == "promote_dna":
+            # Remove the appended item from dna_preferences.promoted
+            appended = out.get("after_appends") or {}
+            prefs = profile.dna_preferences or {}
+            promoted = prefs.get("promoted") or []
+            prefs["promoted"] = [
+                p for p in promoted
+                if p.get("combo") != appended.get("combo")
+            ]
+            profile.dna_preferences = prefs
+            profile.save(update_fields=["dna_preferences", "updated_at"])
+
+        elif t == "retire_dna":
+            appended = out.get("after_appends") or {}
+            prefs = profile.dna_preferences or {}
+            retired = prefs.get("retired") or []
+            prefs["retired"] = [
+                r for r in retired
+                if r.get("combo") != appended.get("combo")
+            ]
+            profile.dna_preferences = prefs
+            profile.save(update_fields=["dna_preferences", "updated_at"])
+
+        elif t == "reweight_pillar":
+            pillar = (action.input_data or {}).get("pillar")
+            before = out.get("before")
+            weights = dict(profile.pillar_weights or {})
+            if pillar and before is not None:
+                weights[pillar] = before
+                profile.pillar_weights = weights
+                profile.save(update_fields=["pillar_weights", "updated_at"])
+
+        elif t == "adjust_frequency":
+            before = out.get("before")
+            if before is not None:
+                profile.posting_frequency = before
+                profile.save(update_fields=["posting_frequency", "updated_at"])
+
+        elif t == "shift_schedule":
+            plat = (action.input_data or {}).get("platform")
+            before = out.get("before")
+            if plat is not None:
+                schedule = dict(profile.optimal_schedule or {})
+                if before:
+                    schedule[plat] = before
+                else:
+                    schedule.pop(plat, None)
+                profile.optimal_schedule = schedule
+                profile.save(update_fields=["optimal_schedule", "updated_at"])
+
+        # Mark this action as reverted in its own input_data
+        action.input_data = {
+            **(action.input_data or {}),
+            "reverted": True,
+            "reverted_at": timezone.now().isoformat(),
+        }
+        action.save(update_fields=["input_data"])
+        messages.success(request, "Reverted that change.")
+    except Exception as exc:
+        messages.error(request, f"Couldn't revert: {exc}")
+
+    return redirect("accounts:ai_learning")
+
+
+@login_required
+@require_POST
+def ai_learning_toggle_pause(request):
+    """Flip adapt_paused on the user's profile. Pausing stops future
+    cycles but keeps everything Adapt has already learned in place."""
+    profile = request.user.profile
+    profile.adapt_paused = not profile.adapt_paused
+    profile.save(update_fields=["adapt_paused", "updated_at"])
+    if profile.adapt_paused:
+        messages.success(request, "⏸ AI Learning paused. Adapt won't change your settings until you resume.")
+    else:
+        messages.success(request, "▶ AI Learning resumed. Adapt will start learning again on the next 12h cycle.")
+    return redirect("accounts:ai_learning")
+
+
+@login_required
+@require_POST
+def ai_learning_reset(request):
+    """Revert every non-reverted Adapt mutation in reverse chronological
+    order. Returns the profile to its post-onboarding state for the
+    fields Adapt manages."""
+    from apps.agents.models import AgentAction
+
+    pending = AgentAction.objects.filter(
+        user=request.user, agent_type="adapt",
+    ).order_by("-created_at")
+
+    reverted_count = 0
+    for action in pending:
+        if "reverted" in (action.input_data or {}):
+            continue
+        # Re-use the single-revert logic by faking a request flow. To
+        # keep this simple and predictable, inline a minimal revert:
+        out = action.output_data or {}
+        profile = request.user.profile
+        try:
+            t = action.action_type
+            if t in ("promote_dna", "retire_dna"):
+                appended = out.get("after_appends") or {}
+                key = "promoted" if t == "promote_dna" else "retired"
+                prefs = profile.dna_preferences or {}
+                current = prefs.get(key) or []
+                prefs[key] = [c for c in current if c.get("combo") != appended.get("combo")]
+                profile.dna_preferences = prefs
+                profile.save(update_fields=["dna_preferences", "updated_at"])
+            elif t == "reweight_pillar":
+                pillar = (action.input_data or {}).get("pillar")
+                before = out.get("before")
+                if pillar and before is not None:
+                    weights = dict(profile.pillar_weights or {})
+                    weights[pillar] = before
+                    profile.pillar_weights = weights
+                    profile.save(update_fields=["pillar_weights", "updated_at"])
+            elif t == "adjust_frequency":
+                before = out.get("before")
+                if before is not None:
+                    profile.posting_frequency = before
+                    profile.save(update_fields=["posting_frequency", "updated_at"])
+            elif t == "shift_schedule":
+                plat = (action.input_data or {}).get("platform")
+                before = out.get("before")
+                if plat is not None:
+                    schedule = dict(profile.optimal_schedule or {})
+                    if before:
+                        schedule[plat] = before
+                    else:
+                        schedule.pop(plat, None)
+                    profile.optimal_schedule = schedule
+                    profile.save(update_fields=["optimal_schedule", "updated_at"])
+            action.input_data = {
+                **(action.input_data or {}),
+                "reverted": True,
+                "reverted_at": timezone.now().isoformat(),
+                "reverted_via": "global_reset",
+            }
+            action.save(update_fields=["input_data"])
+            reverted_count += 1
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception(
+                "Adapt reset: failed to revert action %s for %s", action.pk, request.user.email,
+            )
+
+    if reverted_count:
+        messages.success(request, f"Reset complete — reverted {reverted_count} change(s).")
+    else:
+        messages.info(request, "Nothing to reset — no active Adapt mutations.")
+    return redirect("accounts:ai_learning")

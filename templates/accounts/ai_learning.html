@@ -1,0 +1,144 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}AI Learning — Settings{% endblock %}
+{% block page_title %}AI Learning{% endblock %}
+{% block page_subtitle %}
+  <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
+    What Kova has learned about your business and how it's adjusting on its own
+  </p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-6 space-y-6">
+
+  {# ── Status + global controls ──────────────────────────────────── #}
+  <div class="card">
+    <div class="card-body space-y-4">
+      <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">AI Learning is
+            {% if profile.adapt_paused %}
+              <span class="text-amber-600 dark:text-amber-400">paused</span>
+            {% else %}
+              <span class="text-green-600 dark:text-green-400">active</span>
+            {% endif %}
+          </h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Every 12 hours, Kova reads your last 30 days of post performance and
+            adjusts your settings to bias future content toward what's working.
+            All changes are tracked here. You can revert any individual change
+            or reset everything.
+          </p>
+          {% if profile.adapt_last_run_at %}
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
+            Last cycle: {{ profile.adapt_last_run_at|date:"M j · H:i" }}
+          </p>
+          {% endif %}
+        </div>
+
+        <form method="post" action="{% url 'accounts:ai_learning_toggle_pause' %}">
+          {% csrf_token %}
+          {% if profile.adapt_paused %}
+            <button type="submit" class="btn-primary text-sm">▶ Resume learning</button>
+          {% else %}
+            <button type="submit" class="btn-secondary text-sm">⏸ Pause learning</button>
+          {% endif %}
+        </form>
+      </div>
+
+      {# Current state — pillar weights + retired patterns + promoted patterns #}
+      {% if profile.pillar_weights or profile.dna_preferences.promoted or profile.dna_preferences.retired %}
+      <div class="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-3">
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Current learning state</h3>
+
+        {% if profile.pillar_weights %}
+        <div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Pillar weights</p>
+          <div class="flex flex-wrap gap-2">
+            {% for pillar, weight in profile.pillar_weights.items %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                {% if weight > 1.0 %}bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300
+                {% elif weight < 1.0 %}bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300
+                {% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300{% endif %}">
+                {{ pillar }} · {{ weight }}
+              </span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if profile.dna_preferences.promoted %}
+        <div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Promoted patterns ({{ profile.dna_preferences.promoted|length }})</p>
+          <ul class="text-xs text-green-700 dark:text-green-400 space-y-0.5">
+            {% for p in profile.dna_preferences.promoted %}
+              <li>· {% for k, v in p.combo.items %}{% if v %}{{ k }}={{ v }} {% endif %}{% endfor %}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        {% if profile.dna_preferences.retired %}
+        <div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Retired patterns ({{ profile.dna_preferences.retired|length }})</p>
+          <ul class="text-xs text-amber-700 dark:text-amber-400 space-y-0.5">
+            {% for r in profile.dna_preferences.retired %}
+              <li>· {% for k, v in r.combo.items %}{% if v %}{{ k }}={{ v }} {% endif %}{% endfor %}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Recent changes table with per-row revert ─────────────────── #}
+  <div class="card">
+    <div class="card-body">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-base font-semibold text-gray-900 dark:text-white">Recent changes</h2>
+        {% if actions %}
+        <form method="post" action="{% url 'accounts:ai_learning_reset' %}"
+              onsubmit="return confirm('Revert every Adapt change Kova has made? This restores your profile to its post-onboarding state for the fields Adapt manages.');">
+          {% csrf_token %}
+          <button type="submit" class="text-xs font-medium text-red-600 dark:text-red-400 hover:underline">Reset all</button>
+        </form>
+        {% endif %}
+      </div>
+
+      {% if not actions %}
+        <p class="text-sm text-gray-500 dark:text-gray-400 py-6 text-center">
+          Kova hasn't made any learning adjustments yet. The first cycle needs at least 5 published posts and 7 days of history.
+        </p>
+      {% else %}
+      <div class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for row in actions %}
+          <div class="py-3 flex items-start justify-between gap-3 {% if row.is_reverted %}opacity-60{% endif %}">
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium text-gray-900 dark:text-white">{{ row.title }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {{ row.obj.created_at|date:"M j · H:i" }}
+                {% if row.evidence %} · {{ row.evidence }}{% endif %}
+                {% if row.is_reverted %} · <span class="text-amber-600 dark:text-amber-400">reverted</span>{% endif %}
+              </p>
+            </div>
+            {% if not row.is_reverted %}
+              <form method="post" action="{% url 'accounts:ai_learning_revert' row.obj.pk %}" class="flex-shrink-0">
+                {% csrf_token %}
+                <button type="submit" class="text-xs font-medium text-red-600 dark:text-red-400 hover:underline">Revert</button>
+              </form>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <p class="text-xs text-center text-gray-400 dark:text-gray-500">
+    Adapt Agent v2 · runs every 12 hours · <a href="{% url 'help:center' %}" class="underline hover:text-gray-600 dark:hover:text-gray-300">How it works</a>
+  </p>
+
+</div>
+{% endblock %}

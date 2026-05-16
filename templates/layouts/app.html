@@ -234,6 +234,7 @@
       {% if '/accounts/settings' in request.path or '/platforms/' in request.path or '/teams/' in request.path or '/billing/' in request.path or '/agents/' in request.path or '/help/' in request.path or '/analytics/pixel' in request.path %}
       <div class="ml-8 space-y-0.5 mb-1">
         <a href="{% url 'platforms:list' %}" class="block text-xs py-1 px-2 rounded {% if '/platforms/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Platforms</a>
+        <a href="{% url 'accounts:ai_learning' %}" class="block text-xs py-1 px-2 rounded {% if '/ai-learning' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">AI Learning</a>
         <a href="{% url 'agents:control' %}" class="block text-xs py-1 px-2 rounded {% if '/agents/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Agents</a>
         {% if request.plan_limits.multi_touch_attribution %}
         <a href="{% url 'analytics:pixel_settings' %}" class="block text-xs py-1 px-2 rounded {% if '/analytics/pixel' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Kova Pixel</a>
