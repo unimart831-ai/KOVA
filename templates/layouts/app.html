@@ -67,8 +67,10 @@
         Create
       </a>
 
-      {# Create subnav — appears when on any Create-family path so the merged
-         tabs (Visual Publisher, Trending/Memes) stay discoverable. #}
+      {% comment %}
+        Create subnav — appears when on any Create-family path so the merged
+        tabs (Visual Publisher, Trending/Memes) stay discoverable.
+      {% endcomment %}
       {% if '/content/studio' in request.path or '/memes/' in request.path or '/media-queue/' in request.path or '/content/' in request.path and '/edit/' in request.path %}
       <div class="ml-8 space-y-0.5 mb-1">
         <a href="{% url 'content:studio' %}" class="block text-xs py-1 px-2 rounded {% if '/content/studio' in request.path or '/content/' in request.path and '/edit/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Studio</a>
@@ -112,9 +114,11 @@
         {% if not request.plan_limits.engagement_agent %}<span class="ml-auto text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">PRO</span>{% endif %}
       </a>
 
-      {# Inbox subnav — surfaces the "AI auto-sent replies" review surface
-         (Engage Agent v2, /engage/auto-sent/) only when the user's on an
-         Engage path so it doesn't clutter the default nav. #}
+      {% comment %}
+        Inbox subnav — surfaces the "AI auto-sent replies" review surface
+        (Engage Agent v2, /engage/auto-sent/) only when the user's on an
+        Engage path so it doesn't clutter the default nav.
+      {% endcomment %}
       {% if request.plan_limits.engagement_agent and '/engage/' in request.path %}
       <div class="ml-8 space-y-0.5 mb-1">
         <a href="{% url 'engage:inbox' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'inbox' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Conversations</a>
@@ -201,8 +205,10 @@
         Performance
       </a>
 
-      {# Insights subnav — surfaces Competitors (Pro+) when on Insights paths
-         so the feature isn't undiscoverable. #}
+      {% comment %}
+        Insights subnav — surfaces Competitors (Pro+) when on Insights paths
+        so the feature isn't undiscoverable.
+      {% endcomment %}
       {% if '/analytics/' in request.path and '/analytics/revenue' not in request.path and '/analytics/attribution' not in request.path and '/analytics/pixel' not in request.path %}
       <div class="ml-8 space-y-0.5 mb-1">
         <a href="{% url 'analytics:insights' %}" class="block text-xs py-1 px-2 rounded {% if '/analytics/competitors' not in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Performance</a>
