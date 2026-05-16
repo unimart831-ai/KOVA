@@ -185,11 +185,13 @@ From the nav audit, with autonomy now real behind it:
 
 ### Week 12 — Daily Brief 10× Rewrite
 
-- [ ] **W12.1** Rewrite Daily Brief LLM system prompt: action-tense, AI-first-person
-- [ ] **W12.2** Structure: "I did X. I replied to Y. I learned Z. Here's the lead I couldn't handle. Recommended next move."
-- [ ] **W12.3** Surface Adapt Agent v2 learnings prominently
-- [ ] **W12.4** Surface Engage autonomy results (auto-sent count + escalations)
-- [ ] **W12.5** Tests + commit/push
+- [x] **W12.1** System prompt rewritten — AI-first-person ("I did", "I learned"), action-tense
+- [x] **W12.2** Structure enforced: P1 = "I did", P2 = "I learned / I couldn't", P3 = "Your one move"
+- [x] **W12.3** Adapt v2 learnings surfaced via `adapt_update` JSON field + "I learned" panel
+- [x] **W12.4** Engage autonomy + walk-ins + bookings surfaced via new `action_summary` + `actions_summary`
+- [x] **W12.5** Escalations panel — negative reviews + flagged comments auto-link to where the owner needs to go
+- [x] **W12.6** Brief home template renders "I handled" / "I learned" / "I couldn't handle" sections
+- [x] **W12.7** 6 tests for `_build_action_summary` aggregator (`tests/test_brief_actions.py`)
 
 ---
 

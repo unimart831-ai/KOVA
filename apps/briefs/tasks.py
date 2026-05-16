@@ -218,6 +218,108 @@ def _send_brief_email(user, brief):
         logger.warning("Failed to send email brief to %s: %s", user.email, e)
 
 
+def _build_action_summary(user) -> dict:
+    """Aggregate concrete agent actions over the last 24h.
+
+    Powers the action-tense Daily Brief (Phase 3 W12). Where adapt_summary
+    captures *learning*, this captures *doing* — the things the AI actually
+    handled on the owner's behalf, plus what it couldn't and bumped up.
+
+    Shape:
+        {
+            "engage": {
+                "auto_sent": int,        # AI replies sent autonomously
+                "escalated": int,        # comments routed to owner for review
+                "drafts_pending": int,   # drafts awaiting owner approval
+            },
+            "reviews": {
+                "scheduled": int,        # new ReviewRequests this window
+                "sent": int,             # outreach fired
+                "positive_seeds": int,   # content seeds auto-created from praise
+                "negative_to_review": list[dict],  # escalations needing eyes
+            },
+            "walk_ins": int,             # WalkInEvents recorded
+            "bookings_completed": int,   # Booking.status=completed transitions
+        }
+    """
+    from datetime import timedelta
+    cutoff = timezone.now() - timedelta(hours=24)
+
+    summary = {
+        "engage": {"auto_sent": 0, "escalated": 0, "drafts_pending": 0},
+        "reviews": {
+            "scheduled": 0, "sent": 0, "positive_seeds": 0,
+            "negative_to_review": [],
+        },
+        "walk_ins": 0,
+        "bookings_completed": 0,
+    }
+
+    try:
+        from apps.engage.models import Interaction
+        summary["engage"]["auto_sent"] = Interaction.objects.filter(
+            user=user, status="auto_replied",
+            updated_at__gte=cutoff,
+        ).count()
+        summary["engage"]["escalated"] = Interaction.objects.filter(
+            user=user, status="flagged",
+            updated_at__gte=cutoff,
+        ).count()
+        summary["engage"]["drafts_pending"] = Interaction.objects.filter(
+            user=user, status="draft",
+        ).count()
+    except Exception:
+        pass
+
+    try:
+        from apps.reviews.models import ReviewRequest
+        rqs = ReviewRequest.objects.filter(user=user)
+        summary["reviews"]["scheduled"] = rqs.filter(
+            created_at__gte=cutoff,
+        ).count()
+        summary["reviews"]["sent"] = rqs.filter(
+            sent_at__gte=cutoff,
+        ).count()
+        summary["reviews"]["positive_seeds"] = rqs.filter(
+            content_seed__isnull=False,
+            responded_at__gte=cutoff,
+        ).count()
+        neg = rqs.filter(
+            escalated_in_brief=True,
+            sentiment="negative",
+            responded_at__gte=cutoff,
+        )[:3]
+        summary["reviews"]["negative_to_review"] = [
+            {
+                "customer": r.customer_name or "(anonymous)",
+                "preview": (r.response_text or "")[:120],
+            }
+            for r in neg
+        ]
+    except Exception:
+        pass
+
+    try:
+        from apps.qr_attribution.models import WalkInEvent
+        summary["walk_ins"] = WalkInEvent.objects.filter(
+            user=user, recorded_at__gte=cutoff,
+        ).count()
+    except Exception:
+        pass
+
+    try:
+        from apps.bookings.models import Booking
+        summary["bookings_completed"] = Booking.objects.filter(
+            booking_link__user=user,
+            status="completed",
+            completed_at__gte=cutoff,
+        ).count()
+    except Exception:
+        pass
+
+    return summary
+
+
 def _build_adapt_summary(user) -> dict:
     """Aggregate recent Adapt Agent v2 actions into a Daily-Brief-shaped summary.
 
@@ -416,6 +518,12 @@ def _gather_brief_data(user):
         logger.warning("Adapt summary for brief failed: %s", e)
         adapt_summary = {}
 
+    try:
+        action_summary = _build_action_summary(user)
+    except Exception as e:
+        logger.warning("Action summary for brief failed: %s", e)
+        action_summary = {}
+
     # Posts created this week
     week_stats = Post.objects.filter(
         user=user,
@@ -535,6 +643,7 @@ def _gather_brief_data(user):
         "product_catalog": product_data,
         "revenue_attribution": revenue_data,
         "adapt_summary": adapt_summary,
+        "action_summary": action_summary,
         "decisions_needed": decisions_needed,
         "holiday_context": holiday_context,
     }
@@ -606,34 +715,40 @@ def _generate_brief_with_llm(user, brief_data):
             max_tokens=1500,
         )
 
-    # ── Standard strategist mode ───────────────────────────────────────────────
+    # ── Standard mode — action-tense, AI-first-person (Phase 3 W12) ───────────
     system_prompt = (
-        "You are the Chief Strategist at Kova — an AI social media agency. "
-        "Every morning you sit down with your client for a 2-minute strategy check-in. "
-        f"Your client is {first_name}, who runs '{company}'.\n\n"
-        "THIS IS NOT A REPORT OR SUMMARY. This is a strategic conversation. "
-        "Talk like an agency director who genuinely knows the business:\n"
-        "- Be direct: 'You should...' not 'It is recommended...'\n"
-        "- Be specific: name actual posts, actual numbers, actual people\n"
-        "- Be strategic: connect dots between data (why something worked, what to do about it)\n"
-        "- Be honest: if something failed or underperformed, say so and say what to change\n"
-        "- Be motivating: acknowledge effort and celebrate wins before delivering hard news\n"
-        "- Use 'we' for the agency team, 'you' for the client\n"
-        "- SHORT SENTENCES. Punchy. No corporate language. No run-ons.\n\n"
+        "You are Kova — the AI marketing operator running this account. "
+        f"You are talking to {first_name}, who runs '{company}'.\n\n"
+        "THIS IS NOT A REPORT FROM AN OUTSIDER. You ARE the system. "
+        "You did the work last night. You learned the things. You handled the "
+        "comments. Speak in the first person about your own actions. The owner "
+        "wakes up to 'here's what I did' — not 'here's what was done'.\n\n"
+        "Voice rules:\n"
+        "- USE 'I' for your own actions ('I replied to 7 comments', 'I learned…', "
+        "'I retired pattern X'). Never 'the agent' or 'we'.\n"
+        "- USE 'you' for the owner — direct, no formal address.\n"
+        "- Action-tense: past for what you did, present for what's blocked, "
+        "future for the one move you're recommending.\n"
+        "- Be specific: name posts, numbers, platforms, customer names.\n"
+        "- SHORT SENTENCES. Punchy. No marketing-speak. No 'leverage', 'optimize', 'synergy'.\n"
+        "- Honesty: if you couldn't handle something, say so plainly.\n\n"
         "Respond in JSON with these keys:\n"
-        '- "summary": exactly 3 short paragraphs separated by \\n\\n — this is the morning check-in '
-        f'that {first_name} reads before their first coffee. Structure it like this:\n'
-        f'  Paragraph 1 (opener): Start with "{first_name}," — then ONE sentence on the single most '
-        'important positive signal or win from the last 24 hours, even a small one. If there is genuinely '
-        'nothing positive, acknowledge the work put in (e.g. posts published, agents active). '
-        'Keep it to 1-2 short sentences. End on an energising note.\n'
-        '  Paragraph 2 (the signal): The most important thing that needs attention — '
-        'what is actually happening, why it matters, and what it tells us about strategy. '
-        'Be specific: use real numbers, real platform names, real patterns. 2-3 short sentences.\n'
-        '  Paragraph 3 (the move): One concrete action for today. Start with "Your move today:" or '
-        '"We\'re handling X — your one decision is Y." Give a clear, specific next step the client '
-        'can act on immediately. 1-2 sentences. No vague directives like "diagnose the issue" — '
-        'say WHAT to diagnose, HOW, and WHO does it (you vs the agents).\n'
+        '- "summary": exactly 3 short paragraphs separated by \\n\\n. Structure:\n'
+        f'  Paragraph 1 (I DID): Start with "{first_name}," — then a punchy recap '
+        'of what you actually did in the last 24h, drawn from `action_summary` '
+        '(auto-sent replies, walk-ins recorded, bookings completed, content seeds '
+        'created from positive reviews). Numbers, not adjectives. '
+        'Example: "I auto-replied to 7 comments, scheduled 2 review requests, '
+        'and turned a 5-star testimonial into a content seed for you."\n'
+        '  Paragraph 2 (I LEARNED / I COULDN\'T): The single most useful thing '
+        'you learned — paraphrase `adapt_summary` if it has changes. Then call '
+        'out exactly one thing you couldn\'t handle that needs the owner — a '
+        'flagged comment, a negative review, an open lead. Use the customer\'s '
+        'name. 2-3 short sentences.\n'
+        '  Paragraph 3 (YOUR ONE MOVE): One concrete recommended action. Start '
+        'with "Your move today:" followed by something the owner can do in '
+        'under 5 minutes. Specific, not "diagnose the funnel" — say WHAT, WHERE, '
+        'with WHICH button. 1-2 sentences.\n'
         '- "decisions_needed": list of 1-4 items needing human judgment, each with '
         '{item, context, recommended_action, urgency: "now"|"today"|"this_week"}. '
         'E.g. "3 flagged comments need your review", "A lead asked about pricing — reply recommended". '
@@ -661,17 +776,27 @@ def _generate_brief_with_llm(user, brief_data):
         'E.g. {item: "Scheduled posts promote an out-of-stock product", severity: "critical", '
         'action: "Pause or edit 2 posts mentioning Product X"}. '
         'Check product_catalog data for stock_content_mismatches, demand_signals, and never_promoted items.\n'
-        '- "adapt_update": ONE concrete sentence about what the AI learning '
-        'loop changed since the last brief. Use the `adapt_summary` block '
-        'as the source of truth. If `adapt_summary.changes_count == 0`, '
-        'return an empty string (do not fabricate learning). If there are '
-        'changes, paraphrase the most impactful one. Format examples: '
+        '- "adapt_update": ONE concrete sentence in YOUR voice about what '
+        'you (the AI) changed since the last brief. Use `adapt_summary` as '
+        'truth. If `adapt_summary.changes_count == 0`, return empty string '
+        '(do not fabricate learning). When there ARE changes, paraphrase '
+        'the most impactful one. Format examples: '
         '"I\'ve started favouring [pattern X] — your last 3 posts using it '
-        'got 2.4× your average."  OR  "I retired [pattern Y] — 5 recent '
-        'posts averaged 0.2%."  Pick promotions over retirements over '
-        'pillar reweights over frequency changes when multiple exist. '
-        'NEVER say generic things like "I\'m learning your style" — name '
-        'specifics or say nothing.\n'
+        'got 2.4× your average."  OR  "I retired [pattern Y] — 5 posts '
+        'averaged 0.2%."  Pick promotions over retirements over pillar '
+        'reweights over frequency changes when multiple exist. NEVER say '
+        'generic "I\'m learning your style" — name specifics or say nothing.\n'
+        '- "actions_summary": ONE sentence in YOUR voice summarizing the '
+        'concrete things you handled in the last 24h. Use `action_summary` '
+        'as truth. Format: "I auto-replied to N comments, recorded N '
+        'walk-ins, and completed N bookings." Skip zero-count items. '
+        'Empty string if nothing happened.\n'
+        '- "escalations": list of 0-3 items you (the AI) could NOT handle '
+        'and need the owner to look at. Each: {what, why_escalated, '
+        'where_to_go}. E.g. {what: "Negative review from Mary", '
+        'why_escalated: "sentiment dropped below threshold", '
+        'where_to_go: "/reviews/<id>/"}. Pull from '
+        '`action_summary.reviews.negative_to_review` and from `decisions_needed`.\n'
         '- "revenue_update": ONE concrete sentence about money. Use the '
         '`revenue_attribution.headline_insight` block as the source of truth. '
         'If `headline_insight.kind == "top_post"`, paraphrase its `headline` '

@@ -355,10 +355,30 @@
               </div>
               {% endif %}
 
+              {% if brief.performance_summary.actions_summary %}
+                <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-kova-700 dark:text-kova-300 mb-1">I handled</p>
+                  <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.actions_summary }}</p>
+                </div>
+              {% endif %}
+
               {% if brief.performance_summary.adapt_update %}
                 <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-kova-700 dark:text-kova-300 mb-1">AI learned</p>
+                  <p class="text-xs font-semibold uppercase tracking-wide text-kova-700 dark:text-kova-300 mb-1">I learned</p>
                   <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.adapt_update }}</p>
+                </div>
+              {% endif %}
+
+              {% if brief.performance_summary.escalations %}
+                <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300 mb-2">I couldn't handle — your call</p>
+                  <div class="space-y-1.5">
+                    {% for esc in brief.performance_summary.escalations %}
+                      <div class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                        {% if esc.where_to_go %}<a href="{{ esc.where_to_go }}" class="hover:underline">{{ esc.what }}</a>{% else %}{{ esc.what }}{% endif %}{% if esc.why_escalated %} — <span class="text-xs text-gray-500 dark:text-gray-400">{{ esc.why_escalated }}</span>{% endif %}
+                      </div>
+                    {% endfor %}
+                  </div>
                 </div>
               {% endif %}
 
