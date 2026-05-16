@@ -1,0 +1,15 @@
+{% extends "qr_attribution/landing/_base.html" %}
+{% block content %}
+  <h1>Our menu</h1>
+  {% if payload.today_special %}
+    <div style="background:#fef3c7; border-radius:12px; padding:16px; margin-bottom:16px; text-align:center;">
+      <p style="font-size:12px; color:#92400e; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Today's special</p>
+      <p style="font-size:18px; color:#78350f; font-weight:600; margin-top:4px;">{{ payload.today_special }}</p>
+    </div>
+  {% endif %}
+  {% if payload.menu_image_url %}
+    <img src="{{ payload.menu_image_url }}" alt="Menu"
+         style="width:100%; border-radius:12px; margin-bottom:16px;">
+  {% endif %}
+  <p class="body-text">Order at the counter or ask for service.</p>
+{% endblock %}

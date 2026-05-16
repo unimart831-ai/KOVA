@@ -19,6 +19,33 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
+def _get_walkins_queryset(user, cutoff):
+    """Walk-ins in the active window. Falls back to empty if the app/table
+    isn't installed yet (lets analytics run on instances that haven't migrated)."""
+    try:
+        from apps.qr_attribution.models import WalkInEvent
+    except Exception:
+        return _EmptyQS()
+    try:
+        return WalkInEvent.objects.filter(user=user, recorded_at__gte=cutoff)
+    except Exception:
+        return _EmptyQS()
+
+
+class _EmptyQS:
+    """Stub queryset for environments without qr_attribution installed."""
+    def aggregate(self, **kwargs):
+        return {k: None for k in kwargs}
+    def values(self, *_a, **_kw):
+        return self
+    def annotate(self, **_kw):
+        return self
+    def order_by(self, *_a):
+        return []
+    def __iter__(self):
+        return iter([])
+
+
 def get_revenue_summary(user, days=30):
     """
     Comprehensive revenue attribution summary.
@@ -32,6 +59,8 @@ def get_revenue_summary(user, days=30):
 
     conversions = Conversion.objects.filter(user=user, created_at__gte=cutoff)
 
+    walkins = _get_walkins_queryset(user, cutoff)
+
     # Core totals
     totals = conversions.aggregate(
         total_revenue=Sum("revenue"),
@@ -41,6 +70,17 @@ def get_revenue_summary(user, days=30):
         total_clicks=Count("id", filter=Q(conversion_type="click")),
     )
     totals = {k: v or (Decimal("0") if "revenue" in k else 0) for k, v in totals.items()}
+
+    walkin_totals = walkins.aggregate(
+        revenue=Sum("revenue"),
+        count=Count("id"),
+    )
+    walkin_revenue = walkin_totals["revenue"] or Decimal("0")
+    walkin_count = walkin_totals["count"] or 0
+    totals["walkin_revenue"] = walkin_revenue
+    totals["walkin_count"] = walkin_count
+    totals["digital_revenue"] = totals["total_revenue"]
+    totals["total_revenue"] = totals["total_revenue"] + walkin_revenue
 
     # Revenue by platform
     platform_revenue = list(
@@ -134,6 +174,38 @@ def get_revenue_summary(user, days=30):
         ),
     }
 
+    walkin_by_source = list(
+        walkins
+        .values("attribution_source")
+        .annotate(revenue=Sum("revenue"), count=Count("id"))
+        .order_by("-revenue")
+    )
+
+    # Merge walk-in revenue into platform_revenue where attribution_source
+    # maps to a digital platform. Walk-ins tied to instagram/facebook/etc.
+    # are real revenue those channels drove — they belong in that bucket.
+    _WALKIN_TO_PLATFORM = {
+        "instagram": "instagram",
+        "facebook": "facebook",
+        "whatsapp": "whatsapp",
+        "tiktok": "tiktok",
+    }
+    by_platform = {p["social_account__platform"]: p for p in platform_revenue}
+    for row in walkin_by_source:
+        plat = _WALKIN_TO_PLATFORM.get(row["attribution_source"])
+        if not plat:
+            continue
+        bucket = by_platform.setdefault(plat, {
+            "social_account__platform": plat, "revenue": Decimal("0"), "count": 0,
+        })
+        bucket["revenue"] = (bucket["revenue"] or Decimal("0")) + (row["revenue"] or Decimal("0"))
+        bucket["count"] = (bucket["count"] or 0) + (row["count"] or 0)
+    platform_revenue = sorted(
+        by_platform.values(),
+        key=lambda r: r["revenue"] or Decimal("0"),
+        reverse=True,
+    )
+
     return {
         "totals": totals,
         "platform_revenue": platform_revenue,
@@ -142,6 +214,7 @@ def get_revenue_summary(user, days=30):
         "product_revenue": product_revenue,
         "top_posts": top_posts,
         "source_revenue": source_revenue,
+        "walkin_by_source": walkin_by_source,
         "daily_trend": daily_trend,
         "roi": {
             "monthly_cost_kes": monthly_cost,

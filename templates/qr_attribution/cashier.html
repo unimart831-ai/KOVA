@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Walk-ins · {{ cashier_user.full_name|default:cashier_user.username }}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { background: #f9fafb; min-height: 100vh; padding: 16px; color: #111; }
+    .header {
+      text-align: center;
+      padding: 16px 0 24px;
+    }
+    .header h1 { font-size: 22px; font-weight: 700; }
+    .header p { font-size: 14px; color: #6b7280; margin-top: 4px; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .source-btn {
+      background: #fff;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 28px 12px;
+      font-size: 17px;
+      font-weight: 600;
+      color: #111;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .source-btn:active { background: #2dd4a4; color: #fff; border-color: #2dd4a4; transform: scale(0.98); }
+    .revenue-row {
+      background: #fff;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .revenue-row label {
+      flex: 1;
+      font-size: 14px;
+      color: #6b7280;
+    }
+    .revenue-row input {
+      flex: 2;
+      font-size: 18px;
+      padding: 8px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 16px; right: 16px;
+      background: #2dd4a4;
+      color: #fff;
+      padding: 16px;
+      border-radius: 12px;
+      text-align: center;
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Where did you hear about us?</h1>
+    <p>{{ cashier_user.full_name|default:cashier_user.username }} · staff cashier</p>
+  </div>
+
+  <div class="revenue-row">
+    <label for="revenue">Revenue (KES)</label>
+    <input id="revenue" type="number" placeholder="optional · e.g. 3500" min="0" step="50">
+  </div>
+
+  <div class="grid">
+    {% for value, label in sources %}
+      <button class="source-btn" data-source="{{ value }}">{{ label }}</button>
+    {% endfor %}
+  </div>
+
+  <div id="toast" class="toast">Recorded! Thanks.</div>
+
+  <script>
+    const buttons = document.querySelectorAll('.source-btn');
+    const revenueInput = document.getElementById('revenue');
+    const toast = document.getElementById('toast');
+
+    buttons.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const source = btn.dataset.source;
+        const formData = new FormData();
+        formData.append('source', source);
+        const rev = revenueInput.value.trim();
+        if (rev) formData.append('revenue', rev);
+
+        try {
+          const resp = await fetch('{% url "qr_attribution:cashier_record" cashier_user.username %}', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          });
+          if (!resp.ok) throw new Error(resp.statusText);
+          toast.classList.add('show');
+          revenueInput.value = '';
+          setTimeout(() => toast.classList.remove('show'), 1800);
+        } catch (e) {
+          alert('Could not record. Try again.');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

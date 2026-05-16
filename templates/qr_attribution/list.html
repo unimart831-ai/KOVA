@@ -1,0 +1,70 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}QR Codes & Walk-ins{% endblock %}
+{% block page_title %}QR Codes & Walk-ins{% endblock %}
+{% block page_subtitle %}
+  <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
+    Track walk-in customers attributed back to your posts and campaigns
+  </p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-6 space-y-6">
+
+  {# ── Header stat row ─────────────────────────────────────────── #}
+  <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
+    <div class="card"><div class="card-body">
+      <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">QR codes</p>
+      <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ qrs.count }}</p>
+    </div></div>
+    <div class="card"><div class="card-body">
+      <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Total walk-ins</p>
+      <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ totals.total_walkins|default:0 }}</p>
+    </div></div>
+    <div class="card hidden sm:block"><div class="card-body">
+      <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Attributed revenue</p>
+      <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">KES {{ totals.total_revenue|default:0|floatformat:0 }}</p>
+    </div></div>
+  </div>
+
+  {# ── Actions row ────────────────────────────────────────────── #}
+  <div class="flex flex-wrap gap-2 items-center justify-between">
+    <a href="{% url 'qr_attribution:create' %}" class="btn-primary text-sm">+ New QR code</a>
+    <a href="{% url 'qr_attribution:cashier_link' %}" class="text-sm font-medium text-kova-600 dark:text-kova-400 hover:underline">
+      Open cashier UI →
+    </a>
+  </div>
+
+  {# ── QR codes table ─────────────────────────────────────────── #}
+  <div class="card">
+    <div class="card-body">
+      {% if not qrs %}
+        <div class="py-8 text-center">
+          <p class="text-sm text-gray-500 dark:text-gray-400">No QR codes yet.</p>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            Create one for any campaign or post so customers who scan it get tracked.
+          </p>
+        </div>
+      {% else %}
+        <div class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for qr in qrs %}
+            <div class="py-3 flex items-center justify-between gap-3 {% if not qr.is_active %}opacity-50{% endif %}">
+              <div class="min-w-0 flex-1">
+                <a href="{% url 'qr_attribution:detail' qr.pk %}" class="text-sm font-medium text-gray-900 dark:text-white hover:underline">{{ qr.label }}</a>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  {{ qr.get_landing_template_display }} · created {{ qr.created_at|date:"M j" }}
+                  {% if not qr.is_active %} · archived{% endif %}
+                </p>
+              </div>
+              <div class="flex-shrink-0 text-right">
+                <p class="text-xs text-gray-400 dark:text-gray-500">{{ qr.scan_count }} scans · {{ qr.walkin_count }} walk-ins</p>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

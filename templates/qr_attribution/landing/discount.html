@@ -1,0 +1,13 @@
+{% extends "qr_attribution/landing/_base.html" %}
+{% block content %}
+  <h1>{{ payload.discount_pct|default:10 }}% off — show this</h1>
+  <p class="body-text">
+    Show this screen at the counter to claim your discount.
+    {% if payload.valid_until %}
+      <br><strong>Valid until {{ payload.valid_until }}</strong>.
+    {% endif %}
+  </p>
+  {% if payload.terms %}
+    <p class="body-text" style="font-size:13px; color:#6b7280;">{{ payload.terms }}</p>
+  {% endif %}
+{% endblock %}

@@ -97,6 +97,9 @@ urlpatterns = [
     path("memes/", include("apps.memes.urls")),
     path("calendar/", include("apps.calendar_intel.urls")),
     path("profile-health/", include("apps.profile_audit.urls")),
+    # QR codes + walk-in attribution (Phase 2 W5-6). Mounted at root
+    # because it owns both /qr/ and /walkin/ namespaces.
+    path("", include("apps.qr_attribution.urls")),
     path("dashboard/", include("apps.admin_dashboard.urls")),
     path("api/v1/", include("apps.api.urls")),
     path("api/v1/partner/", include("apps.api.partner_urls")),

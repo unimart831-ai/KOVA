@@ -121,15 +121,19 @@ claim today.
 No Western tool does this. For our flagship industries (salon, restaurant,
 retail), 70%+ of conversions are walk-ins.
 
-- [ ] **W5.1** New `qr_codes` Django app
-- [ ] **W5.2** `QRCode` model linked to Campaign + Post optionally; carries `attribution_token`
-- [ ] **W5.3** Public `/qr/<token>/` redirect endpoint — logs `WalkInEvent`, redirects to landing
-- [ ] **W5.4** Industry-aware landing pages (salon = "Welcome! Show this to claim 10% off"; restaurant = today's menu; retail = current offers)
-- [ ] **W5.5** Generation UI inside Campaigns + Post detail — one click to create QR for a campaign
-- [ ] **W5.6** Print-ready PDF download (poster, flyer, receipt sticker formats)
-- [ ] **W5.7** Cashier UI — mobile-friendly page where staff tap "Where did you hear about us?" to attribute walk-ins
-- [ ] **W5.8** `WalkInEvent` rolls up into Revenue Dashboard alongside Pixel events
-- [ ] **W5.9** Tests + commit/push
+- [x] **W5.1** New `qr_attribution` Django app
+- [x] **W5.2** `QRCode` model linked to Campaign + Post optionally; carries `token`
+- [x] **W5.3** Public `/qr/<token>/` endpoint — logs `QRScan`, sets visitor cookie, renders landing
+- [x] **W5.4** Five landing templates (discount / menu / booking / follow / custom) — owner picks at QR creation
+- [x] **W5.5** Generation UI at `/qr/new/` — one click + template-specific fields
+- [x] **W5.6** Print-pack PDF (receipt sticker, counter sticker, A5 flyer)
+- [x] **W5.7** Cashier UI at `/walkin/<slug>/` — phone-friendly button grid, no login
+- [x] **W5.8** `WalkInEvent` rolls into `get_revenue_summary` (totals.walkin_revenue + merged platform_revenue)
+- [x] **W5.9** 28 tests passing (`tests/test_qr_attribution.py`)
+- [x] **W5.10** `apps/analytics/revenue.py` rollup (digital + walk-ins → unified `total_revenue`)
+- [x] **W5.11** "Walk-ins" nav link under Money
+- [x] **W5.12** Test suite — model invariants, all 5 templates, cashier UI, visitor_id → scan linkage, rollup
+- [x] **W5.13** Django admin registration for `QRCode`, `QRScan`, `WalkInEvent`
 
 **Deliverable:** Kawaida prints a flyer with a Kova QR code. Customer scans → lands on welcome page → walks in → stylist taps "Insta" on cashier UI → KES 3,500 service attributed to the Instagram campaign. Revenue dashboard shows it.
 

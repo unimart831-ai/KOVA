@@ -83,6 +83,7 @@ LOCAL_APPS = [
     "apps.memes",
     "apps.calendar_intel",
     "apps.profile_audit",
+    "apps.qr_attribution",
     "apps.api",
 ]
 

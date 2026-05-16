@@ -1,0 +1,75 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}{{ qr.label }} — QR Code{% endblock %}
+{% block page_title %}{{ qr.label }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-6 space-y-6">
+
+  {# ── Stats row ─────────────────────────────────────────────── #}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div class="card"><div class="card-body">
+      <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Scans</p>
+      <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ scan_count }}</p>
+    </div></div>
+    <div class="card"><div class="card-body">
+      <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Walk-ins</p>
+      <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ walkin_count }}</p>
+    </div></div>
+    <div class="card"><div class="card-body">
+      <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Conv. rate</p>
+      <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ conversion_rate }}%</p>
+    </div></div>
+    <div class="card"><div class="card-body">
+      <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Revenue</p>
+      <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">KES {{ revenue_total|floatformat:0 }}</p>
+    </div></div>
+  </div>
+
+  {# ── Public URL + print PDF ─────────────────────────────────── #}
+  <div class="card">
+    <div class="card-body space-y-3">
+      <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Public URL</p>
+      <code class="block text-sm bg-gray-50 dark:bg-gray-800 rounded p-3 break-all">{{ public_url }}</code>
+      <div class="flex gap-3 flex-wrap">
+        <a href="{% url 'qr_attribution:print' qr.pk %}" class="btn-primary text-sm">📄 Download print pack (PDF)</a>
+        <a href="{{ public_url }}" target="_blank" class="text-sm text-kova-600 dark:text-kova-400 hover:underline self-center">Preview landing →</a>
+      </div>
+    </div>
+  </div>
+
+  {# ── Recent scans + walk-ins ────────────────────────────────── #}
+  <div class="card">
+    <div class="card-body">
+      <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-3">Recent walk-ins</h3>
+      {% if not walkins %}
+        <p class="text-sm text-gray-500 dark:text-gray-400">No walk-ins recorded yet.</p>
+      {% else %}
+        <div class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for w in walkins %}
+            <div class="py-2 flex items-center justify-between gap-3 text-sm">
+              <div>
+                <p class="text-gray-700 dark:text-gray-300">{{ w.get_attribution_source_display }}{% if w.attribution_label %} · {{ w.attribution_label }}{% endif %}</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500">{{ w.recorded_at|date:"M j · H:i" }}</p>
+              </div>
+              {% if w.revenue %}
+                <span class="font-medium text-green-600 dark:text-green-400">KES {{ w.revenue|floatformat:0 }}</span>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="text-center">
+    <form method="post" action="{% url 'qr_attribution:delete' qr.pk %}"
+          onsubmit="return confirm('Archive this QR code? Past scans + walk-ins are preserved.');"
+          class="inline">
+      {% csrf_token %}
+      <button type="submit" class="text-xs text-red-600 dark:text-red-400 hover:underline">Archive QR code</button>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

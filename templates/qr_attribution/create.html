@@ -1,0 +1,138 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}New QR Code{% endblock %}
+{% block page_title %}New QR Code{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-6" x-data="{ template: 'discount' }">
+  <form method="post" class="card">
+    {% csrf_token %}
+    <div class="card-body space-y-5">
+
+      <div>
+        <label class="label">Name this code</label>
+        <input type="text" name="label" class="input w-full"
+               placeholder="e.g. Jamhuri flyer · Door sticker · Receipt corner"
+               required maxlength="200">
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          For your reference. Customers never see this name.
+        </p>
+      </div>
+
+      <div>
+        <label class="label">What should the scan show?</label>
+        <select name="landing_template" class="input w-full" x-model="template">
+          {% for value, label in templates %}
+            <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {# Template-specific fields #}
+      <div x-show="template === 'discount'" x-cloak class="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl">
+        <div>
+          <label class="label">Discount %</label>
+          <input type="number" name="discount_pct" class="input w-full" min="1" max="100" value="10">
+        </div>
+        <div>
+          <label class="label">Valid until (optional)</label>
+          <input type="date" name="valid_until" class="input w-full">
+        </div>
+        <div>
+          <label class="label">Terms (optional)</label>
+          <input type="text" name="terms" class="input w-full" maxlength="300"
+                 placeholder="e.g. One per customer · braids only">
+        </div>
+      </div>
+
+      <div x-show="template === 'menu'" x-cloak class="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl">
+        <div>
+          <label class="label">Menu image URL</label>
+          <input type="url" name="menu_image_url" class="input w-full" placeholder="https://...">
+        </div>
+        <div>
+          <label class="label">Today's special (optional)</label>
+          <input type="text" name="today_special" class="input w-full" maxlength="200">
+        </div>
+      </div>
+
+      <div x-show="template === 'booking'" x-cloak class="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl">
+        <div>
+          <label class="label">Booking link (Calendly, Kova booking page, etc.)</label>
+          <input type="url" name="booking_link" class="input w-full" placeholder="https://...">
+        </div>
+        <div>
+          <label class="label">WhatsApp number (without +)</label>
+          <input type="text" name="contact_whatsapp" class="input w-full" placeholder="254712345678">
+        </div>
+      </div>
+
+      <div x-show="template === 'follow'" x-cloak class="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl">
+        <div>
+          <label class="label">Instagram handle (without @)</label>
+          <input type="text" name="instagram_handle" class="input w-full" placeholder="kawaidabeauty">
+        </div>
+        <div>
+          <label class="label">Facebook page URL</label>
+          <input type="url" name="facebook_url" class="input w-full" placeholder="https://facebook.com/...">
+        </div>
+      </div>
+
+      <div x-show="template === 'custom'" x-cloak class="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl">
+        <div>
+          <label class="label">Headline</label>
+          <input type="text" name="headline" class="input w-full" maxlength="120">
+        </div>
+        <div>
+          <label class="label">Body</label>
+          <textarea name="body" rows="3" class="input w-full" maxlength="500"></textarea>
+        </div>
+        <div>
+          <label class="label">Button text</label>
+          <input type="text" name="cta_text" class="input w-full" maxlength="40">
+        </div>
+        <div>
+          <label class="label">Button link</label>
+          <input type="url" name="cta_url" class="input w-full" placeholder="https://...">
+        </div>
+      </div>
+
+      {# Attribution: optional campaign / post linkage #}
+      <details>
+        <summary class="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300">
+          Tie to a specific campaign or post (optional)
+        </summary>
+        <div class="mt-3 space-y-3">
+          {% if campaigns %}
+          <div>
+            <label class="label">Campaign</label>
+            <select name="campaign_id" class="input w-full">
+              <option value="">— none —</option>
+              {% for c in campaigns %}
+                <option value="{{ c.pk }}">{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+          {% if posts %}
+          <div>
+            <label class="label">Post</label>
+            <select name="post_id" class="input w-full">
+              <option value="">— none —</option>
+              {% for p in posts %}
+                <option value="{{ p.pk }}">{{ p.content_text|truncatechars:60 }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+        </div>
+      </details>
+
+      <div class="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-800">
+        <a href="{% url 'qr_attribution:list' %}" class="text-sm text-gray-500 dark:text-gray-400 hover:underline">Cancel</a>
+        <button type="submit" class="btn-primary">Generate QR →</button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

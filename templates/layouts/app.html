@@ -194,6 +194,15 @@
         Links
       </a>
 
+      <a href="{% url 'qr_attribution:list' %}"
+         {% if '/qr/' in request.path or '/walkin/' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/qr/' in request.path or '/walkin/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/qr/' in request.path or '/walkin/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 4h2m2 0h2m-4-4h6m-2 2v2"/>
+        </svg>
+        Walk-ins
+      </a>
+
       <p class="nav-section">Insights</p>
 
       <a href="{% url 'analytics:insights' %}"

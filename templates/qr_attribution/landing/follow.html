@@ -1,0 +1,15 @@
+{% extends "qr_attribution/landing/_base.html" %}
+{% block content %}
+  <h1>Follow us</h1>
+  <p class="body-text">Daily updates, behind-the-scenes, and customer love.</p>
+  {% if payload.instagram_handle %}
+    <a href="https://instagram.com/{{ payload.instagram_handle|cut:'@' }}" class="cta">
+      Follow on Instagram
+    </a>
+  {% endif %}
+  {% if payload.facebook_url %}
+    <a href="{{ payload.facebook_url }}" class="cta cta-secondary">
+      Follow on Facebook
+    </a>
+  {% endif %}
+{% endblock %}

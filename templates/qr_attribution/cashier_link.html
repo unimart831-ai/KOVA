@@ -1,0 +1,31 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Cashier UI{% endblock %}
+{% block page_title %}Cashier UI{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-6 space-y-6">
+  <div class="card">
+    <div class="card-body space-y-4">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Your cashier URL</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Open this URL on the till phone, iPad, or tablet. When a customer
+        walks in, your staff taps where they heard about you. No login
+        needed — the URL is the auth, so keep it private.
+      </p>
+      <code class="block text-sm bg-gray-50 dark:bg-gray-800 rounded p-3 break-all">{{ cashier_url }}</code>
+      <a href="{{ cashier_url }}" target="_blank" class="btn-primary text-sm">Open cashier UI →</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <p class="text-xs text-gray-500 dark:text-gray-400">
+        <strong>Tip:</strong> Save the URL as a home-screen shortcut on the
+        cashier's phone so opening it is one tap. Each walk-in recorded
+        rolls into your Revenue Dashboard.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
