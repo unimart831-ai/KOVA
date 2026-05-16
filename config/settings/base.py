@@ -85,6 +85,7 @@ LOCAL_APPS = [
     "apps.profile_audit",
     "apps.qr_attribution",
     "apps.bookings",
+    "apps.reviews",
     "apps.api",
 ]
 

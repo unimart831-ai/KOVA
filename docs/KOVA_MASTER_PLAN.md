@@ -160,12 +160,13 @@ is a booking, not a click.
 
 ### Week 9 — Review Request Loop
 
-- [ ] **W9.1** Trigger on `Lead.status = converted` OR `Booking.status = completed`
-- [ ] **W9.2** WhatsApp template review request (24h after conversion)
-- [ ] **W9.3** Email fallback if no WhatsApp
-- [ ] **W9.4** Positive responses (sentiment ≥ 0.7) → auto-create content seed: "Customer says…"
-- [ ] **W9.5** Negative responses → escalate to owner via Daily Brief
-- [ ] **W9.6** Tests + commit/push
+- [x] **W9.1** Signals on `Lead.status=converted` + `Booking.status=completed` schedule a ReviewRequest 24h out
+- [x] **W9.2** `send_review_request` fires WhatsApp first (template-style soft-fail send)
+- [x] **W9.3** Email fallback when WhatsApp not available — automatic on first send failure
+- [x] **W9.4** Positive responses → auto-create `ContentSeed` with the testimonial idea
+- [x] **W9.5** Negative responses → `escalated_in_brief=True` flag (Brief rewrite W12 will surface)
+- [x] **W9.6** 22 tests passing — sentiment classifier, signals, batch task, branching, public webhook
+- [x] **W9.7** Reviews nav link under Customers + Django admin + public response webhook
 
 ### Weeks 10-11 — Nav Refactor (21 → 9 Tabs)
 

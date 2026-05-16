@@ -102,6 +102,8 @@ urlpatterns = [
     path("", include("apps.qr_attribution.urls")),
     # Booking integration (Phase 2 W7-8). Owns /bookings/ and /book/.
     path("", include("apps.bookings.urls")),
+    # Review request loop (Phase 3 W9). Owns /reviews/.
+    path("", include("apps.reviews.urls")),
     path("dashboard/", include("apps.admin_dashboard.urls")),
     path("api/v1/", include("apps.api.urls")),
     path("api/v1/partner/", include("apps.api.partner_urls")),
