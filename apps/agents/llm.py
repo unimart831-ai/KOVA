@@ -156,10 +156,12 @@ def parse_llm_json(text: str) -> dict:
     except json.JSONDecodeError:
         pass
 
-    # Stage 2: Fix unescaped newlines inside JSON string values
+    # Stage 2: Fix unescaped newlines inside JSON string values.
+    # The lookahead includes \] so strings ending before ] (last item in
+    # a JSON array) are handled correctly, not just those before , or }.
     try:
         fixed = re.sub(
-            r'(?<=": ")(.*?)(?="[,\s*}])',
+            r'(?<=": ")(.*?)(?="[,\s*}\]])',
             lambda m: m.group(0).replace("\n", "\\n"),
             cleaned,
             flags=re.DOTALL,

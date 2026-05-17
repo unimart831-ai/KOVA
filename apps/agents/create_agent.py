@@ -768,8 +768,8 @@ def parse_posts(llm_content: str) -> tuple[str, list[dict]]:
 # Minimum content length (chars) per platform to accept as valid.
 # Anything below this is likely truncated from a multi-platform batch.
 _MIN_CONTENT_LENGTH = {
-    "linkedin": 200,
-    "facebook": 150,
+    "linkedin": 600,   # typical LI post is 700-2000 chars; 200 missed most truncations
+    "facebook": 300,
     "youtube": 150,
     "tiktok": 100,
     "instagram": 80,
@@ -1001,21 +1001,22 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                     plat, len(content),
                 )
 
-        # Also regenerate if the LLM was truncated but ALL platforms were
-        # parsed (the last platform is most likely to be incomplete)
+        # When the LLM was token-limited, ANY platform's content could be
+        # incomplete — not just the last one. Apply a 3× min-length bar to
+        # every platform that wasn't already flagged by the normal check.
         if was_truncated_at_all and post_dicts:
-            last_plat = post_dicts[-1].get("platform", "").lower().strip()
-            if last_plat not in truncated_platforms:
-                content = post_dicts[-1].get("content_text", "")
-                min_len = _MIN_CONTENT_LENGTH.get(last_plat, 30)
-                # Use a higher bar for the last platform since it was likely mid-generation
-                if len(content) < min_len * 3:
-                    truncated_platforms.append(last_plat)
-                    logger.warning(
-                        "Create Agent: last platform %s likely truncated (%d chars, "
-                        "was_truncated=True) — queuing for regen",
-                        last_plat, len(content),
-                    )
+            for pd in post_dicts:
+                plat = pd.get("platform", "").lower().strip()
+                if plat not in truncated_platforms:
+                    content = pd.get("content_text", "")
+                    min_len = _MIN_CONTENT_LENGTH.get(plat, 30)
+                    if len(content) < min_len * 3:
+                        truncated_platforms.append(plat)
+                        logger.warning(
+                            "Create Agent: %s likely truncated (%d chars, "
+                            "was_truncated=True) — queuing for regen",
+                            plat, len(content),
+                        )
 
         # Check for platforms that are completely missing from the response
         parsed_platforms = {pd.get("platform", "").lower().strip() for pd in post_dicts}
