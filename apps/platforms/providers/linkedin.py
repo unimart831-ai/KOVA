@@ -43,7 +43,7 @@ Docs:
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from urllib.parse import quote, urlencode
+from urllib.parse import quote, unquote, urlencode
 
 import httpx
 
@@ -111,7 +111,7 @@ class LinkedInProvider(BaseProvider):
         ):
             # Check for organization URN first (Company Page accounts)
             org_id = account.metadata.get("organization_id", "")
-            if org_id and getattr(account, "account_type", "") == "organization":
+            if org_id and account.metadata.get("account_type", "") == "organization":
                 return f"urn:li:organization:{org_id}"
 
             sub = account.metadata.get("linkedin_sub", "")
@@ -632,12 +632,13 @@ class LinkedInProvider(BaseProvider):
                 resp.raise_for_status()
 
                 post_urn = resp.headers.get("x-restli-id", "")
+                post_urn_decoded = unquote(post_urn)
                 return PublishResult(
                     success=True,
-                    platform_post_id=post_urn,
+                    platform_post_id=post_urn_decoded,
                     url=(
-                        f"https://www.linkedin.com/feed/update/{post_urn}/"
-                        if post_urn else ""
+                        f"https://www.linkedin.com/feed/update/{post_urn_decoded}/"
+                        if post_urn_decoded else ""
                     ),
                     metadata={
                         "author_urn": author_urn,
@@ -686,7 +687,7 @@ class LinkedInProvider(BaseProvider):
                 return PublishResult(
                     success=True,
                     platform_post_id=platform_post_id,
-                    url=f"https://www.linkedin.com/feed/update/{platform_post_id}/",
+                    url=f"https://www.linkedin.com/feed/update/{unquote(platform_post_id)}/",
                 )
         except httpx.HTTPStatusError as e:
             logger.error("LinkedIn update failed: %s", e.response.text)
@@ -794,9 +795,10 @@ class LinkedInProvider(BaseProvider):
                     )
                     return []
                 resp.raise_for_status()
+                elements = resp.json().get("elements", [])
 
             result = []
-            for c in resp.json().get("elements", []):
+            for c in elements:
                 created_ts = c.get("created", {}).get("time", 0)
                 result.append({
                     "id": c.get("id", ""),
@@ -931,7 +933,7 @@ class LinkedInProvider(BaseProvider):
             logger.error(
                 "LinkedIn reply_to_comment failed: %s", e.response.text
             )
-            return {"error": str(e)}
+            return {"error": e.response.text[:300], "success": False}
 
     # ── Reactions ────────────────────────────────────────────────────────
 
@@ -945,6 +947,8 @@ class LinkedInProvider(BaseProvider):
           ENTERTAINMENT (Funny)
         """
         author_urn = self._get_author_urn(access_token, **kwargs)
+        if not author_urn:
+            return {"error": "Could not resolve author URN", "success": False}
         encoded_actor = quote(author_urn, safe="")
 
         valid = {
@@ -1203,7 +1207,7 @@ class LinkedInProvider(BaseProvider):
                         "LinkedIn-Version": LINKEDIN_VERSION,
                         "X-Restli-Protocol-Version": "2.0.0",
                         "Content-Type": "application/json",
-                        "X-RestLi-Method": "partial_update",
+                        "X-RestLi-Method": "PARTIAL_UPDATE",
                     },
                     json=body,
                 )
