@@ -186,12 +186,18 @@ def _fetch_post_comments(user, account, provider):
         )
         return 0
 
-    # For Facebook/Instagram, use page token instead of user token
+    # For Facebook/Instagram, use the selected Page's token instead of user token
     token = account.access_token
     if account.platform in ("facebook", "instagram"):
-        pages = (account.metadata or {}).get("pages", [])
+        meta = account.metadata or {}
+        pages = meta.get("pages", [])
         if pages:
-            token = pages[0].get("access_token", account.access_token)
+            selected_id = meta.get("selected_page_id")
+            selected_page = (
+                next((p for p in pages if p["id"] == selected_id), None)
+                if selected_id else None
+            ) or pages[0]
+            token = selected_page.get("access_token", account.access_token)
 
     for post in recent_posts:
         try:

@@ -477,6 +477,14 @@ def publish_post(self, post_id: str):
                     "user may need to reconnect with Pages permissions",
                     account.pk,
                 )
+                _fail_post(post, "Facebook account has no Pages — reconnect with Pages permissions.")
+                Notification.create_for_user(
+                    post.user, "publish_failed",
+                    "Your Facebook account needs to be reconnected. "
+                    "Go to Settings → Platforms → Facebook and reconnect to grant Pages access.",
+                    related_post=post,
+                )
+                return {"error": "Facebook account has no pages in metadata"}
         elif account.platform == "instagram":
             # Instagram stores its Business Account ID under ig_business_id,
             # not in a "pages" list. The access_token on the account is already

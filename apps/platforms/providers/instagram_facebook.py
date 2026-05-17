@@ -533,12 +533,19 @@ class FacebookProvider(BaseProvider):
         ``access_token`` (engage_agent's call site) as the token kwarg.
         """
         token = page_token or kwargs.get("access_token", "")
-        # Allow callers to pass the Page object on `account` and look up the
-        # selected Page's token from metadata. Falls back to whatever token
-        # was passed.
         account = kwargs.get("account")
-        if account is not None and not token:
-            token = account.access_token
+        if account is not None:
+            meta = account.metadata or {}
+            pages = meta.get("pages", [])
+            if pages:
+                selected_id = meta.get("selected_page_id")
+                selected_page = (
+                    next((p for p in pages if p["id"] == selected_id), None)
+                    if selected_id else None
+                ) or pages[0]
+                token = selected_page.get("access_token", token or account.access_token)
+            elif not token:
+                token = account.access_token
         try:
             with httpx.Client(timeout=HTTP_TIMEOUT) as client:
                 resp = client.post(f"{FB_API_BASE}/{post_id}/comments", data={
