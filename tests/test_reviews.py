@@ -144,9 +144,12 @@ class TestAutoSchedule:
 
 class TestSendReviewRequest:
     def test_send_marks_sent(self, owner):
+        # Give the request an email so the email fallback fires when WA
+        # isn't configured in the test environment — status should be SENT.
         req = ReviewRequest.objects.create(
             user=owner, customer_name="Mary",
             customer_phone="254712345678",
+            customer_email="mary@test.com",
             scheduled_at=timezone.now(),
         )
         send_review_request(req)
@@ -157,10 +160,12 @@ class TestSendReviewRequest:
     def test_batch_picks_up_due(self, owner):
         req = ReviewRequest.objects.create(
             user=owner, customer_name="A", customer_phone="254700000000",
+            customer_email="a@test.com",
             scheduled_at=timezone.now() - timedelta(minutes=5),
         )
         future = ReviewRequest.objects.create(
             user=owner, customer_name="B", customer_phone="254700000001",
+            customer_email="b@test.com",
             scheduled_at=timezone.now() + timedelta(hours=12),
         )
         sent = send_due_review_requests()

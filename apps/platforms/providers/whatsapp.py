@@ -273,7 +273,7 @@ class WhatsAppProvider(BaseProvider):
                 error="WhatsApp business profile audit requires a connected phone number.",
             )
         url = (
-            f"https://graph.facebook.com/v18.0/{phone_id}/whatsapp_business_profile"
+            f"{WA_API_BASE}/{phone_id}/whatsapp_business_profile"
             "?fields=about,address,description,email,profile_picture_url,vertical,websites"
         )
         try:
@@ -287,15 +287,30 @@ class WhatsAppProvider(BaseProvider):
 
         websites = data.get("websites") or []
         website = websites[0] if websites else ""
-        return ProfileSnapshot(
-            bio=(data.get("about") or "").strip(),
-            description=(data.get("description") or "").strip(),
-            email=(data.get("email") or "").strip(),
-            website=website,
-            address=(data.get("address") or "").strip(),
-            category=(data.get("vertical") or "").strip(),
-            profile_picture_url=(data.get("profile_picture_url") or "").strip(),
-        )
+        snap = ProfileSnapshot()
+        snap.raw_profile = {k: v for k, v in data.items() if k != "profile_picture_url"}
+        present = {}
+        missing = []
+        field_map = {
+            "about": (data.get("about") or "").strip(),
+            "description": (data.get("description") or "").strip(),
+            "email": (data.get("email") or "").strip(),
+            "website": website,
+            "address": (data.get("address") or "").strip(),
+            "category": (data.get("vertical") or "").strip(),
+            "profile_picture_url": (data.get("profile_picture_url") or "").strip(),
+        }
+        for k, v in field_map.items():
+            if v:
+                present[k] = v
+            else:
+                missing.append(k)
+        snap.fields_present = present
+        snap.fields_missing = missing
+        filled = len(present)
+        total = len(field_map)
+        snap.completeness_score = int(round(filled / total * 100)) if total else 0
+        return snap
 
     # ── Messaging ────────────────────────────────────────────────────────
 

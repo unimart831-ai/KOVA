@@ -227,6 +227,65 @@ def qr_delete(request, pk):
 
 
 @login_required
+def qr_edit(request, pk):
+    """Edit an existing QR code's label, template, and payload."""
+    qr = get_object_or_404(QRCode, pk=pk, user=request.user)
+
+    if request.method == "POST":
+        label = (request.POST.get("label") or "").strip()
+        if not label:
+            messages.error(request, "Label cannot be empty.")
+            return redirect("qr_attribution:edit", pk=pk)
+
+        template = (request.POST.get("landing_template") or qr.landing_template).strip()
+        if template not in dict(QRCode.LandingTemplate.choices):
+            template = qr.landing_template
+
+        payload = {}
+        if template == "discount":
+            payload = {
+                "discount_pct": int(request.POST.get("discount_pct", 10) or 10),
+                "valid_until": request.POST.get("valid_until", "").strip(),
+                "terms": request.POST.get("terms", "").strip()[:300],
+            }
+        elif template == "menu":
+            payload = {
+                "menu_image_url": request.POST.get("menu_image_url", "").strip(),
+                "today_special": request.POST.get("today_special", "").strip()[:200],
+            }
+        elif template == "booking":
+            payload = {
+                "booking_link": request.POST.get("booking_link", "").strip(),
+                "contact_whatsapp": request.POST.get("contact_whatsapp", "").strip(),
+            }
+        elif template == "follow":
+            payload = {
+                "instagram_handle": request.POST.get("instagram_handle", "").strip(),
+                "facebook_url": request.POST.get("facebook_url", "").strip(),
+            }
+        else:  # custom
+            payload = {
+                "headline": request.POST.get("headline", "").strip()[:120],
+                "body": request.POST.get("body", "").strip()[:500],
+                "cta_text": request.POST.get("cta_text", "").strip()[:40],
+                "cta_url": request.POST.get("cta_url", "").strip(),
+            }
+
+        qr.label = label
+        qr.landing_template = template
+        qr.landing_payload = payload
+        qr.save(update_fields=["label", "landing_template", "landing_payload", "updated_at"])
+        messages.success(request, f"Updated QR code: {qr.label}")
+        return redirect("qr_attribution:detail", pk=qr.pk)
+
+    return render(request, "qr_attribution/edit.html", {
+        "qr": qr,
+        "templates": QRCode.LandingTemplate.choices,
+        "page_title": f"Edit — {qr.label}",
+    })
+
+
+@login_required
 def qr_print_pdf(request, pk):
     """Generate the print-pack PDF (3 sticker formats per QR)."""
     qr = get_object_or_404(QRCode, pk=pk, user=request.user)

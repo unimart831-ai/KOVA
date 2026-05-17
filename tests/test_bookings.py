@@ -323,6 +323,7 @@ class TestBookingIntent:
 
 class TestRevenueRollup:
     def test_booking_revenue_in_summary(self, owner, link):
+        # CONFIRMED booking = future appointment, not yet delivered — excluded.
         Booking.objects.create(
             booking_link=link,
             customer_name="A", customer_phone="x",
@@ -331,6 +332,7 @@ class TestRevenueRollup:
             scheduled_at=timezone.now() + timedelta(days=2),
             status="confirmed",
         )
+        # COMPLETED booking = service delivered — counts as revenue.
         Booking.objects.create(
             booking_link=link,
             customer_name="B", customer_phone="y",
@@ -341,9 +343,9 @@ class TestRevenueRollup:
         )
         from apps.analytics.revenue import get_revenue_summary
         summary = get_revenue_summary(owner, days=30)
-        assert summary["totals"]["booking_revenue"] == Decimal("5500")
-        assert summary["totals"]["booking_count"] == 2
-        assert summary["totals"]["total_revenue"] == Decimal("5500")
+        assert summary["totals"]["booking_revenue"] == Decimal("2000")
+        assert summary["totals"]["booking_count"] == 1
+        assert summary["totals"]["total_revenue"] == Decimal("2000")
 
     def test_cancelled_bookings_not_counted(self, owner, link):
         Booking.objects.create(

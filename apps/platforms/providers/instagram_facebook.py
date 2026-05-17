@@ -319,10 +319,21 @@ class FacebookProvider(BaseProvider):
 
                 resp.raise_for_status()
                 post_id = resp.json().get("id", "")
+                # Fetch canonical permalink — raw post IDs like "123_456" are not
+                # valid Facebook URLs; Graph API returns the real link on request.
+                try:
+                    plink_resp = client.get(f"{FB_API_BASE}/{post_id}", params={
+                        "fields": "permalink_url",
+                        "access_token": page_token,
+                    })
+                    url = plink_resp.json().get("permalink_url",
+                                               f"https://www.facebook.com/{post_id}")
+                except Exception:
+                    url = f"https://www.facebook.com/{post_id}"
                 return PublishResult(
                     success=True,
                     platform_post_id=post_id,
-                    url=f"https://www.facebook.com/{post_id}",
+                    url=url,
                 )
         except httpx.HTTPStatusError as e:
             logger.error("Facebook publish failed: %s", e.response.text)
@@ -632,10 +643,13 @@ class FacebookProvider(BaseProvider):
         Send a message from a Page. Requires pages_messaging.
         kwargs: page_id, page_access_token
         """
+        page_id = kwargs.get("page_id", "")
         page_token = kwargs.get("page_access_token", access_token)
+        if not page_id:
+            return {"error": "page_id is required for Facebook Messenger send", "success": False}
         try:
             with httpx.Client(timeout=HTTP_TIMEOUT) as client:
-                resp = client.post(f"{FB_API_BASE}/me/messages", json={
+                resp = client.post(f"{FB_API_BASE}/{page_id}/messages", json={
                     "recipient": {"id": recipient_id},
                     "message": {"text": message},
                     "access_token": page_token,
@@ -1064,6 +1078,26 @@ class InstagramProvider(BaseProvider):
             logger.error("Instagram publish failed: %s", e.response.text)
             return PublishResult(success=False, error=e.response.text[:500])
 
+    def _fetch_ig_permalink(self, client: httpx.Client, token: str,
+                            post_id: str) -> str:
+        """Fetch the canonical permalink for a published IG media object.
+
+        The raw Graph API media ID is not a valid Instagram URL — we must call
+        `GET /{post_id}?fields=permalink` to get the real shortcode-based URL.
+        Falls back to a best-effort URL on any error.
+        """
+        try:
+            resp = client.get(f"{FB_API_BASE}/{post_id}", params={
+                "fields": "permalink",
+                "access_token": token,
+            })
+            permalink = resp.json().get("permalink", "")
+            if permalink:
+                return permalink
+        except Exception:
+            pass
+        return f"https://www.instagram.com/p/{post_id}/"
+
     def _publish_single_image(self, client: httpx.Client, token: str,
                               ig_id: str, caption: str, image_url: str) -> PublishResult:
         """Single image post."""
@@ -1081,8 +1115,8 @@ class InstagramProvider(BaseProvider):
         })
         pub.raise_for_status()
         post_id = pub.json().get("id", "")
-        return PublishResult(success=True, platform_post_id=post_id,
-                             url=f"https://www.instagram.com/p/{post_id}/")
+        url = self._fetch_ig_permalink(client, token, post_id)
+        return PublishResult(success=True, platform_post_id=post_id, url=url)
 
     def _publish_carousel(self, client: httpx.Client, token: str,
                           ig_id: str, caption: str, image_urls: list[str]) -> PublishResult:
@@ -1115,8 +1149,8 @@ class InstagramProvider(BaseProvider):
         })
         pub.raise_for_status()
         post_id = pub.json().get("id", "")
-        return PublishResult(success=True, platform_post_id=post_id,
-                             url=f"https://www.instagram.com/p/{post_id}/")
+        url = self._fetch_ig_permalink(client, token, post_id)
+        return PublishResult(success=True, platform_post_id=post_id, url=url)
 
     def _publish_reels(self, client: httpx.Client, token: str,
                        ig_id: str, caption: str, video_url: str) -> PublishResult:
@@ -1133,10 +1167,10 @@ class InstagramProvider(BaseProvider):
         container.raise_for_status()
         container_id = container.json()["id"]
 
-        # Poll until video is processed (max 60 seconds).
+        # Poll until video is processed (max ~3 minutes: 60 polls × 3s).
         # Instagram status_code values: IN_PROGRESS → FINISHED | ERROR | EXPIRED
         status_code = "IN_PROGRESS"
-        for attempt in range(30):
+        for attempt in range(60):
             status_resp = client.get(f"{FB_API_BASE}/{container_id}", params={
                 "fields": "status_code,status",
                 "access_token": token,
@@ -1150,7 +1184,7 @@ class InstagramProvider(BaseProvider):
             if status_code == "ERROR":
                 error_detail = status_data.get("status", "Video processing failed.")
                 logger.error(
-                    "Instagram Reel container %s processing ERROR after %d polls: %s",
+                    "Instagram Reel container %s ERROR after %d polls: %s",
                     container_id, attempt + 1, error_detail,
                 )
                 return PublishResult(
@@ -1165,11 +1199,12 @@ class InstagramProvider(BaseProvider):
                     success=False,
                     error="Reel container expired before publishing. Please try again.",
                 )
-            time.sleep(2)
+            time.sleep(3)
         else:
-            # Loop exhausted without FINISHED — log but attempt publish anyway
+            # Loop exhausted (~3 min) without FINISHED — attempt publish anyway.
+            # Very long videos (>10 min) or slow Instagram infra can exceed this.
             logger.warning(
-                "Reel container %s still '%s' after 30 polls — attempting publish",
+                "Reel container %s still '%s' after 60 polls — attempting publish",
                 container_id, status_code,
             )
 
@@ -1179,8 +1214,8 @@ class InstagramProvider(BaseProvider):
         })
         pub.raise_for_status()
         post_id = pub.json().get("id", "")
-        return PublishResult(success=True, platform_post_id=post_id,
-                             url=f"https://www.instagram.com/reel/{post_id}/")
+        url = self._fetch_ig_permalink(client, token, post_id)
+        return PublishResult(success=True, platform_post_id=post_id, url=url)
 
     def _publish_story(self, client: httpx.Client, token: str,
                        ig_id: str, media_urls: Optional[list[str]]) -> PublishResult:
@@ -1335,7 +1370,8 @@ class InstagramProvider(BaseProvider):
                 raise PlatformAuthError(f"Instagram token/permission error: {error_body[:300]}") from e
             return []
 
-    def post_comment(self, page_token: str, post_id: str, message: str) -> dict:
+    def post_comment(self, page_token: str = "", post_id: str = "",
+                     message: str = "", **kwargs) -> dict:
         """
         Post a first comment on an IG post immediately after publishing.
 

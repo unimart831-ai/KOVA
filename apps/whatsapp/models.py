@@ -104,6 +104,7 @@ class WhatsAppConversation(models.Model):
         """Open/extend the 24-hour service window (called on inbound message)."""
         self.window_expires_at = timezone.now() + timezone.timedelta(hours=24)
         self.last_message_at = timezone.now()
+        self.save(update_fields=["window_expires_at", "last_message_at"])
 
 
 # ─── MESSAGE ─────────────────────────────────────────────────────────────────
@@ -440,12 +441,19 @@ class StatusContent(models.Model):
         return self.state in (self.StatusState.DRAFT, self.StatusState.READY)
 
     def generate_share_url(self):
-        """Build WhatsApp deep link for one-tap sharing."""
+        """Build a WhatsApp pre-fill link for sharing content.
+
+        WhatsApp has no Status posting API for businesses — the owner must
+        post Status manually. This URL opens the WhatsApp app with the text
+        pre-filled so the owner can paste it into their Status in one tap.
+        The `api.whatsapp.com/send` form works on both mobile and desktop;
+        `wa.me/?text=` opens a new chat instead (wrong behaviour).
+        """
         from urllib.parse import quote
         text = self.text
         if self.media_url:
             text = f"{self.text}\n{self.media_url}"
-        self.share_url = f"https://wa.me/?text={quote(text)}"
+        self.share_url = f"https://api.whatsapp.com/send?text={quote(text)}"
         return self.share_url
 
 

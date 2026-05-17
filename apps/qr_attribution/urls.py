@@ -9,6 +9,7 @@ urlpatterns = [
     path("qr/", views.qr_list, name="list"),
     path("qr/new/", views.qr_create, name="create"),
     path("qr/<uuid:pk>/", views.qr_detail, name="detail"),
+    path("qr/<uuid:pk>/edit/", views.qr_edit, name="edit"),
     path("qr/<uuid:pk>/delete/", views.qr_delete, name="delete"),
     path("qr/<uuid:pk>/print/", views.qr_print_pdf, name="print"),
     # User-side cashier link helper

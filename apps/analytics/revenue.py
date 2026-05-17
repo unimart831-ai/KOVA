@@ -20,7 +20,8 @@ logger = logging.getLogger(__name__)
 
 
 def _get_bookings_queryset(user, cutoff):
-    """Confirmed/completed bookings in the active window."""
+    """Completed bookings in the active window. CONFIRMED excluded — service
+    not yet delivered; CANCELLED bookings should never appear as revenue."""
     try:
         from apps.bookings.models import Booking
     except Exception:
@@ -28,10 +29,7 @@ def _get_bookings_queryset(user, cutoff):
     try:
         return Booking.objects.filter(
             booking_link__user=user,
-            status__in=[
-                Booking.Status.CONFIRMED,
-                Booking.Status.COMPLETED,
-            ],
+            status=Booking.Status.COMPLETED,
             scheduled_at__gte=cutoff,
         )
     except Exception:
@@ -365,6 +363,36 @@ def get_revenue_headline_insight(user, days=7, summary=None):
     }
 
 
+def _revenue_window(user, start, end=None):
+    """Sum all revenue sources (digital + walk-in + booking) for a time window."""
+    from apps.analytics.models import Conversion
+
+    filters = {"user": user, "created_at__gte": start}
+    if end:
+        filters["created_at__lt"] = end
+    digital = Conversion.objects.filter(**filters).aggregate(
+        rev=Sum("revenue")
+    )["rev"] or Decimal("0")
+
+    walkin = _get_walkins_queryset(user, start)
+    if end:
+        try:
+            walkin = walkin.filter(recorded_at__lt=end)
+        except Exception:
+            pass
+    walkin_rev = walkin.aggregate(rev=Sum("revenue"))["rev"] or Decimal("0")
+
+    booking = _get_bookings_queryset(user, start)
+    if end:
+        try:
+            booking = booking.filter(scheduled_at__lt=end)
+        except Exception:
+            pass
+    booking_rev = booking.aggregate(rev=Sum("price_kes"))["rev"] or Decimal("0")
+
+    return digital + Decimal(str(walkin_rev)) + Decimal(str(booking_rev))
+
+
 def get_revenue_stat_card(user):
     """Compact stat block for the Daily Brief home page (W1.4).
 
@@ -382,23 +410,16 @@ def get_revenue_stat_card(user):
 
     `has_data=False` means both windows are zero — the template should hide
     or show an install-Pixel hint instead of a misleading "—" card.
-    """
-    from apps.analytics.models import Conversion
-    from django.db.models import Sum
 
+    Includes digital (Pixel), walk-in, and booking revenue so walk-in-first
+    businesses (salons, restaurants) see real numbers, not KES 0.
+    """
     now = timezone.now()
     last_7_start = now - timedelta(days=7)
     prev_7_start = now - timedelta(days=14)
 
-    current = Conversion.objects.filter(
-        user=user, created_at__gte=last_7_start,
-    ).aggregate(rev=Sum("revenue"))["rev"] or Decimal("0")
-
-    previous = Conversion.objects.filter(
-        user=user,
-        created_at__gte=prev_7_start,
-        created_at__lt=last_7_start,
-    ).aggregate(rev=Sum("revenue"))["rev"] or Decimal("0")
+    current = _revenue_window(user, last_7_start)
+    previous = _revenue_window(user, prev_7_start, last_7_start)
 
     if previous > 0:
         delta_pct = float((current - previous) / previous * 100)
@@ -427,8 +448,10 @@ def get_revenue_brief_data(user, days=7):
     """
     Revenue data for Daily Brief injection.
     Returns a concise dict the LLM can summarize.
+    Includes digital (Pixel), walk-in, and booking revenue.
     """
     from apps.analytics.models import Conversion
+    from decimal import Decimal
 
     cutoff = timezone.now() - timedelta(days=days)
     conversions = Conversion.objects.filter(user=user, created_at__gte=cutoff)
@@ -439,8 +462,19 @@ def get_revenue_brief_data(user, days=7):
         leads=Count("id", filter=Q(conversion_type="lead")),
         clicks=Count("id", filter=Q(conversion_type="click")),
     )
+    digital_rev = Decimal(str(totals["revenue"] or 0))
 
-    # Best performing post this week
+    walkin_rev = _get_walkins_queryset(user, cutoff).aggregate(
+        rev=Sum("revenue")
+    )["rev"] or Decimal("0")
+
+    booking_rev = _get_bookings_queryset(user, cutoff).aggregate(
+        rev=Sum("price_kes")
+    )["rev"] or Decimal("0")
+
+    total_rev = digital_rev + Decimal(str(walkin_rev)) + Decimal(str(booking_rev))
+
+    # Best performing post this week (digital only — walk-ins/bookings have no single post)
     best_post = (
         conversions
         .filter(post__isnull=False, revenue__gt=0)
@@ -452,7 +486,10 @@ def get_revenue_brief_data(user, days=7):
 
     return {
         "period_days": days,
-        "total_revenue": float(totals["revenue"] or 0),
+        "total_revenue": float(total_rev),
+        "digital_revenue": float(digital_rev),
+        "walkin_revenue": float(walkin_rev),
+        "booking_revenue": float(booking_rev),
         "total_sales": totals["sales"] or 0,
         "total_leads": totals["leads"] or 0,
         "total_clicks": totals["clicks"] or 0,

@@ -25,6 +25,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import IntegrityError
 from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -301,19 +302,24 @@ def public_confirm(request, slug):
             "That time isn't available anymore — please pick another."
         )
 
-    booking = Booking.objects.create(
-        booking_link=link,
-        customer_name=customer_name,
-        customer_phone=customer_phone,
-        customer_email=customer_email,
-        service_name=service_name,
-        duration_minutes=duration,
-        price_kes=price,
-        scheduled_at=scheduled_at,
-        status=Booking.Status.CONFIRMED,
-        source_channel=source,
-        confirmed_at=timezone.now(),
-    )
+    try:
+        booking = Booking.objects.create(
+            booking_link=link,
+            customer_name=customer_name,
+            customer_phone=customer_phone,
+            customer_email=customer_email,
+            service_name=service_name,
+            duration_minutes=duration,
+            price_kes=price,
+            scheduled_at=scheduled_at,
+            status=Booking.Status.CONFIRMED,
+            source_channel=source,
+            confirmed_at=timezone.now(),
+        )
+    except IntegrityError:
+        return HttpResponseBadRequest(
+            "That slot was just taken — please pick another time."
+        )
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return JsonResponse({

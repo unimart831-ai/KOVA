@@ -98,8 +98,7 @@ def _try_whatsapp(to: str, message: str) -> bool:
         return True
     except Exception as e:
         logger.info("WhatsApp send unavailable (%s) — would have sent to %s", e, to)
-        # Soft-success in environments where WA isn't wired
-        return True
+        return False
 
 
 def _try_email(to: str, subject: str, message: str) -> bool:
@@ -123,6 +122,8 @@ def _try_email(to: str, subject: str, message: str) -> bool:
 
 def _create_content_seed(req: ReviewRequest):
     """Positive review → ContentSeed the Create Agent can turn into a post."""
+    if req.content_seed_id:
+        return
     try:
         from apps.content.models import ContentSeed
     except Exception:

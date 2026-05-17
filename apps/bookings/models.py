@@ -152,6 +152,7 @@ class Booking(models.Model):
 
     class Meta:
         ordering = ["-scheduled_at"]
+        unique_together = [("booking_link", "scheduled_at")]
         indexes = [
             models.Index(fields=["booking_link", "scheduled_at"]),
             models.Index(fields=["booking_link", "status", "-scheduled_at"]),

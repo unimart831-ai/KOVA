@@ -52,7 +52,7 @@ import httpx
 from django.conf import settings
 
 from apps.platforms.providers.base import (
-    BaseProvider, OAuthResult, PostMetrics, PublishResult,
+    BaseProvider, OAuthResult, PostMetrics, ProfileSnapshot, PublishResult,
 )
 from apps.platforms.providers.registry import register_provider
 
@@ -281,6 +281,13 @@ class TikTokProvider(BaseProvider):
             "disable_stitch": kwargs.get("disable_stitch", False),
             "disable_comment": kwargs.get("disable_comment", False),
         }
+
+        # Scheduled publishing — TikTok requires "scheduled": True +
+        # schedule_time as a Unix timestamp (min 15 min, max 10 days out).
+        schedule_time = kwargs.get("schedule_time")
+        if schedule_time:
+            post_info["scheduled"] = True
+            post_info["schedule_time"] = int(schedule_time)
 
         # Optional fields
         if kwargs.get("video_cover_timestamp_ms") is not None:
@@ -639,11 +646,13 @@ class TikTokProvider(BaseProvider):
                     return PostMetrics()
 
                 v = videos[0]
+                # TikTok view_count = unique viewers = reach, not impressions.
+                # TikTok does not expose an impressions metric via Display API.
                 return PostMetrics(
                     likes=v.get("like_count", 0),
                     comments=v.get("comment_count", 0),
                     shares=v.get("share_count", 0),
-                    impressions=v.get("view_count", 0),
+                    reach=v.get("view_count", 0),
                 )
         except httpx.HTTPStatusError as e:
             logger.error("TikTok metrics fetch failed: %s", e.response.text)
@@ -687,6 +696,60 @@ class TikTokProvider(BaseProvider):
         except Exception as e:
             logger.error("TikTok get_account_insights failed: %s", e)
             return {}
+
+    def audit_profile(self, access_token: str, **kwargs) -> ProfileSnapshot:
+        """Audit a TikTok account's profile completeness.
+
+        Fetches user info and creator info. Creator info also reveals whether
+        the account is in SELF_ONLY mode (unaudited API access) — when it is,
+        surfaces that as a warning in fields_thin so the dashboard can alert
+        the owner that posts are private until TikTok approves the app.
+        """
+        snap = ProfileSnapshot()
+        try:
+            info = self.get_user_info(access_token)
+        except Exception as exc:
+            snap.error = f"TikTok profile fetch failed: {exc}"
+            return snap
+
+        # Creator info for publish settings (privacy options available)
+        creator_info = {}
+        try:
+            with httpx.Client(timeout=15) as client:
+                resp = client.post(
+                    f"{TIKTOK_API_BASE}/post/publish/creator_info/query/",
+                    headers=self._api_headers(access_token),
+                )
+                if resp.status_code == 200:
+                    creator_info = resp.json().get("data", {})
+        except Exception:
+            pass
+
+        field_map = {
+            "display_name": info.get("display_name", "").strip(),
+            "username": info.get("username", "").strip(),
+            "avatar_url": info.get("avatar_url", "").strip(),
+            "follower_count": str(info.get("follower_count", 0)),
+            "bio_description": info.get("bio_description", "").strip(),
+        }
+
+        present = {k: v for k, v in field_map.items() if v and v != "0"}
+        missing = [k for k, v in field_map.items() if not v or v == "0"]
+        thin = []
+
+        # Flag SELF_ONLY limitation as a thin field so UI can warn the owner.
+        privacy_options = creator_info.get("privacy_level_options", [])
+        if privacy_options and all(p == "SELF_ONLY" for p in privacy_options):
+            thin.append("privacy_level")
+            present["privacy_level"] = "SELF_ONLY — posts are private until TikTok audits your app"
+
+        snap.fields_present = present
+        snap.fields_missing = missing
+        snap.fields_thin = thin
+        snap.raw_profile = {**info, "creator_info": creator_info}
+        total = len(field_map) + (1 if thin else 0)
+        snap.completeness_score = int(round(len(present) / total * 100)) if total else 0
+        return snap
 
     def validate_token(self, access_token: str) -> bool:
         """Check token validity with a lightweight user info call."""
