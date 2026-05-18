@@ -67,6 +67,31 @@ def insights(request):
     except Exception:
         plain_insights = []
 
+    # Proof stats — "Kova got you X leads and Y bookings this month"
+    month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    try:
+        from apps.leads.models import Lead
+        leads_this_month = Lead.objects.filter(
+            user=request.user,
+            first_seen_at__gte=month_start,
+        ).count()
+        hot_leads = Lead.objects.filter(
+            user=request.user,
+            temperature="hot",
+        ).count()
+    except Exception:
+        leads_this_month = 0
+        hot_leads = 0
+
+    try:
+        from apps.bookings.models import Booking
+        bookings_this_month = Booking.objects.filter(
+            booking_link__user=request.user,
+            created_at__gte=month_start,
+        ).count()
+    except Exception:
+        bookings_this_month = 0
+
     ctx = {
         "page_title": "Insights & Analytics",
         "totals": totals,
@@ -76,6 +101,9 @@ def insights(request):
         "connected_platforms": connected_platforms,
         "current_platform": platform,
         "plain_insights": plain_insights,
+        "leads_this_month": leads_this_month,
+        "bookings_this_month": bookings_this_month,
+        "hot_leads": hot_leads,
     }
     cache.set(cache_key, ctx, 300)  # 5 min
 

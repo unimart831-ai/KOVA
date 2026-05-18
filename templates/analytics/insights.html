@@ -9,6 +9,38 @@
 {% include "analytics/_performance_tabs.html" %}
 <div class="max-w-6xl mx-auto space-y-8">
 
+  {# ── Proof Banner — "Kova got you X leads and Y bookings this month" ── #}
+  {% if leads_this_month or bookings_this_month %}
+  <div class="rounded-2xl bg-gradient-to-r from-kova-600 to-purple-700 p-5 text-white shadow-lg">
+    <p class="text-xs font-semibold uppercase tracking-wider text-purple-200 mb-1">This month</p>
+    <p class="text-lg font-bold leading-snug">
+      Kova got you
+      {% if leads_this_month %}
+        <span class="text-2xl font-black">{{ leads_this_month }}</span> lead{{ leads_this_month|pluralize }}{% if bookings_this_month %} and{% endif %}
+      {% endif %}
+      {% if bookings_this_month %}
+        <span class="text-2xl font-black">{{ bookings_this_month }}</span> booking{{ bookings_this_month|pluralize }}
+      {% endif %}
+      automatically.
+    </p>
+    {% if hot_leads %}
+    <p class="text-sm text-purple-200 mt-1">{{ hot_leads }} lead{{ hot_leads|pluralize }} ready to buy now.</p>
+    {% endif %}
+    <div class="flex items-center gap-3 mt-3">
+      <a href="{% url 'leads:list' %}"
+         class="text-xs font-semibold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-colors">
+        View leads
+      </a>
+      {% if bookings_this_month %}
+      <a href="{% url 'bookings:list' %}"
+         class="text-xs font-semibold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-colors">
+        View bookings
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
   {# P4.4 — Plain-English insights at the top (sentences > charts) #}
   {% if plain_insights %}
   <div class="card">

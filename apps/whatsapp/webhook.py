@@ -187,6 +187,27 @@ def _process_inbound_message(social_account, msg_data, contacts):
         "contact_name", "window_expires_at", "last_message_at", "status", "updated_at",
     ])
 
+    # Auto-create a Lead for the business owner on first contact
+    if created:
+        try:
+            from apps.leads.models import Lead
+            Lead.objects.get_or_create(
+                user=social_account.user,
+                email=f"wa_{wa_id}@kova.page",
+                defaults={
+                    "name": contact_name,
+                    "phone": wa_id,
+                    "source_type": Lead.Source.SOCIAL_DM,
+                    "source_platform": "whatsapp",
+                    "metadata": {
+                        "wa_id": wa_id,
+                        "conversation_id": str(conversation.pk),
+                    },
+                },
+            )
+        except Exception as e:
+            logger.warning("Failed to auto-create lead from WhatsApp conversation: %s", e)
+
     # Extract message content based on type
     content, media_url, interactive_data = _extract_message_content(msg_data, msg_type)
 
