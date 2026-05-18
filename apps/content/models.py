@@ -132,6 +132,39 @@ class Post(SoftDeleteMixin, models.Model):
         help_text="Tracks whether AI image generation succeeded, failed, or was skipped.",
     )
 
+    # ── Post format — explicit format type for publishing routing ───────────
+    class PostFormat(models.TextChoices):
+        TEXT = "text", "Text"
+        IMAGE = "image", "Image"
+        CAROUSEL = "carousel", "Carousel"
+        STORY = "story", "Story"
+        REEL = "reel", "Reel"
+        VIDEO = "video", "Video"
+
+    post_format = models.CharField(
+        max_length=20, choices=PostFormat.choices, default=PostFormat.TEXT, db_index=True,
+        help_text="The content format — drives which publish API endpoint is called.",
+    )
+
+    # Carousel slides — ordered array of slide data
+    # Structure: [{"heading": str, "body": str, "image_prompt": str, "image_url": str}]
+    carousel_slides = models.JSONField(
+        default=list, blank=True,
+        help_text="Ordered carousel slides. Each: {heading, body, image_prompt, image_url}.",
+    )
+
+    # Aspect ratio — hints image generation and delivery format
+    class AspectRatio(models.TextChoices):
+        SQUARE = "square", "Square (1:1)"
+        PORTRAIT = "portrait", "Portrait (4:5)"
+        LANDSCAPE = "landscape", "Landscape (16:9)"
+        STORY = "story", "Story / Reel (9:16)"
+
+    aspect_ratio = models.CharField(
+        max_length=20, choices=AspectRatio.choices, default=AspectRatio.SQUARE, blank=True,
+        help_text="Aspect ratio for image/video generation. Derived from post_format if not set.",
+    )
+
     # Visual strategy tracking — enables analytics on which visual type performs best
     VISUAL_STRATEGY_CHOICES = [
         ("none", "No visual"),

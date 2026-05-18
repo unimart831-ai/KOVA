@@ -13,11 +13,13 @@ dict ready for Post.objects.create(**draft.to_post_kwargs()).
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
 logger = logging.getLogger(__name__)
+
+_VALID_FORMATS = {"text", "image", "carousel", "story", "reel", "video"}
 
 
 class PostDraft(BaseModel):
@@ -29,6 +31,8 @@ class PostDraft(BaseModel):
     content_text: str = ""
     content_type: str = "original"
     content_intent: str = ""
+    post_format: str = "text"
+    carousel_slides: List[dict] = []
     predicted_score: Optional[float] = None
     reasoning: str = ""
     angle: str = ""
@@ -73,6 +77,23 @@ class PostDraft(BaseModel):
     def _coerce_visual_strategy(cls, v: Any) -> dict:
         return v if isinstance(v, dict) else {}
 
+    @field_validator("carousel_slides", mode="before")
+    @classmethod
+    def _coerce_carousel_slides(cls, v: Any) -> List[dict]:
+        if not v:
+            return []
+        if isinstance(v, list):
+            return [s for s in v if isinstance(s, dict)]
+        return []
+
+    @field_validator("post_format", mode="before")
+    @classmethod
+    def _coerce_post_format(cls, v: Any) -> str:
+        if v is None:
+            return "text"
+        s = str(v).lower().strip()
+        return s if s in _VALID_FORMATS else "text"
+
     @field_validator(
         "content_text", "content_type", "content_intent", "reasoning", "angle",
         "framework_used", "image_prompt", "platform",
@@ -106,9 +127,25 @@ class PostDraft(BaseModel):
     def to_post_kwargs(self) -> dict:
         """Subset of fields ready to pass to Post.objects.create(...)."""
         intent = self.content_intent.lower().strip() if self.content_intent else ""
+
+        # Derive aspect_ratio from post_format
+        format_to_aspect = {
+            "story": "story",
+            "reel": "story",
+            "carousel": "square",
+            "image": "square",
+            "text": "square",
+            "video": "story",
+        }
+        aspect = format_to_aspect.get(self.post_format, "square")
+
         return {
             "content_text": self.content_text,
             "content_intent": intent if intent in self._VALID_INTENTS else "",
+            "post_format": self.post_format,
+            "carousel_slides": self.carousel_slides,
+            "aspect_ratio": aspect,
+            "media_prompt": self.image_prompt,
             "predicted_engagement_score": self.predicted_score,
             "ai_reasoning": self.reasoning,
             "ai_angle": self.angle,

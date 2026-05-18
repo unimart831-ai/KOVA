@@ -658,32 +658,56 @@ Respond with a JSON object. No markdown code fences. Structure:
   "batch_strategy": "One sentence explaining the overall content strategy for this idea.",
   "posts": [
     {{
-      "platform": "twitter",
+      "platform": "instagram",
       "username": "@handle",
-      "content_text": "The full post text, ready to publish. Include line breaks, formatting, hashtags as native to the platform.",
+      "content_text": "The full post caption / text, ready to publish. Include line breaks, emojis, hashtags as native to the platform.",
       "content_type": "original",
-      "format": "single tweet",
+      "post_format": "One of: text | image | carousel | story | reel — the CONTENT FORMAT for this specific post. Choose based on the platform and content type: Instagram feed → image or carousel; Instagram Stories → story; Reels → reel; Facebook feed → text or image; LinkedIn → text or image (carousel for multi-point posts); TikTok → reel.",
+      "carousel_slides": "ONLY when post_format is 'carousel' — an array of slide objects: [{{\\"heading\\": \\"Slide title (max 60 chars)\\", \\"body\\": \\"Slide body text (max 150 chars, punchy)\\", \\"image_prompt\\": \\"Vivid prompt for AI image generation for THIS slide. Describe scene, mood, colors, lighting. Under 150 words. NO text in the image.\\", \\"image_url\\": \\"\\"}}, ...]. For all other formats: empty array [].",
       "framework_used": "Hook → Value → CTA",
       "angle": "Brief description of the specific angle chosen for this platform",
       "reasoning": "Why this angle, framework, and format will perform well here. What engagement pattern it targets.",
       "content_intent": "One of: problem_awareness | solution | proof | offer | authority — what this post is designed to achieve in the customer journey",
       "predicted_score": 72,
-      "image_prompt": "ONLY for platforms that REQUIRE images (Instagram, TikTok, Pinterest): A vivid, specific description for AI image generation that matches the brand's visual identity. Describe: subject, composition, style/mood, colors (use brand colors if provided), and lighting. Make it platform-appropriate (square for Instagram, vertical for TikTok/Pinterest). Keep it under 200 words. NEVER include text/words in the image — text overlays are handled separately. For text-capable platforms (Twitter, LinkedIn, Facebook, Threads, Bluesky, YouTube): leave this as an EMPTY STRING.",
+      "image_prompt": "For post_format 'image': A vivid, specific description for AI image generation. Describe: subject, composition, style/mood, colors (use brand colors if provided), and lighting. Make it platform-appropriate (square for Instagram feed, vertical 9:16 for story/reel). Under 200 words. NEVER include text/words in the image. For post_format 'story' or 'reel': provide a 9:16 vertical image prompt. For post_format 'text' or 'carousel': leave as EMPTY STRING.",
       "visual_strategy": {{
-        "strategy": "One of: ai_photo | quote_card | tip_graphic | stat_highlight | cta_banner | carousel | none. IMPORTANT: For platforms that do NOT require images (Twitter, LinkedIn, Facebook, Threads, Bluesky, YouTube), DEFAULT to 'none' — text posts perform great on these platforms. Only use a visual strategy for these platforms if the content genuinely benefits from it (e.g. a stat_highlight for a data post). For image-required platforms (Instagram, TikTok, Pinterest), always pick an appropriate visual strategy.",
+        "strategy": "One of: ai_photo | quote_card | tip_graphic | stat_highlight | cta_banner | carousel | story_graphic | none. Match to post_format: image→ai_photo/quote_card/etc, carousel→carousel, story→story_graphic, reel→ai_photo, text→none.",
         "text": "For quote_card: the quote text. For tip_graphic: the title.",
         "attribution": "For quote_card: who said it (optional).",
         "tips": ["For tip_graphic: array of tip strings."],
         "stat_number": "For stat_highlight: the big number (e.g. '87%', '10,000+').",
-        "stat_label": "For stat_highlight: what the number means (e.g. 'Customer satisfaction').",
-        "headline": "For cta_banner: the main headline. For carousel: opening slide title.",
-        "subtext": "For cta_banner: supporting text. For carousel: opening slide subtitle.",
-        "cta_text": "For cta_banner: button text. For carousel: closing slide CTA.",
-        "slides": "For carousel: array of objects with 'content' (str), optional 'title' (str), optional 'type' ('content'|'quote'|'stat'|'tip')."
+        "stat_label": "For stat_highlight: what the number means.",
+        "headline": "For cta_banner / story_graphic: the main headline.",
+        "subtext": "For cta_banner / story_graphic: supporting text.",
+        "cta_text": "For cta_banner / story_graphic: button/CTA text."
       }}
     }}
   ]
 }}
+
+POST FORMAT GUIDE — choose the best format for each platform:
+- **Instagram feed post**: use post_format="image" (single striking image) or post_format="carousel" (3-7 slides for educational/list content — carousels get 3× more reach on Instagram)
+- **Instagram Story**: use post_format="story" (vertical 9:16, short punchy text, high-energy, casual tone)
+- **Instagram Reel**: use post_format="reel" (vertical 9:16, hook in first 2 seconds, trend-aware)
+- **Facebook post**: use post_format="text" (text-only performs well) or post_format="image" if visual adds value
+- **LinkedIn post**: use post_format="text" for thought leadership; post_format="carousel" for step-by-step guides or frameworks (LinkedIn carousels = document posts, great for authority building)
+- **TikTok**: use post_format="reel" (always video-first, vertical 9:16)
+- **WhatsApp**: use post_format="text" or post_format="image"
+
+CAROUSEL SLIDE GUIDE (when post_format="carousel"):
+- 3-7 slides is optimal (Instagram penalises >10 slides)
+- Slide 1: HOOK — bold claim or question that stops the scroll. The cover image matters most.
+- Slides 2-N: VALUE — one idea per slide. Short. Punchy. Each slide should make people swipe.
+- Last slide: CTA — "Save this", "Follow for more", or a clear next step.
+- Each slide MUST have: heading (title), body (body text), image_prompt (for AI image)
+- image_prompt per slide: describe a visual that reinforces THAT slide's specific message
+
+STORY FORMAT GUIDE (when post_format="story"):
+- Very short text (max 10 words as a headline, 1-2 sentences body)
+- High energy, casual, conversational — Stories disappear in 24h so urgency is native
+- Emojis are essential — they replace facial expressions in text
+- Always include a CTA sticker hint in the content_text (e.g., "Tap the link in bio 👆")
+- image_prompt: describe a vibrant, eye-catching 9:16 vertical scene
 
 IMPORTANT:
 - Generate ONE post per platform
@@ -1099,6 +1123,7 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                     platform, len(content_text), repr(content_text[:100]),
                 )
 
+            _kwargs = draft.to_post_kwargs()
             post = Post.objects.create(
                 user=user,
                 seed=seed,
@@ -1107,7 +1132,10 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                 platform=account.platform,
                 content_text=content_text,
                 content_type=draft.content_type or "original",
-                content_intent=draft.to_post_kwargs().get("content_intent", ""),
+                content_intent=_kwargs.get("content_intent", ""),
+                post_format=_kwargs.get("post_format", "text"),
+                carousel_slides=_kwargs.get("carousel_slides", []),
+                aspect_ratio=_kwargs.get("aspect_ratio", "square"),
                 status=initial_status,
                 generated_by_agent="create",
                 predicted_engagement_score=draft.predicted_score,
@@ -1286,17 +1314,23 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                     ).count()
                     if images_this_month < monthly_limit:
                         # Dispatch image generation as async Celery task
-                        # so the user sees posts immediately without waiting
-                        from apps.content.tasks import async_generate_image
+                        # so the user sees posts immediately without waiting.
+                        # Route by post_format: story/reel use generate_post_images
+                        # (handles 9:16 aspect ratio); image format uses async_generate_image.
                         post.media_status = Post.MediaStatus.PENDING
                         post.media_prompt = image_prompt
                         post.save(update_fields=["media_status", "media_prompt", "updated_at"])
                         try:
-                            async_generate_image.delay(
-                                str(post.id),
-                                image_prompt,
-                                visual_strategy_data if visual_strategy_data.get("strategy") else None,
-                            )
+                            if post.post_format in ("story", "reel"):
+                                from apps.content.tasks import generate_post_images
+                                generate_post_images.delay(str(post.id))
+                            else:
+                                from apps.content.tasks import async_generate_image
+                                async_generate_image.delay(
+                                    str(post.id),
+                                    image_prompt,
+                                    visual_strategy_data if visual_strategy_data.get("strategy") else None,
+                                )
                         except Exception as img_exc:
                             logger.warning("Failed to queue image gen for post %s: %s", post.id, img_exc)
                     else:
@@ -1624,6 +1658,7 @@ Respond with a JSON object. No markdown code fences.
                 else Post.Status.PENDING_APPROVAL
             )
             draft = PostDraft.from_llm_dict(pd)
+            _rp_kwargs = draft.to_post_kwargs()
             post = Post.objects.create(
                 user=user,
                 seed=source_post.seed,
@@ -1632,7 +1667,10 @@ Respond with a JSON object. No markdown code fences.
                 platform=account.platform,
                 content_text=draft.content_text,
                 content_type="repurposed",
-                content_intent=draft.to_post_kwargs().get("content_intent", ""),
+                content_intent=_rp_kwargs.get("content_intent", ""),
+                post_format=_rp_kwargs.get("post_format", "text"),
+                carousel_slides=_rp_kwargs.get("carousel_slides", []),
+                aspect_ratio=_rp_kwargs.get("aspect_ratio", "square"),
                 status=_status,
                 generated_by_agent="create",
                 predicted_engagement_score=draft.predicted_score,
@@ -1794,6 +1832,7 @@ Generate exactly {n} variants labeled {', '.join(VARIANT_LABELS[:n])}.
         for i, vd in enumerate(variant_dicts[:n]):
             label = vd.get("label", VARIANT_LABELS[i] if i < len(VARIANT_LABELS) else str(i + 1))
             draft = PostDraft.from_llm_dict(vd)
+            _ab_kwargs = draft.to_post_kwargs()
             post = Post.objects.create(
                 user=user,
                 seed=seed,
@@ -1804,7 +1843,10 @@ Generate exactly {n} variants labeled {', '.join(VARIANT_LABELS[:n])}.
                 variant_label=label,
                 content_text=draft.content_text,
                 content_type="original",
-                content_intent=draft.to_post_kwargs().get("content_intent", ""),
+                content_intent=_ab_kwargs.get("content_intent", ""),
+                post_format=_ab_kwargs.get("post_format", "text"),
+                carousel_slides=_ab_kwargs.get("carousel_slides", []),
+                aspect_ratio=_ab_kwargs.get("aspect_ratio", "square"),
                 status=initial_status,
                 generated_by_agent="create",
                 predicted_engagement_score=draft.predicted_score,

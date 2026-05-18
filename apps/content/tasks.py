@@ -343,6 +343,120 @@ def retry_image_generation(post_id: str):
         return {"error": str(exc)}
 
 
+@shared_task(name="content.generate_post_images", soft_time_limit=180, time_limit=240)
+def generate_post_images(post_id: str):
+    """
+    Generate AI images for a post based on its post_format.
+
+    Routes:
+    - text:     no-op (text posts don't need images)
+    - image:    generate one image from media_prompt, square or portrait
+    - carousel: generate one image per slide that has an image_prompt
+    - story:    generate one image at 9:16 aspect ratio
+    - reel:     generate one image at 9:16 aspect ratio (used as thumbnail)
+
+    After generation, media_status is set to GENERATED (or FAILED).
+    Sets media_urls for image/story/reel, and updates carousel_slides
+    in-place with each slide's image_url.
+    """
+    from apps.content.models import Post
+    from apps.content.image_gen import generate_image, generate_carousel_images
+
+    try:
+        post = Post.objects.select_related("user").get(pk=post_id)
+    except Post.DoesNotExist:
+        logger.warning("generate_post_images: post %s not found", post_id)
+        return
+
+    fmt = post.post_format or Post.PostFormat.TEXT
+    if fmt == Post.PostFormat.TEXT:
+        return  # Text posts don't need images
+
+    post.media_status = Post.MediaStatus.PENDING
+    post.save(update_fields=["media_status", "updated_at"])
+
+    try:
+        if fmt == Post.PostFormat.CAROUSEL:
+            slides = list(post.carousel_slides or [])
+            if not slides:
+                logger.info("generate_post_images: no slides on carousel post %s", post_id)
+                post.media_status = Post.MediaStatus.FAILED
+                post.save(update_fields=["media_status", "updated_at"])
+                return
+
+            aspect = post.aspect_ratio or Post.AspectRatio.SQUARE
+            slides = generate_carousel_images(slides, aspect)
+            image_urls = [s["image_url"] for s in slides if s.get("image_url")]
+
+            post.carousel_slides = slides
+            post.media_urls = image_urls
+            post.media_status = (
+                Post.MediaStatus.GENERATED if image_urls else Post.MediaStatus.FAILED
+            )
+            # Sync visual_strategy so existing carousel routing in publish_post still works
+            post.visual_strategy = "carousel"
+            post.save(update_fields=[
+                "carousel_slides", "media_urls", "media_status", "visual_strategy", "updated_at",
+            ])
+            logger.info(
+                "generate_post_images: carousel post %s — %d/%d slides have images",
+                post_id, len(image_urls), len(slides),
+            )
+
+        elif fmt in (Post.PostFormat.STORY, Post.PostFormat.REEL):
+            prompt = (post.media_prompt or "").strip()
+            if not prompt:
+                logger.info("generate_post_images: no prompt on story/reel post %s", post_id)
+                post.media_status = Post.MediaStatus.FAILED
+                post.save(update_fields=["media_status", "updated_at"])
+                return
+
+            url = generate_image(prompt, aspect_ratio="story")
+            if url:
+                post.media_urls = [url]
+                post.aspect_ratio = Post.AspectRatio.STORY
+                post.media_status = Post.MediaStatus.GENERATED
+                post.save(update_fields=[
+                    "media_urls", "aspect_ratio", "media_status", "updated_at",
+                ])
+                logger.info("generate_post_images: story/reel post %s — image generated", post_id)
+            else:
+                post.media_status = Post.MediaStatus.FAILED
+                post.save(update_fields=["media_status", "updated_at"])
+                logger.warning("generate_post_images: image gen failed for story/reel post %s", post_id)
+
+        else:  # image format
+            prompt = (post.media_prompt or "").strip()
+            if not prompt:
+                logger.info("generate_post_images: no prompt on image post %s", post_id)
+                post.media_status = Post.MediaStatus.FAILED
+                post.save(update_fields=["media_status", "updated_at"])
+                return
+
+            aspect = post.aspect_ratio or Post.AspectRatio.SQUARE
+            url = generate_image(prompt, aspect_ratio=aspect)
+            if url:
+                post.media_urls = [url]
+                post.media_status = Post.MediaStatus.GENERATED
+                post.save(update_fields=["media_urls", "media_status", "updated_at"])
+                logger.info("generate_post_images: image post %s — image generated", post_id)
+            else:
+                post.media_status = Post.MediaStatus.FAILED
+                post.save(update_fields=["media_status", "updated_at"])
+                logger.warning("generate_post_images: image gen failed for image post %s", post_id)
+
+    except Exception as exc:
+        logger.exception("generate_post_images failed for post %s", post_id)
+        try:
+            post.media_status = Post.MediaStatus.FAILED
+            post.save(update_fields=["media_status", "updated_at"])
+        except Exception:
+            pass
+        return {"error": str(exc)}
+
+    return {"post_id": post_id, "status": post.media_status}
+
+
 @shared_task(
     name="content.publish_post",
     bind=True,
@@ -536,10 +650,14 @@ def publish_post(self, post_id: str):
         import mimetypes
         from django.core.files.storage import default_storage
 
-        # Carousel posts store ordered slide URLs in post.media_urls AND have matching
-        # MediaAttachment files. Adding attachment URLs on top would reverse the order
-        # and create duplicates. For carousels, trust post.media_urls as the URL source.
-        is_carousel_post = getattr(post, "visual_strategy", "") == "carousel"
+        # Determine post format for media routing.
+        # post_format is the authoritative source; fall back to visual_strategy for
+        # older posts created before post_format existed.
+        _post_format = getattr(post, "post_format", "") or ""
+        _visual_strategy = getattr(post, "visual_strategy", "") or ""
+        is_carousel_post = _post_format == "carousel" or _visual_strategy == "carousel"
+        is_story_post = _post_format == "story"
+        is_reel_post = _post_format == "reel"
 
         media_files = []   # [(filename, bytes, content_type), ...]
         media_urls_list = list(post.media_urls or [])  # AI-generated / carousel slides (already public)
@@ -585,11 +703,20 @@ def publish_post(self, post_id: str):
             or None
         )
 
-        # Instagram carousel: pass media_type kwarg so the provider uses the
-        # container carousel API instead of defaulting to single-image.
-        if account.platform == "instagram" and absolute_media_urls:
-            if is_carousel_post or len(absolute_media_urls) > 1:
+        # Route Instagram publish to the correct API endpoint based on post_format.
+        # The Instagram provider dispatches to _publish_carousel / _publish_story /
+        # _publish_reels / _publish_single_image based on the media_type kwarg.
+        if account.platform == "instagram":
+            if is_story_post:
+                publish_kwargs["media_type"] = "STORIES"
+            elif is_reel_post:
+                publish_kwargs["media_type"] = "REELS"
+            elif absolute_media_urls and (is_carousel_post or len(absolute_media_urls) > 1):
                 publish_kwargs["media_type"] = "CAROUSEL"
+
+        # Facebook stories: pass media_type so provider uses the story endpoint.
+        if account.platform == "facebook" and is_story_post:
+            publish_kwargs["media_type"] = "STORIES"
 
         # Safety net: detect and fix encrypted tokens not decrypted by ORM
         token = account.access_token
