@@ -26,19 +26,39 @@
       {% if post.generated_by_agent %}
         <span class="text-[9px] bg-kova-50 text-kova-600 dark:bg-kova-950 dark:text-kova-300 px-1.5 py-0.5 rounded-md font-semibold tracking-wide">AI</span>
       {% endif %}
+      {# ── Post format badge — Carousel / Story / Reel / Image ── #}
+      {% if post.post_format == 'carousel' %}
+        <span class="inline-flex items-center gap-0.5 text-[9px] bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 px-1.5 py-0.5 rounded-md font-semibold">
+          <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          Carousel{% if post.carousel_slides %} · {{ post.carousel_slides|length }}{% endif %}
+        </span>
+      {% elif post.post_format == 'story' %}
+        <span class="inline-flex items-center gap-0.5 text-[9px] bg-pink-50 text-pink-700 dark:bg-pink-950/60 dark:text-pink-300 px-1.5 py-0.5 rounded-md font-semibold">
+          <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
+          Story
+        </span>
+      {% elif post.post_format == 'reel' %}
+        <span class="inline-flex items-center gap-0.5 text-[9px] bg-orange-50 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300 px-1.5 py-0.5 rounded-md font-semibold">
+          <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Reel
+        </span>
+      {% elif post.post_format == 'image' or post.post_format == 'video' %}
+        <span class="text-[9px] bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 px-1.5 py-0.5 rounded-md font-semibold">{{ post.post_format|title }}</span>
+      {% elif post.visual_strategy and post.visual_strategy != 'none' and post.post_format == 'text' %}
+        {# Fallback: show visual_strategy for text posts with a visual element #}
+        <span class="text-[9px] bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400 px-1.5 py-0.5 rounded-md font-medium">
+          {% if post.visual_strategy == 'carousel' %}Carousel{% elif post.visual_strategy == 'quote_card' %}Quote{% elif post.visual_strategy == 'tip_graphic' %}Tips{% elif post.visual_strategy == 'stat_highlight' %}Stat{% elif post.visual_strategy == 'cta_banner' %}CTA{% elif post.visual_strategy == 'ai_photo' %}AI Photo{% elif post.visual_strategy == 'story_graphic' %}Story{% else %}{{ post.visual_strategy }}{% endif %}
+        </span>
+      {% endif %}
+      {# ── Media status badge ── #}
       {% if post.media_status == 'generated' %}
         <span class="text-[9px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 px-1.5 py-0.5 rounded-md font-medium">AI image</span>
       {% elif post.media_status == 'uploaded' %}
         <span class="text-[9px] bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 px-1.5 py-0.5 rounded-md font-medium">Uploaded</span>
       {% elif post.media_status == 'pending' %}
-        <span class="text-[9px] bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400 px-1.5 py-0.5 rounded-md font-medium">Generating…</span>
+        <span class="text-[9px] bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400 px-1.5 py-0.5 rounded-md font-medium animate-pulse">Generating…</span>
       {% elif post.media_status == 'failed' %}
         <span class="text-[9px] bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400 px-1.5 py-0.5 rounded-md font-medium">Image failed</span>
-      {% endif %}
-      {% if post.visual_strategy and post.visual_strategy != 'none' %}
-        <span class="text-[9px] bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400 px-1.5 py-0.5 rounded-md font-medium">
-          {% if post.visual_strategy == 'carousel' %}Carousel{% elif post.visual_strategy == 'quote_card' %}Quote{% elif post.visual_strategy == 'tip_graphic' %}Tips{% elif post.visual_strategy == 'stat_highlight' %}Stat{% elif post.visual_strategy == 'cta_banner' %}CTA{% elif post.visual_strategy == 'ai_photo' %}AI Photo{% elif post.visual_strategy == 'story_graphic' %}Story{% else %}{{ post.visual_strategy }}{% endif %}
-        </span>
       {% endif %}
     </div>
   </div>

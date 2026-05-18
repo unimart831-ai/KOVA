@@ -19,8 +19,8 @@
       <!-- Post card -->
       <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
         <!-- Status banner -->
-        <div class="px-5 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-          <div class="flex items-center gap-3">
+        <div class="px-5 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3 flex-wrap">
+          <div class="flex items-center gap-2 flex-wrap">
             {% if post.social_account %}
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ post.social_account.get_platform_display }} &middot; @{{ post.social_account.username }}
@@ -32,6 +32,22 @@
                 &middot; @{{ post.social_account.username }}
               {% endif %}
             </span>
+            {% endif %}
+            {# Post format pill #}
+            {% if post.post_format == 'carousel' %}
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                Carousel{% if post.carousel_slides %} · {{ post.carousel_slides|length }} slides{% endif %}
+              </span>
+            {% elif post.post_format == 'story' %}
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-pink-100 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300">Story · 9:16</span>
+            {% elif post.post_format == 'reel' %}
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Reel · 9:16
+              </span>
+            {% elif post.post_format == 'image' %}
+              <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">Image</span>
             {% endif %}
           </div>
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
@@ -77,8 +93,85 @@
         </div>
         {% endif %}
 
-        <!-- Media -->
-        {% if post.attachments.exists %}
+        <!-- Media — carousel / story+reel / single image -->
+
+        {# ── Carousel: full slide viewer ── #}
+        {% if post.post_format == 'carousel' and post.carousel_slides %}
+        <div class="px-5 pb-4">
+          <p class="text-[10px] font-semibold text-purple-500 dark:text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            Carousel Slides ({{ post.carousel_slides|length }})
+          </p>
+          <div class="space-y-3">
+            {% for slide in post.carousel_slides %}
+            <div class="flex gap-3 p-3 rounded-xl border border-purple-100 dark:border-purple-900/40 bg-purple-50/30 dark:bg-purple-950/20">
+              {# Slide image #}
+              <div class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-purple-100 dark:bg-purple-900/40">
+                {% if slide.image_url %}
+                  <img src="{{ slide.image_url }}" alt="Slide {{ forloop.counter }}" loading="lazy"
+                       class="w-full h-full object-cover"
+                       onerror="this.parentElement.innerHTML='<div class=\'w-full h-full flex items-center justify-center text-purple-300\'><svg class=\'w-5 h-5\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\'/></svg></div>'">
+                {% elif post.media_status == 'pending' %}
+                  <div class="w-full h-full flex items-center justify-center">
+                    <svg class="w-4 h-4 text-purple-300 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                  </div>
+                {% else %}
+                  <div class="w-full h-full flex items-center justify-center text-purple-300 dark:text-purple-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  </div>
+                {% endif %}
+              </div>
+              {# Slide text #}
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-0.5">
+                  <span class="text-[9px] font-bold text-purple-400 dark:text-purple-500 bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 rounded-full">{{ forloop.counter }}</span>
+                  {% if slide.heading %}
+                    <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{{ slide.heading }}</p>
+                  {% endif %}
+                </div>
+                {% if slide.body %}
+                  <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-2">{{ slide.body }}</p>
+                {% endif %}
+                {% if slide.image_prompt and not slide.image_url %}
+                  <p class="text-[10px] text-purple-400 dark:text-purple-500 italic mt-0.5 line-clamp-1" title="{{ slide.image_prompt }}">Prompt: {{ slide.image_prompt|truncatechars:60 }}</p>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        {# ── Story / Reel: 9:16 viewer ── #}
+        {% elif post.post_format == 'story' or post.post_format == 'reel' %}
+        {% if post.media_urls or post.attachments.exists %}
+        <div class="px-5 pb-4 flex justify-center">
+          <div class="relative w-40 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-md" style="aspect-ratio:9/16">
+            {% if post.media_urls %}
+              <img src="{{ post.media_urls.0 }}" alt="{{ post.post_format|title }}" loading="lazy"
+                   class="w-full h-full object-cover bg-gray-100 dark:bg-gray-800">
+            {% elif post.attachments.exists %}
+              <img src="{{ post.attachments.first.file.url }}" alt="{{ post.post_format|title }}" loading="lazy"
+                   class="w-full h-full object-cover bg-gray-100 dark:bg-gray-800">
+            {% endif %}
+            <div class="absolute top-2 left-2 right-2 flex justify-between items-center">
+              <span class="text-[8px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded-full">
+                {% if post.post_format == 'reel' %}REEL{% else %}STORY{% endif %}
+              </span>
+              <span class="text-[8px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded-full">9:16</span>
+            </div>
+          </div>
+        </div>
+        {% elif post.media_status == 'pending' %}
+        <div class="px-5 pb-4">
+          <div class="flex items-center justify-center gap-2 px-4 py-5 rounded-xl border border-dashed border-pink-200 dark:border-pink-800 bg-pink-50/30 dark:bg-pink-950/20">
+            <svg class="w-4 h-4 text-pink-400 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            <span class="text-sm text-pink-500 dark:text-pink-400 font-medium">Generating {{ post.post_format }} image (9:16)…</span>
+          </div>
+        </div>
+        {% endif %}
+
+        {# ── Default: attachments or single image ── #}
+        {% elif post.attachments.exists %}
         <div class="px-5 pb-4">
           <div class="grid grid-cols-2 gap-2 rounded-lg overflow-hidden">
             {% for attachment in post.attachments.all %}
@@ -106,6 +199,12 @@
         <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
           <div class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
             <span>Created {{ post.created_at|timesince }} ago</span>
+            {% if post.post_format and post.post_format != 'text' %}
+            <span class="font-medium text-gray-600 dark:text-gray-300">{{ post.get_post_format_display }}</span>
+            {% endif %}
+            {% if post.aspect_ratio and post.aspect_ratio != 'square' %}
+            <span>{{ post.get_aspect_ratio_display }}</span>
+            {% endif %}
             {% if post.scheduled_at %}
             <span>Scheduled: {{ post.scheduled_at|date:"M d, Y g:i A" }}</span>
             {% endif %}

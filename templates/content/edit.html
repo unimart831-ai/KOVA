@@ -11,10 +11,26 @@
   {# Post info header #}
   <div class="flex items-center flex-wrap gap-2">
     {% if post.social_account %}
-      <span class="badge {% if post.social_account.platform == 'twitter' %}bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200{% elif post.social_account.platform == 'linkedin' %}bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200{% elif post.social_account.platform == 'instagram' %}bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-200{% elif post.social_account.platform == 'facebook' %}bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200{% elif post.social_account.platform == 'youtube' %}bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200{% elif post.social_account.platform == 'pinterest' %}bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200{% elif post.social_account.platform == 'threads' %}bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200{% elif post.social_account.platform == 'bluesky' %}bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200{% elif post.social_account.platform == 'whatsapp' %}bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200{% else %}bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200{% endif %}">
+      <span class="badge {% if post.social_account.platform == 'instagram' %}bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-200{% elif post.social_account.platform == 'facebook' %}bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200{% elif post.social_account.platform == 'linkedin' %}bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200{% elif post.social_account.platform == 'tiktok' %}bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200{% elif post.social_account.platform == 'whatsapp' %}bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200{% else %}bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200{% endif %}">
         {{ post.social_account.get_platform_display }}
       </span>
       <span class="text-xs text-gray-500 dark:text-gray-400">@{{ post.social_account.username }}</span>
+    {% endif %}
+    {# Format badge #}
+    {% if post.post_format == 'carousel' %}
+      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        Carousel
+      </span>
+    {% elif post.post_format == 'story' %}
+      <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-pink-100 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300">Story · 9:16</span>
+    {% elif post.post_format == 'reel' %}
+      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Reel · 9:16
+      </span>
+    {% elif post.post_format == 'image' %}
+      <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">Image</span>
     {% endif %}
     {% if post.predicted_engagement_score %}
       <span class="text-xs font-medium {% if post.predicted_engagement_score >= 70 %}text-green-600{% elif post.predicted_engagement_score >= 40 %}text-yellow-600{% else %}text-gray-500{% endif %}">
@@ -147,12 +163,12 @@
     </div>
   </div>
 
-  {# Media uploads #}
+  {# Media card — format-aware #}
   <div class="card">
     <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
       <h3 class="font-semibold text-gray-900 dark:text-white">Media</h3>
       {% if post.media_status and post.media_status != 'none' %}
-        <span class="text-[10px] font-medium px-2 py-0.5 rounded-md {% if post.media_status == 'generated' %}bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400{% elif post.media_status == 'uploaded' %}bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400{% elif post.media_status == 'failed' %}bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400{% elif post.media_status == 'pending' %}bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400{% endif %}">
+        <span class="text-[10px] font-medium px-2 py-0.5 rounded-md {% if post.media_status == 'generated' %}bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400{% elif post.media_status == 'uploaded' %}bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400{% elif post.media_status == 'failed' %}bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400{% elif post.media_status == 'pending' %}bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400 animate-pulse{% endif %}">
           {% if post.media_status == 'generated' %}AI-generated{% elif post.media_status == 'uploaded' %}Uploaded{% elif post.media_status == 'failed' %}Generation failed{% elif post.media_status == 'pending' %}Generating…{% endif %}
         </span>
       {% endif %}
@@ -177,40 +193,222 @@
         </div>
       </div>
       {% endif %}
-      {# AI-generated images from media_urls #}
-      {% if post.media_urls and not post.attachments.exists %}
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-        {% for url in post.media_urls %}
-        <div class="relative group">
-          <img src="{{ url }}" alt="AI-generated image" loading="lazy"
-               class="w-full aspect-square object-cover rounded-lg bg-gray-100 dark:bg-gray-800">
-          <div class="absolute inset-x-0 bottom-0 bg-black/50 text-white text-[10px] p-1 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-            AI generated
-          </div>
+
+      {% if post.post_format == 'story' or post.post_format == 'reel' %}
+        {# 9:16 frame preview #}
+        <div class="flex justify-center">
+          {% if post.media_urls %}
+            <div class="relative w-32 rounded-xl overflow-hidden shadow-lg" style="aspect-ratio:9/16">
+              <img src="{{ post.media_urls.0 }}" alt="{% if post.post_format == 'reel' %}Reel{% else %}Story{% endif %} image"
+                   class="w-full h-full object-cover">
+              <div class="absolute top-2 left-2 flex flex-col gap-1">
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-black/60 text-white uppercase tracking-wide">
+                  {% if post.post_format == 'reel' %}Reel{% else %}Story{% endif %}
+                </span>
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-black/60 text-white">9:16</span>
+              </div>
+            </div>
+          {% elif post.media_status == 'pending' %}
+            <div class="relative w-32 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center shadow-inner" style="aspect-ratio:9/16">
+              <div class="text-center">
+                <div class="w-8 h-8 border-2 border-pink-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                <p class="text-[10px] text-gray-400">Generating…</p>
+              </div>
+            </div>
+          {% else %}
+            <div class="relative w-32 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center" style="aspect-ratio:9/16">
+              <div class="text-center px-2">
+                <svg class="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <p class="text-[9px] text-gray-400">No image yet</p>
+              </div>
+            </div>
+          {% endif %}
         </div>
-        {% endfor %}
-      </div>
+        {% if post.media_prompt %}
+        <p class="mt-3 text-xs text-gray-400 text-center italic truncate">"{{ post.media_prompt }}"</p>
+        {% endif %}
+
+      {% elif post.post_format == 'carousel' %}
+        {# Slide strip preview — full editor is below in the Carousel Slides card #}
+        {% if post.carousel_slides %}
+          <div class="flex gap-2 overflow-x-auto pb-1">
+            {% for slide in post.carousel_slides %}
+            <div class="shrink-0 w-20 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+              {% if slide.image_url %}
+                <img src="{{ slide.image_url }}" alt="Slide {{ forloop.counter }}" class="w-full h-20 object-cover">
+              {% else %}
+                <div class="w-full h-20 bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                  <span class="text-xs text-gray-400">{{ forloop.counter }}</span>
+                </div>
+              {% endif %}
+              <div class="px-1.5 py-1 bg-white dark:bg-gray-900">
+                <p class="text-[9px] font-medium text-gray-700 dark:text-gray-300 truncate">{{ slide.heading|default:"—" }}</p>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <p class="mt-2 text-[10px] text-gray-400">Edit slide content in the Carousel Slides section below ↓</p>
+        {% else %}
+          <p class="text-sm text-gray-400 text-center py-4">No slides generated yet.</p>
+        {% endif %}
+
+      {% else %}
+        {# Default: AI-generated images or uploaded attachments #}
+        {% if post.media_urls and not post.attachments.exists %}
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+          {% for url in post.media_urls %}
+          <div class="relative group">
+            <img src="{{ url }}" alt="AI-generated image" loading="lazy"
+                 class="w-full aspect-square object-cover rounded-lg bg-gray-100 dark:bg-gray-800">
+            <div class="absolute inset-x-0 bottom-0 bg-black/50 text-white text-[10px] p-1 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+              <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              AI generated
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div id="media-list" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+          {% for attachment in post.attachments.all %}
+            {% include "content/_media_item.html" with attachment=attachment %}
+          {% endfor %}
+        </div>
+
+        <form hx-post="{% url 'content:upload_media' post.id %}"
+              hx-target="#media-list"
+              hx-swap="beforeend"
+              hx-encoding="multipart/form-data"
+              class="flex items-center space-x-3">
+          {% csrf_token %}
+          <input type="file" name="file" accept="image/*" required
+                 class="text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
+          <input type="text" name="alt_text" placeholder="Alt text (optional)" class="input text-sm flex-1">
+          <button type="submit" class="btn-secondary btn-sm">Upload</button>
+        </form>
       {% endif %}
-
-      <div id="media-list" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-        {% for attachment in post.attachments.all %}
-          {% include "content/_media_item.html" with attachment=attachment %}
-        {% endfor %}
-      </div>
-
-      <form hx-post="{% url 'content:upload_media' post.id %}"
-            hx-target="#media-list"
-            hx-swap="beforeend"
-            hx-encoding="multipart/form-data"
-            class="flex items-center space-x-3">
-        {% csrf_token %}
-        <input type="file" name="file" accept="image/*" required
-               class="text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
-        <input type="text" name="alt_text" placeholder="Alt text (optional)" class="input text-sm flex-1">
-        <button type="submit" class="btn-secondary btn-sm">Upload</button>
-      </form>
     </div>
   </div>
+
+  {# Carousel Slides Editor — only for carousel posts #}
+  {% if post.post_format == 'carousel' %}
+  {{ post.carousel_slides|json_script:"carousel-slides-data" }}
+  <div class="card" x-data="carouselSlidesEditor()">
+    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+      <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+        <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        Carousel Slides
+        <span class="text-xs font-normal text-gray-400 dark:text-gray-500" x-text="`(${slides.length} slides)`"></span>
+      </h3>
+      <div class="flex items-center gap-3">
+        <span x-show="saved" x-cloak
+              class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">✓ Saved</span>
+        <button type="button" @click="saveSlides()" :disabled="saving"
+                class="btn-primary btn-sm"
+                x-text="saving ? 'Saving…' : 'Save Slides'"></button>
+      </div>
+    </div>
+    <div class="card-body space-y-4">
+
+      <template x-for="(slide, i) in slides" :key="i">
+        <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          {# Slide header #}
+          <div class="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-800/60">
+            <span class="w-6 h-6 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 text-xs font-bold flex items-center justify-center shrink-0"
+                  x-text="i + 1"></span>
+            <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Slide</span>
+            <span class="ml-auto text-[10px] text-gray-400 dark:text-gray-500 truncate max-w-32" x-text="slide.heading || '(no heading)'"></span>
+          </div>
+          {# Slide body #}
+          <div class="p-4 space-y-3">
+            {# Thumbnail #}
+            <template x-if="slide.image_url">
+              <div class="flex gap-3 items-start">
+                <img :src="slide.image_url" class="w-16 h-16 object-cover rounded-lg shrink-0 border border-gray-200 dark:border-gray-700" alt="">
+                <div class="min-w-0">
+                  <p class="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mb-0.5 flex items-center gap-1">
+                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    AI-generated
+                  </p>
+                  <p class="text-[10px] text-gray-400 break-all line-clamp-2" x-text="slide.image_url"></p>
+                </div>
+              </div>
+            </template>
+            <template x-if="!slide.image_url">
+              <div class="flex items-center gap-2">
+                <div class="w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                  <svg class="w-5 h-5 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                </div>
+                <p class="text-xs text-gray-400">Image not yet generated</p>
+              </div>
+            </template>
+            {# Heading #}
+            <div>
+              <label class="label">Heading</label>
+              <input type="text" x-model="slide.heading" class="input"
+                     placeholder="Slide headline…" maxlength="200">
+            </div>
+            {# Body #}
+            <div>
+              <label class="label">Body</label>
+              <textarea x-model="slide.body" class="input" rows="3"
+                        placeholder="Slide body text…"></textarea>
+            </div>
+            {# Image prompt #}
+            <div>
+              <label class="label">
+                Image Prompt
+                <span class="text-[10px] text-gray-400 font-normal ml-1">(for AI generation)</span>
+              </label>
+              <input type="text" x-model="slide.image_prompt" class="input"
+                     placeholder="Describe the visual for this slide…" maxlength="500">
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <template x-if="slides.length === 0">
+        <p class="text-sm text-gray-400 text-center py-8">No slides yet. Regenerate this post to create carousel slides.</p>
+      </template>
+
+    </div>
+  </div>
+
+  <script>
+  function carouselSlidesEditor() {
+    const raw = document.getElementById('carousel-slides-data');
+    const initial = raw ? JSON.parse(raw.textContent) : [];
+    return {
+      slides: Array.isArray(initial) ? initial : [],
+      saving: false,
+      saved: false,
+      async saveSlides() {
+        this.saving = true;
+        this.saved = false;
+        try {
+          const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+          const csrf = csrfEl ? csrfEl.value : '';
+          const resp = await fetch('{% url "content:update_slides" post.id %}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-CSRFToken': csrf,
+              'HX-Request': 'true',
+            },
+            body: 'carousel_slides_json=' + encodeURIComponent(JSON.stringify(this.slides)),
+          });
+          if (resp.ok) {
+            this.saved = true;
+            setTimeout(() => { this.saved = false; }, 3000);
+          }
+        } finally {
+          this.saving = false;
+        }
+      },
+    };
+  }
+  </script>
+  {% endif %}
+
 </div>
 {% endblock %}

@@ -22,6 +22,7 @@ def content_studio(request):
         request.user,
         status_filter=request.GET.get("status"),
         platform_filter=request.GET.get("platform"),
+        format_filter=request.GET.get("post_format"),
         search_query=request.GET.get("q"),
         source_filter=request.GET.get("source"),
     )
@@ -69,13 +70,14 @@ def content_studio(request):
         "can_generate_images": can_generate_images,
         "current_status": request.GET.get("status", ""),
         "current_platform": request.GET.get("platform", ""),
+        "current_format": request.GET.get("post_format", ""),
         "current_search": request.GET.get("q", ""),
         "current_source": request.GET.get("source", ""),
         "page_title": "Content Studio",
     })
 
 
-def _get_studio_posts(user, status_filter=None, platform_filter=None, search_query=None, source_filter=None):
+def _get_studio_posts(user, status_filter=None, platform_filter=None, format_filter=None, search_query=None, source_filter=None):
     """Return (seed_groups, ungrouped, total_pending) for the studio."""
     visible_user_ids = get_teammate_ids(user)
 
@@ -89,6 +91,8 @@ def _get_studio_posts(user, status_filter=None, platform_filter=None, search_que
 
     if platform_filter:
         posts = posts.filter(platform=platform_filter)
+    if format_filter:
+        posts = posts.filter(post_format=format_filter)
     if search_query:
         posts = posts.filter(content_text__icontains=search_query)
     if source_filter == "holiday":
@@ -128,6 +132,7 @@ def studio_posts(request):
         request.user,
         status_filter=request.GET.get("status"),
         platform_filter=request.GET.get("platform"),
+        format_filter=request.GET.get("post_format"),
         search_query=request.GET.get("q"),
         source_filter=request.GET.get("source"),
     )
@@ -874,6 +879,48 @@ def retry_image(request, post_id):
             '⏳ Retrying…</span>'
         )
     messages.info(request, "Retrying image generation…")
+    return redirect("content:edit", post_id=post.id)
+
+
+@login_required
+@require_POST
+def update_carousel_slides(request, post_id):
+    """Save edited carousel slide content (heading, body, image_prompt)."""
+    post = get_object_or_404(Post.objects.select_related("user"), id=post_id)
+    if not can_edit_post(request.user, post):
+        raise Http404
+    if post.post_format != Post.PostFormat.CAROUSEL:
+        return HttpResponse("Not a carousel post", status=400)
+
+    try:
+        slides_raw = json.loads(request.POST.get("carousel_slides_json", "[]"))
+        if not isinstance(slides_raw, list):
+            raise ValueError
+        clean_slides = []
+        for s in slides_raw:
+            if not isinstance(s, dict):
+                continue
+            clean_slides.append({
+                "heading": str(s.get("heading", ""))[:200],
+                "body": str(s.get("body", ""))[:2000],
+                "image_prompt": str(s.get("image_prompt", ""))[:500],
+                "image_url": str(s.get("image_url", "")),
+            })
+    except (json.JSONDecodeError, ValueError):
+        if request.headers.get("HX-Request"):
+            return HttpResponse("Invalid slide data", status=400)
+        messages.error(request, "Invalid slide data.")
+        return redirect("content:edit", post_id=post.id)
+
+    post.carousel_slides = clean_slides
+    post.save(update_fields=["carousel_slides", "updated_at"])
+
+    if request.headers.get("HX-Request"):
+        return HttpResponse(
+            '<span id="slides-save-feedback" class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">'
+            '✓ Slides saved</span>'
+        )
+    messages.success(request, "Slides updated.")
     return redirect("content:edit", post_id=post.id)
 
 

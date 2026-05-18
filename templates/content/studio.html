@@ -245,16 +245,23 @@
               hx-target="#studio-posts-section" hx-swap="innerHTML"
               hx-include="#studio-filter-form">
         <option value="">All platforms</option>
-        <option value="twitter" {% if current_platform == 'twitter' %}selected{% endif %}>Twitter</option>
-        <option value="linkedin" {% if current_platform == 'linkedin' %}selected{% endif %}>LinkedIn</option>
         <option value="instagram" {% if current_platform == 'instagram' %}selected{% endif %}>Instagram</option>
         <option value="facebook" {% if current_platform == 'facebook' %}selected{% endif %}>Facebook</option>
         <option value="tiktok" {% if current_platform == 'tiktok' %}selected{% endif %}>TikTok</option>
-        <option value="youtube" {% if current_platform == 'youtube' %}selected{% endif %}>YouTube</option>
-        <option value="pinterest" {% if current_platform == 'pinterest' %}selected{% endif %}>Pinterest</option>
-        <option value="threads" {% if current_platform == 'threads' %}selected{% endif %}>Threads</option>
-        <option value="bluesky" {% if current_platform == 'bluesky' %}selected{% endif %}>Bluesky</option>
+        <option value="linkedin" {% if current_platform == 'linkedin' %}selected{% endif %}>LinkedIn</option>
         <option value="whatsapp" {% if current_platform == 'whatsapp' %}selected{% endif %}>WhatsApp</option>
+      </select>
+      <select name="post_format" class="input text-xs h-8 w-auto"
+              hx-get="{% url 'content:studio_posts' %}" hx-trigger="change"
+              hx-target="#studio-posts-section" hx-swap="innerHTML"
+              hx-include="#studio-filter-form">
+        <option value="">All formats</option>
+        <option value="text" {% if current_format == 'text' %}selected{% endif %}>Text</option>
+        <option value="image" {% if current_format == 'image' %}selected{% endif %}>Image</option>
+        <option value="carousel" {% if current_format == 'carousel' %}selected{% endif %}>Carousel</option>
+        <option value="story" {% if current_format == 'story' %}selected{% endif %}>Story</option>
+        <option value="reel" {% if current_format == 'reel' %}selected{% endif %}>Reel</option>
+        <option value="video" {% if current_format == 'video' %}selected{% endif %}>Video</option>
       </select>
     </form>
 

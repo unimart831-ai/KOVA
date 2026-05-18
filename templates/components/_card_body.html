@@ -12,8 +12,61 @@
   Preview on {% if post.social_account %}{{ post.social_account.get_platform_display }}{% elif post.platform %}{{ post.platform|title }}{% endif %}
 </button>
 
-{# ── Media section — AI images, uploaded images, inline upload ── #}
-{% if post.media_urls %}
+{# ── Media section — carousel strip / story frame / single image / upload ── #}
+
+{# Carousel: show slide strip #}
+{% if post.post_format == 'carousel' and post.carousel_slides %}
+  <div class="mb-3">
+    <div class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+      {% for slide in post.carousel_slides %}
+      <div class="flex-shrink-0 w-20 rounded-lg border border-purple-100 dark:border-purple-900/40 bg-purple-50/50 dark:bg-purple-950/20 overflow-hidden">
+        {% if slide.image_url %}
+          <img src="{{ slide.image_url }}" alt="Slide {{ forloop.counter }}" loading="lazy"
+               class="w-full h-14 object-cover"
+               onerror="this.parentElement.classList.add('bg-purple-100','dark:bg-purple-950')">
+        {% elif post.media_status == 'pending' %}
+          <div class="w-full h-14 flex items-center justify-center">
+            <svg class="w-4 h-4 text-purple-300 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+          </div>
+        {% else %}
+          <div class="w-full h-14 flex items-center justify-center text-purple-300 dark:text-purple-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+        {% endif %}
+        <div class="px-1 py-0.5">
+          <p class="text-[8px] font-semibold text-purple-500 dark:text-purple-400">{{ forloop.counter }}</p>
+          {% if slide.heading %}
+            <p class="text-[8px] text-gray-600 dark:text-gray-400 truncate leading-tight">{{ slide.heading|truncatechars:18 }}</p>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="text-[10px] text-purple-500 dark:text-purple-400 mt-1">{{ post.carousel_slides|length }} slides · swipe to reveal all</p>
+  </div>
+
+{# Story / Reel: show 9:16 frame #}
+{% elif post.post_format == 'story' or post.post_format == 'reel' %}
+  {% if post.media_urls %}
+    <div class="mb-3 flex justify-center">
+      <div class="relative w-20 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm" style="aspect-ratio:9/16">
+        <img src="{{ post.media_urls.0 }}" alt="{{ post.post_format|title }}" loading="lazy"
+             class="w-full h-full object-cover bg-gray-100 dark:bg-gray-800"
+             onerror="this.parentElement.style.display='none'">
+        <div class="absolute bottom-1 inset-x-0 flex justify-center">
+          <span class="text-[8px] font-bold text-white bg-black/50 px-1.5 py-0.5 rounded-full">9:16</span>
+        </div>
+      </div>
+    </div>
+  {% elif post.media_status == 'pending' %}
+    <div class="mb-3 flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-medium rounded-lg border border-dashed border-pink-200 dark:border-pink-800 text-pink-500 dark:text-pink-400 bg-pink-50/30 dark:bg-pink-950/20">
+      <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+      Generating {% if post.post_format == 'reel' %}reel{% else %}story{% endif %} image (9:16)…
+    </div>
+  {% endif %}
+
+{# Default: single image (feed post) #}
+{% elif post.media_urls %}
   <div class="mb-3 relative group rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700">
     <img src="{{ post.media_urls.0 }}" alt="AI-generated image" loading="lazy"
          class="w-full h-36 object-cover bg-gray-100 dark:bg-gray-800"
@@ -41,8 +94,9 @@
   </div>
 {% endif %}
 
-{# ── Inline image upload (for editable posts without uploaded media) ── #}
+{# ── Inline image upload (for editable feed/image posts — not carousel/story/reel) ── #}
 {% if post.status == 'pending_approval' or post.status == 'draft' %}
+  {% if post.post_format != 'carousel' and post.post_format != 'story' and post.post_format != 'reel' %}
   {% if post.media_status == 'pending' or post.media_status == 'processing' %}
     {# Image is generating — show spinner instead of upload/generate buttons #}
     <div class="mb-3 flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-medium rounded-lg border border-dashed border-kova-200 dark:border-kova-800 text-kova-500 dark:text-kova-400 bg-kova-50/30 dark:bg-kova-950/20">
@@ -90,6 +144,7 @@
     </div>
   {% endif %}
   {% endif %}{# end pending/processing check #}
+  {% endif %}{# end format check (not carousel/story/reel) #}
 {% endif %}
 
 {# ── Holiday badge (when post was generated by the holiday watcher) ── #}
