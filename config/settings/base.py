@@ -86,6 +86,7 @@ LOCAL_APPS = [
     "apps.qr_attribution",
     "apps.bookings",
     "apps.reviews",
+    "apps.kova_page",
     "apps.api",
 ]
 

@@ -323,6 +323,19 @@ class UserProfile(models.Model):
     cta_phone = models.CharField(max_length=20, blank=True, help_text="Phone number for phone CTAs.")
     cta_email = models.EmailField(blank=True, help_text="Email address for email CTAs.")
     cta_whatsapp = models.CharField(max_length=20, blank=True, help_text="WhatsApp number for WhatsApp CTAs.")
+    # ── Kova Link Page ──
+    page_slug = models.SlugField(
+        max_length=60, unique=True, null=True, blank=True, db_index=True,
+        help_text="Public slug for the Kova Link Page (/p/<slug>/). Auto-set to username.",
+    )
+    page_headline = models.CharField(
+        max_length=160, blank=True,
+        help_text="One-line tagline shown on the public page.",
+    )
+    page_active = models.BooleanField(
+        default=True,
+        help_text="Whether the public Kova Link Page is visible.",
+    )
     # ── Kova Pixel (Sprint T2A) ──
     pixel_token = models.CharField(
         max_length=64, null=True, blank=True, unique=True, db_index=True,

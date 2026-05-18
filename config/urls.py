@@ -104,6 +104,8 @@ urlpatterns = [
     path("", include("apps.bookings.urls")),
     # Review request loop (Phase 3 W9). Owns /reviews/.
     path("", include("apps.reviews.urls")),
+    # Kova Link Page — public business profile + conversion page.
+    path("p/", include("apps.kova_page.urls")),
     path("dashboard/", include("apps.admin_dashboard.urls")),
     path("api/v1/", include("apps.api.urls")),
     path("api/v1/partner/", include("apps.api.partner_urls")),

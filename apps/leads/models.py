@@ -30,6 +30,11 @@ class Lead(models.Model):
         MEDIUM = "medium", "Medium"
         LOW = "low", "Low"
 
+    class Temperature(models.TextChoices):
+        HOT = "hot", "Hot"
+        WARM = "warm", "Warm"
+        COLD = "cold", "Cold"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="leads"
@@ -56,6 +61,10 @@ class Lead(models.Model):
     # CRM-lite
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW)
     priority = models.CharField(max_length=10, choices=Priority.choices, default=Priority.MEDIUM)
+    temperature = models.CharField(
+        max_length=10, choices=Temperature.choices, default=Temperature.COLD,
+        help_text="HOT = ready to buy now, WARM = interested, COLD = early awareness.",
+    )
     tags = models.JSONField(default=list, blank=True)
     notes = models.TextField(blank=True)
 
@@ -77,6 +86,7 @@ class Lead(models.Model):
             models.Index(fields=["user", "status", "-first_seen_at"]),
             models.Index(fields=["user", "priority", "-first_seen_at"]),
             models.Index(fields=["user", "source_type"]),
+            models.Index(fields=["user", "temperature", "-first_seen_at"]),
             models.Index(fields=["email"]),
         ]
 
@@ -102,6 +112,42 @@ class Lead(models.Model):
             self.priority = self.Priority.MEDIUM
         else:
             self.priority = self.Priority.LOW
+
+    def compute_temperature(self):
+        """
+        Auto-score lead temperature from recency + engagement signals.
+
+        HOT  — replied to enquiry, or multiple activities in the last 48h,
+                or explicitly converted, or came via WhatsApp/DM (intent-first).
+        WARM — form submission with phone, or 2+ activities, or LinkedIn source.
+        COLD — everything else (awareness stage).
+        """
+        if self.status == self.Status.CONVERTED:
+            self.temperature = self.Temperature.HOT
+            return
+
+        activity_count = getattr(self, "_activity_count_cache", None)
+        if activity_count is None:
+            activity_count = self.activities.count()
+
+        is_intent_channel = self.source_type in (
+            self.Source.SOCIAL_DM,
+            self.Source.FORM_SUBMISSION,
+        ) or self.source_platform in ("whatsapp",)
+
+        if is_intent_channel and self.phone:
+            self.temperature = self.Temperature.HOT
+        elif activity_count >= 2 or self.source_platform in ("linkedin",):
+            self.temperature = self.Temperature.WARM
+        elif self.source_type == self.Source.FORM_SUBMISSION or activity_count >= 1:
+            self.temperature = self.Temperature.WARM
+        else:
+            self.temperature = self.Temperature.COLD
+
+    def save(self, *args, **kwargs):
+        if not kwargs.get("update_fields") or "temperature" in (kwargs.get("update_fields") or []):
+            self.compute_temperature()
+        super().save(*args, **kwargs)
 
 
 class LeadActivity(models.Model):

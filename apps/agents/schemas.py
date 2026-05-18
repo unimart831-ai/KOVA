@@ -28,6 +28,7 @@ class PostDraft(BaseModel):
     platform: str = ""
     content_text: str = ""
     content_type: str = "original"
+    content_intent: str = ""
     predicted_score: Optional[float] = None
     reasoning: str = ""
     angle: str = ""
@@ -73,7 +74,7 @@ class PostDraft(BaseModel):
         return v if isinstance(v, dict) else {}
 
     @field_validator(
-        "content_text", "content_type", "reasoning", "angle",
+        "content_text", "content_type", "content_intent", "reasoning", "angle",
         "framework_used", "image_prompt", "platform",
         mode="before",
     )
@@ -98,10 +99,16 @@ class PostDraft(BaseModel):
             logger.warning("PostDraft validation failed: %s", exc)
             return cls()
 
+    _VALID_INTENTS = {
+        "problem_awareness", "solution", "proof", "offer", "authority",
+    }
+
     def to_post_kwargs(self) -> dict:
         """Subset of fields ready to pass to Post.objects.create(...)."""
+        intent = self.content_intent.lower().strip() if self.content_intent else ""
         return {
             "content_text": self.content_text,
+            "content_intent": intent if intent in self._VALID_INTENTS else "",
             "predicted_engagement_score": self.predicted_score,
             "ai_reasoning": self.reasoning,
             "ai_angle": self.angle,

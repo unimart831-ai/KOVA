@@ -34,7 +34,18 @@ class ContentSeed(models.Model):
         default=False,
         help_text="When True, generate AI images for ALL platforms (not just visual-first ones like Instagram).",
     )
+    class Intent(models.TextChoices):
+        PROBLEM_AWARENESS = "problem_awareness", "Problem Awareness"
+        SOLUTION = "solution", "Solution Education"
+        PROOF = "proof", "Proof / Testimonial"
+        OFFER = "offer", "Offer / CTA"
+        AUTHORITY = "authority", "Authority / Expertise"
+
     status = models.CharField(max_length=20, choices=SeedStatus.choices, default=SeedStatus.NEW, db_index=True)
+    target_intent = models.CharField(
+        max_length=30, choices=Intent.choices, blank=True,
+        help_text="Content intent the Strategist wants this seed to target.",
+    )
     error_message = models.TextField(blank=True)
     batch_strategy = models.TextField(blank=True, help_text="AI-generated content strategy for this batch of posts.")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -102,6 +113,10 @@ class Post(SoftDeleteMixin, models.Model):
     )
     content_text = models.TextField()
     content_type = models.CharField(max_length=20, choices=ContentType.choices, default=ContentType.ORIGINAL)
+    content_intent = models.CharField(
+        max_length=30, choices=ContentSeed.Intent.choices, blank=True,
+        help_text="What this post is designed to do: attract attention, educate, prove, offer, or build authority.",
+    )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT, db_index=True)
 
     # Media
