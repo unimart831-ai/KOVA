@@ -48,7 +48,8 @@ def trigger_carousel_image_generation(sender, instance, created, **kwargs):
 
     try:
         from apps.content.tasks import generate_post_images
-        generate_post_images.delay(str(instance.pk))
+        from apps.utils import fire_task
+        fire_task(generate_post_images, str(instance.pk))
         logger.info(
             "trigger_carousel_image_generation: queued image gen for carousel post %s",
             instance.pk,

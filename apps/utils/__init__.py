@@ -5,13 +5,16 @@ from django.conf import settings
 
 def fire_task(task, *args, **kwargs):
     """
-    Fire a Celery task asynchronously.
+    Dispatch a Celery task without blocking the web request.
 
-    In production (with a real broker), uses task.delay() as normal.
-    In dev with CELERY_TASK_ALWAYS_EAGER, runs the task in a daemon thread
-    so the HTTP request returns immediately instead of blocking.
+    - With a real broker (Redis): sends via task.delay() — Celery worker picks it up.
+    - Without a broker (CELERY_TASK_ALWAYS_EAGER or empty broker URL): runs the task
+      in a daemon thread so the HTTP response returns immediately.
     """
-    if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
+    broker = getattr(settings, "CELERY_BROKER_URL", "") or ""
+    always_eager = getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False)
+
+    if always_eager or not broker:
         threading.Thread(target=task, args=args, kwargs=kwargs, daemon=True).start()
     else:
         task.delay(*args, **kwargs)

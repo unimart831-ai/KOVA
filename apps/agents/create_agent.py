@@ -1321,12 +1321,14 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                         post.media_prompt = image_prompt
                         post.save(update_fields=["media_status", "media_prompt", "updated_at"])
                         try:
+                            from apps.utils import fire_task
                             if post.post_format in ("story", "reel"):
                                 from apps.content.tasks import generate_post_images
-                                generate_post_images.delay(str(post.id))
+                                fire_task(generate_post_images, str(post.id))
                             else:
                                 from apps.content.tasks import async_generate_image
-                                async_generate_image.delay(
+                                fire_task(
+                                    async_generate_image,
                                     str(post.id),
                                     image_prompt,
                                     visual_strategy_data if visual_strategy_data.get("strategy") else None,
