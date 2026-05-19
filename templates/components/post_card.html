@@ -4,7 +4,13 @@ Usage: {% include "components/post_card.html" with post=post %}
 Partials: _card_header.html, _card_body.html, _card_actions.html, _card_schedule_modal.html
 {% endcomment %}
 
-<div id="post-{{ post.id }}" class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/20 transition-shadow">
+<div id="post-{{ post.id }}"
+     class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/20 transition-shadow"
+     {% if post.media_status == 'pending' %}
+     hx-get="{% url 'content:post_card' post.id %}"
+     hx-trigger="every 4s"
+     hx-swap="outerHTML"
+     {% endif %}>
 
   {% include "components/_card_header.html" %}
 

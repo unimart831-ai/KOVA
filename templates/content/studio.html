@@ -160,12 +160,28 @@
       <div hx-get="{% url 'content:seed_status' seed.id %}"
            hx-trigger="every 2s"
            hx-swap="outerHTML"
-           class="card border-l-4 border-l-kova-400 dark:border-l-kova-500">
+           class="card border border-kova-200 dark:border-kova-800 overflow-hidden">
+        {# Animated top bar #}
+        <div class="h-1 bg-gradient-to-r from-kova-400 via-purple-400 to-pink-400 animate-pulse"></div>
         <div class="card-body flex items-center gap-4">
-          <div class="animate-spin rounded-full h-6 w-6 border-2 border-kova-400 border-t-transparent shrink-0" aria-hidden="true"></div>
-          <div class="min-w-0">
-            <p class="text-sm font-medium text-gray-900 dark:text-white">Generating posts…</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ seed.idea|truncatewords:15 }}</p>
+          {# Pulsing AI orb #}
+          <div class="relative shrink-0">
+            <div class="w-10 h-10 rounded-full bg-kova-100 dark:bg-kova-900/80 flex items-center justify-center">
+              <svg class="w-5 h-5 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+            </div>
+            <div class="absolute inset-0 rounded-full border-2 border-kova-400/50 animate-ping"></div>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <p class="text-sm font-semibold text-gray-900 dark:text-white">Kova AI is writing your posts</p>
+              <div class="flex gap-0.5">
+                <span class="w-1 h-1 rounded-full bg-kova-500 animate-bounce" style="animation-delay:0ms"></span>
+                <span class="w-1 h-1 rounded-full bg-kova-500 animate-bounce" style="animation-delay:120ms"></span>
+                <span class="w-1 h-1 rounded-full bg-kova-500 animate-bounce" style="animation-delay:240ms"></span>
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 truncate italic">"{{ seed.idea|truncatewords:15 }}"</p>
+            <p class="text-[10px] text-kova-500 dark:text-kova-400 mt-1">Crafting unique angles for each platform · images will follow</p>
           </div>
         </div>
       </div>

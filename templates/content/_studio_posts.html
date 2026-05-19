@@ -1,5 +1,31 @@
 {# Partial: Posts to review section — used inline and via HTMX refresh #}
 <section>
+
+  {# ── Live AI activity bar — visible when images are generating ── #}
+  {% if pending_images %}
+  <div class="mb-5 flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-kova-50 to-purple-50/60 dark:from-kova-950/60 dark:to-purple-950/40 border border-kova-100 dark:border-kova-900/60">
+    <div class="relative shrink-0">
+      <div class="w-8 h-8 rounded-full bg-kova-100 dark:bg-kova-900/80 flex items-center justify-center">
+        <svg class="w-4 h-4 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      </div>
+      <div class="absolute inset-0 rounded-full border-2 border-kova-400/40 animate-ping"></div>
+    </div>
+    <div class="flex-1 min-w-0">
+      <p class="text-sm font-semibold text-kova-800 dark:text-kova-200">
+        AI is generating
+        <span class="text-kova-600 dark:text-kova-400">{{ pending_images }} image{{ pending_images|pluralize }}</span>
+        right now
+      </p>
+      <p class="text-xs text-kova-600 dark:text-kova-400 mt-0.5">Cards update automatically — no need to refresh</p>
+    </div>
+    <div class="flex gap-1 shrink-0">
+      <span class="w-1.5 h-1.5 rounded-full bg-kova-400 animate-bounce" style="animation-delay:0ms"></span>
+      <span class="w-1.5 h-1.5 rounded-full bg-kova-500 animate-bounce" style="animation-delay:150ms"></span>
+      <span class="w-1.5 h-1.5 rounded-full bg-kova-400 animate-bounce" style="animation-delay:300ms"></span>
+    </div>
+  </div>
+  {% endif %}
+
   <div class="flex items-center justify-between gap-4 mb-6">
     <div>
       <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Posts to review</h2>

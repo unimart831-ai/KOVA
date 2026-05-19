@@ -58,6 +58,9 @@ def content_studio(request):
     plan_limits = get_plan_limits(user_plan)
     can_generate_images = plan_limits.get("ai_image_generation", False)
 
+    all_posts = [p for g in seed_groups for p in g["posts"]] + list(ungrouped)
+    pending_images = sum(1 for p in all_posts if p.media_status == "pending")
+
     return render(request, "content/studio.html", {
         "seed_groups": seed_groups,
         "ungrouped_posts": ungrouped,
@@ -66,6 +69,7 @@ def content_studio(request):
         "seed_form": seed_form,
         "connected_platforms": json.dumps(connected_platforms),
         "total_pending": total_pending,
+        "pending_images": pending_images,
         "seed_suggestions": seed_suggestions,
         "can_generate_images": can_generate_images,
         "current_status": request.GET.get("status", ""),
@@ -136,12 +140,26 @@ def studio_posts(request):
         search_query=request.GET.get("q"),
         source_filter=request.GET.get("source"),
     )
+    all_posts = [p for g in seed_groups for p in g["posts"]] + list(ungrouped)
+    pending_images = sum(1 for p in all_posts if p.media_status == "pending")
     return render(request, "content/_studio_posts.html", {
         "seed_groups": seed_groups,
         "ungrouped_posts": ungrouped,
         "total_pending": total_pending,
+        "pending_images": pending_images,
         "current_source": request.GET.get("source", ""),
     })
+
+
+@login_required
+def post_card(request, post_id):
+    """Return a single post card partial — used by HTMX polling on pending-media cards."""
+    post = get_object_or_404(
+        Post.objects.select_related("social_account", "seed", "user"), id=post_id
+    )
+    if post.user_id not in get_teammate_ids(request.user):
+        raise Http404
+    return render(request, "components/post_card.html", {"post": post, "show_angle": True})
 
 
 @login_required
