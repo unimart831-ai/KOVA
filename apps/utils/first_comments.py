@@ -67,15 +67,20 @@ def compose_first_comment(
     post,
     product=None,
     profile=None,
+    kova_page_url: str = "",
 ) -> str:
     """
     Return a conversational first-comment string for the given platform.
+
+    Priority: product link > kova_page_url > profile.website_url
 
     Args:
         platform: 'facebook' or 'linkedin' (others return empty string).
         post: the Post instance (used to deterministically pick a template).
         product: optional Product with .name, .product_url, .display_price.
         profile: optional UserProfile with .website_url + .company_name.
+        kova_page_url: absolute URL of the user's Kova Link Page (highest-priority
+            general link — used when no product URL is present).
 
     Returns "" if there's no URL to share (nothing to comment).
     """
@@ -85,7 +90,7 @@ def compose_first_comment(
     seed_id = str(getattr(post, "id", "") or "")
     bucket = _bucket_for(seed_id)
 
-    # ── Product link branch (preferred over generic website) ──
+    # ── Product link branch (highest priority) ──
     if product:
         product_url = (getattr(product, "product_url", "") or "").strip()
         if product_url:
@@ -98,10 +103,7 @@ def compose_first_comment(
             )
             template = templates[bucket % len(templates)]
 
-            # Some templates use {price} — when there's no price, swap to a
-            # template that doesn't, to avoid awkward blanks.
             if "{price}" in template and not display_price:
-                # Pick the next template that has no {price}
                 no_price_alternatives = [t for t in templates if "{price}" not in t]
                 if no_price_alternatives:
                     template = no_price_alternatives[bucket % len(no_price_alternatives)]
@@ -112,19 +114,20 @@ def compose_first_comment(
                 url=product_url,
             ).strip()
 
-    # ── Generic website link branch ──
-    website_url = (getattr(profile, "website_url", "") or "").strip() if profile else ""
-    if website_url:
+    # ── Kova Link Page (preferred over generic website_url) ──
+    link_url = kova_page_url.strip() if kova_page_url else ""
+    if not link_url:
+        link_url = (getattr(profile, "website_url", "") or "").strip() if profile else ""
+
+    if link_url:
         brand = (getattr(profile, "company_name", "") or "").strip() if profile else ""
         templates = (
             _WEBSITE_TEMPLATES_FACEBOOK if platform == "facebook"
             else _WEBSITE_TEMPLATES_LINKEDIN
         )
         template = templates[bucket % len(templates)]
-        return template.format(brand=brand or "us", url=website_url).strip()
+        return template.format(brand=brand or "us", url=link_url).strip()
 
-    # Nothing to link — caller may decide on a no-link fallback (e.g. IG-style
-    # 'save this for later' that has no URL).
     return ""
 
 

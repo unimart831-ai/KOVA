@@ -111,6 +111,20 @@ def _should_auto_approve(user, post):
     return True
 
 
+def _get_kova_page_url(user) -> str:
+    """Return the absolute public URL of the user's first active Kova Link Page, or ''."""
+    try:
+        from django.conf import settings
+        from apps.links.models import KovaPage
+        page = KovaPage.objects.filter(user=user).first()
+        if page:
+            base = (getattr(settings, "SITE_URL", "") or "").rstrip("/")
+            return f"{base}/k/{page.slug}/"
+    except Exception:
+        pass
+    return ""
+
+
 # ─── Performance Intelligence (Content DNA Feedback Loop) ────────────────────
 
 def _get_performance_intelligence(user) -> str:
@@ -1216,12 +1230,13 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                 except Exception as img_exc:
                     logger.warning("Failed to attach product image to post %s: %s", post.id, img_exc)
 
+            # ── Resolve the user's Kova Link Page URL once for all platforms ──
+            kova_page_url = _get_kova_page_url(user)
+
             # ── Facebook first-comment: populate link to be posted after publish ──
             # Facebook reduces organic reach 50-70% for posts with outbound links
             # in the body. We store the CTA link in first_comment so the
             # publishing task can post it as a comment immediately after going live.
-            # Composed via apps.utils.first_comments — varied, conversational,
-            # not the spammy "Learn More: <URL>" pattern.
             if platform == "facebook":
                 from apps.utils.first_comments import compose_first_comment
                 fc_text = compose_first_comment(
@@ -1229,21 +1244,23 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                     post=post,
                     product=getattr(seed, "product", None) if seed else None,
                     profile=profile,
+                    kova_page_url=kova_page_url,
                 )
                 if fc_text:
                     post.first_comment = fc_text
                     post.save(update_fields=["first_comment", "updated_at"])
 
             # ── Instagram first-comment: save/link-in-bio CTA ────────────────
-            # Links in IG captions are not clickable, so the bio link is the
-            # only working click path. A first comment immediately below the
-            # caption reinforces this CTA and prompts saves — a top algorithm
-            # signal. Keep it brief and action-oriented.
+            # Links in IG captions are not clickable — the only click path is
+            # the bio link. The first comment reinforces the CTA and prompts
+            # saves (top algorithm signal). Keep it brief and action-oriented.
             if platform == "instagram":
                 ig_fc = ""
                 if seed and seed.product and getattr(seed.product, "product_url", ""):
                     name = seed.product.name or "this"
                     ig_fc = f"💾 Save this! 🛍️ Shop {name} — link in bio 👆"
+                elif kova_page_url:
+                    ig_fc = "💾 Save this post for later! 🔗 Everything's at the link in bio 👆"
                 elif profile and getattr(profile, "website_url", ""):
                     ig_fc = "💾 Save this post for later! 🔗 More at the link in bio 👆"
                 else:
@@ -1255,9 +1272,6 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
             # LinkedIn suppresses organic reach ~50% for posts with outbound links
             # in the body. We store the CTA link in first_comment so the
             # publishing task posts it as a comment immediately after going live.
-            # Only auto-populate if the user hasn't already written a custom first comment.
-            # Composed via apps.utils.first_comments — professional, varied,
-            # not the spammy "Learn More: <URL>" pattern.
             if platform == "linkedin" and not (post.first_comment or "").strip():
                 from apps.utils.first_comments import compose_first_comment
                 li_fc = compose_first_comment(
@@ -1265,6 +1279,7 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                     post=post,
                     product=getattr(seed, "product", None) if seed else None,
                     profile=profile,
+                    kova_page_url=kova_page_url,
                 )
                 if li_fc:
                     post.first_comment = li_fc
