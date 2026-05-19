@@ -511,8 +511,12 @@ def approve_post(request, post_id):
     post = get_object_or_404(Post.objects.select_related("social_account", "user"), id=post_id)
     if not can_approve_post(request.user, post):
         raise Http404
+    is_htmx = bool(request.headers.get("HX-Request"))
+
     if post.status not in (Post.Status.DRAFT, Post.Status.PENDING_APPROVAL):
-        return render(request, "components/post_card.html", {"post": post})
+        if is_htmx:
+            return render(request, "components/post_card.html", {"post": post})
+        return redirect("content:post_detail", post_id=post.id)
 
     # Block approval if platform requires media and none exists
     if post.needs_media:
@@ -522,7 +526,9 @@ def approve_post(request, post_id):
             request,
             f"{platform_name} requires an image. Upload one before approving.",
         )
-        return render(request, "components/post_card.html", {"post": post})
+        if is_htmx:
+            return render(request, "components/post_card.html", {"post": post})
+        return redirect("content:post_detail", post_id=post.id)
 
     intent = request.POST.get("schedule_intent", "next_best")
     platform = post.social_account.platform if post.social_account else None
@@ -559,7 +565,9 @@ def approve_post(request, post_id):
         from apps.content.tasks import publish_post
         fire_task(publish_post, str(post.id))
 
-    return render(request, "components/post_card.html", {"post": post})
+    if is_htmx:
+        return render(request, "components/post_card.html", {"post": post})
+    return redirect("content:post_detail", post_id=post.id)
 
 
 @login_required
@@ -631,14 +639,16 @@ def batch_approve(request, seed_id):
 
 @login_required
 def reject_post(request, post_id):
-    """Reject a pending post (HTMX)."""
+    """Reject a pending post."""
     post = get_object_or_404(Post.objects.select_related("social_account", "user"), id=post_id)
     if not can_approve_post(request.user, post):
         raise Http404
     if post.status in (Post.Status.DRAFT, Post.Status.PENDING_APPROVAL):
         post.status = Post.Status.REJECTED
         post.save(update_fields=["status", "updated_at"])
-    return render(request, "components/post_card.html", {"post": post})
+    if request.headers.get("HX-Request"):
+        return render(request, "components/post_card.html", {"post": post})
+    return redirect("content:post_detail", post_id=post.id)
 
 
 @login_required
