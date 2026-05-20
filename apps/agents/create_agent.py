@@ -728,6 +728,13 @@ IMPORTANT:
 - Each post MUST take a DIFFERENT angle on the idea — do NOT rewrite the same content
 - predicted_score is your honest assessment (0-100) of performance potential
 - Content must be READY TO PUBLISH — no placeholders, no [insert X here]
+
+⚠️  PLAIN TEXT RULE — NON-NEGOTIABLE:
+Social platforms (LinkedIn, Facebook, Instagram, TikTok) do NOT render markdown.
+Asterisks, underscores, and backticks appear as literal characters on the published post.
+NEVER use: **bold**, *italic*, __underline__, _italic_, `code`, or any other markdown syntax.
+For emphasis, use CAPS, line breaks, numbered lists, or stronger word choice.
+Markdown in content_text = broken, unprofessional post.
 """
 
     # Facebook-specific link rule: enforce at prompt level so the AI never
@@ -1129,16 +1136,23 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
                 continue
 
             draft = PostDraft.from_llm_dict(pd)
-            # Strip invisible Unicode characters (zero-width spaces, BOM markers,
-            # soft hyphens) that Claude/GPT occasionally emit and that cause
-            # LinkedIn / Facebook APIs to silently truncate the published post.
-            from apps.content.tasks import sanitize_content
+            # Strip invisible Unicode characters + markdown syntax at creation time.
+            # Both are safety nets: the prompt says no markdown, but LLMs still slip.
+            from apps.content.tasks import sanitize_content, strip_markdown, _PLAIN_TEXT_PLATFORMS
             content_text = sanitize_content(draft.content_text)
             if content_text != draft.content_text:
                 logger.warning(
                     "Create Agent: stripped %d invisible char(s) from %s content before save.",
                     len(draft.content_text) - len(content_text), platform,
                 )
+            if platform in _PLAIN_TEXT_PLATFORMS:
+                md_stripped = strip_markdown(content_text)
+                if md_stripped != content_text:
+                    logger.warning(
+                        "Create Agent: stripped markdown syntax from %s content before save.",
+                        platform,
+                    )
+                    content_text = md_stripped
 
             # Diagnostic: warn if content seems suspiciously short
             # (may indicate LLM token-limit truncation salvaged by JSON repair)

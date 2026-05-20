@@ -57,6 +57,30 @@ def sanitize_content(content: str) -> str:
     return ''.join(chars)
 
 
+# Platforms that do not render markdown — asterisks/underscores appear literally.
+_PLAIN_TEXT_PLATFORMS = frozenset({"linkedin", "facebook", "instagram", "tiktok", "whatsapp"})
+
+
+def strip_markdown(content: str) -> str:
+    """Remove LLM-generated markdown syntax that renders as literal characters
+    on social platforms.
+
+    Handles: **bold**, *italic*, __underline__, _italic_, `code`.
+    Leaves hashtags, numbered lists, emojis, and newlines untouched.
+    """
+    if not content:
+        return content
+    # Bold (**text** or __text__)
+    content = re.sub(r'\*\*(.+?)\*\*', r'\1', content, flags=re.DOTALL)
+    content = re.sub(r'__(.+?)__', r'\1', content, flags=re.DOTALL)
+    # Italic (*text* or _text_) — only match single delimiters not already consumed
+    content = re.sub(r'\*([^*\n]+?)\*', r'\1', content)
+    content = re.sub(r'(?<!\w)_([^_\n]+?)_(?!\w)', r'\1', content)
+    # Inline code (`text`)
+    content = re.sub(r'`([^`\n]+?)`', r'\1', content)
+    return content
+
+
 # ── Media URL helpers ────────────────────────────────────────────────────
 
 def _public_url_for_file(file_name: str):
@@ -674,6 +698,17 @@ def publish_post(self, post_id: str):
                 account.platform, post.id,
                 len(publish_content_raw) - len(publish_content),
             )
+
+        # Strip markdown syntax (**bold**, *italic*, etc.) that LLMs emit but
+        # social platforms render as literal asterisks/underscores.
+        if account.platform in _PLAIN_TEXT_PLATFORMS:
+            stripped = strip_markdown(publish_content)
+            if stripped != publish_content:
+                logger.warning(
+                    "MARKDOWN [%s] post=%s: stripped markdown syntax before publish.",
+                    account.platform, post.id,
+                )
+                publish_content = stripped
 
         # ── Diagnostic: content audit at publish time ─────────────────
         _db_len = len(post.content_text) if post.content_text else 0
