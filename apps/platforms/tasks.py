@@ -121,6 +121,92 @@ def refresh_expiring_tokens():
     return {"refreshed": refreshed, "failed": failed}
 
 
+@shared_task(name="platforms.warn_expiring_tokens")
+def warn_expiring_tokens():
+    """
+    Send proactive token expiry warnings to users.
+
+    Runs daily. Finds accounts that:
+      - Cannot be auto-refreshed (LinkedIn, TikTok when refresh fails, etc.)
+      - Are expiring within 7 days → yellow warning notification
+      - Are expiring within 1 day  → red urgent notification
+      - Have already expired       → reconnect-required notification
+
+    Facebook/Instagram are auto-extended by refresh_expiring_tokens, so they
+    only appear here if the auto-extension failed and expiry is very close.
+    """
+    from apps.notifications.models import Notification
+    from apps.platforms.models import SocialAccount
+
+    now = timezone.now()
+    warned_7day, warned_1day, warned_expired = 0, 0, 0
+
+    # Accounts that cannot auto-refresh (no refresh token = LinkedIn, FB/IG if extension failed)
+    # We warn users who are within 7 days of expiry.
+    at_risk = SocialAccount.objects.filter(
+        is_active=True,
+        token_expires_at__isnull=False,
+        token_expires_at__lte=now + timedelta(days=7),
+    ).select_related("user")
+
+    for account in at_risk:
+        delta = account.token_expires_at - now
+        days_left = max(0, delta.days)
+        platform_name = account.get_platform_display()
+        cache_key = f"kova:token_warned:{account.pk}:{days_left // 1}"
+
+        # Deduplicate — only warn once per day per account
+        from django.core.cache import cache
+        if cache.get(cache_key):
+            continue
+        cache.set(cache_key, True, 86400)
+
+        if account.token_expires_at <= now:
+            # Already expired
+            Notification.create_for_user(
+                user=account.user,
+                notification_type=Notification.NotificationType.SYSTEM,
+                message=(
+                    f"🔴 Your {platform_name} connection (@{account.username}) has expired. "
+                    f"Scheduled posts are paused. "
+                    f"Reconnect now to resume: Settings → Platforms → Reconnect."
+                ),
+            )
+            warned_expired += 1
+
+        elif days_left <= 1:
+            # 1 day or less — urgent
+            Notification.create_for_user(
+                user=account.user,
+                notification_type=Notification.NotificationType.SYSTEM,
+                message=(
+                    f"🔴 Urgent: Your {platform_name} connection (@{account.username}) expires "
+                    f"{'today' if days_left == 0 else 'tomorrow'}. "
+                    f"Reconnect now to keep your posts going: Settings → Platforms → Reconnect."
+                ),
+            )
+            warned_1day += 1
+
+        elif days_left <= 7:
+            # 7 days — early warning
+            Notification.create_for_user(
+                user=account.user,
+                notification_type=Notification.NotificationType.SYSTEM,
+                message=(
+                    f"⚠️ Your {platform_name} connection (@{account.username}) expires in "
+                    f"{days_left} day{'s' if days_left != 1 else ''}. "
+                    f"Reconnect soon to avoid any interruption: Settings → Platforms → Reconnect."
+                ),
+            )
+            warned_7day += 1
+
+    logger.info(
+        "Token expiry warnings: %d expired, %d urgent (1-day), %d early (7-day)",
+        warned_expired, warned_1day, warned_7day,
+    )
+    return {"expired": warned_expired, "urgent": warned_1day, "early": warned_7day}
+
+
 def _refresh_page_tokens(account, user_access_token):
     """
     Re-fetch page tokens after extending the user token.

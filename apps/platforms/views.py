@@ -122,10 +122,14 @@ def platform_list(request):
             acc.profile_audit = None
             acc.profile_audit_gap_count = 0
 
+    from apps.platforms.outage import get_outages
+    platform_outages = {p: v for p, v in get_outages().items() if v}
+
     return render(request, "platforms/list.html", {
         "accounts": accounts,
         "platforms": platforms,
         "coming_soon_platforms": COMING_SOON_PLATFORMS,
+        "platform_outages": platform_outages,
         "page_title": "Connected Platforms",
     })
 

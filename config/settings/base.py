@@ -192,6 +192,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "platforms.refresh_expiring_tokens",
         "schedule": 30 * 60.0,  # every 30 minutes
     },
+    "warn-expiring-tokens": {
+        "task": "platforms.warn_expiring_tokens",
+        "schedule": 24 * 3600.0,  # daily — proactive 7-day and 1-day user warnings
+    },
     "generate-daily-briefs": {
         "task": "briefs.generate_all_daily_briefs",
         "schedule": 15 * 60.0,  # every 15 minutes — checks which users' brief time has passed

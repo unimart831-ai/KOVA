@@ -460,15 +460,19 @@ def generate_post_images(post_id: str):
 @shared_task(
     name="content.publish_post",
     bind=True,
-    max_retries=3,
+    max_retries=8,     # up to 8 retries — enough for a 4-hour outage window
     soft_time_limit=120,
     time_limit=150,
 )
 def publish_post(self, post_id: str):
     """
     Publish a single post to its platform.
-    Called when a post's scheduled_at time arrives, or on 'post_now' intent.
-    Retries up to 3 times on transient failures.
+
+    Retry strategy:
+      - Auth errors (401/403/PlatformAuthError): no retry — fail immediately
+      - Rate limit (429): retry at 15min, 30min, 90min
+      - Outage (5xx):     retry at 30min, 60min, 90min, 120min (covers 4-hour window)
+      - Other transient:  retry at 1min, 2min, 4min (original backoff)
     """
     from apps.content.models import Post
     from apps.platforms.providers import get_provider
@@ -743,18 +747,111 @@ def publish_post(self, post_id: str):
             **publish_kwargs,
         )
     except Exception as exc:
+        from apps.platforms.providers.base import PlatformAuthError
+        from apps.platforms.error_codes import translate_error
+        from apps.platforms.outage import record_failure
+
+        exc_str = str(exc)
+        platform = account.platform
+
+        # ── Detect error type ─────────────────────────────────────────────
+        # Extract HTTP status code from the exception message if present
+        status_code = None
+        for code in (401, 403, 429, 500, 502, 503, 504):
+            if str(code) in exc_str:
+                status_code = code
+                break
+
+        is_auth_error = isinstance(exc, PlatformAuthError) or status_code in (401, 403)
+        is_rate_limit = status_code == 429
+        is_outage = status_code in (500, 502, 503, 504)
+
+        # Translate to user-friendly message
+        error_info = translate_error(platform, status_code, exc_str)
+
+        # ── Auth errors — fail immediately, no retry ──────────────────────
+        if is_auth_error or error_info.is_auth:
+            logger.error("Auth error publishing post %s (%s): %s", post_id, platform, exc_str)
+            _fail_post(post, f"Authentication error: {exc_str}")
+            account.mark_error(exc_str, status_code=status_code or 401)
+            Notification.create_for_user(
+                post.user, "publish_failed",
+                f"❌ {error_info.user_message} {error_info.fix}",
+                related_post=post,
+            )
+            return {"error": "auth_error"}
+
+        # ── Outage — record failure, retry with long windows ─────────────
+        if is_outage or error_info.is_outage:
+            record_failure(platform)
+            account.mark_error(exc_str, status_code=status_code)
+            # Retry schedule: 30min, 60min, 90min, 120min (4×)
+            outage_countdowns = [1800, 3600, 5400, 7200]
+            retry_num = self.request.retries
+            if retry_num < len(outage_countdowns):
+                countdown = outage_countdowns[retry_num]
+                logger.warning(
+                    "Outage retry %d for post %s (%s) in %ds",
+                    retry_num + 1, post_id, platform, countdown,
+                )
+                # Only notify user on first outage retry
+                if retry_num == 0:
+                    Notification.create_for_user(
+                        post.user, "publish_failed",
+                        f"⏳ {error_info.user_message} {error_info.fix}",
+                        related_post=post,
+                    )
+                raise self.retry(exc=exc, countdown=countdown)
+            else:
+                _fail_post(post, f"Outage: platform unavailable after {retry_num} retries: {exc_str}")
+                Notification.create_for_user(
+                    post.user, "publish_failed",
+                    f"❌ {platform.title()} was unavailable for too long. "
+                    f"Your post has been saved — reschedule it when the platform recovers.",
+                    related_post=post,
+                )
+                return {"error": "outage_max_retries"}
+
+        # ── Rate limit — retry with moderate back-off ─────────────────────
+        if is_rate_limit or error_info.is_rate_limit:
+            account.mark_error(exc_str, status_code=429)
+            rate_countdowns = [900, 1800, 5400]  # 15min, 30min, 90min
+            retry_num = self.request.retries
+            if retry_num < len(rate_countdowns):
+                countdown = rate_countdowns[retry_num]
+                logger.warning(
+                    "Rate limit retry %d for post %s (%s) in %ds",
+                    retry_num + 1, post_id, platform, countdown,
+                )
+                if retry_num == 0:
+                    Notification.create_for_user(
+                        post.user, "publish_failed",
+                        f"⏳ {error_info.user_message} {error_info.fix}",
+                        related_post=post,
+                    )
+                raise self.retry(exc=exc, countdown=countdown)
+            else:
+                _fail_post(post, f"Rate limit exceeded after {retry_num} retries")
+                Notification.create_for_user(
+                    post.user, "publish_failed",
+                    f"❌ {error_info.user_message} {error_info.fix}",
+                    related_post=post,
+                )
+                return {"error": "rate_limit_max_retries"}
+
+        # ── Other transient errors — original exponential backoff ─────────
         logger.exception("Publishing post %s raised an exception", post_id)
-        # Retry on transient errors
         try:
             self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
         except self.MaxRetriesExceededError:
-            _fail_post(post, f"Max retries exceeded: {exc}")
+            _fail_post(post, f"Max retries exceeded: {exc_str}")
             Notification.create_for_user(
                 post.user, "publish_failed",
-                f"Failed to publish to {account.get_platform_display()} after multiple attempts.",
+                f"❌ Failed to publish to {account.get_platform_display()} after multiple attempts. "
+                f"Error: {exc_str[:200]}",
                 related_post=post,
             )
-            return {"error": "Max retries exceeded"}
+            return {"error": "max_retries_exceeded"}
 
     if result.success:
         post.status = Post.Status.PUBLISHED
@@ -767,6 +864,10 @@ def publish_post(self, post_id: str):
         ])
         account.mark_synced()
 
+        # Clear any outage flags — this platform is working
+        from apps.platforms.outage import record_success as clear_outage
+        clear_outage(account.platform)
+
         logger.info(
             "PUBLISH SUCCESS [%s] post=%s: platform_id=%s, "
             "content_len=%d chars sent, url=%s",
@@ -775,6 +876,15 @@ def publish_post(self, post_id: str):
             len(publish_content or ""),
             result.url,
         )
+
+        # ── TikTok: queue post-publish verification ───────────────────────
+        # TikTok sometimes returns 200 but the post never appears. Verify
+        # the post actually exists 2 minutes after publishing.
+        if account.platform == "tiktok" and result.platform_post_id:
+            verify_tiktok_post.apply_async(
+                args=[post_id, result.platform_post_id, account.access_token],
+                countdown=120,
+            )
 
         # ── Facebook first-comment link strategy ─────────────────────────
         # Facebook reduces organic reach 50-70% for posts with outbound links
@@ -1505,4 +1615,64 @@ def process_voice_brief(voice_brief_id: str):
         vb.status = VoiceBrief.Status.FAILED
         vb.error_message = str(e)[:1000]
         vb.save(update_fields=["status", "error_message"])
+
+
+@shared_task(name="content.verify_tiktok_post", max_retries=3, soft_time_limit=30)
+def verify_tiktok_post(post_id: str, tiktok_post_id: str, access_token: str):
+    """
+    Verify a TikTok post actually exists after publishing.
+
+    TikTok occasionally returns a 200 success but the post never appears.
+    This task runs 2 minutes after publish and re-checks via the TikTok API.
+    If not found after 3 attempts (2min, 5min, 15min), notify the user.
+    """
+    import httpx
+    from apps.content.models import Post
+    from apps.notifications.models import Notification
+
+    try:
+        post = Post.objects.select_related("user", "social_account").get(pk=post_id)
+    except Post.DoesNotExist:
+        return {"error": "post_not_found"}
+
+    try:
+        resp = httpx.post(
+            "https://open.tiktokapis.com/v2/video/list/",
+            headers={"Authorization": f"Bearer {access_token}"},
+            json={
+                "filters": {"video_ids": [tiktok_post_id]},
+                "fields": ["id", "title", "create_time"],
+            },
+            timeout=15.0,
+        )
+        data = resp.json()
+        videos = data.get("data", {}).get("videos", [])
+        if videos:
+            logger.info("TikTok post %s verified — exists on platform", tiktok_post_id)
+            return {"verified": True}
+
+        # Not found yet — retry with increasing delays
+        retry_delays = [300, 900]  # 5min, 15min
+        attempt = verify_tiktok_post.request.retries
+        if attempt < len(retry_delays):
+            raise verify_tiktok_post.retry(countdown=retry_delays[attempt])
+
+        # Still not found after all retries
+        logger.warning("TikTok post %s not found after 3 checks — notifying user", tiktok_post_id)
+        Notification.create_for_user(
+            user=post.user,
+            notification_type=Notification.NotificationType.SYSTEM,
+            message=(
+                f"⚠️ Your TikTok post may not have published correctly. "
+                f"Check your TikTok profile to confirm it's live. "
+                f"If it's missing, you can reschedule it from your Queue."
+            ),
+        )
+        return {"verified": False}
+
+    except verify_tiktok_post.MaxRetriesExceededError:
+        return {"verified": False, "error": "max_retries"}
+    except Exception as exc:
+        logger.warning("TikTok verification error for post %s: %s", post_id, exc)
+        return {"error": str(exc)}
         return {"error": str(e)}
