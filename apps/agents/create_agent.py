@@ -907,9 +907,12 @@ CRITICAL:
         return None
 
 
-def run_create_agent(seed: ContentSeed) -> list[Post]:
+def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Post]:
     """
     Main entry point: take a ContentSeed and produce Post drafts.
+
+    force_pending: if True, skip auto-approval regardless of user settings
+    (used during onboarding so first-run posts always land in the review queue).
 
     Returns list of created Post objects.
     """
@@ -1168,9 +1171,11 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                 ai_original_text=content_text,
             )
 
-            # Smart auto-approval: learn from user's history
-            if post.status == Post.Status.PENDING_APPROVAL:
-                if _should_auto_approve(user, post):
+            # Smart auto-approval: only runs when user has explicitly enabled it
+            # and we're not in a forced-pending context (e.g. onboarding)
+            if post.status == Post.Status.PENDING_APPROVAL and not force_pending:
+                _profile = getattr(user, "profile", None)
+                if _profile and _profile.auto_approve_posts and _should_auto_approve(user, post):
                     post.status = Post.Status.APPROVED
                     post.save(update_fields=["status", "updated_at"])
 

@@ -171,7 +171,7 @@ def run_onboarding_intelligence(user_id):
             from apps.agents.create_agent import run_create_agent
             for seed in seeds:
                 try:
-                    posts = run_create_agent(seed)
+                    posts = run_create_agent(seed, force_pending=True)
                     total_posts += len(posts)
                 except Exception as e:
                     logger.warning("Onboarding content gen failed for seed %s: %s", seed.id, e)

@@ -175,6 +175,20 @@ def onboarding_view(request):
     # old users (pre-merge) and new users (post-merge).
     if step == 3:
         if request.method == "POST":
+            # ── Require at least one connected platform ───────────────
+            from apps.platforms.models import SocialAccount
+            if not SocialAccount.objects.filter(user=request.user, is_active=True).exists():
+                messages.warning(
+                    request,
+                    "Please connect at least one social platform before continuing. "
+                    "This lets Kova publish posts on your behalf."
+                )
+                connected = SocialAccount.objects.filter(user=request.user, is_active=True)
+                return render(request, "accounts/onboarding.html", {
+                    "step": 3,
+                    "connected_accounts": connected,
+                })
+
             # ── Complete onboarding ──────────────────────────────────
             request.user.onboarding_completed = True
             request.user.save(update_fields=["onboarding_completed"])
