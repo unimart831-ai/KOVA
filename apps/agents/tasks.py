@@ -229,11 +229,19 @@ def run_engage_cycle():
     from apps.agents.models import AgentConfig
     from apps.billing.models import get_plan_limits
 
-    users_with_engage = User.objects.filter(
-        Q(onboarding_completed=True) | Q(posts__status="published"),
-        agent_configs__agent_type="engage",
-        agent_configs__is_active=True,
-    ).distinct()
+    # Use a subquery to guarantee distinct IDs before fetching User objects.
+    # The multi-table JOIN (posts + agent_configs) can produce duplicate rows
+    # that .distinct() on the outer queryset doesn't always collapse correctly.
+    eligible_ids = (
+        User.objects.filter(
+            Q(onboarding_completed=True) | Q(posts__status="published"),
+            agent_configs__agent_type="engage",
+            agent_configs__is_active=True,
+        )
+        .values("id")
+        .distinct()
+    )
+    users_with_engage = User.objects.filter(pk__in=eligible_ids).select_related("profile")
 
     dispatched = 0
     for user in users_with_engage:
