@@ -1126,7 +1126,16 @@ def run_create_agent(seed: ContentSeed) -> list[Post]:
                 continue
 
             draft = PostDraft.from_llm_dict(pd)
-            content_text = draft.content_text
+            # Strip invisible Unicode characters (zero-width spaces, BOM markers,
+            # soft hyphens) that Claude/GPT occasionally emit and that cause
+            # LinkedIn / Facebook APIs to silently truncate the published post.
+            from apps.content.tasks import sanitize_content
+            content_text = sanitize_content(draft.content_text)
+            if content_text != draft.content_text:
+                logger.warning(
+                    "Create Agent: stripped %d invisible char(s) from %s content before save.",
+                    len(draft.content_text) - len(content_text), platform,
+                )
 
             # Diagnostic: warn if content seems suspiciously short
             # (may indicate LLM token-limit truncation salvaged by JSON repair)

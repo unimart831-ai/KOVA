@@ -9,6 +9,8 @@ import logging
 import re
 from urllib.parse import urlencode, urlparse, urlunparse, parse_qs
 
+import unicodedata
+
 import sentry_sdk
 from celery import shared_task
 from django.utils import timezone
@@ -16,6 +18,43 @@ from django.utils import timezone
 from apps.utils.locks import single_run
 
 logger = logging.getLogger(__name__)
+
+
+# ── Content sanitizer ─────────────────────────────────────────────────────
+# LLMs occasionally emit invisible Unicode characters (zero-width spaces,
+# soft hyphens, BOM markers) that are invisible in our UI but cause platform
+# APIs — especially LinkedIn — to silently truncate the post at that point.
+
+_ZERO_WIDTH_CHARS = frozenset({
+    '​',  # zero-width space
+    '‌',  # zero-width non-joiner
+    '‍',  # zero-width joiner
+    '\u200E',  # left-to-right mark
+    '\u200F',  # right-to-left mark
+    '­',  # soft hyphen
+    '﻿',  # BOM / zero-width no-break space
+    ' ',  # line separator (breaks JSON parsers)
+    ' ',  # paragraph separator (breaks JSON parsers)
+})
+
+
+def sanitize_content(content: str) -> str:
+    """Strip invisible Unicode control characters that cause platform truncation.
+
+    Keeps all printable characters, newlines, and tabs intact.
+    Normalises Windows line endings to Unix so downstream code is consistent.
+    """
+    if not content:
+        return content
+    content = content.replace('\r\n', '\n').replace('\r', '\n')
+    chars = []
+    for ch in content:
+        if ch in _ZERO_WIDTH_CHARS:
+            continue
+        cat = unicodedata.category(ch)
+        if ch in ('\n', '\t') or cat[0] != 'C':
+            chars.append(ch)
+    return ''.join(chars)
 
 
 # ── Media URL helpers ────────────────────────────────────────────────────
@@ -623,6 +662,19 @@ def publish_post(self, post_id: str):
         # Add UTM tracking to any URLs in the content body
         publish_content = add_utm_tracking(post.content_text, account.platform, str(post.id), post=post)
 
+        # Strip invisible Unicode characters (zero-width spaces, soft hyphens,
+        # BOM markers) that LLMs occasionally emit and that cause LinkedIn and
+        # other platform APIs to silently truncate the post body.
+        publish_content_raw = publish_content
+        publish_content = sanitize_content(publish_content)
+        if len(publish_content) != len(publish_content_raw):
+            logger.warning(
+                "SANITIZE [%s] post=%s: stripped %d invisible char(s). "
+                "This is likely the cause of past platform truncation.",
+                account.platform, post.id,
+                len(publish_content_raw) - len(publish_content),
+            )
+
         # ── Diagnostic: content audit at publish time ─────────────────
         _db_len = len(post.content_text) if post.content_text else 0
         _pub_len = len(publish_content) if publish_content else 0
@@ -631,8 +683,8 @@ def publish_post(self, post_id: str):
             account.platform, post.id, _db_len, _pub_len,
             (publish_content or "").count("\n"),
         )
-        logger.info("AUDIT first100=%s", (publish_content or "")[:100])
-        logger.info("AUDIT last80=%s", (publish_content or "")[-80:])
+        logger.info("AUDIT first100=%r", (publish_content or "")[:100])
+        logger.info("AUDIT last80=%r", (publish_content or "")[-80:])
 
         # Safety: block publishing to platforms that require media if none attached
         if post.needs_media:
