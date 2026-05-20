@@ -1148,13 +1148,25 @@ def run_engage_cycle(user):
     fetched = fetch_interactions(user)
     analyzed = analyze_interactions(user)
     replies = generate_replies(user)
-    auto_sent = auto_respond(user)
+    auto_respond_result = auto_respond(user)
+
+    # auto_respond returns a counts dict; extract the int for the summary
+    if isinstance(auto_respond_result, dict):
+        auto_sent_count = auto_respond_result.get("auto_sent", 0)
+        drafted = auto_respond_result.get("drafted", 0)
+        escalated = auto_respond_result.get("escalated", 0)
+    else:
+        auto_sent_count = auto_respond_result or 0
+        drafted = 0
+        escalated = 0
 
     return {
         "fetched": fetched,
         "analyzed": analyzed,
         "replies_generated": replies,
-        "auto_sent": auto_sent,
+        "auto_sent": auto_sent_count,
+        "drafted": drafted,
+        "escalated": escalated,
     }
 
 
