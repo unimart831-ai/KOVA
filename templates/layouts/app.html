@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load nav_tags %}
 
 {% block body_class %}bg-gray-50 dark:bg-gray-950{% endblock %}
 
@@ -58,7 +59,7 @@
 
       <p class="nav-section">Work</p>
 
-      {% with create_active='/content/studio' in request.path or '/content/voice-campaign' in request.path or '/content/autopilot' in request.path or '/memes/' in request.path or '/media-queue/' in request.path or '/content/' in request.path and '/edit/' in request.path %}
+      {% nav_active request.path '/content/studio' '/content/voice-campaign' '/content/autopilot' '/memes/' '/media-queue/' '/content/edit/' as create_active %}
       <a href="{% url 'content:studio' %}"
          {% if create_active %}aria-current="page"{% endif %}
          class="{% if create_active %}nav-link-active{% else %}nav-link{% endif %}">
@@ -79,9 +80,8 @@
         <a href="{% url 'content:voice_campaign' %}" class="block text-xs py-1 px-2 rounded {% if '/content/voice-campaign' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Voice Campaign</a>
       </div>
       {% endif %}
-      {% endwith %}
 
-      {% with schedule_active='/content/queue' in request.path or '/content/calendar' in request.path or '/content/ab-tests' in request.path or '/campaigns/' in request.path or '/emails/' in request.path %}
+      {% nav_active request.path '/content/queue' '/content/calendar' '/content/ab-tests' '/campaigns/' '/emails/' as schedule_active %}
       <a href="{% url 'content:queue' %}"
          {% if schedule_active %}aria-current="page"{% endif %}
          class="{% if schedule_active %}nav-link-active{% else %}nav-link{% endif %}">
@@ -102,7 +102,6 @@
         <a href="{% url 'emails:dashboard' %}" class="block text-xs py-1 px-2 rounded {% if '/emails/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Email Marketing</a>
       </div>
       {% endif %}
-      {% endwith %}
 
       <p class="nav-section">Customers</p>
 
@@ -240,7 +239,7 @@
 
       <p class="nav-section">Insights</p>
 
-      {% with insights_active='/analytics/' in request.path and '/analytics/revenue' not in request.path and '/analytics/pixel' not in request.path %}
+      {% nav_active request.path '/analytics/' '!/analytics/revenue' '!/analytics/pixel' as insights_active %}
       <a href="{% url 'analytics:insights' %}"
          {% if insights_active %}aria-current="page"{% endif %}
          class="{% if insights_active %}nav-link-active{% else %}nav-link{% endif %}">
@@ -262,11 +261,10 @@
         {% endif %}
       </div>
       {% endif %}
-      {% endwith %}
 
       <p class="nav-section">Settings</p>
 
-      {% with settings_active='/accounts/settings' in request.path or '/platforms/' in request.path or '/teams/' in request.path or '/billing/' in request.path or '/agents/' in request.path or '/help/' in request.path or '/analytics/pixel' in request.path or '/calendar/' in request.path or '/profile-health/' in request.path or '/api/schema/' in request.path %}
+      {% nav_active request.path '/accounts/settings' '/platforms/' '/teams/' '/billing/' '/agents/' '/help/' '/analytics/pixel' '/calendar/' '/profile-health/' '/api/schema/' as settings_active %}
       <a href="{% url 'accounts:settings' %}"
          {% if settings_active %}aria-current="page"{% endif %}
          class="{% if settings_active %}nav-link-active{% else %}nav-link{% endif %}">
@@ -296,7 +294,6 @@
         <a href="{% url 'help:center' %}" class="block text-xs py-1 px-2 rounded {% if '/help/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Help</a>
       </div>
       {% endif %}
-      {% endwith %}
     </nav>
 
     <!-- User menu at bottom -->
