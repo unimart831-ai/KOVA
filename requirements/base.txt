@@ -59,5 +59,8 @@ PyYAML>=6.0
 holidays>=0.55
 hijri-converter>=2.3
 
+# Error tracking (imported by tasks across multiple apps)
+sentry-sdk[django]>=2.13
+
 # PDF Reports
 xhtml2pdf>=0.2.11
