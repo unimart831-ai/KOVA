@@ -92,6 +92,13 @@
           </div>
         </template>
 
+        <template x-if="status === 'planning' && stalled">
+          <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+            <p class="text-sm font-medium text-amber-900 dark:text-amber-200">Taking longer than usual</p>
+            <p class="text-xs text-amber-800 dark:text-amber-300 mt-1">We're retrying automatically. If nothing happens in a few minutes, close and click Plan This Week again.</p>
+          </div>
+        </template>
+
         {# Error state #}
         <template x-if="status === 'failed'">
           <div class="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
@@ -123,8 +130,16 @@
           </button>
         </template>
         <template x-if="status === 'failed'">
+          <form method="post" action="{% url 'content:autopilot' %}" class="flex-1">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="trigger">
+            <button type="submit"
+                    class="w-full px-4 py-2.5 text-sm font-semibold rounded-lg bg-kova-600 text-white hover:bg-kova-700">
+              Try again
+            </button>
+          </form>
           <button type="button" @click="close()"
-                  class="w-full px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600">
+                  class="px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600">
             Close
           </button>
         </template>
@@ -147,6 +162,8 @@ function autopilotPlanningModal(planId) {
     detailUrl: '',
     approveUrl: '',
     pollTimer: null,
+    startedAt: Date.now(),
+    stalled: false,
     get headerTitle() {
       if (this.status === 'pending_review') return 'Your weekly plan is ready';
       if (this.status === 'failed') return 'Planning interrupted';
@@ -190,6 +207,13 @@ function autopilotPlanningModal(planId) {
         this.errorMessage = data.error_message || '';
         this.detailUrl = data.detail_url || '';
         this.approveUrl = data.approve_url || '';
+        if (this.status === 'planning') {
+          const workerSteps = ['start', 'brand', 'platforms', 'performance', 'strategist', 'complete'];
+          const started = (this.log || []).some(e => workerSteps.includes(e.step));
+          this.stalled = !started && (Date.now() - this.startedAt) > 90000;
+        } else {
+          this.stalled = false;
+        }
         if (data.terminal && this.pollTimer) {
           clearInterval(this.pollTimer);
           this.pollTimer = null;

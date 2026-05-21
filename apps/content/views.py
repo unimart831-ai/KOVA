@@ -1699,6 +1699,8 @@ def autopilot_dashboard(request):
         get_plan_live_stats,
         log_plan_step,
         plan_user_week,
+        recover_stale_planning,
+        _planning_worker_started,
     )
     from apps.content.models import WeeklyContentPlan
     from django.urls import reverse
@@ -1708,6 +1710,9 @@ def autopilot_dashboard(request):
         WeeklyContentPlan.objects.filter(user=request.user)
         .order_by("-week_start")[:20]
     )
+    for p in plans:
+        if p.status == WeeklyContentPlan.Status.PLANNING:
+            recover_stale_planning(p)
     current_plan = next(
         (p for p in plans if p.status in AUTOPILOT_ACTIVE_STATUSES),
         None,
@@ -1725,7 +1730,11 @@ def autopilot_dashboard(request):
     plans_with_stats = [{"plan": p, "stats": plan_stats.get(str(p.pk), {})} for p in plans]
 
     if request.method == "POST" and request.POST.get("action") == "trigger":
+        from datetime import timedelta
+        from apps.utils import fire_task, run_task_inline
+
         week_start = _next_monday()
+        week_end = week_start + timedelta(days=6)
         existing = WeeklyContentPlan.objects.filter(
             user=request.user,
             week_start=week_start,
@@ -1737,6 +1746,21 @@ def autopilot_dashboard(request):
         ).first()
         if existing:
             if existing.status == WeeklyContentPlan.Status.PLANNING:
+                recover_stale_planning(existing)
+                existing.refresh_from_db()
+                if existing.status == WeeklyContentPlan.Status.PLANNING:
+                    if not _planning_worker_started(existing):
+                        log_plan_step(
+                            existing, "queued",
+                            "Restarting your weekly strategy preview.",
+                            f"Week of {week_start.strftime('%b %d, %Y')}",
+                        )
+                        run_task_inline(
+                            plan_user_week,
+                            str(request.user.pk),
+                            week_start.isoformat(),
+                            str(existing.pk),
+                        )
                 return redirect(f"{reverse('content:autopilot')}?planning={existing.pk}")
             if existing.status == WeeklyContentPlan.Status.PENDING_REVIEW:
                 messages.info(
@@ -1750,8 +1774,35 @@ def autopilot_dashboard(request):
                 )
             return redirect("content:autopilot_detail", plan_id=existing.pk)
 
-        from datetime import timedelta
-        week_end = week_start + timedelta(days=6)
+        failed_plan = WeeklyContentPlan.objects.filter(
+            user=request.user,
+            week_start=week_start,
+            status=WeeklyContentPlan.Status.FAILED,
+        ).first()
+        if failed_plan:
+            failed_plan.status = WeeklyContentPlan.Status.PLANNING
+            failed_plan.error_message = ""
+            failed_plan.planning_log = []
+            failed_plan.strategy = {}
+            failed_plan.strategy_reasoning = ""
+            failed_plan.week_end = week_end
+            failed_plan.save(update_fields=[
+                "status", "error_message", "planning_log", "strategy",
+                "strategy_reasoning", "week_end",
+            ])
+            log_plan_step(
+                failed_plan, "queued",
+                "Queued your weekly strategy preview.",
+                f"Week of {week_start.strftime('%b %d, %Y')}",
+            )
+            fire_task(
+                plan_user_week,
+                str(request.user.pk),
+                week_start.isoformat(),
+                str(failed_plan.pk),
+            )
+            return redirect(f"{reverse('content:autopilot')}?planning={failed_plan.pk}")
+
         plan = WeeklyContentPlan.objects.create(
             user=request.user,
             week_start=week_start,
@@ -1760,7 +1811,7 @@ def autopilot_dashboard(request):
             planning_log=[],
         )
         log_plan_step(plan, "queued", "Queued your weekly strategy preview.", f"Week of {week_start.strftime('%b %d, %Y')}")
-        plan_user_week.delay(str(request.user.pk), week_start.isoformat(), str(plan.pk))
+        fire_task(plan_user_week, str(request.user.pk), week_start.isoformat(), str(plan.pk))
         return redirect(f"{reverse('content:autopilot')}?planning={plan.pk}")
 
     return render(request, "content/autopilot.html", {
@@ -1780,10 +1831,13 @@ def autopilot_dashboard(request):
 @login_required
 def autopilot_plan_status(request, plan_id):
     """JSON status for live planning modal (polled from the dashboard)."""
+    from apps.content.autopilot import recover_stale_planning
     from apps.content.models import WeeklyContentPlan
     from django.urls import reverse
 
     plan = get_object_or_404(WeeklyContentPlan, pk=plan_id, user=request.user)
+    recover_stale_planning(plan)
+    plan.refresh_from_db()
     strategy = plan.strategy or {}
     topics = strategy.get("daily_topics", [])
     terminal = plan.status in (
@@ -1841,7 +1895,7 @@ def autopilot_approve(request, plan_id):
         messages.error(request, "This plan is not waiting for approval.")
         return redirect("content:autopilot_detail", plan_id=plan.pk)
 
-    execute_autopilot_plan.delay(str(plan.pk))
+    fire_task(execute_autopilot_plan, str(plan.pk))
     if request.user.profile.auto_approve_posts:
         messages.success(
             request,

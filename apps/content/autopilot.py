@@ -30,6 +30,69 @@ AUTOPILOT_ACTIVE_STATUSES = (
     "active",
 )
 
+PLANNING_RETRY_SECONDS = 90
+PLANNING_FAIL_SECONDS = 300
+
+
+def _planning_worker_started(plan) -> bool:
+    """True once the strategist task has actually begun (not just web-queued)."""
+    steps = {entry.get("step") for entry in (plan.planning_log or [])}
+    return bool(steps.intersection({"start", "brand", "platforms", "performance", "strategist", "complete"}))
+
+
+def recover_stale_planning(plan) -> bool:
+    """
+    Detect plans stuck at web-queue and retry or fail them.
+    Returns True if plan state was changed.
+    """
+    from apps.content.models import WeeklyContentPlan
+    from apps.utils import run_task_inline
+
+    if plan.status != WeeklyContentPlan.Status.PLANNING:
+        return False
+
+    age_seconds = (timezone.now() - plan.updated_at).total_seconds()
+    if _planning_worker_started(plan):
+        if age_seconds >= PLANNING_FAIL_SECONDS:
+            plan.status = WeeklyContentPlan.Status.FAILED
+            plan.error_message = (
+                "Planning timed out after 5 minutes. The AI step may be overloaded — "
+                "click Plan This Week to try again."
+            )
+            log_plan_step(plan, "error", "Planning timed out.", plan.error_message)
+            plan.save(update_fields=["status", "error_message", "planning_log"])
+            return True
+        return False
+
+    steps = {entry.get("step") for entry in (plan.planning_log or [])}
+
+    if age_seconds >= PLANNING_FAIL_SECONDS:
+        plan.status = WeeklyContentPlan.Status.FAILED
+        plan.error_message = (
+            "Planning never started — the background worker may be offline. "
+            "Click Plan This Week to retry."
+        )
+        log_plan_step(plan, "error", "Planning timed out.", plan.error_message)
+        plan.save(update_fields=["status", "error_message", "planning_log"])
+        return True
+
+    if age_seconds >= PLANNING_RETRY_SECONDS and "retry_dispatch" not in steps:
+        log_plan_step(
+            plan, "retry_dispatch",
+            "Restarting strategist…",
+            "Re-dispatching — the first attempt did not start.",
+        )
+        # Bypass broker on retry: if the worker queue is stuck, run inline instead.
+        run_task_inline(
+            plan_user_week,
+            str(plan.user_id),
+            plan.week_start.isoformat(),
+            str(plan.pk),
+        )
+        return True
+
+    return False
+
 
 def log_plan_step(plan, step: str, message: str, detail: str = ""):
     """Append a visible planning step for the Autopilot live modal."""
@@ -212,11 +275,21 @@ def plan_user_week(user_id: str, week_start_iso: str, plan_id=None):
             plan.week_end = week_end
             plan.save(update_fields=["status", "error_message", "planning_log", "week_end"])
 
+    plan.refresh_from_db()
+    if plan.status == WeeklyContentPlan.Status.PENDING_REVIEW:
+        return {"skipped": "already_ready", "plan_id": str(plan.pk), "status": plan.status}
+
     if plan.status not in (
         WeeklyContentPlan.Status.PLANNING,
         WeeklyContentPlan.Status.FAILED,
     ):
         return {"skipped": "plan_already_exists", "plan_id": str(plan.pk), "status": plan.status}
+
+    # Another worker/thread may already be running the strategist steps.
+    if _planning_worker_started(plan):
+        age = (timezone.now() - plan.updated_at).total_seconds()
+        if age < PLANNING_FAIL_SECONDS:
+            return {"skipped": "already_running", "plan_id": str(plan.pk)}
 
     plan.status = WeeklyContentPlan.Status.PLANNING
     plan.error_message = ""

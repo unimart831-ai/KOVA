@@ -3,6 +3,11 @@ import threading
 from django.conf import settings
 
 
+def run_task_inline(task, *args, **kwargs):
+    """Run a Celery task callable in a daemon thread (bypasses the broker)."""
+    threading.Thread(target=task, args=args, kwargs=kwargs, daemon=True).start()
+
+
 def fire_task(task, *args, **kwargs):
     """
     Dispatch a Celery task without blocking the web request.
@@ -15,6 +20,10 @@ def fire_task(task, *args, **kwargs):
     always_eager = getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False)
 
     if always_eager or not broker:
-        threading.Thread(target=task, args=args, kwargs=kwargs, daemon=True).start()
+        run_task_inline(task, *args, **kwargs)
     else:
-        task.delay(*args, **kwargs)
+        try:
+            task.delay(*args, **kwargs)
+        except Exception:
+            # Broker unreachable — fall back so user-facing flows still complete.
+            run_task_inline(task, *args, **kwargs)
