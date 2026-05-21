@@ -13,12 +13,13 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.production")
 
 django_asgi_app = get_asgi_application()
 
+from apps.notifications.routing import websocket_urlpatterns  # noqa: E402
+
 application = ProtocolTypeRouter(
     {
         "http": django_asgi_app,
-        # WebSocket routes will be added here when we build real-time features
-        # "websocket": AuthMiddlewareStack(
-        #     URLRouter([])
-        # ),
+        "websocket": AuthMiddlewareStack(
+            URLRouter(websocket_urlpatterns)
+        ),
     }
 )

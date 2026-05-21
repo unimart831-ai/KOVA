@@ -29,7 +29,8 @@ def campaign_list(request):
 
     q = request.GET.get("q")
     if q:
-        qs = qs.filter(Q(name__icontains=q) | Q(description__icontains=q))
+        from apps.utils.search import full_text_search
+        qs = full_text_search(qs, q, ["name", "description"])
 
     # Quick stats
     user_campaigns = Campaign.objects.filter(user=request.user)

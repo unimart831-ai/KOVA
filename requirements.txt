@@ -18,6 +18,7 @@ django-extensions>=3.2
 
 # API (for agent communication)
 djangorestframework>=3.15
+drf-spectacular>=0.28
 
 # Async Tasks
 celery>=5.4

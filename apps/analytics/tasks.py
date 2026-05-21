@@ -409,7 +409,7 @@ def generate_recycle_email(recycle_id: str):
         prompt = (
             "You are an email marketing expert. A social media post performed exceptionally well.\n"
             "Turn this post's topic into a deeper, value-packed email for subscribers.\n\n"
-            f"Original post ({post.platform}): \"{post.text[:500]}\"\n"
+            f"Original post ({post.platform}): \"{post.content_text[:500]}\"\n"
             f"Performance: {recycle.performance_multiplier}x average engagement\n"
             f"{brand_context}\n\n"
             "Return JSON with:\n"
@@ -425,8 +425,8 @@ def generate_recycle_email(recycle_id: str):
             result = json.loads(response["text"])
         except (json.JSONDecodeError, KeyError):
             result = {
-                "subject": f"What our community loved: {post.text[:60]}",
-                "body_html": f"<p>{post.text}</p>",
+                "subject": f"What our community loved: {post.content_text[:60]}",
+                "body_html": f"<p>{post.content_text}</p>",
                 "reasoning": "High engagement post recycled to email",
             }
 

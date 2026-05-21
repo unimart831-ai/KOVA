@@ -14,6 +14,7 @@ from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from django_ratelimit.decorators import ratelimit
 
 from apps.reviews.models import ReviewRequest
 from apps.reviews.services import process_response
@@ -43,6 +44,7 @@ def review_detail(request, pk):
 
 
 @csrf_exempt
+@ratelimit(key="ip", rate="10/m", method="POST", block=True)
 @require_POST
 def capture_response(request, pk):
     """Public POST endpoint. Used by:

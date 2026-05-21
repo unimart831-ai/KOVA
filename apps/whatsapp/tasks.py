@@ -56,6 +56,14 @@ def handle_incoming_message(self, message_id: str):
     social_account = conversation.social_account
     user = social_account.user
 
+    # Commerce bot — handle product browsing, bookings, payments before AI
+    try:
+        from apps.whatsapp.commerce import handle_commerce_message
+        if handle_commerce_message(conversation, message, social_account):
+            return
+    except Exception as e:
+        logger.warning("Commerce bot error (falling through to AI): %s", e)
+
     # Skip if AI handling is disabled for this conversation
     if not conversation.ai_handling:
         logger.info("AI handling disabled for conversation %s", conversation.id)

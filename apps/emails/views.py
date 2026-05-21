@@ -32,9 +32,14 @@ def _verify_resend_signature(request) -> bool:
     """
     signing_secret = getattr(settings, "RESEND_WEBHOOK_SECRET", "")
     if not signing_secret:
+        if not settings.DEBUG:
+            logger.error(
+                "RESEND_WEBHOOK_SECRET not configured in production — rejecting webhook."
+            )
+            return False
         logger.warning(
             "RESEND_WEBHOOK_SECRET not configured — accepting webhook without "
-            "signature verification. Set this in production!"
+            "signature verification (dev mode only)."
         )
         return True
 

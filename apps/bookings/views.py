@@ -33,6 +33,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
+from django_ratelimit.decorators import ratelimit
 
 from apps.bookings.models import Booking, BookingLink
 from apps.bookings.slots import free_slots
@@ -263,6 +264,7 @@ def public_book(request, slug):
 
 
 @csrf_exempt
+@ratelimit(key="ip", rate="10/m", method="POST", block=True)
 @require_POST
 def public_confirm(request, slug):
     """POST: create the Booking. CSRF-exempt because public unauthenticated."""

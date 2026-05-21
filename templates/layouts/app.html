@@ -58,49 +58,51 @@
 
       <p class="nav-section">Work</p>
 
+      {% with create_active='/content/studio' in request.path or '/content/voice-campaign' in request.path or '/content/autopilot' in request.path or '/memes/' in request.path or '/media-queue/' in request.path or '/content/' in request.path and '/edit/' in request.path %}
       <a href="{% url 'content:studio' %}"
-         {% if '/content/studio' in request.path or '/content/' in request.path and '/edit/' in request.path or '/memes/' in request.path or '/media-queue/' in request.path %}aria-current="page"{% endif %}
-         class="{% if '/content/studio' in request.path or '/content/' in request.path and '/edit/' in request.path or '/memes/' in request.path or '/media-queue/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
-        <svg class="mr-3 h-5 w-5 {% if '/content/studio' in request.path or '/memes/' in request.path or '/media-queue/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+         {% if create_active %}aria-current="page"{% endif %}
+         class="{% if create_active %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if create_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
         </svg>
         Create
       </a>
 
-      {% comment %}
-        Create subnav — appears when on any Create-family path so the merged
-        tabs (Visual Publisher, Trending/Memes) stay discoverable.
-      {% endcomment %}
-      {% if '/content/studio' in request.path or '/memes/' in request.path or '/media-queue/' in request.path or '/content/' in request.path and '/edit/' in request.path %}
+      {% if create_active %}
       <div class="ml-8 space-y-0.5 mb-1">
         <a href="{% url 'content:studio' %}" class="block text-xs py-1 px-2 rounded {% if '/content/studio' in request.path or '/content/' in request.path and '/edit/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Studio</a>
         <a href="{% url 'media_queue:list' %}" class="block text-xs py-1 px-2 rounded {% if '/media-queue/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Visual Publisher</a>
         {% if request.plan_limits.memes_enabled %}
         <a href="{% url 'memes:discover' %}" class="block text-xs py-1 px-2 rounded {% if '/memes/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Trending / Memes</a>
         {% endif %}
+        <a href="{% url 'content:autopilot' %}" class="block text-xs py-1 px-2 rounded {% if '/content/autopilot' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Autopilot</a>
+        <a href="{% url 'content:voice_campaign' %}" class="block text-xs py-1 px-2 rounded {% if '/content/voice-campaign' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Voice Campaign</a>
       </div>
       {% endif %}
+      {% endwith %}
 
+      {% with schedule_active='/content/queue' in request.path or '/content/calendar' in request.path or '/content/ab-tests' in request.path or '/campaigns/' in request.path or '/emails/' in request.path %}
       <a href="{% url 'content:queue' %}"
-         {% if '/content/queue' in request.path or '/content/calendar' in request.path or '/content/ab-tests' in request.path or '/campaigns/' in request.path or '/emails/' in request.path %}aria-current="page"{% endif %}
-         class="{% if '/content/queue' in request.path or '/content/calendar' in request.path or '/content/ab-tests' in request.path or '/campaigns/' in request.path or '/emails/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
-        <svg class="mr-3 h-5 w-5 {% if '/content/queue' in request.path or '/content/calendar' in request.path or '/campaigns/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+         {% if schedule_active %}aria-current="page"{% endif %}
+         class="{% if schedule_active %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if schedule_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
         </svg>
         Schedule
       </a>
 
-      {# Schedule subnav — Timeline / A/B Tests / Campaigns. #}
-      {% if '/content/queue' in request.path or '/content/calendar' in request.path or '/content/ab-tests' in request.path or '/campaigns/' in request.path or '/emails/' in request.path %}
+      {% if schedule_active %}
       <div class="ml-8 space-y-0.5 mb-1">
         <a href="{% url 'content:queue' %}" class="block text-xs py-1 px-2 rounded {% if '/content/queue' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Queue</a>
         <a href="{% url 'content:calendar' %}" class="block text-xs py-1 px-2 rounded {% if '/content/calendar' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Calendar</a>
         {% if request.plan_limits.ab_testing %}
         <a href="{% url 'content:ab_test_list' %}" class="block text-xs py-1 px-2 rounded {% if '/content/ab-tests' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">A/B Tests</a>
         {% endif %}
-        <a href="{% url 'campaigns:list' %}" class="block text-xs py-1 px-2 rounded {% if '/campaigns/' in request.path or '/emails/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Campaigns</a>
+        <a href="{% url 'campaigns:list' %}" class="block text-xs py-1 px-2 rounded {% if '/campaigns/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Campaigns</a>
+        <a href="{% url 'emails:dashboard' %}" class="block text-xs py-1 px-2 rounded {% if '/emails/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Email Marketing</a>
       </div>
       {% endif %}
+      {% endwith %}
 
       <p class="nav-section">Customers</p>
 
@@ -156,6 +158,14 @@
         Leads
       </a>
 
+      {% if '/leads/' in request.path %}
+      <div class="ml-8 space-y-0.5 mb-1">
+        <a href="{% url 'leads:list' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'list' and request.resolver_match.namespace == 'leads' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">All Leads</a>
+        <a href="{% url 'leads:analytics' %}" class="block text-xs py-1 px-2 rounded {% if '/leads/analytics' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Analytics</a>
+        <a href="{% url 'leads:nurture_list' %}" class="block text-xs py-1 px-2 rounded {% if '/leads/nurture' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Nurture Sequences</a>
+      </div>
+      {% endif %}
+
       <a href="{% url 'bookings:list' %}"
          {% if '/bookings/' in request.path or '/book/' in request.path %}aria-current="page"{% endif %}
          class="{% if '/bookings/' in request.path or '/book/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
@@ -177,21 +187,14 @@
       <p class="nav-section">Money</p>
 
       <a href="{% url 'analytics:revenue' %}"
-         {% if '/analytics/revenue' in request.path or '/analytics/attribution' in request.path %}aria-current="page"{% endif %}
-         class="{% if '/analytics/revenue' in request.path or '/analytics/attribution' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
-        <svg class="mr-3 h-5 w-5 {% if '/analytics/revenue' in request.path or '/analytics/attribution' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+         {% if '/analytics/revenue' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/analytics/revenue' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/analytics/revenue' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
         Revenue
       </a>
 
-      {% comment %}
-        Products tab — only show when the user's industry actually needs a
-        product catalog. Salons, restaurants, retail, e-commerce do. SaaS,
-        consulting, nonprofit, NGO don't. Adapt list as new industries land.
-      {% endcomment %}
-      {% with industry=request.user.profile.industry %}
-      {% if industry in 'fashion_beauty,salon_beauty,food_restaurant,wholesale_retail,ecommerce,health,real_estate,travel_tourism,agriculture' %}
       <a href="{% url 'products:list' %}"
          {% if '/products/' in request.path %}aria-current="page"{% endif %}
          class="{% if '/products/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
@@ -200,8 +203,15 @@
         </svg>
         Products
       </a>
+
+      {% if '/products/' in request.path %}
+      <div class="ml-8 space-y-0.5 mb-1">
+        <a href="{% url 'products:list' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'list' and request.resolver_match.namespace == 'products' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">All Products</a>
+        <a href="{% url 'products:categories' %}" class="block text-xs py-1 px-2 rounded {% if '/products/categories' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Categories</a>
+        <a href="{% url 'products:snap' %}" class="block text-xs py-1 px-2 rounded {% if '/products/snap' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Snap to Sell</a>
+        <a href="{% url 'products:restock' %}" class="block text-xs py-1 px-2 rounded {% if '/products/restock' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Restock Scanner</a>
+      </div>
       {% endif %}
-      {% endwith %}
 
       <a href="{% url 'links:list' %}"
          {% if '/links/' in request.path %}aria-current="page"{% endif %}
@@ -211,6 +221,13 @@
         </svg>
         Links
       </a>
+
+      {% if '/links/' in request.path %}
+      <div class="ml-8 space-y-0.5 mb-1">
+        <a href="{% url 'links:list' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'list' and request.resolver_match.namespace == 'links' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Pages</a>
+        <a href="{% url 'links:submissions' %}" class="block text-xs py-1 px-2 rounded {% if '/links/submissions' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Form Submissions</a>
+      </div>
+      {% endif %}
 
       <a href="{% url 'qr_attribution:list' %}"
          {% if '/qr/' in request.path or '/walkin/' in request.path %}aria-current="page"{% endif %}
@@ -223,46 +240,51 @@
 
       <p class="nav-section">Insights</p>
 
+      {% with insights_active='/analytics/' in request.path and '/analytics/revenue' not in request.path and '/analytics/pixel' not in request.path %}
       <a href="{% url 'analytics:insights' %}"
-         {% if '/analytics/' in request.path and '/analytics/revenue' not in request.path and '/analytics/attribution' not in request.path and '/analytics/pixel' not in request.path %}aria-current="page"{% endif %}
-         class="{% if '/analytics/' in request.path and '/analytics/revenue' not in request.path and '/analytics/attribution' not in request.path and '/analytics/pixel' not in request.path %}nav-link-active{% else %}nav-link{% endif %}">
-        <svg class="mr-3 h-5 w-5 {% if '/analytics/' in request.path and '/analytics/revenue' not in request.path and '/analytics/attribution' not in request.path and '/analytics/pixel' not in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+         {% if insights_active %}aria-current="page"{% endif %}
+         class="{% if insights_active %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if insights_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
         </svg>
-        Performance
+        Insights
       </a>
 
-      {% comment %}
-        Insights subnav — surfaces Competitors (Pro+) when on Insights paths
-        so the feature isn't undiscoverable.
-      {% endcomment %}
-      {% if '/analytics/' in request.path and '/analytics/revenue' not in request.path and '/analytics/attribution' not in request.path and '/analytics/pixel' not in request.path %}
+      {% if insights_active %}
       <div class="ml-8 space-y-0.5 mb-1">
-        <a href="{% url 'analytics:insights' %}" class="block text-xs py-1 px-2 rounded {% if '/analytics/competitors' not in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Performance</a>
+        <a href="{% url 'analytics:insights' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'insights' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Performance</a>
+        <a href="{% url 'analytics:content_intelligence' %}" class="block text-xs py-1 px-2 rounded {% if '/analytics/intelligence' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Content Intelligence</a>
+        <a href="{% url 'analytics:attribution' %}" class="block text-xs py-1 px-2 rounded {% if '/analytics/attribution' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Attribution</a>
+        <a href="{% url 'analytics:performance_recycle' %}" class="block text-xs py-1 px-2 rounded {% if '/analytics/recycle' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Content Recycle</a>
+        <a href="{% url 'analytics:screenshot_compete' %}" class="block text-xs py-1 px-2 rounded {% if '/analytics/screenshot-compete' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Screenshot Compete</a>
         {% if request.plan_limits.competitor_tracking %}
         <a href="{% url 'analytics:competitors' %}" class="block text-xs py-1 px-2 rounded {% if '/analytics/competitors' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Competitors</a>
         {% endif %}
       </div>
       {% endif %}
+      {% endwith %}
 
       <p class="nav-section">Settings</p>
 
+      {% with settings_active='/accounts/settings' in request.path or '/platforms/' in request.path or '/teams/' in request.path or '/billing/' in request.path or '/agents/' in request.path or '/help/' in request.path or '/analytics/pixel' in request.path or '/calendar/' in request.path or '/profile-health/' in request.path or '/api/schema/' in request.path %}
       <a href="{% url 'accounts:settings' %}"
-         {% if '/accounts/settings' in request.path or '/platforms/' in request.path or '/teams/' in request.path or '/billing/' in request.path or '/agents/' in request.path or '/help/' in request.path or '/analytics/pixel' in request.path %}aria-current="page"{% endif %}
-         class="{% if '/accounts/settings' in request.path or '/platforms/' in request.path or '/teams/' in request.path or '/billing/' in request.path or '/agents/' in request.path or '/help/' in request.path or '/analytics/pixel' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
-        <svg class="mr-3 h-5 w-5 {% if '/accounts/settings' in request.path or '/platforms/' in request.path or '/teams/' in request.path or '/billing/' in request.path or '/agents/' in request.path or '/help/' in request.path or '/analytics/pixel' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+         {% if settings_active %}aria-current="page"{% endif %}
+         class="{% if settings_active %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if settings_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
         </svg>
         Settings
       </a>
 
-      {# ── Subnav under Settings — shown only when on a settings-family page ── #}
-      {% if '/accounts/settings' in request.path or '/platforms/' in request.path or '/teams/' in request.path or '/billing/' in request.path or '/agents/' in request.path or '/help/' in request.path or '/analytics/pixel' in request.path %}
+      {% if settings_active %}
       <div class="ml-8 space-y-0.5 mb-1">
+        <a href="{% url 'accounts:settings' %}" class="block text-xs py-1 px-2 rounded {% if '/accounts/settings' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Profile & Brand</a>
         <a href="{% url 'platforms:list' %}" class="block text-xs py-1 px-2 rounded {% if '/platforms/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Platforms</a>
         <a href="{% url 'accounts:ai_learning' %}" class="block text-xs py-1 px-2 rounded {% if '/ai-learning' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">AI Learning</a>
         <a href="{% url 'agents:control' %}" class="block text-xs py-1 px-2 rounded {% if '/agents/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Agents</a>
+        <a href="{% url 'calendar_intel:preferences' %}" class="block text-xs py-1 px-2 rounded {% if '/calendar/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Holidays & Moments</a>
+        <a href="{% url 'profile_audit:list' %}" class="block text-xs py-1 px-2 rounded {% if '/profile-health/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Profile Health</a>
         {% if request.plan_limits.multi_touch_attribution %}
         <a href="{% url 'analytics:pixel_settings' %}" class="block text-xs py-1 px-2 rounded {% if '/analytics/pixel' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Kova Pixel</a>
         {% endif %}
@@ -270,9 +292,11 @@
         <a href="{% url 'teams:list' %}" class="block text-xs py-1 px-2 rounded {% if '/teams/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Teams</a>
         {% endif %}
         <a href="{% url 'billing:overview' %}" class="block text-xs py-1 px-2 rounded {% if '/billing/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Billing</a>
+        <a href="/api/schema/swagger/" class="block text-xs py-1 px-2 rounded {% if '/api/schema/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">API Docs</a>
         <a href="{% url 'help:center' %}" class="block text-xs py-1 px-2 rounded {% if '/help/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Help</a>
       </div>
       {% endif %}
+      {% endwith %}
     </nav>
 
     <!-- User menu at bottom -->
@@ -332,8 +356,9 @@
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
               </svg>
-              <span hx-get="{% url 'notifications:bell' %}" hx-trigger="load, every 30s" hx-swap="innerHTML"
+              <span hx-get="{% url 'notifications:bell' %}" hx-trigger="load" hx-swap="innerHTML"
                     id="notif-badge"></span>
+              <span id="notification-count" class="hidden absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white"></span>
             </button>
             <div x-show="notifOpen" @click.away="notifOpen = false" x-cloak
                  x-transition:enter="transition ease-out duration-100"
@@ -391,6 +416,36 @@
 
       {% block content %}{% endblock %}
     </main>
+
+    <!-- Spacer for mobile bottom nav so content isn't hidden behind it -->
+    <div class="h-16 lg:hidden"></div>
   </div>
+
+  <!-- Mobile bottom navigation — visible only on small screens -->
+  <nav class="fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 lg:hidden pb-[env(safe-area-inset-bottom)]"
+       aria-label="Mobile quick navigation">
+    <div class="flex items-center justify-around h-14 px-2">
+      <a href="{% url 'brief:home' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if request.resolver_match.url_name == 'home' and request.resolver_match.namespace == 'brief' %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Home">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        <span class="text-[10px] font-medium">Home</span>
+      </a>
+      <a href="{% url 'content:studio' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/content/' in request.path or '/memes/' in request.path or '/media-queue/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Create">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        <span class="text-[10px] font-medium">Create</span>
+      </a>
+      <a href="{% url 'engage:inbox' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/engage/' in request.path or '/whatsapp/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Inbox">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+        <span class="text-[10px] font-medium">Inbox</span>
+      </a>
+      <a href="{% url 'analytics:insights' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/analytics/' in request.path and '/analytics/revenue' not in request.path and '/analytics/pixel' not in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Insights">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <span class="text-[10px] font-medium">Insights</span>
+      </a>
+      <a href="{% url 'leads:list' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/leads/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Leads">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span class="text-[10px] font-medium">Leads</span>
+      </a>
+    </div>
+  </nav>
 </div>
 {% endblock %}

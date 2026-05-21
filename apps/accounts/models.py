@@ -266,6 +266,21 @@ class UserProfile(models.Model):
                   "No publishing, no seeds, no replies, no media queue processing.",
     )
 
+    # ── Content Autopilot (Phase 3, May 2026) ──
+    autopilot_enabled = models.BooleanField(
+        default=False,
+        help_text="If True, the Strategist plans a full week of content autonomously "
+                  "and posts are auto-generated and scheduled every week.",
+    )
+    autopilot_posts_per_week = models.PositiveSmallIntegerField(
+        default=5,
+        help_text="Target number of posts per week when autopilot is active (1-14).",
+    )
+    autopilot_platforms = models.JSONField(
+        default=list, blank=True,
+        help_text='Platforms for autopilot to target. Empty = all connected. ["instagram", "linkedin"]',
+    )
+
     # ── Adapt Agent v2 (Phase 1 W3-4, May 2026) ──
     # The autonomous learning loop. Reads per-user post performance every
     # 12h and mutates these fields to bias future content toward winners.

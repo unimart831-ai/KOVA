@@ -12,7 +12,7 @@ from .base import *  # noqa: F401, F403
 # insecure default. Failing loudly here is far better than silently shipping
 # a broken trust boundary — these are the keys that protect every user's
 # session and every encrypted OAuth token.
-if SECRET_KEY == "INSECURE-dev-key-change-me-in-production":  # noqa: F405
+if SECRET_KEY.startswith("django-insecure") or SECRET_KEY == "INSECURE-dev-key-change-me-in-production":  # noqa: F405
     raise ImproperlyConfigured(
         "SECRET_KEY is set to the insecure default in production. "
         "Set SECRET_KEY in Railway environment variables to a strong random value."
@@ -108,16 +108,18 @@ else:
     }
 
 # ─── CONTENT SECURITY POLICY ────────────────────────────────────────────────
-# django-csp: Restrict what the browser can load to prevent XSS/injection.
+# django-csp with nonce-based inline script allowlisting.
+# CSP_INCLUDE_NONCE_IN adds a per-request nonce to the CSP header and makes
+# request.csp_nonce available in templates. Inline <script> tags must include
+# nonce="{{ request.csp_nonce }}" to execute.
 CSP_DEFAULT_SRC = ("'self'",)
-# 'unsafe-eval' removed — Alpine.js 3+ does not need it, and HTMX never did.
-# If a future dep needs it, add a strict-dynamic nonce instead of re-allowing eval.
-CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://js.stripe.com")
+CSP_INCLUDE_NONCE_IN = ["script-src"]
+CSP_SCRIPT_SRC = ("'self'", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://js.stripe.com")
 CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com")
-CSP_IMG_SRC = ("'self'", "data:", "https:", "blob:")  # Allow platform avatars, media
+CSP_IMG_SRC = ("'self'", "data:", "https:", "blob:")
 CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net")
 CSP_CONNECT_SRC = ("'self'", "https://api.stripe.com")
-CSP_FRAME_SRC = ("'self'", "https://js.stripe.com")   # Stripe checkout iframe
+CSP_FRAME_SRC = ("'self'", "https://js.stripe.com")
 CSP_OBJECT_SRC = ("'none'",)
 CSP_BASE_URI = ("'self'",)
 CSP_FORM_ACTION = ("'self'",)
@@ -258,8 +260,8 @@ if SENTRY_DSN:
         ),
     )
 else:
-    # Optional: log warning instead of crashing
-    import logging
-    logger = logging.getLogger(__name__)
-    logger.warning("SENTRY_DSN not set — Sentry disabled.")
+    raise ImproperlyConfigured(
+        "SENTRY_DSN must be set in production. "
+        "Without it, errors are silently lost. Get a DSN from https://sentry.io"
+    )
 

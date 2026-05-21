@@ -6,6 +6,7 @@ from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
+from django_ratelimit.decorators import ratelimit
 
 from apps.help.models import Article, HelpPageView, NewsletterSubscriber
 
@@ -262,6 +263,7 @@ def public_blog_article(request, slug):
 # ── Newsletter subscribe / unsubscribe ───────────────────────────────────────
 
 
+@ratelimit(key="ip", rate="5/m", method="POST", block=True)
 @require_POST
 def blog_subscribe(request):
     """Accept a newsletter signup from the blog. Returns an HTMX-friendly HTML

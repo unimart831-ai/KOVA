@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <script>
+  <script nonce="{{ request.csp_nonce }}">
     (function () {
       try {
         var k = "kova-theme";
@@ -118,15 +118,13 @@
   </div>
 
   <!-- Service Worker registration -->
-  <script>
+  <script nonce="{{ request.csp_nonce }}">
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(function () {});
     }
-    // Re-init Alpine components after HTMX swaps (fixes x-teleport, x-data, etc.)
     document.body.addEventListener('htmx:load', function(evt) {
       if (window.Alpine && evt.target) Alpine.initTree(evt.target);
     });
-    // HTMX global error handler — toast on failed requests
     document.body.addEventListener('htmx:responseError', function(evt) {
       var status = evt.detail.xhr ? evt.detail.xhr.status : 0;
       var msg = status === 403 ? 'Permission denied. Please refresh and try again.'
@@ -139,5 +137,43 @@
       window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'Network error. Check your connection.', type: 'error' } }));
     });
   </script>
+
+  {% if user.is_authenticated %}
+  <script nonce="{{ request.csp_nonce }}">
+    (function() {
+      var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      var ws = null;
+      var retryDelay = 1000;
+      var maxRetry = 30000;
+
+      function connect() {
+        ws = new WebSocket(proto + '//' + location.host + '/ws/updates/');
+        ws.onopen = function() { retryDelay = 1000; };
+        ws.onmessage = function(e) {
+          try {
+            var data = JSON.parse(e.data);
+            window.dispatchEvent(new CustomEvent('kova:ws', { detail: data }));
+
+            if (data.type === 'notification') {
+              window.dispatchEvent(new CustomEvent('notify', {
+                detail: { message: data.message, type: data.level || 'info' }
+              }));
+              var badge = document.getElementById('notification-count');
+              if (badge && data.count != null) {
+                badge.textContent = data.count;
+                badge.classList.toggle('hidden', data.count < 1);
+              }
+            }
+          } catch(err) {}
+        };
+        ws.onclose = function() {
+          setTimeout(connect, retryDelay);
+          retryDelay = Math.min(retryDelay * 2, maxRetry);
+        };
+      }
+      connect();
+    })();
+  </script>
+  {% endif %}
 </body>
 </html>

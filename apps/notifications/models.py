@@ -43,18 +43,30 @@ class Notification(models.Model):
 
     @classmethod
     def create_for_user(cls, user, notification_type, message, related_post=None):
-        """Create a notification, respecting user preferences."""
-        # System notifications always go through (critical alerts)
+        """Create a notification, respecting user preferences.
+        Also pushes a real-time WebSocket event to the user's browser.
+        """
         if notification_type != cls.NotificationType.SYSTEM:
             prefs = NotificationPreference.for_user(user)
             if not prefs.is_enabled(notification_type):
                 return None
-        return cls.objects.create(
+        notif = cls.objects.create(
             user=user,
             notification_type=notification_type,
             message=message,
             related_post=related_post,
         )
+        try:
+            from apps.notifications.realtime import send_user_event
+            send_user_event(user.pk, "notification", {
+                "message": message,
+                "level": "error" if notification_type == cls.NotificationType.PUBLISH_FAILED else "info",
+                "count": cls.unread_count(user),
+                "notification_type": notification_type,
+            })
+        except Exception:
+            pass
+        return notif
 
     @classmethod
     def unread_count(cls, user):

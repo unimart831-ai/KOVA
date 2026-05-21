@@ -24,7 +24,7 @@ if os.path.isfile(env_file):
     environ.Env.read_env(env_file)
 
 # ─── CORE ────────────────────────────────────────────────────────────────────
-SECRET_KEY = env("SECRET_KEY", default="INSECURE-dev-key-change-me-in-production")
+SECRET_KEY = env("SECRET_KEY", default="django-insecure-dev-only-key-DO-NOT-USE-IN-PRODUCTION")
 DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
@@ -44,6 +44,7 @@ DJANGO_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.sites",
     "django.contrib.humanize",
+    "django.contrib.postgres",
 ]
 
 THIRD_PARTY_APPS = [
@@ -56,6 +57,7 @@ THIRD_PARTY_APPS = [
     "django_extensions",
     "rest_framework",
     "rest_framework.authtoken",
+    "drf_spectacular",
     "channels",
 ]
 
@@ -248,9 +250,21 @@ CELERY_BEAT_SCHEDULE = {
         "task": "products.auto_promote_products",
         "schedule": 24 * 3600.0,  # daily — auto-create content for under-promoted products
     },
+    "autopilot-plan-weekly": {
+        "task": "content.plan_weekly_autopilot",
+        "schedule": 7 * 24 * 3600.0,  # weekly — plan next week's content (Sunday)
+    },
+    "autopilot-review-emails": {
+        "task": "content.send_autopilot_review_emails",
+        "schedule": 24 * 3600.0,  # daily — check if any plans finished, send review emails
+    },
     "recycle-top-content": {
         "task": "content.recycle_top_content",
         "schedule": 24 * 3600.0,  # daily — repurpose high-performing old content
+    },
+    "detect-top-performers-email": {
+        "task": "analytics.detect_top_performers",
+        "schedule": 24 * 3600.0,  # daily — find top posts → generate email campaign drafts
     },
     # Adapt Agent v2 — the autonomous learning loop. Reads each user's
     # last 30 days of post performance and mutates their UserProfile to
@@ -419,8 +433,26 @@ REST_FRAMEWORK = {
         "anon": "20/minute",
         "user": "120/minute",
     },
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.CursorPagination",
     "PAGE_SIZE": 25,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Kova Agent API",
+    "DESCRIPTION": "REST API for Kova Agent — autonomous social media intelligence for African SMEs.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SCHEMA_PATH_PREFIX": r"/api/v1/",
+    "TAGS": [
+        {"name": "Platforms", "description": "Connected social accounts"},
+        {"name": "Seeds", "description": "Content seed management"},
+        {"name": "Posts", "description": "Post lifecycle management"},
+        {"name": "Analytics", "description": "Performance metrics and attribution"},
+        {"name": "Agents", "description": "AI agent configuration and actions"},
+        {"name": "Products", "description": "Product catalog management"},
+        {"name": "Conversions", "description": "Revenue attribution events"},
+    ],
 }
 
 # ─── AI / LLM CONFIG ────────────────────────────────────────────────────────
@@ -533,11 +565,6 @@ AI_IMAGE_MODEL = env("AI_IMAGE_MODEL", default="flux")        # Pollinations mod
 # When configured, Research Agent uses real web data instead of LLM hallucinations.
 TAVILY_API_KEY = env("TAVILY_API_KEY", default="")
 
-# ─── WEB SEARCH (Tavily — real-time trend data for Research Agent) ───────────
-# Free tier: 1000 searches/month — sign up at https://tavily.com
-# When configured, Research Agent uses real web data instead of LLM hallucinations.
-TAVILY_API_KEY = env("TAVILY_API_KEY", default="")
-
 # ─── STRIPE (kept for future international billing) ─────────────────────────
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY", default="")
@@ -551,10 +578,7 @@ MPESA_ENVIRONMENT = env("MPESA_ENVIRONMENT", default="sandbox")  # sandbox | pro
 MPESA_CONSUMER_KEY = env("MPESA_CONSUMER_KEY", default="")
 MPESA_CONSUMER_SECRET = env("MPESA_CONSUMER_SECRET", default="")
 MPESA_SHORTCODE = env("MPESA_SHORTCODE", default="174379")       # Sandbox default
-MPESA_PASSKEY = env(
-    "MPESA_PASSKEY",
-    default="bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919",  # Sandbox default
-)
+MPESA_PASSKEY = env("MPESA_PASSKEY", default="")
 MPESA_CALLBACK_URL = env("MPESA_CALLBACK_URL", default="")       # e.g. https://yourdomain.com/billing/webhook/mpesa/
 MPESA_WEBHOOK_SECRET = env("MPESA_WEBHOOK_SECRET", default="")   # Optional: append ?token=<secret> to callback URL
 MPESA_TRIAL_DAYS = env.int("MPESA_TRIAL_DAYS", default=14)
@@ -582,7 +606,7 @@ THREADS_APP_SECRET = env("THREADS_APP_SECRET", default="") # Falls back to FACEB
 WHATSAPP_PHONE_NUMBER_ID = env("WHATSAPP_PHONE_NUMBER_ID", default="")  # Meta phone number ID
 WHATSAPP_ACCESS_TOKEN = env("WHATSAPP_ACCESS_TOKEN", default="")        # Permanent system user token
 WHATSAPP_WABA_ID = env("WHATSAPP_WABA_ID", default="")                 # WhatsApp Business Account ID
-WHATSAPP_VERIFY_TOKEN = env("WHATSAPP_VERIFY_TOKEN", default="kova-whatsapp-verify")  # Webhook verification
+WHATSAPP_VERIFY_TOKEN = env("WHATSAPP_VERIFY_TOKEN", default="")
 WHATSAPP_APP_SECRET = env("WHATSAPP_APP_SECRET", default="")            # For webhook signature validation
 FB_WA_CONFIG_ID = env("FB_WA_CONFIG_ID", default="")                    # Facebook Login for Business config ID (Embedded Signup)
 

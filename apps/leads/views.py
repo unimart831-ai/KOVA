@@ -28,7 +28,8 @@ def lead_list(request):
     if source:
         leads = leads.filter(source_type=source)
     if q:
-        leads = leads.filter(Q(name__icontains=q) | Q(email__icontains=q) | Q(phone__icontains=q))
+        from apps.utils.search import full_text_search
+        leads = full_text_search(leads, q, ["email", "first_name", "last_name", "notes"])
 
     leads = leads.annotate(activity_count=Count("activities"))[:100]
 

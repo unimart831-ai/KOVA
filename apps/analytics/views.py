@@ -974,11 +974,12 @@ def recycle_action(request, pk):
 
     if action == "dismiss" and recycle.status in ("detected", "ready"):
         recycle.status = "dismissed"
-        recycle.save(update_fields=["status", "updated_at"])
+        recycle.save(update_fields=["status"])
         messages.info(request, "Recycle dismissed.")
     elif action == "send" and recycle.status == "ready":
         recycle.status = "sent"
-        recycle.save(update_fields=["status", "updated_at"])
+        recycle.sent_at = timezone.now()
+        recycle.save(update_fields=["status", "sent_at"])
         messages.success(request, "Email marked as sent!")
 
     return redirect("analytics:performance_recycle")

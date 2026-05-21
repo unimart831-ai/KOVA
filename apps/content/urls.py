@@ -44,4 +44,8 @@ urlpatterns = [
     path("<uuid:post_id>/", views.post_detail, name="post_detail"),
     # Voice to Campaign
     path("voice-campaign/", views.voice_campaign, name="voice_campaign"),
+    # Autopilot
+    path("autopilot/", views.autopilot_dashboard, name="autopilot"),
+    path("autopilot/<uuid:plan_id>/", views.autopilot_plan_detail, name="autopilot_detail"),
+    path("autopilot/<uuid:plan_id>/cancel/", views.autopilot_cancel, name="autopilot_cancel"),
 ]

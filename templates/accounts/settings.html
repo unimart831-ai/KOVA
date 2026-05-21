@@ -223,6 +223,9 @@
                 <div>
                   <label for="id_brand_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">{{ field.label }}</label>
                   {% if field.help_text %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ field.help_text }}</p>{% endif %}
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    This also powers <a href="{% url 'content:autopilot' %}" class="text-kova-600 dark:text-kova-400 underline font-medium">Content Autopilot</a> — weekly AI-planned content.
+                  </p>
                 </div>
               </div>
 

@@ -7,6 +7,7 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from django_ratelimit.decorators import ratelimit
 
 from apps.billing.models import get_plan_limits
 from apps.links.forms import (
@@ -381,6 +382,7 @@ def public_page(request, slug):
     })
 
 
+@ratelimit(key="ip", rate="10/m", method="POST", block=True)
 @require_POST
 def public_form_submit(request, slug, form_id):
     """Handle form submission on a public Kova page."""

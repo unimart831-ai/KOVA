@@ -109,6 +109,8 @@ urlpatterns = [
     path("dashboard/", include("apps.admin_dashboard.urls")),
     path("api/v1/", include("apps.api.urls")),
     path("api/v1/partner/", include("apps.api.partner_urls")),
+    # OpenAPI schema + interactive docs
+    path("api/schema/", include("apps.api.schema_urls")),
 ]
 
 if settings.DEBUG:

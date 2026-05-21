@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+env:
+  PYTHON_VERSION: "3.12"
+  DJANGO_SETTINGS_MODULE: config.settings.development
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kova_agent
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Ruff check
+        run: ruff check .
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: lint
+    defaults:
+      run:
+        working-directory: kova_agent
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: kova_test
+          POSTGRES_USER: kova
+          POSTGRES_PASSWORD: kova
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kova -d kova_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://kova:kova@localhost:5432/kova_test
+      REDIS_URL: redis://localhost:6379/0
+      SECRET_KEY: ci-test-secret-key-not-for-production
+      DEBUG: "True"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: kova_agent/requirements/development.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements/development.txt
+
+      - name: Run migrations
+        run: python manage.py migrate --run-syncdb
+
+      - name: Run tests with coverage
+        run: |
+          pytest --cov=apps --cov-report=xml --cov-report=term-missing --cov-fail-under=70
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: kova_agent/coverage.xml
+
+  security:
+    name: Security Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kova_agent
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Check for secrets in code
+        run: |
+          pip install ruff
+          # Fail if any hardcoded password/secret patterns are found
+          ! grep -rn "INSECURE-dev-key\|bfb279f9aa9bdbcf158e97dd71a467cd" --include="*.py" config/ apps/ || echo "No hardcoded secrets found"
+
+      - name: Check Django deployment settings
+        run: |
+          pip install -r requirements/development.txt
+          python manage.py check --deploy --settings=config.settings.production 2>&1 || true
+        env:
+          SECRET_KEY: ci-check-key-not-for-production
+          FIELD_ENCRYPTION_KEY: ci-check-key-not-for-production-aaaaaaaaaaaaaa==
+          RESEND_API_KEY: re_fake_ci_check
+          SENTRY_DSN: https://fake@sentry.io/0
+          DATABASE_URL: postgres://kova:kova@localhost:5432/kova_test

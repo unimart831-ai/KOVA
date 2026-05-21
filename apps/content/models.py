@@ -556,3 +556,77 @@ class VoiceBrief(models.Model):
 
     def __str__(self):
         return f"VoiceBrief {self.pk} ({self.get_status_display()})"
+
+
+class WeeklyContentPlan(models.Model):
+    """
+    AI Content Autopilot — a fully autonomous weekly content plan.
+
+    The Strategist agent plans the week, Create generates posts for each day,
+    Adapt optimizes timing per platform. Posts auto-publish on schedule.
+    The user gets a weekly review email showing what went out and what's coming.
+
+    Lifecycle:
+      planning → generating → scheduling → active → completed
+    """
+
+    class Status(models.TextChoices):
+        PLANNING = "planning", "Planning"
+        GENERATING = "generating", "Generating Content"
+        SCHEDULING = "scheduling", "Optimizing Schedule"
+        ACTIVE = "active", "Active — Publishing"
+        COMPLETED = "completed", "Week Completed"
+        FAILED = "failed", "Failed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="weekly_content_plans",
+    )
+    week_start = models.DateField(help_text="Monday of the plan week")
+    week_end = models.DateField(help_text="Sunday of the plan week")
+    status = models.CharField(max_length=15, choices=Status.choices, default=Status.PLANNING, db_index=True)
+
+    # Strategist output
+    strategy = models.JSONField(
+        default=dict, blank=True,
+        help_text=(
+            "Strategist's weekly plan: {theme, goals, daily_topics: "
+            "[{day, topic, intent, platforms, notes}], content_mix}"
+        ),
+    )
+    strategy_reasoning = models.TextField(blank=True, help_text="Why the Strategist chose this strategy")
+
+    # Execution tracking
+    seeds_created = models.PositiveIntegerField(default=0)
+    posts_generated = models.PositiveIntegerField(default=0)
+    posts_published = models.PositiveIntegerField(default=0)
+    posts_failed = models.PositiveIntegerField(default=0)
+
+    # Performance (populated after the week completes)
+    performance_summary = models.JSONField(
+        default=dict, blank=True,
+        help_text="Post-week performance: {total_impressions, total_engagement, avg_engagement_rate, top_post_id}",
+    )
+
+    # Email digest
+    review_email_sent = models.BooleanField(default=False)
+    review_email_sent_at = models.DateTimeField(null=True, blank=True)
+
+    # Error tracking
+    error_message = models.TextField(blank=True)
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-week_start"]
+        unique_together = ["user", "week_start"]
+        indexes = [
+            models.Index(fields=["user", "status", "-week_start"]),
+        ]
+
+    def __str__(self):
+        return f"Week of {self.week_start} — {self.get_status_display()}"

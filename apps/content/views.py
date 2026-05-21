@@ -98,7 +98,8 @@ def _get_studio_posts(user, status_filter=None, platform_filter=None, format_fil
     if format_filter:
         posts = posts.filter(post_format=format_filter)
     if search_query:
-        posts = posts.filter(content_text__icontains=search_query)
+        from apps.utils.search import full_text_search
+        posts = full_text_search(posts, search_query, ["content_text", "first_comment"])
     if source_filter == "holiday":
         # Filter to only holiday-watcher generated posts
         posts = posts.filter(generated_by_agent="holiday_watcher")
@@ -1461,3 +1462,65 @@ def voice_campaign(request):
     return render(request, "content/voice_campaign.html", {
         "briefs": briefs,
     })
+
+
+# ─── AUTOPILOT ──────────────────────────────────────────────────────────────
+
+@login_required
+def autopilot_dashboard(request):
+    """Autopilot overview: current plan, past plans, toggle."""
+    from apps.content.models import WeeklyContentPlan
+
+    plans = (
+        WeeklyContentPlan.objects.filter(user=request.user)
+        .order_by("-week_start")[:20]
+    )
+    current_plan = plans.first() if plans and plans[0].status in ("planning", "generating", "scheduling", "active") else None
+
+    if request.method == "POST" and request.POST.get("action") == "trigger":
+        from apps.content.autopilot import plan_user_week, _next_monday
+        from datetime import date
+
+        week_start = _next_monday()
+        plan_user_week.delay(str(request.user.pk), week_start.isoformat())
+        messages.success(request, f"Autopilot triggered for the week of {week_start.strftime('%b %d')}.")
+        return redirect("content:autopilot")
+
+    return render(request, "content/autopilot.html", {
+        "plans": plans,
+        "current_plan": current_plan,
+        "autopilot_enabled": getattr(request.user.profile, "auto_approve_posts", False),
+    })
+
+
+@login_required
+def autopilot_plan_detail(request, plan_id):
+    """View details of a specific weekly content plan."""
+    from apps.content.models import Post, WeeklyContentPlan
+
+    plan = get_object_or_404(WeeklyContentPlan, pk=plan_id, user=request.user)
+    posts = Post.objects.filter(
+        user=request.user,
+        created_at__date__gte=plan.week_start,
+        created_at__date__lte=plan.week_end,
+        seed__notes__startswith="[Autopilot]",
+    ).select_related("social_account").order_by("scheduled_at")
+
+    return render(request, "content/autopilot_detail.html", {
+        "plan": plan,
+        "posts": posts,
+    })
+
+
+@login_required
+@require_POST
+def autopilot_cancel(request, plan_id):
+    """Cancel an active autopilot plan."""
+    from apps.content.models import WeeklyContentPlan
+
+    plan = get_object_or_404(WeeklyContentPlan, pk=plan_id, user=request.user)
+    if plan.status in ("planning", "generating", "scheduling", "active"):
+        plan.status = WeeklyContentPlan.Status.CANCELLED
+        plan.save(update_fields=["status"])
+        messages.info(request, "Autopilot plan cancelled.")
+    return redirect("content:autopilot")

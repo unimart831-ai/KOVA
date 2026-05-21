@@ -71,6 +71,9 @@ app.conf.task_routes = {
     # Products
     "products.auto_promote_products": {"queue": "default"},
     "content.recycle_top_content": {"queue": "low"},
+    "content.plan_weekly_autopilot": {"queue": "default"},
+    "content.plan_user_week": {"queue": "default"},
+    "content.send_autopilot_review_emails": {"queue": "low"},
     "campaigns.ai_build_campaign": {"queue": "default"},
     # Lead nurture + scoring + monthly reports
     "leads.process_nurture_steps": {"queue": "default"},

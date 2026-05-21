@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from django_ratelimit.decorators import ratelimit
 
 from .forms import PartnerApplicationForm
 from .models import (
@@ -113,6 +114,7 @@ def partners_article(request, slug):
     return render(request, f"partners/articles/{slug}.html", context)
 
 
+@ratelimit(key="ip", rate="5/m", method="POST", block=True)
 def partners_apply(request):
     """Application form for the Growth Partners Program."""
     # If already applied, show status

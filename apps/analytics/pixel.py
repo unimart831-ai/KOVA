@@ -20,6 +20,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from django_ratelimit.decorators import ratelimit
 
 from apps.accounts.models import UserProfile
 from apps.analytics.models import (
@@ -43,6 +44,7 @@ RATE_LIMIT_PER_MINUTE = 120  # per pixel_token
 
 
 @csrf_exempt
+@ratelimit(key="ip", rate="120/m", method="POST", block=True)
 def pixel_track(request):
     """
     Public endpoint for Kova Pixel events.

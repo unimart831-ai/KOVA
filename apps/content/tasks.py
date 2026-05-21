@@ -1508,7 +1508,7 @@ def recycle_top_content():
             other_platforms = [p for p in platforms if p != post.platform]
             target = other_platforms[:2] if other_platforms else [post.platform]
 
-            ContentSeed.objects.create(
+            seed = ContentSeed.objects.create(
                 user=user,
                 idea=(
                     f"Repurpose top-performing content:\n\n"
@@ -1520,6 +1520,7 @@ def recycle_top_content():
                 notes=f"[Recycle] From post {post.id} ({post.platform})",
                 target_platforms=target,
             )
+            generate_from_seed.delay(str(seed.pk))
             recycled += 1
             break  # Max 1 per user
 

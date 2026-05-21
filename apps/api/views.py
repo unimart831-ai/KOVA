@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, BasePermission
@@ -36,21 +37,25 @@ class HasAPIAccess(BasePermission):
 
 # ─── Platforms ───────────────────────────────────────────────────────────────
 
+@extend_schema(tags=["Platforms"])
 class SocialAccountListView(generics.ListAPIView):
     """List connected social accounts."""
     serializer_class = SocialAccountSerializer
     permission_classes = [IsAuthenticated, HasAPIAccess]
+    ordering = "-created_at"
 
     def get_queryset(self):
-        return SocialAccount.objects.filter(user=self.request.user, is_active=True)
+        return SocialAccount.objects.filter(user=self.request.user, is_active=True).order_by("-created_at")
 
 
 # ─── Content Seeds ───────────────────────────────────────────────────────────
 
+@extend_schema(tags=["Seeds"])
 class SeedListCreateView(generics.ListCreateAPIView):
     """List or create content seeds."""
     serializer_class = ContentSeedSerializer
     permission_classes = [IsAuthenticated, HasAPIAccess]
+    ordering = "-created_at"
 
     def get_queryset(self):
         return ContentSeed.objects.filter(user=self.request.user).order_by("-created_at")
@@ -64,6 +69,7 @@ class SeedListCreateView(generics.ListCreateAPIView):
         serializer.save(user=self.request.user)
 
 
+@extend_schema(tags=["Seeds"])
 class SeedDetailView(generics.RetrieveAPIView):
     """Retrieve a content seed."""
     serializer_class = ContentSeedSerializer
@@ -75,10 +81,20 @@ class SeedDetailView(generics.RetrieveAPIView):
 
 # ─── Posts ───────────────────────────────────────────────────────────────────
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Posts"],
+        parameters=[
+            OpenApiParameter("status", str, description="Filter by post status (draft, published, scheduled, etc.)"),
+            OpenApiParameter("platform", str, description="Filter by platform (instagram, twitter, etc.)"),
+        ],
+    ),
+)
 class PostListView(generics.ListAPIView):
-    """List user's posts with optional status filter."""
+    """List user's posts with optional status and platform filters."""
     serializer_class = PostSerializer
     permission_classes = [IsAuthenticated, HasAPIAccess]
+    ordering = "-created_at"
 
     def get_queryset(self):
         qs = Post.objects.filter(user=self.request.user).select_related(
@@ -93,9 +109,10 @@ class PostListView(generics.ListAPIView):
         if platform:
             qs = qs.filter(social_account__platform=platform)
 
-        return qs[:100]
+        return qs
 
 
+@extend_schema(tags=["Posts"])
 class PostDetailView(generics.RetrieveUpdateAPIView):
     """Retrieve or update (edit text, reschedule) a post."""
     serializer_class = PostSerializer
@@ -109,6 +126,7 @@ class PostDetailView(generics.RetrieveUpdateAPIView):
 
 # ─── Analytics ───────────────────────────────────────────────────────────────
 
+@extend_schema(tags=["Analytics"])
 class PostMetricsView(generics.RetrieveAPIView):
     """Get metrics for a specific post."""
     serializer_class = PostMetricSerializer
@@ -119,6 +137,7 @@ class PostMetricsView(generics.RetrieveAPIView):
         return PostMetric.objects.filter(post__user=self.request.user).select_related("post")
 
 
+@extend_schema(tags=["Analytics"])
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, HasAPIAccess])
 def analytics_summary(request):
@@ -148,6 +167,7 @@ def analytics_summary(request):
 
 # ─── Agents ──────────────────────────────────────────────────────────────────
 
+@extend_schema(tags=["Agents"])
 class AgentConfigListView(generics.ListAPIView):
     """List agent configurations."""
     serializer_class = AgentConfigSerializer
@@ -157,25 +177,36 @@ class AgentConfigListView(generics.ListAPIView):
         return AgentConfig.objects.filter(user=self.request.user)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Agents"],
+        parameters=[
+            OpenApiParameter("agent_type", str, description="Filter by agent type (research, create, adapt, etc.)"),
+        ],
+    ),
+)
 class AgentActionListView(generics.ListAPIView):
     """List recent agent actions."""
     serializer_class = AgentActionSerializer
     permission_classes = [IsAuthenticated, HasAPIAccess]
+    ordering = "-created_at"
 
     def get_queryset(self):
         qs = AgentAction.objects.filter(user=self.request.user).order_by("-created_at")
         agent_type = self.request.query_params.get("agent_type")
         if agent_type:
             qs = qs.filter(agent_type=agent_type)
-        return qs[:50]
+        return qs
 
 
 # ─── Conversions / Revenue Attribution ────────────────────────────────────────
 
+@extend_schema(tags=["Conversions"])
 class ConversionListCreateView(generics.ListCreateAPIView):
     """List or create conversion events (revenue attribution)."""
     serializer_class = ConversionSerializer
     permission_classes = [IsAuthenticated, HasAPIAccess]
+    ordering = "-created_at"
 
     def get_queryset(self):
         from apps.analytics.models import Conversion
@@ -183,7 +214,7 @@ class ConversionListCreateView(generics.ListCreateAPIView):
         ctype = self.request.query_params.get("type")
         if ctype:
             qs = qs.filter(conversion_type=ctype)
-        return qs[:100]
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -191,6 +222,7 @@ class ConversionListCreateView(generics.ListCreateAPIView):
 
 # ─── Products / Catalog ──────────────────────────────────────────────────────
 
+@extend_schema(tags=["Products"])
 class ProductListCreateView(generics.ListCreateAPIView):
     """
     List or create products in the user's catalog.
@@ -206,6 +238,7 @@ class ProductListCreateView(generics.ListCreateAPIView):
     """
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated, HasAPIAccess]
+    ordering = "-created_at"
 
     def get_queryset(self):
         from apps.products.models import Product
@@ -231,10 +264,10 @@ class ProductListCreateView(generics.ListCreateAPIView):
 
         q = self.request.query_params.get("q", "").strip()
         if q:
-            from django.db.models import Q
-            qs = qs.filter(Q(name__icontains=q) | Q(description__icontains=q))
+            from apps.utils.search import full_text_search
+            qs = full_text_search(qs, q, ["name", "description"], {"name": "A", "description": "B"})
 
-        return qs[:200]
+        return qs
 
     def perform_create(self, serializer):
         from apps.billing.models import get_plan_limits
@@ -253,6 +286,7 @@ class ProductListCreateView(generics.ListCreateAPIView):
         product.save(update_fields=["stock_status"])
 
 
+@extend_schema(tags=["Products"])
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
     Retrieve, update, or soft-delete a product.
@@ -270,6 +304,7 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
         instance.save(update_fields=["is_active"])
 
 
+@extend_schema(tags=["Products"])
 class ProductBulkImportView(generics.CreateAPIView):
     """
     Bulk import products via API.
@@ -318,10 +353,12 @@ class ProductBulkImportView(generics.CreateAPIView):
         )
 
 
+@extend_schema(tags=["Products"])
 class ProductCategoryListCreateView(generics.ListCreateAPIView):
     """List or create product categories."""
     serializer_class = ProductCategorySerializer
     permission_classes = [IsAuthenticated, HasAPIAccess]
+    ordering = "position"
 
     def get_queryset(self):
         from apps.products.models import ProductCategory

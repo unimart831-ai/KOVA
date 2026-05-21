@@ -1,0 +1,130 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Autopilot: Week of {{ plan.week_start|date:"M d" }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+  <!-- Back link -->
+  <a href="{% url 'content:autopilot' %}" class="inline-flex items-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    Back to Autopilot
+  </a>
+
+  <!-- Plan header -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div class="bg-gradient-to-r from-kova-600 to-purple-600 px-5 py-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-white font-bold text-lg">Week of {{ plan.week_start|date:"M d" }} — {{ plan.week_end|date:"M d, Y" }}</h2>
+          <p class="text-white/80 text-sm mt-1">{{ plan.strategy.theme|default:"No theme" }}</p>
+        </div>
+        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-white">
+          {{ plan.get_status_display }}
+        </span>
+      </div>
+    </div>
+
+    <div class="p-5">
+      <!-- Stats row -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ plan.seeds_created }}</div>
+          <div class="text-xs text-gray-500">Topics Planned</div>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ plan.posts_generated }}</div>
+          <div class="text-xs text-gray-500">Posts Generated</div>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
+          <div class="text-2xl font-bold text-green-600">{{ plan.posts_published }}</div>
+          <div class="text-xs text-gray-500">Published</div>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
+          {% if plan.performance_summary.avg_engagement %}
+          <div class="text-2xl font-bold text-kova-600">{{ plan.performance_summary.avg_engagement|floatformat:1 }}%</div>
+          <div class="text-xs text-gray-500">Avg Engagement</div>
+          {% else %}
+          <div class="text-2xl font-bold text-gray-400">—</div>
+          <div class="text-xs text-gray-500">Avg Engagement</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Strategy reasoning -->
+      {% if plan.strategy_reasoning %}
+      <div class="bg-kova-50 dark:bg-kova-950/30 border border-kova-200 dark:border-kova-800 rounded-lg p-4 mb-6">
+        <h4 class="text-xs font-semibold text-kova-700 dark:text-kova-300 uppercase tracking-wider mb-1">Strategist Reasoning</h4>
+        <p class="text-sm text-kova-800 dark:text-kova-200">{{ plan.strategy_reasoning }}</p>
+      </div>
+      {% endif %}
+
+      <!-- Daily plan -->
+      {% if plan.strategy.daily_topics %}
+      <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Daily Plan</h4>
+      <div class="space-y-2 mb-6">
+        {% for topic in plan.strategy.daily_topics %}
+        <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+          <div class="flex-shrink-0 w-20 text-xs font-medium text-gray-500 dark:text-gray-400 pt-0.5">
+            {{ topic.day|default:"Day" }}
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-900 dark:text-white">{{ topic.topic }}</p>
+            <div class="flex items-center gap-2 mt-1">
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-kova-100 dark:bg-kova-900/30 text-kova-700 dark:text-kova-300">
+                {{ topic.intent }}
+              </span>
+              {% for platform in topic.platforms %}
+              <span class="text-[10px] text-gray-400">{{ platform }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Generated posts -->
+  {% if posts %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+      <h3 class="font-semibold text-gray-900 dark:text-white">Generated Posts ({{ posts|length }})</h3>
+    </div>
+    <div class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for post in posts %}
+      <a href="{% url 'content:edit' post.pk %}" class="block px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <p class="text-sm text-gray-900 dark:text-white line-clamp-2">{{ post.content_text|truncatechars:150 }}</p>
+            <div class="flex items-center gap-2 mt-1.5">
+              <span class="text-xs text-gray-400">{{ post.platform }}</span>
+              {% if post.scheduled_at %}
+              <span class="text-xs text-gray-400">{{ post.scheduled_at|date:"M d, g:i A" }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <span class="flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold
+            {% if post.status == 'published' %}bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400
+            {% elif post.status == 'scheduled' %}bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+            {% elif post.status == 'failed' %}bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400
+            {% elif post.status == 'draft' %}bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400
+            {% else %}bg-yellow-50 text-yellow-700{% endif %}">
+            {{ post.get_status_display }}
+          </span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if plan.error_message %}
+  <div class="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+    <h4 class="text-sm font-semibold text-red-800 dark:text-red-200 mb-1">Error</h4>
+    <p class="text-sm text-red-700 dark:text-red-300">{{ plan.error_message }}</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

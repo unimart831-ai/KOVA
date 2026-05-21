@@ -28,7 +28,8 @@ def product_list(request):
         products = products.filter(category_id=cat)
     q = request.GET.get("q", "").strip()
     if q:
-        products = products.filter(Q(name__icontains=q) | Q(description__icontains=q))
+        from apps.utils.search import full_text_search
+        products = full_text_search(products, q, ["name", "description"])
     featured_only = request.GET.get("featured")
     if featured_only:
         products = products.filter(is_featured=True)

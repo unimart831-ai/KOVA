@@ -1,0 +1,143 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Content Autopilot{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white">Content Autopilot</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        AI plans your week, generates posts, schedules them, and publishes automatically.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      {% if autopilot_enabled %}
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+          <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Active
+        </span>
+      {% else %}
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+          Disabled
+        </span>
+      {% endif %}
+      <form method="post" class="inline">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="trigger">
+        <button type="submit"
+                class="px-4 py-2 text-sm font-medium rounded-lg bg-kova-600 text-white hover:bg-kova-700 transition shadow-sm">
+          Plan This Week
+        </button>
+      </form>
+    </div>
+  </div>
+
+  {% if not autopilot_enabled %}
+  <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+    <p class="text-sm text-amber-800 dark:text-amber-200">
+      <strong>Autopilot is disabled.</strong>
+      Enable "Auto-approve posts" in
+      <a href="{% url 'accounts:settings' %}" class="underline font-medium">Settings</a>
+      to let Kova autonomously plan and publish your weekly content.
+    </p>
+  </div>
+  {% endif %}
+
+  <!-- Current Plan -->
+  {% if current_plan %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div class="bg-gradient-to-r from-kova-600 to-purple-600 px-5 py-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-white font-semibold">Current Plan: Week of {{ current_plan.week_start|date:"M d" }}</h3>
+          <p class="text-white/80 text-sm mt-0.5">{{ current_plan.strategy.theme|default:"Planning..." }}</p>
+        </div>
+        <span class="px-2.5 py-1 rounded-full text-xs font-semibold
+          {% if current_plan.status == 'active' %}bg-white/20 text-white
+          {% elif current_plan.status == 'generating' %}bg-yellow-100 text-yellow-800
+          {% else %}bg-white/20 text-white{% endif %}">
+          {{ current_plan.get_status_display }}
+        </span>
+      </div>
+    </div>
+    <div class="p-5">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ current_plan.seeds_created }}</div>
+          <div class="text-xs text-gray-500">Seeds</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ current_plan.posts_generated }}</div>
+          <div class="text-xs text-gray-500">Posts Generated</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-green-600">{{ current_plan.posts_published }}</div>
+          <div class="text-xs text-gray-500">Published</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold {% if current_plan.posts_failed %}text-red-600{% else %}text-gray-900 dark:text-white{% endif %}">{{ current_plan.posts_failed }}</div>
+          <div class="text-xs text-gray-500">Failed</div>
+        </div>
+      </div>
+      <div class="flex gap-3">
+        <a href="{% url 'content:autopilot_detail' current_plan.pk %}"
+           class="flex-1 text-center px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+          View Details
+        </a>
+        <form method="post" action="{% url 'content:autopilot_cancel' current_plan.pk %}" class="flex-1">
+          {% csrf_token %}
+          <button type="submit"
+                  class="w-full px-4 py-2 text-sm font-medium rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition">
+            Cancel Plan
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Past Plans -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+      <h3 class="font-semibold text-gray-900 dark:text-white">Plan History</h3>
+    </div>
+    {% if plans %}
+    <div class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for plan in plans %}
+      <a href="{% url 'content:autopilot_detail' plan.pk %}"
+         class="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+        <div class="min-w-0">
+          <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+            Week of {{ plan.week_start|date:"M d, Y" }}
+          </p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+            {{ plan.strategy.theme|default:"—" }}
+          </p>
+        </div>
+        <div class="flex items-center gap-3 flex-shrink-0">
+          <span class="text-xs text-gray-500">{{ plan.posts_published }} published</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold
+            {% if plan.status == 'completed' %}bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400
+            {% elif plan.status == 'active' %}bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+            {% elif plan.status == 'failed' %}bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400
+            {% elif plan.status == 'cancelled' %}bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400
+            {% else %}bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400{% endif %}">
+            {{ plan.get_status_display }}
+          </span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="px-5 py-12 text-center">
+      <p class="text-sm text-gray-500 dark:text-gray-400">No autopilot plans yet.</p>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+        Click "Plan This Week" to create your first autonomous content week.
+      </p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

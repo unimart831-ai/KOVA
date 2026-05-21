@@ -28,6 +28,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
+from django_ratelimit.decorators import ratelimit
 
 from apps.qr_attribution.models import QRCode, QRScan, WalkInEvent
 
@@ -58,6 +59,7 @@ def _ip_hash(request):
 # ── Public scan landing ─────────────────────────────────────────────────────
 
 
+@ratelimit(key="ip", rate="60/m", method="GET", block=True)
 @require_GET
 def scan_landing(request, token):
     """Public page the customer lands on when they scan the QR."""
@@ -333,6 +335,7 @@ def cashier_view(request, slug):
 
 
 @csrf_exempt
+@ratelimit(key="ip", rate="30/m", method="POST", block=True)
 @require_POST
 def cashier_record(request, slug):
     """POST endpoint the cashier UI hits to record a walk-in.
