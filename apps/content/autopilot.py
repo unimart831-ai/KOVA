@@ -1,14 +1,15 @@
 """
-AI Content Autopilot — fully autonomous weekly content planning and execution.
+AI Content Autopilot — weekly content planning with preview-before-generate.
 
 Pipeline:
-  1. Strategist plans the week (topics, intents, platform mix)
-  2. Create Agent generates posts from each daily topic
-  3. Adapt Agent schedules posts at optimal times
-  4. Posts auto-publish on schedule
+  1. Strategist plans the week (preview) → user reviews every topic
+  2. User approves the strategy → Create Agent generates posts
+  3. Adapt Agent schedules posts only when auto_approve_posts is enabled
+  4. User reviews posts in Studio when auto-approve is off
   5. Weekly review email summarizes performance
 
-Runs every Monday via Celery Beat for users who have autopilot enabled.
+Runs every Monday via Celery Beat for users with autopilot_enabled.
+Does NOT require auto_approve_posts — that only controls auto-scheduling/publishing.
 """
 
 import logging
@@ -21,16 +22,64 @@ from apps.utils.locks import single_run
 
 logger = logging.getLogger(__name__)
 
+AUTOPILOT_ACTIVE_STATUSES = (
+    "pending_review",
+    "planning",
+    "generating",
+    "scheduling",
+    "active",
+)
+
 
 def get_autopilot_users():
-    """Return active users who have auto_approve_posts enabled (autopilot candidates)."""
+    """Users who receive automatic weekly plan previews."""
     from django.contrib.auth import get_user_model
     User = get_user_model()
     return User.objects.filter(
         is_active=True,
-        profile__auto_approve_posts=True,
+        profile__autopilot_enabled=True,
         profile__emergency_pause=False,
     ).select_related("profile")
+
+
+def get_plan_posts(plan):
+    """Posts belonging to an autopilot plan (FK-first, notes-prefix fallback)."""
+    from apps.content.models import Post
+
+    if plan.seeds.exists():
+        return (
+            Post.objects.filter(user=plan.user, seed__weekly_plan=plan)
+            .select_related("social_account")
+            .order_by("scheduled_at", "-created_at")
+        )
+    return (
+        Post.objects.filter(
+            user=plan.user,
+            created_at__date__gte=plan.week_start,
+            created_at__date__lte=plan.week_end,
+            seed__notes__startswith="[Autopilot]",
+        )
+        .select_related("social_account")
+        .order_by("scheduled_at", "-created_at")
+    )
+
+
+def get_plan_live_stats(plan):
+    """Live counts for dashboard — not persisted until week-end email."""
+    from apps.content.models import Post
+
+    posts = get_plan_posts(plan)
+    return {
+        "posts_generated": posts.count(),
+        "posts_published": posts.filter(status=Post.Status.PUBLISHED).count(),
+        "posts_pending": posts.filter(
+            status__in=[Post.Status.DRAFT, Post.Status.PENDING_APPROVAL],
+        ).count(),
+        "posts_scheduled": posts.filter(
+            status__in=[Post.Status.APPROVED, Post.Status.SCHEDULED],
+        ).count(),
+        "posts_failed": posts.filter(status=Post.Status.FAILED).count(),
+    }
 
 
 def _next_monday():
@@ -42,12 +91,20 @@ def _next_monday():
     return today + timedelta(days=days_ahead)
 
 
+def _resolve_autopilot_platforms(user, connected_platforms, profile):
+    """Honor profile.autopilot_platforms when set."""
+    chosen = profile.autopilot_platforms if profile else []
+    if chosen:
+        return [p for p in chosen if p in connected_platforms]
+    return connected_platforms
+
+
 @shared_task(name="content.plan_weekly_autopilot", soft_time_limit=30 * 60, time_limit=35 * 60)
 @single_run("content.plan_weekly_autopilot", timeout=40 * 60)
 def plan_weekly_autopilot():
     """
-    Weekly orchestrator: plan + generate + schedule for all autopilot users.
-    Runs every Monday morning via Celery Beat.
+    Weekly orchestrator: create plan PREVIEWS for autopilot users.
+    Generation happens only after the user approves the strategy.
     """
     week_start = _next_monday()
     planned = 0
@@ -57,26 +114,20 @@ def plan_weekly_autopilot():
             plan_user_week.delay(str(user.pk), week_start.isoformat())
             planned += 1
         except Exception as e:
-            logger.error("Failed to queue autopilot for user %s: %s", user.email, e)
+            logger.error("Failed to queue autopilot preview for user %s: %s", user.email, e)
 
-    logger.info("Autopilot: queued weekly plans for %d users", planned)
+    logger.info("Autopilot: queued weekly previews for %d users", planned)
     return {"users_queued": planned}
 
 
 @shared_task(name="content.plan_user_week", soft_time_limit=15 * 60, time_limit=18 * 60)
 def plan_user_week(user_id: str, week_start_iso: str):
     """
-    Plan and generate a full week of content for a single user.
-
-    Steps:
-      1. Strategist analyzes performance + audience → weekly plan
-      2. Create ContentSeeds for each day's topic
-      3. Generate posts from seeds (Create Agent)
-      4. Auto-schedule posts (Adapt Agent)
+    Step 1 only: Strategist creates a weekly plan preview.
+    Stops at PENDING_REVIEW — user must approve before posts are generated.
     """
     from django.contrib.auth import get_user_model
-    from apps.content.models import ContentSeed, WeeklyContentPlan
-    from apps.agents.llm import generate, get_model_for_task, parse_llm_json
+    from apps.content.models import WeeklyContentPlan
     from apps.agents.models import AgentAction
     from apps.notifications.models import Notification
     from apps.platforms.models import SocialAccount
@@ -100,67 +151,168 @@ def plan_user_week(user_id: str, week_start_iso: str):
         defaults={"week_end": week_end, "status": WeeklyContentPlan.Status.PLANNING},
     )
 
-    if not created and plan.status not in (WeeklyContentPlan.Status.FAILED, WeeklyContentPlan.Status.CANCELLED):
-        return {"skipped": "plan_already_exists", "plan_id": str(plan.pk)}
+    if not created and plan.status not in (
+        WeeklyContentPlan.Status.FAILED,
+        WeeklyContentPlan.Status.CANCELLED,
+    ):
+        return {"skipped": "plan_already_exists", "plan_id": str(plan.pk), "status": plan.status}
 
     if not created:
         plan.status = WeeklyContentPlan.Status.PLANNING
         plan.error_message = ""
-        plan.save(update_fields=["status", "error_message"])
+        plan.week_end = week_end
+        plan.save(update_fields=["status", "error_message", "week_end"])
 
     try:
-        platforms = list(
+        connected = list(
             SocialAccount.objects.filter(user=user, is_active=True)
             .values_list("platform", flat=True)
         )
-        if not platforms:
+        if not connected:
             plan.status = WeeklyContentPlan.Status.FAILED
             plan.error_message = "No connected platforms"
             plan.save(update_fields=["status", "error_message"])
             return {"error": "no_platforms"}
 
-        # ── Step 1: Strategist plans the week ─────────────────────────────
-        strategy = _strategist_plan_week(user, profile, platforms, week_start)
+        platforms = _resolve_autopilot_platforms(user, connected, profile)
+        if not platforms:
+            plan.status = WeeklyContentPlan.Status.FAILED
+            plan.error_message = "No autopilot target platforms match connected accounts"
+            plan.save(update_fields=["status", "error_message"])
+            return {"error": "no_target_platforms"}
+
+        posts_per_week = profile.autopilot_posts_per_week or 5
+        strategy = _strategist_plan_week(
+            user, profile, platforms, week_start, posts_per_week,
+        )
         plan.strategy = strategy
         plan.strategy_reasoning = strategy.get("reasoning", "")
-        plan.save(update_fields=["strategy", "strategy_reasoning"])
+        plan.status = WeeklyContentPlan.Status.PENDING_REVIEW
+        plan.save(update_fields=["strategy", "strategy_reasoning", "status"])
 
-        # ── Step 2: Create seeds from the plan ────────────────────────────
-        plan.status = WeeklyContentPlan.Status.GENERATING
-        plan.save(update_fields=["status"])
+        AgentAction.objects.create(
+            user=user,
+            agent_type="strategist",
+            action_type="weekly_autopilot_preview",
+            description=f"Prepared autopilot preview for week of {week_start}",
+            status=AgentAction.ActionStatus.COMPLETED,
+            input_data={"week_start": week_start_iso, "platforms": platforms},
+            output_data={
+                "strategy_theme": strategy.get("theme", ""),
+                "topics": len(strategy.get("daily_topics", [])),
+            },
+        )
 
-        daily_topics = strategy.get("daily_topics", [])
+        topic_count = len(strategy.get("daily_topics", []))
+        Notification.create_for_user(
+            user,
+            Notification.NotificationType.SYSTEM,
+            f"Your weekly content plan is ready: {topic_count} topic{'s' if topic_count != 1 else ''} "
+            f"for the week of {week_start.strftime('%b %d')}. Review and approve to generate posts.",
+        )
+
+        logger.info("Autopilot preview ready for %s (week %s)", user.email, week_start)
+        return {
+            "plan_id": str(plan.pk),
+            "status": "pending_review",
+            "topics": topic_count,
+            "theme": strategy.get("theme", ""),
+        }
+
+    except Exception as e:
+        logger.exception("Autopilot preview failed for user %s: %s", user.email, e)
+        plan.status = WeeklyContentPlan.Status.FAILED
+        plan.error_message = str(e)[:1000]
+        plan.save(update_fields=["status", "error_message"])
+        return {"error": str(e)}
+
+
+@shared_task(name="content.execute_autopilot_plan", soft_time_limit=20 * 60, time_limit=25 * 60)
+def execute_autopilot_plan(plan_id: str):
+    """
+    Step 2: User approved the preview — generate seeds, posts, and optionally schedule.
+
+    auto_approve_posts controls whether Adapt auto-schedules. When off, posts land
+    in Studio as pending approval — autopilot still delivers value without autonomy.
+    """
+    from django.contrib.auth import get_user_model
+    from apps.content.models import ContentSeed, Post, WeeklyContentPlan
+    from apps.agents.models import AgentAction
+    from apps.agents.create_agent import run_create_agent
+    from apps.agents.adapt_agent import auto_schedule_post
+    from apps.notifications.models import Notification
+    from apps.platforms.models import SocialAccount
+
+    User = get_user_model()
+    try:
+        plan = WeeklyContentPlan.objects.select_related("user", "user__profile").get(pk=plan_id)
+    except WeeklyContentPlan.DoesNotExist:
+        return {"error": "plan_not_found"}
+
+    user = plan.user
+    profile = user.profile
+
+    if plan.status != WeeklyContentPlan.Status.PENDING_REVIEW:
+        return {"error": "invalid_status", "status": plan.status}
+
+    if profile.emergency_pause:
+        return {"error": "emergency_pause"}
+
+    connected = list(
+        SocialAccount.objects.filter(user=user, is_active=True)
+        .values_list("platform", flat=True)
+    )
+    platforms = _resolve_autopilot_platforms(user, connected, profile)
+    strategy = plan.strategy or {}
+    posts_per_week = profile.autopilot_posts_per_week or 5
+    daily_topics = strategy.get("daily_topics", [])[:posts_per_week]
+
+    plan.status = WeeklyContentPlan.Status.GENERATING
+    plan.error_message = ""
+    plan.save(update_fields=["status", "error_message"])
+
+    try:
         seeds = []
-        for topic in daily_topics[:7]:
-            target = topic.get("platforms", platforms[:2])
+        for topic in daily_topics:
+            raw_target = topic.get("platforms", platforms[:2])
+            if isinstance(raw_target, str):
+                target = [raw_target]
+            else:
+                target = [p for p in raw_target if p in connected] or platforms[:2]
+
             seed = ContentSeed.objects.create(
                 user=user,
                 idea=topic.get("topic", ""),
-                notes=f"[Autopilot] Week of {week_start} — {topic.get('intent', '')}",
-                target_platforms=target if isinstance(target, list) else [target],
+                notes=(
+                    f"[Autopilot] Week of {plan.week_start} — "
+                    f"{topic.get('intent', '')}"
+                ),
+                target_platforms=target,
                 target_intent=topic.get("intent", ""),
+                weekly_plan=plan,
             )
             seeds.append(seed)
 
         plan.seeds_created = len(seeds)
         plan.save(update_fields=["seeds_created"])
 
-        # ── Step 3: Generate posts from each seed ─────────────────────────
-        from apps.agents.create_agent import run_create_agent
-        from apps.agents.adapt_agent import auto_schedule_post
-
         total_posts = 0
+        auto_approve = profile.auto_approve_posts
+
         for seed in seeds:
             try:
                 posts = run_create_agent(seed)
                 total_posts += len(posts)
 
-                for post in posts:
-                    try:
-                        auto_schedule_post(post)
-                    except Exception as e:
-                        logger.warning("Autopilot: auto-schedule failed for post %s: %s", post.id, e)
-
+                if auto_approve:
+                    for post in posts:
+                        try:
+                            auto_schedule_post(post)
+                        except Exception as e:
+                            logger.warning(
+                                "Autopilot: auto-schedule failed for post %s: %s",
+                                post.id, e,
+                            )
             except Exception as e:
                 logger.error("Autopilot: seed generation failed for %s: %s", seed.id, e)
                 seed.status = ContentSeed.SeedStatus.FAILED
@@ -174,48 +326,58 @@ def plan_user_week(user_id: str, week_start_iso: str):
         AgentAction.objects.create(
             user=user,
             agent_type="strategist",
-            action_type="weekly_autopilot",
-            description=f"Planned week of {week_start}: {len(seeds)} seeds → {total_posts} posts",
+            action_type="weekly_autopilot_execute",
+            description=(
+                f"Executed autopilot plan for {plan.week_start}: "
+                f"{len(seeds)} seeds → {total_posts} posts"
+            ),
             status=AgentAction.ActionStatus.COMPLETED,
-            input_data={"week_start": week_start_iso, "platforms": platforms},
             output_data={
-                "strategy_theme": strategy.get("theme", ""),
+                "plan_id": str(plan.pk),
                 "seeds": len(seeds),
                 "posts": total_posts,
+                "auto_approve": auto_approve,
             },
         )
 
+        if auto_approve:
+            msg = (
+                f"Autopilot generated {total_posts} posts for the week of "
+                f"{plan.week_start.strftime('%b %d')} and scheduled them automatically."
+            )
+        else:
+            msg = (
+                f"Autopilot generated {total_posts} posts for the week of "
+                f"{plan.week_start.strftime('%b %d')}. Review and approve them in Studio."
+            )
         Notification.create_for_user(
-            user, Notification.NotificationType.POSTS_GENERATED,
-            f"Autopilot: {total_posts} posts planned for the week of {week_start.strftime('%b %d')}. "
-            f"Theme: {strategy.get('theme', 'mixed content')}",
+            user, Notification.NotificationType.POSTS_GENERATED, msg,
         )
 
         logger.info(
-            "Autopilot completed for user %s: %d seeds → %d posts",
-            user.email, len(seeds), total_posts,
+            "Autopilot executed for %s: %d seeds → %d posts (auto_approve=%s)",
+            user.email, len(seeds), total_posts, auto_approve,
         )
         return {
             "plan_id": str(plan.pk),
             "seeds": len(seeds),
             "posts": total_posts,
-            "theme": strategy.get("theme", ""),
+            "auto_approve": auto_approve,
         }
 
     except Exception as e:
-        logger.exception("Autopilot failed for user %s: %s", user.email, e)
+        logger.exception("Autopilot execute failed for plan %s: %s", plan.pk, e)
         plan.status = WeeklyContentPlan.Status.FAILED
         plan.error_message = str(e)[:1000]
         plan.save(update_fields=["status", "error_message"])
         return {"error": str(e)}
 
 
-def _strategist_plan_week(user, profile, platforms, week_start):
+def _strategist_plan_week(user, profile, platforms, week_start, posts_per_week=5):
     """
     Have the Strategist agent create a weekly content plan based on
     the user's brand, audience, recent performance, and connected platforms.
     """
-    import json
     from apps.agents.llm import generate, get_model_for_task, parse_llm_json
     from apps.analytics.models import PostMetric
     from apps.content.models import Post
@@ -261,11 +423,12 @@ TOP PERFORMING CONTENT:
 Create a weekly content plan for the week of {week_label}.
 
 Rules:
-- Plan 5-7 posts across the week (not every day needs a post — rest days are OK)
+- Plan exactly {posts_per_week} posts across the week (not every day needs a post — rest days are OK)
 - Mix content intents: problem_awareness, solution, proof, offer, authority
 - Vary platforms — don't post the same thing everywhere
 - Each topic should be a specific, actionable content idea (not generic)
 - Consider what performed well and do more of it
+- Only use platforms from the PLATFORMS list above
 
 Return ONLY valid JSON:
 {{
@@ -297,13 +460,13 @@ Return ONLY valid JSON:
     if not parsed or "daily_topics" not in parsed:
         fallback_topics = [
             {
-                "day": days[i],
+                "day": days[i % 7],
                 "topic": f"Share a {['tip', 'story', 'product highlight', 'customer win', 'behind the scenes'][i % 5]} about {company}",
                 "intent": ["problem_awareness", "solution", "proof", "offer", "authority"][i % 5],
                 "platforms": platforms[:2],
                 "notes": "",
             }
-            for i in range(5)
+            for i in range(min(posts_per_week, 5))
         ]
         return {
             "theme": "Mixed content week",
@@ -312,6 +475,7 @@ Return ONLY valid JSON:
             "daily_topics": fallback_topics,
         }
 
+    parsed["daily_topics"] = parsed.get("daily_topics", [])[:posts_per_week]
     return parsed
 
 
@@ -322,7 +486,7 @@ Return ONLY valid JSON:
 def send_autopilot_review_emails():
     """
     Send weekly review emails for completed autopilot plans.
-    Runs every Sunday evening via Celery Beat.
+    Runs daily via Celery Beat.
     """
     from apps.content.models import Post, WeeklyContentPlan
     from apps.analytics.models import PostMetric
@@ -337,12 +501,7 @@ def send_autopilot_review_emails():
     sent = 0
     for plan in plans[:100]:
         try:
-            posts = Post.objects.filter(
-                user=plan.user,
-                created_at__date__gte=plan.week_start,
-                created_at__date__lte=plan.week_end,
-                seed__notes__startswith="[Autopilot]",
-            )
+            posts = get_plan_posts(plan)
             published = posts.filter(status=Post.Status.PUBLISHED)
             metrics = PostMetric.objects.filter(
                 post__in=published,
@@ -355,6 +514,7 @@ def send_autopilot_review_emails():
             )
 
             plan.posts_published = published.count()
+            plan.posts_generated = posts.count()
             plan.posts_failed = posts.filter(status=Post.Status.FAILED).count()
             plan.performance_summary = {
                 k: float(v) if v else 0
@@ -427,18 +587,17 @@ def _send_review_email(plan, published_posts, metrics):
             {"<div style='background: #f0fdf4; border: 1px solid #bbf7d0; padding: 16px; border-radius: 8px; margin-bottom: 24px;'><strong>Top Post:</strong><br>" + top_post + "</div>" if top_post else ""}
 
             <p style="color: #6b7280; font-size: 14px;">
-                Next week's plan is already in the works. Kova's Strategist is analyzing this week's
-                performance to make next week even better.
+                Next week's plan preview will arrive soon. Review and approve it before posts are generated.
             </p>
 
             <div style="text-align: center; margin-top: 24px;">
-                <a href="https://app.kova.page/brief/" style="display: inline-block; background: #7c3aed; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
-                    View Full Dashboard
+                <a href="https://app.kova.page/content/autopilot/" style="display: inline-block; background: #7c3aed; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                    Review Autopilot
                 </a>
             </div>
 
             <p style="color: #9ca3af; font-size: 12px; text-align: center; margin-top: 32px;">
-                You're receiving this because Autopilot is enabled. Manage in Settings → Agents.
+                You're receiving this because Autopilot is enabled. Manage in Settings.
             </p>
         </div>
         """

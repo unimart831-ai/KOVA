@@ -5,77 +5,139 @@
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-6">
 
-  <!-- Back link -->
+  {% include "content/_studio_subnav.html" %}
+
   <a href="{% url 'content:autopilot' %}" class="inline-flex items-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
     Back to Autopilot
   </a>
 
-  <!-- Plan header -->
+  {% if is_preview %}
+  <div class="bg-kova-50 dark:bg-kova-950/40 border-2 border-kova-300 dark:border-kova-700 rounded-xl p-5">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div>
+        <p class="text-xs font-semibold text-kova-700 dark:text-kova-300 uppercase tracking-wider">Strategy preview</p>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mt-1">Review before anything is generated</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          This is the full week plan. Approve when you're happy — or cancel and plan again.
+          {% if not auto_approve_posts %}
+            Posts will land in Studio for your approval; nothing publishes automatically.
+          {% endif %}
+        </p>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-2 flex-shrink-0">
+        <form method="post" action="{% url 'content:autopilot_cancel' plan.pk %}">
+          {% csrf_token %}
+          <button type="submit"
+                  class="w-full px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+            Cancel Plan
+          </button>
+        </form>
+        <form method="post" action="{% url 'content:autopilot_approve' plan.pk %}">
+          {% csrf_token %}
+          <button type="submit"
+                  class="w-full px-5 py-2.5 text-sm font-semibold rounded-lg bg-kova-600 text-white hover:bg-kova-700 transition shadow-sm">
+            Approve &amp; Generate Posts
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% elif plan.status == 'generating' %}
+  <div class="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
+    <p class="text-sm text-yellow-800 dark:text-yellow-200">
+      Kova is generating your posts now. Refresh in a minute to see them here
+      {% if not auto_approve_posts %}and in Studio for approval{% endif %}.
+    </p>
+  </div>
+  {% endif %}
+
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
     <div class="bg-gradient-to-r from-kova-600 to-purple-600 px-5 py-4">
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between gap-3">
         <div>
           <h2 class="text-white font-bold text-lg">Week of {{ plan.week_start|date:"M d" }} — {{ plan.week_end|date:"M d, Y" }}</h2>
           <p class="text-white/80 text-sm mt-1">{{ plan.strategy.theme|default:"No theme" }}</p>
         </div>
-        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-white">
+        <span class="px-3 py-1 rounded-full text-xs font-semibold
+          {% if plan.status == 'pending_review' %}bg-white text-kova-700
+          {% else %}bg-white/20 text-white{% endif %}">
           {{ plan.get_status_display }}
         </span>
       </div>
     </div>
 
     <div class="p-5">
-      <!-- Stats row -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
-          <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ plan.seeds_created }}</div>
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ plan.strategy.daily_topics|length|default:plan.seeds_created }}</div>
           <div class="text-xs text-gray-500">Topics Planned</div>
         </div>
         <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
-          <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ plan.posts_generated }}</div>
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ live_stats.posts_generated|default:plan.posts_generated }}</div>
           <div class="text-xs text-gray-500">Posts Generated</div>
         </div>
         <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
-          <div class="text-2xl font-bold text-green-600">{{ plan.posts_published }}</div>
+          <div class="text-2xl font-bold text-green-600">{{ live_stats.posts_published|default:plan.posts_published }}</div>
           <div class="text-xs text-gray-500">Published</div>
         </div>
         <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
           {% if plan.performance_summary.avg_engagement %}
           <div class="text-2xl font-bold text-kova-600">{{ plan.performance_summary.avg_engagement|floatformat:1 }}%</div>
           <div class="text-xs text-gray-500">Avg Engagement</div>
+          {% elif live_stats.posts_pending %}
+          <div class="text-2xl font-bold text-blue-600">{{ live_stats.posts_pending }}</div>
+          <div class="text-xs text-gray-500">Awaiting Your Review</div>
           {% else %}
           <div class="text-2xl font-bold text-gray-400">—</div>
-          <div class="text-xs text-gray-500">Avg Engagement</div>
+          <div class="text-xs text-gray-500">Performance</div>
           {% endif %}
         </div>
       </div>
 
-      <!-- Strategy reasoning -->
       {% if plan.strategy_reasoning %}
       <div class="bg-kova-50 dark:bg-kova-950/30 border border-kova-200 dark:border-kova-800 rounded-lg p-4 mb-6">
-        <h4 class="text-xs font-semibold text-kova-700 dark:text-kova-300 uppercase tracking-wider mb-1">Strategist Reasoning</h4>
+        <h4 class="text-xs font-semibold text-kova-700 dark:text-kova-300 uppercase tracking-wider mb-1">Why this strategy</h4>
         <p class="text-sm text-kova-800 dark:text-kova-200">{{ plan.strategy_reasoning }}</p>
       </div>
       {% endif %}
 
-      <!-- Daily plan -->
+      {% if plan.strategy.content_mix %}
+      <div class="mb-6">
+        <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Content mix</h4>
+        <div class="flex flex-wrap gap-2">
+          {% for intent, count in plan.strategy.content_mix.items %}
+          <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+            {{ intent|title }} × {{ count }}
+          </span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
       {% if plan.strategy.daily_topics %}
-      <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Daily Plan</h4>
+      <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+        {% if is_preview %}Proposed topics ({{ plan.strategy.daily_topics|length }}){% else %}Weekly topics{% endif %}
+      </h4>
       <div class="space-y-2 mb-6">
         {% for topic in plan.strategy.daily_topics %}
-        <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
-          <div class="flex-shrink-0 w-20 text-xs font-medium text-gray-500 dark:text-gray-400 pt-0.5">
+        <div class="flex items-start gap-3 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80">
+          <div class="flex-shrink-0 w-24 text-xs font-semibold text-gray-500 dark:text-gray-400 pt-0.5">
             {{ topic.day|default:"Day" }}
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-sm text-gray-900 dark:text-white">{{ topic.topic }}</p>
-            <div class="flex items-center gap-2 mt-1">
+            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ topic.topic }}</p>
+            {% if topic.notes %}
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ topic.notes }}</p>
+            {% endif %}
+            <div class="flex flex-wrap items-center gap-2 mt-2">
               <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-kova-100 dark:bg-kova-900/30 text-kova-700 dark:text-kova-300">
-                {{ topic.intent }}
+                {{ topic.intent|default:"content" }}
               </span>
               {% for platform in topic.platforms %}
-              <span class="text-[10px] text-gray-400">{{ platform }}</span>
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400">
+                {{ platform }}
+              </span>
               {% endfor %}
             </div>
           </div>
@@ -83,14 +145,28 @@
         {% endfor %}
       </div>
       {% endif %}
+
+      {% if not is_preview and not auto_approve_posts and live_stats.posts_pending %}
+      <div class="mb-6 p-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+        <p class="text-sm text-blue-800 dark:text-blue-200">
+          <strong>{{ live_stats.posts_pending }} post{{ live_stats.posts_pending|pluralize }}</strong> waiting for your approval in Studio.
+        </p>
+        <a href="{% url 'content:studio' %}?source=autopilot"
+           class="inline-flex items-center mt-2 text-sm font-medium text-kova-600 dark:text-kova-400 hover:underline">
+          Open Studio →
+        </a>
+      </div>
+      {% endif %}
     </div>
   </div>
 
-  <!-- Generated posts -->
   {% if posts %}
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
-    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
       <h3 class="font-semibold text-gray-900 dark:text-white">Generated Posts ({{ posts|length }})</h3>
+      {% if live_stats.posts_scheduled %}
+      <span class="text-xs text-gray-500">{{ live_stats.posts_scheduled }} scheduled</span>
+      {% endif %}
     </div>
     <div class="divide-y divide-gray-100 dark:divide-gray-800">
       {% for post in posts %}
@@ -107,8 +183,9 @@
           </div>
           <span class="flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold
             {% if post.status == 'published' %}bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400
-            {% elif post.status == 'scheduled' %}bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+            {% elif post.status == 'scheduled' or post.status == 'approved' %}bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
             {% elif post.status == 'failed' %}bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400
+            {% elif post.status == 'pending_approval' %}bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400
             {% elif post.status == 'draft' %}bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400
             {% else %}bg-yellow-50 text-yellow-700{% endif %}">
             {{ post.get_status_display }}
@@ -118,6 +195,10 @@
       {% endfor %}
     </div>
   </div>
+  {% elif not is_preview and plan.status == 'active' %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm px-5 py-8 text-center">
+    <p class="text-sm text-gray-500 dark:text-gray-400">No posts linked to this plan yet.</p>
+  </div>
   {% endif %}
 
   {% if plan.error_message %}
@@ -125,6 +206,16 @@
     <h4 class="text-sm font-semibold text-red-800 dark:text-red-200 mb-1">Error</h4>
     <p class="text-sm text-red-700 dark:text-red-300">{{ plan.error_message }}</p>
   </div>
+  {% endif %}
+
+  {% if not is_preview and plan.status != 'completed' and plan.status != 'cancelled' and plan.status != 'failed' and plan.status != 'pending_review' %}
+  <form method="post" action="{% url 'content:autopilot_cancel' plan.pk %}">
+    {% csrf_token %}
+    <button type="submit"
+            class="text-sm text-red-600 dark:text-red-400 hover:underline">
+      Cancel this plan
+    </button>
+  </form>
   {% endif %}
 </div>
 {% endblock %}

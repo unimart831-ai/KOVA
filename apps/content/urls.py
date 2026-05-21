@@ -47,5 +47,6 @@ urlpatterns = [
     # Autopilot
     path("autopilot/", views.autopilot_dashboard, name="autopilot"),
     path("autopilot/<uuid:plan_id>/", views.autopilot_plan_detail, name="autopilot_detail"),
+    path("autopilot/<uuid:plan_id>/approve/", views.autopilot_approve, name="autopilot_approve"),
     path("autopilot/<uuid:plan_id>/cancel/", views.autopilot_cancel, name="autopilot_cancel"),
 ]

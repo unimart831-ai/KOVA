@@ -48,6 +48,14 @@ class ContentSeed(models.Model):
     )
     error_message = models.TextField(blank=True)
     batch_strategy = models.TextField(blank=True, help_text="AI-generated content strategy for this batch of posts.")
+    weekly_plan = models.ForeignKey(
+        "WeeklyContentPlan",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="seeds",
+        help_text="Set when this seed was created by Content Autopilot.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -560,18 +568,15 @@ class VoiceBrief(models.Model):
 
 class WeeklyContentPlan(models.Model):
     """
-    AI Content Autopilot — a fully autonomous weekly content plan.
-
-    The Strategist agent plans the week, Create generates posts for each day,
-    Adapt optimizes timing per platform. Posts auto-publish on schedule.
-    The user gets a weekly review email showing what went out and what's coming.
+    AI Content Autopilot — weekly content planning with preview-before-generate.
 
     Lifecycle:
-      planning → generating → scheduling → active → completed
+      planning → pending_review → (user approves) → generating → active → completed
     """
 
     class Status(models.TextChoices):
         PLANNING = "planning", "Planning"
+        PENDING_REVIEW = "pending_review", "Awaiting Your Approval"
         GENERATING = "generating", "Generating Content"
         SCHEDULING = "scheduling", "Optimizing Schedule"
         ACTIVE = "active", "Active — Publishing"

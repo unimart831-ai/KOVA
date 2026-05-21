@@ -1548,58 +1548,136 @@ def voice_campaign(request):
 
 @login_required
 def autopilot_dashboard(request):
-    """Autopilot overview: current plan, past plans, toggle."""
+    """Autopilot overview: preview plans, approve strategy, track execution."""
+    from apps.content.autopilot import (
+        AUTOPILOT_ACTIVE_STATUSES,
+        _next_monday,
+        get_plan_live_stats,
+        plan_user_week,
+    )
     from apps.content.models import WeeklyContentPlan
 
-    plans = (
+    profile = request.user.profile
+    plans = list(
         WeeklyContentPlan.objects.filter(user=request.user)
         .order_by("-week_start")[:20]
     )
-    current_plan = plans.first() if plans and plans[0].status in ("planning", "generating", "scheduling", "active") else None
+    current_plan = next(
+        (p for p in plans if p.status in AUTOPILOT_ACTIVE_STATUSES),
+        None,
+    )
+    pending_plan = next(
+        (p for p in plans if p.status == WeeklyContentPlan.Status.PENDING_REVIEW),
+        None,
+    )
+    plan_stats = {str(p.pk): get_plan_live_stats(p) for p in plans}
+    current_plan_stats = plan_stats.get(str(current_plan.pk), {}) if current_plan else {}
+    plans_with_stats = [{"plan": p, "stats": plan_stats.get(str(p.pk), {})} for p in plans]
 
     if request.method == "POST" and request.POST.get("action") == "trigger":
-        from apps.content.autopilot import plan_user_week, _next_monday
-        from datetime import date
-
         week_start = _next_monday()
+        existing = WeeklyContentPlan.objects.filter(
+            user=request.user,
+            week_start=week_start,
+        ).exclude(
+            status__in=[
+                WeeklyContentPlan.Status.FAILED,
+                WeeklyContentPlan.Status.CANCELLED,
+            ],
+        ).first()
+        if existing:
+            if existing.status == WeeklyContentPlan.Status.PENDING_REVIEW:
+                messages.info(
+                    request,
+                    f"A plan preview for the week of {week_start.strftime('%b %d')} is already waiting for your approval.",
+                )
+            else:
+                messages.info(
+                    request,
+                    f"You already have an active plan for the week of {week_start.strftime('%b %d')}.",
+                )
+            return redirect("content:autopilot_detail", plan_id=existing.pk)
+
         plan_user_week.delay(str(request.user.pk), week_start.isoformat())
-        messages.success(request, f"Autopilot triggered for the week of {week_start.strftime('%b %d')}.")
+        messages.success(
+            request,
+            f"Planning the week of {week_start.strftime('%b %d')} — review every topic here before posts are generated.",
+        )
         return redirect("content:autopilot")
 
     return render(request, "content/autopilot.html", {
         "plans": plans,
+        "plans_with_stats": plans_with_stats,
         "current_plan": current_plan,
-        "autopilot_enabled": getattr(request.user.profile, "auto_approve_posts", False),
+        "current_plan_stats": current_plan_stats,
+        "pending_plan": pending_plan,
+        "autopilot_enabled": profile.autopilot_enabled,
+        "auto_approve_posts": profile.auto_approve_posts,
+        "autopilot_posts_per_week": profile.autopilot_posts_per_week or 5,
     })
 
 
 @login_required
 def autopilot_plan_detail(request, plan_id):
-    """View details of a specific weekly content plan."""
-    from apps.content.models import Post, WeeklyContentPlan
+    """View a weekly plan — full strategy preview or generated posts."""
+    from apps.content.autopilot import get_plan_live_stats, get_plan_posts
+    from apps.content.models import WeeklyContentPlan
 
     plan = get_object_or_404(WeeklyContentPlan, pk=plan_id, user=request.user)
-    posts = Post.objects.filter(
-        user=request.user,
-        created_at__date__gte=plan.week_start,
-        created_at__date__lte=plan.week_end,
-        seed__notes__startswith="[Autopilot]",
-    ).select_related("social_account").order_by("scheduled_at")
+    profile = request.user.profile
+    posts = get_plan_posts(plan)
+    live_stats = get_plan_live_stats(plan)
 
     return render(request, "content/autopilot_detail.html", {
         "plan": plan,
         "posts": posts,
+        "live_stats": live_stats,
+        "auto_approve_posts": profile.auto_approve_posts,
+        "is_preview": plan.status == WeeklyContentPlan.Status.PENDING_REVIEW,
     })
 
 
 @login_required
 @require_POST
-def autopilot_cancel(request, plan_id):
-    """Cancel an active autopilot plan."""
+def autopilot_approve(request, plan_id):
+    """User approved the strategy preview — queue post generation."""
+    from apps.content.autopilot import execute_autopilot_plan
     from apps.content.models import WeeklyContentPlan
 
     plan = get_object_or_404(WeeklyContentPlan, pk=plan_id, user=request.user)
-    if plan.status in ("planning", "generating", "scheduling", "active"):
+    if plan.status != WeeklyContentPlan.Status.PENDING_REVIEW:
+        messages.error(request, "This plan is not waiting for approval.")
+        return redirect("content:autopilot_detail", plan_id=plan.pk)
+
+    execute_autopilot_plan.delay(str(plan.pk))
+    if request.user.profile.auto_approve_posts:
+        messages.success(
+            request,
+            "Strategy approved. Kova is generating and scheduling your posts now.",
+        )
+    else:
+        messages.success(
+            request,
+            "Strategy approved. Kova is generating your posts — you'll review them in Studio before publishing.",
+        )
+    return redirect("content:autopilot_detail", plan_id=plan.pk)
+
+
+@login_required
+@require_POST
+def autopilot_cancel(request, plan_id):
+    """Cancel a pending or active autopilot plan."""
+    from apps.content.models import WeeklyContentPlan
+
+    plan = get_object_or_404(WeeklyContentPlan, pk=plan_id, user=request.user)
+    cancellable = (
+        WeeklyContentPlan.Status.PENDING_REVIEW,
+        WeeklyContentPlan.Status.PLANNING,
+        WeeklyContentPlan.Status.GENERATING,
+        WeeklyContentPlan.Status.SCHEDULING,
+        WeeklyContentPlan.Status.ACTIVE,
+    )
+    if plan.status in cancellable:
         plan.status = WeeklyContentPlan.Status.CANCELLED
         plan.save(update_fields=["status"])
         messages.info(request, "Autopilot plan cancelled.")

@@ -269,8 +269,8 @@ class UserProfile(models.Model):
     # ── Content Autopilot (Phase 3, May 2026) ──
     autopilot_enabled = models.BooleanField(
         default=False,
-        help_text="If True, the Strategist plans a full week of content autonomously "
-                  "and posts are auto-generated and scheduled every week.",
+        help_text="If True, Kova prepares a weekly content plan preview every Monday. "
+                  "You review and approve the strategy before posts are generated.",
     )
     autopilot_posts_per_week = models.PositiveSmallIntegerField(
         default=5,

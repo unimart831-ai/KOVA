@@ -150,6 +150,14 @@ class BrandProfileForm(forms.ModelForm):
         label="Social media goals",
     )
 
+    autopilot_platforms_selection = forms.MultipleChoiceField(
+        choices=[],
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "rounded text-kova-600"}),
+        required=False,
+        label="Autopilot platforms",
+        help_text="Leave empty to use all connected platforms.",
+    )
+
     class Meta:
         model = UserProfile
         fields = [
@@ -163,6 +171,8 @@ class BrandProfileForm(forms.ModelForm):
             "brand_voice",
             "target_audience",
             "posting_frequency",
+            "autopilot_enabled",
+            "autopilot_posts_per_week",
             "auto_approve_posts",
             "engage_autonomy_level",
             "content_language",
@@ -196,6 +206,7 @@ class BrandProfileForm(forms.ModelForm):
                 }
             ),
             "posting_frequency": forms.NumberInput(attrs={"class": "input", "min": 1, "max": 50}),
+            "autopilot_posts_per_week": forms.NumberInput(attrs={"class": "input", "min": 1, "max": 14}),
             "content_language": forms.Select(attrs={"class": "input"}),
             "brand_restrictions": forms.Textarea(
                 attrs={
@@ -230,6 +241,8 @@ class BrandProfileForm(forms.ModelForm):
                 self.fields["key_offerings_text"].initial = "\n".join(self.instance.key_offerings)
             if self.instance.goals:
                 self.fields["goals_selection"].initial = self.instance.goals
+            if self.instance.autopilot_platforms:
+                self.fields["autopilot_platforms_selection"].initial = self.instance.autopilot_platforms
 
             # ── Plan-tier-gate engage_autonomy_level ─────────────────────
             # Per docs/specs/ENGAGE_AGENT_V2_SPEC.md: Starter caps at
@@ -244,6 +257,9 @@ class BrandProfileForm(forms.ModelForm):
                 if is_level_allowed(val, plan)
             ]
             self.fields["engage_autonomy_level"].choices = allowed_levels
+
+        from apps.platforms.models import SocialAccount
+        self.fields["autopilot_platforms_selection"].choices = SocialAccount.Platform.choices
 
     def clean_engage_autonomy_level(self):
         """Defence-in-depth: reject levels above the plan's cap.
@@ -287,6 +303,7 @@ class BrandProfileForm(forms.ModelForm):
         instance.key_offerings = [o.strip() for o in offerings_text.split("\n") if o.strip()]
         # Goals
         instance.goals = self.cleaned_data.get("goals_selection", [])
+        instance.autopilot_platforms = self.cleaned_data.get("autopilot_platforms_selection", [])
         if commit:
             instance.save()
         return instance

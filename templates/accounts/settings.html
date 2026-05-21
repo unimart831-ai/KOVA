@@ -226,6 +226,44 @@
                 {% if field.help_text %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ field.help_text }}</p>{% endif %}
               </div>
 
+            {% elif field.name == 'autopilot_enabled' %}
+              <div class="flex items-start space-x-3 mb-4 p-4 bg-kova-50 dark:bg-kova-950/30 rounded-xl border border-kova-200 dark:border-kova-800">
+                <input type="checkbox" name="{{ field.html_name }}" id="id_brand_{{ field.name }}"
+                       {% if field.value %}checked{% endif %}
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-kova-600 focus:ring-kova-500 dark:bg-gray-900">
+                <div>
+                  <label for="id_brand_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">{{ field.label }}</label>
+                  {% if field.help_text %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ field.help_text }}</p>{% endif %}
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Manage plans in <a href="{% url 'content:autopilot' %}" class="text-kova-600 dark:text-kova-400 underline font-medium">Content Autopilot</a>.
+                    You always review the strategy before posts are generated.
+                  </p>
+                </div>
+              </div>
+
+            {% elif field.name == 'autopilot_posts_per_week' %}
+              <div class="mb-4">
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ field.help_text }}</p>{% endif %}
+              </div>
+
+            {% elif field.name == 'autopilot_platforms_selection' %}
+              <div class="mb-4">
+                <label class="label">{{ field.label }}</label>
+                {% if field.help_text %}<p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ field.help_text }}</p>{% endif %}
+                <div class="grid grid-cols-2 gap-3">
+                  {% for choice in field.field.choices %}
+                    <label class="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-kova-300 dark:hover:border-kova-600 cursor-pointer transition-colors has-[:checked]:border-kova-500 has-[:checked]:bg-kova-50 dark:has-[:checked]:bg-kova-950/40">
+                      <input type="checkbox" name="{{ field.html_name }}" value="{{ choice.0 }}"
+                             {% if choice.0 in field.value %}checked{% endif %}
+                             class="rounded border-gray-300 text-kova-600 focus:ring-kova-500">
+                      <span class="text-sm text-gray-700 dark:text-gray-300">{{ choice.1 }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+              </div>
+
             {% elif field.name == 'auto_approve_posts' %}
               <div class="flex items-start space-x-3 mb-4 p-4 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-100 dark:border-gray-700">
                 <input type="checkbox" name="{{ field.html_name }}" id="id_brand_{{ field.name }}"
@@ -235,7 +273,7 @@
                   <label for="id_brand_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">{{ field.label }}</label>
                   {% if field.help_text %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ field.help_text }}</p>{% endif %}
                   <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    This also powers <a href="{% url 'content:autopilot' %}" class="text-kova-600 dark:text-kova-400 underline font-medium">Content Autopilot</a> — weekly AI-planned content.
+                    Optional for Autopilot. When off, you still get weekly plan previews — posts land in Studio for your approval before scheduling.
                   </p>
                 </div>
               </div>
