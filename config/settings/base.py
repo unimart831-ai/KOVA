@@ -289,6 +289,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "emails.process_email_sequences",
         "schedule": 30 * 60.0,  # every 30 min — advance sequence enrollments
     },
+    "sync-leads-to-subscribers": {
+        "task": "emails.sync_leads_to_subscribers_all",
+        "schedule": 24 * 3600.0,  # daily — backfill email subscribers from leads
+    },
     "discover-trending-memes": {
         "task": "memes.discover_trending_memes",
         "schedule": 3 * 3600.0,  # every 3 hours — AI meme trend discovery

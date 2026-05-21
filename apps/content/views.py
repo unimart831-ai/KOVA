@@ -1641,17 +1641,46 @@ def ab_test_cancel(request, test_id):
 
 @login_required
 def voice_campaign(request):
-    """Upload a voice memo and turn it into a full campaign."""
+    """Launch AI campaigns from voice memos or text prompts."""
+    from apps.campaigns.models import Campaign
     from apps.content.models import VoiceBrief
     from apps.content.tasks import process_voice_brief
+    from apps.campaigns.tasks import ai_build_campaign
 
     if request.method == "POST":
+        action = request.POST.get("action", "voice")
+
+        if action == "prompt":
+            prompt = request.POST.get("prompt", "").strip()
+            if not prompt:
+                messages.error(request, "Describe what you want your campaign to achieve.")
+                return redirect("content:voice_campaign")
+
+            duration = request.POST.get("duration_days", "7")
+            try:
+                duration_days = max(1, min(int(duration), 90))
+            except (ValueError, TypeError):
+                duration_days = 7
+
+            include_email = request.POST.get("include_email") == "on"
+            fire_task(
+                ai_build_campaign,
+                str(request.user.id),
+                prompt,
+                duration_days,
+                include_email,
+            )
+            messages.success(
+                request,
+                "AI is building your campaign — posts will appear in Queue as they're generated.",
+            )
+            return redirect("content:voice_campaign")
+
         audio = request.FILES.get("audio")
         if not audio:
             messages.error(request, "Please upload an audio file.")
             return redirect("content:voice_campaign")
 
-        # Basic validation
         allowed_types = [
             "audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav",
             "audio/ogg", "audio/webm", "audio/mp4", "audio/m4a",
@@ -1663,7 +1692,7 @@ def voice_campaign(request):
             messages.error(request, "Unsupported audio format. Use MP3, WAV, OGG, WebM, or M4A.")
             return redirect("content:voice_campaign")
 
-        if audio.size > 25 * 1024 * 1024:  # 25 MB Whisper limit
+        if audio.size > 25 * 1024 * 1024:
             messages.error(request, "Audio file too large. Maximum 25 MB.")
             return redirect("content:voice_campaign")
 
@@ -1672,19 +1701,25 @@ def voice_campaign(request):
         messages.success(
             request,
             "Voice memo uploaded! AI is transcribing and building your campaign — "
-            "check back in a minute."
+            "check back in a minute.",
         )
         return redirect("content:voice_campaign")
 
     briefs = (
         VoiceBrief.objects
         .filter(user=request.user)
-        .select_related("campaign")
-        .order_by("-created_at")[:30]
+        .select_related("campaign", "email_campaign")
+        .order_by("-created_at")[:20]
+    )
+    campaigns = (
+        Campaign.objects
+        .filter(user=request.user)
+        .order_by("-created_at")[:15]
     )
 
     return render(request, "content/voice_campaign.html", {
         "briefs": briefs,
+        "campaigns": campaigns,
     })
 
 

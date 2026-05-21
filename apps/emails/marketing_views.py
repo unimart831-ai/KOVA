@@ -65,9 +65,14 @@ def subscriber_add(request):
     if request.method == "POST":
         form = EmailSubscriberForm(request.POST)
         if form.is_valid():
-            sub = form.save(commit=False)
-            sub.user = request.user
-            sub.save()
+            from apps.emails.subscriber_sync import upsert_subscriber
+
+            sub, _ = upsert_subscriber(
+                request.user,
+                form.cleaned_data["email"],
+                name=form.cleaned_data.get("name", ""),
+                source=form.cleaned_data.get("source") or EmailSubscriber.Source.MANUAL,
+            )
             messages.success(request, f"Subscriber '{sub.email}' added!")
             return redirect("emails:subscribers")
     else:
@@ -208,8 +213,12 @@ def campaign_create(request):
     if request.method == "POST":
         form = EmailCampaignForm(request.POST, user=request.user)
         if form.is_valid():
+            from apps.emails.subscriber_sync import ensure_default_list
+
             campaign = form.save(commit=False)
             campaign.user = request.user
+            if not campaign.target_list_id:
+                campaign.target_list = ensure_default_list(request.user)
             campaign.save()
             messages.success(request, f"Campaign '{campaign.name}' created!")
             return redirect("emails:campaign_detail", campaign_id=campaign.pk)
@@ -279,7 +288,9 @@ def campaign_send(request, campaign_id):
         return redirect("emails:campaign_detail", campaign_id=campaign.pk)
 
     # Check plan limits
-    limits = get_plan_limits(request.user)
+    profile = getattr(request.user, "profile", None)
+    plan = getattr(profile, "plan", "starter") if profile else "starter"
+    limits = get_plan_limits(plan)
     monthly_limit = limits.get("email_campaigns_per_month")
     if monthly_limit is not None:
         from datetime import timedelta
@@ -341,10 +352,21 @@ def sequence_detail(request, sequence_id):
 
 @login_required
 def email_dashboard(request):
-    """Email marketing overview."""
+    """Email marketing overview — auto-syncs subscribers from leads on each visit."""
+    from apps.emails.subscriber_sync import bootstrap_email_marketing
+
+    sync_result = bootstrap_email_marketing(request.user)
+
     subscriber_stats = EmailSubscriber.objects.filter(user=request.user).aggregate(
         total=Count("id"),
         active=Count("id", filter=Q(status="active")),
+    )
+
+    source_stats = (
+        EmailSubscriber.objects.filter(user=request.user, status="active")
+        .values("source")
+        .annotate(count=Count("id"))
+        .order_by("-count")
     )
 
     campaign_stats = EmailCampaign.objects.filter(user=request.user).aggregate(
@@ -363,13 +385,32 @@ def email_dashboard(request):
         user=request.user, is_active=True
     ).annotate(enrollment_count=Count("enrollments"))[:5]
 
+    default_list = EmailList.objects.filter(user=request.user, name="All contacts").first()
     list_count = EmailList.objects.filter(user=request.user).count()
 
     return render(request, "emails/dashboard.html", {
         "subscriber_stats": subscriber_stats,
+        "source_stats": source_stats,
         "campaign_stats": campaign_stats,
         "recent_campaigns": recent_campaigns,
         "active_sequences": active_sequences,
         "list_count": list_count,
+        "default_list": default_list,
+        "sync_result": sync_result,
         "page_title": "Email Marketing",
     })
+
+
+@login_required
+@require_POST
+def subscriber_sync_now(request):
+    """Manual trigger to sync all leads into email subscribers."""
+    from apps.emails.subscriber_sync import bootstrap_email_marketing
+
+    result = bootstrap_email_marketing(request.user)
+    messages.success(
+        request,
+        f"Synced {result['synced']} contact(s). "
+        f"{result['list_count']} active on your All contacts list.",
+    )
+    return redirect("emails:dashboard")

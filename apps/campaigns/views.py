@@ -13,54 +13,8 @@ from apps.content.models import ContentSeed, Post
 
 @login_required
 def campaign_list(request):
-    """User's campaign hub — list with status filters and quick stats."""
-    qs = Campaign.objects.filter(user=request.user).annotate(
-        seed_count=Count("campaign_seeds", distinct=True),
-        email_count=Count("campaign_emails", distinct=True),
-    )
-
-    status = request.GET.get("status")
-    if status and status in dict(Campaign.Status.choices):
-        qs = qs.filter(status=status)
-
-    objective = request.GET.get("objective")
-    if objective and objective in dict(Campaign.Objective.choices):
-        qs = qs.filter(objective=objective)
-
-    q = request.GET.get("q")
-    if q:
-        from apps.utils.search import full_text_search
-        qs = full_text_search(qs, q, ["name", "description"])
-
-    # Quick stats
-    user_campaigns = Campaign.objects.filter(user=request.user)
-    stats = {
-        "total": user_campaigns.count(),
-        "active": user_campaigns.filter(status=Campaign.Status.ACTIVE).count(),
-        "draft": user_campaigns.filter(status=Campaign.Status.DRAFT).count(),
-        "completed": user_campaigns.filter(status=Campaign.Status.COMPLETED).count(),
-    }
-
-    # Plan limit check
-    profile = getattr(request.user, "profile", None)
-    plan = getattr(profile, "plan", "starter") if profile else "starter"
-    limits = get_plan_limits(plan)
-    max_campaigns = limits.get("max_campaigns", 3)
-
-    paginator = Paginator(qs, 20)
-    page = paginator.get_page(request.GET.get("page", 1))
-
-    return render(request, "campaigns/campaign_list.html", {
-        "page_obj": page,
-        "stats": stats,
-        "current_status": status,
-        "current_objective": objective,
-        "current_q": q or "",
-        "max_campaigns": max_campaigns,
-        "can_create": stats["total"] < max_campaigns or max_campaigns >= 999999,
-        "statuses": Campaign.Status.choices,
-        "objectives": Campaign.Objective.choices,
-    })
+    """Redirect legacy campaigns list to unified Voice Campaign hub."""
+    return redirect("content:voice_campaign")
 
 
 @login_required
@@ -388,28 +342,5 @@ def _apply_utm_to_posts(campaign):
 
 @login_required
 def campaign_ai_build(request):
-    """AI Campaign Builder — create a full campaign from a single prompt."""
-    if request.method != "POST":
-        return redirect("campaigns:list")
-
-    prompt = request.POST.get("prompt", "").strip()
-    if not prompt:
-        messages.error(request, "Please describe what you want your campaign to achieve.")
-        return redirect("campaigns:list")
-
-    duration = request.POST.get("duration_days", "7")
-    try:
-        duration_days = max(1, min(int(duration), 90))
-    except (ValueError, TypeError):
-        duration_days = 7
-
-    from apps.campaigns.tasks import ai_build_campaign
-    from apps.utils.helpers import fire_task
-
-    fire_task(ai_build_campaign, str(request.user.id), prompt, duration_days)
-
-    messages.success(
-        request,
-        "Your AI campaign is being built! Check back in a moment.",
-    )
-    return redirect("campaigns:list")
+    """Legacy endpoint — redirect to Voice Campaign hub."""
+    return redirect("content:voice_campaign")

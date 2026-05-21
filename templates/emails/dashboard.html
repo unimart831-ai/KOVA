@@ -1,10 +1,39 @@
 {% extends "layouts/app.html" %}
 
-{% block page_title %}Campaigns{% endblock %}
+{% block page_title %}Email Marketing{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Subscribers sync automatically from leads and Kova Forms — ready to send</p>
+{% endblock %}
 
 {% block content %}
-{% include "campaigns/_campaigns_tabs.html" %}
+{% include "emails/_emails_subnav.html" %}
 <div class="space-y-6">
+
+  {# Auto-sync strip #}
+  <div class="card px-4 py-3 bg-kova-50/50 dark:bg-kova-950/20 border-kova-100 dark:border-kova-900/40">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <p class="text-sm font-medium text-gray-900 dark:text-white">Automatic subscriber capture</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          Leads, Kova Form submissions, and manual adds flow into your list — no CSV required.
+          {% if default_list %}<span class="text-kova-600 dark:text-kova-400">{{ default_list.subscriber_count }} on {{ default_list.name }}</span>{% endif %}
+        </p>
+      </div>
+      <form method="post" action="{% url 'emails:sync' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-secondary text-xs px-3 py-1.5">Sync from Leads</button>
+      </form>
+    </div>
+    {% if source_stats %}
+    <div class="flex flex-wrap gap-2 mt-3">
+      {% for row in source_stats %}
+      <span class="text-[10px] px-2 py-0.5 rounded-full bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+        {{ row.source|default:"unknown" }} · {{ row.count }}
+      </span>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
 
   {# Stats #}
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -31,8 +60,7 @@
     <a href="{% url 'emails:campaign_create' %}" class="btn-primary text-sm px-4 py-2">+ New Campaign</a>
     <a href="{% url 'emails:subscribers' %}" class="btn-secondary text-sm px-4 py-2">Subscribers ({{ subscriber_stats.total|default:0 }})</a>
     <a href="{% url 'emails:lists' %}" class="btn-secondary text-sm px-4 py-2">Lists ({{ list_count }})</a>
-    <a href="{% url 'emails:sequences' %}" class="btn-secondary text-sm px-4 py-2">Sequences</a>
-    <a href="{% url 'emails:campaigns' %}" class="btn-secondary text-sm px-4 py-2">All Campaigns</a>
+    <a href="{% url 'leads:list' %}" class="btn-secondary text-sm px-4 py-2">View Leads</a>
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -67,7 +95,10 @@
         {% endfor %}
       </ul>
       {% else %}
-      <div class="px-5 py-8 text-center text-sm text-gray-400">No campaigns yet.</div>
+      <div class="px-5 py-8 text-center text-sm text-gray-400">
+        <p>No campaigns yet.</p>
+        <p class="text-xs mt-1">Create one — your All contacts list is ready when you have subscribers.</p>
+      </div>
       {% endif %}
     </div>
 
@@ -94,7 +125,7 @@
         {% endfor %}
       </ul>
       {% else %}
-      <div class="px-5 py-8 text-center text-sm text-gray-400">No active sequences.</div>
+      <div class="px-5 py-8 text-center text-sm text-gray-400">No active sequences — new subscribers still sync automatically.</div>
       {% endif %}
     </div>
 

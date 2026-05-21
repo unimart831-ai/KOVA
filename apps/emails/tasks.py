@@ -634,3 +634,28 @@ def process_email_sequences():
 
     logger.info("Email sequences processed: %d sent, %d completed", sent, completed)
     return {"sent": sent, "completed": completed}
+
+
+@shared_task(name="emails.sync_leads_to_subscribers_all")
+def sync_leads_to_subscribers_all():
+    """
+    Daily backfill: sync all leads with emails into EmailSubscriber records.
+    Keeps lists populated even if a signal was missed.
+    """
+    from apps.accounts.models import UserProfile
+    from apps.emails.subscriber_sync import sync_leads_for_user
+
+    profiles = UserProfile.objects.filter(
+        subscription_status__in=("active", "trialing"),
+    ).select_related("user")
+
+    total_synced = 0
+    for profile in profiles:
+        try:
+            result = sync_leads_for_user(profile.user)
+            total_synced += result.get("synced", 0)
+        except Exception:
+            logger.exception("Lead→subscriber sync failed for user %s", profile.user.email)
+
+    logger.info("Lead→subscriber sync complete: %d contacts processed", total_synced)
+    return total_synced

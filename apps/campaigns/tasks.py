@@ -16,27 +16,23 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
-@shared_task(name="campaigns.ai_build_campaign")
-def ai_build_campaign(user_id, prompt, duration_days=7):
+def build_campaign_from_prompt(
+    user,
+    prompt,
+    duration_days=7,
+    *,
+    voice_brief=None,
+    include_email=False,
+    auto_generate=True,
+):
     """
-    Build a full campaign from a user prompt.
+    Shared campaign builder used by AI prompt and Voice-to-Campaign flows.
 
-    1. Uses LLM to generate campaign strategy (name, objective, seed ideas)
-    2. Creates Campaign object
-    3. Creates ContentSeeds linked to the campaign, spread across duration
-    4. Each seed will be picked up by the Create Agent for content generation
+    Returns dict with campaign_id, name, seeds_created, email_campaign_id (optional).
     """
-    from django.contrib.auth import get_user_model
-
-    from apps.campaigns.models import Campaign, CampaignNote, CampaignSeed
+    from apps.campaigns.models import Campaign, CampaignEmail, CampaignNote, CampaignSeed
     from apps.content.models import ContentSeed
     from apps.platforms.models import SocialAccount
-
-    User = get_user_model()
-    try:
-        user = User.objects.get(id=user_id)
-    except User.DoesNotExist:
-        return {"error": "User not found"}
 
     platforms = list(
         SocialAccount.objects.filter(user=user, is_active=True)
@@ -49,14 +45,12 @@ def ai_build_campaign(user_id, prompt, duration_days=7):
     business_name = getattr(profile, "company_name", "") if profile else ""
     brand_voice = getattr(profile, "brand_voice", "") if profile else ""
 
-    # Step 1: Generate campaign plan via LLM
     plan = _generate_campaign_plan(
         user, prompt, platforms, business_name, brand_voice, duration_days,
     )
     if not plan:
         return {"error": "Failed to generate campaign plan"}
 
-    # Step 2: Create Campaign
     start_date = timezone.now().date()
     end_date = start_date + timedelta(days=duration_days)
 
@@ -66,7 +60,8 @@ def ai_build_campaign(user_id, prompt, duration_days=7):
         "traffic": Campaign.Objective.TRAFFIC,
         "leads": Campaign.Objective.LEADS,
         "sales": Campaign.Objective.SALES,
-        "brand": Campaign.Objective.BRAND,
+        "brand": Campaign.Objective.LAUNCH,
+        "launch": Campaign.Objective.LAUNCH,
     }
     objective = objective_map.get(
         plan.get("objective", "").lower(), Campaign.Objective.ENGAGEMENT,
@@ -77,7 +72,7 @@ def ai_build_campaign(user_id, prompt, duration_days=7):
         name=plan.get("name", prompt[:60]),
         description=plan.get("description", prompt),
         objective=objective,
-        status=Campaign.Status.DRAFT,
+        status=Campaign.Status.ACTIVE,
         start_date=start_date,
         end_date=end_date,
         target_platforms=platforms,
@@ -91,11 +86,11 @@ def ai_build_campaign(user_id, prompt, duration_days=7):
         note_type="status_change",
     )
 
-    # Step 3: Create ContentSeeds from the plan
     seeds_created = 0
+    seed_ids = []
     seed_ideas = plan.get("seeds", [])
 
-    for i, seed_data in enumerate(seed_ideas[:10]):  # Cap at 10 seeds
+    for i, seed_data in enumerate(seed_ideas[:10]):
         if not isinstance(seed_data, dict):
             continue
 
@@ -104,7 +99,6 @@ def ai_build_campaign(user_id, prompt, duration_days=7):
             continue
 
         seed_platforms = seed_data.get("platforms", platforms[:2])
-        # Filter to connected platforms only
         seed_platforms = [p for p in seed_platforms if p in platforms] or platforms[:1]
 
         seed = ContentSeed.objects.create(
@@ -121,10 +115,26 @@ def ai_build_campaign(user_id, prompt, duration_days=7):
             role=role,
             sequence_order=i,
         )
+        seed_ids.append(str(seed.pk))
         seeds_created += 1
 
+    if voice_brief:
+        voice_brief.campaign = campaign
+        voice_brief.seeds_created = seeds_created
+        voice_brief.save(update_fields=["campaign", "seeds_created"])
+
+    email_campaign_id = None
+    if include_email or plan.get("include_email"):
+        email_campaign_id = _create_linked_email_campaign(user, campaign, plan, prompt)
+
+    if auto_generate and seed_ids:
+        from apps.content.tasks import generate_from_seed
+
+        for seed_id in seed_ids:
+            generate_from_seed.delay(seed_id)
+
     logger.info(
-        "AI Campaign Builder: created campaign '%s' with %d seeds for %s",
+        "Campaign builder: created '%s' with %d seeds for %s",
         campaign.name, seeds_created, user.email,
     )
 
@@ -132,7 +142,51 @@ def ai_build_campaign(user_id, prompt, duration_days=7):
         "campaign_id": str(campaign.id),
         "name": campaign.name,
         "seeds_created": seeds_created,
+        "email_campaign_id": email_campaign_id,
     }
+
+
+def _create_linked_email_campaign(user, campaign, plan, prompt):
+    """Create a draft email campaign linked to the default subscriber list."""
+    try:
+        from apps.campaigns.models import CampaignEmail
+        from apps.emails.models import EmailCampaign
+        from apps.emails.subscriber_sync import ensure_default_list
+
+        key_message = plan.get("key_message") or plan.get("description") or prompt[:200]
+        default_list = ensure_default_list(user)
+
+        email_camp = EmailCampaign.objects.create(
+            user=user,
+            name=f"Email: {campaign.name}",
+            subject=(plan.get("email_subject") or key_message)[:255],
+            preview_text=(plan.get("email_preview") or key_message)[:255],
+            html_content=plan.get("email_html") or f"<p>{key_message}</p>",
+            target_list=default_list,
+            status=EmailCampaign.Status.DRAFT,
+            ai_generated=True,
+        )
+        CampaignEmail.objects.create(campaign=campaign, email_campaign=email_camp, role=CampaignEmail.Role.ANNOUNCEMENT)
+        return str(email_camp.pk)
+    except Exception as e:
+        logger.warning("Linked email campaign creation failed: %s", e)
+        return None
+
+
+@shared_task(name="campaigns.ai_build_campaign")
+def ai_build_campaign(user_id, prompt, duration_days=7, include_email=False):
+    """Celery entry: build a full campaign from a text prompt."""
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return {"error": "User not found"}
+
+    return build_campaign_from_prompt(
+        user, prompt, duration_days, include_email=include_email,
+    )
 
 
 def _generate_campaign_plan(user, prompt, platforms, business_name, brand_voice, duration_days):
@@ -154,8 +208,11 @@ def _generate_campaign_plan(user, prompt, platforms, business_name, brand_voice,
             f'{{\n'
             f'  "name": "Short campaign name (max 60 chars)",\n'
             f'  "description": "One-paragraph campaign description",\n'
-            f'  "objective": "awareness|engagement|traffic|leads|sales|brand",\n'
+            f'  "objective": "awareness|engagement|traffic|leads|sales|launch",\n'
             f'  "target_audience": "Who this campaign targets",\n'
+            f'  "include_email": false,\n'
+            f'  "email_subject": "Optional email subject if include_email is true",\n'
+            f'  "key_message": "Core message in one sentence",\n'
             f'  "seeds": [\n'
             f'    {{\n'
             f'      "idea": "Detailed content idea with angle and key message",\n'
@@ -167,7 +224,7 @@ def _generate_campaign_plan(user, prompt, platforms, business_name, brand_voice,
             f"Generate 4-7 content seeds spread across {duration_days} days.\n"
             f"Each seed should have a unique angle — don't repeat the same message.\n"
             f"Mix content types: educational, social proof, behind-the-scenes, CTA-focused.\n"
-            f"Assign each seed to 1-2 of the most appropriate platforms."
+            f"Set include_email to true if the prompt mentions email, newsletter, or subscribers."
         )
 
         model = get_model_for_task("create.strategize", user=user)
@@ -178,7 +235,6 @@ def _generate_campaign_plan(user, prompt, platforms, business_name, brand_voice,
 
         if resp and resp.text:
             text = resp.text.strip()
-            # Strip markdown code fences if present
             if text.startswith("```"):
                 text = text.split("\n", 1)[1] if "\n" in text else text[3:]
                 if text.endswith("```"):

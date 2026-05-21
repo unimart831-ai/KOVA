@@ -13,6 +13,7 @@ urlpatterns = [
 
     # Email marketing dashboard
     path("marketing/", marketing_views.email_dashboard, name="dashboard"),
+    path("sync/", marketing_views.subscriber_sync_now, name="sync"),
 
     # Subscribers
     path("subscribers/", marketing_views.subscriber_list, name="subscribers"),

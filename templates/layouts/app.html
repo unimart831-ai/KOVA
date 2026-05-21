@@ -64,6 +64,7 @@
 
       {% if create_active %}
       <div class="ml-8 space-y-0.5 mb-1">
+        <a href="{% url 'content:voice_campaign' %}" class="block text-xs py-1 px-2 rounded {% if '/content/voice-campaign' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Campaigns</a>
         <a href="{% url 'media_queue:list' %}" class="block text-xs py-1 px-2 rounded {% if '/media-queue/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Visual Publisher</a>
         {% if request.plan_limits.memes_enabled %}
         <a href="{% url 'memes:discover' %}" class="block text-xs py-1 px-2 rounded {% if '/memes/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Memes & Trends</a>
@@ -72,26 +73,15 @@
       </div>
       {% endif %}
 
-      {% nav_active request.path '/content/queue' '/content/calendar' '/content/ab-tests' '/campaigns/' '/emails/' as schedule_active %}
+      {% nav_active request.path '/content/queue' '/content/calendar' as queue_active %}
       <a href="{% url 'content:queue' %}"
-         {% if schedule_active %}aria-current="page"{% endif %}
-         class="{% if schedule_active %}nav-link-active{% else %}nav-link{% endif %}">
-        <svg class="mr-3 h-5 w-5 {% if schedule_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+         {% if queue_active %}aria-current="page"{% endif %}
+         class="{% if queue_active %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if queue_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
         </svg>
-        Schedule
+        Queue
       </a>
-
-      {% if schedule_active %}
-      <div class="ml-8 space-y-0.5 mb-1">
-        <a href="{% url 'content:queue' %}" class="block text-xs py-1 px-2 rounded {% if '/content/queue' in request.path or '/content/calendar' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Queue</a>
-        {% if request.plan_limits.ab_testing %}
-        <a href="{% url 'content:ab_test_list' %}" class="block text-xs py-1 px-2 rounded {% if '/content/ab-tests' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">A/B Tests</a>
-        {% endif %}
-        <a href="{% url 'campaigns:list' %}" class="block text-xs py-1 px-2 rounded {% if '/campaigns/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Campaigns</a>
-        <a href="{% url 'emails:dashboard' %}" class="block text-xs py-1 px-2 rounded {% if '/emails/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Email Marketing</a>
-      </div>
-      {% endif %}
 
       <p class="nav-section">Customers</p>
 
@@ -145,6 +135,24 @@
         <a href="{% url 'leads:list' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'list' and request.resolver_match.namespace == 'leads' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">All Leads</a>
         <a href="{% url 'leads:analytics' %}" class="block text-xs py-1 px-2 rounded {% if '/leads/analytics' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Analytics</a>
         <a href="{% url 'leads:nurture_list' %}" class="block text-xs py-1 px-2 rounded {% if '/leads/nurture' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Nurture Sequences</a>
+      </div>
+      {% endif %}
+
+      <a href="{% url 'emails:dashboard' %}"
+         {% if '/emails/' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/emails/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/emails/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        Email
+      </a>
+
+      {% if '/emails/' in request.path %}
+      <div class="ml-8 space-y-0.5 mb-1">
+        <a href="{% url 'emails:dashboard' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'dashboard' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Overview</a>
+        <a href="{% url 'emails:campaigns' %}" class="block text-xs py-1 px-2 rounded {% if 'campaign' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Campaigns</a>
+        <a href="{% url 'emails:subscribers' %}" class="block text-xs py-1 px-2 rounded {% if 'subscriber' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Subscribers</a>
+        <a href="{% url 'emails:lists' %}" class="block text-xs py-1 px-2 rounded {% if 'list' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Lists</a>
       </div>
       {% endif %}
 
