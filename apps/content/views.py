@@ -423,58 +423,145 @@ def seed_generation_status(request, seed_id):
     })
 
 
-@login_required
-def content_queue(request):
-    """View scheduled and published posts, grouped by seed where possible."""
-    visible_user_ids = get_teammate_ids(request.user)
-    team_posts = Post.objects.filter(user_id__in=visible_user_ids)
+def _apply_queue_filters(qs, platform_filter=None, search_query=None):
+    if platform_filter:
+        qs = qs.filter(platform=platform_filter)
+    if search_query:
+        from apps.utils.search import full_text_search
+        qs = full_text_search(qs, search_query, ["content_text", "first_comment"])
+    return qs
 
-    scheduled = team_posts.filter(
-        status__in=["approved", "scheduled"]
-    ).select_related("social_account", "seed", "user").order_by("scheduled_at")
-    publishing = team_posts.filter(
-        status="publishing"
-    ).select_related("social_account", "seed", "user").order_by("-updated_at")
-    failed = team_posts.filter(
-        status="failed"
-    ).select_related("social_account", "seed", "user").order_by("-updated_at")
-    published = team_posts.filter(
-        status="published"
-    ).select_related("social_account", "seed", "user").order_by("-published_at")[:30]
 
-    def group_by_seed(posts_qs):
-        """Group posts into seed batches + ungrouped."""
-        grouped = defaultdict(list)
-        ungrouped = []
-        for post in posts_qs:
-            if post.seed_id:
-                grouped[post.seed_id].append(post)
-            else:
-                ungrouped.append(post)
-        batches = []
-        seed_ids = list(grouped.keys())
-        if seed_ids:
-            seeds_map = {s.id: s for s in ContentSeed.objects.filter(id__in=seed_ids)}
-            for seed_id, seed_posts in grouped.items():
-                seed_obj = seeds_map.get(seed_id)
-                if seed_obj:
-                    batches.append({"seed": seed_obj, "posts": seed_posts})
-        return batches, ungrouped
+def _group_queue_by_seed(posts_list):
+    """Group posts by seed batch — newest campaigns first, posts in generation order."""
+    grouped = defaultdict(list)
+    ungrouped = []
+    for post in posts_list:
+        if post.seed_id:
+            grouped[post.seed_id].append(post)
+        else:
+            ungrouped.append(post)
 
-    scheduled_batches, scheduled_ungrouped = group_by_seed(scheduled)
-    published_batches, published_ungrouped = group_by_seed(published)
+    batches = []
+    seed_ids = list(grouped.keys())
+    if seed_ids:
+        seeds_map = {s.id: s for s in ContentSeed.objects.filter(id__in=seed_ids)}
+        for seed_id, seed_posts in grouped.items():
+            seed_obj = seeds_map.get(seed_id)
+            if not seed_obj:
+                continue
+            seed_posts.sort(key=lambda p: p.created_at)
+            batches.append({
+                "seed": seed_obj,
+                "posts": seed_posts,
+                "platform_count": len(seed_posts),
+                "generated_at": seed_obj.created_at,
+            })
 
-    return render(request, "content/queue.html", {
+    batches.sort(key=lambda b: b["generated_at"], reverse=True)
+    ungrouped.sort(key=lambda p: p.created_at, reverse=True)
+    return batches, ungrouped
+
+
+def _get_queue_context(user, section_filter=None, platform_filter=None, search_query=None):
+    """Build queue sections, stats, and filter state."""
+    from django.db.models import Q
+
+    visible_user_ids = get_teammate_ids(user)
+    base = Post.objects.filter(user_id__in=visible_user_ids).select_related(
+        "social_account", "seed", "user",
+    )
+
+    failed_qs = _apply_queue_filters(
+        base.filter(status="failed").order_by("-created_at"),
+        platform_filter, search_query,
+    )
+    publishing_qs = _apply_queue_filters(
+        base.filter(status="publishing").order_by("-created_at"),
+        platform_filter, search_query,
+    )
+    ready_qs = _apply_queue_filters(
+        base.filter(status="approved", scheduled_at__isnull=True).order_by("-created_at"),
+        platform_filter, search_query,
+    )
+    scheduled_qs = _apply_queue_filters(
+        base.filter(
+            Q(status="scheduled") | Q(status="approved", scheduled_at__isnull=False)
+        ).order_by("-created_at"),
+        platform_filter, search_query,
+    )
+    published_qs = _apply_queue_filters(
+        base.filter(status="published").order_by("-published_at")[:50],
+        platform_filter, search_query,
+    )
+
+    # Stats use unfiltered counts so tab badges stay accurate while browsing
+    stats_base = Post.objects.filter(user_id__in=visible_user_ids)
+    queue_stats = {
+        "ready_count": stats_base.filter(status="approved", scheduled_at__isnull=True).count(),
+        "scheduled_count": stats_base.filter(
+            Q(status="scheduled") | Q(status="approved", scheduled_at__isnull=False)
+        ).count(),
+        "publishing_count": stats_base.filter(status="publishing").count(),
+        "failed_count": stats_base.filter(status="failed").count(),
+        "published_count": stats_base.filter(status="published").count(),
+    }
+
+    failed = list(failed_qs)
+    publishing = list(publishing_qs)
+    ready = list(ready_qs)
+    scheduled = list(scheduled_qs)
+    published = list(published_qs)
+
+    ready_batches, ready_ungrouped = _group_queue_by_seed(ready)
+    scheduled_batches, scheduled_ungrouped = _group_queue_by_seed(scheduled)
+    published_batches, published_ungrouped = _group_queue_by_seed(published)
+
+    section = section_filter if section_filter in ("ready", "scheduled", "live", "attention") else "all"
+
+    return {
+        "section": section,
+        "queue_stats": queue_stats,
+        "failed": failed,
+        "publishing": publishing,
+        "ready_batches": ready_batches,
+        "ready_ungrouped": ready_ungrouped,
+        "ready_count": len(ready),
         "scheduled_batches": scheduled_batches,
         "scheduled_ungrouped": scheduled_ungrouped,
-        "scheduled_count": scheduled.count(),
-        "publishing": publishing,
-        "failed": failed,
+        "scheduled_count": len(scheduled),
         "published_batches": published_batches,
         "published_ungrouped": published_ungrouped,
-        "published_count": published.count(),
-        "page_title": "Content Queue",
-    })
+        "published_count": len(published),
+        "current_section": section,
+        "current_platform": platform_filter or "",
+        "current_search": search_query or "",
+    }
+
+
+@login_required
+def content_queue(request):
+    """Pipeline view — approved, scheduled, and published posts grouped by campaign."""
+    ctx = _get_queue_context(
+        request.user,
+        section_filter=request.GET.get("section"),
+        platform_filter=request.GET.get("platform"),
+        search_query=request.GET.get("q"),
+    )
+    ctx["page_title"] = "Content Queue"
+    return render(request, "content/queue.html", ctx)
+
+
+@login_required
+def queue_sections(request):
+    """HTMX partial: filtered queue sections."""
+    ctx = _get_queue_context(
+        request.user,
+        section_filter=request.GET.get("section"),
+        platform_filter=request.GET.get("platform"),
+        search_query=request.GET.get("q"),
+    )
+    return render(request, "content/_queue_sections.html", ctx)
 
 
 @login_required

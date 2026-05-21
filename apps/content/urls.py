@@ -15,6 +15,7 @@ urlpatterns = [
     path("studio/seed/<uuid:seed_id>/generation-status/", views.seed_generation_status, name="seed_generation_status"),
     path("studio/seed/<uuid:seed_id>/batch-approve/", views.batch_approve, name="batch_approve"),
     path("queue/", views.content_queue, name="queue"),
+    path("queue/sections/", views.queue_sections, name="queue_sections"),
     path("calendar/", views.calendar_view, name="calendar"),
     # A/B Testing
     path("ab-tests/", views.ab_test_list, name="ab_test_list"),
