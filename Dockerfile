@@ -22,9 +22,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Python dependencies
+# Python dependencies — install BOTH production and development requirements
 COPY requirements/ requirements/
-RUN pip install --no-cache-dir -r requirements/development.txt
+RUN pip install --no-cache-dir -r requirements/production.txt -r requirements/development.txt
 
 # Tailwind
 COPY package.json package-lock.json* tailwind.config.js ./
@@ -36,6 +36,9 @@ COPY . .
 # Build Tailwind CSS
 RUN npx tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify
 
+# Collect static files (whitenoise serves them in production)
+RUN DJANGO_SETTINGS_MODULE=config.settings.base python manage.py collectstatic --noinput 2>/dev/null || true
+
 EXPOSE 8000
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
