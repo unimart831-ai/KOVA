@@ -1,9 +1,9 @@
 {% extends "layouts/app.html" %}
 {% load humanize %}
 
-{% block page_title %}Daily Brief{% endblock %}
+{% block page_title %}Home{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Your morning check-in with Kova's Chief Strategist</p>
+<p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Your business operating system — morning check-in, live signals, and your next move</p>
 {% endblock %}
 
 {% block content %}
@@ -14,8 +14,8 @@
   <div class="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl flex items-start gap-3">
     
     <div class="flex-1">
-      <p class="text-sm font-medium text-amber-800 dark:text-amber-300">Connect a platform to activate your agents</p>
-      <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">Your 6 AI agents are ready, but they need a social media account to create, schedule, and analyze content.</p>
+      <p class="text-sm font-medium text-amber-800 dark:text-amber-300">Connect a platform to activate your AI team</p>
+      <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">Content, engagement, leads, and revenue tracking all start with one connected account.</p>
       <a href="{% url 'platforms:list' %}" class="inline-flex items-center gap-1 mt-2 text-sm font-medium text-kova-600 dark:text-kova-400 hover:text-kova-800 dark:hover:text-kova-300">
         Connect now
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
@@ -29,6 +29,22 @@
 
   {% if brief %}
 
+    {% if brief_is_stale %}
+    <div class="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+      <svg class="w-5 h-5 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium text-blue-900 dark:text-blue-100">
+          {% if brief_time_passed %}
+            Today's brief is being prepared — showing {{ brief.date|date:"M j" }} for now
+          {% else %}
+            Today's brief arrives at {{ request.user.daily_brief_time|time:"g:i A" }} — showing {{ brief.date|date:"M j" }} for now
+          {% endif %}
+        </p>
+      </div>
+      <a href="{% url 'brief:detail' brief.date|date:'Y-m-d' %}" class="text-sm font-medium text-blue-700 dark:text-blue-300 hover:underline shrink-0">View archive →</a>
+    </div>
+    {% endif %}
+
     {# ━━━ HERO BAR — Streak + Kova Score ━━━ #}
     <div class="card bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-gray-800 dark:via-gray-750 dark:to-gray-800 border-gray-700 dark:border-gray-600">
       <div class="px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -41,8 +57,10 @@
           </div>
           {% endif %}
           <div>
-            <h2 class="text-lg font-semibold text-white">Morning, {{ request.user.first_name|default:"there" }}</h2>
-            <p class="text-sm text-gray-400 mt-0.5">{{ brief.date|date:"l, F j" }}</p>
+            <h2 class="text-lg font-semibold text-white">Morning, {{ greeting_name }}</h2>
+            <p class="text-sm text-gray-400 mt-0.5">
+              {% if brief_is_stale %}{{ brief.date|date:"l, F j" }}{% else %}{{ brief.date|date:"l, F j" }} · Today's brief{% endif %}
+            </p>
           </div>
         </div>
 
@@ -55,14 +73,25 @@
                 <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
               </button>
               {# Tooltip — drops downward to stay within the card's bounds #}
-              <div class="absolute right-0 top-full mt-2 w-56 bg-gray-900 border border-gray-700 rounded-xl shadow-xl p-3 text-left opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150 z-50">
+              <div class="absolute right-0 top-full mt-2 w-64 bg-gray-900 border border-gray-700 rounded-xl shadow-xl p-3 text-left opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150 z-50">
                 <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Score breakdown (0–100)</p>
+                {% if score_breakdown %}
+                <ul class="space-y-1.5 text-xs text-gray-300">
+                  {% for key, comp in score_breakdown.items %}
+                  <li class="flex justify-between gap-3">
+                    <span>{{ comp.label }}</span>
+                    <span class="text-gray-400 font-mono tabular-nums">{{ comp.points }}/{{ comp.max }}</span>
+                  </li>
+                  {% endfor %}
+                </ul>
+                {% else %}
                 <ul class="space-y-1.5 text-xs text-gray-300">
                   <li class="flex justify-between"><span>Pipeline health</span><span class="text-gray-500 font-mono">30 pts</span></li>
                   <li class="flex justify-between"><span>Engagement</span><span class="text-gray-500 font-mono">25 pts</span></li>
                   <li class="flex justify-between"><span>Consistency</span><span class="text-gray-500 font-mono">25 pts</span></li>
                   <li class="flex justify-between"><span>Agent activity</span><span class="text-gray-500 font-mono">20 pts</span></li>
                 </ul>
+                {% endif %}
                 <p class="text-[10px] text-gray-500 mt-2 border-t border-gray-700 pt-2">70+ healthy · 40–69 improving · &lt;40 needs attention</p>
               </div>
             </div>
@@ -113,6 +142,21 @@
     <div class="flex items-center gap-2 px-4 py-3 rounded-xl bg-green-50/50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/60">
       <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       <span class="text-sm font-medium text-green-800 dark:text-green-300">All clear! Nothing needs your attention right now.</span>
+    </div>
+    {% endif %}
+
+    {# ━━━ YOUR MOVE TODAY — pinned action from strategist ━━━ #}
+    {% if your_move %}
+    <div class="card border-kova-200 dark:border-kova-800/60 bg-gradient-to-r from-kova-50/80 to-white dark:from-kova-950/30 dark:to-gray-900">
+      <div class="px-6 py-4 flex flex-col sm:flex-row sm:items-start gap-4">
+        <div class="w-10 h-10 rounded-xl bg-kova-600 flex items-center justify-center shrink-0 shadow-kova">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-kova-600 dark:text-kova-400 mb-1">Your move today</p>
+          <p class="text-sm sm:text-base text-gray-800 dark:text-gray-200 leading-relaxed">{{ your_move }}</p>
+        </div>
+      </div>
     </div>
     {% endif %}
 
@@ -182,7 +226,7 @@
               </div>
               <div>
                 <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Strategy check-in</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400">From your Chief Strategist</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Your daily operating brief from Kova</p>
               </div>
             </div>
             <div class="text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-relaxed max-w-none [&>p]:mb-4 [&>p:last-child]:mb-0">
@@ -191,10 +235,7 @@
           </div>
         </div>
 
-        {# ── Decisions needed — things that require human judgment ── #}
-        {# dismissed_decisions comes from view (always a list, never None) #}
-        {% with decisions=brief.performance_summary.decisions_needed %}
-        {% if decisions %}
+        {% if decisions_needed %}
           <div class="card border-amber-200 dark:border-amber-800/60">
             <div class="px-6 py-4 border-b border-amber-100 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20 rounded-t-xl">
               <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -203,10 +244,10 @@
                 </span>
                 Needs your decision
               </h3>
-              <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">Items only you can handle — dismiss when done</p>
+              <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">Business calls only you can make — tap through or dismiss when done</p>
             </div>
             <ul id="decisions-list" class="divide-y divide-amber-100 dark:divide-amber-900/30">
-              {% for d in decisions %}
+              {% for d in decisions_needed %}
                 {% if forloop.counter0 not in dismissed_decisions %}
                 <li id="decision-{{ forloop.counter0 }}" class="px-6 py-4">
                   <div class="flex items-start gap-3">
@@ -225,8 +266,13 @@
                       {% if d.recommended_action %}
                         <p class="text-xs text-kova-600 dark:text-kova-400 mt-1 font-medium">→ {{ d.recommended_action }}</p>
                       {% endif %}
+                      {% if d.action_url %}
+                        <a href="{{ d.action_url }}" class="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-kova-600 dark:text-kova-400 hover:underline">
+                          Take action
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </a>
+                      {% endif %}
                     </div>
-                    {# Dismiss button — HTMX removes this <li> and persists the dismissal #}
                     <form hx-post="{% url 'brief:dismiss_decision' %}"
                           hx-target="#decision-{{ forloop.counter0 }}"
                           hx-swap="outerHTML"
@@ -246,7 +292,6 @@
             </ul>
           </div>
         {% endif %}
-        {% endwith %}
 
         {# ── Agent plan — what the AI team is doing today ── #}
         {% with agent_plan=brief.performance_summary.agent_plan %}
@@ -280,117 +325,7 @@
         {% endif %}
         {% endwith %}
 
-        {% if brief.performance_summary.highlight %}
-          <div class="card">
-            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-              <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <span class="text-kova-600 dark:text-kova-400" aria-hidden="true">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                </span>
-                Performance insight
-              </h3>
-            </div>
-            <div class="card-body space-y-4">
-              <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.highlight }}</p>
-
-              {% if brief.performance_summary.engagement_summary %}
-              <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
-                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Engagement</p>
-                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.engagement_summary }}</p>
-              </div>
-              {% endif %}
-
-              {% if brief.performance_summary.pipeline_summary %}
-              <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
-                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Sales pipeline</p>
-                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.pipeline_summary }}</p>
-              </div>
-              {% endif %}
-
-              {% if brief.performance_summary.revenue_update or revenue_stat.has_data %}
-              <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
-                <div class="flex items-center justify-between mb-1">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Revenue</p>
-                  {% if revenue_stat.has_data %}
-                    <a href="{% url 'analytics:revenue' %}" class="inline-flex items-baseline gap-1.5 group">
-                      <span class="text-base font-bold tabular-nums text-gray-900 dark:text-white group-hover:text-kova-600 dark:group-hover:text-kova-400 transition-colors">KES {{ revenue_stat.current_kes|floatformat:0 }}</span>
-                      {% if revenue_stat.direction == 'up' %}
-                        <span class="text-xs font-semibold text-green-600 dark:text-green-400">+{{ revenue_stat.delta_pct|floatformat:0 }}%</span>
-                      {% elif revenue_stat.direction == 'down' %}
-                        <span class="text-xs font-semibold text-red-600 dark:text-red-400">{{ revenue_stat.delta_pct|floatformat:0 }}%</span>
-                      {% else %}
-                        <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">flat</span>
-                      {% endif %}
-                      <span class="text-[10px] text-gray-400 dark:text-gray-500">/ 7d</span>
-                    </a>
-                  {% endif %}
-                </div>
-                {% if brief.performance_summary.revenue_update %}
-                  <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.revenue_update }}</p>
-                {% endif %}
-              </div>
-              {% endif %}
-
-              {% if brief.performance_summary.competitor_update %}
-              <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
-                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Competitor Intel</p>
-                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.competitor_update }}</p>
-              </div>
-              {% endif %}
-
-              {% if brief.performance_summary.product_update %}
-              <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
-                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Product Pulse</p>
-                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.product_update }}</p>
-                {% if brief.performance_summary.product_alerts %}
-                <div class="mt-2 space-y-1">
-                  {% for alert in brief.performance_summary.product_alerts %}
-                  <div class="flex items-start gap-2 text-sm {% if alert.severity == 'critical' %}text-red-600 dark:text-red-400{% elif alert.severity == 'warning' %}text-amber-600 dark:text-amber-400{% else %}text-blue-600 dark:text-blue-400{% endif %}">
-                    <span class="mt-0.5">{% if alert.severity == 'critical' %}<span class="inline-block w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span>{% elif alert.severity == 'warning' %}<span class="inline-block w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></span>{% else %}<span class="inline-block w-2 h-2 rounded-full bg-gray-400 flex-shrink-0"></span>{% endif %}</span>
-                    <span>{{ alert.item }}{% if alert.action %} — <strong>{{ alert.action }}</strong>{% endif %}</span>
-                  </div>
-                  {% endfor %}
-                </div>
-                {% endif %}
-              </div>
-              {% endif %}
-
-              {% if brief.performance_summary.actions_summary %}
-                <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-kova-700 dark:text-kova-300 mb-1">I handled</p>
-                  <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.actions_summary }}</p>
-                </div>
-              {% endif %}
-
-              {% if brief.performance_summary.adapt_update %}
-                <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-kova-700 dark:text-kova-300 mb-1">I learned</p>
-                  <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.adapt_update }}</p>
-                </div>
-              {% endif %}
-
-              {% if brief.performance_summary.escalations %}
-                <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300 mb-2">I couldn't handle — your call</p>
-                  <div class="space-y-1.5">
-                    {% for esc in brief.performance_summary.escalations %}
-                      <div class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                        {% if esc.where_to_go %}<a href="{{ esc.where_to_go }}" class="hover:underline">{{ esc.what }}</a>{% else %}{{ esc.what }}{% endif %}{% if esc.why_escalated %} — <span class="text-xs text-gray-500 dark:text-gray-400">{{ esc.why_escalated }}</span>{% endif %}
-                      </div>
-                    {% endfor %}
-                  </div>
-                </div>
-              {% endif %}
-
-              {% if brief.performance_summary.agent_summary %}
-                <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Agent activity</p>
-                  <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ brief.performance_summary.agent_summary }}</p>
-                </div>
-              {% endif %}
-            </div>
-          </div>
-        {% endif %}
+        {% include "briefs/_performance_insight.html" %}
 
         {# trending_topics is normalized in the view (platforms always a list) #}
         {% if trending_topics %}
@@ -507,6 +442,8 @@
 
       <!-- Side column: momentum + actions + stats + history -->
       <div class="space-y-6 mt-6 lg:mt-0">
+
+        {% include "briefs/_customer_pulse.html" %}
 
         {# ── Momentum — 14-day posting consistency ── #}
         {% if momentum %}
@@ -664,20 +601,108 @@
     </div>
 
   {% else %}
-    <div class="card max-w-2xl mx-auto">
-      <div class="card-body text-center py-14 px-6">
-        <div class="w-14 h-14 mx-auto rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-5">
-          <svg class="w-7 h-7 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    <div class="lg:grid lg:grid-cols-3 lg:gap-8 lg:items-start">
+      <div class="lg:col-span-2 space-y-6">
+        <div class="card max-w-none">
+          <div class="card-body py-10 px-6 sm:px-10 text-center">
+            <div class="w-14 h-14 mx-auto rounded-xl bg-kova-100 dark:bg-kova-950 flex items-center justify-center mb-5">
+              <svg class="w-7 h-7 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            </div>
+            {% if not strategist_active %}
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">Enable your Chief Strategist</h2>
+              <p class="text-gray-600 dark:text-gray-400 mt-3 max-w-lg mx-auto text-sm leading-relaxed">
+                Kova's daily brief is your business operating rhythm — strategy, decisions, and your one move for the day.
+                Turn on the Chief Strategist agent to start receiving it at {{ request.user.daily_brief_time|time:"g:i A" }}.
+              </p>
+              <div class="flex flex-col sm:flex-row gap-3 justify-center mt-8">
+                <a href="{% url 'agents:control' %}" class="btn-primary">Enable Chief Strategist</a>
+              </div>
+            {% elif not has_connected_platform %}
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">Morning, {{ greeting_name }} — let's get you connected</h2>
+              <p class="text-gray-600 dark:text-gray-400 mt-3 max-w-lg mx-auto text-sm leading-relaxed">
+                Your AI team is ready to run content, engagement, leads, and revenue tracking —
+                but they need at least one social account connected first.
+              </p>
+              <div class="flex flex-col sm:flex-row gap-3 justify-center mt-8">
+                <a href="{% url 'platforms:list' %}" class="btn-primary">Connect a platform</a>
+                <a href="{% url 'content:studio' %}" class="btn-secondary">Open Studio</a>
+              </div>
+            {% else %}
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">Morning, {{ greeting_name }}</h2>
+              <p class="text-gray-600 dark:text-gray-400 mt-3 max-w-lg mx-auto text-sm leading-relaxed">
+                {% if brief_time_passed %}
+                  Today's brief is being prepared. Your live customer signals and pipeline are updating below —
+                  check back shortly or explore Create and Customers in the meantime.
+                {% else %}
+                  Your morning brief arrives at {{ request.user.daily_brief_time|time:"g:i A" }}.
+                  Until then, use the live signals on the right to stay on top of customers and content.
+                {% endif %}
+              </p>
+              <div class="flex flex-col sm:flex-row gap-3 justify-center mt-8">
+                <a href="{% url 'content:studio' %}" class="btn-primary">Create content</a>
+                <a href="{% url 'engage:inbox' %}" class="btn-secondary">Check inbox</a>
+              </div>
+            {% endif %}
+          </div>
         </div>
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Your strategist hasn't checked in yet</h2>
-        <p class="text-gray-600 dark:text-gray-400 mt-3 max-w-md mx-auto text-sm leading-relaxed">
-          Your morning check-in arrives at {{ request.user.daily_brief_time|time:"g:i A" }} every day.
-          Connect platforms and enable agents so your strategist has data to work with.
-        </p>
-        <div class="flex flex-col sm:flex-row gap-3 justify-center mt-8">
-          <a href="{% url 'platforms:list' %}" class="btn-primary">Connect a platform</a>
-          <a href="{% url 'agents:control' %}" class="btn-secondary">Manage agents</a>
+
+        {% if quick_actions %}
+        <div class="flex flex-wrap items-center gap-3 px-1">
+          <span class="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Needs attention</span>
+          {% for action in quick_actions %}
+            <a href="{% url action.url_name %}"
+               class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white hover:border-kova-300 dark:hover:border-kova-600 hover:shadow-sm transition-all">
+              {{ action.label }}
+            </a>
+          {% endfor %}
         </div>
+        {% endif %}
+      </div>
+
+      <div class="space-y-6 mt-6 lg:mt-0">
+        {% include "briefs/_customer_pulse.html" %}
+        {% if momentum %}
+        <div class="card">
+          <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+            <h3 class="font-semibold text-gray-900 dark:text-white text-sm">Momentum</h3>
+          </div>
+          <div class="card-body space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Consistency (14d)</span>
+              <span class="text-sm font-bold tabular-nums text-gray-900 dark:text-white">{{ momentum.consistency_pct }}%</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Published this week</span>
+              <span class="text-sm font-bold text-gray-900 dark:text-white tabular-nums">{{ momentum.this_week_total }}</span>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        <div class="card">
+          <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+            <h3 class="font-semibold text-gray-900 dark:text-white text-sm">Pipeline status</h3>
+          </div>
+          <div class="card-body space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Scheduled</span>
+              <span class="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">{{ scheduled_count }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Published today</span>
+              <span class="text-sm font-semibold text-green-600 dark:text-green-400 tabular-nums">{{ published_today }}</span>
+            </div>
+            {% if failed_count > 0 %}
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-red-600 dark:text-red-400">Failed</span>
+              <a href="{% url 'content:queue' %}" class="text-sm font-semibold text-red-600 dark:text-red-400 hover:underline tabular-nums">{{ failed_count }}</a>
+            </div>
+            {% endif %}
+            <div class="pt-2 border-t border-gray-100 dark:border-gray-800">
+              <a href="{% url 'content:queue' %}" class="text-sm text-kova-600 dark:text-kova-400 font-medium hover:underline">View queue →</a>
+            </div>
+          </div>
+        </div>
+        {% include "briefs/_value_summary.html" %}
       </div>
     </div>
   {% endif %}

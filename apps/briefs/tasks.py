@@ -33,7 +33,7 @@ User = get_user_model()
 
 # ─── Kova Score Calculation ──────────────────────────────────────────────────
 
-def calculate_kova_score(user, brief_data):
+def calculate_kova_score(user, brief_data, *, return_breakdown=False):
     """Calculate a 0-100 social media health score.
 
     Components (each weighted):
@@ -42,7 +42,12 @@ def calculate_kova_score(user, brief_data):
     - Consistency (25): Have you posted regularly over the last 7 days?
     - Agent activity (20): Are your AI agents active and working?
     """
-    score = 0
+    breakdown = {
+        "pipeline": {"points": 0, "max": 30, "label": "Pipeline health"},
+        "engagement": {"points": 0, "max": 25, "label": "Engagement"},
+        "consistency": {"points": 0, "max": 25, "label": "Consistency"},
+        "agent_activity": {"points": 0, "max": 20, "label": "Agent activity"},
+    }
 
     week = brief_data.get("week_stats", {})
     week_published = week.get("published", 0)
@@ -50,61 +55,74 @@ def calculate_kova_score(user, brief_data):
     pending = brief_data.get("pending_approval", 0)
     failed = brief_data.get("failed_posts", 0)
 
-    # Pipeline health (0-30): requires ACTUAL publishing to score well.
-    # Having only pending/scheduled content without any published posts earns partial credit.
+    pipeline_pts = 0
     if week_published >= 5:
-        score += 30
+        pipeline_pts = 30
     elif week_published >= 3:
-        score += 22
+        pipeline_pts = 22
     elif week_published >= 1:
-        score += 14
+        pipeline_pts = 14
     elif scheduled > 0 or pending > 0:
-        score += 7  # Has pipeline but nothing published yet
+        pipeline_pts = 7
     if failed > 0:
-        score -= min(10, failed * 4)  # Penalty for failures
+        pipeline_pts -= min(10, failed * 4)
+    breakdown["pipeline"]["points"] = max(0, pipeline_pts)
 
-    # Engagement health (0-25): logarithmic — first few interactions worth more.
     engagement = brief_data.get("engagement", {})
     interactions = engagement.get("total_interactions", 0)
+    engagement_pts = 0
     if interactions >= 20:
-        score += 25
+        engagement_pts = 25
     elif interactions >= 10:
-        score += 20
+        engagement_pts = 20
     elif interactions >= 5:
-        score += 14
+        engagement_pts = 14
     elif interactions >= 1:
-        score += 8
+        engagement_pts = 8
+    breakdown["engagement"]["points"] = engagement_pts
 
-    # Consistency (0-25): based on days with at least one post in the last 7 days.
     week_created = week.get("total_created", 0)
+    consistency_pts = 0
     if week_created >= 7:
-        score += 25
+        consistency_pts = 25
     elif week_created >= 5:
-        score += 20
+        consistency_pts = 20
     elif week_created >= 3:
-        score += 13
+        consistency_pts = 13
     elif week_created >= 1:
-        score += 6
+        consistency_pts = 6
+    breakdown["consistency"]["points"] = consistency_pts
 
-    # Agent activity (0-20): counts distinct agent types active in last 24h.
-    # Uses full AgentAction queryset count rather than capped list.
     agent_actions = brief_data.get("agent_activity", [])
-    active_agents = len({a.get("agent_type") or a.get("type", "") for a in agent_actions if (a.get("agent_type") or a.get("type", ""))})
-    completed_actions = brief_data.get("agent_completed_count", sum(1 for a in agent_actions if a.get("status") == "completed"))
+    active_agents = len({
+        a.get("agent_type") or a.get("type", "")
+        for a in agent_actions
+        if (a.get("agent_type") or a.get("type", ""))
+    })
+    completed_actions = brief_data.get(
+        "agent_completed_count",
+        sum(1 for a in agent_actions if a.get("status") == "completed"),
+    )
+    agent_pts = 0
     if active_agents >= 4:
-        score += 12
+        agent_pts += 12
     elif active_agents >= 2:
-        score += 8
+        agent_pts += 8
     elif active_agents >= 1:
-        score += 4
+        agent_pts += 4
     if completed_actions >= 10:
-        score += 8
+        agent_pts += 8
     elif completed_actions >= 5:
-        score += 5
+        agent_pts += 5
     elif completed_actions >= 1:
-        score += 2
+        agent_pts += 2
+    breakdown["agent_activity"]["points"] = agent_pts
 
-    return max(0, min(100, score))
+    score = sum(c["points"] for c in breakdown.values())
+    score = max(0, min(100, score))
+    if return_breakdown:
+        return score, breakdown
+    return score
 
 
 def _get_kova_score_delta(user, new_score):
@@ -953,7 +971,9 @@ def generate_daily_brief(user, *, user_date=None):
         ]
 
         # Calculate Kova Score and overnight work summary
-        kova_score = calculate_kova_score(user, brief_data)
+        kova_score, score_breakdown = calculate_kova_score(
+            user, brief_data, return_breakdown=True,
+        )
         score_delta = _get_kova_score_delta(user, kova_score)
         overnight = _gather_overnight_work(user)
 
@@ -970,10 +990,15 @@ def generate_daily_brief(user, *, user_date=None):
                 "pipeline_summary": llm_result.get("pipeline_summary", ""),
                 "competitor_update": llm_result.get("competitor_update", ""),
                 "product_update": llm_result.get("product_update", ""),
+                "product_alerts": llm_result.get("product_alerts", []),
                 "revenue_update": llm_result.get("revenue_update", ""),
+                "adapt_update": llm_result.get("adapt_update", ""),
+                "actions_summary": llm_result.get("actions_summary", ""),
+                "escalations": llm_result.get("escalations", []),
                 "decisions_needed": llm_result.get("decisions_needed", []),
                 "dismissed_decisions": [],
                 "agent_plan": llm_result.get("agent_plan", []),
+                "score_breakdown": score_breakdown,
                 "data": brief_data.get("performance", {}).get("performance_data", {}),
                 "research_updated_at": brief_data.get("research_updated_at").isoformat() if brief_data.get("research_updated_at") else None,
                 "is_onboarding_mode": not brief_data.get("has_meaningful_data", True),

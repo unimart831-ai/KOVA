@@ -1,0 +1,32 @@
+{% if customer_pulse %}
+<div class="card border-kova-100 dark:border-kova-900/40">
+  <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+    <h3 class="font-semibold text-gray-900 dark:text-white text-sm flex items-center gap-2">
+      <svg class="w-4 h-4 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      Customer pulse
+    </h3>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Live signals from inbox, leads &amp; bookings</p>
+  </div>
+  <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+    {% for item in customer_pulse %}
+    <li>
+      <a href="{% url item.url_name %}"
+         class="flex items-center justify-between gap-3 px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
+        <div class="min-w-0">
+          <p class="text-sm font-medium text-gray-900 dark:text-white">{{ item.label }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{{ item.detail }}</p>
+        </div>
+        <span class="shrink-0 text-xs font-semibold
+          {% if item.tone == 'red' %}text-red-600 dark:text-red-400
+          {% elif item.tone == 'amber' %}text-amber-600 dark:text-amber-400
+          {% elif item.tone == 'green' %}text-green-600 dark:text-green-400
+          {% elif item.tone == 'purple' %}text-purple-600 dark:text-purple-400
+          {% else %}text-kova-600 dark:text-kova-400{% endif %} group-hover:underline">
+          Open →
+        </span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}

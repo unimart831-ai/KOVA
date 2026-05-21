@@ -2,11 +2,13 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.briefs.models import DailyBrief
 from apps.engage.models import Superfan
+from apps.utils.greetings import greeting_name
 
 
 def _build_setup_checklist(user):
@@ -104,10 +106,11 @@ def _build_value_summary(user):
         user=user, created_at__gte=week_ago,
     ).count()
 
-    # Engagement replies drafted
+    # Engagement replies handled (AI or human sent a response)
     from apps.engage.models import Interaction
     replies_count = Interaction.objects.filter(
-        user=user, created_at__gte=week_ago,
+        user=user,
+        responded_at__gte=week_ago,
     ).count()
 
     # Leads captured
@@ -204,7 +207,179 @@ def _build_quick_actions(user, brief):
             "priority": 1,
         })
 
+    # Bookings needing attention today
+    try:
+        from apps.bookings.models import Booking
+        today = timezone.now().date()
+        bookings_today = Booking.objects.filter(
+            booking_link__user=user,
+            scheduled_at__date=today,
+            status="pending",
+        ).count()
+        if bookings_today > 0:
+            actions.append({
+                "label": f"Confirm {bookings_today} booking{'s' if bookings_today != 1 else ''} today",
+                "url_name": "bookings:list",
+                "icon": "user",
+                "priority": 2,
+            })
+    except Exception:
+        pass
+
     return sorted(actions, key=lambda a: a["priority"])[:3]
+
+
+def _extract_your_move(summary):
+    """Pull the actionable 'Your move today' paragraph from the brief summary."""
+    if not summary:
+        return ""
+    for paragraph in summary.split("\n\n"):
+        stripped = paragraph.strip()
+        if stripped.lower().startswith("your move"):
+            return stripped
+    parts = [p.strip() for p in summary.split("\n\n") if p.strip()]
+    return parts[-1] if len(parts) >= 3 else ""
+
+
+def _guess_decision_url(decision):
+    """Map a decision item to the most relevant in-app destination."""
+    if not isinstance(decision, dict):
+        return None
+    text = " ".join([
+        decision.get("item", ""),
+        decision.get("recommended_action", ""),
+        decision.get("context", ""),
+    ]).lower()
+    if any(w in text for w in ("whatsapp", "wa chat")):
+        return reverse("whatsapp:inbox")
+    if any(w in text for w in ("comment", "reply", "inbox", "message", "dm", "mention")):
+        return reverse("engage:inbox")
+    if any(w in text for w in ("lead", "pricing", "prospect", "inquiry")):
+        return reverse("leads:list")
+    if any(w in text for w in ("booking", "appointment", "schedule")):
+        return reverse("bookings:list")
+    if any(w in text for w in ("fail", "queue", "publish error")):
+        return reverse("content:queue")
+    if any(w in text for w in ("approv", "draft", "post", "content", "studio")):
+        return reverse("content:studio")
+    if any(w in text for w in ("platform", "connect", "account", "profile health")):
+        return reverse("platforms:list")
+    if any(w in text for w in ("revenue", "sale", "money", "pixel")):
+        return reverse("analytics:revenue")
+    if any(w in text for w in ("competitor", "intel")):
+        return reverse("analytics:competitors")
+    return None
+
+
+def _enrich_decisions(decisions):
+    enriched = []
+    for decision in decisions or []:
+        item = dict(decision) if isinstance(decision, dict) else {"item": str(decision)}
+        url = _guess_decision_url(item)
+        if url:
+            item["action_url"] = url
+        enriched.append(item)
+    return enriched
+
+
+def _build_customer_pulse(user):
+    """Live customer-facing signals for the Home sidebar."""
+    from datetime import timedelta
+
+    from apps.bookings.models import Booking
+    from apps.engage.models import Interaction
+    from apps.leads.models import Lead
+    from apps.platforms.models import SocialAccount
+    from apps.whatsapp.models import WhatsAppConversation
+
+    today = timezone.now().date()
+    week_ago = timezone.now() - timedelta(days=7)
+    pulse = []
+
+    inbox_waiting = Interaction.objects.filter(
+        user=user, status__in=["new", "flagged"],
+    ).count()
+    if inbox_waiting:
+        pulse.append({
+            "label": "Social inbox",
+            "detail": f"{inbox_waiting} waiting for reply",
+            "url_name": "engage:inbox",
+            "tone": "amber" if inbox_waiting >= 3 else "blue",
+        })
+
+    new_leads = Lead.objects.filter(user=user, status="new").count()
+    if new_leads:
+        pulse.append({
+            "label": "Leads",
+            "detail": f"{new_leads} new lead{'s' if new_leads != 1 else ''}",
+            "url_name": "leads:list",
+            "tone": "purple",
+        })
+
+    bookings_today = Booking.objects.filter(
+        booking_link__user=user,
+        scheduled_at__date=today,
+        status__in=["pending", "confirmed"],
+    ).count()
+    if bookings_today:
+        pulse.append({
+            "label": "Bookings",
+            "detail": f"{bookings_today} today",
+            "url_name": "bookings:list",
+            "tone": "green",
+        })
+
+    wa_accounts = SocialAccount.objects.filter(
+        user=user, platform="whatsapp", is_active=True,
+    )
+    if wa_accounts.exists():
+        wa_escalated = WhatsAppConversation.objects.filter(
+            social_account__in=wa_accounts,
+            status="escalated",
+        ).count()
+        if wa_escalated:
+            pulse.append({
+                "label": "WhatsApp",
+                "detail": f"{wa_escalated} need{'s' if wa_escalated == 1 else ''} you",
+                "url_name": "whatsapp:inbox",
+                "tone": "red",
+            })
+
+    leads_this_week = Lead.objects.filter(
+        user=user, first_seen_at__gte=week_ago,
+    ).count()
+    if leads_this_week and not new_leads:
+        pulse.append({
+            "label": "Leads",
+            "detail": f"{leads_this_week} this week",
+            "url_name": "leads:list",
+            "tone": "purple",
+        })
+
+    return pulse
+
+
+def _strategist_is_active(user):
+    from apps.agents.models import AgentConfig
+    return AgentConfig.objects.filter(
+        user=user, agent_type="strategist", is_active=True,
+    ).exists()
+
+
+def _brief_time_has_passed(user):
+    import zoneinfo
+    try:
+        user_tz = zoneinfo.ZoneInfo(user.timezone or "UTC")
+    except (KeyError, Exception):
+        user_tz = zoneinfo.ZoneInfo("UTC")
+    local_now = timezone.now().astimezone(user_tz)
+    return local_now.time() >= user.daily_brief_time
+
+
+def _get_score_breakdown(brief):
+    if not brief:
+        return None
+    return (brief.performance_summary or {}).get("score_breakdown")
 
 
 def _build_momentum_data(user):
@@ -304,21 +479,25 @@ def _normalize_trending_topics(brief):
 
 @login_required
 def brief_home(request):
-    """Show today's daily brief, or the most recent one."""
+    """Show today's daily brief, or the most recent one while today's is pending."""
     today = timezone.now().date()
     brief = DailyBrief.objects.filter(user=request.user, date=today).first()
+    brief_is_stale = False
 
     if brief and not brief.is_read:
         brief.is_read = True
         brief.save(update_fields=["is_read"])
+    elif not brief:
+        brief = DailyBrief.objects.filter(user=request.user).first()
+        brief_is_stale = brief is not None
 
-    # If user hasn't completed onboarding, redirect
     if not request.user.onboarding_completed:
         return redirect("accounts:onboarding")
 
-    recent_briefs = DailyBrief.objects.filter(user=request.user).exclude(date=today)[:7]
+    recent_briefs = DailyBrief.objects.filter(user=request.user).exclude(
+        date=brief.date if brief else today,
+    )[:7]
 
-    # Quick stats for the sidebar
     published_today = request.user.posts.filter(
         status="published",
         published_at__date=today,
@@ -328,16 +507,13 @@ def brief_home(request):
         status__in=["approved", "scheduled"],
     ).count()
 
-    # Top superfans to acknowledge
     superfans = Superfan.objects.filter(user=request.user)[:5]
 
-    # Platform connection nudge — show if user has no active social accounts
     from apps.platforms.models import SocialAccount
     has_connected_platform = SocialAccount.objects.filter(
-        user=request.user, is_active=True
+        user=request.user, is_active=True,
     ).exists()
 
-    # Upcoming holidays / cultural moments (calendar_intel app)
     upcoming_moments = []
     holiday_drafts_ready = 0
     try:
@@ -351,8 +527,6 @@ def brief_home(request):
     except Exception:
         pass
 
-    # Profile health alerts — surface accounts scoring below 70 on their
-    # most recent audit (only successful audits — skip ones with errors).
     profile_health_alerts = []
     try:
         from apps.profile_audit.models import ProfileAudit, ProfileUpdateSuggestion
@@ -379,8 +553,19 @@ def brief_home(request):
     except Exception:
         pass
 
+    performance = brief.performance_summary if brief else {}
+    decisions_needed = _enrich_decisions(performance.get("decisions_needed", []))
+
     return render(request, "briefs/home.html", {
         "brief": brief,
+        "brief_is_stale": brief_is_stale,
+        "brief_time_passed": _brief_time_has_passed(request.user),
+        "strategist_active": _strategist_is_active(request.user),
+        "greeting_name": greeting_name(request.user),
+        "your_move": _extract_your_move(brief.summary if brief else ""),
+        "decisions_needed": decisions_needed,
+        "score_breakdown": _get_score_breakdown(brief),
+        "customer_pulse": _build_customer_pulse(request.user),
         "recent_briefs": recent_briefs,
         "published_today": published_today,
         "failed_count": failed_count,
@@ -390,7 +575,7 @@ def brief_home(request):
         "setup_checklist": _build_setup_checklist(request.user),
         "value_summary": _build_value_summary(request.user),
         "brief_streak": _build_brief_streak(request.user),
-        "quick_actions": _build_quick_actions(request.user, brief) if brief else [],
+        "quick_actions": _build_quick_actions(request.user, brief),
         "momentum": _build_momentum_data(request.user),
         "research_updated_at": _parse_research_updated_at(brief),
         "dismissed_decisions": _get_dismissed_decisions(brief),
@@ -399,7 +584,7 @@ def brief_home(request):
         "holiday_drafts_ready": holiday_drafts_ready,
         "profile_health_alerts": profile_health_alerts,
         "revenue_stat": _safe_revenue_stat(request.user),
-        "page_title": "Daily Brief",
+        "page_title": "Home",
     })
 
 
