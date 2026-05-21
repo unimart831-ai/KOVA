@@ -301,6 +301,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "memes.update_meme_lifecycle",
         "schedule": 24 * 3600.0,  # daily — age out stale memes
     },
+    "scan-trends-for-users": {
+        "task": "memes.scan_trends_for_users",
+        "schedule": 2 * 3600.0,  # every 2 hours — personalized trend alerts
+    },
     # WhatsApp Sprint 5C — Status Studio
     "generate-status-queue": {
         "task": "whatsapp.generate_status_queue",

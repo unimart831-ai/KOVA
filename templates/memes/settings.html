@@ -1,65 +1,95 @@
 {% extends "layouts/app.html" %}
 
 {% block title %}Meme Settings{% endblock %}
-{% block page_title %}
-<div class="flex items-center justify-between">
-  <div>
-    <h1 class="text-lg font-bold text-gray-900 dark:text-white">Meme Preferences</h1>
-    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Control how meme intelligence works for your brand</p>
-  </div>
-  <a href="{% url 'memes:discover' %}" class="btn-outline text-xs px-3 py-1.5">← Back to Discover</a>
-</div>
+{% block page_subtitle %}
+<p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Control what trends you see and how memes reach Studio.</p>
 {% endblock %}
 
 {% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
 
-<div class="max-w-2xl">
+  {% include "content/_studio_subnav.html" %}
+
+  <div class="flex items-center justify-between">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Meme Preferences</h2>
+    <a href="{% url 'memes:discover' %}" class="btn-outline text-xs px-3 py-1.5">← Discover</a>
+  </div>
+
   <form method="post" class="space-y-6">
     {% csrf_token %}
 
-    {# Active toggle #}
-    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+    <div class="bg-white dark:bg-gray-900 rounded-xl border p-5">
       <div class="flex items-center justify-between">
         <div>
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Meme Intelligence</h3>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Enable AI meme discovery and adaptation for your brand</p>
+          <h3 class="text-sm font-semibold">Meme Intelligence</h3>
+          <p class="text-xs text-gray-500 mt-0.5">Enable weekly trend scans and auto-adaptations</p>
         </div>
         <label class="relative inline-flex items-center cursor-pointer">
           <input type="checkbox" name="is_active" {% if form.instance.is_active %}checked{% endif %} class="sr-only peer">
-          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kova-600"></div>
+          <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-kova-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
         </label>
       </div>
     </div>
 
-    {# Risk tolerance #}
-    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Risk Tolerance</h3>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">How edgy should meme suggestions be?</p>
+    <div class="bg-white dark:bg-gray-900 rounded-xl border p-5">
+      <h3 class="text-sm font-semibold mb-1">Risk Tolerance</h3>
+      <p class="text-xs text-gray-500 mb-3">Conservative hides edgy trends (political excluded by default)</p>
       {{ form.risk_tolerance }}
-      <div class="mt-2 text-[10px] text-gray-400">
-        <strong>Conservative:</strong> Only brand-safe, universally relatable memes (safety score ≥70)<br>
-        <strong>Moderate:</strong> Balanced — some edge, but nothing too risky (safety score ≥40)<br>
-        <strong>Bold:</strong> Show me everything — I'll decide what's too much
-      </div>
     </div>
 
-    {# Weekly quota #}
-    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Weekly Meme Quota</h3>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Maximum meme adaptations per week</p>
+    <div class="bg-white dark:bg-gray-900 rounded-xl border p-5">
+      <h3 class="text-sm font-semibold mb-1">Weekly Quota</h3>
       {{ form.max_memes_per_week }}
     </div>
 
-    {# Auto-queue #}
-    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+    <div class="bg-white dark:bg-gray-900 rounded-xl border p-5">
+      <h3 class="text-sm font-semibold mb-2">Excluded categories</h3>
+      <p class="text-xs text-gray-500 mb-3">Never show these in Discover (political recommended for MSMEs)</p>
+      <div class="grid grid-cols-2 gap-2">
+        {% for choice in form.excluded_categories_selection %}
+        <label class="flex items-center gap-2 text-sm">{{ choice.tag }} {{ choice.choice_label }}</label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-900 rounded-xl border p-5">
+      <h3 class="text-sm font-semibold mb-2">Preferred categories</h3>
+      <p class="text-xs text-gray-500 mb-3">Boost these in your feed (optional)</p>
+      <div class="grid grid-cols-2 gap-2">
+        {% for choice in form.preferred_categories_selection %}
+        <label class="flex items-center gap-2 text-sm">{{ choice.tag }} {{ choice.choice_label }}</label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-900 rounded-xl border p-5">
+      <h3 class="text-sm font-semibold mb-2">Preferred humor</h3>
+      <div class="grid grid-cols-2 gap-2">
+        {% for choice in form.preferred_humor_selection %}
+        <label class="flex items-center gap-2 text-sm">{{ choice.tag }} {{ choice.choice_label }}</label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-900 rounded-xl border p-5">
+      <h3 class="text-sm font-semibold mb-2">Preferred platforms</h3>
+      <p class="text-xs text-gray-500 mb-3">Adaptations target these first (WhatsApp = Status format)</p>
+      <div class="grid grid-cols-2 gap-2">
+        {% for choice in form.preferred_platforms_selection %}
+        <label class="flex items-center gap-2 text-sm">{{ choice.tag }} {{ choice.choice_label }}</label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-900 rounded-xl border p-5">
       <div class="flex items-center justify-between">
         <div>
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Auto-Queue</h3>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Automatically add high-scoring adaptations to your content queue</p>
+          <h3 class="text-sm font-semibold">Auto-Queue to Studio</h3>
+          <p class="text-xs text-gray-500 mt-0.5">When brand fit ≥65%, approve and send to Studio automatically</p>
         </div>
         <label class="relative inline-flex items-center cursor-pointer">
           <input type="checkbox" name="auto_queue" {% if form.instance.auto_queue %}checked{% endif %} class="sr-only peer">
-          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kova-600"></div>
+          <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-kova-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
         </label>
       </div>
     </div>
@@ -67,5 +97,4 @@
     <button type="submit" class="btn-primary text-sm px-6 py-2.5">Save Preferences</button>
   </form>
 </div>
-
 {% endblock %}

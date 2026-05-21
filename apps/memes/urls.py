@@ -14,6 +14,7 @@ urlpatterns = [
     path("adaptation/<uuid:adaptation_id>/approve/", views.meme_approve, name="approve"),
     path("adaptation/<uuid:adaptation_id>/reject/", views.meme_reject, name="reject"),
     path("adaptation/<uuid:adaptation_id>/to-post/", views.meme_to_post, name="to_post"),
+    path("adaptation/<uuid:adaptation_id>/retry/", views.meme_retry, name="retry"),
     # Trend Alerts
     path("trends/", views.trend_alerts, name="trend_alerts"),
     path("trends/<uuid:pk>/action/", views.trend_alert_action, name="trend_alert_action"),

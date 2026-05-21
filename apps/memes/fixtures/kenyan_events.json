@@ -397,5 +397,47 @@
       "tags": ["harambee_stars", "football", "world_cup", "qualifiers"],
       "meme_angles": ["Supporting Harambee Stars through pain", "Next year is our year", "Football fan reactions", "Referee conspiracy theories"]
     }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Salary Day / Mwezi iko corner",
+      "description": "End-of-month payday culture — M-Pesa notifications, broke January, budget memes.",
+      "date": "2026-05-28",
+      "event_type": "commercial",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["payday", "salary", "hustle", "broke", "mpesa"],
+      "meme_angles": ["Waiting for salary", "Mwezi iko corner", "January broke season"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "School Fees Season",
+      "description": "Term opening — parents, fees, back-to-school shopping stress.",
+      "date": "2026-09-01",
+      "event_type": "cultural",
+      "meme_potential": "high",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["school_fees", "parents", "back_to_school"],
+      "meme_angles": ["Wallet pain at bookshop", "Uniform size drama", "Term two pressure"]
+    }
+  },
+  {
+    "model": "memes.kenyanevent",
+    "fields": {
+      "name": "Long Rains Traffic",
+      "description": "Rainy season — flooded roads, matatu chaos, umbrella economics.",
+      "date": "2026-04-15",
+      "event_type": "cultural",
+      "meme_potential": "medium",
+      "sensitivity": "safe",
+      "annual": true,
+      "tags": ["rain", "traffic", "nairobi", "matatu"],
+      "meme_angles": ["Two-hour commute for 5km", "Flooded CBD", "Umbrella vendor wins"]
+    }
   }
 ]

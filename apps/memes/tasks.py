@@ -117,10 +117,14 @@ def discover_trending_memes(self):
         '  "shelf_life_hours": estimated hours before this meme becomes stale (24-168)\n'
     )
 
+    from apps.memes.relevance import msme_moments_context
+    msme_context = msme_moments_context()
+
     prompt = (
         f"Date: {today.strftime('%A, %B %d, %Y')}\n"
         f"Time: {timezone.now().strftime('%H:%M')} EAT (East Africa Time)\n"
         f"{events_context}\n"
+        f"{msme_context}\n"
         f"{web_context}\n"
         f"{existing_context}\n\n"
         "Discover 5-8 trending memes, viral formats, or culturally relevant humor "
@@ -304,7 +308,9 @@ def adapt_memes_for_users(self):
         for meme in memes_to_adapt[:remaining_quota]:
             try:
                 adaptation = _adapt_meme_for_user(meme, user, profile, prefs)
-                if adaptation:
+                if adaptation and adaptation.status != MemeAdaptation.Status.FAILED:
+                    from apps.memes.pipeline import auto_queue_adaptation
+                    auto_queue_adaptation(adaptation, prefs)
                     total_adapted += 1
             except Exception as e:
                 logger.warning(
@@ -319,7 +325,7 @@ def adapt_memes_for_users(self):
 @shared_task(name="memes.adapt_single_meme", bind=True, max_retries=1)
 def adapt_single_meme(self, meme_id, user_id):
     """Adapt a specific meme for a specific user (triggered from UI)."""
-    from .models import MemePreferences, TrendingMeme
+    from .models import MemeAdaptation, MemePreferences, TrendingMeme
 
     try:
         meme = TrendingMeme.objects.get(id=meme_id)
@@ -335,9 +341,22 @@ def adapt_single_meme(self, meme_id, user_id):
     prefs, _ = MemePreferences.objects.get_or_create(user=user)
 
     adaptation = _adapt_meme_for_user(meme, user, profile, prefs)
-    if adaptation:
+    if adaptation and adaptation.status != MemeAdaptation.Status.FAILED:
+        from apps.memes.pipeline import auto_queue_adaptation
+        auto_queue_adaptation(adaptation, prefs)
         return {"adaptation_id": str(adaptation.id)}
-    return {"error": "Adaptation failed"}
+
+    reason = (adaptation.error_message if adaptation else "") or "Adaptation failed"
+    try:
+        from apps.notifications.models import Notification
+        Notification.create_for_user(
+            user,
+            Notification.NotificationType.SYSTEM,
+            f"Meme adaptation failed for \"{meme.title}\": {reason[:120]}",
+        )
+    except Exception:
+        logger.exception("Failed to notify user of meme adapt failure")
+    return {"error": reason, "adaptation_id": str(adaptation.id) if adaptation else None}
 
 
 # ─── TASK 3: LIFECYCLE MANAGEMENT ────────────────────────────────────────────
@@ -527,6 +546,7 @@ def _adapt_meme_for_user(meme, user, profile, prefs):
     # Build brand context
     brand_name = profile.company_name or user.get_full_name() or user.email.split("@")[0]
     industry = profile.get_industry_display() if profile.industry else "General"
+    city = getattr(profile, "city", "") or ""
     brand_voice = profile.brand_voice or "Professional but approachable"
     target_audience = profile.target_audience or "Not specified"
     key_offerings = profile.key_offerings or []
@@ -592,6 +612,7 @@ def _adapt_meme_for_user(meme, user, profile, prefs):
         f"=== BRAND CONTEXT ===\n"
         f"Brand: {brand_name}\n"
         f"Industry: {industry}\n"
+        f"City: {city or 'Kenya (general)'}\n"
         f"Voice: {brand_voice}\n"
         f"Audience: {target_audience}\n"
         f"Key offerings: {json.dumps(key_offerings)}\n"
@@ -612,14 +633,17 @@ def _adapt_meme_for_user(meme, user, profile, prefs):
         )
 
         if not response.content or not response.content.strip():
-            return None
+            return _fail_adaptation(meme, user, "AI returned an empty response")
 
         data = parse_llm_json(response.content)
 
         # Skip forced adaptations
         if data.get("is_forced"):
             logger.info("Meme '%s' doesn't fit %s — skipping", meme.title, user.email)
-            return None
+            return _fail_adaptation(
+                meme, user,
+                "This trend doesn't fit your brand naturally — try another meme.",
+            )
 
         adapted_text = (data.get("adapted_text") or "").strip()
         adapted_caption = (data.get("adapted_caption") or "").strip()
@@ -631,7 +655,10 @@ def _adapt_meme_for_user(meme, user, profile, prefs):
                 "Meme '%s' adaptation blocked by quality gate for %s: %s",
                 meme.title, user.email, gate["reasons"],
             )
-            return None
+            return _fail_adaptation(
+                meme, user,
+                "Quality check failed: " + "; ".join(gate["reasons"]),
+            )
 
         adaptation = MemeAdaptation.objects.create(
             user=user,
@@ -660,7 +687,35 @@ def _adapt_meme_for_user(meme, user, profile, prefs):
 
     except Exception as e:
         logger.warning("Meme adaptation failed for '%s' x %s: %s", meme.title, user.email, e)
-        return None
+        return _fail_adaptation(meme, user, str(e)[:500])
+
+
+def _fail_adaptation(meme, user, reason: str):
+    """Record a failed adaptation so the user sees why in Queue."""
+    from .models import MemeAdaptation
+
+    existing = MemeAdaptation.objects.filter(user=user, trending_meme=meme).first()
+    if existing:
+        if existing.status in (MemeAdaptation.Status.DRAFT, MemeAdaptation.Status.FAILED):
+            existing.status = MemeAdaptation.Status.FAILED
+            existing.error_message = reason[:500]
+            existing.save(update_fields=["status", "error_message", "updated_at"])
+        return existing
+
+    return MemeAdaptation.objects.create(
+        user=user,
+        trending_meme=meme,
+        adapted_text=f"Could not adapt: {meme.title}",
+        status=MemeAdaptation.Status.FAILED,
+        error_message=reason[:500],
+    )
+
+
+    try:
+        from apps.memes.pipeline import auto_queue_adaptation
+        auto_queue_adaptation(adaptation, prefs)
+    except Exception as e:
+        logger.warning("auto_queue failed for adaptation %s: %s", adaptation.pk, e)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -672,77 +727,87 @@ def _adapt_meme_for_user(meme, user, profile, prefs):
 def scan_trends_for_users():
     """
     Periodic task: check trending memes + Kenyan events against each user's
-    industry/audience → create TrendAlert for matches → generate content.
+    industry/audience → create TrendAlert for matches.
 
     Run every 2 hours via Celery Beat.
     """
-    from django.utils import timezone
-    from apps.memes.models import TrendingMeme, TrendAlert, KenyanEvent, MemePreferences
-    from apps.accounts.models import User
+    from apps.billing.models import get_plan_limits
+    from apps.memes.models import TrendAlert, KenyanEvent, MemePreferences, TrendingMeme
+    from apps.memes.relevance import get_meme_prefs, industry_relevance_for_trend
 
     now = timezone.now()
     detected = 0
 
-    # Get active trending memes (emerging or trending stage)
     hot_memes = TrendingMeme.objects.filter(
-        lifecycle_stage__in=["emerging", "trending"],
+        lifecycle__in=[
+            TrendingMeme.Lifecycle.EMERGING,
+            TrendingMeme.Lifecycle.TRENDING,
+        ],
         brand_safety_score__gte=60,
-        is_active=True,
+        expires_at__gt=now,
     ).order_by("-virality_score")[:20]
 
-    # Get upcoming Kenyan events (next 3 days)
     upcoming_events = KenyanEvent.objects.filter(
         date__range=[now.date(), (now + timezone.timedelta(days=3)).date()],
-        meme_potential__in=["high", "viral"],
-        sensitivity__in=["safe", "mild"],
+        meme_potential__in=["high", "medium"],
+        sensitivity__in=["safe", "moderate"],
     )
 
-    # Get users with meme preferences who haven't opted out
     active_users = User.objects.filter(
         is_active=True,
-    ).select_related("profile").exclude(
-        profile__plan="starter",  # Skip free tier
-    )
+        meme_preferences__is_active=True,
+    ).select_related("profile", "meme_preferences")[:100]
 
-    for user in active_users[:100]:  # Cap per run
+    for user in active_users:
         profile = getattr(user, "profile", None)
         if not profile:
             continue
 
-        prefs = MemePreferences.objects.filter(user=user).first()
-        user_industry = (profile.industry or "").lower()
+        limits = get_plan_limits(profile.plan or "starter")
+        if not limits.get("memes_enabled", False):
+            continue
 
-        # Check each hot meme for relevance
+        prefs = get_meme_prefs(user)
+
         for meme in hot_memes:
-            # Skip if user already has an active alert for this meme
-            if TrendAlert.objects.filter(user=user, trending_meme=meme).exists():
+            if TrendAlert.objects.filter(
+                user=user, trending_meme=meme,
+                status__in=[
+                    TrendAlert.Status.DETECTED,
+                    TrendAlert.Status.GENERATING,
+                    TrendAlert.Status.READY,
+                    TrendAlert.Status.APPROVED,
+                ],
+            ).exists():
                 continue
 
-            # Skip if user's risk tolerance is conservative and meme is edgy
-            if prefs and prefs.risk_tolerance == "conservative" and meme.brand_safety_score < 80:
+            if prefs.risk_tolerance == MemePreferences.RiskTolerance.CONSERVATIVE:
+                if meme.brand_safety_score < 80:
+                    continue
+            if meme.category in (prefs.excluded_categories or []):
                 continue
 
-            # Basic relevance check: meme category vs user preferences
-            relevance_score = meme.cultural_relevance_kenya or 50
-            if prefs and meme.category in (prefs.excluded_categories or []):
+            relevance_score = industry_relevance_for_trend(meme, profile)
+            if relevance_score < 60:
                 continue
 
-            if relevance_score >= 60:
-                urgency = max(2, 24 - (meme.virality_score // 5))
-                alert = TrendAlert.objects.create(
-                    user=user,
-                    trend_topic=meme.title,
-                    trend_source=meme.source_platform or "meme",
-                    trend_context=f"Trending meme ({meme.lifecycle_stage}): {meme.description[:200]}",
-                    trend_score=relevance_score,
-                    urgency_hours=urgency,
-                    trending_meme=meme,
-                    expires_at=now + timezone.timedelta(hours=urgency),
-                )
-                generate_trend_ride_content.delay(str(alert.pk))
-                detected += 1
+            urgency = max(2, 24 - (meme.virality_score // 5))
+            alert = TrendAlert.objects.create(
+                user=user,
+                trend_topic=meme.title,
+                trend_source=TrendAlert.TrendSource.MEME,
+                trend_context=(
+                    f"Trending meme ({meme.get_lifecycle_display()}): "
+                    f"{meme.description[:200]}"
+                ),
+                trend_score=relevance_score,
+                urgency_hours=urgency,
+                trending_meme=meme,
+                expires_at=now + timezone.timedelta(hours=urgency),
+                status=TrendAlert.Status.DETECTED,
+            )
+            detected += 1
 
-        # Check upcoming Kenyan events
         for event in upcoming_events:
             if TrendAlert.objects.filter(user=user, kenyan_event=event).exists():
                 continue
@@ -751,17 +816,17 @@ def scan_trends_for_users():
             alert = TrendAlert.objects.create(
                 user=user,
                 trend_topic=event.name,
-                trend_source="kenyan_event",
+                trend_source=TrendAlert.TrendSource.KENYAN_EVENT,
                 trend_context=(
-                    f"Upcoming event: {event.name} ({event.get_event_type_display()}) on {event.date}. "
-                    f"Meme angles: {', '.join(event.meme_angles or [])}."
+                    f"Upcoming: {event.name} ({event.get_event_type_display()}) on {event.date}. "
+                    f"Angles: {', '.join(event.meme_angles or [])}."
                 ),
-                trend_score=80 if event.meme_potential == "viral" else 60,
+                trend_score=80 if event.meme_potential == "high" else 65,
                 urgency_hours=max(6, days_until * 12),
                 kenyan_event=event,
-                expires_at=now + timezone.timedelta(days=days_until + 1),
+                expires_at=now + timezone.timedelta(hours=max(6, days_until * 12)),
+                status=TrendAlert.Status.DETECTED,
             )
-            generate_trend_ride_content.delay(str(alert.pk))
             detected += 1
 
     logger.info("Trend scan: created %d alerts", detected)
@@ -802,7 +867,9 @@ def generate_trend_ride_content(alert_id: str):
         brand_context = ""
         if profile:
             brand_context = (
-                f"Brand: Industry={profile.industry or 'general'}, "
+                f"Brand: {profile.company_name or 'Business'}, "
+                f"Industry={profile.industry or 'general'}, "
+                f"City={getattr(profile, 'city', '') or 'Kenya'}, "
                 f"Voice={profile.brand_voice or 'professional'}, "
                 f"Audience={profile.target_audience or 'general'}."
             )

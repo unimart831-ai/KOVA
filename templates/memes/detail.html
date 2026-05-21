@@ -24,6 +24,15 @@
 {% endblock %}
 
 {% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+  {% include "content/_studio_subnav.html" %}
+
+  {% if fit_line %}
+  <div class="bg-kova-50 dark:bg-kova-950/30 border border-kova-200 dark:border-kova-800 rounded-xl px-4 py-3">
+    <p class="text-sm text-kova-800 dark:text-kova-200">{{ fit_line }}</p>
+  </div>
+  {% endif %}
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -240,6 +249,7 @@
     {% endif %}
   </div>
 
+</div>
 </div>
 
 {% endblock %}

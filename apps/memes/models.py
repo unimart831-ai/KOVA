@@ -182,6 +182,7 @@ class MemeAdaptation(models.Model):
         APPROVED = "approved", "Approved"
         PUBLISHED = "published", "Published"
         REJECTED = "rejected", "Rejected"
+        FAILED = "failed", "Failed"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="meme_adaptations")
@@ -210,6 +211,7 @@ class MemeAdaptation(models.Model):
 
     # Status
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT, db_index=True)
+    error_message = models.TextField(blank=True, help_text="Why adaptation failed, if status=failed")
     post = models.ForeignKey(
         "content.Post", on_delete=models.SET_NULL, null=True, blank=True,
         related_name="meme_adaptation",

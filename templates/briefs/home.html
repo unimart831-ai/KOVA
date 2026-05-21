@@ -374,7 +374,8 @@
                           {% endfor %}
                         </div>
                       {% endif %}
-                      <form hx-post="{% url 'brief:action' %}" hx-swap="outerHTML" class="mt-2">
+                      <div class="mt-2 flex flex-wrap items-center gap-3">
+                      <form hx-post="{% url 'brief:action' %}" hx-swap="outerHTML" class="inline-flex">
                         {% csrf_token %}
                         <input type="hidden" name="idea" value="Trending topic: {{ topic.topic|default:topic }}{% if topic.suggested_angle %} — Angle: {{ topic.suggested_angle }}{% endif %}">
                         <input type="hidden" name="context" value="{{ topic.relevance|default:'' }}">
@@ -385,6 +386,13 @@
                           Create content
                         </button>
                       </form>
+                      {% if request.plan_limits.memes_enabled %}
+                      <a href="{% url 'memes:discover' %}?topic={{ topic.topic|default:topic|urlencode }}"
+                         class="inline-flex items-center gap-1 text-xs font-medium text-rose-600 dark:text-rose-400 hover:underline">
+                        Adapt as meme →
+                      </a>
+                      {% endif %}
+                      </div>
                     </div>
                   </li>
                 {% endfor %}

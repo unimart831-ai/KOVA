@@ -44,6 +44,7 @@ WHATSAPP_URLS = [
 MEMES_URLS = [
     "memes:discover", "memes:queue", "memes:settings", "memes:detail",
     "memes:adapt", "memes:card", "memes:approve", "memes:reject", "memes:to_post",
+    "memes:retry", "memes:trend_alerts", "memes:trend_alert_action",
 ]
 SEED_CREATE_URLS = ["content:generate"]
 

@@ -2,126 +2,76 @@
 
 {% block page_title %}Trend Alerts{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">AI-detected trends with ready-made content for your brand</p>
-{% endblock %}
-
-{% block page_actions %}
-<a href="{% url 'memes:discover' %}" class="btn-secondary text-sm px-3 py-1.5">← Discover</a>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Trends matched to your industry — approve to generate content fast.</p>
 {% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-6">
 
-  {# Info banner #}
-  <div class="flex items-center gap-3 px-4 py-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl">
-    <div class="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center shrink-0">
-      <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-    </div>
-    <p class="text-sm text-rose-800 dark:text-rose-200">Kova scans Twitter, Reddit, and Kenyan events for trends relevant to your brand. Approve alerts to generate content that rides the wave.</p>
+  {% include "content/_studio_subnav.html" %}
+
+  <div class="flex items-center justify-between">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Trend Alerts</h2>
+    <a href="{% url 'memes:discover' %}" class="btn-outline text-sm px-3 py-1.5">← Discover</a>
   </div>
 
-  {# Status filter #}
-  <div class="flex items-center gap-2 flex-wrap">
-    <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Filter:</span>
-    <a href="{% url 'memes:trend_alerts' %}"
-       class="text-xs px-3 py-1.5 rounded-full border font-medium transition-colors {% if not status_filter %}bg-kova-600 text-white border-kova-600{% else %}bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-kova-300{% endif %}">
-      All
-    </a>
+  {% include "memes/_memes_value_strip.html" %}
+
+  <div class="flex items-center gap-3 px-4 py-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl">
+    <p class="text-sm text-rose-800 dark:text-rose-200">
+      Kova scans Kenyan trends and events every 2 hours. When something matches {{ request.user.profile.company_name|default:"your business" }}, you get an alert here — approve to ride the wave.
+    </p>
+  </div>
+
+  <div class="flex flex-wrap gap-2">
+    <a href="{% url 'memes:trend_alerts' %}" class="text-xs px-3 py-1.5 rounded-full border {% if not status_filter %}bg-kova-600 text-white border-kova-600{% else %}text-gray-500{% endif %}">All</a>
     {% for value, label in status_choices %}
-    <a href="{% url 'memes:trend_alerts' %}?status={{ value }}"
-       class="text-xs px-3 py-1.5 rounded-full border font-medium transition-colors {% if status_filter == value %}bg-kova-600 text-white border-kova-600{% else %}bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-kova-300{% endif %}">
-      {{ label }}
-    </a>
+    <a href="{% url 'memes:trend_alerts' %}?status={{ value }}" class="text-xs px-3 py-1.5 rounded-full border {% if status_filter == value %}bg-kova-600 text-white{% else %}text-gray-500{% endif %}">{{ label }}</a>
     {% endfor %}
   </div>
 
-  {# Alerts list #}
   {% if alerts %}
   <div class="space-y-3">
     {% for alert in alerts %}
-    <div class="card hover:shadow-md transition-shadow {% if alert.is_expired %}opacity-60{% endif %}">
-      <div class="card-body p-4">
-        <div class="flex items-start justify-between gap-4">
-          <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-2 mb-1.5">
-              {# Status badge #}
-              {% if alert.status == 'approved' %}
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">✓ Approved</span>
-              {% elif alert.status == 'ready' %}
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">Ready</span>
-              {% elif alert.status == 'detected' %}
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">New</span>
-              {% elif alert.status == 'dismissed' %}
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">Dismissed</span>
-              {% elif alert.status == 'expired' %}
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500">Expired</span>
-              {% else %}
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">{{ alert.get_status_display }}</span>
-              {% endif %}
-
-              {# Source badge #}
-              <span class="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">{{ alert.get_trend_source_display }}</span>
-
-              {# Score #}
-              {% if alert.trend_score %}
-                <span class="text-xs font-bold text-rose-600 dark:text-rose-400">Score: {{ alert.trend_score }}</span>
-              {% endif %}
-            </div>
-
-            <h4 class="text-sm font-semibold text-gray-900 dark:text-white">{{ alert.trend_topic }}</h4>
-
-            {% if alert.trend_context %}
-              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{{ alert.trend_context|truncatewords:30 }}</p>
-            {% endif %}
-
-            {% if alert.brand_angle %}
-              <p class="text-xs text-kova-600 dark:text-kova-400 mt-2">
-                <span class="font-medium">Brand angle:</span> {{ alert.brand_angle|truncatewords:20 }}
-              </p>
-            {% endif %}
-
-            <div class="flex items-center gap-3 mt-2 text-xs text-gray-400 dark:text-gray-500">
-              <span>{{ alert.detected_at|timesince }} ago</span>
-              {% if alert.urgency_hours %}
-                <span>{{ alert.urgency_hours }}h window</span>
-              {% endif %}
-              {% if alert.posts_generated %}
-                <span>{{ alert.posts_generated }} post{{ alert.posts_generated|pluralize }} generated</span>
-              {% endif %}
-            </div>
+    <div class="bg-white dark:bg-gray-900 rounded-xl border p-4 {% if alert.is_expired %}opacity-60{% endif %}">
+      <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2 mb-1">
+            <span class="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800">{{ alert.get_status_display }}</span>
+            <span class="text-xs text-gray-500">{{ alert.get_trend_source_display }}</span>
+            {% if alert.trend_score %}<span class="text-xs font-bold text-rose-600">Fit: {{ alert.trend_score }}</span>{% endif %}
           </div>
-
-          {# Actions #}
-          <div class="shrink-0 flex items-center gap-2">
-            {% if alert.status == 'detected' or alert.status == 'ready' %}
-              <form method="post" action="{% url 'memes:trend_alert_action' alert.pk %}">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="approve">
-                <button type="submit" class="btn-primary text-xs px-3 py-1">Ride It</button>
-              </form>
-              <form method="post" action="{% url 'memes:trend_alert_action' alert.pk %}">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="dismiss">
-                <button type="submit" class="btn-secondary text-xs px-3 py-1">Skip</button>
-              </form>
-            {% elif alert.content_seed %}
-              <a href="{% url 'content:studio' %}" class="btn-secondary text-xs px-3 py-1">View in Studio</a>
-            {% endif %}
+          <h4 class="text-sm font-semibold">{{ alert.trend_topic }}</h4>
+          {% if alert.trend_context %}<p class="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{{ alert.trend_context }}</p>{% endif %}
+          {% if alert.brand_angle %}<p class="text-xs text-kova-600 mt-2"><strong>Angle:</strong> {{ alert.brand_angle|truncatewords:25 }}</p>{% endif %}
+          {% if alert.error_message and alert.status == 'failed' %}
+          <p class="text-xs text-red-600 mt-2">{{ alert.error_message }}</p>
+          {% endif %}
+          <div class="flex gap-3 mt-2 text-xs text-gray-400">
+            <span>{{ alert.detected_at|timesince }} ago</span>
+            {% if alert.urgency_hours %}<span>{{ alert.urgency_hours }}h window</span>{% endif %}
           </div>
+        </div>
+        <div class="shrink-0 flex gap-2">
+          {% if alert.status == 'detected' or alert.status == 'ready' %}
+          <form method="post" action="{% url 'memes:trend_alert_action' alert.pk %}">{% csrf_token %}<input type="hidden" name="action" value="approve"><button type="submit" class="btn-primary text-xs px-3 py-1">Ride It</button></form>
+          <form method="post" action="{% url 'memes:trend_alert_action' alert.pk %}">{% csrf_token %}<input type="hidden" name="action" value="dismiss"><button type="submit" class="btn-outline text-xs px-3 py-1">Skip</button></form>
+          {% elif alert.trending_meme %}
+          <a href="{% url 'memes:detail' meme_id=alert.trending_meme.id %}" class="btn-outline text-xs px-3 py-1">View Meme</a>
+          {% elif alert.content_seed %}
+          <a href="{% url 'content:studio' %}" class="btn-outline text-xs px-3 py-1">Studio</a>
+          {% endif %}
         </div>
       </div>
     </div>
     {% endfor %}
   </div>
   {% else %}
-  <div class="card border-dashed">
-    <div class="card-body text-center py-12">
-      <div class="flex justify-center mb-3"><svg class="w-10 h-10 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg></div>
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">No trend alerts yet</h3>
-      <p class="text-sm text-gray-500 dark:text-gray-400">Kova automatically scans for trending topics. Alerts will appear here when trends match your brand.</p>
-    </div>
+  <div class="text-center py-12 border border-dashed rounded-xl">
+    <h3 class="text-lg font-semibold mb-1">No trend alerts yet</h3>
+    <p class="text-sm text-gray-500">Alerts appear when trends match your industry and settings. Browse Discover while you wait.</p>
+    <a href="{% url 'memes:discover' %}" class="btn-primary text-sm px-4 py-2 mt-4 inline-block">Browse Discover</a>
   </div>
   {% endif %}
-
 </div>
 {% endblock %}
