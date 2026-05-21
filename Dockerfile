@@ -5,12 +5,16 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# System dependencies
+# System dependencies (libcairo2-dev + pkg-config needed by pycairo/xhtml2pdf)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     curl \
     fonts-dejavu-core \
+    pkg-config \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libgdk-pixbuf2.0-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js (for Tailwind CSS CLI)
