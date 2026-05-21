@@ -81,57 +81,6 @@
   </div>
   {% endif %}
 
-  {# Quick access — Revenue Attribution #}
-  <div class="flex items-center justify-between px-4 py-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl">
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
-        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      </div>
-      <div>
-        <p class="text-sm font-medium text-emerald-900 dark:text-emerald-200">Revenue Attribution</p>
-        <p class="text-xs text-emerald-600 dark:text-emerald-400">See which posts and platforms drive actual sales</p>
-      </div>
-    </div>
-    <a href="{% url 'analytics:revenue' %}" class="text-xs font-medium text-emerald-700 dark:text-emerald-300 hover:underline flex items-center gap-1">
-      View Revenue
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-    </a>
-  </div>
-
-  {# Quick access — Kova Pixel #}
-  <div class="flex items-center justify-between px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl">
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
-        <svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
-      </div>
-      <div>
-        <p class="text-sm font-medium text-purple-900 dark:text-purple-200">Kova Pixel</p>
-        <p class="text-xs text-purple-600 dark:text-purple-400">Track website visitors and attribute revenue to social posts</p>
-      </div>
-    </div>
-    <a href="{% url 'analytics:pixel_settings' %}" class="text-xs font-medium text-purple-700 dark:text-purple-300 hover:underline flex items-center gap-1">
-      Setup Pixel
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-    </a>
-  </div>
-
-  {# Quick access — Performance to Email #}
-  <div class="flex items-center justify-between px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
-        <svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-      </div>
-      <div>
-        <p class="text-sm font-medium text-amber-900 dark:text-amber-200">Performance to Email</p>
-        <p class="text-xs text-amber-600 dark:text-amber-400">Top-performing posts auto-recycled into email campaigns</p>
-      </div>
-    </div>
-    <a href="{% url 'analytics:performance_recycle' %}" class="text-xs font-medium text-amber-700 dark:text-amber-300 hover:underline flex items-center gap-1">
-      View Recycles
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-    </a>
-  </div>
-
   {% if has_data %}
     {# Summary cards — primary metrics with icons #}
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
