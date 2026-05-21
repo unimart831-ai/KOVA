@@ -331,6 +331,8 @@
   </div>
 </div>
 
+{% include "content/_studio_generation_modal.html" %}
+
 <script>
 function seedForm() {
   const connected = JSON.parse('{{ connected_platforms|escapejs }}');

@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST, require_http_methods
 from django_ratelimit.decorators import ratelimit
 
@@ -80,6 +81,7 @@ def content_studio(request):
         "current_search": request.GET.get("q", ""),
         "current_source": request.GET.get("source", ""),
         "page_title": "Studio",
+        "generating_seed_id": request.GET.get("generating", ""),
     })
 
 
@@ -234,16 +236,22 @@ def submit_seed(request):
     if form.is_valid():
         seed = form.save(commit=False)
         seed.user = request.user
+        seed.generation_log = []
         seed.save()
+
+        from apps.agents.create_agent import log_gen_step
+        log_gen_step(seed, "queued", "Queued your idea.", seed.idea[:120])
 
         fire_task(generate_from_seed, str(seed.id))
 
+        redirect_url = f"{reverse('content:studio')}?generating={seed.id}"
         if is_htmx:
-            # Return the processing spinner card that polls for status
-            return render(request, "content/_seed_processing.html", {"seed": seed})
+            response = HttpResponse(status=200)
+            response["HX-Redirect"] = redirect_url
+            return response
 
         messages.success(request, "Your idea is being processed! Posts will appear below shortly.")
-        return redirect("content:studio")
+        return redirect(redirect_url)
 
     if is_htmx:
         return HttpResponse(
@@ -364,6 +372,44 @@ def seed_status(request, seed_id):
     if seed.status in ("completed", "failed"):
         response["HX-Trigger"] = "postsUpdated"
     return response
+
+
+@login_required
+def seed_generation_status(request, seed_id):
+    """JSON status for live Studio generation modal."""
+    seed = get_object_or_404(ContentSeed, id=seed_id, user=request.user)
+
+    from datetime import timedelta
+    from django.utils import timezone as tz
+
+    if seed.status in ("new", "processing"):
+        if seed.updated_at < tz.now() - timedelta(minutes=5):
+            seed.status = "failed"
+            seed.error_message = "Generation timed out. Please try again."
+            seed.save(update_fields=["status", "error_message", "updated_at"])
+
+    posts = seed.posts.select_related("social_account").all()
+    terminal = seed.status in ("completed", "failed")
+    return JsonResponse({
+        "seed_id": str(seed.pk),
+        "status": seed.status,
+        "idea": seed.idea[:200],
+        "generation_log": seed.generation_log or [],
+        "batch_strategy": seed.batch_strategy or "",
+        "posts": [
+            {
+                "id": str(p.id),
+                "platform": p.social_account.get_platform_display() if p.social_account else p.platform,
+                "angle": p.ai_angle or "",
+                "preview": p.content_text[:120],
+                "media_status": p.media_status,
+            }
+            for p in posts
+        ],
+        "post_count": posts.count(),
+        "error_message": seed.error_message or "",
+        "terminal": terminal,
+    })
 
 
 @login_required

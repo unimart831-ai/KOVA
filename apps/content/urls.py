@@ -12,6 +12,7 @@ urlpatterns = [
     path("studio/dismiss-failed/", views.dismiss_failed_seeds, name="dismiss_failed"),
     path("studio/refresh-suggestions/", views.refresh_suggestions, name="refresh_suggestions"),
     path("studio/seed/<uuid:seed_id>/status/", views.seed_status, name="seed_status"),
+    path("studio/seed/<uuid:seed_id>/generation-status/", views.seed_generation_status, name="seed_generation_status"),
     path("studio/seed/<uuid:seed_id>/batch-approve/", views.batch_approve, name="batch_approve"),
     path("queue/", views.content_queue, name="queue"),
     path("calendar/", views.calendar_view, name="calendar"),

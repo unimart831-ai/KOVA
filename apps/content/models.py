@@ -47,6 +47,11 @@ class ContentSeed(models.Model):
         help_text="Content intent the Strategist wants this seed to target.",
     )
     error_message = models.TextField(blank=True)
+    generation_log = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Live Create Agent steps shown during post generation.",
+    )
     batch_strategy = models.TextField(blank=True, help_text="AI-generated content strategy for this batch of posts.")
     weekly_plan = models.ForeignKey(
         "WeeklyContentPlan",

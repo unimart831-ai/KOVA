@@ -31,6 +31,33 @@ from apps.platforms.models import SocialAccount
 logger = logging.getLogger(__name__)
 
 
+def log_gen_step(seed: ContentSeed, step: str, message: str, detail: str = ""):
+    """Append a visible generation step for the Studio live modal."""
+    entry = {
+        "step": step,
+        "message": message,
+        "detail": detail,
+        "at": dj_timezone.now().isoformat(),
+    }
+    log = list(seed.generation_log or [])
+    log.append(entry)
+    seed.generation_log = log
+    seed.save(update_fields=["generation_log", "updated_at"])
+
+
+def get_generation_context(user, platforms: list[dict]) -> dict:
+    """Build context snippets shown in the Studio generation modal."""
+    profile = getattr(user, "profile", None)
+    company = (profile.company_name if profile else None) or "your business"
+    industry = profile.get_industry_display() if profile and profile.industry else "your industry"
+    platform_names = [p.get("platform", "") for p in platforms]
+    return {
+        "company": company,
+        "industry": industry,
+        "platforms": platform_names,
+    }
+
+
 # ─── Smart Auto-Approval (Learning from User Patterns) ──────────────────────
 
 def _should_auto_approve(user, post):
@@ -930,6 +957,7 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
     if agent_config and not agent_config.is_active:
         seed.status = ContentSeed.SeedStatus.FAILED
         seed.error_message = "Create Agent is disabled. Enable it in Agent Control Center."
+        log_gen_step(seed, "failed", "Create Agent is disabled.", "Enable it in Agent Control Center.")
         seed.save(update_fields=["status", "error_message", "updated_at"])
         return []
 
@@ -941,14 +969,26 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
     if not connected.exists():
         seed.status = ContentSeed.SeedStatus.FAILED
         seed.error_message = "No connected platforms found. Connect at least one platform first."
+        log_gen_step(seed, "failed", "No connected platforms.", "Connect Instagram, Facebook, or WhatsApp first.")
         seed.save(update_fields=["status", "error_message", "updated_at"])
         return []
 
     platforms = [{"platform": a.platform, "username": a.username, "account_id": str(a.id)} for a in connected]
+    gen_ctx = get_generation_context(user, platforms)
 
     # Mark processing
     seed.status = ContentSeed.SeedStatus.PROCESSING
     seed.save(update_fields=["status", "updated_at"])
+    log_gen_step(
+        seed, "brand",
+        f"Loaded {gen_ctx['company']}'s brand voice.",
+        f"{gen_ctx['industry']} · tailored for your audience",
+    )
+    log_gen_step(
+        seed, "platforms",
+        f"Writing for {len(platforms)} platform{'s' if len(platforms) != 1 else ''}.",
+        ", ".join(p["platform"].title() for p in platforms),
+    )
 
     # Log agent action
     action = AgentAction.objects.create(
@@ -964,6 +1004,12 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
         # Build prompts
         system = build_system_prompt(user)
         prompt = build_generation_prompt(seed, platforms)
+
+        log_gen_step(
+            seed, "writing",
+            "Create Agent is crafting unique angles for each platform.",
+            "Not copy-paste — each post gets its own strategic hook.",
+        )
 
         # Call LLM (with two retries on parse failure)
         batch_strategy = ""
@@ -1084,6 +1130,11 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
                 "Create Agent: Regenerating %d truncated platforms: %s",
                 len(truncated_platforms), truncated_platforms,
             )
+            log_gen_step(
+                seed, "polish",
+                f"Polishing {len(truncated_platforms)} post{'s' if len(truncated_platforms) != 1 else ''}.",
+                ", ".join(p.title() for p in truncated_platforms),
+            )
             for plat in truncated_platforms:
                 pinfo = platform_map.get(plat)
                 if not pinfo:
@@ -1104,10 +1155,15 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
         # Save batch strategy on the seed
         seed.batch_strategy = batch_strategy
         seed.save(update_fields=["batch_strategy", "updated_at"])
+        if batch_strategy:
+            log_gen_step(seed, "strategy", "Strategy locked in.", batch_strategy)
+        else:
+            log_gen_step(seed, "strategy", "Posts structured — saving drafts.", "")
 
         # Create Post objects
         created_posts = []
         account_map = {a.platform: a for a in connected}
+        images_queued = 0
 
         # Normalize LLM platform names to our internal keys
         platform_aliases = {
@@ -1376,6 +1432,7 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
                                     image_prompt,
                                     visual_strategy_data if visual_strategy_data.get("strategy") else None,
                                 )
+                            images_queued += 1
                         except Exception as img_exc:
                             logger.warning("Failed to queue image gen for post %s: %s", post.id, img_exc)
                     else:
@@ -1389,6 +1446,25 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
                     logger.info("Skipping visual gen for %s (plan: %s)", seed.user, user_plan)
 
             created_posts.append(post)
+            angle = draft.angle or draft.reasoning or ""
+            log_gen_step(
+                seed, f"draft_{platform}",
+                f"Drafted {platform.title()} post.",
+                (angle[:120] + "…") if len(angle) > 120 else angle,
+            )
+
+        if images_queued:
+            log_gen_step(
+                seed, "images",
+                f"Queued {images_queued} AI image{'s' if images_queued != 1 else ''}.",
+                "Images generate in the background — posts are ready to review now.",
+            )
+
+        log_gen_step(
+            seed, "complete",
+            f"{len(created_posts)} post{'s' if len(created_posts) != 1 else ''} ready for review.",
+            seed.batch_strategy or "Scroll down to approve or edit each platform draft.",
+        )
 
         # Update seed status
         seed.status = ContentSeed.SeedStatus.COMPLETED
@@ -1418,6 +1494,7 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
     except json.JSONDecodeError as exc:
         seed.status = ContentSeed.SeedStatus.FAILED
         seed.error_message = f"Failed to parse AI response: {exc}"
+        log_gen_step(seed, "failed", "Could not parse AI response.", "Try submitting again — the model may have been overloaded.")
         seed.save(update_fields=["status", "error_message", "updated_at"])
         action.status = AgentAction.ActionStatus.FAILED
         action.error_message = str(exc)
@@ -1429,6 +1506,7 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
     except Exception as exc:
         seed.status = ContentSeed.SeedStatus.FAILED
         seed.error_message = f"Agent error: {exc}"
+        log_gen_step(seed, "failed", "Generation failed.", str(exc)[:200])
         seed.save(update_fields=["status", "error_message", "updated_at"])
         action.status = AgentAction.ActionStatus.FAILED
         action.error_message = str(exc)
