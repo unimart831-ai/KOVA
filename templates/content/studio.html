@@ -1,26 +1,43 @@
 {% extends "layouts/app.html" %}
 
-{% block page_title %}Content Studio{% endblock %}
+{% block page_title %}Studio{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Turn one idea into platform-ready posts across all your channels</p>
+<p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">One idea → every platform. See your time saved and output below.</p>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto space-y-8">
+<div class="max-w-6xl mx-auto space-y-6">
 
-  {# ━━━ Voice to Campaign Banner ━━━ #}
-  <div class="flex items-center justify-between px-4 py-3 bg-kova-50 dark:bg-kova-900/20 border border-kova-200 dark:border-kova-800 rounded-xl">
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-kova-100 dark:bg-kova-900/40 flex items-center justify-center">
+  {% include "content/_studio_subnav.html" %}
+
+  {% include "content/_studio_value_strip.html" %}
+
+  {% if connected_platform_count == 0 %}
+  <div class="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl flex items-start gap-3">
+    <div class="flex-1">
+      <p class="text-sm font-medium text-amber-800 dark:text-amber-300">Connect a platform to unlock Studio</p>
+      <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">You're paying for multi-platform AI — connect Instagram, Facebook, or WhatsApp to start generating posts that publish automatically.</p>
+      <a href="{% url 'platforms:list' %}" class="inline-flex items-center gap-1 mt-2 text-sm font-medium text-kova-600 dark:text-kova-400 hover:text-kova-800 dark:hover:text-kova-300">
+        Connect now
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ━━━ Voice to Campaign — value-first CTA ━━━ #}
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 bg-kova-50 dark:bg-kova-900/20 border border-kova-200 dark:border-kova-800 rounded-xl">
+    <div class="flex items-start gap-3 min-w-0">
+      <div class="w-8 h-8 rounded-lg bg-kova-100 dark:bg-kova-900/40 flex items-center justify-center shrink-0">
         <svg class="w-4 h-4 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
       </div>
-      <div>
+      <div class="min-w-0">
         <p class="text-sm font-medium text-kova-900 dark:text-kova-200">Voice to Campaign</p>
-        <p class="text-xs text-kova-600 dark:text-kova-400">Upload a voice memo and AI creates a full campaign — transcription, extraction, multi-post generation</p>
+        <p class="text-xs text-kova-600 dark:text-kova-400 mt-0.5">Record once — get a full multi-post campaign in minutes. Perfect when you're on the move.</p>
       </div>
     </div>
-    <a href="{% url 'content:voice_campaign' %}" class="text-xs font-medium text-kova-700 dark:text-kova-300 hover:underline flex items-center gap-1">
-      Try it
+    <a href="{% url 'content:voice_campaign' %}" class="inline-flex items-center justify-center gap-1 shrink-0 px-4 py-2 rounded-lg text-xs font-semibold bg-kova-600 text-white hover:bg-kova-700 transition-colors">
+      Start voice campaign
       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
     </a>
   </div>
@@ -28,8 +45,19 @@
   {# ━━━ Composer ━━━ #}
   <div class="card border-kova-100 dark:border-kova-900/50 shadow-kova dark:shadow-none overflow-hidden">
     <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-br from-kova-50/80 to-white dark:from-kova-950/40 dark:to-gray-900">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Drop your idea</h2>
-      <p class="text-sm text-gray-600 dark:text-gray-400 mt-1 max-w-2xl">Kova's intelligence engine turns one idea into unique, platform-native posts — each with a different strategic angle. Not reformatted. Reimagined.</p>
+      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Drop your idea</h2>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1 max-w-2xl">One idea becomes unique, platform-native posts — each with a different strategic angle. Not copy-paste. Reimagined for every channel.</p>
+        </div>
+        {% if connected_platform_count > 0 %}
+        <div class="shrink-0 px-3 py-2 rounded-lg bg-white/80 dark:bg-gray-900/80 border border-kova-200 dark:border-kova-800 text-right">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-kova-600 dark:text-kova-400">You'll get</p>
+          <p class="text-lg font-black text-gray-900 dark:text-white tabular-nums">{{ connected_platform_count }} post{{ connected_platform_count|pluralize }}</p>
+          <p class="text-[11px] text-gray-500 dark:text-gray-400">~2 min · saves ~{% widthratio connected_platform_count 1 35 %} min manual</p>
+        </div>
+        {% endif %}
+      </div>
     </div>
     <div class="card-body">
       <form method="post" action="{% url 'content:submit_seed' %}"
@@ -140,7 +168,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="shrink-0 opacity-95 group-[.htmx-request]/form:hidden" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
             </svg>
-            <span class="group-[.htmx-request]/form:hidden">Generate posts</span>
+            <span class="group-[.htmx-request]/form:hidden">Generate {{ connected_platform_count|default:1 }} post{{ connected_platform_count|default:1|pluralize }}</span>
             {# Loading state #}
             <svg class="w-4 h-4 animate-spin hidden group-[.htmx-request]/form:block" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
             <span class="hidden group-[.htmx-request]/form:inline">Generating…</span>

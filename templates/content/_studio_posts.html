@@ -29,7 +29,7 @@
   <div class="flex items-center justify-between gap-4 mb-6">
     <div>
       <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Posts to review</h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Approve individually or as a batch across all platforms</p>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Approve in one tap — Kova already wrote, angled, and sized each post for its platform</p>
     </div>
     {% if total_pending %}
       <span class="badge bg-kova-100 text-kova-800 dark:bg-kova-950 dark:text-kova-200 tabular-nums">{{ total_pending }} pending</span>
@@ -58,6 +58,11 @@
                     <span class="font-medium text-kova-600 dark:text-kova-400">Strategy:</span> {{ group.seed.batch_strategy }}
                   </p>
                 {% endif %}
+                {% if group.minutes_saved_estimate %}
+                  <p class="text-[11px] text-green-600 dark:text-green-400 ml-8 mt-1 font-medium">
+                    ≈ {{ group.minutes_saved_estimate }} min saved vs writing {{ group.platform_count }} posts manually
+                  </p>
+                {% endif %}
               </div>
 
               <div class="flex items-center gap-2 shrink-0">
@@ -67,13 +72,17 @@
                   {{ group.platform_count }} platform{{ group.platform_count|pluralize }}
                 </span>
 
-                {# Batch Approve All button #}
-                {% if group.all_pending %}
+                {# Batch Approve — skips posts that still need media #}
+                {% if group.can_batch_approve %}
                   <button @click="showBatchSchedule = true"
                           class="inline-flex items-center gap-1.5 h-8 px-4 text-xs font-semibold text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors shadow-sm shadow-kova-600/20">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                    Approve all
+                    Approve {% if group.approvable_count < group.platform_count %}{{ group.approvable_count }}/{% endif %}{{ group.platform_count }}
                   </button>
+                {% elif group.media_blocked_count %}
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-[11px] font-medium text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                    {{ group.media_blocked_count }} need image
+                  </span>
                 {% endif %}
 
                 {# Collapse toggle #}
@@ -86,7 +95,7 @@
           </div>
 
           {# Batch Schedule Modal — teleported to body #}
-          {% if group.all_pending %}
+          {% if group.can_batch_approve %}
           <template x-teleport="body">
             <div x-show="showBatchSchedule" x-cloak
                  class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
@@ -115,8 +124,11 @@
 
                   <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
                     <div>
-                      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Approve all {{ group.platform_count }} posts</h3>
-                      <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Schedule across all platforms at once</p>
+                      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Approve {{ group.approvable_count }} post{{ group.approvable_count|pluralize }}</h3>
+                      <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                        Schedule across platforms at once
+                        {% if group.media_blocked_count %} · {{ group.media_blocked_count }} skipped (need images){% endif %}
+                      </p>
                     </div>
                     <button type="button" @click="showBatchSchedule = false"
                             class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
@@ -202,11 +214,17 @@
   {% elif not ungrouped_posts %}
     <div class="card border-dashed border-gray-200 dark:border-gray-700">
       <div class="card-body text-center py-14 px-6">
-        <div class="w-14 h-14 mx-auto rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4" aria-hidden="true">
-          <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        <div class="w-14 h-14 mx-auto rounded-xl bg-kova-100 dark:bg-kova-950 flex items-center justify-center mb-4" aria-hidden="true">
+          <svg class="w-7 h-7 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
         </div>
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">No posts to review</h3>
-        <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm max-w-md mx-auto">Add an idea above and Kova will generate unique, strategically different posts for each of your connected platforms.</p>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Your AI content team is ready</h3>
+        <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm max-w-md mx-auto">
+          Drop one idea above. In ~2 minutes you'll get platform-native posts for every connected channel —
+          work that would take hours to write, adapt, and format manually.
+        </p>
+        <p class="text-xs text-kova-600 dark:text-kova-400 mt-4 font-medium">
+          Tip: use the mic button to dictate your idea while you're on the go.
+        </p>
       </div>
     </div>
   {% endif %}

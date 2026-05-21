@@ -68,16 +68,18 @@ def content_studio(request):
         "failed_seeds": failed_seeds,
         "seed_form": seed_form,
         "connected_platforms": json.dumps(connected_platforms),
+        "connected_platform_count": len(connected_platforms),
         "total_pending": total_pending,
         "pending_images": pending_images,
         "seed_suggestions": seed_suggestions,
         "can_generate_images": can_generate_images,
+        "studio_value": _build_studio_value_stats(request.user),
         "current_status": request.GET.get("status", ""),
         "current_platform": request.GET.get("platform", ""),
         "current_format": request.GET.get("post_format", ""),
         "current_search": request.GET.get("q", ""),
         "current_source": request.GET.get("source", ""),
-        "page_title": "Content Studio",
+        "page_title": "Studio",
     })
 
 
@@ -119,15 +121,71 @@ def _get_studio_posts(user, status_filter=None, platform_filter=None, format_fil
     for seed_id, seed_posts in grouped.items():
         seed_obj = seeds_map.get(seed_id)
         if seed_obj:
-            seed_groups.append({
-                "seed": seed_obj,
-                "posts": seed_posts,
-                "platform_count": len(seed_posts),
-                "all_pending": all(p.status in ("pending_approval", "draft") for p in seed_posts),
-            })
+            seed_groups.append(_enrich_seed_group(seed_obj, seed_posts))
 
     seed_groups.sort(key=lambda g: g["seed"].created_at, reverse=True)
     return seed_groups, ungrouped, posts.count()
+
+
+def _enrich_seed_group(seed_obj, seed_posts):
+    """Attach batch-approve metadata and value hints to a seed group."""
+    pending_statuses = ("pending_approval", "draft")
+    approvable = [
+        p for p in seed_posts
+        if p.status in pending_statuses and not p.needs_media
+    ]
+    media_blocked = [
+        p for p in seed_posts
+        if p.status in pending_statuses and p.needs_media
+    ]
+    # Rough manual-equivalent minutes: ~35 min per platform-native post
+    minutes_saved = len(seed_posts) * 35
+    return {
+        "seed": seed_obj,
+        "posts": seed_posts,
+        "platform_count": len(seed_posts),
+        "all_pending": all(p.status in pending_statuses for p in seed_posts),
+        "can_batch_approve": len(approvable) > 0,
+        "approvable_count": len(approvable),
+        "media_blocked_count": len(media_blocked),
+        "minutes_saved_estimate": minutes_saved,
+    }
+
+
+def _build_studio_value_stats(user):
+    """ROI metrics shown on Studio — helps users see value for money."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    week_ago = timezone.now() - timedelta(days=7)
+
+    posts_created = Post.objects.filter(user=user, created_at__gte=week_ago).count()
+    posts_published = Post.objects.filter(
+        user=user, status="published", published_at__gte=week_ago,
+    ).count()
+    seeds_completed = ContentSeed.objects.filter(
+        user=user, created_at__gte=week_ago, status="completed",
+    ).count()
+    platform_count = user.social_accounts.filter(is_active=True).count()
+    scheduled = Post.objects.filter(
+        user=user, status__in=["approved", "scheduled"],
+    ).count()
+    pending_review = Post.objects.filter(
+        user=user, status__in=["draft", "pending_approval"],
+    ).count()
+
+    hours_saved = round((posts_created * 35) / 60, 1)
+
+    return {
+        "posts_created_week": posts_created,
+        "posts_published_week": posts_published,
+        "seeds_week": seeds_completed,
+        "platform_count": platform_count,
+        "scheduled_count": scheduled,
+        "pending_review": pending_review,
+        "hours_saved_week": hours_saved,
+    }
 
 
 @login_required
@@ -598,7 +656,15 @@ def batch_approve(request, seed_id):
     intent = request.POST.get("schedule_intent", "next_best")
     now = timezone.now()
 
+    approved_count = 0
+    skipped_media = 0
+    post_now_ids = []
+
     for post in posts:
+        if post.needs_media:
+            skipped_media += 1
+            continue
+
         platform = post.social_account.platform if post.social_account else None
 
         if intent == "post_now":
@@ -627,14 +693,28 @@ def batch_approve(request, seed_id):
 
         post.status = Post.Status.APPROVED
         post.save(update_fields=["status", "scheduled_at", "updated_at"])
+        approved_count += 1
 
-        # If "post_now" — fire publish tasks
         if intent == "post_now":
-            from apps.content.tasks import publish_post
-            fire_task(publish_post, str(post.id))
+            post_now_ids.append(str(post.id))
 
-    post_count = posts.count()
-    messages.success(request, f"All {post_count} posts approved and scheduled!")
+    if intent == "post_now":
+        from apps.content.tasks import publish_post
+        for post_id in post_now_ids:
+            fire_task(publish_post, post_id)
+
+    if approved_count == 0 and skipped_media:
+        messages.warning(
+            request,
+            f"No posts approved — {skipped_media} need images before they can go live.",
+        )
+    elif skipped_media:
+        messages.warning(
+            request,
+            f"Approved {approved_count} posts. {skipped_media} skipped — upload images first.",
+        )
+    elif approved_count:
+        messages.success(request, f"All {approved_count} posts approved and scheduled!")
     return redirect("content:studio")
 
 

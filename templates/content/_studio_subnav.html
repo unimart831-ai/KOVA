@@ -1,0 +1,30 @@
+{# In-page Create tools — always visible on Studio so users discover the full toolkit #}
+<nav class="flex flex-wrap items-center gap-2 pb-1" aria-label="Create tools">
+  <a href="{% url 'content:studio' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
+       {% if request.resolver_match.url_name == 'studio' %}bg-kova-600 text-white shadow-sm{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-kova-50 dark:hover:bg-kova-950/40{% endif %}">
+    Studio
+  </a>
+  <a href="{% url 'content:voice_campaign' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
+       {% if request.resolver_match.url_name == 'voice_campaign' %}bg-kova-600 text-white shadow-sm{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-kova-50 dark:hover:bg-kova-950/40{% endif %}">
+    Voice Campaign
+  </a>
+  <a href="{% url 'media_queue:list' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
+       {% if '/media-queue/' in request.path %}bg-kova-600 text-white shadow-sm{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-kova-50 dark:hover:bg-kova-950/40{% endif %}">
+    Visual Publisher
+  </a>
+  <a href="{% url 'content:autopilot' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
+       {% if request.resolver_match.url_name == 'autopilot' %}bg-kova-600 text-white shadow-sm{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-kova-50 dark:hover:bg-kova-950/40{% endif %}">
+    Autopilot
+  </a>
+  {% if request.plan_limits.memes_enabled %}
+  <a href="{% url 'memes:discover' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
+       {% if '/memes/' in request.path %}bg-kova-600 text-white shadow-sm{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-kova-50 dark:hover:bg-kova-950/40{% endif %}">
+    Memes &amp; Trends
+  </a>
+  {% endif %}
+</nav>
