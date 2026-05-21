@@ -46,7 +46,7 @@ def recover_stale_planning(plan) -> bool:
     Returns True if plan state was changed.
     """
     from apps.content.models import WeeklyContentPlan
-    from apps.utils import run_task_inline
+    from apps.utils import fire_task
 
     if plan.status != WeeklyContentPlan.Status.PLANNING:
         return False
@@ -80,10 +80,9 @@ def recover_stale_planning(plan) -> bool:
         log_plan_step(
             plan, "retry_dispatch",
             "Restarting strategist…",
-            "Re-dispatching — the first attempt did not start.",
+            "Re-dispatching to Celery worker.",
         )
-        # Bypass broker on retry: if the worker queue is stuck, run inline instead.
-        run_task_inline(
+        fire_task(
             plan_user_week,
             str(plan.user_id),
             plan.week_start.isoformat(),

@@ -1763,4 +1763,12 @@ def verify_tiktok_post(post_id: str, tiktok_post_id: str, access_token: str):
     except Exception as exc:
         logger.warning("TikTok verification error for post %s: %s", post_id, exc)
         return {"error": str(exc)}
-        return {"error": str(e)}
+
+
+# Autopilot tasks live in autopilot.py — import so Celery workers register them.
+from apps.content.autopilot import (  # noqa: F401, E402
+    execute_autopilot_plan,
+    plan_user_week,
+    plan_weekly_autopilot,
+    send_autopilot_review_emails,
+)

@@ -8,11 +8,11 @@ def run_task_inline(task, *args, **kwargs):
     threading.Thread(target=task, args=args, kwargs=kwargs, daemon=True).start()
 
 
-def fire_task(task, *args, **kwargs):
+def fire_task(task, *args, queue=None, **kwargs):
     """
     Dispatch a Celery task without blocking the web request.
 
-    - With a real broker (Redis): sends via task.delay() — Celery worker picks it up.
+    - With a real broker (Redis): sends via Celery — worker picks it up.
     - Without a broker (CELERY_TASK_ALWAYS_EAGER or empty broker URL): runs the task
       in a daemon thread so the HTTP response returns immediately.
     """
@@ -22,8 +22,4 @@ def fire_task(task, *args, **kwargs):
     if always_eager or not broker:
         run_task_inline(task, *args, **kwargs)
     else:
-        try:
-            task.delay(*args, **kwargs)
-        except Exception:
-            # Broker unreachable — fall back so user-facing flows still complete.
-            run_task_inline(task, *args, **kwargs)
+        task.apply_async(args=args, kwargs=kwargs, queue=queue or "default")

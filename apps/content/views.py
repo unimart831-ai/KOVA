@@ -1731,7 +1731,7 @@ def autopilot_dashboard(request):
 
     if request.method == "POST" and request.POST.get("action") == "trigger":
         from datetime import timedelta
-        from apps.utils import fire_task, run_task_inline
+        from apps.utils import fire_task
 
         week_start = _next_monday()
         week_end = week_start + timedelta(days=6)
@@ -1755,7 +1755,7 @@ def autopilot_dashboard(request):
                             "Restarting your weekly strategy preview.",
                             f"Week of {week_start.strftime('%b %d, %Y')}",
                         )
-                        run_task_inline(
+                        fire_task(
                             plan_user_week,
                             str(request.user.pk),
                             week_start.isoformat(),

@@ -94,6 +94,9 @@ app.conf.task_routes = {
 # Auto-discover tasks in all installed apps (looks for tasks.py in each app)
 app.autodiscover_tasks()
 
+# Tasks defined outside tasks.py must be imported on worker boot.
+import apps.content.autopilot  # noqa: F401, E402
+
 
 # ── Startup diagnostics ─────────────────────────────────────────────────────
 # Logs the active settings module + storage backend when the worker starts.
