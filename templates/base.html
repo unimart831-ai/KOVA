@@ -61,9 +61,9 @@
 
   {% block body %}{% endblock %}
 
-  <!-- Notifications (toast) -->
+  <!-- Notifications (toast) — full width on mobile -->
   <div id="notifications"
-       class="fixed top-4 right-4 z-50 space-y-2"
+       class="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-50 space-y-2 pointer-events-none"
        x-data="{ toasts: [] }"
        @notify.window="toasts.push({message: $event.detail.message, type: $event.detail.type || 'info', id: Date.now()}); setTimeout(() => toasts.shift(), 4000)">
     <template x-for="toast in toasts" :key="toast.id">
@@ -80,7 +80,7 @@
              'bg-blue-50 border-blue-400 text-blue-800 dark:bg-blue-950 dark:border-blue-700 dark:text-blue-200': toast.type === 'info',
              'bg-yellow-50 border-yellow-400 text-yellow-800 dark:bg-yellow-950 dark:border-yellow-700 dark:text-yellow-200': toast.type === 'warning'
            }"
-           class="px-4 py-3 rounded-lg border shadow-lg text-sm font-medium max-w-sm animate-slide-in-right">
+           class="px-4 py-3 rounded-lg border shadow-lg text-sm font-medium w-full sm:max-w-sm animate-slide-in-right pointer-events-auto">
         <span x-text="toast.message"></span>
       </div>
     </template>
@@ -97,7 +97,7 @@
        x-transition:leave="transition ease-in duration-200"
        x-transition:leave-start="opacity-100"
        x-transition:leave-end="opacity-0 translate-y-4"
-       class="fixed bottom-0 inset-x-0 z-50 p-4 sm:p-6"
+       class="fixed inset-x-0 z-50 p-4 sm:p-6 {% if user.is_authenticated %}bottom-[calc(3.5rem+env(safe-area-inset-bottom))] lg:bottom-0{% else %}bottom-0{% endif %}"
        x-cloak>
     <div class="mx-auto max-w-xl bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-3">
       <p class="text-sm text-gray-600 dark:text-gray-300 flex-1">

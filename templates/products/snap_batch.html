@@ -26,7 +26,7 @@
   {# Offering type selector — applies to all items in the batch #}
   <div class="card p-4">
     <label class="label text-sm font-semibold mb-2">What are you selling?</label>
-    <div class="grid grid-cols-3 gap-2">
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
       <button type="button" @click="offeringType = 'product'"
               class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
               :class="offeringType === 'product'

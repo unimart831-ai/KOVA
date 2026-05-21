@@ -51,16 +51,27 @@ textarea {
 
 @layer base {
   html {
-    @apply scroll-smooth;
+    @apply scroll-smooth overflow-x-hidden;
   }
   body {
-    @apply bg-gray-50 text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100;
+    @apply bg-gray-50 text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100 overflow-x-hidden;
+    max-width: 100%;
+  }
+  /* Prevent horizontal layout shift from full-bleed scroll areas */
+  #main-content,
+  #marketing-main {
+    @apply min-w-0;
   }
 }
 
 @layer components {
   .btn {
     @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  @media (max-width: 639px) {
+    .btn:not(.btn-sm) {
+      min-height: 44px;
+    }
   }
   .btn-primary {
     @apply btn bg-kova-600 text-white hover:bg-kova-700 focus:ring-kova-500 dark:hover:bg-kova-500;
@@ -91,7 +102,7 @@ textarea {
     @apply bg-white rounded-xl border border-gray-200 shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:shadow-none;
   }
   .card-body {
-    @apply p-5;
+    @apply p-4 sm:p-5;
   }
   .badge {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
@@ -256,5 +267,70 @@ textarea {
   .cursor-blink::after {
     content: '|';
     animation: blink 1s step-end infinite;
+  }
+
+  /* ── Mobile-first responsive platform utilities ── */
+
+  /* Horizontal tab sub-nav (Products, Email, etc.) */
+  .subnav-tabs {
+    @apply flex items-center gap-1 border-b border-gray-200 dark:border-gray-700 mb-6 overflow-x-auto overscroll-x-contain -mx-4 px-4 sm:mx-0 sm:px-0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .subnav-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .subnav-tabs > a,
+  .subnav-tabs > button {
+    @apply whitespace-nowrap flex-shrink-0;
+  }
+
+  /* Pill-style sub-nav (Studio, Memes) */
+  .subnav-pills {
+    @apply flex items-center gap-2 pb-1 mb-4 overflow-x-auto overscroll-x-contain -mx-4 px-4 sm:mx-0 sm:px-0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .subnav-pills::-webkit-scrollbar {
+    display: none;
+  }
+  .subnav-pills > a,
+  .subnav-pills > button {
+    @apply whitespace-nowrap flex-shrink-0;
+  }
+
+  /* Page toolbars: stack on mobile, row on sm+ */
+  .page-toolbar {
+    @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3;
+  }
+  .page-toolbar-actions {
+    @apply flex flex-wrap items-center gap-2 w-full sm:w-auto;
+  }
+
+  /* Data tables inside cards — horizontal scroll on narrow screens */
+  .table-scroll {
+    @apply overflow-x-auto overscroll-x-contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .card:has(> table) {
+    @apply overflow-x-auto overscroll-x-contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .card > table,
+  .table-scroll > table {
+    min-width: 36rem;
+  }
+
+  /* Minimum 44px touch targets (WCAG / iOS HIG) */
+  .touch-target {
+    @apply min-h-[44px];
+  }
+
+  /* Full-width inputs on mobile filter rows */
+  .filter-row {
+    @apply flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 w-full sm:w-auto;
+  }
+  .filter-row .input {
+    @apply w-full sm:w-auto;
   }
 }

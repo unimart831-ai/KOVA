@@ -59,17 +59,17 @@
         <div id="services-rows" class="space-y-2">
           {% if link.services %}
             {% for s in link.services %}
-            <div class="grid grid-cols-12 gap-2">
-              <input type="text" name="service_name[]" placeholder="Service name" class="input col-span-6" value="{{ s.name }}">
-              <input type="number" name="service_duration[]" placeholder="Mins" class="input col-span-3" min="15" max="600" value="{{ s.duration_minutes }}">
-              <input type="number" name="service_price[]" placeholder="KES" class="input col-span-3" min="0" value="{{ s.price_kes }}">
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+              <input type="text" name="service_name[]" placeholder="Service name" class="input sm:col-span-6" value="{{ s.name }}">
+              <input type="number" name="service_duration[]" placeholder="Mins" class="input sm:col-span-3" min="15" max="600" value="{{ s.duration_minutes }}">
+              <input type="number" name="service_price[]" placeholder="KES" class="input sm:col-span-3" min="0" value="{{ s.price_kes }}">
             </div>
             {% endfor %}
           {% else %}
-            <div class="grid grid-cols-12 gap-2">
-              <input type="text" name="service_name[]" placeholder="Service name" class="input col-span-6">
-              <input type="number" name="service_duration[]" placeholder="Mins" class="input col-span-3" min="15" max="600" value="60">
-              <input type="number" name="service_price[]" placeholder="KES" class="input col-span-3" min="0">
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+              <input type="text" name="service_name[]" placeholder="Service name" class="input sm:col-span-6">
+              <input type="number" name="service_duration[]" placeholder="Mins" class="input sm:col-span-3" min="15" max="600" value="60">
+              <input type="number" name="service_price[]" placeholder="KES" class="input sm:col-span-3" min="0">
             </div>
           {% endif %}
         </div>
@@ -106,11 +106,11 @@
 <script>
 document.getElementById("add-service")?.addEventListener("click", () => {
   const row = document.createElement("div");
-  row.className = "grid grid-cols-12 gap-2";
+  row.className = "grid grid-cols-1 sm:grid-cols-12 gap-2";
   row.innerHTML = `
-    <input type="text" name="service_name[]" placeholder="Service name" class="input col-span-6">
-    <input type="number" name="service_duration[]" placeholder="Mins" class="input col-span-3" min="15" max="600" value="60">
-    <input type="number" name="service_price[]" placeholder="KES" class="input col-span-3" min="0">
+    <input type="text" name="service_name[]" placeholder="Service name" class="input sm:col-span-6">
+    <input type="number" name="service_duration[]" placeholder="Mins" class="input sm:col-span-3" min="15" max="600" value="60">
+    <input type="number" name="service_price[]" placeholder="KES" class="input sm:col-span-3" min="0">
   `;
   document.getElementById("services-rows").appendChild(row);
 });

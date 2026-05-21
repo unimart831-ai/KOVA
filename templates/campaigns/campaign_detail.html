@@ -2,15 +2,15 @@
 
 {% block title %}{{ campaign.name }}{% endblock %}
 {% block page_title %}
-<div class="flex items-start justify-between">
-  <div>
-    <h1 class="text-lg font-bold text-gray-900 dark:text-white">{{ campaign.name }}</h1>
+<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+  <div class="min-w-0">
+    <h1 class="text-lg font-bold text-gray-900 dark:text-white truncate">{{ campaign.name }}</h1>
     <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
       <a href="{% url 'content:voice_campaign' %}" class="hover:text-kova-600 dark:hover:text-kova-400">Campaigns</a>
       <span class="mx-1">/</span> {{ campaign.name }}
     </p>
   </div>
-  <div class="flex items-center gap-2">
+  <div class="flex flex-wrap items-center gap-2 shrink-0">
     {% if campaign.is_editable %}
     <a href="{% url 'campaigns:edit' pk=campaign.pk %}" class="btn-secondary text-xs px-3 py-1.5">Edit</a>
     {% endif %}
@@ -49,7 +49,7 @@
   {% if campaign.start_date %}<span class="text-gray-400">{{ campaign.start_date|date:"M d" }} → {{ campaign.end_date|date:"M d, Y"|default:"Ongoing" }}</span>{% endif %}
   {% if campaign.days_remaining is not None %}<span class="text-gray-500 dark:text-gray-400 font-medium">{{ campaign.days_remaining }} day{{ campaign.days_remaining|pluralize }} left</span>{% endif %}
   {% if campaign.target_platforms %}<span class="text-gray-400">{% for p in campaign.target_platforms %}{{ p|title }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>{% endif %}
-  <span class="text-gray-300 dark:text-gray-600 ml-auto">UTM: <code class="text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">{{ campaign.utm_campaign_tag }}</code></span>
+  <span class="text-gray-300 dark:text-gray-600 sm:ml-auto w-full sm:w-auto">UTM: <code class="text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded break-all">{{ campaign.utm_campaign_tag }}</code></span>
 </div>
 
 {# ── Performance Cards ───────────────────────────────────────────────── #}

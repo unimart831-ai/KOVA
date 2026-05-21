@@ -365,7 +365,7 @@
     </header>
 
     <!-- Page content -->
-    <main id="main-content" class="flex-1 p-4 sm:p-6" tabindex="-1">
+    <main id="main-content" class="flex-1 p-4 sm:p-6 min-w-0 overflow-x-hidden" tabindex="-1">
       {% if messages %}
         {% for message in messages %}
           <div class="mb-4 px-4 py-3 rounded-lg text-sm font-medium
@@ -381,8 +381,8 @@
       {% block content %}{% endblock %}
     </main>
 
-    <!-- Spacer for mobile bottom nav so content isn't hidden behind it -->
-    <div class="h-16 lg:hidden"></div>
+    <!-- Spacer for mobile bottom nav + safe area -->
+    <div class="lg:hidden" style="height: calc(3.5rem + env(safe-area-inset-bottom, 0px));"></div>
   </div>
 
   <!-- Mobile bottom navigation — visible only on small screens -->

@@ -23,12 +23,12 @@
   </div>
 
   {# Filters #}
-  <div class="flex flex-wrap items-center gap-3">
-    <a href="{% url 'emails:subscriber_add' %}" class="btn-primary text-sm px-4 py-2">+ Add Subscriber</a>
+  <div class="page-toolbar">
+    <a href="{% url 'emails:subscriber_add' %}" class="btn-primary text-sm px-4 py-2 w-full sm:w-auto justify-center">+ Add Subscriber</a>
 
-    <form method="get" class="flex items-center gap-2 ml-auto">
-      <input type="text" name="q" value="{{ current_q }}" placeholder="Search…" class="input text-sm w-48 px-3 py-1.5">
-      <select name="status" class="input text-sm px-2 py-1.5" onchange="this.form.submit()">
+    <form method="get" class="filter-row sm:ml-auto">
+      <input type="text" name="q" value="{{ current_q }}" placeholder="Search…" class="input text-sm w-full sm:w-48 px-3 py-1.5">
+      <select name="status" class="input text-sm px-2 py-1.5 w-full sm:w-auto" onchange="this.form.submit()">
         <option value="">All statuses</option>
         <option value="active" {% if current_status == 'active' %}selected{% endif %}>Active</option>
         <option value="unsubscribed" {% if current_status == 'unsubscribed' %}selected{% endif %}>Unsubscribed</option>

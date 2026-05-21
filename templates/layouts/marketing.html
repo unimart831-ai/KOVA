@@ -4,25 +4,30 @@
 {% block body_class %}bg-white dark:bg-gray-950{% endblock %}
 
 {% block body %}
-<div class="min-h-screen flex flex-col">
+<div class="min-h-screen flex flex-col" x-data="{ mobileMenuOpen: false }">
 <a href="#marketing-main" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-kova-600 focus:text-white focus:shadow-lg">
   Skip to main content
 </a>
 <!-- Marketing nav -->
 <nav class="bg-white/95 dark:bg-gray-950/95 backdrop-blur border-b border-gray-100 dark:border-gray-800 sticky top-0 z-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex justify-between h-16 items-center gap-4">
+    <div class="flex justify-between h-16 items-center gap-3">
       <a href="/" class="flex items-center space-x-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-kova-500 focus:ring-offset-2 dark:focus:ring-offset-gray-950 shrink-0">
         <div class="w-8 h-8 rounded-lg bg-kova-600 flex items-center justify-center shadow-kova">
           <span class="text-white font-bold text-sm">K</span>
         </div>
         <span class="text-lg font-bold text-gray-900 dark:text-white">Kova Agent</span>
       </a>
-      <div class="flex items-center gap-2 sm:gap-4">
-        <a href="{% url 'blog:index' %}" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors hidden sm:inline">Blog</a>
-        <a href="{% url 'learn:center' %}" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors hidden sm:inline">Learn</a>
-        <a href="{% url 'partners:landing' %}" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors hidden sm:inline">Partners</a>
-        <a href="{% url 'campus_rep' %}" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors hidden sm:inline">Campus Rep</a>
+
+      <!-- Desktop links -->
+      <div class="hidden md:flex items-center gap-4">
+        <a href="{% url 'blog:index' %}" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Blog</a>
+        <a href="{% url 'learn:center' %}" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Learn</a>
+        <a href="{% url 'partners:landing' %}" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Partners</a>
+        <a href="{% url 'campus_rep' %}" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Campus Rep</a>
+      </div>
+
+      <div class="flex items-center gap-2 sm:gap-3">
         <button type="button"
                 x-data="{ dark: document.documentElement.classList.contains('dark') }"
                 x-init="dark = document.documentElement.classList.contains('dark')"
@@ -31,7 +36,7 @@
                   dark = document.documentElement.classList.contains('dark');
                   try { localStorage.setItem('kova-theme', dark ? 'dark' : 'light'); } catch (e) {}
                 "
-                class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-kova-500"
+                class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-kova-500 touch-target"
                 :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'">
           <svg x-show="!dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
@@ -41,22 +46,45 @@
           </svg>
         </button>
         {% if user.is_authenticated %}
-          <a href="{% url 'brief:home' %}" class="btn-primary btn-sm">Go to app</a>
+          <a href="{% url 'brief:home' %}" class="btn-primary btn-sm hidden sm:inline-flex">Go to app</a>
         {% else %}
           <a href="{% url 'account_login' %}" class="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hidden sm:inline">Sign in</a>
           <a href="{% url 'account_signup' %}" class="btn-primary btn-sm">Start free trial</a>
         {% endif %}
+        <button type="button" @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-kova-500 touch-target" :aria-expanded="mobileMenuOpen" aria-controls="marketing-mobile-menu" aria-label="Open menu">
+          <svg x-show="!mobileMenuOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          <svg x-show="mobileMenuOpen" x-cloak class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
       </div>
+    </div>
+  </div>
+
+  <!-- Mobile menu drawer -->
+  <div id="marketing-mobile-menu" x-show="mobileMenuOpen" x-cloak @click.away="mobileMenuOpen = false" @keydown.escape.window="mobileMenuOpen = false"
+       x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
+       x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+       class="md:hidden border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-4 py-4 space-y-1">
+    <a href="{% url 'blog:index' %}" class="block px-3 py-3 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">Blog</a>
+    <a href="{% url 'learn:center' %}" class="block px-3 py-3 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">Learn</a>
+    <a href="{% url 'partners:landing' %}" class="block px-3 py-3 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">Partners</a>
+    <a href="{% url 'campus_rep' %}" class="block px-3 py-3 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">Campus Rep</a>
+    <div class="pt-2 border-t border-gray-100 dark:border-gray-800 space-y-2">
+      {% if user.is_authenticated %}
+        <a href="{% url 'brief:home' %}" class="btn-primary w-full justify-center">Go to app</a>
+      {% else %}
+        <a href="{% url 'account_login' %}" class="btn-secondary w-full justify-center">Sign in</a>
+        <a href="{% url 'account_signup' %}" class="btn-primary w-full justify-center">Start free trial</a>
+      {% endif %}
     </div>
   </div>
 </nav>
 
-<main id="marketing-main" tabindex="-1" class="flex-1">
+<main id="marketing-main" tabindex="-1" class="flex-1 min-w-0 overflow-x-hidden">
   {% block content %}{% endblock %}
 </main>
 
 <footer class="bg-gray-900 text-gray-400 border-t border-gray-800">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
     <div class="flex flex-col md:flex-row justify-between items-center gap-6">
       <div class="flex items-center space-x-2">
         <div class="w-7 h-7 rounded-lg bg-kova-600 flex items-center justify-center">
@@ -64,18 +92,18 @@
         </div>
         <span class="text-sm font-semibold text-white">Kova Agent</span>
       </div>
-      <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
-        <a href="{% url 'blog:index' %}" class="hover:text-white transition-colors">Blog</a>
-        <a href="{% url 'learn:center' %}" class="hover:text-white transition-colors">Learn</a>
-        <a href="{% url 'partners:landing' %}" class="hover:text-white transition-colors">Partners</a>
-        <a href="{% url 'campus_rep' %}" class="hover:text-white transition-colors">Campus Rep</a>
-        <a href="{% url 'account_login' %}" class="hover:text-white transition-colors">Sign in</a>
-        <a href="{% url 'account_signup' %}" class="hover:text-white transition-colors">Sign up</a>
-        <a href="{% url 'privacy' %}" class="hover:text-white transition-colors">Privacy</a>
-        <a href="{% url 'terms' %}" class="hover:text-white transition-colors">Terms</a>
-        <a href="{% url 'cookies' %}" class="hover:text-white transition-colors">Cookies</a>
+      <div class="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm">
+        <a href="{% url 'blog:index' %}" class="hover:text-white transition-colors py-1">Blog</a>
+        <a href="{% url 'learn:center' %}" class="hover:text-white transition-colors py-1">Learn</a>
+        <a href="{% url 'partners:landing' %}" class="hover:text-white transition-colors py-1">Partners</a>
+        <a href="{% url 'campus_rep' %}" class="hover:text-white transition-colors py-1">Campus Rep</a>
+        <a href="{% url 'account_login' %}" class="hover:text-white transition-colors py-1">Sign in</a>
+        <a href="{% url 'account_signup' %}" class="hover:text-white transition-colors py-1">Sign up</a>
+        <a href="{% url 'privacy' %}" class="hover:text-white transition-colors py-1">Privacy</a>
+        <a href="{% url 'terms' %}" class="hover:text-white transition-colors py-1">Terms</a>
+        <a href="{% url 'cookies' %}" class="hover:text-white transition-colors py-1">Cookies</a>
       </div>
-      <p class="text-sm">&copy; {% now "Y" %} Kova Agent</p>
+      <p class="text-sm text-center">&copy; {% now "Y" %} Kova Agent</p>
     </div>
   </div>
 </footer>
