@@ -72,7 +72,9 @@
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
                 {% if step.status == "completed" %}Posts ready for review in the Studio
-                {% elif step.status == "running" %}Crafting platform-native content for each connected account...
+                {% elif step.status == "running" %}
+                  {% if has_platforms %}Crafting platform-native content for each connected account...
+                  {% else %}Writing draft posts tailored to your brand — connect a platform later to publish{% endif %}
                 {% elif step.status == "failed" %}Some posts created — check the Studio
                 {% else %}Waiting for content ideas...{% endif %}
               </p>
@@ -208,7 +210,7 @@
       <div class="flex flex-col sm:flex-row gap-3">
         <a href="{% url 'content:studio' %}" class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-kova-600 text-white font-semibold hover:bg-kova-700 transition-colors shadow-kova">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-          Review & Publish Your Posts
+          Review Your Posts
         </a>
         <a href="{% url 'brief:home' %}" class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -226,8 +228,13 @@
       <div class="card-body text-center py-6">
         <p class="text-sm text-gray-600 dark:text-gray-400">
           <span class="font-medium text-gray-700 dark:text-gray-300">While you wait —</span>
+          {% if has_platforms %}
           we're pulling current trends in your industry and drafting platform-native posts for each
           connected account, not reformatted copies of the same text.
+          {% else %}
+          we're researching your industry and drafting brand-native posts as drafts.
+          Connect a platform anytime to publish — no need to redo setup.
+          {% endif %}
         </p>
       </div>
     </div>

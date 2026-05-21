@@ -3,25 +3,41 @@
 {% block title %}Verify Your Email — Kova Agent{% endblock %}
 
 {% block content %}
-<div class="min-h-[60vh] flex items-center justify-center py-12 px-4">
-  <div class="w-full max-w-md text-center">
-    <div class="w-16 h-16 rounded-2xl bg-kova-100 dark:bg-kova-900/30 flex items-center justify-center mx-auto mb-6">
-      <svg class="w-8 h-8 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<div class="brand-atmosphere min-h-[60vh] flex items-center justify-center py-12 px-4">
+  {% include "components/brand/_atmosphere_orbs.html" %}
+  <div class="relative w-full max-w-md text-center reveal">
+    <div class="w-16 h-16 rounded-2xl bg-kova-100 dark:bg-kova-900/40 flex items-center justify-center mx-auto mb-6 shadow-kova">
+      <svg class="w-8 h-8 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
       </svg>
     </div>
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">Check your email</h1>
-    <p class="text-gray-600 dark:text-gray-400 mb-8">
-      We've sent a verification link to your email address. Click the link to activate your account.
+    {% include "components/brand/_agent_loop_badge.html" %}
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-3 mt-4">Check your email</h1>
+    <p class="text-gray-600 dark:text-gray-400 mb-6">
+      One click to activate — then your AI team handles social while you approve in 5 minutes.
     </p>
-    <div class="card">
-      <div class="card-body text-sm text-gray-500 dark:text-gray-400">
-        <p>Didn't receive the email? Check your spam folder or
-          <a href="{% url 'account_login' %}" class="text-kova-600 hover:text-kova-700 dark:text-kova-400 font-medium">try signing in</a>
-          to resend it.
+
+    <div class="card text-left glass-panel">
+      <div class="card-body space-y-4 text-sm text-gray-600 dark:text-gray-400">
+        <div>
+          <p class="font-medium text-gray-900 dark:text-white mb-1">What happens next</p>
+          <ol class="list-decimal list-inside space-y-1.5">
+            <li>Verify your email (this page)</li>
+            <li>Pick a setup path — social, website, or manual</li>
+            <li>Your AI agency drafts your first posts</li>
+          </ol>
+        </div>
+        <p class="text-xs text-gray-500 pt-2 border-t border-gray-100 dark:border-gray-800">
+          Didn't receive it? Check spam or
+          <a href="{% url 'account_login' %}" class="text-kova-600 dark:text-kova-400 font-medium">sign in to resend</a>.
         </p>
       </div>
     </div>
+
+    <p class="mt-6 text-sm text-gray-500">
+      <a href="{% url 'account_login' %}" class="text-kova-600 font-medium dark:text-kova-400">← Back to sign in</a>
+    </p>
   </div>
 </div>
+{% include "components/brand/_reveal_script.html" %}
 {% endblock %}

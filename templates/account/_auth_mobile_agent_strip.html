@@ -1,0 +1,7 @@
+{# Rotating agent activity — mobile signup/login hero #}
+<div class="lg:hidden mb-6 p-4 rounded-xl bg-kova-50 dark:bg-kova-950/30 border border-kova-100 dark:border-kova-900"
+     x-data="{ msg: 0, lines: ['Research Agent found trending topics', 'Content Creator drafted 2 posts', 'Engage Agent replied to comments'] }"
+     x-init="setInterval(() => msg = (msg + 1) % lines.length, 3000)">
+  <p class="text-[10px] font-semibold uppercase tracking-wider text-kova-600 dark:text-kova-400 mb-1">Live agent activity</p>
+  <p class="text-sm text-gray-700 dark:text-gray-300" x-text="lines[msg]"></p>
+</div>

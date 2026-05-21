@@ -1,91 +1,83 @@
 {% extends "layouts/marketing.html" %}
 
+{% block title %}Learn Kova Agent — Help Center{% endblock %}
+
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16" x-data="helpSearch()">
-
-  <!-- Header -->
-  <div class="text-center mb-10">
-    <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">Learn Kova Agent</h1>
-    <p class="text-base text-gray-600 dark:text-gray-400 mt-3 max-w-2xl mx-auto">Everything you need to know about using Kova Agent to automate your social media. Browse categories or search for any topic.</p>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mt-4">
-      Looking for strategy tips and playbooks? Head to the <a href="{% url 'blog:index' %}" class="text-kova-600 dark:text-kova-400 hover:underline font-medium">Kova Blog &rarr;</a>
-    </p>
-  </div>
-
-  <!-- Search bar -->
-  <div class="mb-10">
-    <div class="relative max-w-xl mx-auto">
-      <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-      </svg>
-      <input type="text"
-             x-model="query"
-             placeholder="Search help articles..."
-             class="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-kova-500 focus:border-transparent shadow-sm">
-      <button x-show="query.length > 0" @click="query = ''" x-cloak
-              class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-
-  <!-- Search results (shown when searching) -->
-  <div x-show="query.length > 0" x-cloak class="mb-8">
-    <p class="text-sm text-gray-500 dark:text-gray-400 mb-3" x-text="filteredArticles.length + ' result' + (filteredArticles.length !== 1 ? 's' : '') + ' found'"></p>
-    <div class="space-y-2">
-      <template x-for="article in filteredArticles" :key="article.slug">
-        <a :href="'/learn/' + article.slug + '/'"
-           class="block bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 hover:border-kova-300 dark:hover:border-kova-700 transition-colors shadow-sm">
-          <h3 class="text-sm font-medium text-gray-900 dark:text-white" x-text="article.title"></h3>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5" x-text="article.description"></p>
-        </a>
-      </template>
-      <p x-show="filteredArticles.length === 0" class="text-sm text-gray-500 dark:text-gray-400 text-center py-6">
-        No articles match your search. Try different keywords.
+<div x-data="helpSearch()">
+  <section class="brand-atmosphere border-b border-gray-100 dark:border-gray-800">
+    {% include "components/brand/_atmosphere_orbs.html" %}
+    <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 text-center">
+      {% include "components/brand/_learn_badge.html" %}
+      <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white reveal reveal-delay-1">
+        Everything you need to <span class="text-gradient-hero">run Kova</span>
+      </h1>
+      <p class="text-base text-gray-600 dark:text-gray-400 mt-3 max-w-2xl mx-auto reveal reveal-delay-2">Browse categories or search for any topic — setup, agents, platforms, billing, and more.</p>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-4 reveal reveal-delay-3">
+        Looking for strategy tips? Head to the <a href="{% url 'blog:index' %}" class="text-kova-600 dark:text-kova-400 hover:underline font-medium">Kova Blog &rarr;</a>
       </p>
-    </div>
-  </div>
 
-  <!-- Category grid (hidden when searching) -->
-  <div x-show="query.length === 0" class="space-y-10">
-    {% for group in grouped_articles %}
-    <div>
-      <div class="flex items-center gap-2 mb-4">
-        <div class="w-9 h-9 rounded-lg bg-{{ group.category.color }}-100 dark:bg-{{ group.category.color }}-900/30 flex items-center justify-center">
-          <svg class="w-4.5 h-4.5 text-{{ group.category.color }}-600 dark:text-{{ group.category.color }}-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            {{ group.category.icon }}
+      <div class="mt-10 reveal reveal-delay-4">
+        <div class="relative max-w-xl mx-auto">
+          <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
           </svg>
+          <input type="text"
+                 x-model="query"
+                 placeholder="Search help articles..."
+                 class="w-full pl-12 pr-4 py-3 glass-panel rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-kova-500 focus:border-transparent shadow-sm">
+          <button x-show="query.length > 0" @click="query = ''" x-cloak
+                  class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
         </div>
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ group.category.name }}</h2>
       </div>
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {% for article in group.articles %}
-        <a href="{% url 'learn:article' article.slug %}"
-           class="group bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-5 py-4 hover:border-kova-300 dark:hover:border-kova-700 hover:shadow-md transition-all">
-          <h3 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-kova-600 dark:group-hover:text-kova-400 transition-colors">{{ article.title }}</h3>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 line-clamp-2">{{ article.description }}</p>
-        </a>
-        {% endfor %}
-      </div>
-    </div>
-    {% endfor %}
-  </div>
 
-  <!-- CTA -->
-  <div class="mt-14 bg-gradient-to-r from-kova-50 to-blue-50 dark:from-kova-950/30 dark:to-blue-950/30 border border-kova-200 dark:border-kova-800 rounded-2xl p-8 text-center">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Ready to try Kova Agent?</h3>
-    <p class="text-sm text-gray-600 dark:text-gray-400 mt-2 max-w-md mx-auto">Start your free 14-day trial — no credit card required. Let AI agents handle your social media.</p>
-    <div class="flex flex-wrap justify-center gap-3 mt-5">
-      <a href="{% url 'account_signup' %}" class="btn-primary">Start free trial</a>
-      <a href="mailto:support@kovaagent.com" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-        </svg>
-        Contact Support
-      </a>
+      <div x-show="query.length > 0" x-cloak class="mt-8 text-left">
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-3" x-text="filteredArticles.length + ' result' + (filteredArticles.length !== 1 ? 's' : '') + ' found'"></p>
+        <div class="space-y-2">
+          <template x-for="article in filteredArticles" :key="article.slug">
+            <a :href="'/learn/' + article.slug + '/'"
+               class="block glass-panel rounded-lg px-4 py-3 hover:border-kova-300 dark:hover:border-kova-700 transition-colors">
+              <h3 class="text-sm font-medium text-gray-900 dark:text-white" x-text="article.title"></h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5" x-text="article.description"></p>
+            </a>
+          </template>
+          <p x-show="filteredArticles.length === 0" class="text-sm text-gray-500 dark:text-gray-400 text-center py-6">
+            No articles match your search. Try different keywords.
+          </p>
+        </div>
+      </div>
     </div>
+  </section>
+
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+    <div x-show="query.length === 0" class="space-y-10">
+      {% for group in grouped_articles %}
+      <div class="reveal">
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-9 h-9 rounded-lg bg-{{ group.category.color }}-100 dark:bg-{{ group.category.color }}-900/30 flex items-center justify-center">
+            <svg class="w-4.5 h-4.5 text-{{ group.category.color }}-600 dark:text-{{ group.category.color }}-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {{ group.category.icon }}
+            </svg>
+          </div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ group.category.name }}</h2>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {% for article in group.articles %}
+          <a href="{% url 'learn:article' article.slug %}"
+             class="group glass-panel rounded-xl px-5 py-4 hover:border-kova-300 dark:hover:border-kova-700 hover:shadow-md transition-all">
+            <h3 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-kova-600 dark:group-hover:text-kova-400 transition-colors">{{ article.title }}</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 line-clamp-2">{{ article.description }}</p>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% include "components/brand/_public_cta_signup.html" %}
   </div>
 </div>
 

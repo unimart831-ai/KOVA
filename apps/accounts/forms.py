@@ -1,54 +1,14 @@
-import re
-
 from django import forms
 
 from apps.accounts.models import User, UserProfile
+from apps.accounts.phone_utils import apply_phone_to_user, is_valid_phone, normalize_phone
 
 
 class KovaSignupForm(forms.Form):
-    """Extra fields collected during signup. allauth calls signup() after user creation."""
-
-    phone_number = forms.CharField(
-        max_length=15,
-        required=False,
-        widget=forms.TextInput(attrs={
-            "class": "input",
-            "placeholder": "07XX XXX XXX",
-            "autocomplete": "tel",
-        }),
-        label="Phone number",
-        help_text="Kenyan format: 07xx, 01xx, or 02xx",
-    )
-
-    def clean_phone_number(self):
-        phone = self.cleaned_data.get("phone_number", "").strip()
-        if not phone:
-            return ""
-        # Strip spaces and dashes
-        phone = re.sub(r"[\s\-]", "", phone)
-        # Must match Kenyan local format: 07xx, 01xx, 02xx (10 digits)
-        if not re.match(r"^0[127]\d{8}$", phone):
-            raise forms.ValidationError(
-                "Enter a valid Kenyan phone number starting with 07, 01, or 02 (10 digits)."
-            )
-        return phone
+    """Optional signup hook for allauth — phone is collected in onboarding Step 1."""
 
     def signup(self, request, user):
-        phone = self.cleaned_data.get("phone_number", "")
-        if phone:
-            user.phone_number = phone
-            # Kenyan phone implies Kenyan timezone — saves a Step-1 click
-            # through 500+ zones for the dominant user segment.
-            user.timezone = "Africa/Nairobi"
-            user.save(update_fields=["phone_number", "timezone"])
-
-            # Mirror the phone into the profile as the M-Pesa number + KE country.
-            # User can override later in billing if a different M-Pesa line is used.
-            profile = getattr(user, "profile", None)
-            if profile is not None:
-                profile.mpesa_phone = phone
-                profile.country = "KE"
-                profile.save(update_fields=["mpesa_phone", "country"])
+        return user
 
 
 class UserSettingsForm(forms.ModelForm):
@@ -340,6 +300,17 @@ class OnboardingStep1Form(forms.ModelForm):
     timezone = forms.ChoiceField(
         widget=forms.Select(attrs={"class": "input"}),
     )
+    phone_number = forms.CharField(
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={
+            "class": "input",
+            "placeholder": "+254712345678 or 07XX XXX XXX",
+            "autocomplete": "tel",
+        }),
+        label="Phone number",
+        help_text="Optional — used for WhatsApp CTAs and M-Pesa billing hints.",
+    )
     key_offerings_text = forms.CharField(
         required=False,
         widget=forms.Textarea(
@@ -394,6 +365,16 @@ class OnboardingStep1Form(forms.ModelForm):
             self.fields["timezone"].initial = user.timezone or "Africa/Nairobi"
         if self.instance and self.instance.key_offerings:
             self.fields["key_offerings_text"].initial = "\n".join(self.instance.key_offerings)
+        if user and user.phone_number:
+            self.fields["phone_number"].initial = user.phone_number
+
+    def clean_phone_number(self):
+        phone = normalize_phone(self.cleaned_data.get("phone_number", ""))
+        if phone and not is_valid_phone(phone):
+            raise forms.ValidationError(
+                "Enter a valid phone number (Kenyan 07xx/01xx/02xx or international +country code)."
+            )
+        return phone
 
     def save(self, commit=True):
         profile = super().save(commit=False)
@@ -412,6 +393,7 @@ class OnboardingStep1Form(forms.ModelForm):
             self.user.timezone = self.cleaned_data["timezone"]
             if commit:
                 self.user.save(update_fields=["full_name", "timezone"])
+                apply_phone_to_user(self.user, self.cleaned_data.get("phone_number", ""))
         return profile
 
 

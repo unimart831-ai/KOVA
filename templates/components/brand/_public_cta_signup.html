@@ -1,0 +1,18 @@
+{# Standard bottom CTA for public marketing pages #}
+<section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 mb-24 text-center reveal">
+  {% include "components/brand/_agent_loop_badge.html" %}
+  <h3 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-2">
+    Your AI team handles <span class="text-gradient-hero">social media.</span>
+  </h3>
+  <p class="text-base text-gray-500 dark:text-gray-400 mt-2 font-medium">You approve in 5 minutes.</p>
+  <p class="text-sm text-gray-600 dark:text-gray-400 mt-3 max-w-xl mx-auto">
+    Research trends. Create platform-native content. Engage your audience. Track what works. Learn and improve — automatically.
+  </p>
+  <div class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+    <a href="{% url 'account_signup' %}" class="btn-primary group">
+      Start free — 14 days
+      <svg class="inline w-4 h-4 ml-1 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+    </a>
+    <a href="{% url 'learn:center' %}" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 transition-colors">Explore the platform →</a>
+  </div>
+</section>

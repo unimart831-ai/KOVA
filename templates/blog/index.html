@@ -11,29 +11,19 @@
 <div class="relative overflow-hidden">
 
   <!-- ── Hero ─────────────────────────────────────────────────────────── -->
-  <section class="relative">
-    <!-- Decorative gradient blobs -->
-    <div aria-hidden="true" class="absolute inset-0 -z-10 overflow-hidden">
-      <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[760px] h-[760px] rounded-full bg-gradient-to-br from-kova-500/10 via-blue-500/5 to-transparent blur-3xl"></div>
-      <div class="absolute top-40 -right-20 w-[420px] h-[420px] rounded-full bg-pink-500/5 blur-3xl"></div>
-    </div>
+  <section class="brand-atmosphere relative">
+    {% include "components/brand/_atmosphere_orbs.html" %}
 
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-24 pb-10 sm:pb-12 text-center">
-      <div class="inline-flex items-center gap-2 rounded-full bg-white/70 dark:bg-gray-900/60 backdrop-blur border border-gray-200 dark:border-gray-800 px-3 py-1 mb-5">
-        <span class="relative flex h-2 w-2">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-kova-500 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-2 w-2 bg-kova-500"></span>
-        </span>
-        <span class="text-xs font-semibold tracking-wider uppercase text-kova-600 dark:text-kova-400">The Kova Blog</span>
-      </div>
+    <div class="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-24 pb-10 sm:pb-12 text-center">
+      {% include "components/brand/_blog_badge.html" %}
 
-      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white tracking-tight leading-[1.05]">
-        Social media that <span class="bg-gradient-to-r from-kova-600 via-violet-500 to-pink-500 bg-clip-text text-transparent">actually converts</span>
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white tracking-tight leading-[1.05] reveal reveal-delay-1">
+        Social media that <span class="text-gradient-hero">actually converts</span>
       </h1>
-      <p class="text-base sm:text-lg text-gray-600 dark:text-gray-400 mt-5 max-w-2xl mx-auto leading-relaxed">
+      <p class="text-base sm:text-lg text-gray-600 dark:text-gray-400 mt-5 max-w-2xl mx-auto leading-relaxed reveal reveal-delay-2">
         Field notes, playbooks, and lessons from African small businesses running on Kova Agent.
       </p>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-4">
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-4 reveal reveal-delay-3">
         Already a Kova user? Browse the
         <a href="{% url 'learn:center' %}" class="text-kova-600 dark:text-kova-400 hover:underline font-medium">Help Center &rarr;</a>
       </p>
@@ -68,8 +58,7 @@
     <a href="{% url 'blog:article' featured.slug %}"
        class="block group mb-12 rounded-3xl overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-kova-300 dark:hover:border-kova-700 hover:shadow-xl hover:-translate-y-0.5 transition-all">
       <div class="grid md:grid-cols-5 gap-0">
-        <div class="md:col-span-2 relative aspect-[4/3] md:aspect-auto md:min-h-[320px] overflow-hidden
-                    bg-gradient-to-br from-kova-500 via-violet-500 to-pink-500">
+        <div class="md:col-span-2 relative aspect-[4/3] md:aspect-auto md:min-h-[320px] overflow-hidden bg-gradient-kova-brand">
           {% if featured.hero_image %}
             <img src="{{ featured.hero_image }}" alt="{{ featured.title }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
           {% else %}
@@ -115,7 +104,7 @@
       {% for article in rest %}
       <a href="{% url 'blog:article' article.slug %}"
          class="group flex flex-col bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden hover:border-kova-300 dark:hover:border-kova-700 hover:shadow-md hover:-translate-y-0.5 transition-all">
-        <div class="aspect-[16/9] relative overflow-hidden bg-gradient-to-br from-kova-500/90 via-violet-500/80 to-pink-500/70">
+        <div class="aspect-[16/9] relative overflow-hidden bg-gradient-kova-brand">
           {% if article.hero_image %}
             <img src="{{ article.hero_image }}" alt="{{ article.title }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
           {% else %}
@@ -146,7 +135,7 @@
   {% else %}
     <!-- Empty state -->
     <div class="text-center py-16 max-w-md mx-auto">
-      <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-kova-500/20 to-pink-500/20 flex items-center justify-center">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-kova-500/20 to-purple-500/20 flex items-center justify-center">
         <svg class="w-8 h-8 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
       </div>
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white">No articles in {{ active_category|default:"this category" }} yet</h3>
@@ -157,7 +146,7 @@
 
   <!-- ── Newsletter signup ────────────────────────────────────────────── -->
   <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-20">
-    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-kova-600 via-violet-600 to-pink-600 p-8 sm:p-12">
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-kova-brand p-8 sm:p-12 reveal">
       <div aria-hidden="true" class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15),transparent_50%)]"></div>
       <div class="relative grid md:grid-cols-5 gap-6 items-center">
         <div class="md:col-span-3">
@@ -186,15 +175,7 @@
     </div>
   </section>
 
-  <!-- ── Bottom conversion CTA ────────────────────────────────────────── -->
-  <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 mb-24 text-center">
-    <h3 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Stop posting. Start winning.</h3>
-    <p class="text-base text-gray-600 dark:text-gray-400 mt-3 max-w-xl mx-auto">Kova Agent runs your social media like an AI marketing team — content, scheduling, analytics, replies.</p>
-    <div class="mt-6 flex items-center justify-center gap-3 flex-wrap">
-      <a href="{% url 'account_signup' %}" class="btn-primary">Start free 14-day trial</a>
-      <a href="{% url 'learn:center' %}" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">or explore the platform &rarr;</a>
-    </div>
-  </section>
+  {% include "components/brand/_public_cta_signup.html" %}
 
 </div>
 {% endblock %}

@@ -87,6 +87,14 @@ module.exports = {
           "0%": { transform: "scale(1)", opacity: "0.6" },
           "100%": { transform: "scale(1.8)", opacity: "0" },
         },
+        "gradient-shift": {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+        },
+        "glow-breathe": {
+          "0%, 100%": { opacity: "0.4", transform: "scale(1)" },
+          "50%": { opacity: "0.7", transform: "scale(1.05)" },
+        },
       },
       animation: {
         "shimmer": "shimmer 2.5s ease-in-out infinite",
@@ -101,6 +109,8 @@ module.exports = {
         "orbit": "orbit 20s linear infinite",
         "blink": "blink 1s step-end infinite",
         "pulse-ring": "pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "gradient-shift": "gradient-shift 8s ease infinite",
+        "glow-breathe": "glow-breathe 4s ease-in-out infinite",
       },
     },
   },

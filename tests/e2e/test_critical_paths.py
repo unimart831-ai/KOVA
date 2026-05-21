@@ -101,6 +101,44 @@ class TestAuthFlow:
 
 
 @pytest.mark.django_db(transaction=True)
+class TestOnboardingFlow:
+    """Signup → onboarding wizard → completion page."""
+
+    def test_onboarding_wizard_completes_without_platform(self, page, base_url):
+        user = User.objects.create_user(
+            username="onboard", email="onboard@example.com", password="TestPass123!@#",
+        )
+        user.onboarding_completed = False
+        user.save()
+
+        page.goto(f"{base_url}/accounts/login/")
+        page.fill("input[name='login']", "onboard@example.com")
+        page.fill("input[name='password']", "TestPass123!@#")
+        page.click("button[type='submit']")
+        page.wait_for_load_state("networkidle")
+
+        page.goto(f"{base_url}/accounts/onboarding/?step=1&via=manual")
+        page.fill("input[name='full_name']", "Onboard Test")
+        page.select_option("select[name='timezone']", "Africa/Nairobi")
+        page.fill("input[name='company_name']", "Test Brand Co")
+        page.select_option("select[name='industry']", "agency")
+        page.click("button[type='submit']")
+        page.wait_for_load_state("networkidle")
+
+        page.fill("textarea[name='brand_voice']", "Friendly and expert.")
+        page.fill("textarea[name='target_audience']", "Small business owners in Nairobi.")
+        page.click("button[type='submit']")
+        page.wait_for_load_state("networkidle")
+
+        page.click("button[type='submit']")
+        page.wait_for_load_state("networkidle")
+
+        user.refresh_from_db()
+        assert user.onboarding_completed is True
+        assert "onboarding/complete" in page.url or "Setting up" in page.content()
+
+
+@pytest.mark.django_db(transaction=True)
 class TestHealthCheck:
     """Health check endpoint must return 200."""
 

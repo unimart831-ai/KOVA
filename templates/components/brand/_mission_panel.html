@@ -1,0 +1,39 @@
+{# Left branding panel for auth pages — mirrors landing hero mission #}
+<div class="space-y-8 reveal">
+  <div class="w-12 h-12 rounded-xl bg-kova-600 flex items-center justify-center shadow-kova animate-glow-breathe">
+    <span class="text-white font-bold text-lg">K</span>
+  </div>
+
+  {% include "components/brand/_agent_loop_badge.html" %}
+
+  <div class="space-y-3 reveal reveal-delay-1">
+    <h2 class="text-3xl xl:text-4xl font-extrabold text-gray-900 dark:text-white leading-tight tracking-tight">
+      Your AI team handles<br>
+      <span class="text-gradient-hero">social media.</span>
+    </h2>
+    <p class="text-xl text-gray-400 dark:text-gray-500 font-semibold">You approve in 5 minutes.</p>
+  </div>
+
+  <p class="text-gray-600 dark:text-gray-300 leading-relaxed reveal reveal-delay-2">
+    Research trends. Create platform-native content. Engage your audience. Track what works. Learn and improve — automatically.
+  </p>
+
+  <div class="reveal reveal-delay-3">
+    {% include "components/brand/_agent_activity_loop.html" %}
+  </div>
+
+  <div class="grid grid-cols-3 gap-3 reveal reveal-delay-4">
+    <div class="mission-stat">
+      <p class="text-lg font-bold text-kova-600 dark:text-kova-400">5 min</p>
+      <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Daily approval</p>
+    </div>
+    <div class="mission-stat">
+      <p class="text-lg font-bold text-gray-900 dark:text-white">6</p>
+      <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">AI agents</p>
+    </div>
+    <div class="mission-stat">
+      <p class="text-lg font-bold text-gray-900 dark:text-white">9+</p>
+      <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Platforms</p>
+    </div>
+  </div>
+</div>

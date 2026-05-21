@@ -12,6 +12,37 @@ from apps.accounts.forms import (
     OnboardingStep1Form,
     OnboardingStep2ReviewForm,
 )
+from apps.accounts.onboarding_flow import (
+    SETUP_TOTAL_STEPS,
+    apply_url_inference_to_profile,
+    finish_onboarding,
+    setup_step_for_wizard,
+)
+
+
+def _onboarding_setup_context(*, step=None, path_choice=False, complete=False):
+    if path_choice:
+        return {
+            "setup_step": 1,
+            "setup_total": SETUP_TOTAL_STEPS,
+            "setup_label": "Choose setup path",
+        }
+    if complete:
+        return {
+            "setup_step": 5,
+            "setup_total": SETUP_TOTAL_STEPS,
+            "setup_label": "AI agency meeting",
+        }
+    labels = {
+        1: "About you & brand",
+        2: "Review your brand",
+        3: "Connect a platform (optional)",
+    }
+    return {
+        "setup_step": setup_step_for_wizard(step),
+        "setup_total": SETUP_TOTAL_STEPS,
+        "setup_label": labels.get(step, ""),
+    }
 
 
 @login_required
@@ -75,6 +106,7 @@ def onboarding_choose_path(request):
 
     return render(request, "accounts/onboarding_choose_path.html", {
         "page_title": "How would you like to set up?",
+        **_onboarding_setup_context(path_choice=True),
     })
 
 
@@ -101,6 +133,7 @@ def onboarding_magic_connect(request):
     return render(request, "accounts/onboarding_magic_connect.html", {
         "page_title": "Connect to auto-fill your brand",
         "connected_accounts": connected,
+        **_onboarding_setup_context(path_choice=True),
     })
 
 
@@ -175,59 +208,26 @@ def onboarding_view(request):
     # old users (pre-merge) and new users (post-merge).
     if step == 3:
         if request.method == "POST":
-            # ── Require at least one connected platform ───────────────
             from apps.platforms.models import SocialAccount
-            if not SocialAccount.objects.filter(user=request.user, is_active=True).exists():
-                messages.warning(
+
+            has_platform = SocialAccount.objects.filter(
+                user=request.user, is_active=True
+            ).exists()
+            finish_onboarding(
+                request.user,
+                skipped_platform_connect=not has_platform,
+            )
+            if has_platform:
+                messages.success(
                     request,
-                    "Please connect at least one social platform before continuing. "
-                    "This lets Kova publish posts on your behalf."
+                    "Welcome to Kova Agent! Your AI agency is analyzing your industry now.",
                 )
-                connected = SocialAccount.objects.filter(user=request.user, is_active=True)
-                return render(request, "accounts/onboarding.html", {
-                    "step": 3,
-                    "connected_accounts": connected,
-                })
-
-            # ── Complete onboarding ──────────────────────────────────
-            request.user.onboarding_completed = True
-            request.user.save(update_fields=["onboarding_completed"])
-            profile.record_onboarding_step("step_4_completed")
-
-            # ── Auto-create all 6 agent configs ──────────────────────
-            from apps.agents.models import AgentConfig
-            for agent_type in AgentConfig.AgentType.values:
-                AgentConfig.objects.get_or_create(
-                    user=request.user,
-                    agent_type=agent_type,
-                    defaults={"is_active": True},
+            else:
+                messages.success(
+                    request,
+                    "You're all set! Connect a platform anytime to publish — "
+                    "your AI agency is drafting content now.",
                 )
-
-            # ── Initialize 14-day trial ──────────────────────────────
-            from datetime import timedelta
-            profile = request.user.profile
-            if not profile.trial_ends_at:
-                profile.trial_ends_at = timezone.now() + timedelta(days=14)
-                profile.subscription_status = "trialing"
-                profile.save(update_fields=["trial_ends_at", "subscription_status"])
-
-            # ── Send welcome email (after onboarding, not at signup) ─
-            from apps.emails.tasks import send_welcome_email
-            send_welcome_email.delay(str(request.user.pk))
-
-            from apps.emails.automation import bootstrap_email_automation
-            bootstrap_email_automation(request.user)
-
-            # ── Fire the Agency Intelligence task chain ──────────────
-            # Research → Starter Seeds → Content → Welcome Brief
-            from apps.agents.onboarding_tasks import run_onboarding_intelligence
-            from apps.utils import fire_task
-            profile.onboarding_intelligence_started_at = timezone.now()
-            profile.save(update_fields=["onboarding_intelligence_started_at"])
-            profile.record_onboarding_step("intelligence_started")
-            fire_task(run_onboarding_intelligence, str(request.user.pk))
-
-            messages.success(request, "Welcome to Kova Agent! Your AI agency is analyzing your industry now.")
             return redirect("accounts:onboarding_complete")
 
         from apps.platforms.models import SocialAccount
@@ -237,6 +237,7 @@ def onboarding_view(request):
             "total_steps": total_steps,
             "connected_accounts": connected,
             "page_title": "Connect a Platform",
+            **_onboarding_setup_context(step=3),
         })
 
     if step == 1:
@@ -279,6 +280,7 @@ def onboarding_view(request):
         "step": step,
         "total_steps": total_steps,
         "page_title": "Setup Your Brand",
+        **_onboarding_setup_context(step=step),
     })
 
 
@@ -443,8 +445,9 @@ def infer_brand_from_url(request):
          Industry choices + voice/audience/pillars/offerings.
       5. Returns a JSON dict that the front-end pours into form fields.
 
-    No fields are persisted server-side — the user reviews and submits the
-    Step 1 form normally.
+    No fields are overwritten server-side if the user already edited them — the
+    user reviews and submits the Step 1 form normally. Voice/audience/pillars
+    are also persisted to the profile (empty fields only) so Step 2 is pre-filled.
     """
     import json
     import logging
@@ -601,6 +604,20 @@ def infer_brand_from_url(request):
             t for t in result.get("tone_attributes", []) if t in allowed_tones
         ]
 
+        # Persist inferred voice/audience onto profile (empty fields only).
+        profile = request.user.profile
+        inference_payload = {
+            "company_name": result.get("company_name", "") or "",
+            "website_url": url,
+            "industry": result.get("industry", "") or "",
+            "brand_voice": result.get("brand_voice", "") or "",
+            "target_audience": result.get("target_audience", "") or "",
+            "content_pillars": result.get("content_pillars", []) or [],
+            "tone_attributes": result.get("tone_attributes", []) or [],
+            "key_offerings": result.get("key_offerings", []) or [],
+        }
+        apply_url_inference_to_profile(profile, inference_payload)
+
         # Funnel marker — counted in admin dashboard adoption metrics.
         try:
             request.user.profile.record_onboarding_step("url_inference_applied")
@@ -660,6 +677,7 @@ def onboarding_complete(request):
         "progress": progress,
         "brief": brief,
         "page_title": "Your AI Agency is Starting",
+        **_onboarding_setup_context(complete=True),
     })
 
 

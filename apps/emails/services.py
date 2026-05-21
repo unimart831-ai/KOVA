@@ -191,7 +191,9 @@ class EmailService:
         return self._send(
             "welcome", user.email, user=user,
             context={
-                "onboarding_url": f"{settings.SITE_URL}/accounts/onboarding/",
+                "studio_url": f"{settings.SITE_URL}/content/studio/",
+                "brief_url": f"{settings.SITE_URL}/brief/",
+                "platforms_url": f"{settings.SITE_URL}/platforms/",
                 "help_url": f"{settings.SITE_URL}/learn/",
             },
         )

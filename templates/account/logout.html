@@ -3,8 +3,9 @@
 {% block title %}Sign Out — Kova Agent{% endblock %}
 
 {% block content %}
-<div class="min-h-[60vh] flex items-center justify-center py-12 px-4">
-  <div class="w-full max-w-sm text-center">
+<div class="brand-atmosphere min-h-[60vh] flex items-center justify-center py-12 px-4">
+  {% include "components/brand/_atmosphere_orbs.html" %}
+  <div class="relative w-full max-w-sm text-center glass-panel rounded-2xl p-8 reveal">
     <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Sign out</h1>
     <p class="text-gray-600 dark:text-gray-400 mb-8">Are you sure you want to sign out?</p>
 
@@ -12,7 +13,7 @@
       {% csrf_token %}
       <button type="submit" class="btn-primary w-full mb-3">Yes, sign me out</button>
     </form>
-    <a href="{% url 'brief:home' %}" class="text-sm text-gray-600 hover:text-gray-800">
+    <a href="{% url 'brief:home' %}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400">
       Go back to dashboard
     </a>
   </div>

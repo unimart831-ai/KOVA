@@ -3,8 +3,9 @@
 {% block title %}Application Status — Growth Partners | Kova Agent{% endblock %}
 
 {% block content %}
-<div class="min-h-[70vh] flex items-center justify-center py-16 px-4">
-  <div class="text-center max-w-lg">
+<div class="brand-atmosphere min-h-[70vh] flex items-center justify-center py-16 px-4">
+  {% include "components/brand/_atmosphere_orbs.html" %}
+  <div class="relative text-center max-w-lg glass-panel rounded-2xl p-8 sm:p-10 reveal">
     {% if application.status == "pending" %}
     <div class="w-16 h-16 mx-auto bg-amber-100 dark:bg-amber-950/40 rounded-2xl flex items-center justify-center mb-6">
       <svg class="w-8 h-8 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

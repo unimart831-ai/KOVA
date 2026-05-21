@@ -103,9 +103,10 @@
         <a href="{% url 'terms' %}" class="hover:text-white transition-colors py-1">Terms</a>
         <a href="{% url 'cookies' %}" class="hover:text-white transition-colors py-1">Cookies</a>
       </div>
-      <p class="text-sm text-center">&copy; {% now "Y" %} Kova Agent</p>
+      <p class="text-sm text-center text-gray-500">&copy; {% now "Y" %} Kova Agent · AI team for social media</p>
     </div>
   </div>
 </footer>
 </div>
+{% include "components/brand/_reveal_script.html" %}
 {% endblock %}

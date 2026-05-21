@@ -3,153 +3,90 @@
 {% block title %}Start Free Trial — Kova Agent{% endblock %}
 
 {% block content %}
-<div class="min-h-[85vh] flex items-center justify-center py-12 px-4">
-  <div class="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-    <!-- Branding panel (visible on lg+) -->
+<div class="brand-atmosphere min-h-[85vh] flex items-center justify-center py-12 px-4">
+  {% include "components/brand/_atmosphere_orbs.html" %}
+  <div class="relative w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-10 xl:gap-14 items-center">
+    <!-- Mission panel (desktop) -->
     <div class="hidden lg:block">
-      <div class="space-y-8">
-        <div class="w-12 h-12 rounded-xl bg-kova-600 flex items-center justify-center shadow-kova">
-          <span class="text-white font-bold text-lg">K</span>
-        </div>
-        <h2 class="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
-          Put your social media<br>
-          <span class="text-gradient">on autopilot.</span>
-        </h2>
-
-        <!-- Live simulation of agent activity -->
-        <div class="bg-gray-50 dark:bg-gray-900/60 rounded-xl p-5 border border-gray-100 dark:border-gray-800 space-y-3"
-             x-data="{
-               items: [
-                 { icon: 'research', text: 'Research Agent found 3 trending topics', color: 'blue' },
-                 { icon: 'create', text: 'Content Creator drafted 2 posts', color: 'purple' },
-                 { icon: 'adapt', text: 'Adapted for X, LinkedIn & Instagram', color: 'green' },
-                 { icon: 'engage', text: 'Engagement Agent replied to 8 comments', color: 'amber' },
-                 { icon: 'analyze', text: 'Analytics: +23% engagement this week', color: 'rose' }
-               ],
-               active: 0,
-               init() { setInterval(() => { this.active = (this.active + 1) % this.items.length }, 3000) }
-             }">
-          <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Live agent activity</p>
-          <template x-for="(item, i) in items" :key="i">
-            <div class="flex items-center gap-3 py-2 px-3 rounded-lg transition-all duration-500"
-                 :class="active === i ? 'bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700' : 'opacity-40'">
-              <div class="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
-                   :class="{
-                     'bg-blue-100 dark:bg-blue-950/50': item.color === 'blue',
-                     'bg-purple-100 dark:bg-purple-950/50': item.color === 'purple',
-                     'bg-green-100 dark:bg-green-950/50': item.color === 'green',
-                     'bg-amber-100 dark:bg-amber-950/50': item.color === 'amber',
-                     'bg-rose-100 dark:bg-rose-950/50': item.color === 'rose'
-                   }">
-                <svg x-show="item.icon === 'research'" class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                <svg x-show="item.icon === 'create'" class="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                <svg x-show="item.icon === 'adapt'" class="w-3.5 h-3.5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                <svg x-show="item.icon === 'engage'" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                <svg x-show="item.icon === 'analyze'" class="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-              </div>
-              <span class="text-xs text-gray-700 dark:text-gray-300" x-text="item.text"></span>
-            </div>
-          </template>
-        </div>
-
-        <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-          <div class="flex items-center gap-1.5">
-            <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            14-day free trial
-          </div>
-          <div class="flex items-center gap-1.5">
-            <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            No credit card
-          </div>
-          <div class="flex items-center gap-1.5">
-            <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            KSh 99/mo
-          </div>
-        </div>
-      </div>
+      {% include "components/brand/_mission_panel.html" %}
     </div>
 
     <!-- Form column -->
-    <div class="w-full max-w-md mx-auto lg:mx-0">
+    <div class="w-full max-w-md mx-auto lg:mx-0 reveal">
+      <div class="lg:hidden mb-6">
+        {% include "components/brand/_agent_loop_badge.html" %}
+      </div>
+      <div class="lg:hidden mb-6">
+        {% include "components/brand/_agent_activity_loop.html" %}
+      </div>
+
       <div class="text-center lg:text-left mb-8">
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Start your free trial</h1>
-        <p class="mt-2 text-gray-600 dark:text-gray-400">Let AI agents run your social media</p>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">Join businesses running social on autopilot</p>
       </div>
 
-    <div class="card shadow-kova dark:shadow-none">
-      <div class="card-body">
-        <form method="post" action="{% url 'account_signup' %}" class="space-y-5">
-          {% csrf_token %}
-          {% if request.COOKIES.kova_ref %}
-          <input type="hidden" name="ref_code" value="{{ request.COOKIES.kova_ref }}">
-          <div class="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg px-4 py-2.5">
-            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            <p class="text-sm text-emerald-700 dark:text-emerald-300">Referred by partner <span class="font-mono font-semibold">{{ request.COOKIES.kova_ref }}</span></p>
-          </div>
-          {% endif %}
+      <div class="card shadow-kova dark:shadow-none">
+        <div class="card-body">
+          {% include "account/_auth_trust_strip.html" %}
+          {% include "account/_social_login.html" %}
 
-          {% if form.errors %}
-            <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
-              {% for field in form %}
-                {% for error in field.errors %}
-                  <p>{{ error }}</p>
-                {% endfor %}
-              {% endfor %}
-              {% for error in form.non_field_errors %}
-                <p>{{ error }}</p>
-              {% endfor %}
+          <form method="post" action="{% url 'account_signup' %}" class="space-y-5">
+            {% csrf_token %}
+            {% if request.COOKIES.kova_ref %}
+            <input type="hidden" name="ref_code" value="{{ request.COOKIES.kova_ref }}">
+            <div class="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg px-4 py-2.5">
+              <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <p class="text-sm text-emerald-700 dark:text-emerald-300">Referred by partner <span class="font-mono font-semibold">{{ request.COOKIES.kova_ref }}</span></p>
             </div>
-          {% endif %}
+            {% endif %}
 
-          <div>
-            <label for="id_email" class="label">Email</label>
-            <input type="email" name="email" id="id_email"
-                   class="input" placeholder="you@example.com"
-                   value="{{ form.email.value|default:'' }}" required autofocus>
-          </div>
+            {% if form.errors %}
+              <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm dark:bg-red-950/30 dark:border-red-800 dark:text-red-200">
+                {% for field in form %}
+                  {% for error in field.errors %}<p>{{ error }}</p>{% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+              </div>
+            {% endif %}
 
-          <div>
-            <label for="id_phone_number" class="label">Phone number <span class="text-gray-400 font-normal">(optional)</span></label>
-            <input type="tel" name="phone_number" id="id_phone_number"
-                   class="input" placeholder="07XX XXX XXX"
-                   value="{{ form.phone_number.value|default:'' }}" autocomplete="tel">
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Kenyan format: 07xx, 01xx, or 02xx</p>
-          </div>
+            <div>
+              <label for="id_email" class="label">Email</label>
+              <input type="email" name="email" id="id_email" class="input" placeholder="you@example.com"
+                     value="{{ form.email.value|default:'' }}" required autofocus>
+            </div>
+            <div>
+              <label for="id_password1" class="label">Password</label>
+              <input type="password" name="password1" id="id_password1" class="input" placeholder="At least 8 characters" required>
+            </div>
+            <div>
+              <label for="id_password2" class="label">Confirm password</label>
+              <input type="password" name="password2" id="id_password2" class="input" placeholder="Re-enter your password" required>
+            </div>
 
-          <div>
-            <label for="id_password1" class="label">Password</label>
-            <input type="password" name="password1" id="id_password1"
-                   class="input" placeholder="At least 8 characters" required>
-          </div>
+            {% if redirect_field_value %}
+              <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+            {% endif %}
 
-          <div>
-            <label for="id_password2" class="label">Confirm password</label>
-            <input type="password" name="password2" id="id_password2"
-                   class="input" placeholder="Re-enter your password" required>
-          </div>
+            <button type="submit" class="btn-primary w-full group">
+              Create account
+              <svg class="inline w-4 h-4 ml-1 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+            </button>
 
-          {% if redirect_field_value %}
-            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
-          {% endif %}
-
-          <button type="submit" class="btn-primary w-full">Create account</button>
-
-          <p class="text-xs text-gray-500 text-center">
-            By signing up, you agree to our
-            <a href="{% url 'terms' %}" class="underline">Terms of Service</a> and
-            <a href="{% url 'privacy' %}" class="underline">Privacy Policy</a>.
-          </p>
-        </form>
+            <p class="text-xs text-gray-500 text-center">
+              By signing up, you agree to our
+              <a href="{% url 'terms' %}" class="underline hover:text-kova-600">Terms</a> and
+              <a href="{% url 'privacy' %}" class="underline hover:text-kova-600">Privacy Policy</a>.
+            </p>
+          </form>
+        </div>
       </div>
-    </div>
 
-    <p class="mt-6 text-center lg:text-left text-sm text-gray-600 dark:text-gray-400">
-      Already have an account?
-      <a href="{% url 'account_login' %}" class="text-kova-600 font-medium hover:text-kova-700 dark:text-kova-400 dark:hover:text-kova-300">
-        Sign in
-      </a>
-    </p>
+      <p class="mt-6 text-center lg:text-left text-sm text-gray-600 dark:text-gray-400">
+        Already have an account?
+        <a href="{% url 'account_login' %}" class="text-kova-600 font-medium hover:text-kova-700 dark:text-kova-400">Sign in</a>
+      </p>
     </div>
   </div>
 </div>
+{% include "components/brand/_reveal_script.html" %}
 {% endblock %}

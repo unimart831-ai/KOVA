@@ -140,6 +140,57 @@ textarea {
     @apply text-transparent bg-clip-text bg-gradient-to-r from-kova-600 to-kova-400 dark:from-kova-300 dark:to-kova-500;
   }
 
+  /* Hero headline gradient — matches landing page */
+  .text-gradient-hero {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-kova-600 via-indigo-600 to-purple-600 dark:from-kova-400 dark:via-indigo-400 dark:to-purple-400 bg-[length:200%_auto] animate-gradient-shift;
+  }
+
+  /* Glass card for mission / auth panels */
+  .glass-panel {
+    @apply bg-white/70 dark:bg-gray-900/60 backdrop-blur-md border border-gray-200/80 dark:border-gray-700/60 rounded-2xl shadow-kova;
+  }
+
+  /* Subtle animated brand atmosphere */
+  .brand-atmosphere {
+    @apply relative overflow-hidden;
+  }
+  .brand-atmosphere::before {
+    content: "";
+    @apply absolute inset-0 pointer-events-none;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 20%, rgba(26, 157, 136, 0.12), transparent 50%),
+      radial-gradient(ellipse 60% 40% at 80% 60%, rgba(99, 102, 241, 0.08), transparent 50%),
+      radial-gradient(ellipse 50% 30% at 50% 100%, rgba(147, 51, 234, 0.06), transparent 50%);
+  }
+  .dark .brand-atmosphere::before {
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 20%, rgba(26, 157, 136, 0.15), transparent 50%),
+      radial-gradient(ellipse 60% 40% at 80% 60%, rgba(99, 102, 241, 0.1), transparent 50%),
+      radial-gradient(ellipse 50% 30% at 50% 100%, rgba(147, 51, 234, 0.08), transparent 50%);
+  }
+
+  /* Agent loop badge — landing hero pill */
+  .agent-loop-badge {
+    @apply inline-flex items-center gap-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur text-kova-700 dark:text-kova-300 text-sm font-medium px-4 py-1.5 rounded-full border border-kova-200 dark:border-kova-800 shadow-sm;
+  }
+
+  /* Compact agent orbit ring (auth / mobile) */
+  .agent-orbit-ring {
+    @apply relative w-full aspect-square max-w-[280px] mx-auto;
+  }
+  .agent-orbit-node {
+    @apply absolute w-9 h-9 rounded-lg flex items-center justify-center shadow-sm border border-gray-200/80 dark:border-gray-700/80 bg-white dark:bg-gray-900 animate-agent-glow;
+  }
+
+  /* Mission value stat */
+  .mission-stat {
+    @apply text-center p-3 rounded-xl bg-gray-50/80 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800;
+  }
+
+  .bg-gradient-kova-brand {
+    @apply bg-gradient-to-br from-kova-600 via-indigo-600 to-purple-600;
+  }
+
   /* Stat card with subtle color accent */
   .stat-card {
     @apply card relative overflow-hidden;

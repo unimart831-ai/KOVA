@@ -3,23 +3,29 @@
 {% block title %}Partner Dashboard — Kova Agent{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-  <!-- Header -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Partner Dashboard</h1>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Welcome back, {{ request.user.get_full_name|default:request.user.email }}</p>
-    </div>
-    <div class="flex items-center gap-3">
-      <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
-        {{ partner.get_tier_display }}
-      </span>
-      <a href="{% url 'partners:landing' %}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">← Partners home</a>
+<section class="brand-atmosphere border-b border-gray-100 dark:border-gray-800">
+  {% include "components/brand/_atmosphere_orbs.html" %}
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 reveal">
+      <div>
+        {% include "components/brand/_partner_badge.html" %}
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-2">Partner Dashboard</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Welcome back, {{ request.user.get_full_name|default:request.user.email }}</p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-2 max-w-xl">Share Kova — your AI team handles social media, clients approve in 5 minutes.</p>
+      </div>
+      <div class="flex items-center gap-3 shrink-0">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
+          {{ partner.get_tier_display }}
+        </span>
+        <a href="{% url 'partners:landing' %}" class="text-sm text-gray-500 hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400 transition-colors">← Partners home</a>
+      </div>
     </div>
   </div>
+</section>
 
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
   <!-- Referral Code Card -->
-  <div class="bg-gradient-to-r from-emerald-500 to-kova-600 rounded-2xl p-6 mb-8 text-white"
+  <div class="bg-gradient-to-r from-emerald-500 via-kova-600 to-indigo-600 rounded-2xl p-6 mb-8 text-white reveal reveal-delay-1"
        x-data="{ copied: false }">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
@@ -40,22 +46,22 @@
 
   <!-- Stats Grid -->
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+    <div class="mission-stat reveal reveal-delay-1">
       <p class="text-sm text-gray-500 dark:text-gray-400">Active Clients</p>
       <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ active_count }}</p>
       <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ pending_count }} pending activation</p>
     </div>
-    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+    <div class="mission-stat reveal reveal-delay-2">
       <p class="text-sm text-gray-500 dark:text-gray-400">Commission Rate</p>
       <p class="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{{ partner.commission_rate|floatformat:0 }}%</p>
       <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ partner.get_tier_display }}</p>
     </div>
-    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+    <div class="mission-stat reveal reveal-delay-3">
       <p class="text-sm text-gray-500 dark:text-gray-400">Total Earned</p>
       <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">KES {{ partner.total_earned_kes|floatformat:0 }}</p>
       <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Lifetime earnings</p>
     </div>
-    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+    <div class="mission-stat reveal reveal-delay-4">
       <p class="text-sm text-gray-500 dark:text-gray-400">Pending Payout</p>
       <p class="text-3xl font-bold text-amber-600 dark:text-amber-400 mt-1">KES {{ partner.pending_payout_kes|floatformat:0 }}</p>
       <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Paid on 15th monthly</p>
@@ -64,13 +70,13 @@
 
   <!-- Milestone Progress -->
   {% if next_milestone %}
-  <div class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800 mb-8">
+  <div class="glass-panel rounded-xl p-6 mb-8 reveal">
     <div class="flex items-center justify-between mb-3">
       <h2 class="font-semibold text-gray-900 dark:text-white">Next Milestone: {{ next_milestone.label }}</h2>
       <span class="text-sm text-gray-500 dark:text-gray-400">{{ next_milestone.progress }}/{{ next_milestone.clients_required }} clients</span>
     </div>
     <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-3">
-      <div class="bg-gradient-to-r from-amber-400 to-amber-500 h-3 rounded-full transition-all" style="width: {% widthratio next_milestone.progress next_milestone.clients_required 100 %}%"></div>
+      <div class="bg-gradient-to-r from-emerald-400 via-kova-500 to-indigo-500 h-3 rounded-full transition-all" style="width: {% widthratio next_milestone.progress next_milestone.clients_required 100 %}%"></div>
     </div>
     <div class="flex items-center justify-between mt-3 text-sm">
       <span class="text-gray-500 dark:text-gray-400">{{ next_milestone.remaining }} more to go</span>
@@ -81,7 +87,7 @@
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
     <!-- Recent Referrals -->
-    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
+    <div class="glass-panel rounded-xl overflow-hidden reveal">
       <div class="p-5 border-b border-gray-100 dark:border-gray-800">
         <h2 class="font-semibold text-gray-900 dark:text-white">Recent Referrals</h2>
       </div>
@@ -109,7 +115,7 @@
     </div>
 
     <!-- Recent Commissions -->
-    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
+    <div class="glass-panel rounded-xl overflow-hidden reveal reveal-delay-1">
       <div class="p-5 border-b border-gray-100 dark:border-gray-800">
         <h2 class="font-semibold text-gray-900 dark:text-white">Recent Commissions</h2>
       </div>
@@ -138,7 +144,7 @@
 
   <!-- Achieved Milestones -->
   {% if milestones %}
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 mt-8">
+  <div class="glass-panel rounded-xl overflow-hidden mt-8 reveal">
     <div class="p-5 border-b border-gray-100 dark:border-gray-800">
       <h2 class="font-semibold text-gray-900 dark:text-white">Achieved Milestones</h2>
     </div>
@@ -147,7 +153,7 @@
       <div class="p-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-amber-100 dark:bg-amber-950/40 rounded-lg flex items-center justify-center">
-            
+            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
           </div>
           <div>
             <p class="text-sm font-medium text-gray-900 dark:text-white">{{ m.label }}</p>

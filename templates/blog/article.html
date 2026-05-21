@@ -32,7 +32,7 @@
 {% block content %}
 <!-- Reading progress bar -->
 <div id="reading-progress" class="fixed top-0 left-0 right-0 h-0.5 z-[60] pointer-events-none">
-  <div class="h-full bg-gradient-to-r from-kova-500 via-violet-500 to-pink-500 origin-left transition-transform duration-100" style="transform: scaleX(0);" id="reading-progress-bar"></div>
+  <div class="h-full bg-gradient-to-r from-kova-500 via-indigo-500 to-purple-500 origin-left transition-transform duration-100" style="transform: scaleX(0);" id="reading-progress-bar"></div>
 </div>
 
 <article class="relative">
@@ -64,7 +64,7 @@
     <!-- Byline + meta -->
     <div class="mt-8 flex items-center justify-between gap-4 pt-6 border-t border-gray-100 dark:border-gray-800">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-kova-500 to-pink-500 flex items-center justify-center shrink-0">
+        <div class="w-10 h-10 rounded-full bg-gradient-kova-brand flex items-center justify-center shrink-0">
           <span class="text-white text-sm font-bold">K</span>
         </div>
         <div>
@@ -128,7 +128,7 @@
 
   <!-- ── Inline newsletter CTA ───────────────────────────────────────── -->
   <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
-    <div class="rounded-2xl bg-gradient-to-br from-kova-50 to-pink-50 dark:from-kova-950/40 dark:to-pink-950/40 border border-kova-200 dark:border-kova-900/50 p-6 sm:p-8">
+    <div class="rounded-2xl glass-panel border border-kova-200/50 dark:border-kova-900/50 p-6 sm:p-8 reveal">
       <div class="flex flex-col sm:flex-row sm:items-center gap-4">
         <div class="flex-1">
           <p class="text-sm font-semibold text-gray-900 dark:text-white">Like this? Get one every Friday.</p>
@@ -203,15 +203,7 @@
 
   <!-- ── Bottom conversion CTA ───────────────────────────────────────── -->
   <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mb-24">
-    <div class="rounded-2xl bg-gradient-to-br from-gray-900 to-gray-800 dark:from-gray-950 dark:to-gray-900 border border-gray-800 p-8 sm:p-10 text-center">
-      <p class="text-xs font-semibold tracking-wider uppercase text-kova-400">Ready to automate?</p>
-      <h3 class="text-2xl sm:text-3xl font-bold text-white mt-2">Stop posting. Start winning.</h3>
-      <p class="text-sm text-gray-300 mt-3 max-w-lg mx-auto">Kova Agent runs your social media like an AI marketing team — content, scheduling, analytics, replies.</p>
-      <div class="mt-6 flex items-center justify-center gap-3 flex-wrap">
-        <a href="{% url 'account_signup' %}" class="inline-flex items-center px-5 py-2.5 rounded-lg bg-white text-gray-900 text-sm font-semibold hover:bg-gray-100 transition-colors">Start free 14-day trial</a>
-        <a href="{% url 'blog:index' %}" class="text-sm font-medium text-gray-300 hover:text-white transition-colors">or read more &rarr;</a>
-      </div>
-    </div>
+    {% include "components/brand/_public_cta_dark.html" %}
   </div>
 </article>
 

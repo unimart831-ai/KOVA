@@ -4,19 +4,11 @@
 
 {% block content %}
 <!-- Hero -->
-<section class="relative overflow-hidden">
-  <div class="absolute inset-0 bg-gradient-to-br from-emerald-50 via-white to-kova-50 dark:from-gray-950 dark:via-gray-950 dark:to-emerald-950/20"></div>
-  <div class="hidden sm:block orb w-80 h-80 bg-emerald-400 -top-16 -right-16 animate-float"></div>
-  <div class="hidden sm:block orb w-64 h-64 bg-kova-400 bottom-0 left-10 animate-float-delayed"></div>
+<section class="brand-atmosphere relative overflow-hidden">
+  {% include "components/brand/_atmosphere_orbs.html" %}
 
   <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 text-center">
-    <div class="inline-flex items-center space-x-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur text-emerald-700 dark:text-emerald-300 text-sm font-medium px-4 py-1.5 rounded-full mb-6 border border-emerald-200 dark:border-emerald-800 shadow-sm reveal">
-      <span class="relative flex h-2 w-2">
-        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-      </span>
-      <span>Growth Partners Program</span>
-    </div>
+    {% include "components/brand/_partner_badge.html" %}
 
     <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-[1.1] reveal reveal-delay-1">
       Earn up to <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-kova-600 dark:from-emerald-400 dark:to-kova-400">30% recurring</span><br>
@@ -274,26 +266,4 @@
     <p class="mt-4 text-sm text-gray-400 dark:text-gray-500 reveal reveal-delay-3">Free to join &middot; No obligations &middot; Applications reviewed within 48 hours</p>
   </div>
 </section>
-{% endblock %}
-
-{% block extra_js %}
-<!-- Scroll reveal script -->
-<script>
-(function() {
-  var els = document.querySelectorAll('.reveal');
-  if (!('IntersectionObserver' in window)) {
-    els.forEach(function(el) { el.classList.add('visible'); });
-    return;
-  }
-  var observer = new IntersectionObserver(function(entries) {
-    entries.forEach(function(entry) {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-  els.forEach(function(el) { observer.observe(el); });
-})();
-</script>
 {% endblock %}

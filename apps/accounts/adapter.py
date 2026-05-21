@@ -84,3 +84,19 @@ class AsyncEmailAccountAdapter(DefaultAccountAdapter):
                 safe_context[key] = str(value)
 
         send_allauth_email.delay(template_prefix, email, safe_context)
+
+
+from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+
+
+class KovaSocialAccountAdapter(DefaultSocialAccountAdapter):
+    """Send new Google signups into the onboarding funnel."""
+
+    def get_signup_redirect_url(self, request, sociallogin):
+        return "/accounts/onboarding/"
+
+    def get_login_redirect_url(self, request):
+        user = request.user
+        if user.is_authenticated and not user.onboarding_completed:
+            return "/accounts/onboarding/"
+        return super().get_login_redirect_url(request)

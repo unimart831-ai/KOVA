@@ -29,6 +29,11 @@ DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
+# ─── GOOGLE OAUTH (optional) ─────────────────────────────────────────────────
+GOOGLE_OAUTH_CLIENT_ID = env("GOOGLE_OAUTH_CLIENT_ID", default="")
+GOOGLE_OAUTH_CLIENT_SECRET = env("GOOGLE_OAUTH_CLIENT_SECRET", default="")
+GOOGLE_OAUTH_ENABLED = bool(GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET)
+
 # ─── ENCRYPTION ──────────────────────────────────────────────────────────────
 # Dedicated key for Fernet token encryption (falls back to SECRET_KEY)
 FERNET_KEYS = [env("FIELD_ENCRYPTION_KEY", default=SECRET_KEY)]
@@ -50,6 +55,8 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     "allauth",
     "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
     "crispy_forms",
     "crispy_tailwind",
     "django_htmx",
@@ -388,6 +395,24 @@ ACCOUNT_SIGNUP_REDIRECT_URL = "/accounts/onboarding/"
 LOGIN_REDIRECT_URL = "/brief/"
 LOGOUT_REDIRECT_URL = "/"
 LOGIN_URL = "/accounts/login/"
+
+SOCIALACCOUNT_ADAPTER = "apps.accounts.adapter.KovaSocialAccountAdapter"
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+
+if GOOGLE_OAUTH_ENABLED:
+    SOCIALACCOUNT_PROVIDERS = {
+        "google": {
+            "APP": {
+                "client_id": GOOGLE_OAUTH_CLIENT_ID,
+                "secret": GOOGLE_OAUTH_CLIENT_SECRET,
+                "key": "",
+            },
+            "SCOPE": ["profile", "email"],
+            "AUTH_PARAMS": {"access_type": "online"},
+        },
+    }
 
 # Session: keep users logged in for 30 days
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 days

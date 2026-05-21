@@ -1,34 +1,17 @@
 {% extends "layouts/app.html" %}
 
-{% block title %}Setup Your Brand — Step {{ step }} of {{ total_steps }}{% endblock %}
+{% block title %}Setup — Step {{ setup_step }} of {{ setup_total }}{% endblock %}
 {% block page_title %}Brand setup{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Step {{ step }} of {{ total_steps }} —
-  {% if step == 1 %}tell us about yourself
-  {% elif step == 2 %}review your brand
-  {% elif step == 3 %}connect a platform
-  {% endif %}
-</p>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">{{ setup_label }}</p>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto py-8">
-  <!-- Progress bar -->
-  <div class="mb-8">
-    <div class="flex items-center justify-between mb-2">
-      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Step {{ step }} of {{ total_steps }}</span>
-      <span class="text-sm text-gray-500 dark:text-gray-400">
-        {% if step == 1 %}About you & brand
-        {% elif step == 2 %}Review your brand
-        {% elif step == 3 %}Connect a platform
-        {% endif %}
-      </span>
-    </div>
-    <div class="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
-      <div class="bg-kova-600 h-2 rounded-full transition-all duration-500"
-           style="width: {% widthratio step total_steps 100 %}%"></div>
-    </div>
-  </div>
+<div class="brand-atmosphere relative">
+  {% include "components/brand/_atmosphere_orbs.html" %}
+  <div class="relative max-w-2xl mx-auto py-8">
+  {% include "accounts/_onboarding_setup_progress.html" %}
+  {% if step == 1 %}{% include "components/brand/_onboarding_mission.html" %}{% endif %}
 
   <div class="card">
     <div class="card-body">
@@ -38,7 +21,8 @@
         <div class="mb-6">
           <h2 class="text-xl font-bold text-gray-900 dark:text-white">Connect your first platform</h2>
           <p class="text-gray-600 dark:text-gray-400 mt-1">
-            Your AI agents need at least one connected account to create, schedule, and analyze content.
+            Connect now to publish directly from Kova — or skip and connect later from Settings.
+            Your AI agency will still draft content while you decide.
           </p>
         </div>
 
@@ -86,9 +70,9 @@
             <a href="?step=2" class="btn-secondary">Back</a>
             <button type="submit" class="btn-primary">
               {% if connected_accounts %}
-                Let's Go!
+                Start my AI agency
               {% else %}
-                I'll connect later
+                Continue — connect later
               {% endif %}
               <svg class="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
@@ -240,9 +224,17 @@
                 </div>
               {% elif field.name == 'auto_approve_posts' %}
                 <div class="pt-3 pb-1 border-t border-gray-100 dark:border-gray-800">
-                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Agent autonomy</h3>
-                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">How much should agents act on their own?</p>
-                </div>
+                  <details class="group">
+                    <summary class="flex items-center justify-between cursor-pointer list-none">
+                      <div>
+                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide inline">Advanced agent settings</h3>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">(optional)</span>
+                      </div>
+                      <svg class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                      </svg>
+                    </summary>
+                    <div class="mt-3 space-y-3">
               {% endif %}
             {% endif %}
 
@@ -313,6 +305,11 @@
                   Suggest = AI drafts every reply, you approve. Graduated = AI auto-sends safe replies (≥0.85 confidence), drafts tricky ones. Available levels depend on your plan.
                 </p>
               </div>
+              {% if step == 2 %}
+                    </div>
+                  </details>
+                </div>
+              {% endif %}
 
             {# ── (Legacy auto_engage checkbox removed — replaced by engage_autonomy_level above) ── #}
             {% elif field.name == 'auto_engage_legacy_removed' %}
@@ -443,6 +440,19 @@
                 </div>
               </details>
 
+            {# ── Phone (Step 1) — optional international ── #}
+            {% elif field.name == 'phone_number' %}
+              <div>
+                <label for="id_{{ field.name }}" class="label">{{ field.label }} <span class="text-gray-400 font-normal">(optional)</span></label>
+                {{ field }}
+                {% if field.help_text %}
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ field.help_text }}</p>
+                {% endif %}
+                {% for error in field.errors %}
+                  <p class="text-xs text-red-600 mt-1">{{ error }}</p>
+                {% endfor %}
+              </div>
+
             {# ── "Other" industry text input — shown only when industry == other ── #}
             {% elif field.name == 'industry_other' %}
               <div x-show="industry === 'other'" x-cloak>
@@ -498,17 +508,16 @@
     </div>
   </div>
 
-  {% if step == total_steps %}
+  {% if step == 3 %}
     <p class="text-center text-xs text-gray-500 dark:text-gray-400 mt-4">
-      You can connect more platforms anytime from Settings.
-    </p>
-  {% elif step == 3 %}
-    <p class="text-center text-xs text-gray-500 dark:text-gray-400 mt-4">
-      Don't worry — you can always update these settings later.
+      Publishing requires a connected platform — you can add one anytime from
+      <a href="{% url 'platforms:list' %}" class="text-kova-600 dark:text-kova-400 hover:underline">Platforms</a>
+      or during checkout.
+      <a href="{% url 'billing:pricing' %}" class="text-kova-600 dark:text-kova-400 hover:underline">View plans</a>
     </p>
   {% endif %}
 </div>
-
+</div>
 {% if step == 2 %}
 {# ── AI Brand Builder + Industry pillar suggestions ── #}
 <script>
@@ -768,7 +777,27 @@ document.addEventListener('DOMContentLoaded', function() {
     .then(r => r.json())
     .then(data => { if (data.industry) showSuggestions(data.industry); })
     .catch(() => showSuggestions('other'));
+
+  // Apply URL-inference stash when Step 2 fields are still empty
+  const setTextIfEmpty = (id, value) => {
+    const el = document.getElementById(id);
+    if (el && value && !el.value.trim()) el.value = value;
+  };
+  setTextIfEmpty('id_brand_voice', window.__kovaInferredVoice || '');
+  setTextIfEmpty('id_target_audience', window.__kovaInferredAudience || '');
+
+  const pillarsEl = document.getElementById('id_content_pillars_text');
+  if (pillarsEl && !pillarsEl.value.trim() && Array.isArray(window.__kovaInferredPillars) && window.__kovaInferredPillars.length) {
+    pillarsEl.value = window.__kovaInferredPillars.join('\n');
+  }
+
+  if (Array.isArray(window.__kovaInferredTones) && window.__kovaInferredTones.length) {
+    document.querySelectorAll('input[name="tone_selection"]').forEach(cb => {
+      if (!cb.checked && window.__kovaInferredTones.includes(cb.value)) cb.checked = true;
+    });
+  }
 });
 </script>
 {% endif %}
+{% include "components/brand/_reveal_script.html" %}
 {% endblock %}

@@ -4,25 +4,15 @@
 
 {% block content %}
 <!-- Hero Section -->
-<section class="relative overflow-hidden">
-  <div class="absolute inset-0 bg-gradient-to-br from-kova-50 via-white to-indigo-50 dark:from-gray-950 dark:via-gray-950 dark:to-kova-950/30"></div>
-  <!-- Animated gradient orbs -->
-  <div class="hidden sm:block orb w-96 h-96 bg-kova-400 -top-20 -left-20 animate-float"></div>
-  <div class="hidden sm:block orb w-72 h-72 bg-indigo-400 top-40 right-10 animate-float-delayed"></div>
-  <div class="hidden sm:block orb w-64 h-64 bg-purple-400 bottom-0 left-1/3 animate-float" style="animation-delay: 2s;"></div>
+<section class="brand-atmosphere relative overflow-hidden">
+  {% include "components/brand/_atmosphere_orbs.html" %}
 
   <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-28 text-center">
-    <div class="inline-flex items-center space-x-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur text-kova-700 dark:text-kova-300 text-sm font-medium px-4 py-1.5 rounded-full mb-6 border border-kova-200 dark:border-kova-800 shadow-sm reveal">
-      <span class="relative flex h-2 w-2">
-        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-kova-400 opacity-75"></span>
-        <span class="relative inline-flex rounded-full h-2 w-2 bg-kova-500"></span>
-      </span>
-      <span>6 AI agents working together in one intelligent loop</span>
-    </div>
+    {% include "components/brand/_agent_loop_badge.html" %}
 
     <h1 class="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-[1.1] reveal reveal-delay-1">
       Your AI team handles<br>
-      <span class="text-transparent bg-clip-text bg-gradient-to-r from-kova-600 via-indigo-600 to-purple-600 dark:from-kova-400 dark:via-indigo-400 dark:to-purple-400">social media.</span><br>
+      <span class="text-gradient-hero">social media.</span><br>
       <span class="text-3xl sm:text-4xl lg:text-5xl text-gray-400 dark:text-gray-500 font-semibold mt-2 block">You approve in 5 minutes.</span>
     </h1>
     <p class="mt-6 max-w-2xl mx-auto text-lg sm:text-xl text-gray-600 dark:text-gray-300 leading-relaxed reveal reveal-delay-2">
@@ -517,13 +507,15 @@
 </section>
 
 <!-- CTA Section -->
-<section class="py-24 relative overflow-hidden">
-  <div class="absolute inset-0 bg-gradient-to-br from-kova-50 via-white to-indigo-50 dark:from-gray-950 dark:via-gray-950 dark:to-kova-950/20"></div>
-  <div class="hidden sm:block orb w-80 h-80 bg-kova-400 -bottom-20 -right-20 animate-float-delayed"></div>
-  <div class="hidden sm:block orb w-64 h-64 bg-indigo-400 top-10 -left-10 animate-float"></div>
+<section class="brand-atmosphere py-24 relative overflow-hidden">
+  {% include "components/brand/_atmosphere_orbs.html" %}
   <div class="relative max-w-4xl mx-auto px-4 text-center reveal">
-    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">Stop managing social media.<br>Start getting results from it.</h2>
-    <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">Start from just KSh {{ all_plans.starter.price_kes }}/mo. 14-day free trial on all plans. No credit card required.</p>
+    {% include "components/brand/_agent_loop_badge.html" %}
+    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mt-2">
+      Your AI team handles <span class="text-gradient-hero">social media.</span>
+    </h2>
+    <p class="mt-4 text-lg text-gray-600 dark:text-gray-400 font-medium">You approve in 5 minutes.</p>
+    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">From KSh {{ all_plans.starter.price_kes }}/mo · 14-day free trial · No credit card</p>
     <div class="mt-8">
       <a href="{% url 'account_signup' %}" class="group btn-primary text-lg px-10 py-3.5 shadow-lg shadow-kova-200 dark:shadow-none">
         Start your free trial
@@ -532,24 +524,4 @@
     </div>
   </div>
 </section>
-
-<!-- Scroll reveal script -->
-<script>
-(function() {
-  var els = document.querySelectorAll('.reveal');
-  if (!('IntersectionObserver' in window)) {
-    els.forEach(function(el) { el.classList.add('visible'); });
-    return;
-  }
-  var observer = new IntersectionObserver(function(entries) {
-    entries.forEach(function(entry) {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-  els.forEach(function(el) { observer.observe(el); });
-})();
-</script>
 {% endblock %}

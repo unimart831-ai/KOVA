@@ -4,22 +4,14 @@
 
 {% block content %}
 <!-- Hero -->
-<section class="relative overflow-hidden">
-  <div class="absolute inset-0 bg-gradient-to-br from-violet-50 via-white to-kova-50 dark:from-gray-950 dark:via-gray-950 dark:to-violet-950/20"></div>
-  <div class="hidden sm:block orb w-80 h-80 bg-violet-400 -top-16 -right-16 animate-float"></div>
-  <div class="hidden sm:block orb w-64 h-64 bg-kova-400 bottom-0 left-10 animate-float-delayed"></div>
+<section class="brand-atmosphere relative overflow-hidden">
+  {% include "components/brand/_atmosphere_orbs.html" %}
 
   <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 text-center">
-    <div class="inline-flex items-center space-x-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur text-violet-700 dark:text-violet-300 text-sm font-medium px-4 py-1.5 rounded-full mb-6 border border-violet-200 dark:border-violet-800 shadow-sm reveal">
-      <span class="relative flex h-2 w-2">
-        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
-        <span class="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
-      </span>
-      <span>Campus Rep Program</span>
-    </div>
+    {% include "components/brand/_campus_badge.html" %}
 
     <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-[1.1] reveal reveal-delay-1">
-      Run social media for <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-kova-600 dark:from-violet-400 dark:to-kova-400">real businesses.</span><br>
+      Run social media for <span class="text-gradient-hero">real businesses.</span><br>
       <span class="text-2xl sm:text-3xl lg:text-4xl text-gray-400 dark:text-gray-500 font-semibold mt-2 block">Get paid. Get experience. Build your portfolio.</span>
     </h1>
     <p class="mt-6 max-w-2xl mx-auto text-lg text-gray-600 dark:text-gray-300 leading-relaxed reveal reveal-delay-2">
@@ -378,49 +370,26 @@
 </section>
 
 <!-- Final CTA -->
-<section class="relative overflow-hidden py-24">
-  <div class="absolute inset-0 bg-gradient-to-br from-violet-600 to-kova-700"></div>
-  <div class="hidden sm:block orb w-96 h-96 bg-white/10 -top-20 -right-20"></div>
-  <div class="hidden sm:block orb w-64 h-64 bg-white/10 bottom-0 left-10"></div>
-
+<section class="brand-atmosphere relative overflow-hidden py-24">
+  {% include "components/brand/_atmosphere_orbs.html" %}
   <div class="relative max-w-3xl mx-auto px-4 text-center">
-    <h2 class="text-3xl sm:text-4xl font-bold text-white reveal">
-      Your classmates are looking for jobs.<br>You're building a business.
+    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white reveal">
+      Your classmates are looking for jobs.<br>You're building a <span class="text-gradient-hero">business.</span>
     </h2>
-    <p class="mt-4 text-lg text-white/80 reveal reveal-delay-1">
+    <p class="mt-4 text-lg text-gray-600 dark:text-gray-400 reveal reveal-delay-1">
       Apply today. Get approved in 48 hours. Start earning this week.
     </p>
     <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 reveal reveal-delay-2">
-      <a href="{% url 'partners:apply' %}" class="group inline-flex items-center px-8 py-3.5 text-lg font-semibold text-violet-700 bg-white hover:bg-gray-50 rounded-xl shadow-lg transition-all">
+      <a href="{% url 'partners:apply' %}" class="group inline-flex items-center px-8 py-3.5 text-lg font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-xl shadow-lg shadow-violet-200 dark:shadow-none transition-all">
         Apply as a Campus Rep
         <svg class="inline w-5 h-5 ml-1 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
         </svg>
       </a>
     </div>
-    <p class="mt-6 text-sm text-white/60 reveal reveal-delay-3">
+    <p class="mt-6 text-sm text-gray-500 dark:text-gray-400 reveal reveal-delay-3">
       Open to students at any Kenyan university, college, or polytechnic.
     </p>
   </div>
 </section>
-
-<!-- Scroll reveal script -->
-<script>
-(function() {
-  var els = document.querySelectorAll('.reveal');
-  if (!('IntersectionObserver' in window)) {
-    els.forEach(function(el) { el.classList.add('visible'); });
-    return;
-  }
-  var observer = new IntersectionObserver(function(entries) {
-    entries.forEach(function(entry) {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-  els.forEach(function(el) { observer.observe(el); });
-})();
-</script>
 {% endblock %}

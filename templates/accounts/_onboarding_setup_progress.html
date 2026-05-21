@@ -1,0 +1,13 @@
+{# Global setup progress: path (1) → wizard steps (2–4) → AI meeting (5) #}
+<div class="mb-8">
+  <div class="flex items-center justify-between mb-2 gap-2">
+    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Setup step {{ setup_step }} of {{ setup_total }}</span>
+    {% if setup_label %}
+    <span class="text-sm text-gray-500 dark:text-gray-400 text-right">{{ setup_label }}</span>
+    {% endif %}
+  </div>
+  <div class="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
+    <div class="bg-kova-600 h-2 rounded-full transition-all duration-500"
+         style="width: {% widthratio setup_step setup_total 100 %}%"></div>
+  </div>
+</div>

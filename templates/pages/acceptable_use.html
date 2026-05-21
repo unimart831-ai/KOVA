@@ -2,11 +2,9 @@
 {% block title %}Acceptable Use Policy — Kova Agent{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-  <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2">Acceptable Use Policy</h1>
-  <p class="text-sm text-gray-500 dark:text-gray-400 mb-10">Last updated: April 9, 2026</p>
-
-  <div class="prose prose-gray dark:prose-invert max-w-none space-y-8">
+{% include "components/brand/_legal_header.html" with page_title="Acceptable Use Policy" page_subtitle="Last updated: April 9, 2026" %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16">
+  <div class="prose prose-gray dark:prose-invert max-w-none space-y-8 glass-panel rounded-2xl p-6 sm:p-10">
 
     <section>
       <h2 class="text-xl font-semibold text-gray-900 dark:text-white">1. Purpose</h2>

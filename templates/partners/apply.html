@@ -3,14 +3,13 @@
 {% block title %}Apply — Growth Partners | Kova Agent{% endblock %}
 
 {% block content %}
-<div class="min-h-[85vh] flex items-center justify-center py-12 px-4">
-  <div class="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+<div class="brand-atmosphere min-h-[85vh] flex items-center justify-center py-12 px-4">
+  {% include "components/brand/_atmosphere_orbs.html" %}
+  <div class="relative w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
     <!-- Info panel -->
-    <div class="hidden lg:block">
+    <div class="hidden lg:block reveal">
       <div class="space-y-6">
-        <div class="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center">
-          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        </div>
+        {% include "components/brand/_partner_badge.html" %}
         <h2 class="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
           Join the <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-kova-600 dark:from-emerald-400 dark:to-kova-400">Growth Partners</span> program.
         </h2>
@@ -58,13 +57,14 @@
     </div>
 
     <!-- Form -->
-    <div class="w-full max-w-md mx-auto lg:mx-0">
+    <div class="w-full max-w-md mx-auto lg:mx-0 reveal reveal-delay-1">
       <div class="lg:hidden mb-6">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Apply to Growth Partners</h1>
+        {% include "components/brand/_partner_badge.html" %}
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mt-4">Apply to Growth Partners</h1>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Earn up to 30% recurring commission</p>
       </div>
 
-      <form method="post" class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 p-6 space-y-4">
+      <form method="post" class="glass-panel rounded-2xl shadow-xl p-6 space-y-4">
         {% csrf_token %}
 
         {% if form.errors %}

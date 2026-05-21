@@ -2,19 +2,19 @@
 
 - industry_packs.apply_pack — fills empty profile fields based on industry
 - magic_fill._infer_industry — maps platform category strings to Industry choices
-- KovaSignupForm.signup — sets KE-defaults from a Kenyan phone number
+- KovaSignupForm.signup — no-op hook (phone collected in onboarding Step 1)
 
 These are the load-bearing pieces of the Tier-1/Tier-2 onboarding rework. If
 any of them regress, new users get a worse first-run experience.
 """
 
 import pytest
-from django.test import RequestFactory
 
 from apps.accounts.models import User, UserProfile
 from apps.accounts.industry_packs import apply_pack, get_pack, PACKS
 from apps.accounts.magic_fill import _infer_industry
-from apps.accounts.forms import KovaSignupForm
+from apps.accounts.forms import OnboardingStep1Form
+from apps.accounts.onboarding_flow import apply_url_inference_to_profile, finish_onboarding
 
 
 # ── industry_packs ──────────────────────────────────────────────────────────
@@ -127,49 +127,124 @@ class TestInferIndustry:
         assert _infer_industry(category) == expected
 
 
-# ── signup form Kenya defaults ──────────────────────────────────────────────
+# ── onboarding Step 1 phone ─────────────────────────────────────────────────
 
 @pytest.mark.django_db
-class TestSignupDefaults:
-    def test_kenyan_phone_sets_timezone_and_country(self):
-        # The signup() method runs after allauth creates the user.
+class TestOnboardingStep1Phone:
+    def _user_with_profile(self):
         u = User.objects.create_user(
-            username="sd", email="sd@b.com", password="P1!",
+            username="step1", email="step1@b.com", password="P1!",
         )
-        form = KovaSignupForm(data={"phone_number": "0712345678"})
-        assert form.is_valid(), form.errors
+        return u, u.profile
 
-        rf = RequestFactory().get("/")
-        form.signup(rf, u)
+    def test_kenyan_phone_sets_timezone_and_country(self):
+        u, p = self._user_with_profile()
+        data = {
+            "full_name": "Test User",
+            "timezone": "UTC",
+            "phone_number": "0712345678",
+            "company_name": "Acme",
+            "website_url": "",
+            "industry": "agency",
+            "industry_other": "",
+            "content_language": "en",
+            "key_offerings_text": "",
+        }
+        form = OnboardingStep1Form(data=data, instance=p, user=u)
+        assert form.is_valid(), form.errors
+        form.save()
 
         u.refresh_from_db()
         assert u.phone_number == "0712345678"
         assert u.timezone == "Africa/Nairobi"
         assert u.profile.country == "KE"
-        # mpesa_phone is an encrypted field — read via descriptor
         assert u.profile.mpesa_phone == "0712345678"
 
-    def test_signup_with_no_phone_skips_defaults(self):
-        u = User.objects.create_user(
-            username="np", email="np@b.com", password="P1!",
-        )
-        original_tz = u.timezone
-        form = KovaSignupForm(data={"phone_number": ""})
-        assert form.is_valid()
-
-        rf = RequestFactory().get("/")
-        form.signup(rf, u)
-
+    def test_international_phone_accepted(self):
+        u, p = self._user_with_profile()
+        data = {
+            "full_name": "Test User",
+            "timezone": "UTC",
+            "phone_number": "+1 555 123 4567",
+            "company_name": "Acme",
+            "website_url": "",
+            "industry": "agency",
+            "industry_other": "",
+            "content_language": "en",
+            "key_offerings_text": "",
+        }
+        form = OnboardingStep1Form(data=data, instance=p, user=u)
+        assert form.is_valid(), form.errors
+        form.save()
         u.refresh_from_db()
-        assert u.phone_number == ""
-        # timezone untouched
-        assert u.timezone == original_tz
-        assert u.profile.country == ""
+        assert u.phone_number == "+15551234567"
 
     def test_invalid_phone_rejected(self):
-        form = KovaSignupForm(data={"phone_number": "+1-555-1234"})
+        u, p = self._user_with_profile()
+        data = {
+            "full_name": "Test User",
+            "timezone": "UTC",
+            "phone_number": "abc",
+            "company_name": "Acme",
+            "website_url": "",
+            "industry": "agency",
+            "industry_other": "",
+            "content_language": "en",
+            "key_offerings_text": "",
+        }
+        form = OnboardingStep1Form(data=data, instance=p, user=u)
         assert not form.is_valid()
         assert "phone_number" in form.errors
+
+
+@pytest.mark.django_db
+class TestFinishOnboarding:
+    def test_finish_without_platform(self, monkeypatch):
+        u = User.objects.create_user(
+            username="fin", email="fin@b.com", password="P1!",
+        )
+        monkeypatch.setattr(
+            "apps.emails.tasks.send_welcome_email.delay",
+            lambda pk: None,
+        )
+        monkeypatch.setattr(
+            "apps.emails.automation.bootstrap_email_automation",
+            lambda user: None,
+        )
+        monkeypatch.setattr(
+            "apps.utils.fire_task",
+            lambda task, pk: None,
+        )
+
+        finish_onboarding(u, skipped_platform_connect=True)
+
+        u.refresh_from_db()
+        assert u.onboarding_completed is True
+        assert u.profile.trial_ends_at is not None
+        assert (u.profile.onboarding_step_timestamps or {}).get("platform_connect_deferred")
+
+
+@pytest.mark.django_db
+class TestUrlInferencePersistence:
+    def test_apply_url_inference_skips_nonempty_fields(self):
+        u = User.objects.create_user(
+            username="url", email="url@b.com", password="P1!",
+        )
+        p = u.profile
+        p.brand_voice = "Existing voice"
+        p.save(update_fields=["brand_voice"])
+
+        updated = apply_url_inference_to_profile(p, {
+            "brand_voice": "Inferred voice",
+            "target_audience": "Inferred audience",
+            "content_pillars": ["A", "B"],
+        })
+
+        p.refresh_from_db()
+        assert p.brand_voice == "Existing voice"
+        assert p.target_audience == "Inferred audience"
+        assert "target_audience" in updated
+        assert "brand_voice" not in updated
 
 
 # ── Merged Step 2 "Review your brand" form ──────────────────────────────────

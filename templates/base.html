@@ -19,7 +19,7 @@
 
   <!-- PWA -->
   <link rel="manifest" href="{% static 'manifest.json' %}">
-  <meta name="theme-color" content="#7c3aed">
+  <meta name="theme-color" content="#0d8474">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Kova Agent">
@@ -102,7 +102,7 @@
     <div class="mx-auto max-w-xl bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-3">
       <p class="text-sm text-gray-600 dark:text-gray-300 flex-1">
         We use cookies to improve your experience. By continuing to use Kova Agent, you agree to our
-        <a href="/terms/" class="underline text-violet-600 dark:text-violet-400">cookie policy</a>.
+        <a href="/terms/" class="underline text-kova-600 dark:text-kova-400">cookie policy</a>.
       </p>
       <div class="flex gap-2 shrink-0">
         <button @click="localStorage.setItem('kova-cookie-consent', 'essential'); shown = false"
@@ -110,7 +110,7 @@
           Essential only
         </button>
         <button @click="localStorage.setItem('kova-cookie-consent', 'all'); shown = false"
-                class="px-3 py-1.5 text-xs font-medium rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition">
+                class="px-3 py-1.5 text-xs font-medium rounded-lg bg-kova-600 text-white hover:bg-kova-700 transition">
           Accept all
         </button>
       </div>
