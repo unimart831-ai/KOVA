@@ -364,13 +364,17 @@ def seed_status(request, seed_id):
             seed.save(update_fields=["status", "error_message", "updated_at"])
 
     posts = seed.posts.select_related("social_account", "user", "brand").all()
+    profile = getattr(request.user, "profile", None)
+    auto_approve_posts = bool(profile and profile.auto_approve_posts)
+    pending_for_review_count = posts.filter(status__in=["pending_approval", "draft"]).count()
     response = render(request, "content/_seed_status.html", {
         "seed": seed,
         "posts": posts,
+        "auto_approve_posts": auto_approve_posts,
+        "pending_for_review_count": pending_for_review_count,
     })
-    # When generation is done, tell the posts section to refresh
-    if seed.status in ("completed", "failed"):
-        response["HX-Trigger"] = "postsUpdated"
+    if seed.status == "completed":
+        response["HX-Trigger"] = "refreshStudioPosts"
     return response
 
 
@@ -389,6 +393,9 @@ def seed_generation_status(request, seed_id):
             seed.save(update_fields=["status", "error_message", "updated_at"])
 
     posts = seed.posts.select_related("social_account").all()
+    profile = getattr(request.user, "profile", None)
+    auto_approve_posts = bool(profile and profile.auto_approve_posts)
+    pending_count = posts.filter(status__in=["pending_approval", "draft"]).count()
     terminal = seed.status in ("completed", "failed")
     return JsonResponse({
         "seed_id": str(seed.pk),
@@ -403,10 +410,14 @@ def seed_generation_status(request, seed_id):
                 "angle": p.ai_angle or "",
                 "preview": p.content_text[:120],
                 "media_status": p.media_status,
+                "status": p.status,
             }
             for p in posts
         ],
         "post_count": posts.count(),
+        "pending_count": pending_count,
+        "auto_approve_posts": auto_approve_posts,
+        "queue_url": reverse("content:queue"),
         "error_message": seed.error_message or "",
         "terminal": terminal,
     })

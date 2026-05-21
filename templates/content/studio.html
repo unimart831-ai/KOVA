@@ -325,7 +325,7 @@
   {# ━━━ Seed-Grouped Posts (auto-refreshes when generation completes) ━━━ #}
   <div id="studio-posts-section"
        hx-get="{% url 'content:studio_posts' %}"
-       hx-trigger="postsUpdated from:body"
+       hx-trigger="refreshStudioPosts from:body"
        hx-swap="innerHTML">
     {% include "content/_studio_posts.html" %}
   </div>
@@ -334,6 +334,16 @@
 {% include "content/_studio_generation_modal.html" %}
 
 <script>
+function refreshStudioPostsSection() {
+  const section = document.getElementById('studio-posts-section');
+  if (!section || !window.htmx) return;
+  const url = section.getAttribute('hx-get');
+  if (!url) return;
+  htmx.ajax('GET', url, { target: '#studio-posts-section', swap: 'innerHTML' });
+}
+
+document.body.addEventListener('refreshStudioPosts', refreshStudioPostsSection);
+
 function seedForm() {
   const connected = JSON.parse('{{ connected_platforms|escapejs }}');
   return {

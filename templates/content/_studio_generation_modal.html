@@ -11,7 +11,7 @@
     <div class="absolute inset-0 bg-gray-950/70 backdrop-blur-sm" @click="close()"></div>
 
     <div class="relative w-full max-w-lg max-h-[90vh] overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-2xl flex flex-col">
-      <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-kova-600 to-purple-600">
+      <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-kova-600 dark:bg-kova-700">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
             <p class="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Content Studio</p>
@@ -96,6 +96,13 @@
           </div>
         </template>
 
+        <template x-if="status === 'completed' && autoApprovePosts && pendingCount === 0">
+          <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+            <p class="text-sm font-medium text-amber-900 dark:text-amber-200">Auto-approve is on</p>
+            <p class="text-xs text-amber-800 dark:text-amber-300 mt-1">Posts skip Studio review and go straight to your Queue. Turn off auto-approve in Settings if you want to review here first.</p>
+          </div>
+        </template>
+
         <template x-if="status === 'failed'">
           <div class="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
             <p class="text-sm font-medium text-red-800 dark:text-red-200">Generation failed</p>
@@ -105,13 +112,29 @@
       </div>
 
       <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row gap-2">
-        <template x-if="status === 'completed'">
+        <template x-if="status === 'completed' && pendingCount > 0">
           <button type="button" @click="scrollToPosts()"
                   class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg bg-kova-600 text-white hover:bg-kova-700">
             Review posts below
           </button>
           <button type="button" @click="close()"
                   class="px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300">
+            Close
+          </button>
+        </template>
+        <template x-if="status === 'completed' && pendingCount === 0 && autoApprovePosts">
+          <a :href="queueUrl"
+             class="flex-1 text-center px-4 py-2.5 text-sm font-semibold rounded-lg bg-kova-600 text-white hover:bg-kova-700">
+            View in Queue
+          </a>
+          <button type="button" @click="close()"
+                  class="px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300">
+            Close
+          </button>
+        </template>
+        <template x-if="status === 'completed' && pendingCount === 0 && !autoApprovePosts">
+          <button type="button" @click="close()"
+                  class="w-full px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600">
             Close
           </button>
         </template>
@@ -143,16 +166,23 @@ function studioGenerationModal(seedId) {
     batchStrategy: '',
     posts: [],
     errorMessage: '',
+    pendingCount: 0,
+    autoApprovePosts: false,
+    queueUrl: '/content/queue/',
     pollTimer: null,
     get processing() {
       return this.status === 'new' || this.status === 'processing';
     },
     get headerTitle() {
+      if (this.status === 'completed' && this.autoApprovePosts && this.pendingCount === 0) return 'Posts auto-approved';
       if (this.status === 'completed') return 'Your posts are ready';
       if (this.status === 'failed') return 'Generation interrupted';
       return 'Create Agent is writing your posts';
     },
     get headerSubtitle() {
+      if (this.status === 'completed' && this.autoApprovePosts && this.pendingCount === 0) {
+        return 'Auto-approve is on — find them in Queue, not Posts to review.';
+      }
       if (this.status === 'completed') return 'Each platform got its own angle — review and approve below.';
       if (this.status === 'failed') return 'Fix the issue and try submitting your idea again.';
       return 'Watch the thought process live. Nothing publishes until you approve.';
@@ -193,13 +223,20 @@ function studioGenerationModal(seedId) {
         this.batchStrategy = data.batch_strategy || '';
         this.posts = data.posts || [];
         this.errorMessage = data.error_message || '';
+        this.pendingCount = data.pending_count || 0;
+        this.autoApprovePosts = !!data.auto_approve_posts;
+        this.queueUrl = data.queue_url || '/content/queue/';
         if (data.terminal) {
           if (this.pollTimer) {
             clearInterval(this.pollTimer);
             this.pollTimer = null;
           }
           if (data.status === 'completed') {
-            document.body.dispatchEvent(new CustomEvent('postsUpdated'));
+            if (typeof refreshStudioPostsSection === 'function') {
+              refreshStudioPostsSection();
+            } else {
+              document.body.dispatchEvent(new CustomEvent('refreshStudioPosts', { bubbles: true }));
+            }
           }
         }
       } catch (e) {
