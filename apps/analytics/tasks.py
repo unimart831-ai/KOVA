@@ -436,6 +436,11 @@ def generate_recycle_email(recycle_id: str):
         recycle.status = PerformanceRecycle.Status.READY
         recycle.save()
 
+        from apps.emails.automation import auto_email_enabled, send_performance_recycle
+
+        if auto_email_enabled(user):
+            send_performance_recycle(recycle)
+
         AgentAction.objects.create(
             user=user,
             agent_type="strategist",

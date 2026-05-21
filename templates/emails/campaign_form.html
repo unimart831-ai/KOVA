@@ -3,33 +3,48 @@
 {% block page_title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto">
+<div class="max-w-2xl mx-auto space-y-6">
+
+  {% if not is_edit %}
   <div class="card p-6">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Quick send (recommended)</h3>
+    <form method="post" class="space-y-3">
+      {% csrf_token %}
+      <textarea name="prompt" rows="2" required class="input text-sm w-full"
+                placeholder="What should we email your contacts about?"></textarea>
+      <button type="submit" class="btn-primary py-2 px-6">AI write & send</button>
+    </form>
+  </div>
+
+  <details class="card">
+    <summary class="p-4 text-sm font-medium text-gray-600 dark:text-gray-300 cursor-pointer">Advanced — edit HTML manually</summary>
+    <div class="p-6 pt-0 border-t border-gray-100 dark:border-gray-800">
+  {% else %}
+  <div class="card p-6">
+  {% endif %}
+
     <form method="post" class="space-y-4">
       {% csrf_token %}
       {% for field in form %}
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          {{ field.label }}
-          {% if field.help_text %}<span class="text-xs text-gray-400 font-normal ml-1">{{ field.help_text }}</span>{% endif %}
-        </label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ field.label }}</label>
         {{ field }}
-        {% if field.errors %}
-        <p class="text-xs text-red-500 mt-0.5">{{ field.errors.0 }}</p>
-        {% endif %}
+        {% if field.errors %}<p class="text-xs text-red-500 mt-0.5">{{ field.errors.0 }}</p>{% endif %}
       </div>
       {% endfor %}
       <div class="flex items-center gap-3 pt-2">
-        <button type="submit" class="btn-primary py-2 px-6">
-          {% if is_edit %}Update Campaign{% else %}Create Campaign{% endif %}
+        <button type="submit" class="btn-secondary py-2 px-6">
+          {% if is_edit %}Update{% else %}Create manually{% endif %}
         </button>
-        {% if is_edit %}
-        <a href="{% url 'emails:campaign_detail' campaign_id=campaign.pk %}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Cancel</a>
-        {% else %}
-        <a href="{% url 'emails:campaigns' %}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Cancel</a>
-        {% endif %}
+        <a href="{% if is_edit %}{% url 'emails:campaign_detail' campaign_id=campaign.pk %}{% else %}{% url 'emails:campaigns' %}{% endif %}" class="text-sm text-gray-500">Cancel</a>
       </div>
     </form>
+
+  {% if not is_edit %}
+    </div>
+  </details>
+  {% else %}
   </div>
+  {% endif %}
 </div>
 {% endblock %}

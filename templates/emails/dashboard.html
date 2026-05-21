@@ -13,15 +13,19 @@
   <div class="card px-4 py-3 bg-kova-50/50 dark:bg-kova-950/20 border-kova-100 dark:border-kova-900/40">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <p class="text-sm font-medium text-gray-900 dark:text-white">Automatic subscriber capture</p>
+        <p class="text-sm font-medium text-gray-900 dark:text-white">
+          {% if auto_email_enabled %}Kova handles email automatically{% else %}Automatic email is paused{% endif %}
+        </p>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-          Leads, Kova Form submissions, and manual adds flow into your list — no CSV required.
-          {% if default_list %}<span class="text-kova-600 dark:text-kova-400">{{ default_list.subscriber_count }} on {{ default_list.name }}</span>{% endif %}
+          Leads & forms → subscribers · Top posts → email · New contacts → welcome sequence
+          {% if default_list %}· <span class="text-kova-600 dark:text-kova-400">{{ default_list.subscriber_count }} contacts</span>{% endif %}
         </p>
       </div>
-      <form method="post" action="{% url 'emails:sync' %}">
+      <form method="post" action="{% url 'emails:toggle_auto' %}">
         {% csrf_token %}
-        <button type="submit" class="btn-secondary text-xs px-3 py-1.5">Sync from Leads</button>
+        <button type="submit" class="btn-secondary text-xs px-3 py-1.5">
+          Auto {% if auto_email_enabled %}on{% else %}off{% endif %}
+        </button>
       </form>
     </div>
     {% if source_stats %}
@@ -57,11 +61,19 @@
 
   {# Quick actions #}
   <div class="flex flex-wrap gap-3">
-    <a href="{% url 'emails:campaign_create' %}" class="btn-primary text-sm px-4 py-2">+ New Campaign</a>
+    <a href="{% url 'emails:campaigns' %}" class="btn-primary text-sm px-4 py-2">View campaigns</a>
     <a href="{% url 'emails:subscribers' %}" class="btn-secondary text-sm px-4 py-2">Subscribers ({{ subscriber_stats.total|default:0 }})</a>
-    <a href="{% url 'emails:lists' %}" class="btn-secondary text-sm px-4 py-2">Lists ({{ list_count }})</a>
-    <a href="{% url 'leads:list' %}" class="btn-secondary text-sm px-4 py-2">View Leads</a>
+    <form method="post" action="{% url 'emails:sync' %}" class="inline">
+      {% csrf_token %}
+      <button type="submit" class="btn-secondary text-sm px-4 py-2">Sync leads now</button>
+    </form>
   </div>
+
+  {% if welcome_sequence %}
+  <p class="text-xs text-gray-500 dark:text-gray-400">
+    Welcome sequence active — new contacts get {{ welcome_sequence.steps.count }} automated emails.
+  </p>
+  {% endif %}
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 

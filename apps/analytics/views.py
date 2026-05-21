@@ -977,9 +977,9 @@ def recycle_action(request, pk):
         recycle.save(update_fields=["status"])
         messages.info(request, "Recycle dismissed.")
     elif action == "send" and recycle.status == "ready":
-        recycle.status = "sent"
-        recycle.sent_at = timezone.now()
-        recycle.save(update_fields=["status", "sent_at"])
-        messages.success(request, "Email marked as sent!")
+        from apps.emails.automation import send_performance_recycle
+
+        send_performance_recycle(recycle)
+        messages.success(request, "Email queued to your subscriber list!")
 
     return redirect("analytics:performance_recycle")

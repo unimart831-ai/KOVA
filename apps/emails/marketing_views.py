@@ -174,8 +174,10 @@ def list_edit(request, list_id):
 
 @login_required
 def campaign_list(request):
-    """All campaigns."""
-    campaigns = EmailCampaign.objects.filter(user=request.user)
+    """All campaigns — mostly AI-generated and auto-sent."""
+    from apps.emails.automation import auto_email_enabled
+
+    campaigns = EmailCampaign.objects.filter(user=request.user).order_by("-created_at")
 
     status = request.GET.get("status")
     if status:
@@ -184,6 +186,7 @@ def campaign_list(request):
     stats = EmailCampaign.objects.filter(user=request.user).aggregate(
         total=Count("id"),
         sent=Count("id", filter=Q(status="sent")),
+        draft=Count("id", filter=Q(status="draft", ai_generated=True)),
         total_sent_emails=Sum("total_sent"),
         total_opened_emails=Sum("total_opened"),
     )
@@ -192,13 +195,14 @@ def campaign_list(request):
         "campaigns": campaigns[:50],
         "stats": stats,
         "current_status": status,
+        "auto_email_enabled": auto_email_enabled(request.user),
         "page_title": "Campaigns",
     })
 
 
 @login_required
 def campaign_create(request):
-    """Create a new campaign."""
+    """AI-generate and auto-send a campaign from a one-line prompt."""
     limits = get_plan_limits(request.user.profile.plan)
     max_campaigns = limits.get("email_campaigns_per_month", 2)
     current_month_count = EmailCampaign.objects.filter(
@@ -211,8 +215,23 @@ def campaign_create(request):
         return redirect("billing:pricing")
 
     if request.method == "POST":
+        prompt = request.POST.get("prompt", "").strip()
+        if prompt:
+            from apps.emails.automation import create_ai_campaign
+
+            campaign = create_ai_campaign(request.user, prompt, auto_send=True)
+            if campaign.status == EmailCampaign.Status.DRAFT:
+                messages.success(
+                    request,
+                    "AI wrote your email — it will send automatically when you have subscribers.",
+                )
+            else:
+                messages.success(request, f"AI wrote and queued your email campaign.")
+            return redirect("emails:campaign_detail", campaign_id=campaign.pk)
+
         form = EmailCampaignForm(request.POST, user=request.user)
         if form.is_valid():
+            from apps.emails.automation import try_auto_send_campaign
             from apps.emails.subscriber_sync import ensure_default_list
 
             campaign = form.save(commit=False)
@@ -220,6 +239,7 @@ def campaign_create(request):
             if not campaign.target_list_id:
                 campaign.target_list = ensure_default_list(request.user)
             campaign.save()
+            try_auto_send_campaign(campaign)
             messages.success(request, f"Campaign '{campaign.name}' created!")
             return redirect("emails:campaign_detail", campaign_id=campaign.pk)
     else:
@@ -352,10 +372,10 @@ def sequence_detail(request, sequence_id):
 
 @login_required
 def email_dashboard(request):
-    """Email marketing overview — auto-syncs subscribers from leads on each visit."""
-    from apps.emails.subscriber_sync import bootstrap_email_marketing
+    """Email marketing overview — fully automated by default."""
+    from apps.emails.automation import auto_email_enabled, bootstrap_email_automation
 
-    sync_result = bootstrap_email_marketing(request.user)
+    sync_result = bootstrap_email_automation(request.user)
 
     subscriber_stats = EmailSubscriber.objects.filter(user=request.user).aggregate(
         total=Count("id"),
@@ -387,6 +407,9 @@ def email_dashboard(request):
 
     default_list = EmailList.objects.filter(user=request.user, name="All contacts").first()
     list_count = EmailList.objects.filter(user=request.user).count()
+    welcome_sequence = EmailSequence.objects.filter(
+        user=request.user, name="Welcome new contacts", is_active=True,
+    ).first()
 
     return render(request, "emails/dashboard.html", {
         "subscriber_stats": subscriber_stats,
@@ -397,8 +420,22 @@ def email_dashboard(request):
         "list_count": list_count,
         "default_list": default_list,
         "sync_result": sync_result,
+        "auto_email_enabled": auto_email_enabled(request.user),
+        "welcome_sequence": welcome_sequence,
         "page_title": "Email Marketing",
     })
+
+
+@login_required
+@require_POST
+def toggle_auto_email(request):
+    """Toggle autonomous email marketing."""
+    profile = request.user.profile
+    profile.auto_email_marketing = not profile.auto_email_marketing
+    profile.save(update_fields=["auto_email_marketing"])
+    state = "on" if profile.auto_email_marketing else "off"
+    messages.success(request, f"Automatic email marketing turned {state}.")
+    return redirect(request.POST.get("next") or "emails:dashboard")
 
 
 @login_required

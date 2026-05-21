@@ -461,6 +461,10 @@ def send_campaign_task(self, campaign_id):
         if subscriber.status != EmailSubscriber.Status.ACTIVE:
             continue
 
+        from apps.emails.automation import is_mailable_email
+        if not is_mailable_email(subscriber.email):
+            continue
+
         try:
             # Build context for the campaign email
             context = {
@@ -581,22 +585,27 @@ def process_email_sequences():
                 enrollment.save(update_fields=["status"])
                 continue
 
-            # Send the step email
-            context = {
-                "subscriber_name": subscriber.name or subscriber.email.split("@")[0],
-                "subscriber_email": subscriber.email,
-                "sequence_name": enrollment.sequence.name,
-                "step_number": step.step_number,
-                "html_content": step.html_content,
-                "unsubscribe_url": f"{getattr(settings, 'SITE_URL', '')}/emails/unsubscribe/{subscriber.unsubscribe_token}/",
-            }
+            from apps.emails.automation import (
+                ai_generate_sequence_step,
+                is_mailable_email,
+                send_marketing_email_to_subscriber,
+            )
 
-            email_service._send(
-                email_type="promotional",
-                to_email=subscriber.email,
-                context=context,
-                user=subscriber.user,
-                subject=step.subject,
+            if not is_mailable_email(subscriber.email):
+                enrollment.status = SequenceEnrollment.Status.CANCELLED
+                enrollment.save(update_fields=["status"])
+                continue
+
+            html_content = step.html_content
+            if not html_content.strip() or step.ai_generated:
+                html_content = ai_generate_sequence_step(
+                    subscriber.user, subscriber, enrollment.sequence, step,
+                )
+
+            send_marketing_email_to_subscriber(
+                subscriber,
+                step.subject,
+                html_content,
                 metadata={
                     "sequence_id": str(enrollment.sequence.pk),
                     "step_number": step.step_number,
@@ -659,3 +668,28 @@ def sync_leads_to_subscribers_all():
 
     logger.info("Lead→subscriber sync complete: %d contacts processed", total_synced)
     return total_synced
+
+
+@shared_task(name="emails.process_scheduled_campaigns")
+def process_scheduled_campaigns():
+    """Send campaigns that reached their scheduled_at time."""
+    from apps.emails.models import EmailCampaign
+
+    now = timezone.now()
+    due = EmailCampaign.objects.filter(
+        status=EmailCampaign.Status.SCHEDULED,
+        scheduled_at__lte=now,
+    )
+    queued = 0
+    for campaign in due[:50]:
+        send_campaign_task.delay(str(campaign.pk))
+        queued += 1
+    return queued
+
+
+@shared_task(name="emails.retry_pending_auto_campaigns")
+def retry_pending_auto_campaigns():
+    """Send AI-generated drafts once subscriber lists have contacts."""
+    from apps.emails.automation import retry_all_pending_campaigns
+
+    return retry_all_pending_campaigns()

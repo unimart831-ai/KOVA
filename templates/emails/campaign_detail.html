@@ -9,11 +9,17 @@
   {# Actions #}
   <div class="flex items-center gap-3">
     {% if campaign.status == 'draft' or campaign.status == 'scheduled' %}
-    <a href="{% url 'emails:campaign_edit' campaign_id=campaign.pk %}" class="btn-primary text-sm px-4 py-2">Edit Campaign</a>
-    <form method="post" action="{% url 'emails:campaign_send' campaign_id=campaign.pk %}" onsubmit="return confirm('Send this campaign to all subscribers on the target list?')">
-      {% csrf_token %}
-      <button type="submit" class="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-lg font-medium transition">Send Campaign</button>
-    </form>
+      {% if campaign.ai_generated %}
+      <span class="text-sm text-amber-600 dark:text-amber-400">
+        {% if campaign.target_list and campaign.target_list.subscriber_count %}Queued — sends automatically{% else %}Waiting for subscribers — sends when contacts sync{% endif %}
+      </span>
+      {% else %}
+      <a href="{% url 'emails:campaign_edit' campaign_id=campaign.pk %}" class="btn-primary text-sm px-4 py-2">Edit</a>
+      {% endif %}
+      <form method="post" action="{% url 'emails:campaign_send' campaign_id=campaign.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-secondary text-sm px-4 py-2">Send now</button>
+      </form>
     {% endif %}
     {% if campaign.status == 'sending' %}
     <span class="text-sm text-amber-600 dark:text-amber-400 font-medium">Sending in progress…</span>

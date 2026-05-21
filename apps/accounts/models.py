@@ -281,6 +281,11 @@ class UserProfile(models.Model):
         help_text='Platforms for autopilot to target. Empty = all connected. ["instagram", "linkedin"]',
     )
 
+    auto_email_marketing = models.BooleanField(
+        default=True,
+        help_text="If True, Kova auto-sends AI email campaigns and recycles top posts to your list.",
+    )
+
     # ── Adapt Agent v2 (Phase 1 W3-4, May 2026) ──
     # The autonomous learning loop. Reads per-user post performance every
     # 12h and mutates these fields to bias future content toward winners.

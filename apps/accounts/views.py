@@ -215,6 +215,9 @@ def onboarding_view(request):
             from apps.emails.tasks import send_welcome_email
             send_welcome_email.delay(str(request.user.pk))
 
+            from apps.emails.automation import bootstrap_email_automation
+            bootstrap_email_automation(request.user)
+
             # ── Fire the Agency Intelligence task chain ──────────────
             # Research → Starter Seeds → Content → Welcome Brief
             from apps.agents.onboarding_tasks import run_onboarding_intelligence

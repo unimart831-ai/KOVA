@@ -147,26 +147,37 @@ def build_campaign_from_prompt(
 
 
 def _create_linked_email_campaign(user, campaign, plan, prompt):
-    """Create a draft email campaign linked to the default subscriber list."""
+    """Create an AI email campaign linked to the social campaign; auto-send when ready."""
     try:
         from apps.campaigns.models import CampaignEmail
-        from apps.emails.models import EmailCampaign
-        from apps.emails.subscriber_sync import ensure_default_list
+        from apps.emails.automation import ai_generate_email_content, create_email_campaign
 
         key_message = plan.get("key_message") or plan.get("description") or prompt[:200]
-        default_list = ensure_default_list(user)
-
-        email_camp = EmailCampaign.objects.create(
-            user=user,
-            name=f"Email: {campaign.name}",
-            subject=(plan.get("email_subject") or key_message)[:255],
-            preview_text=(plan.get("email_preview") or key_message)[:255],
-            html_content=plan.get("email_html") or f"<p>{key_message}</p>",
-            target_list=default_list,
-            status=EmailCampaign.Status.DRAFT,
-            ai_generated=True,
+        generated = ai_generate_email_content(
+            user,
+            f"Campaign: {campaign.name}. Message: {key_message}",
         )
-        CampaignEmail.objects.create(campaign=campaign, email_campaign=email_camp, role=CampaignEmail.Role.ANNOUNCEMENT)
+        if not generated:
+            generated = {
+                "subject": (plan.get("email_subject") or key_message)[:255],
+                "preview_text": key_message[:255],
+                "body_html": plan.get("email_html") or f"<p>{key_message}</p>",
+            }
+
+        email_camp = create_email_campaign(
+            user,
+            name=f"Email: {campaign.name}",
+            subject=generated.get("subject", key_message)[:255],
+            html_content=generated.get("body_html", f"<p>{key_message}</p>"),
+            preview_text=generated.get("preview_text", key_message[:255]),
+            ai_generated=True,
+            auto_send=True,
+        )
+        CampaignEmail.objects.create(
+            campaign=campaign,
+            email_campaign=email_camp,
+            role=CampaignEmail.Role.ANNOUNCEMENT,
+        )
         return str(email_camp.pk)
     except Exception as e:
         logger.warning("Linked email campaign creation failed: %s", e)

@@ -49,12 +49,15 @@ def upsert_subscriber(
 
     Returns (subscriber, created).
     """
+    from apps.emails.automation import is_mailable_email
     from apps.emails.models import EmailSubscriber
 
     if not email or not email.strip():
         return None, False
 
     email = email.strip().lower()
+    if not is_mailable_email(email):
+        return None, False
     source = source or EmailSubscriber.Source.LEAD_SYNC
 
     defaults = {
@@ -207,6 +210,7 @@ def enroll_subscriber_in_sequences(subscriber):
 
 
 def bootstrap_email_marketing(user):
-    """One-call setup: default list + lead sync. Safe to run on dashboard load."""
-    ensure_default_list(user)
-    return sync_leads_for_user(user)
+    """One-call setup: default list + lead sync + welcome sequence + pending sends."""
+    from apps.emails.automation import bootstrap_email_automation
+
+    return bootstrap_email_automation(user)

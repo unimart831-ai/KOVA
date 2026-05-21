@@ -293,6 +293,14 @@ CELERY_BEAT_SCHEDULE = {
         "task": "emails.sync_leads_to_subscribers_all",
         "schedule": 24 * 3600.0,  # daily — backfill email subscribers from leads
     },
+    "retry-pending-auto-campaigns": {
+        "task": "emails.retry_pending_auto_campaigns",
+        "schedule": 6 * 3600.0,  # every 6h — send AI drafts once lists have subscribers
+    },
+    "process-scheduled-email-campaigns": {
+        "task": "emails.process_scheduled_campaigns",
+        "schedule": 15 * 60.0,  # every 15 min — dispatch scheduled campaigns
+    },
     "discover-trending-memes": {
         "task": "memes.discover_trending_memes",
         "schedule": 3 * 3600.0,  # every 3 hours — AI meme trend discovery

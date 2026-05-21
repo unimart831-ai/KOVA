@@ -14,6 +14,7 @@ urlpatterns = [
     # Email marketing dashboard
     path("marketing/", marketing_views.email_dashboard, name="dashboard"),
     path("sync/", marketing_views.subscriber_sync_now, name="sync"),
+    path("automation/toggle/", marketing_views.toggle_auto_email, name="toggle_auto"),
 
     # Subscribers
     path("subscribers/", marketing_views.subscriber_list, name="subscribers"),
