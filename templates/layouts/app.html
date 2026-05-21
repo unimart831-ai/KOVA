@@ -188,10 +188,12 @@
 
       {% if '/products/' in request.path %}
       <div class="ml-8 space-y-0.5 mb-1">
-        <a href="{% url 'products:list' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'list' and request.resolver_match.namespace == 'products' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">All Products</a>
-        <a href="{% url 'products:categories' %}" class="block text-xs py-1 px-2 rounded {% if '/products/categories' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Categories</a>
+        <a href="{% url 'products:list' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'list' and request.resolver_match.namespace == 'products' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Catalog</a>
         <a href="{% url 'products:snap' %}" class="block text-xs py-1 px-2 rounded {% if '/products/snap' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Snap to Sell</a>
-        <a href="{% url 'products:restock' %}" class="block text-xs py-1 px-2 rounded {% if '/products/restock' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Restock Scanner</a>
+        <a href="{% url 'products:snap_batch' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'snap_batch' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Batch Snap</a>
+        <a href="{% url 'products:restock' %}" class="block text-xs py-1 px-2 rounded {% if '/products/restock' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Receipt to Restock</a>
+        <a href="{% url 'products:alerts' %}" class="block text-xs py-1 px-2 rounded {% if 'alert' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Stock Alerts{% if unread_alerts %} ({{ unread_alerts }}){% endif %}</a>
+        <a href="{% url 'products:categories' %}" class="block text-xs py-1 px-2 rounded {% if '/products/categories' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Categories</a>
       </div>
       {% endif %}
 

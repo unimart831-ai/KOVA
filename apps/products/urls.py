@@ -8,12 +8,18 @@ urlpatterns = [
     path("", views.product_list, name="list"),
     path("add/", views.product_add, name="add"),
     path("import/", views.product_import, name="import"),
+    path("alerts/", views.stock_alerts, name="alerts"),
+    path("alerts/read-all/", views.stock_alerts_read_all, name="alerts_read_all"),
+    path("alerts/<uuid:alert_id>/read/", views.stock_alert_read, name="alert_read"),
     path("categories/", views.category_list, name="categories"),
     path("categories/add/", views.category_add, name="category_add"),
+    path("categories/<uuid:category_id>/edit/", views.category_edit, name="category_edit"),
+    path("categories/<uuid:category_id>/delete/", views.category_delete, name="category_delete"),
     path("<uuid:product_id>/", views.product_detail, name="detail"),
     path("<uuid:product_id>/edit/", views.product_edit, name="edit"),
     path("<uuid:product_id>/delete/", views.product_delete, name="delete"),
     path("<uuid:product_id>/stock/", views.product_update_stock, name="update_stock"),
+    path("<uuid:product_id>/sale/", views.product_record_sale, name="record_sale"),
     path("<uuid:product_id>/promote/", views.promote_product, name="promote"),
     # Snap to Sell
     path("snap/", views.snap_to_sell, name="snap"),
@@ -23,4 +29,5 @@ urlpatterns = [
     path("snap/batch/launch/", views.snap_batch_launch, name="snap_batch_launch"),
     # Receipt to Restock
     path("restock/", views.restock_scan, name="restock"),
+    path("restock/<uuid:scan_id>/add-item/", views.restock_add_unmatched, name="restock_add_item"),
 ]

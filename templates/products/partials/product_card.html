@@ -12,6 +12,9 @@
           {% if product.is_featured %}
           <span class="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 font-medium">Featured</span>
           {% endif %}
+          {% if product.source == 'snap' %}
+          <span class="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 font-medium">Snap</span>
+          {% endif %}
         </div>
         {% include "products/partials/stock_badge.html" %}
       </div>

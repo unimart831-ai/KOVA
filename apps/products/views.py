@@ -4,15 +4,22 @@ import logging
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.billing.models import get_plan_limits
 from apps.products.forms import BulkImportForm, ProductCategoryForm, ProductForm
-from apps.products.models import Product, ProductCategory, StockAlert, StockUpdate
+from apps.products.models import Product, ProductCategory, RestockScan, StockAlert, StockUpdate
+from apps.products.plan_gates import product_plan_context
+from apps.products.stock_actions import log_stock_change, record_sale
 
 logger = logging.getLogger(__name__)
+
+
+def _plan_ctx(request):
+    return product_plan_context(request.user)
 
 
 @login_required
@@ -34,7 +41,9 @@ def product_list(request):
     if featured_only:
         products = products.filter(is_featured=True)
 
-    products = products.select_related("category")[:200]
+    products = products.select_related("category").order_by("-updated_at")
+    paginator = Paginator(products, 24)
+    page_obj = paginator.get_page(request.GET.get("page"))
 
     # Stats
     all_products = Product.objects.filter(user=request.user, is_active=True)
@@ -50,13 +59,15 @@ def product_list(request):
     unread_alerts = StockAlert.objects.filter(user=request.user, is_read=False).count()
 
     return render(request, "products/product_list.html", {
-        "products": products,
+        "products": page_obj,
+        "page_obj": page_obj,
         "stats": stats,
         "categories": categories,
         "unread_alerts": unread_alerts,
         "current_status": status or "",
         "current_category": cat or "",
         "current_q": q,
+        "plan_ctx": _plan_ctx(request),
     })
 
 
@@ -71,7 +82,7 @@ def product_add(request):
         return redirect("products:list")
 
     if request.method == "POST":
-        form = ProductForm(request.POST, request.FILES, user=request.user)
+        form = ProductForm(request.POST, request.FILES, user=request.user, plan_ctx=_plan_ctx(request))
         if form.is_valid():
             product = form.save(commit=False)
             product.user = request.user
@@ -80,12 +91,13 @@ def product_add(request):
             messages.success(request, f"'{product.name}' added to your catalog.")
             return redirect("products:list")
     else:
-        form = ProductForm(user=request.user)
+        form = ProductForm(user=request.user, plan_ctx=_plan_ctx(request))
 
     return render(request, "products/product_form.html", {
         "form": form,
         "title": "Add to Catalog",
         "submit_label": "Add to Catalog",
+        "plan_ctx": _plan_ctx(request),
     })
 
 
@@ -101,6 +113,7 @@ def product_detail(request, product_id):
         "stock_history": stock_history,
         "alerts": alerts,
         "recent_posts": recent_posts,
+        "plan_ctx": _plan_ctx(request),
     })
 
 
@@ -111,33 +124,30 @@ def product_edit(request, product_id):
     if request.method == "POST":
         old_status = product.stock_status
         old_quantity = product.quantity
-        form = ProductForm(request.POST, request.FILES, instance=product, user=request.user)
+        form = ProductForm(request.POST, request.FILES, instance=product, user=request.user, plan_ctx=_plan_ctx(request))
         if form.is_valid():
             product = form.save(commit=False)
             product.check_low_stock()
             product.save()
 
-            # Log stock change if status or quantity changed
-            if product.stock_status != old_status or product.quantity != old_quantity:
-                StockUpdate.objects.create(
-                    product=product,
-                    previous_status=old_status,
-                    new_status=product.stock_status,
-                    previous_quantity=old_quantity,
-                    new_quantity=product.quantity,
-                    reason=StockUpdate.Reason.MANUAL,
-                )
+            log_stock_change(
+                product,
+                previous_status=old_status,
+                previous_quantity=old_quantity,
+                reason=StockUpdate.Reason.MANUAL,
+            )
 
             messages.success(request, f"'{product.name}' updated.")
             return redirect("products:detail", product_id=product.pk)
     else:
-        form = ProductForm(instance=product, user=request.user)
+        form = ProductForm(instance=product, user=request.user, plan_ctx=_plan_ctx(request))
 
     return render(request, "products/product_form.html", {
         "form": form,
         "product": product,
         "title": f"Edit {product.name}",
         "submit_label": "Save Changes",
+        "plan_ctx": _plan_ctx(request),
     })
 
 
@@ -171,15 +181,12 @@ def product_update_stock(request, product_id):
 
     product.save(update_fields=["stock_status", "quantity", "updated_at"])
 
-    if product.stock_status != old_status or product.quantity != old_quantity:
-        StockUpdate.objects.create(
-            product=product,
-            previous_status=old_status,
-            new_status=product.stock_status,
-            previous_quantity=old_quantity,
-            new_quantity=product.quantity,
-            reason=StockUpdate.Reason.MANUAL,
-        )
+    log_stock_change(
+        product,
+        previous_status=old_status,
+        previous_quantity=old_quantity,
+        reason=StockUpdate.Reason.MANUAL,
+    )
 
     if request.headers.get("HX-Request"):
         return render(request, "products/partials/stock_badge.html", {"product": product})
@@ -190,6 +197,11 @@ def product_update_stock(request, product_id):
 
 @login_required
 def product_import(request):
+    plan_ctx = _plan_ctx(request)
+    if not plan_ctx["csv_import"]:
+        messages.error(request, "CSV import is available on Growth and Pro plans. Upgrade to import products in bulk.")
+        return redirect("products:list")
+
     if request.method == "POST":
         form = BulkImportForm(request.POST, request.FILES)
         if form.is_valid():
@@ -214,7 +226,69 @@ def product_import(request):
     else:
         form = BulkImportForm()
 
-    return render(request, "products/product_import.html", {"form": form})
+    return render(request, "products/product_import.html", {"form": form, "plan_ctx": plan_ctx})
+
+
+@login_required
+def stock_alerts(request):
+    """Stock alert inbox — view and dismiss automation notifications."""
+    show = request.GET.get("show", "unread")
+    alerts = StockAlert.objects.filter(user=request.user).select_related("product")
+    if show != "all":
+        alerts = alerts.filter(is_read=False)
+    alerts = alerts.order_by("-created_at")[:100]
+
+    unread_count = StockAlert.objects.filter(user=request.user, is_read=False).count()
+
+    return render(request, "products/stock_alerts.html", {
+        "alerts": alerts,
+        "unread_count": unread_count,
+        "show": show,
+    })
+
+
+@login_required
+@require_POST
+def stock_alert_read(request, alert_id):
+    alert = get_object_or_404(StockAlert, pk=alert_id, user=request.user)
+    alert.is_read = True
+    alert.save(update_fields=["is_read"])
+    if request.headers.get("HX-Request"):
+        return render(request, "products/partials/alert_row.html", {"alert": alert, "dismissed": True})
+    return redirect("products:alerts")
+
+
+@login_required
+@require_POST
+def stock_alerts_read_all(request):
+    StockAlert.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    messages.success(request, "All stock alerts marked as read.")
+    return redirect("products:alerts")
+
+
+@login_required
+@require_POST
+def product_record_sale(request, product_id):
+    """Record a sale and decrement stock (Growth+ quantity tracking)."""
+    product = get_object_or_404(Product, pk=product_id, user=request.user)
+    plan_ctx = _plan_ctx(request)
+    if not plan_ctx["quantity_tracking"]:
+        messages.error(request, "Quantity tracking is available on Growth and Pro plans.")
+        return redirect("products:detail", product_id=product.pk)
+
+    qty_raw = request.POST.get("quantity", "1").strip()
+    try:
+        qty = max(1, int(qty_raw))
+    except ValueError:
+        qty = 1
+
+    if not product.tracks_stock or product.quantity is None:
+        messages.warning(request, "This product does not track quantity.")
+        return redirect("products:detail", product_id=product.pk)
+
+    record_sale(product, quantity=qty)
+    messages.success(request, f"Recorded sale of {qty} unit{'s' if qty != 1 else ''} for '{product.name}'.")
+    return redirect("products:detail", product_id=product.pk)
 
 
 def _import_csv(user, csv_file, remaining):
@@ -246,6 +320,7 @@ def _import_csv(user, csv_file, remaining):
                     "description": row.get("description", "").strip(),
                     "product_url": row.get("product_url", "").strip(),
                     "external_id": row.get("external_id", row.get("sku", "")).strip(),
+                    "source": Product.Source.CSV,
                 },
             )
             if created:
@@ -285,7 +360,7 @@ def _import_bulk_text(user, text, remaining):
             status = "in_stock"
         _, created = Product.objects.get_or_create(
             user=user, name=name,
-            defaults={"price": price, "stock_status": status},
+            defaults={"price": price, "stock_status": status, "source": Product.Source.CSV},
         )
         if created:
             imported += 1
@@ -296,7 +371,7 @@ def _import_bulk_text(user, text, remaining):
 
 @login_required
 def category_list(request):
-    categories = ProductCategory.objects.filter(user=request.user).annotate(
+    categories = ProductCategory.objects.filter(user=request.user, is_active=True).annotate(
         product_count=Count("products", filter=Q(products__is_active=True))
     )
     return render(request, "products/category_list.html", {"categories": categories})
@@ -319,6 +394,37 @@ def category_add(request):
         "form": form,
         "title": "Add Category",
     })
+
+
+@login_required
+def category_edit(request, category_id):
+    category = get_object_or_404(ProductCategory, pk=category_id, user=request.user)
+    if request.method == "POST":
+        form = ProductCategoryForm(request.POST, instance=category)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Category '{category.name}' updated.")
+            return redirect("products:categories")
+    else:
+        form = ProductCategoryForm(instance=category)
+
+    return render(request, "products/category_form.html", {
+        "form": form,
+        "title": f"Edit {category.name}",
+        "category": category,
+    })
+
+
+@login_required
+@require_POST
+def category_delete(request, category_id):
+    category = get_object_or_404(ProductCategory, pk=category_id, user=request.user)
+    name = category.name
+    category.is_active = False
+    category.save(update_fields=["is_active"])
+    Product.objects.filter(user=request.user, category=category).update(category=None)
+    messages.success(request, f"Category '{name}' removed.")
+    return redirect("products:categories")
 
 
 @login_required
@@ -375,7 +481,7 @@ def promote_product(request, product_id):
 @login_required
 def snap_to_sell(request):
     """Camera/upload page — user snaps a product photo."""
-    return render(request, "products/snap_to_sell.html")
+    return render(request, "products/snap_to_sell.html", {"plan_ctx": _plan_ctx(request)})
 
 
 @login_required
@@ -446,6 +552,7 @@ def snap_launch(request):
         description=description,
         image=photos[0],
         stock_status=stock_status,
+        source=Product.Source.SNAP,
     )
 
     # Save additional images (2nd onward) to storage, store URLs
@@ -478,7 +585,7 @@ def snap_launch(request):
 @login_required
 def snap_batch(request):
     """Batch snap page — user snaps multiple different products."""
-    return render(request, "products/snap_batch.html")
+    return render(request, "products/snap_batch.html", {"plan_ctx": _plan_ctx(request)})
 
 
 @login_required
@@ -557,6 +664,7 @@ def snap_batch_launch(request):
             currency=currency,
             image=photo,
             stock_status=stock_status,
+            source=Product.Source.SNAP,
         )
         product_ids.append(str(product.pk))
         contexts.append(context)
@@ -610,4 +718,61 @@ def restock_scan(request):
 
     return render(request, "products/restock_scan.html", {
         "scans": scans,
+        "plan_ctx": _plan_ctx(request),
     })
+
+
+@login_required
+@require_POST
+def restock_add_unmatched(request, scan_id):
+    """Add an unmatched receipt line to the catalog and apply restock quantity."""
+    scan = get_object_or_404(RestockScan, pk=scan_id, user=request.user)
+    name = request.POST.get("name", "").strip()
+    if not name:
+        messages.error(request, "Product name is required.")
+        return redirect("products:restock")
+
+    limits = get_plan_limits(request.user.profile.plan)
+    max_products = limits.get("max_products", 5)
+    if Product.objects.filter(user=request.user, is_active=True).count() >= max_products:
+        messages.error(request, f"Your plan allows up to {max_products} products. Upgrade to add more.")
+        return redirect("products:restock")
+
+    qty_raw = request.POST.get("quantity", "1").strip()
+    price_raw = request.POST.get("unit_price", "").strip()
+    try:
+        quantity = max(1, int(qty_raw))
+    except ValueError:
+        quantity = 1
+    price = None
+    if price_raw:
+        try:
+            price = float(price_raw)
+        except ValueError:
+            pass
+
+    product = Product.objects.create(
+        user=request.user,
+        name=name,
+        price=price,
+        quantity=quantity,
+        stock_status=Product.StockStatus.IN_STOCK,
+        source=Product.Source.MANUAL,
+    )
+
+    log_stock_change(
+        product,
+        previous_status=Product.StockStatus.IN_STOCK,
+        previous_quantity=0,
+        reason=StockUpdate.Reason.RESTOCK,
+        notes=f"[Receipt to Restock] Added from unmatched line on scan {scan.pk}",
+    )
+
+    if name in (scan.items_not_matched or []):
+        scan.items_not_matched = [i for i in scan.items_not_matched if i != name]
+        scan.products_matched = (scan.products_matched or 0) + 1
+        scan.products_updated = (scan.products_updated or 0) + 1
+        scan.save(update_fields=["items_not_matched", "products_matched", "products_updated"])
+
+    messages.success(request, f"'{name}' added to catalog with {quantity} units.")
+    return redirect("products:restock")

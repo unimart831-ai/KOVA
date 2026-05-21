@@ -29,10 +29,16 @@ class ProductForm(forms.ModelForm):
             "low_stock_threshold": forms.NumberInput(attrs={"class": "input", "placeholder": "5"}),
         }
 
-    def __init__(self, *args, user=None, **kwargs):
+    def __init__(self, *args, user=None, plan_ctx=None, **kwargs):
         super().__init__(*args, **kwargs)
+        plan_ctx = plan_ctx or {}
         if user:
             self.fields["category"].queryset = ProductCategory.objects.filter(user=user, is_active=True)
+        if not plan_ctx.get("quantity_tracking", True):
+            for field in ("quantity", "low_stock_threshold"):
+                if field in self.fields:
+                    self.fields[field].widget = forms.HiddenInput()
+                    self.fields[field].required = False
 
 
 class ProductCategoryForm(forms.ModelForm):

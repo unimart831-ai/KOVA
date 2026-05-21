@@ -664,7 +664,7 @@ def pause_oos_scheduled_posts(user, product_name: str) -> int:
 
 # ─── Auto-Generate Restock Seeds ─────────────────────────────────────────────
 
-def generate_restock_seed(user, product_name: str) -> bool:
+def generate_restock_seed(user, product_name: str, product=None) -> bool:
     """
     When a physical product is restocked, auto-create a 'Back in stock!' content seed.
     Returns True if seed was created.
@@ -693,9 +693,10 @@ def generate_restock_seed(user, product_name: str) -> bool:
         return False
 
     # Look up the product to link via FK
-    product = Product.objects.filter(user=user, name=product_name, is_active=True).first()
+    if product is None:
+        product = Product.objects.filter(user=user, name=product_name, is_active=True).first()
 
-    ContentSeed.objects.create(
+    seed = ContentSeed.objects.create(
         user=user,
         product=product,
         idea=(
@@ -707,6 +708,10 @@ def generate_restock_seed(user, product_name: str) -> bool:
         notes=f"Auto-generated: {product_name} was restocked.",
         target_platforms=platforms[:3],
     )
+    from apps.content.tasks import generate_from_seed
+    from apps.utils import fire_task
+
+    fire_task(generate_from_seed, str(seed.id))
     logger.info("Auto-created restock seed for %s (user: %s)", product_name, user.email)
     return True
 

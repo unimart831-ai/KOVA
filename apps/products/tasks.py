@@ -121,6 +121,54 @@ def check_stock_alerts():
         except Exception as e:
             logger.warning("Featured-no-content check failed for %s: %s", user.email, e)
 
+        # ── In-stock products with surplus inventory but no recent promotion ──
+        try:
+            from apps.content.models import ContentSeed, Post
+
+            two_weeks_ago = timezone.now() - timedelta(days=14)
+            for product in products.filter(
+                stock_status=Product.StockStatus.IN_STOCK,
+                offering_type=Product.OfferingType.PRODUCT,
+            ):
+                if not product.tracks_stock or product.quantity is None:
+                    continue
+                if product.quantity <= product.low_stock_threshold * 2:
+                    continue
+
+                has_recent = (
+                    Post.objects.filter(
+                        user=user,
+                        product=product,
+                        created_at__gte=two_weeks_ago,
+                    ).exists()
+                    or ContentSeed.objects.filter(
+                        user=user,
+                        product=product,
+                        created_at__gte=two_weeks_ago,
+                    ).exists()
+                )
+                if has_recent:
+                    continue
+
+                exists = StockAlert.objects.filter(
+                    product=product,
+                    alert_type=StockAlert.AlertType.OVERSTOCK_NO_PROMO,
+                    created_at__date=timezone.now().date(),
+                ).exists()
+                if not exists:
+                    StockAlert.objects.create(
+                        user=user,
+                        product=product,
+                        alert_type=StockAlert.AlertType.OVERSTOCK_NO_PROMO,
+                        message=(
+                            f"📦 {product.name} has {product.quantity} units in stock "
+                            f"but no content in 14+ days. Consider promoting it."
+                        ),
+                    )
+                    alerts_created += 1
+        except Exception as e:
+            logger.warning("Overstock-no-promo check failed for %s: %s", user.email, e)
+
         # ── Stock-content mismatches (OOS products with scheduled posts) ──
         try:
             mismatches = detect_stock_content_mismatches(user)
@@ -251,13 +299,17 @@ def auto_promote_products():
             # Build context-aware idea based on product type and status
             idea = _build_promotion_idea(product)
 
-            ContentSeed.objects.create(
+            seed = ContentSeed.objects.create(
                 user=user,
                 product=product,
                 idea=idea,
                 notes=f"Auto-promoted: {product.name} — no content in 7+ days.",
                 target_platforms=platforms[:3],
             )
+            from apps.content.tasks import generate_from_seed
+            from apps.utils import fire_task
+
+            fire_task(generate_from_seed, str(seed.id))
             seeds_created += 1
             logger.info(
                 "Auto-promote seed created: %s for %s (score=%d)",
@@ -1108,27 +1160,17 @@ def process_restock_scan(scan_id: str):
                     product.stock_status = Product.StockStatus.IN_STOCK
                 product.save(update_fields=["quantity", "stock_status"])
 
-                StockUpdate.objects.create(
-                    product=product,
-                    user=user,
-                    previous_quantity=old_quantity,
-                    new_quantity=new_quantity,
+                from apps.products.stock_actions import log_stock_change
+
+                log_stock_change(
+                    product,
                     previous_status=old_status,
-                    new_status=product.stock_status,
+                    previous_quantity=old_quantity,
                     reason=StockUpdate.Reason.RESTOCK,
                     notes=f"[Receipt to Restock] +{quantity} from {scan.supplier_name or 'receipt scan'}",
                 )
 
                 restocked_names.append(product.name)
-
-                # Create restock alert
-                if old_status in (Product.StockStatus.OUT_OF_STOCK, Product.StockStatus.LOW_STOCK):
-                    StockAlert.objects.create(
-                        user=user,
-                        product=product,
-                        alert_type=StockAlert.AlertType.RESTOCKED,
-                        message=f"{product.name} restocked: {old_quantity} → {new_quantity} units",
-                    )
             except Product.DoesNotExist:
                 continue
 
