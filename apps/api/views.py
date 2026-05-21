@@ -304,7 +304,11 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
         instance.save(update_fields=["is_active"])
 
 
-@extend_schema(tags=["Products"])
+@extend_schema(
+    tags=["Products"],
+    request={"application/json": {"type": "object", "properties": {"products": {"type": "array", "items": {"$ref": "#/components/schemas/Product"}}}}},
+    responses={201: {"type": "object", "properties": {"imported": {"type": "integer"}, "errors": {"type": "array", "items": {"type": "object"}}}}},
+)
 class ProductBulkImportView(generics.CreateAPIView):
     """
     Bulk import products via API.
@@ -313,6 +317,7 @@ class ProductBulkImportView(generics.CreateAPIView):
     Each item follows the same fields as ProductSerializer.
     Returns: {"imported": N, "errors": [...]}
     """
+    serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated, HasAPIAccess]
 
     def create(self, request, *args, **kwargs):
