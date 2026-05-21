@@ -44,6 +44,21 @@
     </div>
   </div>
 
+  <!-- System maps — founder daily reference -->
+  <div x-show="query.length === 0" class="mb-8 p-5 rounded-xl border-2 border-gray-900 dark:border-gray-600 bg-gray-900 dark:bg-gray-950 text-white">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wider text-kova-400">Founder reference</p>
+        <h2 class="text-lg font-bold mt-1">System Maps</h2>
+        <p class="text-sm text-gray-300 mt-1">22 flow diagrams — how every section works. Print and pin the daily 3.</p>
+      </div>
+      <div class="flex flex-wrap gap-2 shrink-0">
+        <a href="{% url 'help:system_maps' %}" class="px-4 py-2 rounded-lg bg-kova-600 hover:bg-kova-500 text-sm font-semibold transition-colors">Open maps</a>
+        <a href="{% url 'help:system_maps_print' %}" target="_blank" class="px-4 py-2 rounded-lg border border-gray-600 hover:border-gray-400 text-sm font-medium transition-colors">Print all</a>
+      </div>
+    </div>
+  </div>
+
   <!-- Category grid (hidden when searching) -->
   <div x-show="query.length === 0" class="space-y-8">
     {% for group in grouped_articles %}

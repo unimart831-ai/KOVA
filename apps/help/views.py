@@ -9,6 +9,7 @@ from django.views.decorators.http import require_GET, require_POST
 from django_ratelimit.decorators import ratelimit
 
 from apps.help.models import Article, HelpPageView, NewsletterSubscriber
+from apps.help.system_maps import SYSTEM_MAPS, daily_print_maps, get_map, maps_by_group
 
 
 # ── Category UI metadata ─────────────────────────────────────────────────────
@@ -153,6 +154,49 @@ def help_article(request, slug):
         "category": category,
         "prev_article": prev_article,
         "next_article": next_article,
+    })
+
+
+@login_required
+def system_maps_index(request):
+    """Founder system flow maps — daily reference."""
+    HelpPageView.objects.create(user=request.user, page_type="system_maps")
+    return render(request, "help/system_maps_index.html", {
+        "maps_by_group": maps_by_group(),
+        "daily_maps": daily_print_maps(),
+        "total_maps": len(SYSTEM_MAPS),
+    })
+
+
+@login_required
+def system_map_detail(request, slug):
+    map_obj = get_map(slug)
+    if not map_obj:
+        raise Http404
+    HelpPageView.objects.create(
+        user=request.user,
+        page_type="system_map",
+        article_slug=slug,
+        article_title=map_obj.title,
+    )
+    ordered = sorted(SYSTEM_MAPS, key=lambda m: m.print_order)
+    idx = next(i for i, m in enumerate(ordered) if m.slug == slug)
+    prev_map = ordered[idx - 1] if idx > 0 else None
+    next_map = ordered[idx + 1] if idx < len(ordered) - 1 else None
+    return render(request, "help/system_map_detail.html", {
+        "map": map_obj,
+        "prev_map": prev_map,
+        "next_map": next_map,
+    })
+
+
+@login_required
+def system_maps_print(request):
+    """Print-all page — one map per sheet."""
+    HelpPageView.objects.create(user=request.user, page_type="system_maps_print")
+    return render(request, "help/system_maps_print.html", {
+        "maps": sorted(SYSTEM_MAPS, key=lambda m: m.print_order),
+        "daily_maps": daily_print_maps(),
     })
 
 

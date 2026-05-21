@@ -259,7 +259,8 @@
         <a href="{% url 'teams:list' %}" class="block text-xs py-1 px-2 rounded {% if '/teams/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Teams</a>
         {% endif %}
         <a href="{% url 'billing:overview' %}" class="block text-xs py-1 px-2 rounded {% if '/billing/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Billing</a>
-        <a href="{% url 'help:center' %}" class="block text-xs py-1 px-2 rounded {% if '/help/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Help</a>
+        <a href="{% url 'help:system_maps' %}" class="block text-xs py-1 px-2 rounded {% if '/help/system-maps' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">System Maps</a>
+        <a href="{% url 'help:center' %}" class="block text-xs py-1 px-2 rounded {% if '/help/' in request.path and '/help/system-maps' not in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Help</a>
       </div>
       {% endif %}
     </nav>

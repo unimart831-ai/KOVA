@@ -1,0 +1,90 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}{{ map.title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">{{ map.nav_group }} · Map #{{ map.print_order }}</p>
+{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  .mermaid { background: transparent; }
+  .mermaid svg { max-width: 100%; height: auto; }
+  @media print {
+    .no-print { display: none !important; }
+    .print-map { page-break-inside: avoid; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto print-map">
+  <nav class="no-print flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
+    <a href="{% url 'help:system_maps' %}" class="hover:text-kova-600 dark:hover:text-kova-400">System Maps</a>
+    <span>/</span>
+    <span class="text-gray-900 dark:text-white font-medium">{{ map.title }}</span>
+  </nav>
+
+  <div class="no-print flex flex-wrap gap-2 mb-6">
+    <button type="button" onclick="window.print()"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-xs font-semibold">
+      Print this map
+    </button>
+    <a href="{% url 'help:system_maps_print' %}" target="_blank"
+       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-xs font-medium text-gray-700 dark:text-gray-300">
+      Print all maps
+    </a>
+  </div>
+
+  <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ map.title }}</h1>
+  <p class="text-base text-gray-600 dark:text-gray-400 mt-2">{{ map.summary }}</p>
+
+  {% if map.daily_tip %}
+  <div class="mt-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40">
+    <p class="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">Daily tip</p>
+    <p class="text-sm text-gray-800 dark:text-gray-200 mt-1">{{ map.daily_tip }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Flow diagram -->
+  <div class="mt-8 p-4 sm:p-6 rounded-xl bg-gray-900 border border-gray-800 overflow-x-auto">
+    <pre class="mermaid text-center">{{ map.diagram }}</pre>
+  </div>
+
+  <!-- Audit notes -->
+  <div class="mt-8">
+    <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">How it works (audit)</h2>
+    <ul class="space-y-2">
+      {% for note in map.audit %}
+      <li class="flex gap-2 text-sm text-gray-700 dark:text-gray-300">
+        <span class="text-kova-500 shrink-0">•</span>
+        <span>{{ note }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <!-- Prev / next -->
+  <div class="no-print mt-10 pt-6 border-t border-gray-200 dark:border-gray-800 flex justify-between gap-4">
+    {% if prev_map %}
+    <a href="{% url 'help:system_map' prev_map.slug %}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-kova-600">
+      ← #{{ prev_map.print_order }} {{ prev_map.title }}
+    </a>
+    {% else %}<span></span>{% endif %}
+    {% if next_map %}
+    <a href="{% url 'help:system_map' next_map.slug %}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-kova-600 text-right">
+      #{{ next_map.print_order }} {{ next_map.title }} →
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    flowchart: { curve: 'basis', padding: 16 },
+    securityLevel: 'loose',
+  });
+</script>
+{% endblock %}

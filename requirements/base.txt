@@ -5,6 +5,7 @@ psycopg[binary]>=3.1.18
 
 # Django Extensions
 django-allauth>=65.0
+PyJWT[crypto]>=2.8.0  # Required by allauth Google OAuth (jwtkit)
 django-crispy-forms>=2.3
 crispy-tailwind>=1.0.3
 django-htmx>=1.19
