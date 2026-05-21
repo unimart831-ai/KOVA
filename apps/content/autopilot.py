@@ -31,6 +31,50 @@ AUTOPILOT_ACTIVE_STATUSES = (
 )
 
 
+def log_plan_step(plan, step: str, message: str, detail: str = ""):
+    """Append a visible planning step for the Autopilot live modal."""
+    entry = {
+        "step": step,
+        "message": message,
+        "detail": detail,
+        "at": timezone.now().isoformat(),
+    }
+    log = list(plan.planning_log or [])
+    log.append(entry)
+    plan.planning_log = log
+    plan.save(update_fields=["planning_log"])
+
+
+def get_planning_context(user, profile):
+    """Build context snippets shown in the planning modal."""
+    from apps.analytics.models import PostMetric
+    from apps.content.models import Post
+    from apps.platforms.models import SocialAccount
+
+    company = profile.company_name or "your business"
+    industry = profile.get_industry_display() if profile.industry else "your industry"
+    connected = list(
+        SocialAccount.objects.filter(user=user, is_active=True).values_list("platform", flat=True)
+    )
+    recent_count = Post.objects.filter(user=user, status=Post.Status.PUBLISHED).count()
+    top = (
+        PostMetric.objects.filter(post__user=user)
+        .order_by("-engagement_rate")
+        .select_related("post")
+        .first()
+    )
+    top_line = ""
+    if top and top.post:
+        top_line = f"Top post: {top.post.content_text[:80]}… ({top.engagement_rate:.1f}% engagement)"
+    return {
+        "company": company,
+        "industry": industry,
+        "platforms": connected,
+        "recent_posts": recent_count,
+        "top_performer": top_line,
+    }
+
+
 def get_autopilot_users():
     """Users who receive automatic weekly plan previews."""
     from django.contrib.auth import get_user_model
@@ -121,7 +165,7 @@ def plan_weekly_autopilot():
 
 
 @shared_task(name="content.plan_user_week", soft_time_limit=15 * 60, time_limit=18 * 60)
-def plan_user_week(user_id: str, week_start_iso: str):
+def plan_user_week(user_id: str, week_start_iso: str, plan_id=None):
     """
     Step 1 only: Strategist creates a weekly plan preview.
     Stops at PENDING_REVIEW — user must approve before posts are generated.
@@ -145,32 +189,56 @@ def plan_user_week(user_id: str, week_start_iso: str):
     if profile.emergency_pause:
         return {"error": "emergency_pause"}
 
-    plan, created = WeeklyContentPlan.objects.get_or_create(
-        user=user,
-        week_start=week_start,
-        defaults={"week_end": week_end, "status": WeeklyContentPlan.Status.PLANNING},
-    )
+    if plan_id:
+        try:
+            plan = WeeklyContentPlan.objects.get(pk=plan_id, user=user)
+        except WeeklyContentPlan.DoesNotExist:
+            return {"error": "plan_not_found"}
+    else:
+        plan, created = WeeklyContentPlan.objects.get_or_create(
+            user=user,
+            week_start=week_start,
+            defaults={"week_end": week_end, "status": WeeklyContentPlan.Status.PLANNING},
+        )
+        if not created and plan.status not in (
+            WeeklyContentPlan.Status.FAILED,
+            WeeklyContentPlan.Status.CANCELLED,
+        ):
+            return {"skipped": "plan_already_exists", "plan_id": str(plan.pk), "status": plan.status}
+        if not created:
+            plan.status = WeeklyContentPlan.Status.PLANNING
+            plan.error_message = ""
+            plan.planning_log = []
+            plan.week_end = week_end
+            plan.save(update_fields=["status", "error_message", "planning_log", "week_end"])
 
-    if not created and plan.status not in (
+    if plan.status not in (
+        WeeklyContentPlan.Status.PLANNING,
         WeeklyContentPlan.Status.FAILED,
-        WeeklyContentPlan.Status.CANCELLED,
     ):
         return {"skipped": "plan_already_exists", "plan_id": str(plan.pk), "status": plan.status}
 
-    if not created:
-        plan.status = WeeklyContentPlan.Status.PLANNING
-        plan.error_message = ""
-        plan.week_end = week_end
-        plan.save(update_fields=["status", "error_message", "week_end"])
+    plan.status = WeeklyContentPlan.Status.PLANNING
+    plan.error_message = ""
+    if not plan.planning_log:
+        plan.planning_log = []
+    plan.save(update_fields=["status", "error_message", "planning_log"])
+
+    log_plan_step(plan, "start", "Strategist started planning your week.")
 
     try:
-        connected = list(
-            SocialAccount.objects.filter(user=user, is_active=True)
-            .values_list("platform", flat=True)
+        ctx = get_planning_context(user, profile)
+        log_plan_step(
+            plan, "brand",
+            f"Reviewing {ctx['company']} ({ctx['industry']}).",
+            f"Brand voice and audience loaded.",
         )
+
+        connected = ctx["platforms"]
         if not connected:
             plan.status = WeeklyContentPlan.Status.FAILED
             plan.error_message = "No connected platforms"
+            log_plan_step(plan, "error", "No connected platforms found.", "Connect a platform in Settings.")
             plan.save(update_fields=["status", "error_message"])
             return {"error": "no_platforms"}
 
@@ -178,17 +246,45 @@ def plan_user_week(user_id: str, week_start_iso: str):
         if not platforms:
             plan.status = WeeklyContentPlan.Status.FAILED
             plan.error_message = "No autopilot target platforms match connected accounts"
+            log_plan_step(plan, "error", "No matching autopilot platforms.", plan.error_message)
             plan.save(update_fields=["status", "error_message"])
             return {"error": "no_target_platforms"}
 
+        log_plan_step(
+            plan, "platforms",
+            f"Targeting {', '.join(platforms)}.",
+            f"{len(connected)} account(s) connected.",
+        )
+
         posts_per_week = profile.autopilot_posts_per_week or 5
+        perf_detail = ctx["top_performer"] or f"{ctx['recent_posts']} published posts on record."
+        log_plan_step(
+            plan, "performance",
+            "Analyzing what worked for you recently.",
+            perf_detail,
+        )
+
+        log_plan_step(
+            plan, "strategist",
+            f"Designing {posts_per_week} topics for the week of {week_start.strftime('%b %d')}…",
+            "Mixing problem-awareness, proof, offers, and authority content.",
+        )
+
         strategy = _strategist_plan_week(
             user, profile, platforms, week_start, posts_per_week,
         )
         plan.strategy = strategy
         plan.strategy_reasoning = strategy.get("reasoning", "")
         plan.status = WeeklyContentPlan.Status.PENDING_REVIEW
-        plan.save(update_fields=["strategy", "strategy_reasoning", "status"])
+
+        topic_count = len(strategy.get("daily_topics", []))
+        theme = strategy.get("theme", "Weekly plan")
+        log_plan_step(
+            plan, "complete",
+            f"Plan ready: {topic_count} topic{'s' if topic_count != 1 else ''} — \"{theme}\".",
+            plan.strategy_reasoning[:280] if plan.strategy_reasoning else "",
+        )
+        plan.save(update_fields=["strategy", "strategy_reasoning", "status", "planning_log"])
 
         AgentAction.objects.create(
             user=user,
@@ -223,7 +319,8 @@ def plan_user_week(user_id: str, week_start_iso: str):
         logger.exception("Autopilot preview failed for user %s: %s", user.email, e)
         plan.status = WeeklyContentPlan.Status.FAILED
         plan.error_message = str(e)[:1000]
-        plan.save(update_fields=["status", "error_message"])
+        log_plan_step(plan, "error", "Planning failed.", plan.error_message)
+        plan.save(update_fields=["status", "error_message", "planning_log"])
         return {"error": str(e)}
 
 

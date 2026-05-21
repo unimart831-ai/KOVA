@@ -71,6 +71,21 @@
   </div>
   {% endif %}
 
+  {% include "content/_autopilot_planning_modal.html" %}
+
+  {% if planning_plan and not planning_plan_id %}
+  <div class="bg-kova-50 dark:bg-kova-950/40 border border-kova-300 dark:border-kova-700 rounded-xl p-4 flex items-center justify-between gap-3">
+    <div>
+      <p class="text-sm font-medium text-gray-900 dark:text-white">Strategist is planning the week of {{ planning_plan.week_start|date:"M d" }}…</p>
+      <p class="text-xs text-gray-500 mt-0.5">Usually ready in under a minute.</p>
+    </div>
+    <a href="{% url 'content:autopilot' %}?planning={{ planning_plan.pk }}"
+       class="shrink-0 px-4 py-2 text-sm font-medium rounded-lg bg-kova-600 text-white hover:bg-kova-700">
+      View progress
+    </a>
+  </div>
+  {% endif %}
+
   {% if pending_plan %}
   <div class="bg-kova-50 dark:bg-kova-950/40 border-2 border-kova-300 dark:border-kova-700 rounded-xl p-5 shadow-sm">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -101,7 +116,7 @@
   </div>
   {% endif %}
 
-  {% if current_plan and current_plan.status != 'pending_review' %}
+  {% if current_plan and current_plan.status != 'pending_review' and current_plan.status != 'planning' %}
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
     <div class="bg-gradient-to-r from-kova-600 to-purple-600 px-5 py-4">
       <div class="flex items-center justify-between">
@@ -192,6 +207,7 @@
             {% if plan.status == 'completed' %}bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400
             {% elif plan.status == 'active' %}bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
             {% elif plan.status == 'pending_review' %}bg-kova-50 text-kova-700 dark:bg-kova-900/30 dark:text-kova-400
+            {% elif plan.status == 'planning' %}bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400
             {% elif plan.status == 'failed' %}bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400
             {% elif plan.status == 'cancelled' %}bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400
             {% else %}bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400{% endif %}">

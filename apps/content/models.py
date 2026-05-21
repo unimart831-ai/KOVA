@@ -602,6 +602,10 @@ class WeeklyContentPlan(models.Model):
         ),
     )
     strategy_reasoning = models.TextField(blank=True, help_text="Why the Strategist chose this strategy")
+    planning_log = models.JSONField(
+        default=list, blank=True,
+        help_text="Live strategist steps shown during plan preview generation.",
+    )
 
     # Execution tracking
     seeds_created = models.PositiveIntegerField(default=0)

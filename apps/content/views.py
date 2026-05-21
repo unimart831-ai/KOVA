@@ -1553,9 +1553,11 @@ def autopilot_dashboard(request):
         AUTOPILOT_ACTIVE_STATUSES,
         _next_monday,
         get_plan_live_stats,
+        log_plan_step,
         plan_user_week,
     )
     from apps.content.models import WeeklyContentPlan
+    from django.urls import reverse
 
     profile = request.user.profile
     plans = list(
@@ -1568,6 +1570,10 @@ def autopilot_dashboard(request):
     )
     pending_plan = next(
         (p for p in plans if p.status == WeeklyContentPlan.Status.PENDING_REVIEW),
+        None,
+    )
+    planning_plan = next(
+        (p for p in plans if p.status == WeeklyContentPlan.Status.PLANNING),
         None,
     )
     plan_stats = {str(p.pk): get_plan_live_stats(p) for p in plans}
@@ -1586,6 +1592,8 @@ def autopilot_dashboard(request):
             ],
         ).first()
         if existing:
+            if existing.status == WeeklyContentPlan.Status.PLANNING:
+                return redirect(f"{reverse('content:autopilot')}?planning={existing.pk}")
             if existing.status == WeeklyContentPlan.Status.PENDING_REVIEW:
                 messages.info(
                     request,
@@ -1598,12 +1606,18 @@ def autopilot_dashboard(request):
                 )
             return redirect("content:autopilot_detail", plan_id=existing.pk)
 
-        plan_user_week.delay(str(request.user.pk), week_start.isoformat())
-        messages.success(
-            request,
-            f"Planning the week of {week_start.strftime('%b %d')} — review every topic here before posts are generated.",
+        from datetime import timedelta
+        week_end = week_start + timedelta(days=6)
+        plan = WeeklyContentPlan.objects.create(
+            user=request.user,
+            week_start=week_start,
+            week_end=week_end,
+            status=WeeklyContentPlan.Status.PLANNING,
+            planning_log=[],
         )
-        return redirect("content:autopilot")
+        log_plan_step(plan, "queued", "Queued your weekly strategy preview.", f"Week of {week_start.strftime('%b %d, %Y')}")
+        plan_user_week.delay(str(request.user.pk), week_start.isoformat(), str(plan.pk))
+        return redirect(f"{reverse('content:autopilot')}?planning={plan.pk}")
 
     return render(request, "content/autopilot.html", {
         "plans": plans,
@@ -1611,9 +1625,43 @@ def autopilot_dashboard(request):
         "current_plan": current_plan,
         "current_plan_stats": current_plan_stats,
         "pending_plan": pending_plan,
+        "planning_plan": planning_plan,
+        "planning_plan_id": request.GET.get("planning", "") or (str(planning_plan.pk) if planning_plan else ""),
         "autopilot_enabled": profile.autopilot_enabled,
         "auto_approve_posts": profile.auto_approve_posts,
         "autopilot_posts_per_week": profile.autopilot_posts_per_week or 5,
+    })
+
+
+@login_required
+def autopilot_plan_status(request, plan_id):
+    """JSON status for live planning modal (polled from the dashboard)."""
+    from apps.content.models import WeeklyContentPlan
+    from django.urls import reverse
+
+    plan = get_object_or_404(WeeklyContentPlan, pk=plan_id, user=request.user)
+    strategy = plan.strategy or {}
+    topics = strategy.get("daily_topics", [])
+    terminal = plan.status in (
+        WeeklyContentPlan.Status.PENDING_REVIEW,
+        WeeklyContentPlan.Status.FAILED,
+        WeeklyContentPlan.Status.CANCELLED,
+    )
+    return JsonResponse({
+        "plan_id": str(plan.pk),
+        "status": plan.status,
+        "status_label": plan.get_status_display(),
+        "week_start": plan.week_start.isoformat(),
+        "planning_log": plan.planning_log or [],
+        "theme": strategy.get("theme", ""),
+        "reasoning": plan.strategy_reasoning or strategy.get("reasoning", ""),
+        "content_mix": strategy.get("content_mix", {}),
+        "topics": topics,
+        "topics_count": len(topics),
+        "error_message": plan.error_message,
+        "terminal": terminal,
+        "detail_url": reverse("content:autopilot_detail", kwargs={"plan_id": plan.pk}),
+        "approve_url": reverse("content:autopilot_approve", kwargs={"plan_id": plan.pk}),
     })
 
 
