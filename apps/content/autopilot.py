@@ -34,6 +34,24 @@ PLANNING_RETRY_SECONDS = 90
 PLANNING_FAIL_SECONDS = 300
 
 
+def _plan_activity_at(plan):
+    """When planning last changed — used for stale detection."""
+    from django.utils.dateparse import parse_datetime
+
+    latest = plan.created_at
+    updated = getattr(plan, "updated_at", None)
+    if updated and updated > latest:
+        latest = updated
+    for entry in plan.planning_log or []:
+        raw = entry.get("at")
+        if not raw:
+            continue
+        parsed = parse_datetime(raw)
+        if parsed and parsed > latest:
+            latest = parsed
+    return latest
+
+
 def _planning_worker_started(plan) -> bool:
     """True once the strategist task has actually begun (not just web-queued)."""
     steps = {entry.get("step") for entry in (plan.planning_log or [])}
@@ -51,7 +69,7 @@ def recover_stale_planning(plan) -> bool:
     if plan.status != WeeklyContentPlan.Status.PLANNING:
         return False
 
-    age_seconds = (timezone.now() - plan.updated_at).total_seconds()
+    age_seconds = (timezone.now() - _plan_activity_at(plan)).total_seconds()
     if _planning_worker_started(plan):
         if age_seconds >= PLANNING_FAIL_SECONDS:
             plan.status = WeeklyContentPlan.Status.FAILED
@@ -104,7 +122,10 @@ def log_plan_step(plan, step: str, message: str, detail: str = ""):
     log = list(plan.planning_log or [])
     log.append(entry)
     plan.planning_log = log
-    plan.save(update_fields=["planning_log"])
+    fields = ["planning_log"]
+    if hasattr(plan, "updated_at"):
+        fields.append("updated_at")
+    plan.save(update_fields=fields)
 
 
 def get_planning_context(user, profile):
@@ -286,7 +307,7 @@ def plan_user_week(user_id: str, week_start_iso: str, plan_id=None):
 
     # Another worker/thread may already be running the strategist steps.
     if _planning_worker_started(plan):
-        age = (timezone.now() - plan.updated_at).total_seconds()
+        age = (timezone.now() - _plan_activity_at(plan)).total_seconds()
         if age < PLANNING_FAIL_SECONDS:
             return {"skipped": "already_running", "plan_id": str(plan.pk)}
 
