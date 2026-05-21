@@ -260,8 +260,10 @@ if SENTRY_DSN:
         ),
     )
 else:
-    raise ImproperlyConfigured(
-        "SENTRY_DSN must be set in production. "
-        "Without it, errors are silently lost. Get a DSN from https://sentry.io"
+    import logging as _logging
+    _logging.getLogger("django").warning(
+        "SENTRY_DSN is not set — error tracking is disabled. "
+        "Set SENTRY_DSN in environment variables for production error monitoring. "
+        "Get a DSN from https://sentry.io"
     )
 
