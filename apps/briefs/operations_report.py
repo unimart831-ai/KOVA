@@ -261,7 +261,7 @@ def build_operations_report(user, hours=24):
 
         voice_done = VoiceBrief.objects.filter(
             user=user,
-            updated_at__gte=cutoff,
+            completed_at__gte=cutoff,
             status=VoiceBrief.Status.COMPLETED,
         ).count()
         if voice_done:
@@ -426,7 +426,7 @@ def enrich_overnight_work(user, base=None):
 
         base["voice_briefs"] = VoiceBrief.objects.filter(
             user=user,
-            updated_at__gte=cutoff,
+            completed_at__gte=cutoff,
             status=VoiceBrief.Status.COMPLETED,
         ).count()
     except Exception:
@@ -571,7 +571,7 @@ def build_platform_operations_report(hours=24):
         categories["content"]["count"] += reels
 
     voice_done = VoiceBrief.objects.filter(
-        updated_at__gte=cutoff,
+        completed_at__gte=cutoff,
         status=VoiceBrief.Status.COMPLETED,
     ).count()
     if voice_done:
