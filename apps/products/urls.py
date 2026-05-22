@@ -16,6 +16,7 @@ urlpatterns = [
     path("categories/<uuid:category_id>/edit/", views.category_edit, name="category_edit"),
     path("categories/<uuid:category_id>/delete/", views.category_delete, name="category_delete"),
     path("<uuid:product_id>/", views.product_detail, name="detail"),
+    path("<uuid:product_id>/snap-status/", views.snap_pipeline_status, name="snap_status"),
     path("<uuid:product_id>/edit/", views.product_edit, name="edit"),
     path("<uuid:product_id>/delete/", views.product_delete, name="delete"),
     path("<uuid:product_id>/stock/", views.product_update_stock, name="update_stock"),
@@ -27,7 +28,10 @@ urlpatterns = [
     # Batch Snap
     path("snap/batch/", views.snap_batch, name="snap_batch"),
     path("snap/batch/launch/", views.snap_batch_launch, name="snap_batch_launch"),
+    path("snap/batch/status/", views.batch_snap_pipeline_status, name="batch_snap_status"),
     # Receipt to Restock
     path("restock/", views.restock_scan, name="restock"),
+    path("restock/<uuid:scan_id>/status/", views.restock_pipeline_status, name="restock_status"),
+    path("restock/<uuid:scan_id>/retry/", views.restock_retry, name="restock_retry"),
     path("restock/<uuid:scan_id>/add-item/", views.restock_add_unmatched, name="restock_add_item"),
 ]

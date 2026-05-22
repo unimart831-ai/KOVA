@@ -13,6 +13,7 @@
 <div class="space-y-6 max-w-3xl">
 
   {% include "products/_products_subnav.html" %}
+  {% include "products/_snap_pipeline_modal.html" %}
 
   {# Product info card #}
   <div class="card p-6">
@@ -125,7 +126,7 @@
 
   {# Content created for this product #}
   {% if recent_posts %}
-  <div class="card p-5">
+  <div id="product-posts-section" class="card p-5">
     <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Content for This Product</h3>
     <ul class="space-y-2">
       {% for post in recent_posts %}

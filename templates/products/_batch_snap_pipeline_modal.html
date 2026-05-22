@@ -1,0 +1,182 @@
+{# Live Batch Snap pipeline modal — opens when ?batch=id1,id2,... #}
+{% if batch_product_ids %}
+<div x-data="batchSnapPipelineModal('{{ batch_product_ids|escapejs }}')"
+     x-init="init()"
+     x-cloak>
+  <div x-show="open"
+       class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="batch-snap-pipeline-title">
+    <div class="absolute inset-0 bg-gray-950/70 backdrop-blur-sm" @click="close()"></div>
+
+    <div class="relative w-full max-w-xl max-h-[90vh] overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-2xl flex flex-col">
+      <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-orange-600 to-purple-600 dark:from-orange-700 dark:to-purple-700">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Batch Snap</p>
+            <h2 id="batch-snap-pipeline-title" class="text-lg font-bold text-white mt-0.5" x-text="headerTitle"></h2>
+            <p class="text-xs text-white/80 mt-1" x-text="headerSubtitle"></p>
+          </div>
+          <button type="button" @click="close()" class="text-white/70 hover:text-white p-1 shrink-0" aria-label="Close">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-5 space-y-4">
+        <template x-if="processing">
+          <div>
+            <div class="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-orange-500 to-purple-500 rounded-full transition-all duration-700"
+                   :style="'width:' + progressPercent + '%'"></div>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-1.5 text-center">
+              <span x-text="completedCount"></span>/<span x-text="totalCount"></span> products processed
+            </p>
+          </div>
+        </template>
+
+        <div>
+          <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Overall progress</h3>
+          <ul class="space-y-2">
+            <template x-for="step in steps" :key="step.id">
+              <li class="flex gap-3 text-sm rounded-lg p-2.5 border border-gray-100 dark:border-gray-800">
+                <span class="flex-shrink-0 mt-0.5">
+                  <template x-if="step.status === 'completed'">
+                    <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                  </template>
+                  <template x-if="step.status === 'running'">
+                    <span class="block w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></span>
+                  </template>
+                  <template x-if="step.status === 'pending'">
+                    <span class="block w-4 h-4 rounded-full border-2 border-gray-300"></span>
+                  </template>
+                </span>
+                <div>
+                  <p class="font-medium text-gray-900 dark:text-white" x-text="step.message"></p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5" x-text="step.detail"></p>
+                </div>
+              </li>
+            </template>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Each product</h3>
+          <ul class="space-y-2 max-h-56 overflow-y-auto">
+            <template x-for="item in items" :key="item.product_id">
+              <li class="flex gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
+                <div class="w-12 h-12 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0">
+                  <img x-show="item.image_url" :src="item.image_url" alt="" class="w-full h-full object-cover">
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate" x-text="item.product_name"></p>
+                    <span x-show="item.status === 'processing'" class="text-[9px] text-amber-600 animate-pulse">Working…</span>
+                    <span x-show="item.status === 'completed'" class="text-[9px] text-emerald-600">Ready</span>
+                    <span x-show="item.status === 'failed'" class="text-[9px] text-red-600">Failed</span>
+                  </div>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2" x-text="item.current_detail || item.current_step"></p>
+                  <p x-show="item.post_count" class="text-[10px] text-purple-600 dark:text-purple-400 mt-1" x-text="item.post_count + ' post(s)'"></p>
+                </div>
+              </li>
+            </template>
+          </ul>
+        </div>
+
+        <template x-if="status === 'failed'">
+          <div class="bg-red-50 dark:bg-red-950/30 border border-red-200 rounded-xl p-4">
+            <p class="text-sm font-medium text-red-800 dark:text-red-200" x-text="errorMessage"></p>
+          </div>
+        </template>
+      </div>
+
+      <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row gap-2">
+        <template x-if="status === 'completed'">
+          <button type="button" @click="refreshPage()" class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg bg-purple-600 text-white hover:bg-purple-700">View catalog</button>
+          <a :href="studioUrl" class="px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-center">Open Studio</a>
+          <button type="button" @click="close()" class="px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600">Close</button>
+        </template>
+        <template x-if="processing">
+          <button type="button" @click="close()" class="w-full px-4 py-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+            Run in background — products appear in your catalog when ready
+          </button>
+        </template>
+        <template x-if="status === 'failed'">
+          <button type="button" @click="close()" class="w-full px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600">Close</button>
+        </template>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function batchSnapPipelineModal(productIdsCsv) {
+  return {
+    open: true,
+    productIds: productIdsCsv,
+    status: 'processing',
+    steps: [],
+    items: [],
+    totalCount: 0,
+    completedCount: 0,
+    errorMessage: '',
+    progressPercent: 5,
+    studioUrl: '/content/studio/',
+    pollTimer: null,
+    get processing() { return this.status === 'processing'; },
+    get headerTitle() {
+      if (this.status === 'completed') return 'Batch campaigns ready';
+      if (this.status === 'failed') return 'Some products failed';
+      return 'Processing your batch';
+    },
+    get headerSubtitle() {
+      if (this.status === 'completed') return 'Each product got its own AI analysis and platform posts.';
+      if (this.status === 'failed') return 'Check the catalog for products that completed.';
+      return 'AI identifies each photo, names products, and writes content in parallel.';
+    },
+    init() {
+      this.poll();
+      this.pollTimer = setInterval(() => this.poll(), 2000);
+    },
+    close() {
+      this.open = false;
+      if (this.pollTimer) clearInterval(this.pollTimer);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('batch');
+      window.history.replaceState({}, '', url);
+    },
+    refreshPage() {
+      this.close();
+      window.location.reload();
+    },
+    async poll() {
+      if (!this.productIds) return;
+      try {
+        const resp = await fetch(`/products/snap/batch/status/?ids=${encodeURIComponent(this.productIds)}`, {
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin',
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        this.status = data.status;
+        this.steps = data.steps || [];
+        this.items = data.items || [];
+        this.totalCount = data.total_count || 0;
+        this.completedCount = data.completed_count || 0;
+        this.errorMessage = data.error_message || '';
+        this.progressPercent = data.progress_percent || 10;
+        this.studioUrl = data.studio_url || '/content/studio/';
+        if (data.terminal && this.pollTimer) {
+          clearInterval(this.pollTimer);
+          this.pollTimer = null;
+        }
+      } catch (e) {
+        console.warn('Batch snap pipeline poll failed', e);
+      }
+    },
+  };
+}
+</script>
+{% endif %}

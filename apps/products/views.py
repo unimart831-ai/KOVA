@@ -6,7 +6,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from apps.billing.models import get_plan_limits
@@ -68,6 +70,7 @@ def product_list(request):
         "current_category": cat or "",
         "current_q": q,
         "plan_ctx": _plan_ctx(request),
+        "batch_product_ids": request.GET.get("batch", ""),
     })
 
 
@@ -114,7 +117,47 @@ def product_detail(request, product_id):
         "alerts": alerts,
         "recent_posts": recent_posts,
         "plan_ctx": _plan_ctx(request),
+        "snap_building": request.GET.get("snap") == "1",
     })
+
+
+@login_required
+def snap_pipeline_status(request, product_id):
+    """JSON status for live Snap to Sell pipeline modal."""
+    product = get_object_or_404(Product, pk=product_id, user=request.user)
+    from apps.products.snap_pipeline import build_snap_pipeline_status
+
+    data = build_snap_pipeline_status(product, request.user)
+    data["queue_url"] = reverse("content:queue")
+    data["studio_url"] = reverse("content:studio")
+    return JsonResponse(data)
+
+
+@login_required
+def restock_pipeline_status(request, scan_id):
+    """JSON status for live Receipt to Restock pipeline modal."""
+    from apps.products.models import RestockScan
+    from apps.products.restock_pipeline import build_restock_pipeline_status
+
+    scan = get_object_or_404(RestockScan, pk=scan_id, user=request.user)
+    data = build_restock_pipeline_status(scan)
+    data["studio_url"] = reverse("content:studio")
+    data["queue_url"] = reverse("content:queue")
+    return JsonResponse(data)
+
+
+@login_required
+def batch_snap_pipeline_status(request):
+    """JSON status for live Batch Snap pipeline modal."""
+    from apps.products.batch_snap_pipeline import build_batch_snap_pipeline_status
+
+    raw = request.GET.get("ids", "")
+    product_ids = [p.strip() for p in raw.split(",") if p.strip()]
+    data = build_batch_snap_pipeline_status(product_ids, request.user)
+    data["studio_url"] = reverse("content:studio")
+    data["queue_url"] = reverse("content:queue")
+    data["catalog_url"] = reverse("products:list")
+    return JsonResponse(data)
 
 
 @login_required
@@ -575,9 +618,10 @@ def snap_launch(request):
     messages.success(
         request,
         f"📸 '{product.name}' added with {photo_count} photo{'s' if photo_count != 1 else ''}! "
-        f"AI is analyzing and creating content — check your Content Studio in a moment."
+        f"AI is analyzing and creating content — watch the progress popup."
     )
-    return redirect("products:detail", product_id=product.pk)
+    url = reverse("products:detail", kwargs={"product_id": product.pk})
+    return redirect(f"{url}?snap=1")
 
 
 # ── Batch Snap ───────────────────────────────────────────────────────
@@ -676,10 +720,11 @@ def snap_batch_launch(request):
     messages.success(
         request,
         f"⚡ {count} product{'s' if count != 1 else ''} created! "
-        f"AI is analyzing each photo and generating campaigns — "
-        f"check your Content Studio shortly."
+        f"Watch the progress popup as AI analyzes each photo."
     )
-    return redirect("products:list")
+    ids_param = ",".join(product_ids)
+    url = reverse("products:list")
+    return redirect(f"{url}?batch={ids_param}")
 
 
 # ─── RECEIPT TO RESTOCK ─────────────────────────────────────────────────────
@@ -690,6 +735,7 @@ def restock_scan(request):
     """Upload a receipt photo to auto-restock products."""
     from apps.products.models import RestockScan
     from apps.products.tasks import process_restock_scan
+    from apps.utils import fire_task
 
     if request.method == "POST":
         image = request.FILES.get("receipt")
@@ -705,10 +751,10 @@ def restock_scan(request):
         fire_task(process_restock_scan, str(scan.pk))
         messages.success(
             request,
-            "Receipt uploaded! AI is extracting items and updating your stock — "
-            "check back in a moment."
+            "Receipt uploaded! Watch the progress popup as AI extracts items and updates stock."
         )
-        return redirect("products:restock")
+        url = reverse("products:restock")
+        return redirect(f"{url}?restock={scan.pk}")
 
     scans = (
         RestockScan.objects
@@ -719,7 +765,30 @@ def restock_scan(request):
     return render(request, "products/restock_scan.html", {
         "scans": scans,
         "plan_ctx": _plan_ctx(request),
+        "restock_scan_id": request.GET.get("restock", ""),
     })
+
+
+@login_required
+@require_POST
+def restock_retry(request, scan_id):
+    """Re-queue a stuck or failed restock scan."""
+    from apps.products.models import RestockScan
+    from apps.products.tasks import process_restock_scan
+    from apps.utils import fire_task
+
+    scan = get_object_or_404(RestockScan, pk=scan_id, user=request.user)
+    if scan.status not in (RestockScan.Status.UPLOADED, RestockScan.Status.FAILED):
+        messages.info(request, "This scan is already processing or completed.")
+        return redirect("products:restock")
+
+    scan.status = RestockScan.Status.UPLOADED
+    scan.error_message = ""
+    scan.save(update_fields=["status", "error_message"])
+    fire_task(process_restock_scan, str(scan.pk))
+    messages.success(request, "Scan re-queued — watch the progress popup.")
+    url = reverse("products:restock")
+    return redirect(f"{url}?restock={scan.pk}")
 
 
 @login_required

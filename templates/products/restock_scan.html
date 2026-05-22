@@ -9,6 +9,7 @@
 <div class="max-w-4xl mx-auto space-y-6">
 
   {% include "products/_products_subnav.html" %}
+  {% include "products/_restock_pipeline_modal.html" %}
 
   {# Upload form #}
   <div class="card border-l-4 border-orange-500">
@@ -47,6 +48,8 @@
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">✓ Completed</span>
               {% elif scan.status == 'failed' %}
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">✗ Failed</span>
+              {% elif scan.status == 'uploaded' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">Queued · waiting to start</span>
               {% else %}
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">Processing · {{ scan.get_status_display }}</span>
               {% endif %}
@@ -65,10 +68,18 @@
             </div>
             {% endif %}
 
-            <div class="flex items-center gap-3 mt-2 text-xs text-gray-400 dark:text-gray-500">
+            <div class="flex items-center gap-3 mt-2 text-xs text-gray-400 dark:text-gray-500 flex-wrap">
               <span>{{ scan.created_at|timesince }} ago</span>
               {% if scan.receipt_date %}
                 <span>Receipt: {{ scan.receipt_date|date:"M d, Y" }}</span>
+              {% endif %}
+              {% if scan.status == 'uploaded' or scan.status == 'failed' %}
+              <form method="post" action="{% url 'products:restock_retry' scan_id=scan.pk %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="text-orange-600 dark:text-orange-400 hover:underline font-medium">
+                  {% if scan.status == 'failed' %}Retry scan{% else %}Start scan{% endif %}
+                </button>
+              </form>
               {% endif %}
             </div>
           </div>

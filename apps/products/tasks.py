@@ -7,6 +7,33 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
+def _vision_image_url(image_field):
+    """Return a public URL or base64 data URI suitable for vision LLM calls."""
+    import base64
+
+    from django.core.files.storage import default_storage
+
+    url = image_field.url
+    if url.startswith("http"):
+        return url
+
+    ext = image_field.name.rsplit(".", 1)[-1].lower() if image_field.name else "jpg"
+    mime = {
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "png": "image/png",
+        "webp": "image/webp",
+        "gif": "image/gif",
+    }.get(ext, "image/jpeg")
+    try:
+        with open(image_field.path, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode("utf-8")
+    except Exception:
+        with default_storage.open(image_field.name, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode("utf-8")
+    return f"data:{mime};base64,{encoded}"
+
+
 @shared_task(name="check-stock-alerts")
 def check_stock_alerts():
     """
@@ -1168,8 +1195,7 @@ def process_restock_scan(scan_id: str):
         scan.status = RestockScan.Status.ANALYZING
         scan.save(update_fields=["status"])
 
-        from apps.agents.llm_router import call_llm_vision
-        import json
+        from apps.agents.llm import analyze_image, parse_llm_json
 
         vision_prompt = (
             "Analyze this receipt/invoice/delivery note photo. Extract all items listed.\n\n"
@@ -1185,17 +1211,15 @@ def process_restock_scan(scan_id: str):
             "Return ONLY valid JSON. If you can't read something, set it to null."
         )
 
-        vision_response = call_llm_vision(
+        image_url = _vision_image_url(scan.image)
+        vision_resp = analyze_image(
+            image_url=image_url,
             prompt=vision_prompt,
-            image_path=scan.image.path,
-            task="restock_scan",
-            user=user,
+            system="You are a receipt OCR expert. Always respond with valid JSON only.",
+            json_mode=True,
+            max_tokens=1200,
         )
-
-        try:
-            extraction = json.loads(vision_response["text"])
-        except (json.JSONDecodeError, KeyError):
-            raise ValueError(f"Vision AI returned invalid JSON: {vision_response.get('text', '')[:200]}")
+        extraction = parse_llm_json(vision_resp.content)
 
         raw_items = extraction.get("items", [])
         scan.supplier_name = (extraction.get("supplier_name") or "")[:200]
@@ -1331,15 +1355,21 @@ def process_restock_scan(scan_id: str):
             user=user,
             agent_type="analyst",
             action_type="receipt_to_restock",
-            input_data={"items_found": len(extracted_items)},
+            description=f"Receipt to Restock: {len(extracted_items)} items, {scan.products_updated} updated",
+            status=AgentAction.ActionStatus.COMPLETED,
+            input_data={"scan_id": str(scan.pk), "items_found": len(extracted_items)},
             output_data={
                 "matched": scan.products_matched,
                 "updated": scan.products_updated,
                 "not_matched": not_matched,
                 "restocked": restocked_names,
             },
-            tokens_used=vision_response.get("tokens_used", 0),
-            model_used=vision_response.get("model", ""),
+            tokens_used=vision_resp.total_tokens,
+            input_tokens=vision_resp.input_tokens,
+            output_tokens=vision_resp.output_tokens,
+            model_used=vision_resp.model or "",
+            duration_ms=vision_resp.duration_ms,
+            completed_at=timezone.now(),
         )
 
         logger.info(
