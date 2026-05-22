@@ -470,6 +470,9 @@ def _make_strategic_decisions(user, inputs):
         "- Prioritize FEATURED products — they should get 2-3x more content mentions.\n"
         "- For LOW STOCK items, create urgency/scarcity angles ('selling fast', 'limited').\n"
         "- If a product is NEVER PROMOTED but in stock, flag it as a content opportunity.\n"
+        "- ROTATING CATALOG: When the business has uploaded products, at least 1 in every "
+        "3 content_plan items should promote a SPECIFIC catalog offering (set product_name).\n"
+        "- Use source \"catalog\" when the seed directly showcases a product/service from the catalog.\n"
         "- If demand signals show audience interest, create content to match.\n"
         "- Flag stock-content mismatches as CRITICAL alerts (scheduled posts for OOS products).\n\n"
         "PILLAR ROTATION (Adapt Agent v2):\n"
@@ -487,7 +490,8 @@ def _make_strategic_decisions(user, inputs):
         '"content_plan": list of content seed objects to create, each with:\n'
         '  - "idea": the content seed idea (2-3 sentences, specific and actionable)\n'
         '  - "reasoning": why this idea right now (1 sentence)\n'
-        '  - "source": "trend" | "performance" | "engagement" | "gap" | "seasonal" | "growth"\n'
+        '  - "source": "trend" | "performance" | "engagement" | "gap" | "seasonal" | "growth" | "catalog"\n'
+        '  - "product_name": optional — exact catalog name when promoting a specific offering\n'
         '  - "priority": "high" | "medium"\n'
         '  - "platforms": list of target platforms\n\n'
         '"recommendations": list of 2-4 strategic recommendations, each with:\n'
@@ -640,8 +644,16 @@ def _execute_proactive_seeds(user, decisions, inputs):
     These go through the normal pipeline: seed → Create Agent → posts.
 
     Seeds are marked with source="strategist" so we can track autonomous
-    vs. human-initiated content.
+    vs. human-initiated content. Links catalog products when specified or sampled.
     """
+    import random
+
+    from apps.products.utils import (
+        enrich_idea_with_product,
+        resolve_product_by_name,
+        sample_products_for_content,
+    )
+
     content_plan = decisions.get("content_plan", [])
     if not content_plan:
         return 0
@@ -683,9 +695,20 @@ def _execute_proactive_seeds(user, decisions, inputs):
             p for p in platforms if p in inputs["platforms"]
         ]
 
+        product = resolve_product_by_name(user, item.get("product_name", ""))
+        if not product and item.get("source") == "catalog":
+            sampled = sample_products_for_content(user, count=1)
+            product = sampled[0] if sampled else None
+        elif not product and random.random() < 0.35:
+            sampled = sample_products_for_content(user, count=1)
+            product = sampled[0] if sampled else None
+
+        idea = enrich_idea_with_product(idea, product)
+
         # Create the seed
         seed = ContentSeed.objects.create(
             user=user,
+            product=product,
             idea=idea,
             notes=f"[Strategist Agent] {item.get('reasoning', '')}\nSource: {item.get('source', 'trend')}",
             target_platforms=valid_platforms if valid_platforms else [],

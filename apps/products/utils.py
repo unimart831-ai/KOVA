@@ -154,10 +154,164 @@ def get_product_context(user) -> str:
     parts.append("4. For FEATURED items: prioritize in content. Mention naturally, not forced.")
     parts.append("5. Reference REAL prices and names from the catalog — don't invent them.")
     parts.append("6. If a seed mentions a specific offering, match the right tone for its type.")
+    parts.append(
+        "7. ROTATING CATALOG: Uploaded products should not sit unused — when an idea "
+        "is general, naturally feature a real in-stock offering ~1 in 3 times. Prefer "
+        "featured items and offerings not mentioned recently."
+    )
 
     result = "\n".join(parts)
     cache.set(cache_key, result, 300)
     return result
+
+
+# ─── Catalog sampling (rotate products into content) ─────────────────────────
+
+CATALOG_SAMPLE_DAILY_RATE = 30  # ~30% of users get a sample seed each daily run
+
+
+def user_should_receive_catalog_sample(user, run_date=None) -> bool:
+    """Deterministic daily lottery — not every user every day."""
+    import hashlib
+
+    run_date = run_date or timezone.now().date()
+    key = f"{user.pk}:{run_date.isoformat()}:catalog_sample"
+    bucket = int(hashlib.md5(key.encode()).hexdigest(), 16) % 100
+    return bucket < CATALOG_SAMPLE_DAILY_RATE
+
+
+def resolve_product_by_name(user, name: str):
+    """Match a catalog product by exact or close name."""
+    from apps.products.models import Product
+
+    name = (name or "").strip()
+    if not name:
+        return None
+
+    exact = Product.objects.promotable(user).filter(is_active=True, name__iexact=name).first()
+    if exact:
+        return exact
+
+    name_lower = name.lower()
+    for product in Product.objects.promotable(user).filter(is_active=True):
+        pn = product.name.lower()
+        if name_lower in pn or pn in name_lower:
+            return product
+    return None
+
+
+def sample_products_for_content(user, count=1, min_days_since_promotion=3):
+    """
+    Weighted random sample of promotable products not recently featured.
+    Favors featured, never-promoted, and low-stock items.
+    """
+    import random
+
+    from apps.content.models import ContentSeed, Post
+    from apps.products.models import Product
+
+    promotable = list(
+        Product.objects.promotable(user).filter(is_active=True).order_by("name")
+    )
+    if not promotable:
+        return []
+
+    cutoff = timezone.now() - timedelta(days=min_days_since_promotion)
+    pool = []
+
+    for product in promotable:
+        recently_used = (
+            ContentSeed.objects.filter(
+                user=user, product=product, created_at__gte=cutoff,
+            ).exists()
+            or Post.objects.filter(
+                user=user, product=product, created_at__gte=cutoff,
+            ).exists()
+        )
+        if recently_used:
+            continue
+
+        weight = 1.0
+        if product.is_featured:
+            weight += 2.0
+        post_count = Post.objects.filter(user=user, product=product).count()
+        if post_count == 0:
+            weight += 2.5
+        elif post_count < 3:
+            weight += 1.0
+        if product.stock_status == Product.StockStatus.LOW_STOCK:
+            weight += 1.5
+
+        pool.append((product, weight))
+
+    if not pool:
+        return []
+
+    selected = []
+    count = min(count, len(pool))
+    work = list(pool)
+
+    for _ in range(count):
+        total = sum(w for _, w in work)
+        pick = random.uniform(0, total)
+        upto = 0.0
+        for idx, (product, weight) in enumerate(work):
+            upto += weight
+            if pick <= upto:
+                selected.append(product)
+                work.pop(idx)
+                break
+
+    return selected
+
+
+def get_catalog_sampling_hint() -> str:
+    """Prompt snippet for Create Agent when seed has no linked product."""
+    return (
+        "\n### CATALOG ROTATION\n"
+        "This seed is not tied to one product. When it fits naturally, weave in "
+        "**one real offering** from the catalog (prefer featured or under-used items). "
+        "Skip product mentions when the topic is purely educational.\n"
+    )
+
+
+def maybe_attach_sampled_product_to_autonomous_seed(seed) -> bool:
+    """
+    Attach a sampled catalog product to autonomous seeds that lack one.
+    Used as a safety net for Strategist / Autopilot paths.
+    """
+    import random
+
+    if seed.product_id:
+        return False
+
+    notes = seed.notes or ""
+    if notes.startswith(("Auto-promoted:", "Catalog sample:")):
+        return False
+
+    autonomous = notes.startswith(("[Strategist Agent]", "[Autopilot]"))
+    if not autonomous:
+        return False
+
+    if random.random() > 0.45:
+        return False
+
+    sampled = sample_products_for_content(seed.user, count=1)
+    if not sampled:
+        return False
+
+    seed.product = sampled[0]
+    seed.save(update_fields=["product"])
+    return True
+
+
+def enrich_idea_with_product(idea: str, product) -> str:
+    """Ensure the seed idea names the product when one is linked."""
+    if not product or not idea:
+        return idea
+    if product.name.lower() in idea.lower():
+        return idea
+    return f"Feature {product.name}. {idea}"
 
 
 # ─── Demand Signals (what the audience is asking about) ──────────────────────

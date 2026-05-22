@@ -144,6 +144,7 @@ def _get_kova_score_delta(user, new_score):
 def _gather_overnight_work(user):
     """Summarize what agents did overnight (last 12 hours)."""
     from apps.agents.models import AgentAction
+    from apps.briefs.operations_report import enrich_overnight_work
     from apps.content.models import Post, ContentSeed
 
     cutoff = timezone.now() - timedelta(hours=12)
@@ -195,7 +196,7 @@ def _gather_overnight_work(user):
 
     total_actions = actions.filter(status="completed").count()
 
-    return {
+    return enrich_overnight_work(user, {
         "posts_created": posts_created,
         "posts_drafted": posts_drafted,
         "posts_published": posts_published,
@@ -204,7 +205,7 @@ def _gather_overnight_work(user):
         "engagements_handled": engagements_handled,
         "total_actions": total_actions,
         "active_agents": list(agent_counts.keys()),
-    }
+    })
 
 
 def _send_brief_email(user, brief):
@@ -542,6 +543,14 @@ def _gather_brief_data(user):
         logger.warning("Action summary for brief failed: %s", e)
         action_summary = {}
 
+    try:
+        from apps.briefs.operations_report import build_operations_report
+
+        operations_report = build_operations_report(user, hours=24)
+    except Exception as e:
+        logger.warning("Operations report for brief failed: %s", e)
+        operations_report = {"has_activity": False, "categories": [], "recent_tasks": []}
+
     # Posts created this week
     week_stats = Post.objects.filter(
         user=user,
@@ -662,6 +671,7 @@ def _gather_brief_data(user):
         "revenue_attribution": revenue_data,
         "adapt_summary": adapt_summary,
         "action_summary": action_summary,
+        "operations_report": operations_report,
         "decisions_needed": decisions_needed,
         "holiday_context": holiday_context,
     }
@@ -674,6 +684,7 @@ def _gather_brief_data(user):
         or week.get("total_created", 0) > 0
         or engagement.get("total_interactions", 0) > 0
         or pending_posts > 0
+        or operations_report.get("has_activity")
     )
     data["has_meaningful_data"] = has_meaningful_data
 
@@ -804,6 +815,10 @@ def _generate_brief_with_llm(user, brief_data):
         'Specific actions, not "agents were active."\n'
         '- "competitor_update": 1-2 sentences if competitor data exists, empty string otherwise.\n'
         '- "product_update": 1-2 sentences if product catalog data exists, empty string otherwise.\n'
+        '- "operations_update": 1-3 sentences summarizing automated tasks from '
+        '`operations_report` — Snap to Sell, Batch Snap, carousels, motion reels, '
+        'Receipt to Restock, voice briefs, content drafts, engagement replies. '
+        'Name counts and specifics. Empty string if nothing ran.\n'
         '- "product_alerts": list of 0-3 product alerts needing attention, each with '
         '{item, severity: "critical"|"warning"|"info", action}. '
         'E.g. {item: "Scheduled posts promote an out-of-stock product", severity: "critical", '
@@ -990,6 +1005,7 @@ def generate_daily_brief(user, *, user_date=None):
                 "pipeline_summary": llm_result.get("pipeline_summary", ""),
                 "competitor_update": llm_result.get("competitor_update", ""),
                 "product_update": llm_result.get("product_update", ""),
+                "operations_update": llm_result.get("operations_update", ""),
                 "product_alerts": llm_result.get("product_alerts", []),
                 "revenue_update": llm_result.get("revenue_update", ""),
                 "adapt_update": llm_result.get("adapt_update", ""),
@@ -1002,6 +1018,7 @@ def generate_daily_brief(user, *, user_date=None):
                 "data": brief_data.get("performance", {}).get("performance_data", {}),
                 "research_updated_at": brief_data.get("research_updated_at").isoformat() if brief_data.get("research_updated_at") else None,
                 "is_onboarding_mode": not brief_data.get("has_meaningful_data", True),
+                "operations_report": brief_data.get("operations_report", {}),
             },
             agent_activity=[
                 {"type": a["agent_type"], "action": a["action_type"], "status": a["status"]}

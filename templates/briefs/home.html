@@ -209,11 +209,55 @@
             <div class="text-[11px] text-kova-500 dark:text-kova-400 font-medium mt-0.5">Ideas created</div>
           </div>
           {% endif %}
+          {% if ow.snap_launches > 0 %}
+          <div class="text-center py-3 px-2 rounded-lg bg-purple-50 dark:bg-purple-950/30">
+            <div class="text-2xl font-bold text-purple-600 dark:text-purple-400 tabular-nums">{{ ow.snap_launches }}</div>
+            <div class="text-[11px] text-purple-500 dark:text-purple-400 font-medium mt-0.5">Snap to Sell</div>
+          </div>
+          {% endif %}
+          {% if ow.batch_snaps > 0 %}
+          <div class="text-center py-3 px-2 rounded-lg bg-orange-50 dark:bg-orange-950/30">
+            <div class="text-2xl font-bold text-orange-600 dark:text-orange-400 tabular-nums">{{ ow.batch_snaps }}</div>
+            <div class="text-[11px] text-orange-500 dark:text-orange-400 font-medium mt-0.5">Batch Snap</div>
+          </div>
+          {% endif %}
+          {% if ow.carousels_built > 0 %}
+          <div class="text-center py-3 px-2 rounded-lg bg-violet-50 dark:bg-violet-950/30">
+            <div class="text-2xl font-bold text-violet-600 dark:text-violet-400 tabular-nums">{{ ow.carousels_built }}</div>
+            <div class="text-[11px] text-violet-500 dark:text-violet-400 font-medium mt-0.5">Carousels built</div>
+          </div>
+          {% endif %}
+          {% if ow.reels_composed > 0 %}
+          <div class="text-center py-3 px-2 rounded-lg bg-rose-50 dark:bg-rose-950/30">
+            <div class="text-2xl font-bold text-rose-600 dark:text-rose-400 tabular-nums">{{ ow.reels_composed }}</div>
+            <div class="text-[11px] text-rose-500 dark:text-rose-400 font-medium mt-0.5">Motion reels</div>
+          </div>
+          {% endif %}
+          {% if ow.receipt_scans > 0 %}
+          <div class="text-center py-3 px-2 rounded-lg bg-amber-50 dark:bg-amber-950/30">
+            <div class="text-2xl font-bold text-amber-600 dark:text-amber-400 tabular-nums">{{ ow.receipt_scans }}</div>
+            <div class="text-[11px] text-amber-500 dark:text-amber-400 font-medium mt-0.5">Receipt scans</div>
+          </div>
+          {% endif %}
+          {% if ow.products_restocked > 0 %}
+          <div class="text-center py-3 px-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30">
+            <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ ow.products_restocked }}</div>
+            <div class="text-[11px] text-emerald-500 dark:text-emerald-400 font-medium mt-0.5">Units restocked</div>
+          </div>
+          {% endif %}
+          {% if ow.voice_briefs > 0 %}
+          <div class="text-center py-3 px-2 rounded-lg bg-sky-50 dark:bg-sky-950/30">
+            <div class="text-2xl font-bold text-sky-600 dark:text-sky-400 tabular-nums">{{ ow.voice_briefs }}</div>
+            <div class="text-[11px] text-sky-500 dark:text-sky-400 font-medium mt-0.5">Voice briefs</div>
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>
     {% endif %}
     {% endwith %}
+
+    {% include "briefs/_operations_report.html" %}
 
     <div class="lg:grid lg:grid-cols-3 lg:gap-8 lg:items-start">
       <!-- Main column -->
@@ -668,6 +712,7 @@
       </div>
 
       <div class="space-y-6 mt-6 lg:mt-0">
+        {% include "briefs/_operations_report.html" %}
         {% include "briefs/_customer_pulse.html" %}
         {% if momentum %}
         <div class="card">

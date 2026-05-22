@@ -120,7 +120,18 @@ def _build_value_summary(user):
     ).count()
 
     # If no activity at all, don't show the card
-    total_actions = posts_published + posts_created + replies_count + leads_count
+    product_tasks = 0
+    try:
+        from apps.briefs.operations_report import build_operations_report
+
+        week_report = build_operations_report(user, hours=24 * 7)
+        for cat in week_report.get("categories", []):
+            if cat.get("id") in ("products", "inventory"):
+                product_tasks += cat.get("count", 0)
+    except Exception:
+        pass
+
+    total_actions = posts_published + posts_created + replies_count + leads_count + product_tasks
     if total_actions == 0:
         return None
 
@@ -129,6 +140,7 @@ def _build_value_summary(user):
         "posts_created": posts_created,
         "replies_drafted": replies_count,
         "leads_captured": leads_count,
+        "product_tasks": product_tasks,
     }
 
 
@@ -556,6 +568,15 @@ def brief_home(request):
     performance = brief.performance_summary if brief else {}
     decisions_needed = _enrich_decisions(performance.get("decisions_needed", []))
 
+    try:
+        from apps.briefs.operations_report import build_operations_report
+
+        operations_report = build_operations_report(request.user, hours=24)
+    except Exception:
+        operations_report = {"has_activity": False, "categories": [], "recent_tasks": []}
+
+    operations_update = performance.get("operations_update", "")
+
     return render(request, "briefs/home.html", {
         "brief": brief,
         "brief_is_stale": brief_is_stale,
@@ -584,6 +605,8 @@ def brief_home(request):
         "holiday_drafts_ready": holiday_drafts_ready,
         "profile_health_alerts": profile_health_alerts,
         "revenue_stat": _safe_revenue_stat(request.user),
+        "operations_report": operations_report,
+        "operations_update": operations_update,
         "page_title": "Home",
     })
 
@@ -678,6 +701,16 @@ def brief_detail(request, date):
     except Exception:
         pass
 
+    performance = brief.performance_summary or {}
+    operations_report = performance.get("operations_report") or {}
+    if not operations_report.get("categories"):
+        try:
+            from apps.briefs.operations_report import build_operations_report
+
+            operations_report = build_operations_report(request.user, hours=24)
+        except Exception:
+            operations_report = {"has_activity": False, "categories": [], "recent_tasks": []}
+
     return render(request, "briefs/detail.html", {
         "brief": brief,
         "brief_date": brief_date,
@@ -700,6 +733,8 @@ def brief_detail(request, date):
         "profile_health_alerts": profile_health_alerts,
         "quick_actions": [],
         "setup_checklist": None,
+        "operations_report": operations_report,
+        "operations_update": performance.get("operations_update", ""),
         "page_title": f"Brief — {brief_date.strftime('%b %d, %Y')}",
     })
 

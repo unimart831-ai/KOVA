@@ -229,21 +229,20 @@ def check_stock_alerts():
 @shared_task(name="products.auto_promote_products")
 def auto_promote_products():
     """
-    Daily task: auto-create content seeds for products that haven't been
-    promoted recently. Turns stock intelligence into actual content.
+    Daily task: randomly sample catalog products into content seeds.
 
-    Priority order:
-      1. Featured products with no content in 7+ days
-      2. Low-stock products (urgency angle)
-      3. Never-promoted products
-      4. Least-recently-promoted products
+    Not every user every day — ~30% receive one weighted-random product seed
+    when they have promotable items not featured recently (3+ day gap).
 
-    Limits: max 2 auto-seeds per user per day to avoid flooding.
     Skips: out-of-stock physical products, users with no connected platforms.
     """
-    from apps.content.models import ContentSeed, Post
+    from apps.content.models import ContentSeed
     from apps.platforms.models import SocialAccount
     from apps.products.models import Product
+    from apps.products.utils import (
+        sample_products_for_content,
+        user_should_receive_catalog_sample,
+    )
 
     from django.contrib.auth import get_user_model
     User = get_user_model()
@@ -255,10 +254,8 @@ def auto_promote_products():
 
     total_seeds = 0
     now = timezone.now()
-    seven_days_ago = now - timedelta(days=7)
 
     for user in users_with_products:
-        # Skip users with no connected platforms
         platforms = list(
             SocialAccount.objects.filter(user=user, is_active=True)
             .values_list("platform", flat=True)
@@ -266,86 +263,42 @@ def auto_promote_products():
         if not platforms:
             continue
 
-        # Don't exceed 2 auto-seeds per user per day
-        today_auto_seeds = ContentSeed.objects.filter(
+        if not user_should_receive_catalog_sample(user, now.date()):
+            continue
+
+        today_samples = ContentSeed.objects.filter(
             user=user,
-            notes__startswith="Auto-promoted:",
+            notes__startswith="Catalog sample:",
             created_at__date=now.date(),
         ).count()
-        if today_auto_seeds >= 2:
+        if today_samples >= 1:
             continue
 
-        remaining = 2 - today_auto_seeds
-        promotable = Product.objects.promotable(user).filter(is_active=True)
-        if not promotable.exists():
+        sampled = sample_products_for_content(user, count=1, min_days_since_promotion=3)
+        if not sampled:
             continue
 
-        # Build priority queue of products needing content
-        candidates = []
+        product = sampled[0]
+        idea = _build_promotion_idea(product)
 
-        for product in promotable:
-            # Check for recent content (post or seed) about this product
-            has_recent_post = Post.objects.filter(
-                user=user,
-                product=product,
-                status__in=[Post.Status.PUBLISHED, Post.Status.APPROVED, Post.Status.SCHEDULED],
-                created_at__gte=seven_days_ago,
-            ).exists()
-            if has_recent_post:
-                continue
+        seed = ContentSeed.objects.create(
+            user=user,
+            product=product,
+            idea=idea,
+            notes=f"Catalog sample: {product.name} — rotating catalog promotion.",
+            target_platforms=platforms[:3],
+        )
+        from apps.content.tasks import generate_from_seed
+        from apps.utils import fire_task
 
-            has_recent_seed = ContentSeed.objects.filter(
-                user=user,
-                product=product,
-                created_at__gte=seven_days_ago,
-            ).exists()
-            if has_recent_seed:
-                continue
+        fire_task(generate_from_seed, str(seed.id))
+        total_seeds += 1
+        logger.info(
+            "Catalog sample seed created: %s for %s",
+            product.name, user.email,
+        )
 
-            # Calculate priority score
-            score = 0
-            if product.is_featured:
-                score += 30
-            if product.stock_status == Product.StockStatus.LOW_STOCK:
-                score += 20
-            # Never-promoted products get a boost
-            total_posts = Post.objects.filter(user=user, product=product).count()
-            if total_posts == 0:
-                score += 15
-            # Older products without recent content rank higher
-            days_since_update = (now - product.updated_at).days
-            score += min(days_since_update, 10)
-
-            candidates.append((score, product))
-
-        # Sort by priority (highest score first)
-        candidates.sort(key=lambda x: x[0], reverse=True)
-
-        seeds_created = 0
-        for _score, product in candidates[:remaining]:
-            # Build context-aware idea based on product type and status
-            idea = _build_promotion_idea(product)
-
-            seed = ContentSeed.objects.create(
-                user=user,
-                product=product,
-                idea=idea,
-                notes=f"Auto-promoted: {product.name} — no content in 7+ days.",
-                target_platforms=platforms[:3],
-            )
-            from apps.content.tasks import generate_from_seed
-            from apps.utils import fire_task
-
-            fire_task(generate_from_seed, str(seed.id))
-            seeds_created += 1
-            logger.info(
-                "Auto-promote seed created: %s for %s (score=%d)",
-                product.name, user.email, _score,
-            )
-
-        total_seeds += seeds_created
-
-    logger.info("Auto-promote complete: %d seeds created", total_seeds)
+    logger.info("Catalog sample complete: %d seeds created", total_seeds)
     return {"seeds_created": total_seeds, "users_processed": users_with_products.count()}
 
 

@@ -470,9 +470,20 @@ def execute_autopilot_plan(plan_id: str):
             else:
                 target = [p for p in raw_target if p in connected] or platforms[:2]
 
+            from apps.products.utils import enrich_idea_with_product, sample_products_for_content
+            import random
+
+            product = None
+            topic_idea = topic.get("topic", "")
+            if random.random() < 0.35:
+                sampled = sample_products_for_content(user, count=1)
+                product = sampled[0] if sampled else None
+                topic_idea = enrich_idea_with_product(topic_idea, product)
+
             seed = ContentSeed.objects.create(
                 user=user,
-                idea=topic.get("topic", ""),
+                product=product,
+                idea=topic_idea,
                 notes=(
                     f"[Autopilot] Week of {plan.week_start} — "
                     f"{topic.get('intent', '')}"

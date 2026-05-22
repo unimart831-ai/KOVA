@@ -362,6 +362,11 @@ def generate_from_seed(seed_id: str):
         logger.error("ContentSeed %s not found", seed_id)
         return {"error": "Seed not found"}
 
+    from apps.products.utils import maybe_attach_sampled_product_to_autonomous_seed
+
+    maybe_attach_sampled_product_to_autonomous_seed(seed)
+    seed.refresh_from_db()
+
     from apps.billing.exceptions import PlanLimitExceeded
     from apps.notifications.models import Notification
 

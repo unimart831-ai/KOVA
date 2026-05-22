@@ -29,6 +29,12 @@
       <span class="text-sm font-bold text-purple-600 dark:text-purple-400 tabular-nums">{{ value_summary.leads_captured }}</span>
     </div>
     {% endif %}
+    {% if value_summary.product_tasks > 0 %}
+    <div class="flex items-center justify-between">
+      <span class="text-sm text-gray-600 dark:text-gray-400">Product & inventory tasks</span>
+      <span class="text-sm font-bold text-orange-600 dark:text-orange-400 tabular-nums">{{ value_summary.product_tasks }}</span>
+    </div>
+    {% endif %}
     <p class="text-xs text-gray-500 dark:text-gray-500 pt-2 border-t border-green-100 dark:border-green-900/40">
       Work your AI agents did for you in the last 7 days.
     </p>

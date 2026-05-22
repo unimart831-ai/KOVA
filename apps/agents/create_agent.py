@@ -682,6 +682,11 @@ Transform this raw idea into high-performing, platform-native content.
         if p.stock_status == "low_stock":
             product_lines.append(f"- **⚠️ LOW STOCK** — Create urgency! Only {p.quantity or 'few'} left.")
         prompt += "\n".join(product_lines) + "\n\n"
+    elif seed.user_id:
+        from apps.products.utils import get_product_context, get_catalog_sampling_hint
+
+        if get_product_context(seed.user):
+            prompt += get_catalog_sampling_hint()
 
     prompt += f"""### STRATEGIC THINKING (do this before writing)
 For each platform, consider:

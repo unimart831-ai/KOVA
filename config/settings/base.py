@@ -256,7 +256,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     "auto-promote-products": {
         "task": "products.auto_promote_products",
-        "schedule": 24 * 3600.0,  # daily — auto-create content for under-promoted products
+        "schedule": 24 * 3600.0,  # daily — random catalog sample (~30% of users/day)
     },
     "autopilot-plan-weekly": {
         "task": "content.plan_weekly_autopilot",
