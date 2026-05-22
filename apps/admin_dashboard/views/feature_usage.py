@@ -12,6 +12,9 @@ from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
 from django.shortcuts import render
 from django.utils import timezone
+from django.utils.safestring import mark_safe
+
+import json
 
 from apps.admin_dashboard.decorators import staff_required
 
@@ -140,8 +143,10 @@ def feature_usage(request):
         .annotate(count=Count("id"))
         .order_by("hour")
     )
-    hours_labels = [f"{row['hour']:02d}:00" for row in peak_hours]
-    hours_data = [row["count"] for row in peak_hours]
+    # Fill missing hours so the bar chart always has 24 buckets
+    hour_counts = {row["hour"]: row["count"] for row in peak_hours}
+    hours_labels = [f"{h:02d}:00" for h in range(24)]
+    hours_data = [hour_counts.get(h, 0) for h in range(24)]
 
     context = {
         "page_title": "Feature Usage",
@@ -158,7 +163,14 @@ def feature_usage(request):
         "top_users": top_users,
         "section_trend_datasets": section_trend_datasets,
         "depth_dist": depth_dist,
-        "hours_labels": hours_labels,
-        "hours_data": hours_data,
+        "hours_labels_json": mark_safe(json.dumps(hours_labels)),
+        "hours_data_json": mark_safe(json.dumps(hours_data)),
+        "daily_labels_json": mark_safe(json.dumps(daily_labels)),
+        "daily_counts_json": mark_safe(json.dumps(daily_counts)),
+        "daily_users_json": mark_safe(json.dumps(daily_users)),
+        "section_trend_datasets_json": mark_safe(json.dumps([
+            {"label": ds["label"], "data": ds["data"], "color": ds["color"]}
+            for ds in section_trend_datasets
+        ])),
     }
     return render(request, "admin_dashboard/feature_usage.html", context)

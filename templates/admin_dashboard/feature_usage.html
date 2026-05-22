@@ -17,55 +17,52 @@
     <a href="?days=90" class="px-3 py-1 text-xs rounded-full {% if days == 90 %}bg-purple-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">90d</a>
   </div>
 
-  {# ═══ Hero stats ═══ #}
+  {# Hero stats #}
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
       <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Total Page Views</p>
       <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_views|format_number }}</p>
     </div>
-    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
       <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Active Users</p>
       <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_active_users }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">of {{ total_registered }} registered</p>
     </div>
-    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
       <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Adoption Rate</p>
       <p class="text-3xl font-bold {% if adoption_rate >= 50 %}text-emerald-600{% elif adoption_rate >= 25 %}text-amber-600{% else %}text-red-600{% endif %}">{{ adoption_rate }}%</p>
     </div>
-    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
       <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Features Used</p>
       <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ sections|length }}</p>
       {% if unused %}<p class="text-xs text-gray-500 dark:text-gray-400">{{ unused|length }} unused</p>{% endif %}
     </div>
   </div>
 
-  {# ═══ Section breakdown — the core table ═══ #}
-  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+  {# Section breakdown #}
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
     <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Feature Popularity</h3>
     {% if sections %}
     <div class="space-y-3">
       {% for s in sections %}
-      <div class="flex items-center gap-4">
-        <div class="w-36 flex-shrink-0">
-          <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ s.label }}</p>
+      <div class="flex items-center gap-3 sm:gap-4">
+        <div class="w-28 sm:w-36 flex-shrink-0">
+          <p class="text-sm font-medium text-gray-900 dark:text-white truncate" title="{{ s.label }}">{{ s.label }}</p>
         </div>
-        <div class="flex-1">
+        <div class="flex-1 min-w-0">
           <div class="h-6 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
             <div class="h-full rounded-full transition-all duration-500
               {% if forloop.counter <= 3 %}bg-purple-600{% elif forloop.counter <= 6 %}bg-blue-500{% else %}bg-gray-400 dark:bg-gray-600{% endif %}"
               style="width: {{ s.bar_pct }}%"></div>
           </div>
         </div>
-        <div class="w-28 flex-shrink-0 text-right">
+        <div class="w-20 sm:w-28 flex-shrink-0 text-right">
           <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ s.views|format_number }}</span>
-          <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">views</span>
+          <span class="text-xs text-gray-500 dark:text-gray-400 ml-1 hidden sm:inline">views</span>
         </div>
-        <div class="w-24 flex-shrink-0 text-right">
+        <div class="w-16 sm:w-24 flex-shrink-0 text-right hidden sm:block">
           <span class="text-sm text-gray-700 dark:text-gray-300">{{ s.users }}</span>
           <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">users</span>
-        </div>
-        <div class="w-20 flex-shrink-0 text-right">
-          <span class="text-xs text-gray-500 dark:text-gray-400">{{ s.avg_per_user }}/user</span>
         </div>
       </div>
       {% endfor %}
@@ -75,7 +72,6 @@
     {% endif %}
   </div>
 
-  {# ═══ Unused features — adoption gaps ═══ #}
   {% if unused %}
   <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-5">
     <h3 class="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-3">
@@ -92,34 +88,39 @@
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-    {# ═══ Daily views trend chart ═══ #}
-    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Daily Usage Trend</h3>
-      <canvas id="dailyTrendChart" height="200"></canvas>
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Daily Usage Trend</h3>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Page views and active users per day</p>
+      <div class="relative h-52">
+        <canvas id="dailyTrendChart"></canvas>
+      </div>
     </div>
 
-    {# ═══ Peak hours chart ═══ #}
-    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Peak Usage Hours (UTC)</h3>
-      <canvas id="peakHoursChart" height="200"></canvas>
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Peak Usage Hours (UTC)</h3>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">When users are most active on the platform</p>
+      <div class="relative h-52">
+        <canvas id="peakHoursChart"></canvas>
+      </div>
     </div>
 
-    {# ═══ Section trend (top 5) chart ═══ #}
-    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Top 5 Features — Daily Trend</h3>
-      <canvas id="sectionTrendChart" height="200"></canvas>
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm lg:col-span-2">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Top 5 Features — Daily Trend</h3>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Most-used sections over the selected period</p>
+      <div class="relative h-56">
+        <canvas id="sectionTrendChart"></canvas>
+      </div>
     </div>
 
-    {# ═══ User journey depth ═══ #}
-    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm lg:col-span-2">
       <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Feature Depth — How Many Sections Users Explore</h3>
       {% if depth_dist %}
-      <div class="space-y-2">
+      <div class="space-y-2 max-w-2xl">
         {% for d in depth_dist %}
         <div class="flex items-center gap-3">
           <span class="w-24 text-xs font-medium text-gray-700 dark:text-gray-300">{{ d.sections }} section{{ d.sections|pluralize }}</span>
           <div class="flex-1 h-5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-            <div class="h-full bg-purple-500 rounded-full" style="width: {% widthratio d.users total_active_users 100 %}%"></div>
+            <div class="h-full bg-purple-500 rounded-full" style="width: {% if total_active_users %}{% widthratio d.users total_active_users 100 %}{% else %}0{% endif %}%"></div>
           </div>
           <span class="w-12 text-xs text-right text-gray-600 dark:text-gray-400">{{ d.users }}</span>
         </div>
@@ -131,8 +132,7 @@
     </div>
   </div>
 
-  {# ═══ Top users table ═══ #}
-  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
     <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Most Active Users</h3>
     {% if top_users %}
     <div class="overflow-x-auto">
@@ -173,59 +173,130 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script>
   const isDark = document.documentElement.classList.contains('dark');
   const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
   const textColor = isDark ? '#9ca3af' : '#6b7280';
 
-  const defaultOpts = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } },
-      y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } },
+  Chart.defaults.color = textColor;
+  Chart.defaults.borderColor = gridColor;
+  Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+  Chart.defaults.font.size = 11;
+
+  const baseScales = {
+    x: {
+      grid: { display: false },
+      ticks: { color: textColor, font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 },
+    },
+    y: {
+      beginAtZero: true,
+      grid: { color: gridColor },
+      ticks: { color: textColor, font: { size: 10 }, precision: 0 },
     },
   };
 
-  // Daily trend
-  const dailyLabels = {{ daily_labels|safe }};
-  const dailyCounts = {{ daily_counts|safe }};
-  const dailyUsers = {{ daily_users|safe }};
+  const chartBox = {
+    responsive: true,
+    maintainAspectRatio: false,
+  };
+
+  const dailyLabels = {{ daily_labels_json|safe }};
+  const dailyCounts = {{ daily_counts_json|safe }};
+  const dailyUsers = {{ daily_users_json|safe }};
 
   new Chart(document.getElementById('dailyTrendChart'), {
     type: 'line',
     data: {
       labels: dailyLabels,
       datasets: [
-        { label: 'Page Views', data: dailyCounts, borderColor: '#7c3aed', backgroundColor: 'rgba(124,58,237,0.1)', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 0 },
-        { label: 'Active Users', data: dailyUsers, borderColor: '#2563eb', backgroundColor: 'transparent', borderDash: [5,3], tension: 0.3, borderWidth: 1.5, pointRadius: 0 },
+        {
+          label: 'Page Views',
+          data: dailyCounts,
+          borderColor: '#7c3aed',
+          backgroundColor: 'rgba(124,58,237,0.12)',
+          fill: true,
+          tension: 0.35,
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+        },
+        {
+          label: 'Active Users',
+          data: dailyUsers,
+          borderColor: '#2563eb',
+          backgroundColor: 'transparent',
+          borderDash: [5, 3],
+          tension: 0.35,
+          borderWidth: 1.5,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+        },
       ],
     },
-    options: { ...defaultOpts, plugins: { legend: { display: true, labels: { color: textColor, font: { size: 11 }, boxWidth: 12 } } } },
+    options: {
+      ...chartBox,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: { color: textColor, font: { size: 11 }, boxWidth: 12, usePointStyle: true },
+        },
+      },
+      scales: baseScales,
+    },
   });
 
-  // Peak hours
   new Chart(document.getElementById('peakHoursChart'), {
     type: 'bar',
     data: {
-      labels: {{ hours_labels|safe }},
-      datasets: [{ data: {{ hours_data|safe }}, backgroundColor: '#7c3aed', borderRadius: 4 }],
+      labels: {{ hours_labels_json|safe }},
+      datasets: [{
+        label: 'Page Views',
+        data: {{ hours_data_json|safe }},
+        backgroundColor: 'rgba(124,58,237,0.85)',
+        hoverBackgroundColor: '#7c3aed',
+        borderRadius: 4,
+        maxBarThickness: 18,
+      }],
     },
-    options: defaultOpts,
+    options: {
+      ...chartBox,
+      plugins: { legend: { display: false } },
+      scales: {
+        ...baseScales,
+        x: { ...baseScales.x, ticks: { ...baseScales.x.ticks, maxTicksLimit: 12 } },
+      },
+    },
   });
 
-  // Section trend (top 5)
-  const sectionDatasets = [
-    {% for ds in section_trend_datasets %}
-    { label: '{{ ds.label }}', data: {{ ds.data|safe }}, borderColor: '{{ ds.color }}', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2, pointRadius: 0 },
-    {% endfor %}
-  ];
+  const sectionTrendDatasets = {{ section_trend_datasets_json|safe }}.map(ds => ({
+    label: ds.label,
+    data: ds.data,
+    borderColor: ds.color,
+    backgroundColor: 'transparent',
+    tension: 0.35,
+    borderWidth: 2,
+    pointRadius: 0,
+    pointHoverRadius: 4,
+  }));
+
   new Chart(document.getElementById('sectionTrendChart'), {
     type: 'line',
-    data: { labels: dailyLabels, datasets: sectionDatasets },
-    options: { ...defaultOpts, plugins: { legend: { display: true, labels: { color: textColor, font: { size: 10 }, boxWidth: 10 } } } },
+    data: { labels: dailyLabels, datasets: sectionTrendDatasets },
+    options: {
+      ...chartBox,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: { color: textColor, font: { size: 10 }, boxWidth: 10, usePointStyle: true },
+        },
+      },
+      scales: baseScales,
+    },
   });
 </script>
 {% endblock %}
