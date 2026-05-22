@@ -1,0 +1,68 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<a href="{% url 'admin_dashboard:leads_overview' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white mb-4">← Leads overview</a>
+
+<form method="get" class="flex flex-wrap gap-2 mb-4">
+  <input type="text" name="q" value="{{ current_q }}" placeholder="Search name, email, phone" class="input text-sm max-w-xs">
+  <input type="text" name="email" value="{{ current_email }}" placeholder="User email" class="input text-sm max-w-xs">
+  <select name="status" class="input text-sm">
+    <option value="">All statuses</option>
+    <option value="new" {% if current_status == 'new' %}selected{% endif %}>New</option>
+    <option value="contacted" {% if current_status == 'contacted' %}selected{% endif %}>Contacted</option>
+    <option value="qualified" {% if current_status == 'qualified' %}selected{% endif %}>Qualified</option>
+    <option value="converted" {% if current_status == 'converted' %}selected{% endif %}>Converted</option>
+    <option value="lost" {% if current_status == 'lost' %}selected{% endif %}>Lost</option>
+  </select>
+  <select name="priority" class="input text-sm">
+    <option value="">All priorities</option>
+    <option value="high" {% if current_priority == 'high' %}selected{% endif %}>High</option>
+    <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>Medium</option>
+    <option value="low" {% if current_priority == 'low' %}selected{% endif %}>Low</option>
+  </select>
+  <button type="submit" class="btn-primary text-xs px-3 py-1.5">Filter</button>
+</form>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Lead</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">User</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Source</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">First seen</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for lead in page_obj %}
+      <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+        <td class="px-4 py-2.5">
+          <p class="text-xs font-medium text-gray-900 dark:text-white">{{ lead.name|default:lead.email }}</p>
+          <p class="text-[10px] text-gray-400">{{ lead.email }}</p>
+        </td>
+        <td class="px-4 py-2.5">
+          <a href="{% url 'admin_dashboard:user_detail' lead.user.pk %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">{{ lead.user.email }}</a>
+        </td>
+        <td class="px-4 py-2.5 text-xs text-gray-500">{{ lead.get_source_type_display }}</td>
+        <td class="px-4 py-2.5 text-xs">{{ lead.get_status_display }} · {{ lead.get_priority_display }}</td>
+        <td class="px-4 py-2.5 text-right text-xs text-gray-400">{{ lead.first_seen_at|date:"M j, Y" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="px-4 py-8 text-center text-sm text-gray-400">No leads match</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if page_obj.has_other_pages %}
+<div class="flex items-center justify-between mt-4 text-xs text-gray-500">
+  <p>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</p>
+  <div class="flex gap-2">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-700">Previous</a>{% endif %}
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-700">Next</a>{% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, calendar_intel, campaigns, content, costs, emails, engage, feature_usage, help, innovations, llm, logs, media_queue, memes, notifications, onboarding, overview, partners, partials, pixel, platforms, products, profile_audit, revenue, system, teams, user_health, users, whatsapp
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, bookings, calendar_intel, campaigns, content, costs, emails, engage, feature_usage, help, innovations, leads, llm, logs, media_queue, memes, notifications, onboarding, operations, overview, partners, partials, pixel, platforms, products, profile_audit, qr, revenue, reviews, system, teams, user_health, users, whatsapp
 
 app_name = "admin_dashboard"
 
@@ -19,6 +19,25 @@ urlpatterns = [
     path("users/<uuid:pk>/delete/", users.user_delete, name="user_delete"),
     path("users/health/", user_health.user_health, name="user_health"),
     path("users/onboarding-funnel/", onboarding.onboarding_funnel, name="onboarding_funnel"),
+
+    # Operations (platform-wide task activity)
+    path("operations/", operations.operations_overview, name="operations_overview"),
+
+    # Leads & CRM
+    path("leads/", leads.leads_overview, name="leads_overview"),
+    path("leads/list/", leads.lead_list, name="lead_list"),
+
+    # Bookings
+    path("bookings/", bookings.bookings_overview, name="bookings_overview"),
+    path("bookings/list/", bookings.booking_list, name="booking_list"),
+
+    # Reviews
+    path("reviews/", reviews.reviews_overview, name="reviews_overview"),
+    path("reviews/list/", reviews.review_list, name="review_list"),
+
+    # QR & Walk-ins
+    path("qr/", qr.qr_overview, name="qr_overview"),
+    path("qr/list/", qr.qr_list, name="qr_list"),
 
     # Content
     path("content/", content.content_overview, name="content_overview"),

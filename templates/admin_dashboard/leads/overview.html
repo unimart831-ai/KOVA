@@ -1,0 +1,106 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Lead capture, scoring, and nurture across all users</p>{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Total leads</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ total|format_number }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">New (7d)</p>
+    <p class="text-2xl font-bold text-kova-600 dark:text-kova-400 mt-1">{{ new_7d }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-amber-200 dark:border-amber-900/50 p-4 shadow-sm">
+    <p class="text-xs font-medium text-amber-600 dark:text-amber-400">High priority</p>
+    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{{ high_priority }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-orange-200 dark:border-orange-900/50 p-4 shadow-sm">
+    <p class="text-xs font-medium text-orange-600 dark:text-orange-400">Hot leads</p>
+    <p class="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1">{{ hot }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 shadow-sm">
+    <p class="text-xs font-medium text-green-600 dark:text-green-400">Converted</p>
+    <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{{ converted }}</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center">
+    <p class="text-lg font-bold text-gray-900 dark:text-white">{{ nurture_sequences }}</p>
+    <p class="text-[10px] text-gray-500">Active sequences</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center">
+    <p class="text-lg font-bold text-gray-900 dark:text-white">{{ active_enrollments }}</p>
+    <p class="text-[10px] text-gray-500">Active enrollments</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center">
+    <p class="text-lg font-bold text-teal-600 dark:text-teal-400">{{ emails_7d }}</p>
+    <p class="text-[10px] text-gray-500">Nurture emails (7d)</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center">
+    <p class="text-lg font-bold text-gray-900 dark:text-white">{{ new_30d }}</p>
+    <p class="text-[10px] text-gray-500">New (30d)</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">By status</h2>
+    {% for row in by_status %}
+    <div class="flex items-center justify-between text-xs py-1.5 border-b border-gray-50 dark:border-gray-800 last:border-0">
+      <span class="text-gray-600 dark:text-gray-400">{{ row.status|title }}</span>
+      <span class="font-semibold text-gray-900 dark:text-white">{{ row.count }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">By source</h2>
+    {% for row in by_source %}
+    <div class="flex items-center justify-between text-xs py-1.5 border-b border-gray-50 dark:border-gray-800 last:border-0">
+      <span class="text-gray-600 dark:text-gray-400">{{ row.source_type|title }}</span>
+      <span class="font-semibold text-gray-900 dark:text-white">{{ row.count }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Recent leads</h2>
+    <a href="{% url 'admin_dashboard:lead_list' %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">View all →</a>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Lead</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">User</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">Seen</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for lead in recent %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-2.5">
+            <p class="text-xs font-medium text-gray-900 dark:text-white">{{ lead.name|default:lead.email }}</p>
+            <p class="text-[10px] text-gray-400">{{ lead.email }}</p>
+          </td>
+          <td class="px-4 py-2.5">
+            <a href="{% url 'admin_dashboard:user_detail' lead.user.pk %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">{{ lead.user.email }}</a>
+          </td>
+          <td class="px-4 py-2.5 text-xs">{{ lead.get_status_display }} · {{ lead.get_priority_display }}</td>
+          <td class="px-4 py-2.5 text-right text-xs text-gray-400">{{ lead.first_seen_at|timesince }} ago</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="px-4 py-8 text-center text-sm text-gray-400">No leads yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

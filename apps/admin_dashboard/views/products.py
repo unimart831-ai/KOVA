@@ -79,17 +79,44 @@ def products_overview(request):
         .order_by("-created_at")[:15]
     )
 
-    # ── Auto-Promotion Stats ─────────────────────────────────────────
-    from apps.content.models import ContentSeed
-    auto_promo_seeds = ContentSeed.objects.filter(
-        notes__startswith="[Auto-Promo]",
+    # ── Auto-Promotion / Catalog Sampling Stats ────────────────────────
+    from apps.content.models import ContentSeed, Post
+    from django.db.models import Exists, OuterRef
+
+    catalog_sample_seeds = ContentSeed.objects.filter(
+        notes__startswith="Catalog sample:",
     ).count()
-    auto_promo_7d = ContentSeed.objects.filter(
-        notes__startswith="[Auto-Promo]",
+    catalog_sample_7d = ContentSeed.objects.filter(
+        notes__startswith="Catalog sample:",
         created_at__gte=week_ago,
     ).count()
+    legacy_auto_promo = ContentSeed.objects.filter(
+        notes__startswith="Auto-promoted:",
+    ).count()
+    strategist_product_seeds = ContentSeed.objects.filter(
+        product__isnull=False,
+        notes__startswith="[Strategist Agent]",
+    ).count()
 
-    # ── Offering Type Breakdown ──────────────────────────────────────
+    products_with_posts = Post.objects.filter(product=OuterRef("pk"))
+    never_promoted = Product.objects.filter(is_active=True).exclude(
+        Exists(products_with_posts),
+    ).count()
+
+    # ── Motion media pipelines ───────────────────────────────────────
+    snap_carousel = AgentAction.objects.filter(action_type="snap.carousel").count()
+    snap_reel = AgentAction.objects.filter(action_type="snap.reel").count()
+    snap_carousel_7d = AgentAction.objects.filter(
+        action_type="snap.carousel", created_at__gte=week_ago,
+    ).count()
+    snap_reel_7d = AgentAction.objects.filter(
+        action_type="snap.reel", created_at__gte=week_ago,
+    ).count()
+    reel_posts = Post.objects.filter(post_format="reel").count()
+    reel_posts_7d = Post.objects.filter(
+        post_format="reel", created_at__gte=week_ago,
+    ).count()
+
     offering_breakdown = dict(
         Product.objects.filter(is_active=True)
         .values_list("offering_type")
@@ -100,14 +127,12 @@ def products_overview(request):
     services_count = offering_breakdown.get("service", 0)
     digital_count = offering_breakdown.get("digital", 0)
 
-    # ── Snap to Sell Stats ───────────────────────────────────────────
     snap_actions = AgentAction.objects.filter(action_type__startswith="snap.")
     snap_total = snap_actions.count()
     snap_7d = snap_actions.filter(created_at__gte=week_ago).count()
     snap_single = AgentAction.objects.filter(action_type="snap.vision").count()
     snap_batch = AgentAction.objects.filter(action_type="snap.vision_batch").count()
 
-    # Multi-image products (have additional_images)
     multi_image_products = Product.objects.filter(
         is_active=True,
     ).exclude(additional_images=[]).count()
@@ -128,8 +153,11 @@ def products_overview(request):
         "updates_7d": list(updates_7d),
         "top_users": top_users,
         "recent_products": recent_products,
-        "auto_promo_seeds": auto_promo_seeds,
-        "auto_promo_7d": auto_promo_7d,
+        "catalog_sample_seeds": catalog_sample_seeds,
+        "catalog_sample_7d": catalog_sample_7d,
+        "legacy_auto_promo": legacy_auto_promo,
+        "strategist_product_seeds": strategist_product_seeds,
+        "never_promoted": never_promoted,
         # Offering type breakdown
         "products_count": products_count,
         "services_count": services_count,
@@ -140,6 +168,12 @@ def products_overview(request):
         "snap_single": snap_single,
         "snap_batch": snap_batch,
         "multi_image_products": multi_image_products,
+        "snap_carousel": snap_carousel,
+        "snap_reel": snap_reel,
+        "snap_carousel_7d": snap_carousel_7d,
+        "snap_reel_7d": snap_reel_7d,
+        "reel_posts": reel_posts,
+        "reel_posts_7d": reel_posts_7d,
     })
 
 

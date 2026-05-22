@@ -1,0 +1,49 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<a href="{% url 'admin_dashboard:reviews_overview' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white mb-4">← Reviews overview</a>
+
+<form method="get" class="flex flex-wrap gap-2 mb-4">
+  <input type="text" name="q" value="{{ current_q }}" placeholder="Customer name, email, phone" class="input text-sm max-w-xs">
+  <input type="text" name="email" value="{{ current_email }}" placeholder="Business email" class="input text-sm max-w-xs">
+  <select name="status" class="input text-sm">
+    <option value="">All statuses</option>
+    <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+    <option value="sent" {% if current_status == 'sent' %}selected{% endif %}>Sent</option>
+    <option value="responded" {% if current_status == 'responded' %}selected{% endif %}>Responded</option>
+    <option value="failed" {% if current_status == 'failed' %}selected{% endif %}>Failed</option>
+  </select>
+  <button type="submit" class="btn-primary text-xs px-3 py-1.5">Filter</button>
+</form>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Customer</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Business</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Sentiment</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">Created</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for r in page_obj %}
+      <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+        <td class="px-4 py-2.5 text-xs">{{ r.customer_name|default:r.customer_email }}</td>
+        <td class="px-4 py-2.5">
+          <a href="{% url 'admin_dashboard:user_detail' r.user.pk %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">{{ r.user.email }}</a>
+        </td>
+        <td class="px-4 py-2.5 text-xs">{{ r.get_status_display }}</td>
+        <td class="px-4 py-2.5 text-xs">{% if r.sentiment %}{{ r.get_sentiment_display }}{% else %}—{% endif %}</td>
+        <td class="px-4 py-2.5 text-right text-xs text-gray-400">{{ r.created_at|date:"M j, Y" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="px-4 py-8 text-center text-sm text-gray-400">No review requests match</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

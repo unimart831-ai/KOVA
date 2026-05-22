@@ -53,13 +53,17 @@ def overview(request):
         if agent_total_24h > 0 else 100.0
     )
 
-    # MRR calculation
+    # MRR calculation — use live PlanPrice when available
+    from apps.billing.models import PlanPrice
+
     plan_prices_kes = {
         "starter": 99,
         "growth": 500,
         "pro": 1500,
         "agency": 3500,
     }
+    for pp in PlanPrice.objects.filter(is_active=True):
+        plan_prices_kes[pp.tier] = pp.price_kes
     mrr_kes = 0
     plan_counts = (
         UserProfile.objects.filter(subscription_status__in=["active", "trialing"])
@@ -237,8 +241,10 @@ def overview(request):
     )
 
     # ── Help Center ──────────────────────────────────────────────────────
+    from apps.help.models import Article
+
     help_views_7d = HelpPageView.objects.filter(viewed_at__gte=seven_days_ago).count()
-    help_articles = 15  # Static count from help article registry
+    help_articles = Article.objects.filter(status=Article.Status.PUBLISHED).count()
 
     # ── Partners ─────────────────────────────────────────────────────────
     from apps.partners.models import Partner, PartnerApplication, Referral
@@ -296,6 +302,29 @@ def overview(request):
     high_priority_leads = Lead.objects.filter(priority="high").exclude(
         status__in=["converted", "lost"],
     ).count()
+
+    # Platform operations snapshot (24h)
+    try:
+        from apps.briefs.operations_report import build_platform_operations_report
+
+        ops_24h = build_platform_operations_report(hours=24)
+        ops_tasks_24h = ops_24h.get("total_tasks", 0)
+    except Exception:
+        ops_tasks_24h = 0
+
+    # Active automation types (distinct agent action types, 7d)
+    automation_types_7d = AgentAction.objects.filter(
+        created_at__gte=seven_days_ago,
+        status="completed",
+    ).values("action_type").distinct().count()
+
+    automation_labels = [
+        "Lead scoring", "Catalog sampling", "Snap to Sell", "Batch Snap",
+        "Motion reels", "Receipt restock", "Competitor intel", "Daily brief",
+        "Trend seeding", "Smart approval", "Content recycling",
+        "Nurture emails", "Campaign builder", "Engagement auto-reply",
+        "Review requests", "Voice briefs",
+    ]
 
     context = {
         "page_title": "Dashboard Overview",
@@ -368,5 +397,8 @@ def overview(request):
         "nurture_emails_7d": nurture_emails_7d,
         "scored_leads": scored_leads,
         "high_priority_leads": high_priority_leads,
+        "ops_tasks_24h": ops_tasks_24h,
+        "automation_types_7d": automation_types_7d,
+        "automation_labels": automation_labels,
     }
     return render(request, "admin_dashboard/overview.html", context)

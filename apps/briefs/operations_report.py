@@ -433,3 +433,246 @@ def enrich_overnight_work(user, base=None):
         base["voice_briefs"] = 0
 
     return base
+
+
+def build_platform_operations_report(hours=24):
+    """
+    Platform-wide task aggregation for the admin Operations dashboard.
+    Mirrors build_operations_report() but aggregates across all users.
+    """
+    from apps.agents.models import AgentAction
+    from apps.content.models import ContentSeed, Post, VoiceBrief
+    from apps.leads.models import Lead
+    from apps.products.models import Product, RestockScan, StockUpdate
+
+    cutoff = tz.now() - timedelta(hours=hours)
+    cats = _category_defs()
+    categories = {k: _empty_category(k, v) for k, v in cats.items()}
+
+    completed = AgentAction.objects.filter(
+        created_at__gte=cutoff,
+        status=AgentAction.ActionStatus.COMPLETED,
+    )
+
+    action_counts = dict(
+        completed.values("action_type")
+        .annotate(n=Count("id"))
+        .values_list("action_type", "n")
+    )
+
+    for action_type, count in action_counts.items():
+        cat_id, label, detail = ACTION_META.get(
+            action_type,
+            (None, action_type.replace("_", " ").replace(".", " ").title(), ""),
+        )
+        if not cat_id or cat_id not in categories:
+            sample = completed.filter(action_type=action_type).first()
+            agent_map = {
+                "create": "content",
+                "engage": "engage",
+                "research": "research",
+                "analyst": "research",
+                "adapt": "content",
+                "strategist": "strategist",
+            }
+            cat_id = agent_map.get(sample.agent_type, "content") if sample else "content"
+            label = action_type.replace("_", " ").replace(".", " ").title()
+            detail = sample.description[:80] if sample and sample.description else ""
+
+        categories[cat_id]["items"].append({
+            "label": label,
+            "count": count,
+            "detail": detail,
+        })
+        categories[cat_id]["count"] += count
+
+    snap_products = Product.objects.filter(
+        source=Product.Source.SNAP,
+        created_at__gte=cutoff,
+    ).count()
+    if snap_products:
+        categories["products"]["items"].append({
+            "label": "New snap listings",
+            "count": snap_products,
+            "detail": "Products added via Snap to Sell or Batch Snap",
+        })
+        categories["products"]["count"] += snap_products
+
+    scans = RestockScan.objects.filter(created_at__gte=cutoff)
+    completed_scans = scans.filter(status=RestockScan.Status.COMPLETED)
+    failed_scans = scans.filter(status=RestockScan.Status.FAILED)
+    items_updated = completed_scans.aggregate(total=Sum("products_updated"))["total"] or 0
+
+    if scans.exists():
+        categories["inventory"]["items"].append({
+            "label": "Receipt scans",
+            "count": scans.count(),
+            "detail": f"{completed_scans.count()} completed"
+            + (f", {items_updated} products restocked" if items_updated else ""),
+        })
+        categories["inventory"]["count"] += scans.count()
+
+    if failed_scans.exists():
+        categories["inventory"]["items"].append({
+            "label": "Failed receipt scans",
+            "count": failed_scans.count(),
+            "detail": "Needs retry or clearer photo",
+        })
+
+    stock_changes = StockUpdate.objects.filter(created_at__gte=cutoff).count()
+    if stock_changes:
+        categories["inventory"]["items"].append({
+            "label": "Stock level changes",
+            "count": stock_changes,
+            "detail": "Manual updates, sales, and restock events",
+        })
+        categories["inventory"]["count"] += stock_changes
+
+    seeds = ContentSeed.objects.filter(created_at__gte=cutoff).count()
+    if seeds:
+        categories["content"]["items"].append({
+            "label": "Content seeds created",
+            "count": seeds,
+            "detail": "New campaign ideas queued for Create Agent",
+        })
+        categories["content"]["count"] += seeds
+
+    catalog_samples = ContentSeed.objects.filter(
+        created_at__gte=cutoff,
+        notes__startswith="Catalog sample:",
+    ).count()
+    if catalog_samples:
+        categories["content"]["items"].append({
+            "label": "Catalog sample seeds",
+            "count": catalog_samples,
+            "detail": "Rotating product promotion into content",
+        })
+        categories["content"]["count"] += catalog_samples
+
+    published = Post.objects.filter(
+        published_at__gte=cutoff,
+        status="published",
+    ).count()
+    if published:
+        categories["content"]["items"].append({
+            "label": "Posts published",
+            "count": published,
+            "detail": "Live on connected platforms",
+        })
+        categories["content"]["count"] += published
+
+    reels = Post.objects.filter(created_at__gte=cutoff, post_format="reel").count()
+    if reels:
+        categories["content"]["items"].append({
+            "label": "Motion reels",
+            "count": reels,
+            "detail": "Reel-format posts created or composed",
+        })
+        categories["content"]["count"] += reels
+
+    voice_done = VoiceBrief.objects.filter(
+        updated_at__gte=cutoff,
+        status=VoiceBrief.Status.COMPLETED,
+    ).count()
+    if voice_done:
+        categories["content"]["items"].append({
+            "label": "Voice briefs processed",
+            "count": voice_done,
+            "detail": "Voice memos turned into campaigns",
+        })
+        categories["content"]["count"] += voice_done
+
+    new_leads = Lead.objects.filter(first_seen_at__gte=cutoff).count()
+    if new_leads:
+        categories["leads"]["items"].append({
+            "label": "New leads captured",
+            "count": new_leads,
+            "detail": "Fresh pipeline opportunities",
+        })
+        categories["leads"]["count"] += new_leads
+
+    try:
+        from apps.bookings.models import Booking
+
+        bookings_done = Booking.objects.filter(
+            completed_at__gte=cutoff,
+            status=Booking.Status.COMPLETED,
+        ).count()
+        if bookings_done:
+            categories["leads"]["items"].append({
+                "label": "Bookings completed",
+                "count": bookings_done,
+                "detail": "Appointments marked done",
+            })
+            categories["leads"]["count"] += bookings_done
+    except Exception:
+        pass
+
+    try:
+        from apps.reviews.models import ReviewRequest
+
+        review_sent = ReviewRequest.objects.filter(sent_at__gte=cutoff).count()
+        if review_sent:
+            categories["reviews"]["items"].append({
+                "label": "Review requests sent",
+                "count": review_sent,
+                "detail": "Outreach via WhatsApp or email",
+            })
+            categories["reviews"]["count"] += review_sent
+    except Exception:
+        pass
+
+    try:
+        from apps.qr_attribution.models import WalkInEvent
+
+        walk_ins = WalkInEvent.objects.filter(recorded_at__gte=cutoff).count()
+        if walk_ins:
+            categories["leads"]["items"].append({
+                "label": "Walk-ins recorded",
+                "count": walk_ins,
+                "detail": "In-store visits attributed",
+            })
+            categories["leads"]["count"] += walk_ins
+    except Exception:
+        pass
+
+    recent_tasks = []
+    for action in AgentAction.objects.select_related("user").filter(
+        created_at__gte=cutoff,
+    ).order_by("-created_at")[:25]:
+        cat_id, label, _ = ACTION_META.get(
+            action.action_type,
+            (action.agent_type, action.action_type.replace(".", " ").title(), ""),
+        )
+        recent_tasks.append({
+            "id": str(action.pk),
+            "label": label if label else action.description[:60],
+            "description": action.description[:120],
+            "category": cat_id or action.agent_type,
+            "category_label": (
+                categories[cat_id]["label"]
+                if cat_id in categories
+                else action.agent_type.replace("_", " ").title()
+            ),
+            "status": action.status,
+            "user_email": action.user.email if action.user_id else "",
+            "time_display": action.created_at.strftime("%H:%M"),
+            "created_at": action.created_at,
+        })
+
+    category_list = [c for c in categories.values() if c["count"] > 0 or c["items"]]
+    category_list.sort(key=lambda c: c["count"], reverse=True)
+    total_tasks = sum(c["count"] for c in category_list)
+
+    active_users = AgentAction.objects.filter(
+        created_at__gte=cutoff,
+    ).values("user").distinct().count()
+
+    return {
+        "window_hours": hours,
+        "total_tasks": total_tasks,
+        "active_users": active_users,
+        "categories": category_list,
+        "recent_tasks": recent_tasks[:20],
+        "has_activity": total_tasks > 0 or bool(recent_tasks),
+    }

@@ -29,9 +29,9 @@
     <p class="text-xs text-gray-400 mt-0.5">{{ unread_alerts }} unread alert{{ unread_alerts|pluralize }}</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-indigo-200 dark:border-indigo-900/50 p-4 shadow-sm">
-    <p class="text-xs font-medium text-indigo-600 dark:text-indigo-400">Auto-Promoted</p>
-    <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">{{ auto_promo_seeds }}</p>
-    <p class="text-xs text-gray-400 mt-0.5">{{ auto_promo_7d }} this week</p>
+    <p class="text-xs font-medium text-indigo-600 dark:text-indigo-400">Catalog samples</p>
+    <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">{{ catalog_sample_seeds }}</p>
+    <p class="text-xs text-gray-400 mt-0.5">{{ catalog_sample_7d }} this week · {{ never_promoted }} never promoted</p>
   </div>
 </div>
 
@@ -84,6 +84,24 @@
       <div class="text-center">
         <p class="text-2xl font-bold text-orange-600 dark:text-orange-400">{{ snap_batch }}</p>
         <p class="text-[10px] text-gray-500 dark:text-gray-400">Batch Snaps</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 border-t border-gray-100 dark:border-gray-800 pt-3">
+      <div class="text-center">
+        <p class="text-xl font-bold text-violet-600 dark:text-violet-400">{{ snap_carousel }}</p>
+        <p class="text-[10px] text-gray-500 dark:text-gray-400">Carousels ({{ snap_carousel_7d }} 7d)</p>
+      </div>
+      <div class="text-center">
+        <p class="text-xl font-bold text-rose-600 dark:text-rose-400">{{ snap_reel }}</p>
+        <p class="text-[10px] text-gray-500 dark:text-gray-400">Reel compose ({{ snap_reel_7d }} 7d)</p>
+      </div>
+      <div class="text-center">
+        <p class="text-xl font-bold text-rose-500 dark:text-rose-300">{{ reel_posts }}</p>
+        <p class="text-[10px] text-gray-500 dark:text-gray-400">Reel posts ({{ reel_posts_7d }} 7d)</p>
+      </div>
+      <div class="text-center">
+        <p class="text-xl font-bold text-indigo-600 dark:text-indigo-400">{{ strategist_product_seeds }}</p>
+        <p class="text-[10px] text-gray-500 dark:text-gray-400">Strategist product seeds</p>
       </div>
     </div>
     <div class="border-t border-gray-100 dark:border-gray-800 pt-3">

@@ -1,0 +1,131 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Platform-wide automated task activity</p>{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap items-center gap-2 mb-6">
+  <span class="text-xs text-gray-500 dark:text-gray-400">Window:</span>
+  <a href="?hours=24" class="px-3 py-1 text-xs rounded-lg {% if hours == 24 %}bg-kova-100 text-kova-700 dark:bg-kova-900/40 dark:text-kova-300 font-medium{% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200{% endif %}">24h</a>
+  <a href="?hours=48" class="px-3 py-1 text-xs rounded-lg {% if hours == 48 %}bg-kova-100 text-kova-700 dark:bg-kova-900/40 dark:text-kova-300 font-medium{% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200{% endif %}">48h</a>
+  <a href="?hours=168" class="px-3 py-1 text-xs rounded-lg {% if hours == 168 %}bg-kova-100 text-kova-700 dark:bg-kova-900/40 dark:text-kova-300 font-medium{% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200{% endif %}">7d</a>
+</div>
+
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Total tasks ({{ hours }}h)</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ report.total_tasks|format_number }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Active users</p>
+    <p class="text-2xl font-bold text-kova-600 dark:text-kova-400 mt-1">{{ report.active_users|format_number }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 p-4 shadow-sm">
+    <p class="text-xs font-medium text-purple-600 dark:text-purple-400">Snap pipelines (7d)</p>
+    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">{{ pipeline_stats.snap_7d }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-rose-200 dark:border-rose-900/50 p-4 shadow-sm">
+    <p class="text-xs font-medium text-rose-600 dark:text-rose-400">Motion reels (7d)</p>
+    <p class="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1">{{ pipeline_stats.reel_posts_7d }}</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center">
+    <p class="text-lg font-bold text-gray-900 dark:text-white">{{ pipeline_stats.snap_single }}</p>
+    <p class="text-[10px] text-gray-500">Snap to Sell</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center">
+    <p class="text-lg font-bold text-orange-600 dark:text-orange-400">{{ pipeline_stats.snap_batch }}</p>
+    <p class="text-[10px] text-gray-500">Batch Snap</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center">
+    <p class="text-lg font-bold text-violet-600 dark:text-violet-400">{{ pipeline_stats.carousels }}</p>
+    <p class="text-[10px] text-gray-500">Carousels</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center">
+    <p class="text-lg font-bold text-rose-600 dark:text-rose-400">{{ pipeline_stats.reels }}</p>
+    <p class="text-[10px] text-gray-500">Reel compose</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center">
+    <p class="text-lg font-bold text-amber-600 dark:text-amber-400">{{ pipeline_stats.restock }}</p>
+    <p class="text-[10px] text-gray-500">Receipt restock</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Task categories ({{ hours }}h)</h2>
+    {% if report.categories %}
+    <div class="space-y-3">
+      {% for cat in report.categories %}
+      <div class="border border-gray-100 dark:border-gray-800 rounded-lg p-3">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-gray-900 dark:text-white">{{ cat.label }}</span>
+          <span class="text-sm font-bold text-kova-600 dark:text-kova-400">{{ cat.count }}</span>
+        </div>
+        <p class="text-[10px] text-gray-400 mb-2">{{ cat.description }}</p>
+        {% for item in cat.items %}
+        <div class="flex items-center justify-between text-xs py-0.5">
+          <span class="text-gray-600 dark:text-gray-400">{{ item.label }}</span>
+          <span class="font-medium text-gray-900 dark:text-white">{{ item.count }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm text-gray-400 text-center py-8">No automated tasks in this window.</p>
+    {% endif %}
+  </div>
+
+  <div class="space-y-6">
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Recent agent tasks</h2>
+      </div>
+      <div class="divide-y divide-gray-100 dark:divide-gray-800 max-h-96 overflow-y-auto">
+        {% for task in report.recent_tasks %}
+        <div class="px-5 py-3">
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-xs font-medium text-gray-900 dark:text-white truncate">{{ task.label }}</p>
+            <span class="text-[10px] text-gray-400 shrink-0">{{ task.time_display }}</span>
+          </div>
+          <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{{ task.user_email }} · {{ task.category_label }}</p>
+          <span class="inline-flex mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium
+            {% if task.status == 'completed' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
+            {% elif task.status == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
+            {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">{{ task.status }}</span>
+        </div>
+        {% empty %}
+        <div class="px-5 py-8 text-center text-sm text-gray-400">No recent tasks</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Reel music catalog</h2>
+        <span class="text-xs {% if music_missing %}text-red-600 dark:text-red-400{% else %}text-green-600 dark:text-green-400{% endif %}">
+          {{ music_total }} tracks{% if music_missing %} · {{ music_missing }} missing{% else %} · all present{% endif %}
+        </span>
+      </div>
+      <div class="space-y-1.5">
+        {% for track in music_health %}
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-gray-600 dark:text-gray-400">{{ track.title }} <span class="text-gray-400">({{ track.mood }})</span></span>
+          {% if track.file_ok %}
+          <span class="text-green-600 dark:text-green-400">OK</span>
+          {% else %}
+          <span class="text-red-600 dark:text-red-400">Missing file</span>
+          {% endif %}
+        </div>
+        {% empty %}
+        <p class="text-xs text-gray-400">No tracks in catalog JSON.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

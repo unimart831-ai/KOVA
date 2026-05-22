@@ -96,9 +96,12 @@
     <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center col-span-2">
       <div class="flex items-center justify-center gap-2 mb-1">
         <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-        <p class="text-xs font-medium text-gray-900 dark:text-white">10 AI Automations Active</p>
+        <p class="text-xs font-medium text-gray-900 dark:text-white">{{ automation_types_7d }} automation types active (7d)</p>
       </div>
-      <p class="text-[10px] text-gray-400 leading-relaxed">Lead scoring · Product promo · Competitor intel · Brief actions · Media captions · Trend seeding · Smart approval · Content recycling · Nurture emails · Campaign builder</p>
+      <p class="text-[10px] text-gray-400 leading-relaxed">{{ automation_labels|join:" · " }}</p>
+      {% if ops_tasks_24h %}
+      <p class="text-[10px] text-kova-600 dark:text-kova-400 mt-2">{{ ops_tasks_24h }} platform tasks in last 24h · <a href="{% url 'admin_dashboard:operations_overview' %}" class="hover:underline">Operations →</a></p>
+      {% endif %}
     </div>
 
   </div>
