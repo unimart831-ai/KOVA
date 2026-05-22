@@ -38,7 +38,18 @@ Shows batch context when generation finishes.
             <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800/60 rounded-lg">
               <div class="flex items-center space-x-2 min-w-0">
                 <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ post.social_account.get_platform_display }}</span>
-                {% if post.media_status == 'generated' %}
+                {% if post.post_format == 'reel' %}
+                  <span class="text-[9px] bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400 px-1.5 py-0.5 rounded font-medium">Reel</span>
+                  {% if post.reel_compose_pending %}
+                  <span class="text-[9px] bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400 px-1.5 py-0.5 rounded font-medium animate-pulse">Composing…</span>
+                  {% elif post.reel_has_video %}
+                  <span class="text-[9px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 px-1.5 py-0.5 rounded font-medium">Video ready</span>
+                  {% elif post.reel_compose_status == 'failed' %}
+                  <span class="text-[9px] bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400 px-1.5 py-0.5 rounded font-medium">Reel failed</span>
+                  {% endif %}
+                {% elif post.post_format == 'carousel' %}
+                  <span class="text-[9px] bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400 px-1.5 py-0.5 rounded font-medium">Carousel</span>
+                {% elif post.media_status == 'generated' %}
                   <span class="text-[9px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 px-1.5 py-0.5 rounded font-medium">AI image</span>
                 {% elif post.media_status == 'uploaded' %}
                   <span class="text-[9px] bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 px-1.5 py-0.5 rounded font-medium">Uploaded</span>

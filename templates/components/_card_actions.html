@@ -6,7 +6,9 @@
 
     {# Approve button opens modal #}
     <button @click="showSchedule = true" type="button"
-            class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors shadow-sm">
+            {% if post.reel_compose_pending %}disabled title="Motion reel is still composing — wait a moment"{% endif %}
+            class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-lg transition-colors shadow-sm
+                   {% if post.reel_compose_pending %}text-gray-400 bg-gray-200 dark:bg-gray-800 cursor-not-allowed opacity-60{% else %}text-white bg-kova-600 hover:bg-kova-700{% endif %}">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:12px;height:12px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
       Approve
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:10px;height:10px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>

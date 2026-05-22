@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "tracks": [
+    {"id": "upbeat-01", "title": "Sunrise Drive", "mood": "upbeat", "file": "upbeat/sunrise-drive.mp3", "duration_sec": 30, "source": "placeholder", "attribution": ""},
+    {"id": "upbeat-02", "title": "Market Day", "mood": "upbeat", "file": "upbeat/market-day.mp3", "duration_sec": 30, "source": "placeholder", "attribution": ""},
+    {"id": "upbeat-03", "title": "City Pulse", "mood": "upbeat", "file": "upbeat/city-pulse.mp3", "duration_sec": 30, "source": "placeholder", "attribution": ""},
+    {"id": "upbeat-04", "title": "Afro Groove 1", "mood": "upbeat", "file": "upbeat/afro-groove-1.mp3", "duration_sec": 30, "source": "commissioned", "attribution": "Kova Original"},
+    {"id": "upbeat-05", "title": "Gengetone Beat 1", "mood": "upbeat", "file": "upbeat/gengetone-1.mp3", "duration_sec": 30, "source": "commissioned", "attribution": "Kova Original"},
+    {"id": "upbeat-06", "title": "Shop Energy", "mood": "upbeat", "file": "upbeat/shop-energy.mp3", "duration_sec": 30, "source": "placeholder", "attribution": ""},
+    {"id": "upbeat-07", "title": "Bright Steps", "mood": "upbeat", "file": "upbeat/bright-steps.mp3", "duration_sec": 30, "source": "placeholder", "attribution": ""},
+    {"id": "upbeat-08", "title": "Weekend Vibes", "mood": "upbeat", "file": "upbeat/weekend-vibes.mp3", "duration_sec": 30, "source": "placeholder", "attribution": ""},
+    {"id": "upbeat-09", "title": "Afro Groove 2", "mood": "upbeat", "file": "upbeat/afro-groove-2.mp3", "duration_sec": 30, "source": "commissioned", "attribution": "Kova Original"},
+    {"id": "upbeat-10", "title": "Launch Day", "mood": "upbeat", "file": "upbeat/launch-day.mp3", "duration_sec": 30, "source": "placeholder", "attribution": ""},
+
+    {"id": "calm-01", "title": "Soft Morning", "mood": "calm", "file": "calm/soft-morning.mp3", "duration_sec": 30, "source": "placeholder", "attribution": ""},
+    {"id": "calm-02", "title": "Quiet Focus", "mood": "calm", "file": "calm/quiet-focus.mp3", "duration_sec": 30, "source": "placeholder", "attribution": ""},
+    {"id": "calm-03", "title": "Gentle Flow", "mood": "calm", "file": "calm/gentle-flow.mp3", "duration_sec": 30, "source": "placeholder", "attribution": ""},
+    {"id": "calm-04", "title": "Coastal Calm", "mood": "calm", "file": "calm/coastal-calm.mp3", "duration_sec": 30, "source": "placeholder", "attribution": ""},
+    {"id": "calm-05", "title": "Studio Light", "mood": "calm", "file": "calm/studio-light.mp3", "duration_sec": 30, "source": "placeholder", "attribution": ""},
+    {"id": "calm-06", "title": "Afro Chill 1", "mood": "calm", "file": "calm/afro-chill-1.mp3", "duration_sec": 30, "source": "commissioned", "attribution": "Kova Original"},
+    {"id": "calm-07", "title": "Evening Tea", "mood": "calm", "file": "calm/evening-tea.mp3", "duration_sec": 30, "source": "placeholder", "attribution": ""},
+    {"id": "calm-08", "title": "Mindful Moment", "mood": "calm", "file": "calm/mindful-moment.mp3", "duration_sec": 30, "source": "placeholder", "attribution": ""},
+    {"id": "calm-09", "title": "Warm Breeze", "mood": "calm", "file": "calm/warm-breeze.mp3", "duration_sec": 30, "source": "placeholder", "attribution": ""},
+    {"id": "calm-10", "title": "Afro Chill 2", "mood": "calm", "file": "calm/afro-chill-2.mp3", "duration_sec": 30, "source": "commissioned", "attribution": "Kova Original"},
+
+    {"id": "urgent-01", "title": "Flash Sale", "mood": "urgent", "file": "urgent/flash-sale.mp3", "duration_sec": 25, "source": "placeholder", "attribution": ""},
+    {"id": "urgent-02", "title": "Last Call", "mood": "urgent", "file": "urgent/last-call.mp3", "duration_sec": 25, "source": "placeholder", "attribution": ""},
+    {"id": "urgent-03", "title": "Countdown", "mood": "urgent", "file": "urgent/countdown.mp3", "duration_sec": 25, "source": "placeholder", "attribution": ""},
+    {"id": "urgent-04", "title": "Deal Drop", "mood": "urgent", "file": "urgent/deal-drop.mp3", "duration_sec": 25, "source": "placeholder", "attribution": ""},
+    {"id": "urgent-05", "title": "Rush Hour", "mood": "urgent", "file": "urgent/rush-hour.mp3", "duration_sec": 25, "source": "placeholder", "attribution": ""},
+    {"id": "urgent-06", "title": "Gengetone Rush", "mood": "urgent", "file": "urgent/gengetone-rush.mp3", "duration_sec": 25, "source": "commissioned", "attribution": "Kova Original"},
+    {"id": "urgent-07", "title": "Limited Stock", "mood": "urgent", "file": "urgent/limited-stock.mp3", "duration_sec": 25, "source": "placeholder", "attribution": ""},
+    {"id": "urgent-08", "title": "Act Now", "mood": "urgent", "file": "urgent/act-now.mp3", "duration_sec": 25, "source": "placeholder", "attribution": ""},
+    {"id": "urgent-09", "title": "Pulse Alert", "mood": "urgent", "file": "urgent/pulse-alert.mp3", "duration_sec": 25, "source": "placeholder", "attribution": ""},
+    {"id": "urgent-10", "title": "Afro Hype", "mood": "urgent", "file": "urgent/afro-hype.mp3", "duration_sec": 25, "source": "commissioned", "attribution": "Kova Original"}
+  ]
+}

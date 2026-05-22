@@ -111,8 +111,22 @@ Usage: {% url 'content:preview' post.id %}
           <span class="text-xs font-semibold text-gray-900 dark:text-white">{{ post.social_account.username }}</span>
           <svg class="ml-auto w-5 h-5 text-gray-900 dark:text-white" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="6" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="18" r="1.5"/></svg>
         </div>
-        {# Image #}
-        {% if post.media_urls %}
+        {# Media — Reels use 9:16 video #}
+        {% if post.post_format == 'reel' %}
+        <div class="aspect-[9/16] max-h-[420px] mx-auto bg-black">
+          {% if post.reel_has_video %}
+          <video src="{{ post.reel_video_url }}" controls playsinline preload="metadata"
+                 {% if post.reel_thumbnail_url %}poster="{{ post.reel_thumbnail_url }}"{% endif %}
+                 class="w-full h-full object-cover"></video>
+          {% elif post.reel_compose_pending %}
+          <div class="w-full h-full flex flex-col items-center justify-center gap-2 bg-gray-900 relative">
+            {% if post.reel_thumbnail_url %}<img src="{{ post.reel_thumbnail_url }}" class="absolute inset-0 w-full h-full object-cover opacity-30">{% endif %}
+            <div class="relative z-10 w-8 h-8 border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
+            <p class="relative z-10 text-[10px] text-white font-medium">Composing reel…</p>
+          </div>
+          {% endif %}
+        </div>
+        {% elif post.media_urls %}
         <div class="aspect-square bg-gray-100 dark:bg-gray-900">
           <img src="{{ post.media_urls.0 }}" class="w-full h-full object-cover" loading="lazy">
         </div>
@@ -151,7 +165,11 @@ Usage: {% url 'content:preview' post.id %}
           </div>
           <p class="mt-2 text-sm text-gray-900 dark:text-[#e4e6eb] whitespace-pre-line">{{ post.content_text }}</p>
         </div>
-        {% if post.media_urls %}
+        {% if post.post_format == 'reel' and post.reel_has_video %}
+        <video src="{{ post.reel_video_url }}" controls playsinline preload="metadata"
+               {% if post.reel_thumbnail_url %}poster="{{ post.reel_thumbnail_url }}"{% endif %}
+               class="w-full h-64 object-cover bg-black"></video>
+        {% elif post.media_urls %}
         <div class="{% if post.media_urls|length == 1 %}{% else %}grid grid-cols-2 gap-0.5{% endif %}">
           {% for url in post.media_urls %}
           <img src="{{ url }}" class="w-full {% if post.media_urls|length == 1 %}h-64{% else %}h-40{% endif %} object-cover" loading="lazy">
@@ -168,7 +186,17 @@ Usage: {% url 'content:preview' post.id %}
       {# ═══════════════ TIKTOK ═══════════════ #}
       {% elif platform == 'tiktok' %}
       <div class="bg-black rounded-2xl overflow-hidden max-w-[90vw] sm:max-w-[280px] mx-auto relative" style="aspect-ratio: 9/16;">
-        {% if post.media_urls %}
+        {% if post.post_format == 'reel' and post.reel_has_video %}
+        <video src="{{ post.reel_video_url }}" controls playsinline preload="metadata"
+               {% if post.reel_thumbnail_url %}poster="{{ post.reel_thumbnail_url }}"{% endif %}
+               class="absolute inset-0 w-full h-full object-cover"></video>
+        {% elif post.post_format == 'reel' and post.reel_compose_pending %}
+        <div class="absolute inset-0 bg-gray-900 flex flex-col items-center justify-center gap-2">
+          {% if post.reel_thumbnail_url %}<img src="{{ post.reel_thumbnail_url }}" class="absolute inset-0 w-full h-full object-cover opacity-30">{% endif %}
+          <div class="relative z-10 w-8 h-8 border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
+          <p class="relative z-10 text-[10px] text-white">Composing…</p>
+        </div>
+        {% elif post.media_urls %}
         <img src="{{ post.media_urls.0 }}" class="absolute inset-0 w-full h-full object-cover" loading="lazy">
         {% else %}
         <div class="absolute inset-0 bg-gradient-to-b from-gray-800 to-gray-900"></div>

@@ -85,8 +85,11 @@
                 <li class="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700">
                   <div class="flex items-center justify-between gap-2">
                     <p class="text-xs font-medium text-gray-500" x-text="post.platform"></p>
-                    <span x-show="post.media_status === 'pending'" class="text-[9px] text-amber-600 dark:text-amber-400">Image generating</span>
-                    <span x-show="post.media_status === 'generated'" class="text-[9px] text-emerald-600 dark:text-emerald-400">AI image</span>
+                    <span x-show="post.post_format === 'reel' && post.reel_compose_pending" class="text-[9px] text-orange-600 dark:text-orange-400">Composing reel…</span>
+                    <span x-show="post.post_format === 'reel' && post.reel_has_video" class="text-[9px] text-emerald-600 dark:text-emerald-400">Motion reel ready</span>
+                    <span x-show="post.post_format === 'reel' && !post.reel_compose_pending && !post.reel_has_video && post.media_status === 'pending'" class="text-[9px] text-amber-600 dark:text-amber-400">Creating frame…</span>
+                    <span x-show="post.post_format !== 'reel' && post.media_status === 'pending'" class="text-[9px] text-amber-600 dark:text-amber-400">Image generating</span>
+                    <span x-show="post.post_format !== 'reel' && post.media_status === 'generated'" class="text-[9px] text-emerald-600 dark:text-emerald-400">AI image</span>
                   </div>
                   <p x-show="post.angle" class="text-[10px] text-kova-500 dark:text-kova-400 mt-0.5" x-text="post.angle"></p>
                   <p class="text-sm text-gray-900 dark:text-white mt-1 line-clamp-2" x-text="post.preview"></p>

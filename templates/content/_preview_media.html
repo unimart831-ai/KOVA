@@ -1,0 +1,18 @@
+{# Platform preview media — reel video or image grid #}
+{% if post.post_format == 'reel' and post.reel_has_video %}
+  <video src="{{ post.reel_video_url }}" controls playsinline preload="metadata"
+         {% if post.reel_thumbnail_url %}poster="{{ post.reel_thumbnail_url }}"{% endif %}
+         class="{{ preview_media_class|default:'w-full h-full object-cover' }}"></video>
+{% elif post.post_format == 'reel' and post.reel_compose_pending %}
+  <div class="relative {{ preview_media_class|default:'w-full h-full' }} bg-gray-900 flex flex-col items-center justify-center gap-2">
+    {% if post.reel_thumbnail_url %}
+    <img src="{{ post.reel_thumbnail_url }}" alt="" class="absolute inset-0 w-full h-full object-cover opacity-40">
+    {% endif %}
+    <div class="relative z-10 w-8 h-8 border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
+    <p class="relative z-10 text-[10px] font-medium text-white">Composing reel…</p>
+  </div>
+{% elif post.media_urls %}
+  {% for url in post.media_urls %}
+  <img src="{{ url }}" class="{{ preview_media_class|default:'w-full object-cover' }}" loading="lazy">
+  {% endfor %}
+{% endif %}

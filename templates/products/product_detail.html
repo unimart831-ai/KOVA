@@ -129,15 +129,22 @@
     <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Content for This Product</h3>
     <ul class="space-y-2">
       {% for post in recent_posts %}
-      <li class="flex items-center justify-between text-sm">
-        <span class="text-gray-600 dark:text-gray-400 truncate flex-1 mr-3">
+      <li class="flex items-center justify-between text-sm gap-2">
+        <span class="text-gray-600 dark:text-gray-400 truncate flex-1 min-w-0">
           <span class="inline-block px-1.5 py-0.5 rounded text-xs font-medium
             {% if post.status == 'published' %}bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300
             {% elif post.status == 'scheduled' %}bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300
             {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
             {{ post.get_status_display }}
           </span>
-          {{ post.content_text|truncatewords:15 }}
+          {% if post.post_format == 'reel' %}
+          <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300">Reel</span>
+          {% if post.reel_compose_pending %}<span class="text-[10px] text-orange-500 animate-pulse">composing…</span>
+          {% elif post.reel_has_video %}<span class="text-[10px] text-emerald-600">ready</span>{% endif %}
+          {% elif post.post_format == 'carousel' %}
+          <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">Carousel</span>
+          {% endif %}
+          <a href="{% url 'content:post_detail' post.id %}" class="hover:text-kova-600 dark:hover:text-kova-400">{{ post.content_text|truncatewords:12 }}</a>
         </span>
         <span class="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">{{ post.created_at|timesince }} ago</span>
       </li>

@@ -505,6 +505,7 @@ def create_product_carousel_posts(product_id: str, seed_id: str, key_features: l
     from apps.content.models import ContentSeed, Post
     from apps.platforms.models import SocialAccount
     from apps.products.models import Product
+    from apps.utils import fire_task
 
     CAROUSEL_PLATFORMS = {"instagram", "facebook", "linkedin"}
 
@@ -583,6 +584,130 @@ def create_product_carousel_posts(product_id: str, seed_id: str, key_features: l
 
     logger.info(
         "create_product_carousel_posts: %d carousel post(s) created for product %s",
+        posts_created, product_id,
+    )
+
+    if posts_created:
+        fire_task(
+            create_product_reel_posts,
+            str(product.pk),
+            str(seed_id) if seed_id else "",
+            key_features,
+        )
+
+
+@shared_task(name="products.create_product_reel_posts")
+def create_product_reel_posts(product_id: str, seed_id: str, key_features: list):
+    """
+    Create motion Reel variants from product carousel slides (same seed, two formats).
+
+    Uses existing product carousel images — no extra FLUX calls.
+    """
+    from apps.agents.models import AgentAction
+    from apps.content.models import ContentSeed, Post
+    from apps.content.tasks import compose_reel_video
+    from apps.platforms.models import SocialAccount
+    from apps.products.models import Product
+    from apps.utils import fire_task
+
+    REEL_PLATFORMS = {"instagram", "facebook", "tiktok"}
+
+    try:
+        product = Product.objects.select_related("user").get(pk=product_id)
+    except Product.DoesNotExist:
+        logger.error("create_product_reel_posts: product %s not found", product_id)
+        return
+
+    user = product.user
+    seed = None
+    if seed_id:
+        try:
+            seed = ContentSeed.objects.get(pk=seed_id)
+        except ContentSeed.DoesNotExist:
+            pass
+
+    carousel_posts = Post.objects.filter(
+        user=user,
+        product=product,
+        visual_strategy="carousel",
+    ).order_by("-created_at")
+
+    if not carousel_posts.exists():
+        logger.info("create_product_reel_posts: no carousel posts for product %s", product_id)
+        return
+
+    accounts = SocialAccount.objects.filter(
+        user=user, is_active=True, platform__in=REEL_PLATFORMS,
+    )
+    if not accounts.exists():
+        logger.info("create_product_reel_posts: no reel-eligible accounts for user %s", user.email)
+        return
+
+    profile = getattr(user, "profile", None)
+    price_label = product.display_price or ""
+    caption = product.name
+    if key_features:
+        caption += "\n\n" + "\n".join(f"✅ {f}" for f in key_features[:3])
+    if price_label:
+        caption += f"\n\n💰 {price_label}"
+
+    posts_created = 0
+    for account in accounts:
+        source_post = carousel_posts.filter(platform=account.platform).first() or carousel_posts.first()
+        source_images = list(source_post.media_urls or [])
+        if len(source_images) < 2:
+            for att in source_post.attachments.filter(file_type="image").order_by("order"):
+                from apps.content.tasks import _public_url_for_file
+                url = _public_url_for_file(att.file.name)
+                if url:
+                    source_images.append(url)
+        if len(source_images) < 1:
+            continue
+
+        initial_status = (
+            Post.Status.APPROVED
+            if profile and getattr(profile, "auto_approve_posts", False)
+            else Post.Status.PENDING_APPROVAL
+        )
+        post = Post.objects.create(
+            user=user,
+            seed=seed,
+            product=product,
+            social_account=account,
+            platform=account.platform,
+            content_text=caption,
+            content_type="original",
+            status=initial_status,
+            post_format=Post.PostFormat.REEL,
+            aspect_ratio=Post.AspectRatio.STORY,
+            visual_strategy="carousel",
+            media_status=Post.MediaStatus.GENERATED,
+            media_urls=source_images,
+            visual_metadata={
+                "reel_template": "carousel_to_video",
+                "source_images": source_images,
+                "source_carousel_post_id": str(source_post.pk),
+                "music_mood": "upbeat",
+                "video_compose_status": "pending",
+            },
+            generated_by_agent="create",
+        )
+        fire_task(compose_reel_video, str(post.pk))
+        posts_created += 1
+
+    AgentAction.objects.create(
+        user=user,
+        agent_type="create",
+        action_type="snap.reel",
+        description=f"Auto-reel from Snap to Sell: {product.name} ({posts_created} post(s) created)",
+        status=AgentAction.ActionStatus.COMPLETED if posts_created else AgentAction.ActionStatus.FAILED,
+        input_data={"product_id": str(product.pk), "seed_id": seed_id, "features": key_features},
+        output_data={"posts_created": posts_created},
+        completed_at=timezone.now(),
+    )
+
+    logger.info(
+        "create_product_reel_posts: %d reel post(s) created for product %s",
         posts_created, product_id,
     )
 

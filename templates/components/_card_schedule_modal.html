@@ -17,8 +17,8 @@
 
     {# Modal panel — nested x-data for image-approval step #}
     <div x-show="showSchedule"
-         x-data="{ imgOk: {% if not post.media_urls %}true{% else %}false{% endif %} }"
-         x-effect="if(!showSchedule) imgOk = {% if not post.media_urls %}true{% else %}false{% endif %}"
+         x-data="{ imgOk: {% if post.reel_has_video or not post.media_urls and not post.reel_compose_pending %}true{% else %}false{% endif %} }"
+         x-effect="if(!showSchedule) imgOk = {% if post.reel_has_video or not post.media_urls and not post.reel_compose_pending %}true{% else %}false{% endif %}"
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0 scale-95 translate-y-2"
          x-transition:enter-end="opacity-100 scale-100 translate-y-0"
@@ -41,12 +41,19 @@
         </button>
       </div>
 
-      {% if post.media_urls %}
+      {% if post.media_urls or post.reel_has_video or post.reel_compose_pending %}
       {# ── Step 1: Image review ─────────────────────────────────────── #}
       <div x-show="!imgOk" x-cloak>
 
         {# Image preview #}
-        {% if post.visual_strategy == 'carousel' %}
+        {% if post.post_format == 'reel' %}
+        <div class="px-4 pt-4 pb-2">
+          {% include "components/_reel_media_preview.html" with post=post reel_size="modal" %}
+          {% if post.reel_compose_pending %}
+          <p class="text-[11px] text-orange-600 dark:text-orange-400 text-center mt-2 animate-pulse">Please wait — your motion reel is being composed</p>
+          {% endif %}
+        </div>
+        {% elif post.visual_strategy == 'carousel' %}
         {# Carousel: horizontal strip of up to 3 slides #}
         <div class="flex gap-2 overflow-x-auto px-4 pt-4 pb-2 scrollbar-none snap-x">
           {% for url in post.media_urls|slice:":4" %}
@@ -86,7 +93,9 @@
         {# Action buttons #}
         <div class="px-4 pb-4 flex items-center gap-2">
           <button @click="imgOk = true"
-                  class="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-kova-600 hover:bg-kova-700 active:bg-kova-800 rounded-xl transition-colors shadow-sm">
+                  {% if post.reel_compose_pending %}disabled{% endif %}
+                  class="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white rounded-xl transition-colors shadow-sm
+                         {% if post.reel_compose_pending %}bg-gray-300 dark:bg-gray-700 cursor-not-allowed{% else %}bg-kova-600 hover:bg-kova-700 active:bg-kova-800{% endif %}">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
             Looks Good
           </button>

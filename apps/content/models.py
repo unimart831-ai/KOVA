@@ -288,7 +288,102 @@ class Post(SoftDeleteMixin, models.Model):
     @property
     def has_media(self):
         """True if the post has at least one image/video attached."""
+        if self.post_format == self.PostFormat.REEL and self.reel_has_video:
+            return True
         return bool(self.media_urls) or self.attachments.exists()
+
+    @property
+    def reel_meta(self):
+        return self.visual_metadata or {}
+
+    @property
+    def reel_compose_status(self):
+        if self.post_format != self.PostFormat.REEL:
+            return ""
+        return self.reel_meta.get("video_compose_status", "")
+
+    @property
+    def reel_has_video(self):
+        from apps.content.video_compose import is_video_url
+
+        video_url = self.reel_meta.get("reel_video_url")
+        if video_url and is_video_url(video_url):
+            return True
+        for url in self.media_urls or []:
+            if is_video_url(url):
+                return True
+        return self.attachments.filter(file_type="video").exists()
+
+    @property
+    def reel_video_url(self):
+        if self.reel_meta.get("reel_video_url"):
+            return self.reel_meta["reel_video_url"]
+        from apps.content.video_compose import is_video_url
+
+        for url in self.media_urls or []:
+            if is_video_url(url):
+                return url
+        video_att = self.attachments.filter(file_type="video").order_by("order").first()
+        if video_att and video_att.file:
+            return video_att.file.url
+        return ""
+
+    @property
+    def reel_thumbnail_url(self):
+        thumb = self.reel_meta.get("reel_thumbnail_url")
+        if thumb:
+            return thumb
+        from apps.content.video_compose import is_video_url
+
+        for url in self.media_urls or []:
+            if url and not is_video_url(url):
+                return url
+        for att in self.attachments.filter(file_type="image").order_by("order"):
+            if att.file:
+                return att.file.url
+        sources = self.reel_meta.get("source_images") or []
+        return sources[0] if sources else ""
+
+    @property
+    def reel_is_carousel_variant(self):
+        return (
+            self.post_format == self.PostFormat.REEL
+            and self.reel_meta.get("reel_template") == "carousel_to_video"
+        )
+
+    @property
+    def reel_compose_pending(self):
+        if self.post_format != self.PostFormat.REEL:
+            return False
+        if self.reel_compose_status == "pending":
+            return True
+        if self.reel_has_video:
+            return False
+        if self.reel_compose_status == "failed":
+            return False
+        # Images/source slides exist but MP4 not ready yet (queued or starting)
+        return bool(
+            self.reel_meta.get("source_images")
+            or self.media_urls
+            or self.attachments.filter(file_type="image").exists()
+        )
+
+    @property
+    def media_processing(self):
+        """True while AI images or motion reel composition are in progress."""
+        if self.media_status == self.MediaStatus.PENDING:
+            return True
+        return self.reel_compose_pending
+
+    @property
+    def reel_source_slide_urls(self):
+        """Source images used before reel composition (carousel → reel)."""
+        urls = list(self.reel_meta.get("source_images") or [])
+        if urls:
+            return urls
+        from apps.content.video_compose import is_video_url
+
+        return [u for u in (self.media_urls or []) if u and not is_video_url(u)]
 
     @property
     def needs_media(self):
@@ -361,7 +456,16 @@ class Post(SoftDeleteMixin, models.Model):
     @property
     def media_warning(self):
         """User-facing warning message for media issues."""
+        if self.post_format == self.PostFormat.REEL:
+            if self.reel_compose_status == "failed":
+                err = self.reel_meta.get("video_compose_error", "")
+                base = "Motion reel failed to compose."
+                return f"{base} {err}".strip() if err else base
+            if self.reel_compose_pending:
+                return ""
         if self.media_status == self.MediaStatus.FAILED:
+            if self.post_format == self.PostFormat.REEL:
+                return "Image step failed. Retry or re-compose the reel."
             return "Image generation failed. Upload an image or retry."
         if self.needs_media:
             if self.social_account:

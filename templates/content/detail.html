@@ -45,7 +45,13 @@
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300">
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 Reel · 9:16
+                {% if post.reel_is_carousel_variant %} · from carousel{% endif %}
               </span>
+              {% if post.reel_compose_pending %}
+              <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400 animate-pulse">Composing…</span>
+              {% elif post.reel_has_video %}
+              <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">Video ready</span>
+              {% endif %}
             {% elif post.post_format == 'image' %}
               <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">Image</span>
             {% endif %}
@@ -141,22 +147,26 @@
           </div>
         </div>
 
-        {# ── Story / Reel: 9:16 viewer ── #}
-        {% elif post.post_format == 'story' or post.post_format == 'reel' %}
+        {# ── Reel: motion video viewer ── #}
+        {% elif post.post_format == 'reel' %}
+        <div class="px-5 pb-4">
+          {% include "components/_reel_media_preview.html" with post=post reel_size="large" %}
+        </div>
+
+        {# ── Story: 9:16 viewer ── #}
+        {% elif post.post_format == 'story' %}
         {% if post.media_urls or post.attachments.exists %}
         <div class="px-5 pb-4 flex justify-center">
           <div class="relative w-40 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-md" style="aspect-ratio:9/16">
             {% if post.media_urls %}
-              <img src="{{ post.media_urls.0 }}" alt="{{ post.post_format|title }}" loading="lazy"
+              <img src="{{ post.media_urls.0 }}" alt="Story" loading="lazy"
                    class="w-full h-full object-cover bg-gray-100 dark:bg-gray-800">
             {% elif post.attachments.exists %}
-              <img src="{{ post.attachments.first.file.url }}" alt="{{ post.post_format|title }}" loading="lazy"
+              <img src="{{ post.attachments.first.file.url }}" alt="Story" loading="lazy"
                    class="w-full h-full object-cover bg-gray-100 dark:bg-gray-800">
             {% endif %}
             <div class="absolute top-2 left-2 right-2 flex justify-between items-center">
-              <span class="text-[8px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded-full">
-                {% if post.post_format == 'reel' %}REEL{% else %}STORY{% endif %}
-              </span>
+              <span class="text-[8px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded-full">STORY</span>
               <span class="text-[8px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded-full">9:16</span>
             </div>
           </div>
@@ -165,7 +175,7 @@
         <div class="px-5 pb-4">
           <div class="flex items-center justify-center gap-2 px-4 py-5 rounded-xl border border-dashed border-pink-200 dark:border-pink-800 bg-pink-50/30 dark:bg-pink-950/20">
             <svg class="w-4 h-4 text-pink-400 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-            <span class="text-sm text-pink-500 dark:text-pink-400 font-medium">Generating {{ post.post_format }} image (9:16)…</span>
+            <span class="text-sm text-pink-500 dark:text-pink-400 font-medium">Generating story image (9:16)…</span>
           </div>
         </div>
         {% endif %}
@@ -214,7 +224,11 @@
             {% if post.predicted_engagement_score %}
             <span>AI Score: {{ post.predicted_engagement_score|floatformat:0 }}%</span>
             {% endif %}
-            {% if post.media_status and post.media_status != 'none' %}
+            {% if post.post_format == 'reel' %}
+            <span class="inline-flex items-center gap-1 {% if post.reel_has_video %}text-emerald-600 dark:text-emerald-400{% elif post.reel_compose_pending %}text-orange-600 dark:text-orange-400{% elif post.reel_compose_status == 'failed' %}text-red-600 dark:text-red-400{% else %}text-gray-500{% endif %}">
+              {% if post.reel_has_video %}Motion reel ready{% elif post.reel_compose_pending %}Composing reel…{% elif post.reel_compose_status == 'failed' %}Reel failed{% else %}Reel{% endif %}
+            </span>
+            {% elif post.media_status and post.media_status != 'none' %}
             <span class="inline-flex items-center gap-1 {% if post.media_status == 'generated' %}text-emerald-600 dark:text-emerald-400{% elif post.media_status == 'uploaded' %}text-blue-600 dark:text-blue-400{% elif post.media_status == 'failed' %}text-red-600 dark:text-red-400{% elif post.media_status == 'pending' %}text-yellow-600 dark:text-yellow-400{% endif %}">
               {% if post.media_status == 'generated' %}AI image{% elif post.media_status == 'uploaded' %}Uploaded{% elif post.media_status == 'failed' %}Image failed{% elif post.media_status == 'pending' %}Generating…{% endif %}
             </span>
@@ -340,7 +354,7 @@
       <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden"
            x-data="{
              showSchedule: false,
-             imgOk: {% if post.media_urls %}false{% else %}true{% endif %},
+             imgOk: {% if post.reel_has_video or not post.media_urls and not post.reel_compose_pending %}true{% else %}false{% endif %},
              submit(intent, datetime) {
                this.showSchedule = false;
                var f = document.getElementById('af-{{ post.id }}');
@@ -425,7 +439,7 @@
                 </div>
 
                 {# Image review step — only when post has media to review #}
-                {% if post.media_urls %}
+                {% if post.media_urls or post.reel_has_video or post.reel_compose_pending %}
                 <div x-show="!imgOk" x-cloak>
                   <div class="px-4 pt-4 pb-2">
                     {% if post.post_format == 'carousel' %}
@@ -440,12 +454,14 @@
                       <div class="flex-shrink-0 w-[50px] flex items-center justify-center text-xs text-gray-400 font-medium">+{{ post.media_urls|length|add:"-4" }} more</div>
                       {% endif %}
                     </div>
-                    {% elif post.post_format == 'story' or post.post_format == 'reel' %}
+                    {% elif post.post_format == 'reel' %}
+                    {% include "components/_reel_media_preview.html" with post=post reel_size="modal" %}
+                    {% elif post.post_format == 'story' %}
                     <div class="flex justify-center">
                       <div class="relative w-28 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700" style="aspect-ratio:9/16">
-                        <img src="{{ post.media_urls.0 }}" alt="{{ post.post_format|title }}" loading="lazy" class="w-full h-full object-cover">
+                        <img src="{{ post.media_urls.0 }}" alt="Story" loading="lazy" class="w-full h-full object-cover">
                         <div class="absolute top-1 left-1 right-1 flex justify-between">
-                          <span class="text-[7px] font-bold text-white bg-black/60 px-1 py-0.5 rounded-full">{% if post.post_format == 'reel' %}REEL{% else %}STORY{% endif %}</span>
+                          <span class="text-[7px] font-bold text-white bg-black/60 px-1 py-0.5 rounded-full">STORY</span>
                           <span class="text-[7px] font-bold text-white bg-black/60 px-1 py-0.5 rounded-full">9:16</span>
                         </div>
                       </div>
@@ -460,7 +476,9 @@
                   </div>
                   <div class="px-4 pb-4 flex items-center gap-2">
                     <button @click="imgOk = true"
-                            class="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-kova-600 hover:bg-kova-700 rounded-xl transition shadow-sm">
+                            {% if post.reel_compose_pending %}disabled{% endif %}
+                            class="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white rounded-xl transition shadow-sm
+                                   {% if post.reel_compose_pending %}bg-gray-300 dark:bg-gray-700 cursor-not-allowed{% else %}bg-kova-600 hover:bg-kova-700{% endif %}">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                       Looks Good
                     </button>

@@ -51,11 +51,14 @@
   </div>
 
 {# Story / Reel: show 9:16 frame #}
-{% elif post.post_format == 'story' or post.post_format == 'reel' %}
+{% elif post.post_format == 'reel' %}
+  {% include "components/_reel_media_preview.html" with post=post reel_size="compact" %}
+
+{% elif post.post_format == 'story' %}
   {% if post.media_urls %}
     <div class="mb-3 flex justify-center">
       <div class="relative w-20 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm" style="aspect-ratio:9/16">
-        <img src="{{ post.media_urls.0 }}" alt="{{ post.post_format|title }}" loading="lazy"
+        <img src="{{ post.media_urls.0 }}" alt="Story" loading="lazy"
              class="w-full h-full object-cover bg-gray-100 dark:bg-gray-800"
              onerror="this.parentElement.style.display='none'">
         <div class="absolute bottom-1 inset-x-0 flex justify-center">
@@ -76,7 +79,7 @@
           <p class="text-[8px] font-semibold text-pink-500 dark:text-pink-400 text-center leading-tight px-1">AI painting 9:16</p>
         </div>
         <div class="absolute top-1 left-1">
-          <span class="text-[7px] font-bold bg-pink-500/80 text-white px-1 py-0.5 rounded">{% if post.post_format == 'reel' %}REEL{% else %}STORY{% endif %}</span>
+          <span class="text-[7px] font-bold bg-pink-500/80 text-white px-1 py-0.5 rounded">STORY</span>
         </div>
       </div>
     </div>

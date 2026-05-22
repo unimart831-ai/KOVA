@@ -410,6 +410,10 @@ def seed_generation_status(request, seed_id):
                 "angle": p.ai_angle or "",
                 "preview": p.content_text[:120],
                 "media_status": p.media_status,
+                "post_format": p.post_format,
+                "video_compose_status": p.reel_compose_status,
+                "reel_compose_pending": p.reel_compose_pending,
+                "reel_has_video": p.reel_has_video,
                 "status": p.status,
             }
             for p in posts
@@ -1132,6 +1136,32 @@ def retry_image(request, post_id):
             '⏳ Retrying…</span>'
         )
     messages.info(request, "Retrying image generation…")
+    return redirect("content:edit", post_id=post.id)
+
+
+@login_required
+@require_POST
+def retry_reel(request, post_id):
+    """Retry motion reel composition for a failed or stuck reel post."""
+    post = get_object_or_404(Post.objects.select_related("user", "social_account"), id=post_id)
+    if not can_edit_post(request.user, post):
+        raise Http404
+    if post.post_format != Post.PostFormat.REEL:
+        return HttpResponse("Not a reel post", status=400)
+
+    from apps.content.tasks import _queue_reel_compose
+
+    meta = dict(post.visual_metadata or {})
+    meta.pop("video_compose_error", None)
+    post.visual_metadata = meta
+    post.media_status = Post.MediaStatus.GENERATED
+    post.save(update_fields=["visual_metadata", "media_status", "updated_at"])
+
+    _queue_reel_compose(str(post.id))
+
+    if request.headers.get("HX-Request"):
+        return render(request, "components/post_card.html", {"post": post})
+    messages.info(request, "Re-composing motion reel…")
     return redirect("content:edit", post_id=post.id)
 
 

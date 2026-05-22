@@ -141,6 +141,96 @@ def _public_url_for_file(file_name: str):
     return None
 
 
+# ── Motion Reel helpers ──────────────────────────────────────────────────
+
+def _is_video_url(url: str) -> bool:
+    from apps.content.video_compose import is_video_url
+    return is_video_url(url or "")
+
+
+def _post_has_reel_video(post) -> bool:
+    for url in post.media_urls or []:
+        if _is_video_url(url):
+            return True
+    return post.attachments.filter(file_type="video").exists()
+
+
+def _normalize_reel_image_source(source: str) -> str:
+    """Return an absolute URL or local path FFmpeg can read."""
+    if not source:
+        return source
+    if source.startswith(("http://", "https://")):
+        return source
+    from django.conf import settings
+
+    if source.startswith("/"):
+        site = getattr(settings, "SITE_URL", "").rstrip("/")
+        if site and "localhost" not in site:
+            return f"{site}{source}"
+        media_url = getattr(settings, "MEDIA_URL", "/media/").rstrip("/")
+        if source.startswith(media_url + "/") or source.startswith(media_url):
+            rel = source[len(media_url):].lstrip("/")
+            public = _public_url_for_file(rel)
+            if public:
+                return public
+    public = _public_url_for_file(source.lstrip("/"))
+    if public:
+        return public
+    return source
+
+
+def _collect_reel_image_sources(post) -> list[str]:
+    """Gather ordered image URLs/paths for reel composition."""
+    meta = post.visual_metadata or {}
+
+    source_images = meta.get("source_images") or []
+    if source_images:
+        return [_normalize_reel_image_source(u) for u in source_images if u and not _is_video_url(u)]
+
+    slide_urls = [
+        _normalize_reel_image_source(s.get("image_url"))
+        for s in (post.carousel_slides or [])
+        if isinstance(s, dict) and s.get("image_url")
+    ]
+    if slide_urls:
+        return slide_urls
+
+    urls = [_normalize_reel_image_source(u) for u in (post.media_urls or []) if u and not _is_video_url(u)]
+    if urls:
+        return urls
+
+    from django.core.files.storage import default_storage
+
+    attachment_urls = []
+    for attachment in post.attachments.filter(file_type="image").order_by("order"):
+        if not attachment.file:
+            continue
+        url = _public_url_for_file(attachment.file.name)
+        if url:
+            attachment_urls.append(_normalize_reel_image_source(url))
+        else:
+            try:
+                attachment_urls.append(default_storage.path(attachment.file.name))
+            except Exception:
+                pass
+    return attachment_urls
+
+
+def _queue_reel_compose(post_id: str) -> None:
+    from apps.content.models import Post
+    from apps.utils import fire_task
+
+    try:
+        post = Post.objects.get(pk=post_id)
+        meta = dict(post.visual_metadata or {})
+        meta["video_compose_status"] = "pending"
+        post.visual_metadata = meta
+        post.save(update_fields=["visual_metadata", "updated_at"])
+    except Post.DoesNotExist:
+        pass
+    fire_task(compose_reel_video, post_id)
+
+
 # ── UTM Tracking ─────────────────────────────────────────────────────────
 # Appends UTM parameters to URLs in post content so we can attribute
 # website traffic back to specific posts, platforms, and campaigns.
@@ -465,6 +555,8 @@ def generate_post_images(post_id: str):
                 "generate_post_images: carousel post %s — %d/%d slides have images",
                 post_id, len(image_urls), len(slides),
             )
+            if (post.visual_metadata or {}).get("reel_variant"):
+                _queue_reel_compose(post_id)
 
         elif fmt in (Post.PostFormat.STORY, Post.PostFormat.REEL):
             prompt = (post.media_prompt or "").strip()
@@ -483,6 +575,8 @@ def generate_post_images(post_id: str):
                     "media_urls", "aspect_ratio", "media_status", "updated_at",
                 ])
                 logger.info("generate_post_images: story/reel post %s — image generated", post_id)
+                if fmt == Post.PostFormat.REEL:
+                    _queue_reel_compose(post_id)
             else:
                 post.media_status = Post.MediaStatus.FAILED
                 post.save(update_fields=["media_status", "updated_at"])
@@ -518,6 +612,151 @@ def generate_post_images(post_id: str):
         return {"error": str(exc)}
 
     return {"post_id": post_id, "status": post.media_status}
+
+
+@shared_task(name="content.compose_reel_video", soft_time_limit=300, time_limit=360)
+def compose_reel_video(post_id: str):
+    """
+    Compose a motion Reel MP4 from post images + royalty-free music bed.
+
+    Runs after generate_post_images (single 9:16 frame) or directly for
+    carousel→reel variants that already have slide images.
+    """
+    import uuid
+
+    from django.core.files.base import ContentFile
+    from django.core.files.storage import default_storage
+
+    from apps.content.models import MediaAttachment, Post
+    from apps.content.reel_music import ensure_audio_bed, infer_mood_from_post, pick_music_track
+    from apps.content.video_compose import VideoComposeError, compose_carousel_to_reel, compose_motion_reel
+
+    try:
+        post = Post.objects.select_related("user").get(pk=post_id)
+    except Post.DoesNotExist:
+        logger.warning("compose_reel_video: post %s not found", post_id)
+        return
+
+    if post.post_format != Post.PostFormat.REEL:
+        logger.info("compose_reel_video: post %s is not reel format — skipping", post_id)
+        return
+
+    if _post_has_reel_video(post):
+        logger.info("compose_reel_video: post %s already has video — skipping", post_id)
+        return
+
+    meta = dict(post.visual_metadata or {})
+    meta["video_compose_status"] = "pending"
+    post.visual_metadata = meta
+    post.save(update_fields=["visual_metadata", "updated_at"])
+
+    image_sources = _collect_reel_image_sources(post)
+    if not image_sources:
+        meta["video_compose_status"] = "failed"
+        meta["video_compose_error"] = "No images available for reel composition"
+        post.visual_metadata = meta
+        post.media_status = Post.MediaStatus.FAILED
+        post.save(update_fields=["visual_metadata", "media_status", "updated_at"])
+        logger.warning("compose_reel_video: no images for post %s", post_id)
+        return {"error": "no_images"}
+
+    template = meta.get("reel_template") or "slideshow"
+    mood = meta.get("music_mood") or infer_mood_from_post(post.content_intent, post.content_text)
+    track = pick_music_track(mood=mood, seed=str(post.pk))
+    slide_count = len(image_sources)
+    est_duration = max(slide_count * 3.0 - 0.5 * max(slide_count - 1, 0), 5.0)
+
+    from apps.content.reel_music import resolve_track_path
+
+    audio_path = resolve_track_path(track)
+    generated_audio = audio_path is None
+    if generated_audio:
+        try:
+            audio_path = ensure_audio_bed(track, est_duration + 2)
+        except RuntimeError as exc:
+            meta["video_compose_status"] = "failed"
+            meta["video_compose_error"] = str(exc)
+            post.visual_metadata = meta
+            post.media_status = Post.MediaStatus.FAILED
+            post.save(update_fields=["visual_metadata", "media_status", "updated_at"])
+            return {"error": str(exc)}
+
+    thumbnail_url = None
+    for url in post.media_urls or []:
+        if url and not _is_video_url(url):
+            thumbnail_url = url
+            break
+
+    try:
+        if template == "carousel_to_video":
+            mp4_bytes = compose_carousel_to_reel(image_sources, audio_path=audio_path)
+        else:
+            mp4_bytes = compose_motion_reel(
+                image_sources,
+                slide_duration_sec=3.5 if len(image_sources) == 1 else 3.0,
+                transition_sec=0.5,
+                audio_path=audio_path,
+                template=template,
+            )
+    except VideoComposeError as exc:
+        meta["video_compose_status"] = "failed"
+        meta["video_compose_error"] = str(exc)
+        post.visual_metadata = meta
+        post.media_status = Post.MediaStatus.FAILED
+        post.save(update_fields=["visual_metadata", "media_status", "updated_at"])
+        logger.exception("compose_reel_video failed for post %s", post_id)
+        return {"error": str(exc)}
+    finally:
+        if generated_audio and audio_path:
+            try:
+                from pathlib import Path
+                import tempfile
+
+                if str(audio_path).startswith(tempfile.gettempdir()):
+                    Path(audio_path).unlink(missing_ok=True)
+            except Exception:
+                pass
+
+    file_name = f"reel_videos/{uuid.uuid4().hex}.mp4"
+    saved_name = default_storage.save(file_name, ContentFile(mp4_bytes))
+    public_url = _public_url_for_file(saved_name)
+
+    if not public_url:
+        meta["video_compose_status"] = "failed"
+        meta["video_compose_error"] = "Could not generate public URL for composed reel"
+        post.visual_metadata = meta
+        post.media_status = Post.MediaStatus.FAILED
+        post.save(update_fields=["visual_metadata", "media_status", "updated_at"])
+        return {"error": "no_public_url"}
+
+    post.attachments.filter(file_type="video").delete()
+    MediaAttachment.objects.create(
+        post=post,
+        file=saved_name,
+        file_type="video",
+        order=0,
+        alt_text=f"Motion reel — {track.get('title', 'background music')}",
+    )
+
+    meta.update({
+        "video_compose_status": "done",
+        "reel_template": template,
+        "reel_video_url": public_url,
+        "reel_thumbnail_url": thumbnail_url,
+        "music_track_id": track.get("id"),
+        "music_mood": mood,
+        "music_attribution": track.get("attribution", ""),
+    })
+    post.visual_metadata = meta
+    post.media_urls = [public_url]
+    post.aspect_ratio = Post.AspectRatio.STORY
+    post.media_status = Post.MediaStatus.GENERATED
+    post.save(update_fields=[
+        "visual_metadata", "media_urls", "aspect_ratio", "media_status", "updated_at",
+    ])
+
+    logger.info("compose_reel_video: post %s composed (%d bytes)", post_id, len(mp4_bytes))
+    return {"post_id": post_id, "video_url": public_url, "status": "done"}
 
 
 @shared_task(
@@ -585,6 +824,27 @@ def publish_post(self, post_id: str):
         )
         logger.info("SAFETY REVIEW post %s (score=%d): %s", post_id, safety.risk_score, safety.summary)
         return {"error": f"Content flagged for review: {safety.summary}"}
+
+    # ── Reel/video gate — wait for MP4 composition before publishing ─────
+    _post_format_early = getattr(post, "post_format", "") or ""
+    if _post_format_early == Post.PostFormat.REEL:
+        compose_status = (post.visual_metadata or {}).get("video_compose_status")
+        if not _post_has_reel_video(post):
+            if compose_status in (None, "pending"):
+                logger.info(
+                    "publish_post: reel video not ready for post %s — retrying in 90s",
+                    post_id,
+                )
+                post.status = Post.Status.SCHEDULED
+                post.save(update_fields=["status", "updated_at"])
+                raise self.retry(countdown=90, exc=Exception("Reel video composition in progress"))
+            _fail_post(post, "Reel video is not ready — composition failed or was not started.")
+            Notification.create_for_user(
+                post.user, "publish_failed",
+                "Your Reel video could not be composed. Open the post in Studio and retry.",
+                related_post=post,
+            )
+            return {"error": "reel_video_not_ready"}
 
     # Mark as publishing
     post.status = Post.Status.PUBLISHING
@@ -825,6 +1085,38 @@ def publish_post(self, post_id: str):
                     "user must reconnect.",
                     account.platform,
                 )
+
+        # Facebook Reels: publish composed MP4 via Page video API.
+        if account.platform == "facebook" and is_reel_post and absolute_media_urls:
+            video_url = next((u for u in absolute_media_urls if _is_video_url(u)), None)
+            if video_url:
+                fb_result = provider.publish_video(
+                    access_token=token,
+                    video_url=video_url,
+                    description=publish_content,
+                    **publish_kwargs,
+                )
+                if fb_result.success:
+                    post.status = Post.Status.PUBLISHED
+                    post.published_at = timezone.now()
+                    post.platform_post_id = fb_result.platform_post_id or ""
+                    post.platform_url = fb_result.url or ""
+                    post.save(update_fields=[
+                        "status", "published_at", "platform_post_id", "platform_url", "updated_at",
+                    ])
+                    Notification.create_for_user(
+                        post.user, "publish_success",
+                        f"Published Reel to {account.get_platform_display()}!",
+                        related_post=post,
+                    )
+                    return {"status": "published", "platform_post_id": fb_result.platform_post_id}
+                _fail_post(post, fb_result.error or "Facebook video publish failed")
+                Notification.create_for_user(
+                    post.user, "publish_failed",
+                    f"Failed to publish Reel to {account.get_platform_display()}: {fb_result.error}",
+                    related_post=post,
+                )
+                return {"error": fb_result.error}
 
         result = provider.publish_post(
             access_token=token,

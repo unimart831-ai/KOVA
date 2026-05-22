@@ -42,6 +42,16 @@
           <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           Reel
         </span>
+        {% if post.reel_is_carousel_variant %}
+        <span class="text-[9px] bg-orange-100/80 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200 px-1.5 py-0.5 rounded-md font-medium">→ Reel</span>
+        {% endif %}
+        {% if post.reel_compose_pending %}
+        <span class="text-[9px] bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400 px-1.5 py-0.5 rounded-md font-medium animate-pulse">Composing…</span>
+        {% elif post.reel_has_video %}
+        <span class="text-[9px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 px-1.5 py-0.5 rounded-md font-medium">Video ready</span>
+        {% elif post.reel_compose_status == 'failed' %}
+        <span class="text-[9px] bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400 px-1.5 py-0.5 rounded-md font-medium">Reel failed</span>
+        {% endif %}
       {% elif post.post_format == 'image' or post.post_format == 'video' %}
         <span class="text-[9px] bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 px-1.5 py-0.5 rounded-md font-semibold">{{ post.post_format|title }}</span>
       {% elif post.visual_strategy and post.visual_strategy != 'none' and post.post_format == 'text' %}
@@ -50,7 +60,8 @@
           {% if post.visual_strategy == 'carousel' %}Carousel{% elif post.visual_strategy == 'quote_card' %}Quote{% elif post.visual_strategy == 'tip_graphic' %}Tips{% elif post.visual_strategy == 'stat_highlight' %}Stat{% elif post.visual_strategy == 'cta_banner' %}CTA{% elif post.visual_strategy == 'ai_photo' %}AI Photo{% elif post.visual_strategy == 'story_graphic' %}Story{% else %}{{ post.visual_strategy }}{% endif %}
         </span>
       {% endif %}
-      {# ── Media status badge ── #}
+      {# ── Media status badge (non-reel) ── #}
+      {% if post.post_format != 'reel' %}
       {% if post.media_status == 'generated' %}
         <span class="text-[9px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 px-1.5 py-0.5 rounded-md font-medium">AI image</span>
       {% elif post.media_status == 'uploaded' %}
@@ -59,6 +70,9 @@
         <span class="text-[9px] bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400 px-1.5 py-0.5 rounded-md font-medium animate-pulse">Generating…</span>
       {% elif post.media_status == 'failed' %}
         <span class="text-[9px] bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400 px-1.5 py-0.5 rounded-md font-medium">Image failed</span>
+      {% endif %}
+      {% elif post.media_status == 'pending' %}
+        <span class="text-[9px] bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400 px-1.5 py-0.5 rounded-md font-medium animate-pulse">Frame…</span>
       {% endif %}
     </div>
   </div>

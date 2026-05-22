@@ -167,9 +167,22 @@
   <div class="card">
     <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
       <h3 class="font-semibold text-gray-900 dark:text-white">Media</h3>
-      {% if post.media_status and post.media_status != 'none' %}
-        <span class="text-[10px] font-medium px-2 py-0.5 rounded-md {% if post.media_status == 'generated' %}bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400{% elif post.media_status == 'uploaded' %}bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400{% elif post.media_status == 'failed' %}bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400{% elif post.media_status == 'pending' %}bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400 animate-pulse{% endif %}">
-          {% if post.media_status == 'generated' %}AI-generated{% elif post.media_status == 'uploaded' %}Uploaded{% elif post.media_status == 'failed' %}Generation failed{% elif post.media_status == 'pending' %}Generating…{% endif %}
+      {% if post.media_status and post.media_status != 'none' or post.post_format == 'reel' %}
+        <span class="text-[10px] font-medium px-2 py-0.5 rounded-md
+          {% if post.reel_has_video %}bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400
+          {% elif post.reel_compose_pending %}bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400 animate-pulse
+          {% elif post.reel_compose_status == 'failed' %}bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400
+          {% elif post.media_status == 'generated' %}bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400
+          {% elif post.media_status == 'uploaded' %}bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400
+          {% elif post.media_status == 'failed' %}bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400
+          {% elif post.media_status == 'pending' %}bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400 animate-pulse{% endif %}">
+          {% if post.reel_has_video %}Motion reel ready
+          {% elif post.reel_compose_pending %}Composing reel…
+          {% elif post.reel_compose_status == 'failed' %}Reel failed
+          {% elif post.media_status == 'generated' %}AI-generated
+          {% elif post.media_status == 'uploaded' %}Uploaded
+          {% elif post.media_status == 'failed' %}Generation failed
+          {% elif post.media_status == 'pending' %}Generating…{% endif %}
         </span>
       {% endif %}
     </div>
@@ -181,7 +194,15 @@
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
             {{ post.media_warning }}
           </p>
-          {% if post.media_status == 'failed' and post.media_prompt %}
+          {% if post.reel_compose_status == 'failed' %}
+            <form method="post" action="{% url 'content:retry_reel' post.id %}" class="shrink-0">
+              {% csrf_token %}
+              <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                Retry reel
+              </button>
+            </form>
+          {% elif post.media_status == 'failed' and post.media_prompt %}
             <form method="post" action="{% url 'content:retry_image' post.id %}" class="shrink-0">
               {% csrf_token %}
               <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors">
@@ -194,17 +215,21 @@
       </div>
       {% endif %}
 
-      {% if post.post_format == 'story' or post.post_format == 'reel' %}
+      {% if post.post_format == 'reel' %}
+        {% include "components/_reel_media_preview.html" with post=post reel_size="large" %}
+        {% if post.media_prompt %}
+        <p class="mt-1 text-xs text-gray-400 text-center italic truncate">"{{ post.media_prompt }}"</p>
+        {% endif %}
+
+      {% elif post.post_format == 'story' %}
         {# 9:16 frame preview #}
         <div class="flex justify-center">
           {% if post.media_urls %}
             <div class="relative w-32 rounded-xl overflow-hidden shadow-lg" style="aspect-ratio:9/16">
-              <img src="{{ post.media_urls.0 }}" alt="{% if post.post_format == 'reel' %}Reel{% else %}Story{% endif %} image"
+              <img src="{{ post.media_urls.0 }}" alt="Story image"
                    class="w-full h-full object-cover">
               <div class="absolute top-2 left-2 flex flex-col gap-1">
-                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-black/60 text-white uppercase tracking-wide">
-                  {% if post.post_format == 'reel' %}Reel{% else %}Story{% endif %}
-                </span>
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-black/60 text-white uppercase tracking-wide">Story</span>
                 <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-black/60 text-white">9:16</span>
               </div>
             </div>
