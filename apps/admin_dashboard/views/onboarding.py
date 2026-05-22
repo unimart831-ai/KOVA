@@ -22,12 +22,11 @@ from collections import Counter
 from datetime import timedelta
 from statistics import median
 
-from django.db.models import Q
 from django.shortcuts import render
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
-from apps.accounts.models import User
+from apps.accounts.models import User, UserProfile
 from apps.admin_dashboard.decorators import staff_required
 from apps.agents.onboarding_tasks import STUCK_AFTER_SECONDS
 
@@ -52,7 +51,39 @@ FUNNEL_STAGES = [
 ]
 
 
+def _user_profile(user):
+    try:
+        return user.profile
+    except UserProfile.DoesNotExist:
+        return None
+
+
+def _aware_step_ts(raw):
+    """Parse onboarding step timestamps to timezone-aware datetimes."""
+    if not raw:
+        return None
+    if not isinstance(raw, str):
+        raw = str(raw)
+    parsed = parse_datetime(raw)
+    if parsed is None:
+        return None
+    if timezone.is_naive(parsed):
+        return timezone.make_aware(parsed, timezone.utc)
+    return parsed
+
+
+def _aware_dt(value):
+    """Ensure a datetime from the ORM is timezone-aware."""
+    if value is None:
+        return None
+    if timezone.is_naive(value):
+        return timezone.make_aware(value, timezone.utc)
+    return value
+
+
 def _has_step(profile, step_key):
+    if not profile:
+        return False
     return bool((profile.onboarding_step_timestamps or {}).get(step_key))
 
 
@@ -75,7 +106,7 @@ def onboarding_funnel(request):
         if step_stamp is None:
             count = len(users)
         else:
-            count = sum(1 for u in users if _has_step(u.profile, step_stamp))
+            count = sum(1 for u in users if _has_step(_user_profile(u), step_stamp))
         stage_counts.append({"key": key, "label": label, "count": count})
 
     # Drop-off between successive stages (relative to previous stage)
@@ -92,8 +123,10 @@ def onboarding_funnel(request):
     stuck_cutoff = now - timedelta(seconds=STUCK_AFTER_SECONDS)
     stuck_users = []
     for u in users:
-        p = u.profile
-        started = p.onboarding_intelligence_started_at
+        p = _user_profile(u)
+        if not p:
+            continue
+        started = _aware_dt(p.onboarding_intelligence_started_at)
         if not started or started > stuck_cutoff:
             continue
         if _has_step(p, "intelligence_completed"):
@@ -114,32 +147,42 @@ def onboarding_funnel(request):
     for u in users:
         if u.onboarding_completed:
             continue
-        stamps = u.profile.onboarding_step_timestamps or {}
+        profile = _user_profile(u)
+        if not profile:
+            joined = _aware_dt(u.date_joined)
+            if joined and joined < abandon_cutoff:
+                wizard_abandoners.append({
+                    "user": u,
+                    "last_step": "(no profile)",
+                    "last_stamp": joined,
+                    "hours_idle": int((now - joined).total_seconds() // 3600),
+                })
+            continue
+        stamps = profile.onboarding_step_timestamps or {}
         last_step = None
-        last_stamp = None
+        last_parsed = None
         for step_key in ("step_1_completed", "step_2_completed", "step_3_completed"):
-            ts = stamps.get(step_key)
-            if ts and (last_stamp is None or ts > last_stamp):
-                last_stamp = ts
+            parsed_ts = _aware_step_ts(stamps.get(step_key))
+            if parsed_ts and (last_parsed is None or parsed_ts > last_parsed):
+                last_parsed = parsed_ts
                 last_step = step_key
-        if last_stamp:
-            from django.utils.dateparse import parse_datetime
-            parsed = parse_datetime(last_stamp)
-            if parsed and parsed < abandon_cutoff:
+        if last_parsed:
+            if last_parsed < abandon_cutoff:
                 wizard_abandoners.append({
                     "user": u,
                     "last_step": last_step,
-                    "last_stamp": parsed,
-                    "hours_idle": int((now - parsed).total_seconds() // 3600),
+                    "last_stamp": last_parsed,
+                    "hours_idle": int((now - last_parsed).total_seconds() // 3600),
                 })
         else:
             # Signed up but never submitted step 1 — only flag if >24h old
-            if u.date_joined < abandon_cutoff:
+            joined = _aware_dt(u.date_joined)
+            if joined and joined < abandon_cutoff:
                 wizard_abandoners.append({
                     "user": u,
                     "last_step": "(never started)",
-                    "last_stamp": u.date_joined,
-                    "hours_idle": int((now - u.date_joined).total_seconds() // 3600),
+                    "last_stamp": joined,
+                    "hours_idle": int((now - joined).total_seconds() // 3600),
                 })
     wizard_abandoners.sort(key=lambda r: r["hours_idle"], reverse=True)
 
@@ -158,7 +201,11 @@ def onboarding_funnel(request):
     time_to_complete_seconds: list[int] = []
 
     for u in users:
-        stamps = u.profile.onboarding_step_timestamps or {}
+        profile = _user_profile(u)
+        if not profile:
+            path_counts["unknown"] += 1
+            continue
+        stamps = profile.onboarding_step_timestamps or {}
 
         # Path-choice: classify into one bucket; if user touched multiple
         # paths, the first one they recorded wins (earliest timestamp).
@@ -170,9 +217,7 @@ def onboarding_funnel(request):
         earliest = None
         chosen = "unknown"
         for name, ts in path_keys:
-            if not ts:
-                continue
-            parsed_ts = parse_datetime(ts)
+            parsed_ts = _aware_step_ts(ts)
             if parsed_ts and (earliest is None or parsed_ts < earliest):
                 earliest = parsed_ts
                 chosen = name
@@ -191,21 +236,21 @@ def onboarding_funnel(request):
             industry_pack_count += 1
 
         # Industry / country distribution — only for users who got past Step 1.
-        industry = (u.profile.industry or "").strip()
+        industry = (profile.industry or "").strip()
         if industry:
             industry_distribution[industry] += 1
-        country = (u.profile.country or "").strip().upper()
+        country = (profile.country or "").strip().upper()
         if country:
             country_distribution[country] += 1
 
         # Time-to-complete: signup -> step_4_completed (platform connect).
         # Excludes never-finished users so the median doesn't get pulled down
         # by abandoners.
-        s4 = stamps.get("step_4_completed")
-        if s4:
-            parsed_s4 = parse_datetime(s4)
-            if parsed_s4:
-                delta = (parsed_s4 - u.date_joined).total_seconds()
+        parsed_s4 = _aware_step_ts(stamps.get("step_4_completed"))
+        if parsed_s4:
+            joined = _aware_dt(u.date_joined)
+            if joined:
+                delta = (parsed_s4 - joined).total_seconds()
                 if delta > 0:
                     time_to_complete_seconds.append(int(delta))
 
@@ -217,7 +262,9 @@ def onboarding_funnel(request):
         # Percent of completed users for each automation path. "completed"
         # here = step_4_completed fired, so the user actually reached the
         # platform-connect step.
-        "completed_count": sum(1 for u in users if _has_step(u.profile, "step_4_completed")),
+        "completed_count": sum(
+            1 for u in users if _has_step(_user_profile(u), "step_4_completed")
+        ),
     }
     completed = automation_summary["completed_count"] or 1
     automation_summary["magic_pct"] = round(100 * path_counts["magic"] / completed)
