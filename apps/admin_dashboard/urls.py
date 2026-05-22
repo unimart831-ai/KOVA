@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, bookings, calendar_intel, campaigns, content, costs, emails, engage, feature_usage, help, innovations, leads, llm, logs, media_queue, memes, notifications, onboarding, operations, overview, partners, partials, pixel, platforms, products, profile_audit, qr, revenue, reviews, system, teams, user_health, users, whatsapp
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, bookings, calendar_intel, campaigns, content, costs, emails, engage, feature_usage, help, innovations, leads, llm, logs, media_queue, memes, notifications, onboarding, operations, overview, partners, partials, pixel, platforms, products, profile_audit, qr, revenue, reviews, system, system_maps, teams, user_health, users, whatsapp
 
 app_name = "admin_dashboard"
 
@@ -152,6 +152,11 @@ urlpatterns = [
     path("help/", help.help_overview, name="help_overview"),
     path("help/articles/", help.help_article_views, name="help_article_views"),
     path("help/log/", help.help_view_log, name="help_view_log"),
+
+    # System Maps (internal ops reference — staff only)
+    path("system-maps/", system_maps.system_maps_index, name="system_maps"),
+    path("system-maps/print/", system_maps.system_maps_print, name="system_maps_print"),
+    path("system-maps/<slug:slug>/", system_maps.system_map_detail, name="system_map"),
 
     # Blog Studio (Educator agent editorial dashboard)
     path("blog/", blog.blog_studio, name="blog_studio"),

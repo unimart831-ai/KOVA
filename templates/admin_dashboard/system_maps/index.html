@@ -1,0 +1,54 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">How every section works — print and pin for daily ops reference</p>{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+  <div class="mb-8 p-5 rounded-xl border-2 border-kova-200 dark:border-kova-800 bg-kova-50/50 dark:bg-kova-950/20">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wider text-kova-600 dark:text-kova-400">Daily wall — print these 3 first</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Founder routine, Create→Schedule, 6-agent loop</p>
+      </div>
+      <a href="{% url 'admin_dashboard:system_maps_print' %}" target="_blank"
+         class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold hover:opacity-90 transition-opacity shrink-0">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+        Print all {{ total_maps }} maps
+      </a>
+    </div>
+    <div class="mt-4 grid gap-2 sm:grid-cols-3">
+      {% for m in daily_maps %}
+      <a href="{% url 'admin_dashboard:system_map' m.slug %}"
+         class="block p-3 rounded-lg bg-white dark:bg-gray-900 border border-kova-200 dark:border-kova-800 hover:border-kova-400 transition-colors">
+        <span class="text-xs font-mono text-kova-600 dark:text-kova-400">#{{ m.print_order }}</span>
+        <p class="text-sm font-semibold text-gray-900 dark:text-white mt-0.5">{{ m.title }}</p>
+        {% if m.daily_tip %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{{ m.daily_tip }}</p>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% for group, maps in maps_by_group.items %}
+  <section class="mb-10">
+    <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3">{{ group }}</h2>
+    <div class="grid gap-3 sm:grid-cols-2">
+      {% for m in maps %}
+      <a href="{% url 'admin_dashboard:system_map' m.slug %}"
+         class="group flex items-start gap-3 p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-kova-300 dark:hover:border-kova-700 transition-colors">
+        <span class="shrink-0 w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-400">{{ m.print_order }}</span>
+        <div class="min-w-0">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-kova-600 dark:group-hover:text-kova-400 transition-colors">{{ m.title }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{{ m.summary }}</p>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+
+  <p class="text-xs text-gray-400 dark:text-gray-500 text-center pb-8">
+    Source audit: May 2026 · Based on codebase + Celery Beat schedule
+  </p>
+</div>
+{% endblock %}
