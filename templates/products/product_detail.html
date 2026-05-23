@@ -26,12 +26,15 @@
       {% endif %}
 
       <div class="flex-1 min-w-0 space-y-3">
-        {# Additional images row #}
+        {# Scene versions generated from primary photo #}
         {% if product.additional_images %}
-        <div class="flex gap-2 mb-2">
-          {% for img_url in product.additional_images %}
-          <img src="{{ img_url }}" alt="{{ product.name }}" class="w-14 h-14 rounded-md object-cover border border-gray-200 dark:border-gray-700">
-          {% endfor %}
+        <div class="mb-2">
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Scene versions</p>
+          <div class="flex flex-wrap gap-2">
+            {% for img_url in product.additional_images %}
+            <img src="{{ img_url }}" alt="{{ product.name }} scene" class="w-14 h-14 rounded-md object-cover border border-purple-200 dark:border-purple-800">
+            {% endfor %}
+          </div>
         </div>
         {% endif %}
         {% if product.display_price %}
@@ -81,6 +84,12 @@
       {% endif %}
 
       {% if product.image %}
+      <form method="post" action="{% url 'products:expand_photos' product_id=product.pk %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="btn-secondary text-sm px-4 py-1.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 hover:bg-indigo-100">
+          Expand Photo Set
+        </button>
+      </form>
       <form method="post" action="{% url 'products:quick_post' product_id=product.pk %}" class="inline">
         {% csrf_token %}
         <button type="submit" class="btn-secondary text-sm px-4 py-1.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 hover:bg-emerald-100">

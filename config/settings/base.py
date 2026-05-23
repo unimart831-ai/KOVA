@@ -596,6 +596,10 @@ MODEL_TOKEN_COSTS = {
 # ─── AI IMAGE GENERATION ─────────────────────────────────────────────────────
 # Multi-provider with fallback: Hugging Face → Together.ai → Pollinations.ai
 AI_IMAGE_GENERATION_ENABLED = env.bool("AI_IMAGE_GENERATION_ENABLED", default=True)
+
+# Local product photo expansion (rembg + Pillow — no paid image APIs)
+PHOTO_VARIATIONS_ENABLED = env.bool("PHOTO_VARIATIONS_ENABLED", default=True)
+
 HF_TOKEN = env("HF_TOKEN", default="")                        # https://huggingface.co/settings/tokens — FLUX.1-schnell (free)
 TOGETHER_API_KEY = env("TOGETHER_API_KEY", default="")        # https://api.together.xyz — sign up, add $5 credit
 TOGETHER_IMAGE_MODEL = env("TOGETHER_IMAGE_MODEL", default="black-forest-labs/FLUX.1-schnell")  # $0.003/image

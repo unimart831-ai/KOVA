@@ -621,6 +621,26 @@ def fix_and_promote(request, product_id):
     return redirect(f"{reverse('products:detail', kwargs={'product_id': product.pk})}?snap=1")
 
 
+@login_required
+@require_POST
+def expand_product_photos_view(request, product_id):
+    """Manually regenerate scene variations from the primary product photo."""
+    from apps.products.tasks import expand_product_photo_set
+    from apps.utils import fire_task
+
+    product = get_object_or_404(Product, pk=product_id, user=request.user)
+    if not product.image:
+        messages.error(request, "Add a product photo first.")
+        return redirect("products:detail", product_id=product.pk)
+
+    fire_task(expand_product_photo_set, str(product.pk))
+    messages.success(
+        request,
+        f"Expanding photo set for '{product.name}' — 4 scene versions in ~30 seconds.",
+    )
+    return redirect(f"{reverse('products:detail', kwargs={'product_id': product.pk})}?snap=1")
+
+
 # ── Snap to Sell ─────────────────────────────────────────────────────
 
 @login_required

@@ -117,7 +117,36 @@ def build_snap_pipeline_status(product, user):
 
     steps.append(_step("analyze", "AI analyzing product", analyze_detail, analyze_status))
 
-    # 3 — Quick photo post (Commerce Autopilot fast path)
+    # 3 — Photo set expansion (local rembg + Pillow)
+    variation_action = _action("commerce.photo_variations")
+    variation_count = sum(
+        1 for u in (product.additional_images or [])
+        if f"product_variations/{product_id}/" in u
+    )
+
+    if analyze_status == "failed":
+        expand_status = "skipped"
+        expand_detail = "Skipped — analysis did not finish"
+    elif variation_action or variation_count >= 3:
+        n = (variation_action.output_data or {}).get("variations_created", variation_count) if variation_action else variation_count
+        expand_status = "completed"
+        expand_detail = f"{n} scene version{'s' if n != 1 else ''} ready for carousel & posts"
+    elif analyze_status == "running":
+        expand_status = "pending"
+        expand_detail = "Waiting for product analysis…"
+    elif snap_stale and seed:
+        expand_status = "failed"
+        expand_detail = "Photo expansion timed out — tap Expand Photo Set"
+    elif analyze_status == "completed":
+        expand_status = "running"
+        expand_detail = "Creating studio, gradient & promo scenes from your photo…"
+    else:
+        expand_status = "pending"
+        expand_detail = "Waiting for analysis…"
+
+    steps.append(_step("variations", "Expanding photo set", expand_detail, expand_status))
+
+    # 4 — Quick photo post (Commerce Autopilot fast path)
     quick_post_action = _action("commerce.quick_post")
     from apps.products.commerce_autopilot import commerce_autopilot_active
 
@@ -147,7 +176,7 @@ def build_snap_pipeline_status(product, user):
 
     steps.append(_step("quick_post", "Quick photo post", quick_detail, quick_status))
 
-    # 4 — Platform posts (Create Agent)
+    # 5 — Platform posts (Create Agent)
     if analyze_status == "failed":
         writing_status = "skipped"
         writing_detail = "Skipped — analysis did not finish"
@@ -177,7 +206,7 @@ def build_snap_pipeline_status(product, user):
 
     steps.append(_step("writing", "Writing platform posts", writing_detail, writing_status))
 
-    # 5 — Carousel slides
+    # 6 — Carousel slides
     if not carousel_eligible:
         carousel_status = "skipped"
         carousel_detail = (
@@ -212,7 +241,7 @@ def build_snap_pipeline_status(product, user):
 
     steps.append(_step("carousel", "Building carousel slides", carousel_detail, carousel_status))
 
-    # 6 — Motion reel
+    # 7 — Motion reel
     if not reel_eligible:
         reel_status = "skipped"
         reel_detail = (
