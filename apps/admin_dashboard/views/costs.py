@@ -21,40 +21,12 @@ from django.utils import timezone
 
 from apps.accounts.models import UserProfile
 from apps.admin_dashboard.decorators import superuser_required
-from apps.agents.models import AgentAction, LLMConfig
+from apps.agents.models import AgentAction, LLMConfig, UserTokenBucket
+from apps.agents.pricing import calculate_token_cost, get_pricing_display_registry
 from apps.billing.models import MpesaPayment, get_all_plan_limits
 from apps.content.models import Post
+from apps.products.models import CommercePayment
 
-
-# ── Model pricing (USD per 1M tokens) ───────────────────────────────────
-# Kept here so admin can see what rates the system uses. Updated manually
-# when provider pricing changes. Key = model identifier substring.
-MODEL_PRICING = {
-    # Free OpenRouter models
-    "qwen/qwen3": {"input": 0.00, "output": 0.00, "label": "Qwen 3 (Free)"},
-    "stepfun/step-3.5-flash:free": {"input": 0.00, "output": 0.00, "label": "StepFun Flash (Free)"},
-    "nvidia/nemotron": {"input": 0.00, "output": 0.00, "label": "Nemotron (Free)"},
-    "minimax/minimax": {"input": 0.00, "output": 0.00, "label": "MiniMax (Free)"},
-    "mistralai/mistral": {"input": 0.00, "output": 0.00, "label": "Mistral (Free)"},
-    ":free": {"input": 0.00, "output": 0.00, "label": "Free Model"},
-    # Paid — Kova Recommended Stack
-    "deepseek-v3.2": {"input": 0.26, "output": 0.38, "label": "DeepSeek V3.2 ★ PRIMARY FALLBACK"},
-    "deepseek-v3": {"input": 0.26, "output": 0.38, "label": "DeepSeek V3"},
-    "deepseek-r1": {"input": 0.55, "output": 2.19, "label": "DeepSeek R1"},
-    "gemini-3-flash": {"input": 0.50, "output": 3.00, "label": "Gemini 3 Flash ★ PRO/AGENCY"},
-    "gemini-3.1-flash-lite": {"input": 0.25, "output": 1.50, "label": "Gemini 3.1 Flash Lite"},
-    "gemini-2.5-flash": {"input": 0.15, "output": 0.60, "label": "Gemini 2.5 Flash"},
-    "stepfun/step-3.5-flash": {"input": 0.10, "output": 0.30, "label": "Step 3.5 Flash ★ BULK TASKS"},
-    # Paid — OpenAI
-    "gpt-4o-mini": {"input": 0.15, "output": 0.60, "label": "GPT-4o Mini (old fallback)"},
-    "gpt-4o": {"input": 2.50, "output": 10.00, "label": "GPT-4o"},
-    "gpt-4-turbo": {"input": 10.00, "output": 30.00, "label": "GPT-4 Turbo"},
-    "o3-mini": {"input": 1.10, "output": 4.40, "label": "o3-mini"},
-    # Paid — Anthropic
-    "claude-3-5-haiku": {"input": 0.80, "output": 4.00, "label": "Claude 3.5 Haiku"},
-    "claude-3-5-sonnet": {"input": 3.00, "output": 15.00, "label": "Claude 3.5 Sonnet"},
-    "claude-sonnet-4": {"input": 3.00, "output": 15.00, "label": "Claude Sonnet 4"},
-}
 
 # ── Non-LLM AI service pricing ──────────────────────────────────────
 # Image costs are now tier-routed: each plan uses a different FLUX model.
@@ -140,18 +112,23 @@ INFRA_COSTS = {
 
 
 def _get_model_cost(model_name, input_tokens, output_tokens):
-    """Calculate USD cost for a model usage. Returns (cost, is_free)."""
-    if not model_name:
-        return 0.0, True
-    model_lower = model_name.lower()
-    for key, pricing in MODEL_PRICING.items():
-        if key.lower() in model_lower:
-            input_cost = (input_tokens / 1_000_000) * pricing["input"]
-            output_cost = (output_tokens / 1_000_000) * pricing["output"]
-            is_free = pricing["input"] == 0 and pricing["output"] == 0
-            return round(input_cost + output_cost, 6), is_free
-    # Unknown model — assume free (OpenRouter free tier)
-    return 0.0, True
+    """Calculate USD cost for a model usage. Returns (cost, is_free, is_unknown)."""
+    result = calculate_token_cost(model_name, input_tokens, output_tokens)
+    return result["cost_usd"], result["is_free"], result["is_unknown"]
+
+
+def _aggregate_actions_cost(qs):
+    """Sum LLM cost across a queryset grouped by model."""
+    total = 0.0
+    unknown_models: set[str] = set()
+    for row in qs.exclude(model_used="").values("model_used").annotate(
+        inp=Sum("input_tokens"), out=Sum("output_tokens"),
+    ):
+        cost, _, is_unknown = _get_model_cost(row["model_used"], row["inp"] or 0, row["out"] or 0)
+        total += cost
+        if is_unknown:
+            unknown_models.add(row["model_used"])
+    return total, unknown_models
 
 
 def _calculate_infra_cost_per_user(total_users):
@@ -208,13 +185,16 @@ def cost_overview(request):
     total_paid_cost_30d = 0.0
     total_free_calls = 0
     total_paid_calls = 0
+    unknown_model_names: set[str] = set()
     model_cost_rows = []
     for row in model_costs_30d:
-        cost, is_free = _get_model_cost(
+        cost, is_free, is_unknown = _get_model_cost(
             row["model_used"],
             row["total_input"] or 0,
             row["total_output"] or 0,
         )
+        if is_unknown:
+            unknown_model_names.add(row["model_used"])
         total_cost_30d += cost
         if is_free:
             total_free_calls += row["calls"]
@@ -231,23 +211,14 @@ def cost_overview(request):
             "failures": row["failures"],
             "cost_usd": round(cost, 4),
             "is_free": is_free,
+            "is_unknown": is_unknown,
             "avg_duration_ms": round(row["avg_duration"] or 0),
         })
 
     # 7d and 24h costs
-    cost_7d = 0.0
-    for row in actions_7d.exclude(model_used="").values("model_used").annotate(
-        inp=Sum("input_tokens"), out=Sum("output_tokens")
-    ):
-        c, _ = _get_model_cost(row["model_used"], row["inp"] or 0, row["out"] or 0)
-        cost_7d += c
-
-    cost_24h = 0.0
-    for row in actions_24h.exclude(model_used="").values("model_used").annotate(
-        inp=Sum("input_tokens"), out=Sum("output_tokens")
-    ):
-        c, _ = _get_model_cost(row["model_used"], row["inp"] or 0, row["out"] or 0)
-        cost_24h += c
+    cost_7d, unknown_7d = _aggregate_actions_cost(actions_7d)
+    cost_24h, unknown_24h = _aggregate_actions_cost(actions_24h)
+    unknown_model_names |= unknown_7d | unknown_24h
 
     # Total tokens
     token_totals_30d = actions_30d.aggregate(
@@ -273,7 +244,9 @@ def cost_overview(request):
     daily_cost_map = {}
     for row in daily_data:
         day_str = row["day"].strftime("%Y-%m-%d")
-        cost, is_free = _get_model_cost(row["model_used"], row["inp"] or 0, row["out"] or 0)
+        cost, is_free, is_unknown = _get_model_cost(row["model_used"], row["inp"] or 0, row["out"] or 0)
+        if is_unknown:
+            unknown_model_names.add(row["model_used"])
         if day_str not in daily_cost_map:
             daily_cost_map[day_str] = {"free_cost": 0.0, "paid_cost": 0.0, "calls": 0, "tokens": 0}
         if is_free:
@@ -295,11 +268,17 @@ def cost_overview(request):
             "tokens": entry["tokens"],
         })
 
-    # ── 3. Per-plan unit economics (actual data) ────────────────────
-    plan_economics = []
+    # ── 3. Per-plan unit economics (actual LLM + actual images where available) ──
+    plan_image_counts = {
+        row["user__profile__plan"]: row["count"]
+        for row in Post.objects.filter(created_at__gte=last_30d, media_status="generated")
+        .values("user__profile__plan")
+        .annotate(count=Count("id"))
+    }
+
+    plan_drafts: list[dict] = []
     total_active_users = 0
     total_monthly_revenue = Decimal("0")
-    total_monthly_cost = 0.0
 
     for plan_code, plan_label in UserProfile.PlanTier.choices:
         limits = get_all_plan_limits().get(plan_code, {})
@@ -310,21 +289,15 @@ def cost_overview(request):
         ).count()
         total_active_users += active_count
 
-        # Actual token usage for this plan's users (30d)
         plan_actions = actions_30d.filter(user__profile__plan=plan_code)
         plan_tokens = plan_actions.aggregate(
             inp=Sum("input_tokens"), out=Sum("output_tokens"),
             calls=Count("id"),
         )
-        avg_input = 0
-        avg_output = 0
-        avg_calls = 0
-        if active_count > 0:
-            avg_input = (plan_tokens["inp"] or 0) / active_count
-            avg_output = (plan_tokens["out"] or 0) / active_count
-            avg_calls = (plan_tokens["calls"] or 0) / active_count
+        avg_input = (plan_tokens["inp"] or 0) / active_count if active_count else 0
+        avg_output = (plan_tokens["out"] or 0) / active_count if active_count else 0
+        avg_calls = (plan_tokens["calls"] or 0) / active_count if active_count else 0
 
-        # Calculate cost per user for this plan (using most expensive model seen)
         plan_model_costs = (
             plan_actions.exclude(model_used="")
             .values("model_used")
@@ -332,16 +305,17 @@ def cost_overview(request):
         )
         plan_total_cost = 0.0
         for mc in plan_model_costs:
-            c, _ = _get_model_cost(mc["model_used"], mc["inp"] or 0, mc["out"] or 0)
+            c, _, is_unknown = _get_model_cost(mc["model_used"], mc["inp"] or 0, mc["out"] or 0)
             plan_total_cost += c
+            if is_unknown:
+                unknown_model_names.add(mc["model_used"])
 
-        avg_cost_per_user = plan_total_cost / active_count if active_count else 0
-        # Image cost estimate — tier-routed model pricing per plan
-        est = PLAN_TOKEN_ESTIMATES.get(plan_code, {})
+        avg_llm_cost = plan_total_cost / active_count if active_count else 0
         per_image_cost = PLAN_IMAGE_COST.get(plan_code, 0)
-        image_cost = est.get("images", 0) * per_image_cost
+        plan_images_30d = plan_image_counts.get(plan_code, 0)
+        avg_image_cost = (plan_images_30d * per_image_cost / active_count) if active_count else 0
 
-        # Voice cost estimate (Whisper @ $0.006/min, avg ~20s memo)
+        est = PLAN_TOKEN_ESTIMATES.get(plan_code, {})
         whisper = NON_LLM_PRICING["whisper-1"]
         voice_cost = (
             est.get("voice_memos", 0)
@@ -349,17 +323,10 @@ def cost_overview(request):
             * whisper["cost_per_minute"]
         )
 
-        infra_per_user = _calculate_infra_cost_per_user(total_active_users) if total_active_users > 0 else 2.0
-
-        total_cost_per_user = avg_cost_per_user + image_cost + voice_cost + infra_per_user
-        margin = ((price_usd - total_cost_per_user) / price_usd * 100) if price_usd > 0 else 0
-        profit = price_usd - total_cost_per_user
-
         revenue_plan = Decimal(str(price_usd)) * active_count
         total_monthly_revenue += revenue_plan
-        total_monthly_cost += total_cost_per_user * active_count
 
-        plan_economics.append({
+        plan_drafts.append({
             "code": plan_code,
             "label": limits.get("label", plan_label),
             "price_usd": price_usd,
@@ -368,15 +335,33 @@ def cost_overview(request):
             "avg_calls": round(avg_calls),
             "avg_input_tokens": round(avg_input),
             "avg_output_tokens": round(avg_output),
-            "llm_cost": round(avg_cost_per_user, 4),
-            "image_cost": round(image_cost, 4),
+            "llm_cost": round(avg_llm_cost, 4),
+            "image_cost": round(avg_image_cost, 4),
             "voice_cost": round(voice_cost, 4),
+            "plan_images_30d": plan_images_30d,
+            "revenue_total": round(float(revenue_plan), 2),
+            "llm_cost_total": round(plan_total_cost, 2),
+        })
+
+    infra_per_user = _calculate_infra_cost_per_user(total_active_users) if total_active_users else 0
+    plan_economics = []
+    total_monthly_cost = 0.0
+    for draft in plan_drafts:
+        total_cost_per_user = (
+            draft["llm_cost"] + draft["image_cost"] + draft["voice_cost"] + infra_per_user
+        )
+        margin = (
+            (draft["price_usd"] - total_cost_per_user) / draft["price_usd"] * 100
+            if draft["price_usd"] > 0 else 0
+        )
+        total_monthly_cost += total_cost_per_user * draft["active_count"]
+        plan_economics.append({
+            **draft,
             "infra_cost": round(infra_per_user, 4),
             "total_cost": round(total_cost_per_user, 4),
-            "profit": round(profit, 4),
+            "profit": round(draft["price_usd"] - total_cost_per_user, 4),
             "margin": round(margin, 1),
-            "revenue_total": round(float(revenue_plan), 2),
-            "cost_total": round(total_cost_per_user * active_count, 2),
+            "cost_total": round(total_cost_per_user * draft["active_count"], 2),
         })
 
     # ── 4. Top consuming users (30d) ────────────────────────────────
@@ -393,8 +378,6 @@ def cost_overview(request):
     )
     top_user_rows = []
     for u in top_users:
-        cost, _ = _get_model_cost("mixed", u["input_tokens"] or 0, u["output_tokens"] or 0)
-        # Re-calculate with actual models for this user
         user_model_costs = (
             actions_30d.filter(user_id=u["user_id"])
             .exclude(model_used="")
@@ -403,8 +386,10 @@ def cost_overview(request):
         )
         user_cost = 0.0
         for mc in user_model_costs:
-            c, _ = _get_model_cost(mc["model_used"], mc["inp"] or 0, mc["out"] or 0)
+            c, _, is_unknown = _get_model_cost(mc["model_used"], mc["inp"] or 0, mc["out"] or 0)
             user_cost += c
+            if is_unknown:
+                unknown_model_names.add(mc["model_used"])
 
         plan = u["user__profile__plan"] or "starter"
         revenue = float(get_all_plan_limits().get(plan, {}).get("price_usd", 0))
@@ -418,6 +403,7 @@ def cost_overview(request):
             "revenue": revenue,
             "profit": round(revenue - user_cost, 4),
             "profitable": user_cost <= revenue,
+            "note": "LLM cost only — excludes images/voice/infra",
         })
 
     # ── 5. Cost by agent type (30d) ─────────────────────────────────
@@ -443,8 +429,10 @@ def cost_overview(request):
         )
         agent_cost = 0.0
         for mc in agent_model_costs:
-            c, _ = _get_model_cost(mc["model_used"], mc["inp"] or 0, mc["out"] or 0)
+            c, _, is_unknown = _get_model_cost(mc["model_used"], mc["inp"] or 0, mc["out"] or 0)
             agent_cost += c
+            if is_unknown:
+                unknown_model_names.add(mc["model_used"])
         agent_cost_rows.append({
             "agent": row["agent_type"],
             "calls": row["calls"],
@@ -454,10 +442,66 @@ def cost_overview(request):
             "cost": round(agent_cost, 4),
         })
 
-    # ── 6. Monthly revenue from billing ─────────────────────────────
-    actual_revenue_30d = MpesaPayment.objects.filter(
+    # ── 5b. Cost by action type (commerce, snap, etc.) ───────────────
+    action_type_costs = (
+        actions_30d
+        .values("action_type")
+        .annotate(
+            calls=Count("id"),
+            inp=Sum("input_tokens"),
+            out=Sum("output_tokens"),
+            total=Sum("tokens_used"),
+        )
+        .order_by("-total")
+    )
+    action_cost_rows = []
+    commerce_cost_30d = 0.0
+    snap_cost_30d = 0.0
+    for row in action_type_costs:
+        action_type = row["action_type"] or "unknown"
+        action_model_costs = (
+            actions_30d.filter(action_type=row["action_type"])
+            .exclude(model_used="")
+            .values("model_used")
+            .annotate(inp=Sum("input_tokens"), out=Sum("output_tokens"))
+        )
+        action_cost = 0.0
+        for mc in action_model_costs:
+            c, _, is_unknown = _get_model_cost(mc["model_used"], mc["inp"] or 0, mc["out"] or 0)
+            action_cost += c
+            if is_unknown:
+                unknown_model_names.add(mc["model_used"])
+        action_cost_rows.append({
+            "action_type": action_type,
+            "calls": row["calls"],
+            "tokens": row["total"] or 0,
+            "cost": round(action_cost, 4),
+        })
+        if action_type.startswith("commerce."):
+            commerce_cost_30d += action_cost
+        elif action_type.startswith("snap."):
+            snap_cost_30d += action_cost
+
+    # ── 6. Revenue (subscription M-Pesa + commerce checkout) ────────
+    actual_subscription_revenue_30d = MpesaPayment.objects.filter(
         status="completed", completed_at__gte=last_30d,
     ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
+    commerce_checkout_revenue_30d = CommercePayment.objects.filter(
+        status=CommercePayment.Status.COMPLETED,
+        completed_at__gte=last_30d,
+    ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
+
+    # ── 6b. UserTokenBucket reconciliation (enforcement ledger) ─────
+    bucket_stats = UserTokenBucket.objects.filter(
+        period_date__gte=(now - timedelta(days=30)).date(),
+    ).aggregate(
+        cost_micros=Sum("cost_usd_micros"),
+        input_tokens=Sum("input_tokens"),
+        output_tokens=Sum("output_tokens"),
+        calls=Sum("call_count"),
+    )
+    bucket_cost_30d = (bucket_stats["cost_micros"] or 0) / 1_000_000
+    bucket_tokens_30d = (bucket_stats["input_tokens"] or 0) + (bucket_stats["output_tokens"] or 0)
 
     # ── Current LLM config for display ──────────────────────────────
     config = LLMConfig.load()
@@ -502,11 +546,24 @@ def cost_overview(request):
         .annotate(inp=Sum("input_tokens"), out=Sum("output_tokens"))
     )
     for row in vision_model_usage:
-        c, _ = _get_model_cost(row["model_used"], row["inp"] or 0, row["out"] or 0)
+        c, _, is_unknown = _get_model_cost(row["model_used"], row["inp"] or 0, row["out"] or 0)
         vision_cost_30d += c
-    # Vision breakdown: single vs batch
+        if is_unknown:
+            unknown_model_names.add(row["model_used"])
     vision_single = vision_actions_30d.filter(action_type="snap.vision").count()
     vision_batch = vision_actions_30d.filter(action_type="snap.vision_batch").count()
+    vision_carousel = vision_actions_30d.filter(action_type="snap.carousel").count()
+    vision_reel = vision_actions_30d.filter(action_type="snap.reel").count()
+
+    total_ai_cost_30d = round(total_cost_30d + image_cost_30d + vision_cost_30d, 4)
+    cost_per_token = (
+        total_cost_30d / token_totals_30d["total"]
+        if token_totals_30d["total"] else 0
+    )
+    avg_cost_per_image = (
+        image_cost_30d / images_generated if images_generated else 0
+    )
+    bucket_vs_actions_delta = round(total_cost_30d - bucket_cost_30d, 4)
 
     context = {
         "page_title": "Cost Economics",
@@ -521,14 +578,28 @@ def cost_overview(request):
         "total_tokens_30d": token_totals_30d["total"] or 0,
         "total_input_30d": token_totals_30d["inp"] or 0,
         "total_output_30d": token_totals_30d["out"] or 0,
+        "cost_per_token": cost_per_token,
+        "avg_cost_per_image": avg_cost_per_image,
+        "total_ai_cost_30d": total_ai_cost_30d,
         # Revenue
         "total_monthly_revenue": round(float(total_monthly_revenue), 2),
         "total_monthly_cost": round(total_monthly_cost, 2),
         "gross_margin": round(
             (float(total_monthly_revenue) - total_monthly_cost) / float(total_monthly_revenue) * 100, 1
         ) if float(total_monthly_revenue) > 0 else 0,
-        "actual_revenue_30d": float(actual_revenue_30d),
+        "estimated_mrr_usd": round(float(total_monthly_revenue), 2),
+        "actual_subscription_revenue_30d": float(actual_subscription_revenue_30d),
+        "commerce_checkout_revenue_30d": float(commerce_checkout_revenue_30d),
+        "actual_revenue_30d": float(actual_subscription_revenue_30d),
         "total_active_users": total_active_users,
+        # Bucket reconciliation
+        "bucket_cost_30d": round(bucket_cost_30d, 4),
+        "bucket_tokens_30d": bucket_tokens_30d,
+        "bucket_vs_actions_delta": bucket_vs_actions_delta,
+        "unknown_models": sorted(unknown_model_names),
+        # Feature slices
+        "commerce_cost_30d": round(commerce_cost_30d, 4),
+        "snap_cost_30d": round(snap_cost_30d, 4),
         # Image generation stats
         "images_generated_30d": images_generated,
         "images_failed_30d": images_failed,
@@ -541,6 +612,8 @@ def cost_overview(request):
         "vision_cost_30d": round(vision_cost_30d, 4),
         "vision_single": vision_single,
         "vision_batch": vision_batch,
+        "vision_carousel": vision_carousel,
+        "vision_reel": vision_reel,
         # Charts
         "daily_cost_chart_json": daily_cost_chart,
         # Tables
@@ -548,9 +621,10 @@ def cost_overview(request):
         "plan_economics": plan_economics,
         "top_user_rows": top_user_rows,
         "agent_cost_rows": agent_cost_rows,
+        "action_cost_rows": action_cost_rows,
         # Config
         "config": config,
-        "model_pricing_json": {k: v for k, v in MODEL_PRICING.items()},
+        "model_pricing_json": get_pricing_display_registry(),
         "non_llm_pricing": NON_LLM_PRICING,
         "plan_limits": get_all_plan_limits(),
         "infra_costs": INFRA_COSTS,

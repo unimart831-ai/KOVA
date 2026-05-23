@@ -31,14 +31,10 @@ from apps.billing.models import PLAN_LIMITS, get_plan_limits
 logger = logging.getLogger(__name__)
 
 
-# Cost lookup for usage accounting. Keep in sync with
-# settings.MODEL_TOKEN_COSTS — duplicated here to avoid circular import.
 def _cost_per_1k(model: str) -> tuple[float, float]:
-    from django.conf import settings
+    from apps.agents.pricing import get_cost_per_1k
 
-    costs = getattr(settings, "MODEL_TOKEN_COSTS", {})
-    default = getattr(settings, "DEFAULT_TOKEN_COST", (0.0, 0.0))
-    return costs.get(model, default)
+    return get_cost_per_1k(model)
 
 
 def _plan_daily_cap(plan: str) -> int:

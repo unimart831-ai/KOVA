@@ -10,7 +10,7 @@
 
 {% block content %}
 <!-- SECTION 1 - USAGE STATS -->
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
     <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats_24h.total|default:"0" }}</p>
     <p class="text-xs text-gray-500 dark:text-gray-400">LLM Calls (24h)</p>
@@ -24,10 +24,25 @@
     <p class="text-xs text-gray-500 dark:text-gray-400">Tokens (24h)</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">${{ cost_7d|floatformat:4 }}</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">LLM Cost (7d)</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">${{ cost_30d|floatformat:4 }}</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">LLM Cost (30d)</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
     <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ paid_fallback_count_7d }}</p>
     <p class="text-xs text-gray-500 dark:text-gray-400">Paid Fallbacks (7d)</p>
   </div>
 </div>
+
+{% if unknown_models %}
+<div class="mb-6 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 px-5 py-4">
+  <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">Unknown model IDs in usage logs</p>
+  <p class="text-xs font-mono text-amber-900 dark:text-amber-100 mt-1">{{ unknown_models|join:", " }}</p>
+</div>
+{% endif %}
 
 
 <!-- ══════════════════════════════════════════════════════════════════════
@@ -358,7 +373,7 @@
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
     <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
       <h2 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Rate Limits per Plan</h2>
-      <p class="text-[10px] text-gray-400 mt-0.5">Control maximum AI usage per plan to prevent cost overruns</p>
+      <p class="text-[10px] text-gray-400 mt-0.5">UI limits stored in LLMConfig. Daily token enforcement uses <code class="text-[10px]">PLAN_LIMITS.daily_llm_tokens</code> via budget.py (shown in Enforced column).</p>
     </div>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
@@ -366,7 +381,8 @@
           <tr class="border-b border-gray-200 dark:border-gray-800">
             <th class="text-left px-5 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Plan</th>
             <th class="text-left px-5 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Max Calls / Hour</th>
-            <th class="text-left px-5 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Max Tokens / Day</th>
+            <th class="text-left px-5 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">UI Max Tokens / Day</th>
+            <th class="text-left px-5 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Enforced Daily Cap</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -384,6 +400,7 @@
               <input type="number" name="{{ rl.code }}_max_tokens" value="{{ rl.max_tokens_per_day }}" min="1000" step="10000"
                      class="w-40 text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500">
             </td>
+            <td class="px-5 py-3 text-sm font-mono text-emerald-600">{{ rl.enforced_daily_tokens|format_number }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -489,6 +506,7 @@
             <th class="px-3 py-2 text-right text-gray-500 dark:text-gray-400 font-medium">Calls</th>
             <th class="px-3 py-2 text-right text-gray-500 dark:text-gray-400 font-medium">Success</th>
             <th class="px-3 py-2 text-right text-gray-500 dark:text-gray-400 font-medium">Tokens</th>
+            <th class="px-3 py-2 text-right text-gray-500 dark:text-gray-400 font-medium">Cost (7d)</th>
             <th class="px-3 py-2 text-right text-gray-500 dark:text-gray-400 font-medium">Avg ms</th>
           </tr>
         </thead>
@@ -503,6 +521,7 @@
               </span>
             </td>
             <td class="px-3 py-2.5 text-right text-gray-700 dark:text-gray-300">{{ row.total_tokens|format_number }}</td>
+            <td class="px-3 py-2.5 text-right font-mono {% if row.is_unknown %}text-amber-600{% elif row.cost_usd > 0 %}text-amber-600{% else %}text-emerald-600{% endif %}">${{ row.cost_usd|floatformat:4 }}</td>
             <td class="px-3 py-2.5 text-right text-gray-700 dark:text-gray-300">{{ row.avg_duration|floatformat:0 }}</td>
           </tr>
           {% endfor %}

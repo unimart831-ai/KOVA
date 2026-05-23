@@ -11,7 +11,8 @@ from django.views.decorators.http import require_POST
 
 from apps.admin_dashboard.decorators import superuser_required
 from apps.agents.models import AgentAction, LLMConfig
-from apps.billing.models import PLAN_LIMITS
+from apps.agents.pricing import calculate_token_cost
+from apps.billing.models import PLAN_LIMITS, get_all_plan_limits
 
 
 # ── Image model catalog for the quick-select UI ─────────────────────────
@@ -63,6 +64,14 @@ TASK_KEYS = [
     ("strategist.decide", "Strategist → Strategic decisions"),
     ("snap.vision", "Snap → Vision AI analysis"),
     ("snap.vision_batch", "Snap → Batch vision analysis"),
+    ("snap.carousel", "Snap → Carousel compose"),
+    ("snap.reel", "Snap → Reel compose"),
+    ("commerce.quick_post", "Commerce → Quick post copy"),
+    ("commerce.photo_variations", "Commerce → Photo variation copy"),
+    ("commerce.fix_and_promote", "Commerce → Fix & promote copy"),
+    ("educator.draft_article", "Educator → Draft article"),
+    ("educator.compile_digest", "Educator → Compile digest"),
+    ("educator.suggest_topics", "Educator → Suggest topics"),
 ]
 
 # ── Plan tiers for per-plan config UI ────────────────────────────────────
@@ -175,7 +184,7 @@ def llm_overview(request):
         output_tokens=Sum("output_tokens"),
     )
 
-    # Model usage breakdown (last 7 days)
+    # Model usage breakdown (last 7 days) with cost
     model_usage = (
         actions_7d
         .exclude(model_used="")
@@ -191,10 +200,31 @@ def llm_overview(request):
         )
         .order_by("-calls")
     )
+    model_usage_rows = []
+    cost_7d = 0.0
+    unknown_models_7d: set[str] = set()
+    for row in model_usage:
+        cost_info = calculate_token_cost(
+            row["model_used"], row["input_tokens"] or 0, row["output_tokens"] or 0,
+        )
+        cost_7d += cost_info["cost_usd"]
+        if cost_info["is_unknown"]:
+            unknown_models_7d.add(row["model_used"])
+        model_usage_rows.append({**row, **cost_info, "cost_usd": round(cost_info["cost_usd"], 4)})
+
+    cost_30d = 0.0
+    unknown_models_30d: set[str] = set()
+    for row in actions_30d.exclude(model_used="").values("model_used").annotate(
+        inp=Sum("input_tokens"), out=Sum("output_tokens"),
+    ):
+        cost_info = calculate_token_cost(row["model_used"], row["inp"] or 0, row["out"] or 0)
+        cost_30d += cost_info["cost_usd"]
+        if cost_info["is_unknown"]:
+            unknown_models_30d.add(row["model_used"])
 
     # Model health — failure rate per model (last 7d)
     model_health = []
-    for row in model_usage:
+    for row in model_usage_rows:
         total = row["calls"]
         failures = row["failures"]
         rate = (failures / total * 100) if total > 0 else 0
@@ -207,6 +237,8 @@ def llm_overview(request):
             "warning": 10 <= rate < 30,
             "critical": rate >= 30,
             "avg_ms": round(row["avg_duration"] or 0),
+            "cost_usd": row.get("cost_usd", 0),
+            "is_unknown": row.get("is_unknown", False),
         })
 
     # Paid fallback usage (how often are we escalating?)
@@ -264,6 +296,7 @@ def llm_overview(request):
             "label": PLAN_LIMITS.get(plan_code, {}).get("label", plan_label),
             "max_calls_per_hour": current.get("max_calls_per_hour", defaults.get("max_calls_per_hour", 100)),
             "max_tokens_per_day": current.get("max_tokens_per_day", defaults.get("max_tokens_per_day", 1_000_000)),
+            "enforced_daily_tokens": PLAN_LIMITS.get(plan_code, {}).get("daily_llm_tokens", 0),
             "is_custom": bool(current),
         })
 
@@ -288,7 +321,10 @@ def llm_overview(request):
         "config": config,
         "stats_24h": stats_24h,
         "stats_7d": stats_7d,
-        "model_usage": model_usage,
+        "cost_7d": round(cost_7d, 4),
+        "cost_30d": round(cost_30d, 4),
+        "model_usage": model_usage_rows,
+        "unknown_models": sorted(unknown_models_7d | unknown_models_30d),
         "model_health": model_health,
         "paid_fallback_count_7d": paid_fallback_count_7d,
         "daily_tokens": json.dumps([
@@ -546,8 +582,15 @@ def llm_update_task_model(request):
 
 def _get_tier_for_task(task_key):
     """Map task key to its tier name."""
-    premium = {"create.generate", "create.regenerate", "create.repurpose", "engage.reply"}
-    workhorse = {"research.trends", "research.angles", "strategist.brief", "strategist.decide"}
+    premium = {
+        "create.generate", "create.regenerate", "create.repurpose", "engage.reply",
+        "commerce.quick_post", "commerce.photo_variations", "commerce.fix_and_promote",
+        "educator.draft_article", "educator.compile_digest", "educator.suggest_topics",
+    }
+    workhorse = {
+        "research.trends", "research.angles", "strategist.brief", "strategist.decide",
+        "snap.vision", "snap.vision_batch", "snap.carousel", "snap.reel",
+    }
     if task_key in premium:
         return "premium"
     elif task_key in workhorse:
@@ -555,8 +598,12 @@ def _get_tier_for_task(task_key):
     return "fast"
 
 
+def _plan_revenue_usd(plan_code: str) -> float:
+    return float(get_all_plan_limits().get(plan_code, {}).get("price_usd", 0))
+
+
 def _get_strategy_phases():
-    """Return the 4-phase model strategy from AI_MODELS_STRATEGY.md."""
+    """Return the model strategy phases with live plan pricing."""
     return [
         {
             "phase": 2,
@@ -569,10 +616,10 @@ def _get_strategy_phases():
             "fast": "stepfun/step-3.5-flash:free",
             "fallback": "deepseek/deepseek-v3.2",
             "costs": {
-                "starter": {"ai": 0.05, "revenue": 2.10, "margin": 97.6},
-                "growth": {"ai": 0.23, "revenue": 7.03, "margin": 96.7},
-                "pro": {"ai": 0.90, "revenue": 14.08, "margin": 93.6},
-                "agency": {"ai": 2.25, "revenue": 21.12, "margin": 89.3},
+                "starter": {"ai": 0.05, "revenue": _plan_revenue_usd("starter"), "margin": 97.6},
+                "growth": {"ai": 0.23, "revenue": _plan_revenue_usd("growth"), "margin": 96.7},
+                "pro": {"ai": 0.90, "revenue": _plan_revenue_usd("pro"), "margin": 93.6},
+                "agency": {"ai": 2.25, "revenue": _plan_revenue_usd("agency"), "margin": 89.3},
             },
         },
         {
@@ -586,10 +633,10 @@ def _get_strategy_phases():
             "workhorse": "deepseek/deepseek-v3.2",
             "fast": "deepseek/deepseek-v3.2",
             "costs": {
-                "starter": {"ai": 0.05, "revenue": 2.10, "margin": 97.6},
-                "growth": {"ai": 0.24, "revenue": 7.03, "margin": 96.6},
-                "pro": {"ai": 2.66, "revenue": 14.08, "margin": 81.1},
-                "agency": {"ai": 6.66, "revenue": 21.12, "margin": 68.5},
+                "starter": {"ai": 0.05, "revenue": _plan_revenue_usd("starter"), "margin": 97.6},
+                "growth": {"ai": 0.24, "revenue": _plan_revenue_usd("growth"), "margin": 96.6},
+                "pro": {"ai": 2.66, "revenue": _plan_revenue_usd("pro"), "margin": 81.1},
+                "agency": {"ai": 6.66, "revenue": _plan_revenue_usd("agency"), "margin": 68.5},
             },
         },
         {
@@ -603,10 +650,10 @@ def _get_strategy_phases():
             "workhorse": "deepseek/deepseek-v3.2",
             "fast": "stepfun/step-3.5-flash",
             "costs": {
-                "starter": {"ai": 0.03, "revenue": 2.10, "margin": 98.6},
-                "growth": {"ai": 0.15, "revenue": 7.03, "margin": 97.9},
-                "pro": {"ai": 1.80, "revenue": 14.08, "margin": 87.2},
-                "agency": {"ai": 4.50, "revenue": 21.12, "margin": 78.7},
+                "starter": {"ai": 0.03, "revenue": _plan_revenue_usd("starter"), "margin": 98.6},
+                "growth": {"ai": 0.15, "revenue": _plan_revenue_usd("growth"), "margin": 97.9},
+                "pro": {"ai": 1.80, "revenue": _plan_revenue_usd("pro"), "margin": 87.2},
+                "agency": {"ai": 4.50, "revenue": _plan_revenue_usd("agency"), "margin": 78.7},
             },
         },
     ]

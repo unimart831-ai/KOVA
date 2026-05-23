@@ -31,13 +31,26 @@
     <p class="text-[10px] text-gray-400 mt-0.5">${{ paid_cost_30d|floatformat:4 }} paid</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
-    <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Monthly Revenue</p>
-    <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">${{ total_monthly_revenue|floatformat:2 }}</p>
-    <p class="text-[10px] text-gray-400 mt-0.5">{{ total_active_users }} active user{{ total_active_users|pluralize }}</p>
+    <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Est. MRR (USD)</p>
+    <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">${{ estimated_mrr_usd|floatformat:2 }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">{{ total_active_users }} active subscriber{{ total_active_users|pluralize }}</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
-    <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Gross Margin</p>
-    <p class="text-xl font-bold {% if gross_margin >= 50 %}text-emerald-600 dark:text-emerald-400{% elif gross_margin >= 20 %}text-amber-500{% else %}text-red-500{% endif %} mt-1">{{ gross_margin }}%</p>
+    <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">M-Pesa Collected (30d)</p>
+    <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">KES {{ actual_subscription_revenue_30d|floatformat:0 }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">Subscription payments only</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Total AI Spend (30d)</p>
+    <p class="text-xl font-bold text-amber-600 dark:text-amber-400 mt-1">${{ total_ai_cost_30d|floatformat:4 }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">LLM + images + vision</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Est. Unit Cost / MRR</p>
+    <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">${{ total_monthly_cost|floatformat:2 }}</p>
+    <p class="text-[10px] mt-0.5 {% if gross_margin >= 50 %}text-emerald-600{% elif gross_margin >= 20 %}text-amber-600{% else %}text-red-600{% endif %}">
+      {{ gross_margin }}% gross margin (est.)
+    </p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Free vs Paid Calls</p>
@@ -69,9 +82,9 @@
   </div>
   <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
   <div>
-    <span class="text-[10px] font-semibold text-gray-400 uppercase">Cost/Token</span>
+    <span class="text-[10px] font-semibold text-gray-400 uppercase">Avg $/Token</span>
     <p class="text-lg font-bold text-gray-900 dark:text-white">
-      {% if total_tokens_30d %}${{ cost_30d|floatformat:6 }}{% else %}$0{% endif %}
+      {% if total_tokens_30d %}${{ cost_per_token|floatformat:8 }}{% else %}$0{% endif %}
     </p>
   </div>
 </div>
@@ -99,12 +112,54 @@
   </div>
   <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
   <div>
-    <span class="text-[10px] font-semibold text-gray-400 uppercase">Avg Cost/Image</span>
+    <span class="text-[10px] font-semibold text-gray-400 uppercase">Avg $/Image</span>
     <p class="text-lg font-bold text-gray-900 dark:text-white">
-      {% if images_generated_30d > 0 %}${{ image_cost_30d|floatformat:4 }}{% else %}$0{% endif %}
+      {% if images_generated_30d > 0 %}${{ avg_cost_per_image|floatformat:4 }}{% else %}$0{% endif %}
     </p>
   </div>
 </div>
+
+{% if unknown_models %}
+<div class="mb-6 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 px-5 py-4">
+  <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">Unknown model IDs detected</p>
+  <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">These models are priced using a conservative DeepSeek estimate ($0.26/$0.38 per 1M). Add them to <code class="text-[10px]">settings.MODEL_TOKEN_COSTS</code> for exact costs:</p>
+  <p class="text-xs font-mono text-amber-900 dark:text-amber-100 mt-2">{{ unknown_models|join:", " }}</p>
+</div>
+{% endif %}
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm mb-6 flex flex-wrap items-center gap-6">
+  <div>
+    <span class="text-[10px] font-semibold text-gray-400 uppercase">Budget ledger (30d)</span>
+    <p class="text-lg font-bold text-gray-900 dark:text-white">${{ bucket_cost_30d|floatformat:4 }}</p>
+    <p class="text-[10px] text-gray-400">UserTokenBucket enforcement</p>
+  </div>
+  <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
+  <div>
+    <span class="text-[10px] font-semibold text-gray-400 uppercase">AgentAction LLM (30d)</span>
+    <p class="text-lg font-bold text-gray-900 dark:text-white">${{ cost_30d|floatformat:4 }}</p>
+  </div>
+  <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
+  <div>
+    <span class="text-[10px] font-semibold text-gray-400 uppercase">Delta</span>
+    <p class="text-lg font-bold {% if bucket_vs_actions_delta|floatformat:2 != '0.00' %}text-amber-600{% else %}text-emerald-600{% endif %}">${{ bucket_vs_actions_delta|floatformat:4 }}</p>
+  </div>
+  <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
+  <div>
+    <span class="text-[10px] font-semibold text-gray-400 uppercase">Commerce checkout (30d)</span>
+    <p class="text-lg font-bold text-emerald-600">KES {{ commerce_checkout_revenue_30d|floatformat:0 }}</p>
+  </div>
+  <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
+  <div>
+    <span class="text-[10px] font-semibold text-gray-400 uppercase">Commerce LLM cost</span>
+    <p class="text-lg font-bold text-amber-600">${{ commerce_cost_30d|floatformat:4 }}</p>
+  </div>
+  <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
+  <div>
+    <span class="text-[10px] font-semibold text-gray-400 uppercase">Snap LLM cost</span>
+    <p class="text-lg font-bold text-purple-600">${{ snap_cost_30d|floatformat:4 }}</p>
+  </div>
+</div>
+
 
 <!-- Vision AI (Snap to Sell) stats bar -->
 <div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 p-4 shadow-sm mb-6 flex flex-wrap items-center gap-6">
@@ -121,6 +176,16 @@
   <div>
     <span class="text-[10px] font-semibold text-gray-400 uppercase">Batch Snaps</span>
     <p class="text-lg font-bold text-orange-600 dark:text-orange-400">{{ vision_batch|format_number }}</p>
+  </div>
+  <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
+  <div>
+    <span class="text-[10px] font-semibold text-gray-400 uppercase">Carousels</span>
+    <p class="text-lg font-bold text-gray-900 dark:text-white">{{ vision_carousel|format_number }}</p>
+  </div>
+  <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
+  <div>
+    <span class="text-[10px] font-semibold text-gray-400 uppercase">Reels</span>
+    <p class="text-lg font-bold text-gray-900 dark:text-white">{{ vision_reel|format_number }}</p>
   </div>
   <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
   <div>
@@ -154,8 +219,8 @@
      ══════════════════════════════════════════════════════════════════════ -->
 <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6 overflow-hidden">
   <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
-    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Per-Plan Unit Economics (Actual 30d Data)</h2>
-    <p class="text-[10px] text-gray-400 mt-0.5">LLM cost = actual tokens used × model prices · Image cost = plan limit × tier-routed model price · Infra = estimated</p>
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Per-Plan Unit Economics (30d)</h2>
+    <p class="text-[10px] text-gray-400 mt-0.5">LLM = actual usage · Image = actual generated posts × tier price · Voice = plan estimate · Infra = shared hosting estimate</p>
   </div>
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
@@ -233,6 +298,7 @@
               <span class="w-2 h-2 rounded-full {% if m.is_free %}bg-emerald-500{% else %}bg-amber-500{% endif %}"></span>
               <span class="text-sm font-mono text-gray-900 dark:text-white">{{ m.model }}</span>
               {% if m.is_free %}<span class="text-[9px] text-emerald-600 dark:text-emerald-400 font-semibold">FREE</span>{% endif %}
+              {% if m.is_unknown %}<span class="text-[9px] text-amber-600 font-semibold">EST.</span>{% endif %}
             </div>
           </td>
           <td class="px-4 py-3 text-right text-gray-600 dark:text-gray-400">{{ m.calls|format_number }}</td>
@@ -293,12 +359,44 @@
     </div>
   </div>
 
-  <!-- ── Top consuming users ── -->
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
     <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
-      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Top Users by Cost (30d)</h2>
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Cost by Action Type (30d)</h2>
+      <p class="text-[10px] text-gray-400 mt-0.5">Commerce, Snap, and other pipelines</p>
     </div>
-    <div class="overflow-x-auto max-h-[420px] overflow-y-auto">
+    <div class="overflow-x-auto max-h-80 overflow-y-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+            <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Action</th>
+            <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-wider text-right">Calls</th>
+            <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-wider text-right">Tokens</th>
+            <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-wider text-right">Cost</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for a in action_cost_rows %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+            <td class="px-4 py-3 font-mono text-xs text-gray-900 dark:text-white">{{ a.action_type }}</td>
+            <td class="px-4 py-3 text-right text-gray-600">{{ a.calls|format_number }}</td>
+            <td class="px-4 py-3 text-right font-mono text-gray-600">{{ a.tokens|format_number }}</td>
+            <td class="px-4 py-3 text-right font-mono font-semibold {% if a.cost > 0 %}text-amber-600{% else %}text-emerald-600{% endif %}">${{ a.cost|floatformat:4 }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="px-4 py-6 text-center text-sm text-gray-400">No action data yet</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden mb-6">
+  <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Top Users by LLM Cost (30d)</h2>
+    <p class="text-[10px] text-gray-400 mt-0.5">LLM cost only — excludes images, voice, and infrastructure</p>
+  </div>
+  <div class="overflow-x-auto max-h-[420px] overflow-y-auto">
       <table class="w-full text-sm">
         <thead class="sticky top-0 bg-white dark:bg-gray-900">
           <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
