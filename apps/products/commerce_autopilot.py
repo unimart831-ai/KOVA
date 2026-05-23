@@ -122,6 +122,14 @@ def apply_ai_detected_product_fields(product, analysis: dict) -> list[str]:
 
     if update_fields:
         product.save(update_fields=[*update_fields, "updated_at"])
+
+    from apps.products.commerce_seo import ensure_commerce_seo_copy
+
+    profile = product.user.profile
+    if ensure_commerce_seo_copy(product, profile, analysis):
+        if "description" not in update_fields:
+            update_fields.append("description")
+
     return update_fields
 
 

@@ -113,6 +113,7 @@ def product_detail(request, product_id):
     from apps.content.models import Post
     from apps.products.commerce_autopilot import commerce_autopilot_active, is_placeholder_product_name
     from apps.products.commerce_links import commerce_link_url, ensure_commerce_slug
+    from apps.products.commerce_seo import commerce_seo_checklist, shop_index_url
     from apps.products.snap_pipeline import build_snap_pipeline_status
 
     if not product.commerce_slug:
@@ -120,6 +121,8 @@ def product_detail(request, product_id):
         product.refresh_from_db()
 
     commerce_url = commerce_link_url(product, request)
+    shop_url = shop_index_url(request.user.profile, request)
+    seo_checklist = commerce_seo_checklist(product, request.user.profile)
     pipeline = build_snap_pipeline_status(product, request.user)
 
     all_posts = list(
@@ -161,6 +164,8 @@ def product_detail(request, product_id):
         "commerce_autopilot": commerce_autopilot_active(request.user),
         "name_is_placeholder": is_placeholder_product_name(product.name),
         "commerce_url": commerce_url,
+        "shop_url": shop_url,
+        "seo_checklist": seo_checklist,
         "pipeline_initial_json": json.dumps(pipeline),
     })
 

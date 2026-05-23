@@ -1086,6 +1086,10 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
     if not product.description and analysis.get("description"):
         product.description = analysis["description"]
 
+    from apps.products.commerce_seo import ensure_commerce_seo_copy
+
+    ensure_commerce_seo_copy(product, user.profile, analysis)
+
     if analysis.get("suggested_tags"):
         existing_tags = set(product.tags or [])
         new_tags = list(existing_tags | set(analysis["suggested_tags"][:5]))
@@ -1357,6 +1361,10 @@ def snap_batch_process(product_ids: list, contexts: list = None):
         # ── Enrich product with AI analysis ──────────────────────────
         if not product.description and analysis.get("description"):
             product.description = analysis["description"]
+
+        from apps.products.commerce_seo import ensure_commerce_seo_copy
+
+        ensure_commerce_seo_copy(product, user.profile, analysis)
 
         if analysis.get("suggested_tags"):
             existing_tags = set(product.tags or [])

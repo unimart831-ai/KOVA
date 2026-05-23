@@ -144,8 +144,8 @@
   {% if commerce_url %}
   <div class="card p-5 border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20">
     <h3 class="text-sm font-semibold text-emerald-900 dark:text-emerald-100 mb-1">Commerce Link</h3>
-    <p class="text-xs text-emerald-700 dark:text-emerald-300 mb-3">Share this page — customers can view, chat, and pay via M-Pesa.</p>
-    <div class="flex flex-wrap items-center gap-2">
+    <p class="text-xs text-emerald-700 dark:text-emerald-300 mb-3">Share this page — customers can view, chat, and pay via M-Pesa. Google and WhatsApp show your photo &amp; price when shared.</p>
+    <div class="flex flex-wrap items-center gap-2 mb-3">
       <input type="text" readonly value="{{ commerce_url }}" id="commerce-url"
              class="input text-xs flex-1 min-w-0 font-mono bg-white dark:bg-gray-900">
       <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('commerce-url').value); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1500)"
@@ -153,6 +153,55 @@
       <a href="{{ commerce_url }}" target="_blank" rel="noopener"
          class="btn-primary text-sm px-3 py-1.5 shrink-0">Open</a>
     </div>
+    {% if shop_url %}
+    <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-emerald-200/60 dark:border-emerald-800/60">
+      <span class="text-xs font-medium text-emerald-800 dark:text-emerald-200 w-full mb-1">Shop homepage (all products)</span>
+      <input type="text" readonly value="{{ shop_url }}" id="shop-url"
+             class="input text-xs flex-1 min-w-0 font-mono bg-white dark:bg-gray-900">
+      <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('shop-url').value); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1500)"
+              class="btn-secondary text-sm px-3 py-1.5 shrink-0">Copy</button>
+      <a href="{{ shop_url }}" target="_blank" rel="noopener"
+         class="btn-secondary text-sm px-3 py-1.5 shrink-0">Open shop</a>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {# SEO checklist — discoverability for Google & social shares #}
+  {% if seo_checklist %}
+  <div class="card p-5 border border-sky-200 dark:border-sky-800 bg-sky-50/40 dark:bg-sky-950/20">
+    <div class="flex items-center justify-between gap-2 mb-3">
+      <h3 class="text-sm font-semibold text-sky-900 dark:text-sky-100">Shop SEO</h3>
+      <span class="text-xs font-semibold px-2 py-0.5 rounded-full {% if seo_checklist.ready %}bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300{% else %}bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300{% endif %}">
+        {{ seo_checklist.done_count }}/{{ seo_checklist.total }}
+      </span>
+    </div>
+    <p class="text-xs text-sky-700 dark:text-sky-300 mb-3">Complete these to rank on Google and look great when shared on WhatsApp.</p>
+    <ul class="space-y-2">
+      {% for item in seo_checklist.items %}
+      <li class="flex items-start gap-2 text-sm">
+        {% if item.done %}
+        <span class="text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true">✓</span>
+        <span class="text-gray-700 dark:text-gray-300">{{ item.label }}</span>
+        {% else %}
+        <span class="text-amber-500 shrink-0" aria-hidden="true">○</span>
+        <span>
+          <span class="text-gray-900 dark:text-white font-medium">{{ item.label }}</span>
+          <span class="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ item.tip }}</span>
+        </span>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% if not seo_checklist.ready %}
+    <p class="text-xs text-sky-600 dark:text-sky-400 mt-3">
+      {% if seo_checklist.needs_profile_settings %}
+      <a href="{% url 'accounts:settings' %}" class="underline hover:text-sky-800">Update profile settings</a> for city &amp; WhatsApp.
+      {% else %}
+      Edit this product to improve your listing.
+      {% endif %}
+    </p>
+    {% endif %}
   </div>
   {% endif %}
 

@@ -3,8 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>{{ product.name }} · {{ brand_name }}</title>
-  <meta name="description" content="{{ product.description|truncatechars:160 }}">
+  <title>{{ seo_title }}</title>
+  <meta name="description" content="{{ seo_description }}">
+  <link rel="canonical" href="{{ canonical_url }}">
+  <meta property="og:type" content="product">
+  <meta property="og:title" content="{{ seo_title }}">
+  <meta property="og:description" content="{{ seo_description }}">
+  <meta property="og:url" content="{{ canonical_url }}">
+  {% if og_image %}<meta property="og:image" content="{{ og_image }}">{% endif %}
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ seo_title }}">
+  <meta name="twitter:description" content="{{ seo_description }}">
+  {% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}
+  <script type="application/ld+json">{{ product_schema_json|safe }}</script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     body { background: #f9fafb; min-height: 100vh; color: #111; }
@@ -12,6 +23,8 @@
     .header { text-align: center; padding: 16px 0 8px; }
     .header p { font-size: 12px; color: #6b7280; }
     .header h1 { font-size: 14px; font-weight: 600; color: #374151; margin-top: 4px; }
+    .header a { color: #059669; text-decoration: none; }
+    .header a:hover { text-decoration: underline; }
     .hero { border-radius: 16px; overflow: hidden; background: #fff; border: 1px solid #e5e7eb; margin-bottom: 16px; }
     .hero img.hero-main { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
     .thumbs { display: flex; gap: 8px; padding: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -20,13 +33,14 @@
     .thumb-btn.active { border-color: #059669; box-shadow: 0 0 0 1px #059669; }
     .thumb-btn img { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; display: block; }
     .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 16px; margin-bottom: 12px; }
-    .title { font-size: 22px; font-weight: 700; line-height: 1.2; }
+    .product-title { font-size: 22px; font-weight: 700; line-height: 1.2; }
     .price { font-size: 20px; font-weight: 700; color: #059669; margin-top: 8px; }
     .desc { font-size: 14px; color: #4b5563; margin-top: 12px; line-height: 1.5; }
     .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 999px; background: #fef3c7; color: #92400e; margin-top: 8px; }
     .btn { display: block; width: 100%; text-align: center; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: 600; text-decoration: none; border: 0; cursor: pointer; margin-top: 10px; }
     .btn-wa { background: #25D366; color: #fff; }
     .btn-mpesa { background: #059669; color: #fff; }
+    .btn-outline { background: #fff; color: #059669; border: 1px solid #059669; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .field { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #e5e7eb; border-radius: 10px; margin-top: 8px; }
     .msg { font-size: 13px; margin-top: 10px; padding: 10px; border-radius: 8px; display: none; }
@@ -39,7 +53,7 @@
 <div class="wrap">
   <div class="header">
     <p>Shop with</p>
-    <h1>{{ brand_name }}</h1>
+    <h1><a href="{{ shop_index_url }}">{{ brand_name }}</a></h1>
   </div>
 
   <div class="hero">
@@ -63,7 +77,7 @@
   </div>
 
   <div class="card">
-    <div class="title">{{ product.name }}</div>
+    <h1 class="product-title">{{ product.name }}</h1>
     {% if product.display_price %}
     <div class="price">{{ product.display_price }}</div>
     {% endif %}
@@ -93,6 +107,8 @@
     {% elif product.display_price and product.currency != 'KES' %}
     <p class="desc" style="margin-top:0">Contact the seller to complete payment.</p>
     {% endif %}
+
+    <a href="{{ shop_index_url }}" class="btn btn-outline">View all products</a>
   </div>
   {% endif %}
 

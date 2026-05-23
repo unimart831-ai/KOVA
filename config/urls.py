@@ -8,7 +8,12 @@ from django.urls import include, path, re_path
 from django.views.generic.base import RedirectView
 
 from apps.links.views import public_page, public_form_submit, public_link_click
-from apps.products.commerce_views import public_commerce_link, public_commerce_pay
+from apps.products.commerce_views import (
+    public_commerce_link,
+    public_commerce_pay,
+    public_shop_index,
+)
+from apps.products.commerce_sitemap import commerce_sitemap_xml, robots_txt
 
 admin.site.site_header = "KOVA AI ADMIN"
 admin.site.site_title = "Kova AI"
@@ -93,6 +98,13 @@ urlpatterns = [
     path("links/", include("apps.links.urls")),
     path("leads/", include("apps.leads.urls")),
     path("products/", include("apps.products.urls")),
+    path("robots.txt", robots_txt, name="robots_txt"),
+    path("sitemap.xml", commerce_sitemap_xml, name="sitemap"),
+    path(
+        "shop/<slug:page_slug>/",
+        public_shop_index,
+        name="public_shop",
+    ),
     path(
         "shop/<slug:page_slug>/<slug:commerce_slug>/",
         public_commerce_link,

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from decimal import Decimal
+from urllib.parse import quote
 
 from django.http import Http404, JsonResponse
 from django.shortcuts import render
@@ -11,7 +12,16 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from django_ratelimit.decorators import ratelimit
 
-from apps.products.commerce_links import resolve_public_product
+from apps.products.commerce_links import (
+    resolve_page_slug,
+    resolve_public_product,
+    resolve_public_shop,
+)
+from apps.products.commerce_seo import (
+    brand_name,
+    build_commerce_page_seo,
+    build_shop_page_seo,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +45,35 @@ def _track_commerce_view(request, product, profile):
         logger.exception("commerce link view tracking failed for product %s", product.pk)
 
 
+def _whatsapp_url(profile, text: str) -> str:
+    whatsapp = profile.cta_whatsapp or ""
+    if not whatsapp:
+        return ""
+    return f"https://wa.me/{whatsapp}?text={quote(text)}"
+
+
+@require_GET
+def public_shop_index(request, page_slug):
+    profile, products = resolve_public_shop(page_slug)
+    if not profile or not products:
+        raise Http404
+
+    user = profile.user
+    brand = brand_name(profile, user)
+    wa_text = f"Hi! I'd like to browse your shop — {brand}."
+    seo = build_shop_page_seo(request, profile, user, products)
+
+    return render(request, "products/public/shop_index.html", {
+        "profile": profile,
+        "products": products,
+        "user": user,
+        "shop_slug": resolve_page_slug(profile),
+        "brand_name": brand,
+        "wa_url": _whatsapp_url(profile, wa_text),
+        **seo,
+    })
+
+
 @require_GET
 def public_commerce_link(request, page_slug, commerce_slug):
     profile, product = resolve_public_product(page_slug, commerce_slug)
@@ -44,15 +83,14 @@ def public_commerce_link(request, page_slug, commerce_slug):
     _track_commerce_view(request, product, profile)
 
     user = product.user
+    brand = brand_name(profile, user)
     whatsapp = profile.cta_whatsapp or ""
     wa_text = (
         f"Hi! I'm interested in {product.name}"
         f"{f' ({product.display_price})' if product.display_price else ''} "
         f"from your shop link."
     )
-    from urllib.parse import quote
-
-    wa_url = f"https://wa.me/{whatsapp}?text={quote(wa_text)}" if whatsapp else ""
+    wa_url = _whatsapp_url(profile, wa_text)
 
     mpesa_available = bool(
         product.price
@@ -60,20 +98,26 @@ def public_commerce_link(request, page_slug, commerce_slug):
         and product.stock_status != product.StockStatus.OUT_OF_STOCK
     )
 
-    from apps.products.commerce_links import resolve_page_slug
-
     shop_slug = resolve_page_slug(profile)
+    seo = build_commerce_page_seo(
+        request,
+        product,
+        profile,
+        user,
+        mpesa_available=mpesa_available,
+        whatsapp_available=bool(whatsapp),
+    )
 
     return render(request, "products/public/commerce_link.html", {
         "profile": profile,
         "product": product,
         "user": user,
         "shop_slug": shop_slug,
-        "brand_name": profile.company_name or user.full_name or "Shop",
+        "brand_name": brand,
         "whatsapp": whatsapp,
         "wa_url": wa_url,
         "mpesa_available": mpesa_available,
-        "page_title": product.name,
+        **seo,
     })
 
 

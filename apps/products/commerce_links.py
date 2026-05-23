@@ -57,6 +57,36 @@ def commerce_link_url(product, request=None) -> str:
     return path
 
 
+def resolve_public_shop(page_slug: str):
+    """Lookup a seller profile and their active commerce products."""
+    from apps.accounts.models import UserProfile
+    from apps.products.models import Product
+
+    profile = UserProfile.objects.select_related("user").filter(
+        page_slug=page_slug,
+    ).first()
+    if not profile:
+        profile = UserProfile.objects.select_related("user").filter(
+            user__username=page_slug,
+        ).first()
+    if not profile:
+        return None, []
+
+    products = list(
+        Product.objects.filter(
+            user=profile.user,
+            is_active=True,
+        ).exclude(commerce_slug="").select_related("category").order_by(
+            "-is_featured", "-created_at",
+        )
+    )
+    return profile, products
+
+
+def shop_index_path(profile) -> str:
+    return f"/shop/{resolve_page_slug(profile)}/"
+
+
 def resolve_public_product(page_slug: str, commerce_slug: str):
     """Lookup an active product on a public shop page."""
     from apps.accounts.models import UserProfile
