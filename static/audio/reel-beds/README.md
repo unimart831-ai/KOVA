@@ -1,7 +1,12 @@
 # Reel music beds
 
-Royalty-free background tracks for motion Reels. Metadata lives in
-`apps/content/data/reel_music_catalog.json`.
+Royalty-free background tracks for motion Reels.
+
+**→ Upload beats in Admin:** `/dashboard/reel-music/`  
+**→ Full guide:** `docs/REEL_MUSIC.md`
+
+Metadata lives in `apps/content/data/reel_music_catalog.json` (seed) and
+`reel-beds/catalog.json` on cloud storage (live catalog after admin uploads).
 
 ## Layout
 

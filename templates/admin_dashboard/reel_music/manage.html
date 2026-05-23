@@ -1,0 +1,142 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+  Upload royalty-free beats for motion reels ·
+  <span class="{% if music_missing %}text-red-600 dark:text-red-400{% else %}text-green-600 dark:text-green-400{% endif %}">
+    {{ music_total }} tracks{% if music_missing %} · {{ music_missing }} missing file{% endif %}
+  </span>
+</p>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+
+  {# Upload form #}
+  <div class="xl:col-span-1">
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5 sticky top-4">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Upload new beat</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+        MP3 only · max 15 MB · use royalty-free or licensed music you own.
+      </p>
+
+      <form method="post" action="{% url 'admin_dashboard:reel_music_upload' %}" enctype="multipart/form-data" class="space-y-4">
+        {% csrf_token %}
+
+        <div>
+          <label for="title" class="label text-xs">Track title *</label>
+          <input type="text" id="title" name="title" required maxlength="120"
+                 class="input text-sm w-full" placeholder="e.g. Afro Groove 3">
+        </div>
+
+        <div>
+          <label for="mood" class="label text-xs">Mood *</label>
+          <select id="mood" name="mood" class="input text-sm w-full" required>
+            {% for mood in moods %}
+            <option value="{{ mood }}">{{ mood|title }}</option>
+            {% endfor %}
+          </select>
+          <p class="text-[10px] text-gray-400 mt-1">
+            Upbeat = product promos · Calm = tips/guides · Urgent = sales/offers
+          </p>
+        </div>
+
+        <div>
+          <label for="audio" class="label text-xs">MP3 file *</label>
+          <input type="file" id="audio" name="audio" accept=".mp3,audio/mpeg" required
+                 class="input text-sm w-full file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-kova-50 file:text-kova-700">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="duration_sec" class="label text-xs">Duration (sec)</label>
+            <input type="number" id="duration_sec" name="duration_sec" min="5" max="120" value="30"
+                   class="input text-sm w-full">
+          </div>
+          <div>
+            <label for="source" class="label text-xs">Source</label>
+            <select id="source" name="source" class="input text-sm w-full">
+              <option value="uploaded">Uploaded</option>
+              <option value="pixabay">Pixabay</option>
+              <option value="mixkit">Mixkit</option>
+              <option value="uppbeat">Uppbeat</option>
+              <option value="commissioned">Commissioned</option>
+              <option value="kova_original">Kova Original</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label for="attribution" class="label text-xs">Attribution (optional)</label>
+          <input type="text" id="attribution" name="attribution" maxlength="200"
+                 class="input text-sm w-full" placeholder="Artist — Pixabay">
+        </div>
+
+        <button type="submit" class="w-full btn-primary text-sm py-2.5">Upload beat</button>
+      </form>
+
+      <p class="text-[10px] text-gray-400 mt-4 leading-relaxed">
+        Tracks save to the server and cloud storage. New reels pick music by mood automatically.
+        See <code class="text-gray-500">docs/REEL_MUSIC.md</code> for full guide.
+      </p>
+    </div>
+  </div>
+
+  {# Catalog list #}
+  <div class="xl:col-span-2 space-y-6">
+    {% for mood, tracks in tracks_by_mood.items %}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+      <div class="px-5 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white capitalize">{{ mood }}</h3>
+        <span class="text-xs text-gray-400">{{ tracks|length }} track{{ tracks|length|pluralize }}</span>
+      </div>
+
+      {% if tracks %}
+      <div class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for track in tracks %}
+        <div class="px-5 py-4">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-gray-900 dark:text-white">{{ track.title }}</p>
+              <p class="text-[10px] text-gray-400 font-mono mt-0.5">{{ track.file }}</p>
+              <div class="flex flex-wrap gap-2 mt-1.5 text-[10px] text-gray-500">
+                <span>ID: {{ track.id }}</span>
+                <span>{{ track.duration_sec }}s</span>
+                {% if track.source %}<span>{{ track.source }}</span>{% endif %}
+                {% if track.attribution %}<span>{{ track.attribution }}</span>{% endif %}
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              {% if track.file_ok %}
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Ready</span>
+              {% else %}
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">Missing</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2 mt-3">
+            <form method="post" action="{% url 'admin_dashboard:reel_music_replace' track_id=track.id %}" enctype="multipart/form-data" class="flex items-center gap-2">
+              {% csrf_token %}
+              <input type="file" name="audio" accept=".mp3,audio/mpeg" required
+                     class="text-[10px] max-w-[180px] file:mr-1 file:py-0.5 file:px-1.5 file:rounded file:border-0 file:text-[10px] file:bg-gray-100 dark:file:bg-gray-800">
+              <button type="submit" class="text-[10px] px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200">Replace</button>
+            </form>
+            <form method="post" action="{% url 'admin_dashboard:reel_music_delete' track_id=track.id %}"
+                  onsubmit="return confirm('Delete “{{ track.title|escapejs }}” from the catalog?');">
+              {% csrf_token %}
+              <button type="submit" class="text-[10px] px-2 py-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">Delete</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="px-5 py-8 text-sm text-gray-400 text-center">No {{ mood }} tracks yet — upload one above.</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

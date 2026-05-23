@@ -1,11 +1,36 @@
 """Tests for motion Reel composition and music catalog."""
 
+import json
 import pytest
 from io import BytesIO
+from pathlib import Path
 from PIL import Image
+from django.core.files.uploadedfile import SimpleUploadedFile
 
-from apps.content.reel_music import infer_mood_from_post, load_music_catalog, pick_music_track
+from apps.content import reel_music
+from apps.content.reel_music import (
+    add_track,
+    delete_track,
+    infer_mood_from_post,
+    load_music_catalog,
+    pick_music_track,
+    replace_track_file,
+    resolve_track_path,
+)
 from apps.content.video_compose import ffmpeg_available, fit_image_to_story_frame, is_video_url
+
+
+@pytest.fixture
+def isolated_reel_catalog(tmp_path, monkeypatch):
+    catalog = tmp_path / "catalog.json"
+    beds = tmp_path / "beds"
+    beds.mkdir()
+    catalog.write_text(json.dumps({"version": 1, "tracks": []}), encoding="utf-8")
+    monkeypatch.setattr(reel_music, "CATALOG_PATH", catalog)
+    monkeypatch.setattr(reel_music, "REEL_BEDS_ROOT", beds)
+    monkeypatch.setattr(reel_music, "REEL_BEDS_CACHE", tmp_path / "cache")
+    monkeypatch.setattr(reel_music, "save_track_file", lambda rel, f: reel_music.REEL_BEDS_ROOT.joinpath(*rel.split("/")).write_bytes(f.read()))
+    return beds
 
 
 @pytest.mark.django_db
@@ -26,6 +51,24 @@ class TestReelMusic:
 
     def test_infer_mood_calm(self):
         assert infer_mood_from_post(content_intent="solution", content_text="How to grow") == "calm"
+
+    def test_add_and_delete_track(self, isolated_reel_catalog):
+        mp3 = SimpleUploadedFile("beat.mp3", b"\xff\xfb" + b"\x00" * 128, content_type="audio/mpeg")
+        track = add_track(title="Test Groove", mood="upbeat", uploaded_file=mp3, duration_sec=28)
+        assert track["id"].startswith("upbeat-")
+        assert load_music_catalog()
+        assert resolve_track_path(track) is not None
+        assert delete_track(track["id"]) is True
+        assert load_music_catalog() == []
+
+    def test_replace_track(self, isolated_reel_catalog):
+        mp3 = SimpleUploadedFile("beat.mp3", b"\xff\xfb" + b"\x00" * 128, content_type="audio/mpeg")
+        track = add_track(title="Replace Me", mood="calm", uploaded_file=mp3)
+        new_mp3 = SimpleUploadedFile("new.mp3", b"\xff\xfb" + b"\x01" * 128, content_type="audio/mpeg")
+        replace_track_file(track["id"], new_mp3)
+        path = resolve_track_path(track)
+        assert path is not None
+        assert path.read_bytes()[3] == 1
 
 
 class TestVideoComposeHelpers:

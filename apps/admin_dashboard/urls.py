@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, bookings, calendar_intel, campaigns, content, costs, emails, engage, feature_usage, help, innovations, leads, llm, logs, media_queue, memes, notifications, onboarding, operations, overview, partners, partials, pixel, platforms, products, profile_audit, qr, revenue, reviews, system, system_maps, teams, user_health, users, whatsapp
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, bookings, calendar_intel, campaigns, content, costs, emails, engage, feature_usage, help, innovations, leads, llm, logs, media_queue, memes, notifications, onboarding, operations, overview, partners, partials, pixel, platforms, products, profile_audit, qr, reel_music, revenue, reviews, system, system_maps, teams, user_health, users, whatsapp
 
 app_name = "admin_dashboard"
 
@@ -22,6 +22,12 @@ urlpatterns = [
 
     # Operations (platform-wide task activity)
     path("operations/", operations.operations_overview, name="operations_overview"),
+
+    # Reel music catalog
+    path("reel-music/", reel_music.reel_music_manage, name="reel_music_manage"),
+    path("reel-music/upload/", reel_music.reel_music_upload, name="reel_music_upload"),
+    path("reel-music/<str:track_id>/replace/", reel_music.reel_music_replace, name="reel_music_replace"),
+    path("reel-music/<str:track_id>/delete/", reel_music.reel_music_delete, name="reel_music_delete"),
 
     # Leads & CRM
     path("leads/", leads.leads_overview, name="leads_overview"),
