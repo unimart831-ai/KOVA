@@ -1,14 +1,19 @@
 """Admin dashboard — reel music catalog upload and management."""
 
+from pathlib import Path
+
 from django.contrib import messages
+from django.http import FileResponse, Http404
 from django.shortcuts import redirect, render
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 
 from apps.admin_dashboard.decorators import staff_required
 from apps.content.reel_music import (
+    STORAGE_PREFIX,
     VALID_MOODS,
     add_track,
     delete_track,
+    get_track_by_id,
     load_music_catalog,
     replace_track_file,
     resolve_track_path,
@@ -133,3 +138,38 @@ def reel_music_delete(request, track_id):
     else:
         messages.error(request, "Track not found.")
     return redirect("admin_dashboard:reel_music_manage")
+
+
+@staff_required
+@require_GET
+def reel_music_preview(request, track_id):
+    """Stream an MP3 for staff preview in the admin catalog."""
+    track = get_track_by_id(track_id)
+    if not track:
+        raise Http404("Track not found")
+
+    local_path = resolve_track_path(track)
+    if local_path and local_path.is_file():
+        return FileResponse(
+            local_path.open("rb"),
+            content_type="audio/mpeg",
+            as_attachment=False,
+            filename=local_path.name,
+        )
+
+    rel = (track.get("file") or "").replace("\\", "/").lstrip("/")
+    if not rel:
+        raise Http404("Track file not configured")
+
+    from django.core.files.storage import default_storage
+
+    storage_key = f"{STORAGE_PREFIX}{rel}"
+    if not default_storage.exists(storage_key):
+        raise Http404("Track file missing")
+
+    return FileResponse(
+        default_storage.open(storage_key, "rb"),
+        content_type="audio/mpeg",
+        as_attachment=False,
+        filename=Path(rel).name,
+    )

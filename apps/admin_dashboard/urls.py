@@ -28,6 +28,7 @@ urlpatterns = [
     path("reel-music/upload/", reel_music.reel_music_upload, name="reel_music_upload"),
     path("reel-music/<str:track_id>/replace/", reel_music.reel_music_replace, name="reel_music_replace"),
     path("reel-music/<str:track_id>/delete/", reel_music.reel_music_delete, name="reel_music_delete"),
+    path("reel-music/<str:track_id>/preview/", reel_music.reel_music_preview, name="reel_music_preview"),
 
     # Leads & CRM
     path("leads/", leads.leads_overview, name="leads_overview"),

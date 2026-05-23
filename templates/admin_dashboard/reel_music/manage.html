@@ -116,6 +116,18 @@
             </div>
           </div>
 
+          {% if track.file_ok %}
+          <div class="mt-3 p-2.5 rounded-lg bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700">
+            <p class="text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1.5">Preview — what reels will use</p>
+            <audio controls preload="none" class="w-full h-9"
+                   src="{% url 'admin_dashboard:reel_music_preview' track_id=track.id %}">
+              Your browser does not support audio playback.
+            </audio>
+          </div>
+          {% elif track.source == 'placeholder' %}
+          <p class="text-[10px] text-amber-600 dark:text-amber-400 mt-2">Silent placeholder — replace with a real MP3 to hear music in reels.</p>
+          {% endif %}
+
           <div class="flex flex-wrap items-center gap-2 mt-3">
             <form method="post" action="{% url 'admin_dashboard:reel_music_replace' track_id=track.id %}" enctype="multipart/form-data" class="flex items-center gap-2">
               {% csrf_token %}

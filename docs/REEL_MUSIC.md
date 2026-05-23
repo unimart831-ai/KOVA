@@ -86,7 +86,7 @@ Set **Attribution** when the license requires it (e.g. `Artist Name — Pixabay`
 
 ## Verify music is working
 
-1. **Admin → Reel Music** — track shows **Ready** (green), not **Missing**.
+1. **Admin → Reel Music** — use the **Preview** player on each track (same audio reels use).
 2. **Admin → Operations** — “Reel music catalog” section shows all tracks OK.
 3. Snap a product → wait for motion reel compose → open post in Content Studio.
 4. Reel preview should show **Music: Upbeat/Calm/Urgent** and play audio when previewing the MP4.
