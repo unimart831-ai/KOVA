@@ -16,6 +16,12 @@ def create_lead_from_submission(sender, instance, created, **kwargs):
     page = form.page
     user = page.user
 
+    from apps.billing.enforcement import check_leads_limit
+
+    allowed, _msg = check_leads_limit(user, creating=True)
+    if not allowed:
+        return
+
     lead, was_created = Lead.objects.get_or_create(
         user=user,
         email=instance.email,

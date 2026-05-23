@@ -66,11 +66,17 @@ def _should_auto_approve(user, post):
     Returns True only when confidence is high enough.
 
     Requirements to auto-approve:
-    1. User has reviewed 15+ posts (enough training data)
-    2. Approval rate >= 80% (user generally trusts the agent)
-    3. Post content length is within the platform's approved range
-    4. No recent rejections on this platform (last 5 posts)
+    1. Plan includes auto_approve (Pro / Agency)
+    2. User has reviewed 15+ posts (enough training data)
+    3. Approval rate >= 80% (user generally trusts the agent)
+    4. Post content length is within the platform's approved range
+    5. No recent rejections on this platform (last 5 posts)
     """
+    from apps.billing.models import get_plan_limits
+
+    if not get_plan_limits(user.profile.plan).get("auto_approve"):
+        return False
+
     from django.db.models import Q
 
     # Need enough history to learn from

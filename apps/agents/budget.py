@@ -26,7 +26,8 @@ from django.db.models import F
 from django.utils import timezone
 
 from apps.billing.exceptions import PlanLimitExceeded
-from apps.billing.models import PLAN_LIMITS, get_plan_limits
+from apps.billing.models import get_plan_limits
+from apps.billing.enforcement import get_daily_llm_token_cap
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +39,7 @@ def _cost_per_1k(model: str) -> tuple[float, float]:
 
 
 def _plan_daily_cap(plan: str) -> int:
-    plan_cfg = PLAN_LIMITS.get(plan) or PLAN_LIMITS["starter"]
-    return int(plan_cfg.get("daily_llm_tokens", PLAN_LIMITS["starter"]["daily_llm_tokens"]))
+    return get_daily_llm_token_cap(plan)
 
 
 def _user_plan(user) -> str:

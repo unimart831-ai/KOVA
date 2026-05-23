@@ -12,4 +12,6 @@ def product_plan_context(user):
         "max_products": limits.get("max_products", 5),
         "quantity_tracking": bool(limits.get("product_quantity_tracking")),
         "csv_import": bool(limits.get("product_csv_import")),
+        "shopify_integration": bool(limits.get("shopify_integration")),
+        "mpesa_commerce": bool(limits.get("mpesa_commerce")),
     }

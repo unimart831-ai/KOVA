@@ -13,6 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 
+from apps.billing.access import can_start_free_trial
 from apps.billing.models import PLAN_LIMITS, get_all_plan_limits, get_plan_limits
 from apps.billing.services import (
     create_checkout_session,
@@ -79,6 +80,8 @@ def pricing(request):
         "page_title": "Choose Your Plan",
         "all_plans": get_all_plan_limits(),
         "current_plan": request.user.profile.plan,
+        "can_start_free_trial": can_start_free_trial(request.user),
+        "stripe_checkout_available": bool(getattr(settings, "STRIPE_SECRET_KEY", "")),
     })
 
 
@@ -203,8 +206,8 @@ def mpesa_checkout(request):
         messages.error(request, "Invalid phone number. Use format: 07XXXXXXXX or 254XXXXXXXXX")
         return redirect("billing:pricing")
 
-    # Free trial — no payment needed
-    if is_trial and request.user.profile.subscription_status == "none":
+    # Free trial — no payment needed (available until first successful payment)
+    if is_trial and can_start_free_trial(request.user):
         try:
             activate_trial(request.user, plan_tier, formatted_phone)
             messages.success(request, f"🎉 Your 14-day free trial is active!")

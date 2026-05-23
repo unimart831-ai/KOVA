@@ -11,13 +11,15 @@ import logging
 from django.contrib import messages
 from django.shortcuts import redirect
 
+from apps.billing.access import is_subscription_exempt_url, subscription_allows_app_access
 from apps.billing.models import get_plan_limits
 
 logger = logging.getLogger(__name__)
 
-# URL name prefixes that should be checked for plan limits
-PLATFORM_CONNECT_URLS = ["platforms:connect", "platforms:callback"]
-CONTENT_CREATE_URLS = ["content:create", "content:generate"]
+# URL names checked for plan limits (must match apps/*/urls.py name= values)
+PLATFORM_CONNECT_URLS = ["platforms:connect", "platforms:oauth_callback"]
+# Post limits enforced at publish time (media_queue) — no direct post-create URL
+CONTENT_CREATE_URLS: list[str] = []
 COMPETITOR_URLS = [
     "analytics:competitors", "analytics:competitor_add",
     "analytics:competitor_detail", "analytics:competitor_analyze",
@@ -46,7 +48,7 @@ MEMES_URLS = [
     "memes:adapt", "memes:card", "memes:approve", "memes:reject", "memes:to_post",
     "memes:retry", "memes:trend_alerts", "memes:trend_alert_action",
 ]
-SEED_CREATE_URLS = ["content:generate"]
+SEED_CREATE_URLS = ["content:submit_seed", "content:voice_to_seed"]
 
 
 class PlanEnforcementMiddleware:
@@ -218,6 +220,13 @@ class PlanEnforcementMiddleware:
         namespace = request.resolver_match.namespace if request.resolver_match else ""
         full_name = f"{namespace}:{url_name}" if namespace else url_name
 
+        # ── Subscription paywall (expired trial / lapsed period) ──
+        if request.method == "POST" and not is_subscription_exempt_url(full_name):
+            allowed, msg = subscription_allows_app_access(request.user)
+            if not allowed:
+                messages.warning(request, msg)
+                return redirect("billing:pricing")
+
         # ── Feature gates (block on ANY request method, not just POST) ──
         if full_name in COMPETITOR_URLS:
             return self._check_competitor_access(request)
@@ -242,6 +251,9 @@ class PlanEnforcementMiddleware:
             return self._check_post_limit(request)
 
         if full_name in SEED_CREATE_URLS:
+            # voice_to_seed only creates a seed in submit mode
+            if full_name == "content:voice_to_seed" and request.POST.get("mode", "transcribe") != "submit":
+                return None
             return self._check_seed_limit(request)
 
         return None

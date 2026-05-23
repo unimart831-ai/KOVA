@@ -32,31 +32,17 @@ logger = logging.getLogger(__name__)
 
 def _get_page_limit(user):
     """Return the max number of Kova pages this user can create."""
-    plan = user.profile.plan
-    limits = {
-        "starter": 1,
-        "growth": 3,
-        "pro": 10,
-        "agency": 50,
-    }
-    return limits.get(plan, 1)
+    return get_plan_limits(user.profile.plan).get("kova_pages", 1)
 
 
 def _get_link_limit(user):
     """Return the max number of links per page for this user's plan."""
-    plan = user.profile.plan
-    limits = {
-        "starter": 5,
-        "growth": 20,
-        "pro": 100,
-        "agency": 999999,
-    }
-    return limits.get(plan, 5)
+    return get_plan_limits(user.profile.plan).get("kova_links_per_page", 5)
 
 
 def _can_use_forms(user):
-    """Forms are available on Growth+ plans."""
-    return user.profile.plan in ("growth", "pro", "agency")
+    """Forms require kova_forms on the user's plan."""
+    return bool(get_plan_limits(user.profile.plan).get("kova_forms"))
 
 
 # ─── Dashboard views (authenticated) ────────────────────────────────────────

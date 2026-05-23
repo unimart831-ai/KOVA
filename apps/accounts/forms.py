@@ -240,6 +240,23 @@ class BrandProfileForm(forms.ModelForm):
             )
         return level
 
+    def clean_auto_approve_posts(self):
+        from django.forms import ValidationError
+
+        from apps.billing.enforcement import check_auto_approve_plan
+
+        enabled = self.cleaned_data.get("auto_approve_posts")
+        if not enabled:
+            return False
+        user = getattr(self, "user", None)
+        if user is None and self.instance:
+            user = getattr(self.instance, "user", None)
+        if user:
+            allowed, msg = check_auto_approve_plan(user)
+            if not allowed:
+                raise ValidationError(msg)
+        return enabled
+
     def save(self, commit=True):
         instance = super().save(commit=False)
         # Brand colors

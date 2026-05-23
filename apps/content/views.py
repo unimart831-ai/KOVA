@@ -230,6 +230,12 @@ def submit_seed(request):
     if request.method != "POST":
         return redirect("content:studio")
 
+    from apps.billing.enforcement import check_seed_limit, enforce_or_redirect
+
+    allowed, msg = check_seed_limit(request.user)
+    if blocked := enforce_or_redirect(request, allowed, msg):
+        return blocked
+
     is_htmx = request.headers.get("HX-Request") == "true"
 
     form = ContentSeedForm(request.POST)
@@ -290,6 +296,12 @@ def voice_to_seed(request):
     mode = request.POST.get("mode", "transcribe")
 
     if mode == "submit":
+        from apps.billing.enforcement import check_seed_limit, enforce_or_redirect
+
+        allowed, msg = check_seed_limit(request.user)
+        if blocked := enforce_or_redirect(request, allowed, msg):
+            return JsonResponse({"error": msg}, status=402)
+
         # Create seed directly from transcription
         target_platforms = request.POST.get("target_platforms", "[]")
         try:
@@ -1484,6 +1496,12 @@ def post_detail(request, post_id):
 @login_required
 def ab_test_list(request):
     """List user's A/B tests."""
+    from apps.billing.enforcement import check_ab_testing, enforce_or_redirect
+
+    allowed, msg = check_ab_testing(request.user)
+    if blocked := enforce_or_redirect(request, allowed, msg):
+        return blocked
+
     tests = request.user.ab_tests.select_related(
         "social_account", "seed", "winner",
     ).order_by("-created_at")
@@ -1497,9 +1515,14 @@ def ab_test_list(request):
 @login_required
 def ab_test_create(request):
     """Create a new A/B test."""
+    from apps.billing.enforcement import check_ab_testing, check_seed_limit, enforce_or_redirect
     from apps.content.models import ABTest, ContentSeed
     from apps.content.tasks import generate_ab_test_variants
     from apps.platforms.models import SocialAccount
+
+    allowed, msg = check_ab_testing(request.user)
+    if blocked := enforce_or_redirect(request, allowed, msg):
+        return blocked
 
     accounts = SocialAccount.objects.filter(user=request.user, is_active=True)
     if not accounts.exists():
@@ -1516,6 +1539,10 @@ def ab_test_create(request):
         if not idea:
             messages.error(request, "Please enter a content idea.")
             return redirect("content:ab_test_create")
+
+        seed_allowed, seed_msg = check_seed_limit(request.user)
+        if blocked := enforce_or_redirect(request, seed_allowed, seed_msg):
+            return blocked
 
         account = get_object_or_404(SocialAccount, id=account_id, user=request.user)
         variant_count = max(2, min(variant_count, 5))

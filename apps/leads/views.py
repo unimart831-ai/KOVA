@@ -55,7 +55,13 @@ def lead_list(request):
 @login_required
 def lead_create(request):
     """Manually add a lead."""
+    from apps.billing.enforcement import check_leads_limit, enforce_or_redirect
+
     if request.method == "POST":
+        allowed, msg = check_leads_limit(request.user, creating=True)
+        if blocked := enforce_or_redirect(request, allowed, msg):
+            return blocked
+
         form = LeadForm(request.POST)
         if form.is_valid():
             lead = form.save(commit=False)
@@ -98,6 +104,12 @@ def lead_detail(request, lead_id):
 @login_required
 def lead_edit(request, lead_id):
     """Edit a lead."""
+    from apps.billing.enforcement import check_leads_can_edit, enforce_or_redirect
+
+    allowed, msg = check_leads_can_edit(request.user)
+    if blocked := enforce_or_redirect(request, allowed, msg):
+        return blocked
+
     lead = get_object_or_404(Lead, pk=lead_id, user=request.user)
     if request.method == "POST":
         form = LeadForm(request.POST, instance=lead)

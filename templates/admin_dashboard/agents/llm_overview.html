@@ -373,7 +373,7 @@
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
     <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
       <h2 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Rate Limits per Plan</h2>
-      <p class="text-[10px] text-gray-400 mt-0.5">UI limits stored in LLMConfig. Daily token enforcement uses <code class="text-[10px]">PLAN_LIMITS.daily_llm_tokens</code> via budget.py (shown in Enforced column).</p>
+      <p class="text-[10px] text-gray-400 mt-0.5">UI limits stored in LLMConfig. Enforced cap uses LLMConfig <code class="text-[10px]">plan_rate_limits</code> when set, otherwise <code class="text-[10px]">PLAN_LIMITS.daily_llm_tokens</code> via budget.py.</p>
     </div>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">

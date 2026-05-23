@@ -12,6 +12,7 @@ from django.views.decorators.http import require_POST
 from apps.admin_dashboard.decorators import superuser_required
 from apps.agents.models import AgentAction, LLMConfig
 from apps.agents.pricing import calculate_token_cost
+from apps.billing.enforcement import get_daily_llm_token_cap
 from apps.billing.models import PLAN_LIMITS, get_all_plan_limits
 
 
@@ -296,7 +297,7 @@ def llm_overview(request):
             "label": PLAN_LIMITS.get(plan_code, {}).get("label", plan_label),
             "max_calls_per_hour": current.get("max_calls_per_hour", defaults.get("max_calls_per_hour", 100)),
             "max_tokens_per_day": current.get("max_tokens_per_day", defaults.get("max_tokens_per_day", 1_000_000)),
-            "enforced_daily_tokens": PLAN_LIMITS.get(plan_code, {}).get("daily_llm_tokens", 0),
+            "enforced_daily_tokens": get_daily_llm_token_cap(plan_code),
             "is_custom": bool(current),
         })
 

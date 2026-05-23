@@ -4,12 +4,48 @@ Plan enforcement utilities — reusable limit checks for API, Celery tasks, and 
 Use these instead of middleware when you need plan checks outside the HTTP request cycle.
 """
 
+from __future__ import annotations
+
 import logging
+
 from django.utils import timezone
 
-from apps.billing.models import get_plan_limits
+from apps.billing.models import PLAN_LIMITS, get_plan_limits
 
 logger = logging.getLogger(__name__)
+
+
+def get_daily_llm_token_cap(plan: str) -> int:
+    """Daily LLM cap — LLMConfig override when set, else PLAN_LIMITS."""
+    try:
+        from apps.agents.models import LLMConfig
+
+        config = LLMConfig.load()
+        if config.pk:
+            custom = (config.plan_rate_limits or {}).get(plan, {})
+            custom_cap = custom.get("max_tokens_per_day")
+            if custom_cap is not None and int(custom_cap) > 0:
+                return int(custom_cap)
+    except Exception:
+        logger.debug("LLMConfig rate limit lookup failed for plan=%s", plan, exc_info=True)
+
+    limits = get_plan_limits(plan)
+    return int(limits.get("daily_llm_tokens", PLAN_LIMITS["starter"]["daily_llm_tokens"]))
+
+
+def check_plan_feature(user, feature_key: str, feature_label: str | None = None) -> tuple[bool, str]:
+    """Check a boolean flag on the user's plan."""
+    profile = getattr(user, "profile", None)
+    if not profile:
+        return False, "No user profile found."
+
+    limits = get_plan_limits(profile.plan)
+    if limits.get(feature_key):
+        return True, ""
+
+    label = feature_label or feature_key.replace("_", " ")
+    plan_label = limits.get("label", profile.plan)
+    return False, f"{label} is not included in your {plan_label} plan."
 
 
 def check_post_limit(user):
@@ -108,3 +144,86 @@ def check_api_access(user):
         return True, ""
 
     return False, f"API access requires Pro or Agency plan. You're on {profile.get_plan_display()}."
+
+
+def check_ab_testing(user) -> tuple[bool, str]:
+    return check_plan_feature(user, "ab_testing", "A/B testing")
+
+
+def check_auto_approve_plan(user) -> tuple[bool, str]:
+    return check_plan_feature(user, "auto_approve", "Auto-approve publishing")
+
+
+def check_shopify_integration(user) -> tuple[bool, str]:
+    return check_plan_feature(user, "shopify_integration", "Shopify integration")
+
+
+def check_mpesa_commerce(user) -> tuple[bool, str]:
+    return check_plan_feature(user, "mpesa_commerce", "M-Pesa commerce checkout")
+
+
+def check_leads_limit(user, creating: bool = True) -> tuple[bool, str]:
+    """Check max_leads when creating a new lead."""
+    if not creating:
+        return True, ""
+
+    from apps.leads.models import Lead
+
+    profile = getattr(user, "profile", None)
+    if not profile:
+        return False, "No user profile found."
+
+    limits = get_plan_limits(profile.plan)
+    max_leads = limits.get("max_leads", 10)
+    if max_leads >= 999999:
+        return True, ""
+
+    count = Lead.objects.filter(user=user).count()
+    if count >= max_leads:
+        return False, f"Lead limit reached ({max_leads} on {limits['label']} plan)."
+    return True, ""
+
+
+def check_leads_can_edit(user) -> tuple[bool, str]:
+    profile = getattr(user, "profile", None)
+    if not profile:
+        return False, "No user profile found."
+
+    limits = get_plan_limits(profile.plan)
+    if limits.get("leads_can_edit"):
+        return True, ""
+    return False, f"Editing leads requires Growth or higher on your {limits['label']} plan."
+
+
+def check_email_sequences_limit(user) -> tuple[bool, str]:
+    """Count manual sequences; welcome drip is excluded."""
+    from apps.emails.automation import WELCOME_SEQUENCE_NAME
+    from apps.emails.models import EmailSequence
+
+    profile = getattr(user, "profile", None)
+    if not profile:
+        return False, "No user profile found."
+
+    limits = get_plan_limits(profile.plan)
+    max_seq = limits.get("email_sequences", 0)
+    if max_seq >= 999999:
+        return True, ""
+
+    count = EmailSequence.objects.filter(user=user).exclude(name=WELCOME_SEQUENCE_NAME).count()
+    if count >= max_seq:
+        return False, (
+            f"Email sequence limit reached ({max_seq} on {limits['label']} plan, "
+            f"excluding the welcome drip)."
+        )
+    return True, ""
+
+
+def enforce_or_redirect(request, allowed: bool, message: str):
+    """Helper for views — returns redirect response when blocked."""
+    if allowed:
+        return None
+    from django.contrib import messages
+    from django.shortcuts import redirect
+
+    messages.warning(request, message)
+    return redirect("billing:pricing")

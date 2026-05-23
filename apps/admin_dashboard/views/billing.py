@@ -22,34 +22,44 @@ def billing_overview(request):
     month_start = today.replace(day=1)
     last_30d = now - timedelta(days=30)
 
-    # ── Subscription breakdown by plan ───────────────────────────────
+    # ── Subscription breakdown by plan (paying active only) ──────────
     all_plans = get_all_plan_limits()
     plan_breakdown = []
     total_mrr_kes = Decimal("0")
+    total_mrr_usd = Decimal("0")
     total_paying = 0
     for plan_code, plan_label in UserProfile.PlanTier.choices:
         info = all_plans.get(plan_code, {})
         count = UserProfile.objects.filter(plan=plan_code, subscription_status="active").count()
+        trialing_count = UserProfile.objects.filter(plan=plan_code, subscription_status="trialing").count()
         price_kes = Decimal(str(info.get("price_kes", 0)))
         price_usd = Decimal(str(info.get("price_usd", 0)))
         rev_kes = price_kes * count
         rev_usd = price_usd * count
         total_mrr_kes += rev_kes
-        if price_kes > 0:
+        total_mrr_usd += rev_usd
+        if price_kes > 0 and count > 0:
             total_paying += count
         plan_breakdown.append({
             "code": plan_code,
             "label": info.get("label", plan_label),
             "count": count,
+            "trialing_count": trialing_count,
             "price_kes": price_kes,
             "price_usd": price_usd,
             "rev_kes": rev_kes,
             "rev_usd": rev_usd,
         })
 
-    total_mrr_usd = sum(p["rev_usd"] for p in plan_breakdown)
     arr_usd = total_mrr_usd * 12
     arpu = total_mrr_usd / total_paying if total_paying else Decimal("0")
+
+    # Estimated MRR if all trialing converted at list price
+    est_mrr_if_trials_convert_kes = Decimal("0")
+    for plan_code, plan_label in UserProfile.PlanTier.choices:
+        info = all_plans.get(plan_code, {})
+        trialing = UserProfile.objects.filter(plan=plan_code, subscription_status="trialing").count()
+        est_mrr_if_trials_convert_kes += Decimal(str(info.get("price_kes", 0))) * trialing
 
     # ── Subscription lifecycle ───────────────────────────────────────
     active_subs = UserProfile.objects.filter(subscription_status="active").count()
@@ -76,6 +86,10 @@ def billing_overview(request):
     revenue_month = MpesaPayment.objects.filter(
         status="completed", completed_at__date__gte=month_start,
     ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
+    revenue_30d = MpesaPayment.objects.filter(
+        status="completed", completed_at__gte=last_30d,
+    ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
+    mrr_vs_cash_delta = total_mrr_kes - revenue_30d
 
     # ── Plan distribution chart ──────────────────────────────────────
     plan_chart = [
@@ -125,6 +139,9 @@ def billing_overview(request):
         # Revenue cards
         "total_mrr_kes": total_mrr_kes,
         "total_mrr_usd": total_mrr_usd,
+        "est_mrr_if_trials_convert_kes": est_mrr_if_trials_convert_kes,
+        "revenue_30d": revenue_30d,
+        "mrr_vs_cash_delta": mrr_vs_cash_delta,
         "arr_usd": arr_usd,
         "arpu": round(arpu, 2),
         "total_revenue": total_revenue,

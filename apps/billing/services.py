@@ -117,6 +117,7 @@ def sync_subscription(user, subscription_id=None):
 
     profile.stripe_subscription_id = sub.id
     profile.plan = plan_tier
+    profile.payment_provider = "stripe"
     profile.subscription_status = sub.status  # active, trialing, past_due, canceled, etc.
     profile.current_period_end = datetime.fromtimestamp(
         sub.current_period_end, tz=dt_tz.utc
@@ -124,7 +125,7 @@ def sync_subscription(user, subscription_id=None):
     if sub.trial_end:
         profile.trial_ends_at = datetime.fromtimestamp(sub.trial_end, tz=dt_tz.utc)
     profile.save(update_fields=[
-        "stripe_subscription_id", "plan", "subscription_status",
+        "stripe_subscription_id", "plan", "payment_provider", "subscription_status",
         "current_period_end", "trial_ends_at",
     ])
     logger.info("Synced subscription %s → plan=%s status=%s", sub.id, plan_tier, sub.status)
@@ -235,8 +236,9 @@ def _handle_subscription_deleted(event, billing_event):
         profile = user.profile
         profile.plan = "starter"
         profile.subscription_status = "canceled"
+        profile.payment_provider = "none"
         profile.stripe_subscription_id = ""
-        profile.save(update_fields=["plan", "subscription_status", "stripe_subscription_id"])
+        profile.save(update_fields=["plan", "subscription_status", "payment_provider", "stripe_subscription_id"])
         logger.info("Subscription canceled for user %s, reverted to starter", user.email)
 
         # Send cancellation email

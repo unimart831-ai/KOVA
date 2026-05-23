@@ -403,6 +403,11 @@ def revenue_dashboard(request):
 def shopify_connect(request):
     """Connect a Shopify store for revenue attribution."""
     from apps.analytics.models import ShopifyStore
+    from apps.billing.enforcement import check_shopify_integration, enforce_or_redirect
+
+    allowed, msg = check_shopify_integration(request.user)
+    if blocked := enforce_or_redirect(request, allowed, msg):
+        return blocked
 
     if request.method != "POST":
         return redirect("analytics:revenue")
@@ -457,6 +462,12 @@ def shopify_disconnect(request, pk):
 @login_required
 def shopify_sync_products(request, pk):
     """Import / refresh products from a connected Shopify store."""
+    from apps.billing.enforcement import check_shopify_integration, enforce_or_redirect
+
+    allowed, msg = check_shopify_integration(request.user)
+    if blocked := enforce_or_redirect(request, allowed, msg):
+        return blocked
+
     from apps.analytics.models import ShopifyStore
     from apps.products.shopify_import import sync_shopify_store_products
 
@@ -469,11 +480,13 @@ def shopify_sync_products(request, pk):
     if result.get("error"):
         messages.error(request, f"Shopify sync failed: {result['error']}")
     else:
+        autopilot_note = ""
+        if result.get("autopilot_queued"):
+            autopilot_note = f", {result.get('autopilot_queued', 0)} queued for Autopilot"
         messages.success(
             request,
             f"Shopify sync complete — {result.get('created', 0)} new, "
-            f"{result.get('updated', 0)} updated"
-            f"{f', {result.get('autopilot_queued', 0)} queued for Autopilot' if result.get('autopilot_queued') else ''}.",
+            f"{result.get('updated', 0)} updated{autopilot_note}.",
         )
     return redirect("analytics:revenue")
 

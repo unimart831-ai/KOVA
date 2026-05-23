@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto" x-data="{ currency: 'kes', phone: '{{ request.user.profile.mpesa_phone }}', showPhone: false, selectedPlan: '', isTrial: false }">
+<div class="max-w-6xl mx-auto" x-data="{ currency: 'kes', phone: '{{ request.user.profile.mpesa_phone }}', showPhone: false, selectedPlan: '', isTrial: {{ can_start_free_trial|yesno:'true,false' }} }">
 
   {# Currency toggle #}
   <div class="text-center mb-8">
@@ -98,15 +98,23 @@
       {% if current_plan == tier %}
         <span class="block w-full text-center text-sm font-medium text-kova-600 dark:text-kova-400 mt-6 py-2">✓ Active</span>
       {% else %}
-        <button @click="selectedPlan = '{{ tier }}'; showPhone = true; isTrial = '{{ request.user.profile.subscription_status|default:'none' }}' === 'none'"
+        <button @click="selectedPlan = '{{ tier }}'; {% if stripe_checkout_available %}if (currency === 'usd') { $refs.stripeForm.querySelector('[name=plan]').value = '{{ tier }}'; $refs.stripeForm.submit(); return; }{% endif %} showPhone = true; isTrial = {{ can_start_free_trial|yesno:'true,false' }}"
                 class="{% if tier == 'growth' %}btn-primary{% else %}btn-secondary{% endif %} w-full justify-center mt-6">
-          {% if request.user.profile.subscription_status == 'none' %}Start free trial{% else %}Switch to plan{% endif %}
+          {% if can_start_free_trial %}Start free trial{% else %}Switch to plan{% endif %}
         </button>
       {% endif %}
     </div>
     {% endfor %}
 
   </div>
+
+  {# Hidden Stripe checkout form (USD / international) #}
+  {% if stripe_checkout_available %}
+  <form x-ref="stripeForm" method="post" action="{% url 'billing:checkout' %}" class="hidden">
+    {% csrf_token %}
+    <input type="hidden" name="plan" value="">
+  </form>
+  {% endif %}
 
   {# ── M-Pesa Phone Modal ── #}
   <div x-show="showPhone" x-transition.opacity x-cloak
@@ -189,10 +197,16 @@
   {# M-Pesa callout #}
   <div x-show="currency === 'kes'" x-transition class="mt-8 text-center">
     <div class="inline-flex items-center gap-2 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-sm font-medium px-5 py-2.5 rounded-full border border-green-200 dark:border-green-900">
-      
-      Pay with M-Pesa — instant activation
+      Pay with M-Pesa — instant activation (Kenya)
     </div>
   </div>
+  {% if stripe_checkout_available %}
+  <div x-show="currency === 'usd'" x-cloak x-transition class="mt-8 text-center">
+    <div class="inline-flex items-center gap-2 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 text-sm font-medium px-5 py-2.5 rounded-full border border-blue-200 dark:border-blue-900">
+      Pay with card via Stripe — includes 14-day trial
+    </div>
+  </div>
+  {% endif %}
 
   <p class="text-center text-xs text-gray-400 dark:text-gray-500 mt-6">
     All plans include a 14-day free trial. Cancel anytime. No credit card required.

@@ -8,13 +8,19 @@
 <!-- ── Revenue Cards ─────────────────────────────────────────────────── -->
 <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
-    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">MRR (KES)</p>
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Est. MRR (active subs)</p>
     <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">KES {{ total_mrr_kes|format_number }}</p>
-    <p class="text-[10px] text-gray-400 mt-0.5">${{ total_mrr_usd|floatformat:0 }} USD</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">${{ total_mrr_usd|floatformat:0 }} USD · {{ total_paying }} paying</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
-    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">ARR (USD)</p>
-    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">${{ arr_usd|format_number }}</p>
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">M-Pesa Collected (30d)</p>
+    <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">KES {{ revenue_30d|format_number }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">Actual cash · delta vs MRR KES {{ mrr_vs_cash_delta|floatformat:0 }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Trial pipeline (MRR if convert)</p>
+    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">KES {{ est_mrr_if_trials_convert_kes|format_number }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">{{ trialing }} user{{ trialing|pluralize }} trialing</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">ARPU (USD)</p>
@@ -47,7 +53,8 @@
         <thead>
           <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Plan</th>
-            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Users</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Active</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Trialing</th>
             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">KES/mo</th>
             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">USD/mo</th>
             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Share</th>
@@ -61,6 +68,7 @@
               <span class="text-[10px] text-gray-400 ml-1">KES {{ p.price_kes }}/mo</span>
             </td>
             <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">{{ p.count }}</td>
+            <td class="px-4 py-3 text-right text-sm text-amber-600 dark:text-amber-400">{{ p.trialing_count }}</td>
             <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">{{ p.rev_kes|format_number }}</td>
             <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">${{ p.rev_usd|floatformat:0 }}</td>
             <td class="px-4 py-3 w-28">
