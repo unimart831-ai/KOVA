@@ -131,6 +131,12 @@ def billing_overview(request):
     mpesa_payments_30d = MpesaPayment.objects.filter(created_at__gte=last_30d)
     mpesa_new_30d = mpesa_payments_30d.filter(is_renewal=False, status="completed").count()
     mpesa_renewals_30d = mpesa_payments_30d.filter(is_renewal=True, status="completed").count()
+
+    # ── Payment success rate (30 days) ───────────────────────────────
+    mpesa_completed = mpesa_payments_30d.filter(status="completed").count()
+    mpesa_failed = mpesa_payments_30d.filter(status="failed").count()
+    mpesa_expired = mpesa_payments_30d.filter(status="expired").count()
+    mpesa_pending = mpesa_payments_30d.filter(status="pending").count()
     mpesa_success_rate = round(
         mpesa_completed / (mpesa_completed + mpesa_failed + mpesa_expired) * 100, 1
     ) if (mpesa_completed + mpesa_failed + mpesa_expired) else 0
@@ -146,20 +152,6 @@ def billing_overview(request):
         {"label": p["label"], "count": p["count"]}
         for p in plan_breakdown if p["count"] > 0
     ]
-
-    # ── Payment success rate (30 days) ───────────────────────────────
-    mpesa_completed = MpesaPayment.objects.filter(
-        created_at__gte=last_30d, status="completed",
-    ).count()
-    mpesa_failed = MpesaPayment.objects.filter(
-        created_at__gte=last_30d, status="failed",
-    ).count()
-    mpesa_expired = MpesaPayment.objects.filter(
-        created_at__gte=last_30d, status="expired",
-    ).count()
-    mpesa_pending = MpesaPayment.objects.filter(
-        created_at__gte=last_30d, status="pending",
-    ).count()
 
     # ── Monthly revenue trend (last 12 months) ───────────────────────
     revenue_trend = []
