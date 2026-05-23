@@ -708,7 +708,7 @@ Respond with a JSON object. No markdown code fences. Structure:
       "username": "@handle",
       "content_text": "The full post caption / text, ready to publish. Include line breaks, emojis, hashtags as native to the platform.",
       "content_type": "original",
-      "post_format": "One of: text | image | carousel | story | reel — the CONTENT FORMAT for this specific post. Choose based on the platform and content type: Instagram feed → image or carousel; Instagram Stories → story; Reels → reel; Facebook feed → text or image; LinkedIn → text or image (carousel for multi-point posts); TikTok → reel.",
+      "post_format": "One of: text | image | carousel | story | reel — the CONTENT FORMAT for this specific post. Choose based on the platform and content type: Instagram feed → image or carousel; Instagram Stories → story; Instagram Reels → reel; Facebook feed → text or image; Facebook Reels → reel (vertical 9:16); LinkedIn → text or image (carousel for multi-point posts); LinkedIn native video → reel (vertical or square MP4); TikTok → reel.",
       "carousel_slides": "ONLY when post_format is 'carousel' — an array of slide objects: [{{\\"heading\\": \\"Slide title (max 60 chars)\\", \\"body\\": \\"Slide body text (max 150 chars, punchy)\\", \\"image_prompt\\": \\"Vivid prompt for AI image generation for THIS slide. Describe scene, mood, colors, lighting. Under 150 words. NO text in the image.\\", \\"image_url\\": \\"\\"}}, ...]. For all other formats: empty array [].",
       "framework_used": "Hook → Value → CTA",
       "angle": "Brief description of the specific angle chosen for this platform",
@@ -736,7 +736,9 @@ POST FORMAT GUIDE — choose the best format for each platform:
 - **Instagram Story**: use post_format="story" (vertical 9:16, short punchy text, high-energy, casual tone)
 - **Instagram Reel**: use post_format="reel" (vertical 9:16, hook in first 2 seconds, trend-aware)
 - **Facebook post**: use post_format="text" (text-only performs well) or post_format="image" if visual adds value
+- **Facebook Reel**: use post_format="reel" (vertical 9:16 motion video — primary organic reach on Facebook)
 - **LinkedIn post**: use post_format="text" for thought leadership; post_format="carousel" for step-by-step guides or frameworks (LinkedIn carousels = document posts, great for authority building)
+- **LinkedIn native video**: use post_format="reel" (short vertical or square MP4 — strong for B2B proof and tips)
 - **TikTok**: use post_format="reel" (always video-first, vertical 9:16)
 - **WhatsApp**: use post_format="text" or post_format="image"
 

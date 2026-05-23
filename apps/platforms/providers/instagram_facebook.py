@@ -13,6 +13,7 @@ Connect via OAuth                     │ Connect IG Business via FB Page
 List user's Pages                     │ Publish single image
 Publish text/photo/video to Page      │ Publish carousel
 Read post metrics                     │ Publish Reels (video)
+Publish Facebook Reels (video_reels)  │
 Read Page insights                    │ Publish Stories
 Read comments on Page posts           │ Read post metrics (insights)
 Reply to comments                     │ Read account insights
@@ -65,6 +66,14 @@ FB_API_VERSION = "v25.0"
 FB_AUTH_URL = f"https://www.facebook.com/{FB_API_VERSION}/dialog/oauth"
 FB_TOKEN_URL = f"https://graph.facebook.com/{FB_API_VERSION}/oauth/access_token"
 FB_API_BASE = f"https://graph.facebook.com/{FB_API_VERSION}"
+FB_REEL_UPLOAD_BASE = f"https://rupload.facebook.com/video-upload/{FB_API_VERSION}"
+
+
+def _is_video_media_url(url: str) -> bool:
+    if not url:
+        return False
+    path = url.lower().split("?")[0]
+    return path.endswith((".mp4", ".mov", ".avi", ".webm", ".m4v"))
 
 # ── Login Configuration ──────────────────────────────────────────────────────
 # Facebook Login for Business uses config_id (permission bundle created in
@@ -256,6 +265,22 @@ class FacebookProvider(BaseProvider):
         if not page_id:
             return PublishResult(success=False, error="page_id is required for Facebook posting")
 
+        media_type = (kwargs.get("media_type") or "").upper()
+        if media_type == "REELS":
+            video_url = kwargs.get("video_url") or (media_urls[0] if media_urls else "")
+            if not video_url:
+                return PublishResult(success=False, error="video_url is required for Facebook Reels")
+            return self.publish_reel(
+                access_token, video_url, description=content, **kwargs,
+            )
+        if media_type == "VIDEO" or (
+            media_urls and len(media_urls) == 1 and _is_video_media_url(media_urls[0])
+        ):
+            video_url = kwargs.get("video_url") or media_urls[0]
+            return self.publish_video(
+                access_token, video_url, description=content, **kwargs,
+            )
+
         payload = {"message": content, "access_token": page_token}
 
         # Scheduling: publish at a future time (10 min − 6 months from now)
@@ -363,6 +388,77 @@ class FacebookProvider(BaseProvider):
                 )
         except httpx.HTTPStatusError as e:
             logger.error("Facebook video publish failed: %s", e.response.text)
+            return PublishResult(success=False, error=e.response.text[:500])
+
+    def publish_reel(self, access_token: str, video_url: str,
+                     description: str = "", **kwargs) -> PublishResult:
+        """Publish a Reel to a Facebook Page via the video_reels API."""
+        page_id = kwargs.get("page_id", "")
+        page_token = kwargs.get("page_access_token", access_token)
+        if not page_id:
+            return PublishResult(success=False, error="page_id is required")
+
+        if "localhost" in video_url or "127.0.0.1" in video_url:
+            return PublishResult(
+                success=False,
+                error="Video URL is not publicly accessible (localhost)",
+            )
+
+        try:
+            with httpx.Client(timeout=180.0) as client:
+                start_resp = client.post(
+                    f"{FB_API_BASE}/{page_id}/video_reels",
+                    data={"upload_phase": "start", "access_token": page_token},
+                )
+                start_resp.raise_for_status()
+                start_data = start_resp.json()
+                video_id = start_data.get("video_id")
+                if not video_id:
+                    return PublishResult(
+                        success=False,
+                        error=start_data.get("message", "Facebook Reels upload start failed"),
+                    )
+
+                upload_resp = client.post(
+                    f"{FB_REEL_UPLOAD_BASE}/{video_id}",
+                    headers={
+                        "Authorization": f"OAuth {page_token}",
+                        "file_url": video_url,
+                    },
+                )
+                upload_resp.raise_for_status()
+
+                finish_payload = {
+                    "upload_phase": "finish",
+                    "video_id": video_id,
+                    "video_state": "PUBLISHED",
+                    "description": description,
+                    "access_token": page_token,
+                }
+                finish_resp = client.post(
+                    f"{FB_API_BASE}/{page_id}/video_reels",
+                    data=finish_payload,
+                )
+                finish_resp.raise_for_status()
+                finish_data = finish_resp.json()
+                post_id = finish_data.get("post_id") or video_id
+                url = f"https://www.facebook.com/reel/{video_id}"
+                try:
+                    plink_resp = client.get(f"{FB_API_BASE}/{post_id}", params={
+                        "fields": "permalink_url",
+                        "access_token": page_token,
+                    })
+                    url = plink_resp.json().get("permalink_url") or url
+                except Exception:
+                    pass
+                return PublishResult(
+                    success=True,
+                    platform_post_id=str(post_id),
+                    url=url,
+                    metadata={"video_id": video_id, "media_type": "reel"},
+                )
+        except httpx.HTTPStatusError as e:
+            logger.error("Facebook Reel publish failed: %s", e.response.text)
             return PublishResult(success=False, error=e.response.text[:500])
 
     # ── Metrics & Insights ───────────────────────────────────────────────────

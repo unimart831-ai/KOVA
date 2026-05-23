@@ -27,6 +27,9 @@ echo "    DATABASE_URL is set: $(if [ -n \"$DATABASE_URL\" ]; then echo 'YES'; e
 echo "    DB host: $(echo $DATABASE_URL | sed 's/.*@\(.*\):.*/\1/' 2>/dev/null || echo 'could not parse')"
 python manage.py migrate --noinput 2>&1 || echo "WARNING: migrate failed"
 
+echo "==> Seeding reel music beds (FFmpeg placeholders if missing)..."
+python manage.py seed_reel_music_beds 2>&1 || echo "WARNING: reel music seed failed"
+
 echo "==> Creating superuser (if not exists)..."
 python manage.py create_superuser 2>&1
 

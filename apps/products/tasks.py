@@ -590,7 +590,7 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
     from apps.products.models import Product
     from apps.utils import fire_task
 
-    REEL_PLATFORMS = {"instagram", "facebook", "tiktok"}
+REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
 
     try:
         product = Product.objects.select_related("user").get(pk=product_id)

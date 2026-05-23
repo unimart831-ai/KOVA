@@ -7,7 +7,7 @@ from datetime import timedelta
 from django.utils import timezone as tz
 
 CAROUSEL_PLATFORMS = frozenset({"instagram", "facebook", "linkedin"})
-REEL_PLATFORMS = frozenset({"instagram", "facebook", "tiktok"})
+REEL_PLATFORMS = frozenset({"instagram", "facebook", "tiktok", "linkedin"})
 SNAP_TIMEOUT = timedelta(minutes=10)
 SEED_TIMEOUT = timedelta(minutes=5)
 

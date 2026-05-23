@@ -148,7 +148,30 @@ def _is_video_url(url: str) -> bool:
     return is_video_url(url or "")
 
 
+def _resolve_tiktok_privacy(account) -> str:
+    """Privacy level for TikTok Direct Post — defaults to SELF_ONLY until app audit."""
+    from django.conf import settings
+
+    meta = account.metadata or {}
+    level = meta.get("default_privacy_level") or getattr(
+        settings, "TIKTOK_DEFAULT_PRIVACY_LEVEL", "",
+    )
+    return level or "SELF_ONLY"
+
+
+def _reel_video_url(media_urls):
+    if not media_urls:
+        return None
+    return next((u for u in media_urls if _is_video_url(u)), None)
+
+
 def _post_has_reel_video(post) -> bool:
+    for url in post.media_urls or []:
+        if _is_video_url(url):
+            return True
+    return post.attachments.filter(file_type="video").exists()
+
+
     for url in post.media_urls or []:
         if _is_video_url(url):
             return True
@@ -1058,10 +1081,11 @@ def publish_post(self, post_id: str):
             [u for u in media_urls_list if u.startswith(("http://", "https://"))]
             or None
         )
+        reel_video_url = _reel_video_url(absolute_media_urls) if is_reel_post else None
+        if reel_video_url:
+            publish_kwargs["video_url"] = reel_video_url
 
-        # Route Instagram publish to the correct API endpoint based on post_format.
-        # The Instagram provider dispatches to _publish_carousel / _publish_story /
-        # _publish_reels / _publish_single_image based on the media_type kwarg.
+        # Route publish to the correct platform API based on post_format.
         if account.platform == "instagram":
             if is_story_post:
                 publish_kwargs["media_type"] = "STORIES"
@@ -1069,10 +1093,16 @@ def publish_post(self, post_id: str):
                 publish_kwargs["media_type"] = "REELS"
             elif absolute_media_urls and (is_carousel_post or len(absolute_media_urls) > 1):
                 publish_kwargs["media_type"] = "CAROUSEL"
-
-        # Facebook stories: pass media_type so provider uses the story endpoint.
-        if account.platform == "facebook" and is_story_post:
-            publish_kwargs["media_type"] = "STORIES"
+        elif account.platform == "facebook":
+            if is_reel_post:
+                publish_kwargs["media_type"] = "REELS"
+            elif is_story_post:
+                publish_kwargs["media_type"] = "STORIES"
+        elif account.platform == "tiktok" and is_reel_post:
+            publish_kwargs["privacy_level"] = _resolve_tiktok_privacy(account)
+            publish_kwargs["is_aigc"] = True
+        elif account.platform == "linkedin" and is_reel_post and reel_video_url:
+            publish_kwargs["post_type"] = "video"
 
         # Safety net: detect and fix encrypted tokens not decrypted by ORM
         token = account.access_token
@@ -1090,38 +1120,6 @@ def publish_post(self, post_id: str):
                     "user must reconnect.",
                     account.platform,
                 )
-
-        # Facebook Reels: publish composed MP4 via Page video API.
-        if account.platform == "facebook" and is_reel_post and absolute_media_urls:
-            video_url = next((u for u in absolute_media_urls if _is_video_url(u)), None)
-            if video_url:
-                fb_result = provider.publish_video(
-                    access_token=token,
-                    video_url=video_url,
-                    description=publish_content,
-                    **publish_kwargs,
-                )
-                if fb_result.success:
-                    post.status = Post.Status.PUBLISHED
-                    post.published_at = timezone.now()
-                    post.platform_post_id = fb_result.platform_post_id or ""
-                    post.platform_url = fb_result.url or ""
-                    post.save(update_fields=[
-                        "status", "published_at", "platform_post_id", "platform_url", "updated_at",
-                    ])
-                    Notification.create_for_user(
-                        post.user, "publish_success",
-                        f"Published Reel to {account.get_platform_display()}!",
-                        related_post=post,
-                    )
-                    return {"status": "published", "platform_post_id": fb_result.platform_post_id}
-                _fail_post(post, fb_result.error or "Facebook video publish failed")
-                Notification.create_for_user(
-                    post.user, "publish_failed",
-                    f"Failed to publish Reel to {account.get_platform_display()}: {fb_result.error}",
-                    related_post=post,
-                )
-                return {"error": fb_result.error}
 
         result = provider.publish_post(
             access_token=token,
