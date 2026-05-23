@@ -20,6 +20,7 @@ urlpatterns = [
     path("revenue/", views.revenue_dashboard, name="revenue"),
     path("revenue/shopify/connect/", views.shopify_connect, name="shopify_connect"),
     path("revenue/shopify/<uuid:pk>/disconnect/", views.shopify_disconnect, name="shopify_disconnect"),
+    path("revenue/shopify/<uuid:pk>/sync-products/", views.shopify_sync_products, name="shopify_sync_products"),
     # Attribution Dashboard (the single answer)
     path("attribution/", views.attribution_dashboard, name="attribution"),
     path("attribution/download/", views.download_report, name="download_report"),

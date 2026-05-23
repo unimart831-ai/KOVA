@@ -319,6 +319,11 @@ class ShopifyStore(models.Model):
     )
     is_active = models.BooleanField(default=True)
     orders_tracked = models.PositiveIntegerField(default=0)
+    products_synced = models.PositiveIntegerField(
+        default=0,
+        help_text="Products imported from this Shopify store into Kova catalog.",
+    )
+    last_product_sync = models.DateTimeField(null=True, blank=True)
     total_revenue = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     last_order_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

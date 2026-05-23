@@ -433,6 +433,7 @@ class ProductSyncView(APIView):
         created = 0
         updated = 0
         errors = []
+        synced_product_ids: list[str] = []
 
         for i, item_data in enumerate(mapped_products):
             sz = ProductSyncItemSerializer(data=item_data)
@@ -508,9 +509,11 @@ class ProductSyncView(APIView):
                 product_data["quantity"] = data["quantity"]
             if data["product_url"]:
                 product_data["product_url"] = data["product_url"]
-            if data["additional_images"]:
-                product_data["additional_images"] = data["additional_images"]
+            from apps.products.marketplace_sync import apply_sync_images_to_product_data
 
+            apply_sync_images_to_product_data(product_data, data)
+
+            saved_id = None
             if existing:
                 for k, v in product_data.items():
                     setattr(existing, k, v)
@@ -518,6 +521,7 @@ class ProductSyncView(APIView):
                 existing.check_low_stock()
                 existing.save(update_fields=["stock_status"])
                 updated += 1
+                saved_id = str(existing.pk)
             else:
                 if current_count + created >= max_per_seller:
                     errors.append({"index": i, "error": f"Per-seller product limit ({max_per_seller}) reached."})
@@ -530,6 +534,10 @@ class ProductSyncView(APIView):
                 product.check_low_stock()
                 product.save(update_fields=["stock_status"])
                 created += 1
+                saved_id = str(product.pk)
+
+            if saved_id:
+                synced_product_ids.append(saved_id)
 
         # Update seller sync stats
         seller.products_synced = Product.objects.filter(
@@ -538,10 +546,23 @@ class ProductSyncView(APIView):
         seller.last_product_sync = timezone.now()
         seller.save(update_fields=["products_synced", "last_product_sync"])
 
-        # Trigger Snap to Sell vision if configured
+        # Trigger Snap/Autopilot for synced products with images
         snap_triggered = False
-        if mp.auto_snap_on_sync and created > 0:
-            snap_triggered = self._trigger_snap(seller.user, mp)
+        autopilot_queued = 0
+        if mp.auto_snap_on_sync and synced_product_ids:
+            from apps.products.marketplace_sync import trigger_marketplace_autopilot
+
+            autopilot_queued = trigger_marketplace_autopilot(seller.user, mp, synced_product_ids)
+            snap_triggered = autopilot_queued > 0
+
+        if created or updated:
+            from apps.partners.webhooks import notify_product_synced
+
+            notify_product_synced(
+                mp, seller,
+                created=created, updated=updated,
+                product_ids=synced_product_ids,
+            )
 
         resp_status = status.HTTP_201_CREATED if (created or updated) else status.HTTP_400_BAD_REQUEST
         return Response({
@@ -549,6 +570,7 @@ class ProductSyncView(APIView):
             "updated": updated,
             "errors": errors,
             "snap_triggered": snap_triggered,
+            "autopilot_queued": autopilot_queued,
         }, status=resp_status)
 
     def _apply_field_mapping(self, mp, raw_item):
@@ -572,25 +594,7 @@ class ProductSyncView(APIView):
         return mapped
 
     def _trigger_snap(self, user, mp):
-        """Trigger batch Snap to Sell for newly synced products."""
-        try:
-            from apps.products.tasks import snap_batch_process
-            # Get products synced in the last minute (the ones we just created)
-            recent = Product.objects.filter(
-                user=user,
-                marketplace_partner=mp,
-                source=Product.Source.MARKETPLACE,
-                last_synced_at__gte=timezone.now() - timezone.timedelta(minutes=2),
-            ).values_list("id", flat=True)[:50]
-
-            if recent:
-                snap_batch_process.delay(
-                    user_id=str(user.pk),
-                    product_ids=[str(pid) for pid in recent],
-                )
-                return True
-        except Exception:
-            pass
+        """Deprecated — use marketplace_sync.trigger_marketplace_autopilot."""
         return False
 
 

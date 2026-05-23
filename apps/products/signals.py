@@ -24,7 +24,9 @@ def on_product_save(sender, instance, created, **kwargs):
         try:
             slug = ensure_commerce_slug(instance, save=False)
             updates = {"commerce_slug": slug}
-            if not instance.product_url:
+            from apps.products.product_cta import uses_marketplace_cta
+
+            if not instance.product_url and not uses_marketplace_cta(instance):
                 from apps.products.commerce_links import commerce_link_path
                 from django.conf import settings
 

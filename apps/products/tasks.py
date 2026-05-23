@@ -348,8 +348,11 @@ def _build_promotion_idea(product):
             f" behind-the-scenes, or a comparison with alternatives."
         )
 
-    if product.product_url:
-        idea += f" Include link: {product.product_url}"
+    from apps.products.product_cta import resolve_product_cta_url
+
+    cta = resolve_product_cta_url(product)
+    if cta:
+        idea += f" Include link: {cta}"
 
     if product.tags:
         idea += f" Keywords: {', '.join(product.tags)}."
@@ -758,7 +761,9 @@ def quick_post_product_photo(product_id: str):
         return {"error": "no_image"}
 
     image_url = _normalize_reel_image_source(product.all_image_urls[0])
-    shop_link = commerce_link_url(product)
+    from apps.products.product_cta import resolve_product_cta_url
+
+    shop_link = resolve_product_cta_url(product)
     caption_parts = [product.name]
     if product.display_price:
         caption_parts.append(f"💰 {product.display_price}")
@@ -1074,7 +1079,9 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
 
     # ── Step 2: Enrich the product with AI analysis ──────────────────
     renamed_fields = apply_ai_detected_product_fields(product, analysis)
-    if renamed_fields:
+    from apps.products.product_cta import uses_marketplace_cta
+
+    if renamed_fields and not uses_marketplace_cta(product):
         from apps.products.commerce_links import commerce_link_path
         from django.conf import settings
 
@@ -1198,6 +1205,13 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
         "Snap to Sell complete: product=%s, seed=%s, user=%s",
         product_id, seed.id, user.email,
     )
+
+    if product.marketplace_partner_id:
+        from apps.partners.webhooks import notify_content_generated
+
+        posts_count = product.posts.filter(seed=seed).count()
+        notify_content_generated(product, posts_created=posts_count, seed_id=str(seed.pk))
+
     return {
         "product_id": str(product.pk),
         "seed_id": str(seed.pk),
@@ -1245,19 +1259,25 @@ def snap_batch_process(product_ids: list, contexts: list = None):
 
         user = product.user
 
-        if not product.image:
+        if not product.all_image_urls:
             logger.warning("Batch Snap: product %s has no image", product_id)
             results.append({"product_id": product_id, "error": "No image"})
             continue
 
         # ── Convert image to base64 if needed ────────────────────────
-        image_url = product.image.url
+        image_url = product.all_image_urls[0]
         if not image_url.startswith("http"):
             import base64
             try:
-                with open(product.image.path, "rb") as f:
+                from django.core.files.storage import default_storage
+
+                if product.image:
+                    file_path = product.image.path
+                else:
+                    file_path = default_storage.path(image_url.lstrip("/"))
+                with open(file_path, "rb") as f:
                     encoded = base64.b64encode(f.read()).decode("utf-8")
-                ext = product.image.name.rsplit(".", 1)[-1].lower()
+                ext = file_path.rsplit(".", 1)[-1].lower()
                 mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
                         "webp": "image/webp", "gif": "image/gif"}.get(ext, "image/jpeg")
                 image_url = f"data:{mime};base64,{encoded}"

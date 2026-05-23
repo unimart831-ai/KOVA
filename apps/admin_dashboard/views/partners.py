@@ -7,11 +7,12 @@ import json
 from datetime import timedelta
 from decimal import Decimal
 
+from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -307,24 +308,89 @@ def partner_detail(request, pk):
 # MARKETPLACE PARTNERS
 # ══════════════════════════════════════════════════════════════════════════════
 
+DEFAULT_WEBHOOK_EVENTS = [
+    "product.synced",
+    "content.generated",
+    "post.published",
+]
+
+
+def _parse_json_field(raw: str, field_name: str):
+    raw = (raw or "").strip()
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{field_name} must be valid JSON: {exc}") from exc
+    if not isinstance(parsed, dict):
+        raise ValueError(f"{field_name} must be a JSON object")
+    return parsed
+
+
+def _marketplace_integration_stats(mp):
+    """Aggregate stats for admin marketplace dashboards."""
+    from apps.content.models import Post
+    from apps.products.models import Product
+
+    seller_stats = mp.seller_accounts.aggregate(
+        total_content=Sum("content_generated"),
+        total_products=Sum("products_synced"),
+    )
+    products_qs = Product.objects.filter(marketplace_partner=mp, is_active=True)
+    posts_published = Post.objects.filter(
+        product__marketplace_partner=mp,
+        status=Post.Status.PUBLISHED,
+    ).count()
+
+    return {
+        "content_generated_total": seller_stats["total_content"] or 0,
+        "seller_products_reported": seller_stats["total_products"] or 0,
+        "products_active": products_qs.count(),
+        "posts_published": posts_published,
+        "webhook_configured": bool(mp.webhook_url),
+        "webhook_events": mp.get_setting("webhook_events", DEFAULT_WEBHOOK_EVENTS),
+        "max_products_per_seller": mp.get_setting("max_products_per_seller", 500),
+    }
+
 
 @staff_required
 def marketplace_list(request):
     """List all marketplace partners with key stats."""
-    marketplaces = MarketplacePartner.objects.select_related("partner__user").order_by("-created_at")
+    marketplaces = (
+        MarketplacePartner.objects.select_related("partner__user")
+        .annotate(
+            total_content=Sum("seller_accounts__content_generated"),
+            active_sellers=Count("seller_accounts", filter=Q(seller_accounts__status="active")),
+            products_count=Count(
+                "synced_products",
+                filter=Q(synced_products__is_active=True),
+                distinct=True,
+            ),
+        )
+        .order_by("-created_at")
+    )
+
+    totals = MarketplaceSellerAccount.objects.aggregate(
+        content=Sum("content_generated"),
+    )
 
     context = {
         "page_title": "Marketplace Partners",
         "marketplaces": marketplaces,
         "total_marketplaces": marketplaces.count(),
         "active_marketplaces": marketplaces.filter(is_active=True).count(),
+        "total_content_generated": totals["content"] or 0,
+        "default_webhook_events": DEFAULT_WEBHOOK_EVENTS,
     }
     return render(request, "admin_dashboard/partners/marketplace_list.html", context)
 
 
 @staff_required
 def marketplace_detail(request, pk):
-    """Detailed view of a marketplace partner — sellers, products, stats."""
+    """Detailed view of a marketplace partner — sellers, products, stats, config."""
+    from django.conf import settings
+
     mp = get_object_or_404(
         MarketplacePartner.objects.select_related("partner__user"), pk=pk
     )
@@ -333,9 +399,9 @@ def marketplace_detail(request, pk):
     from apps.products.models import Product
     products_synced = Product.objects.filter(marketplace_partner=mp, is_active=True).count()
 
-    # Seller status breakdown
     seller_stats = mp.seller_accounts.values("status").annotate(count=Count("id"))
     seller_breakdown = {row["status"]: row["count"] for row in seller_stats}
+    integration = _marketplace_integration_stats(mp)
 
     context = {
         "page_title": f"Marketplace: {mp.name}",
@@ -346,8 +412,88 @@ def marketplace_detail(request, pk):
         "active_sellers": seller_breakdown.get("active", 0),
         "invited_sellers": seller_breakdown.get("invited", 0),
         "suspended_sellers": seller_breakdown.get("suspended", 0),
+        "integration": integration,
+        "site_url": getattr(settings, "SITE_URL", "").rstrip("/"),
+        "product_field_mapping_json": json.dumps(mp.product_field_mapping or {}, indent=2),
+        "seller_data_mapping_json": json.dumps(mp.seller_data_mapping or {}, indent=2),
+        "webhook_events_json": json.dumps(integration["webhook_events"], indent=2),
+        "sync_direction_choices": MarketplacePartner.SyncDirection.choices,
+        "default_webhook_events": DEFAULT_WEBHOOK_EVENTS,
     }
     return render(request, "admin_dashboard/partners/marketplace_detail.html", context)
+
+
+@senior_staff_required
+@require_POST
+def marketplace_update(request, pk):
+    """Update marketplace partner configuration from admin dashboard."""
+    mp = get_object_or_404(MarketplacePartner, pk=pk)
+
+    try:
+        settings_data = dict(mp.settings or {})
+        if request.POST.get("max_products_per_seller"):
+            settings_data["max_products_per_seller"] = int(request.POST["max_products_per_seller"])
+
+        webhook_events_raw = request.POST.get("webhook_events_json", "").strip()
+        if webhook_events_raw:
+            events = json.loads(webhook_events_raw)
+            if not isinstance(events, list):
+                raise ValueError("Webhook events must be a JSON array")
+            settings_data["webhook_events"] = events
+
+        mp.name = request.POST.get("name", mp.name).strip()
+        mp.contact_name = request.POST.get("contact_name", "").strip()
+        mp.contact_email = request.POST.get("contact_email", "").strip()
+        mp.website = request.POST.get("website", "").strip()
+        mp.notes = request.POST.get("notes", "").strip()
+        mp.seller_identity_field = request.POST.get("seller_identity_field", mp.seller_identity_field)
+        mp.seller_default_plan = request.POST.get("seller_default_plan", mp.seller_default_plan)
+        mp.sync_direction = request.POST.get("sync_direction", mp.sync_direction)
+        mp.default_product_currency = request.POST.get("default_product_currency", mp.default_product_currency)
+        mp.billing_model = request.POST.get("billing_model", mp.billing_model)
+        mp.max_sellers = int(request.POST.get("max_sellers", mp.max_sellers))
+        mp.webhook_url = request.POST.get("webhook_url", "").strip()
+        mp.is_active = request.POST.get("is_active") == "on"
+        mp.auto_activate_sellers = request.POST.get("auto_activate_sellers") == "on"
+        mp.enforce_marketplace_cta = request.POST.get("enforce_marketplace_cta") == "on"
+        mp.auto_snap_on_sync = request.POST.get("auto_snap_on_sync") == "on"
+        mp.enrich_descriptions = request.POST.get("enrich_descriptions") == "on"
+        mp.seller_welcome_email = request.POST.get("seller_welcome_email") == "on"
+        mp.product_field_mapping = (
+            _parse_json_field(
+                request.POST.get("product_field_mapping_json", ""),
+                "Product field mapping",
+            )
+            if request.POST.get("product_field_mapping_json", "").strip()
+            else mp.product_field_mapping
+        )
+        mp.seller_data_mapping = (
+            _parse_json_field(
+                request.POST.get("seller_data_mapping_json", ""),
+                "Seller data mapping",
+            )
+            if request.POST.get("seller_data_mapping_json", "").strip()
+            else mp.seller_data_mapping
+        )
+        mp.settings = settings_data
+
+        new_secret = request.POST.get("webhook_secret", "").strip()
+        if new_secret:
+            mp.webhook_secret = new_secret
+
+        if mp.billing_model == "per_seller":
+            mp.rate_per_seller_kes = Decimal(request.POST.get("rate_per_seller_kes", mp.rate_per_seller_kes))
+        if mp.billing_model == "flat_fee":
+            mp.flat_fee_kes = Decimal(request.POST.get("flat_fee_kes", mp.flat_fee_kes))
+
+        mp.save()
+        messages.success(request, f"Updated configuration for {mp.name}.")
+    except (ValueError, json.JSONDecodeError) as exc:
+        messages.error(request, str(exc))
+    except Exception as exc:
+        messages.error(request, f"Could not save marketplace settings: {exc}")
+
+    return redirect("admin_dashboard:marketplace_detail", pk=mp.pk)
 
 
 @senior_staff_required
@@ -387,6 +533,14 @@ def marketplace_create(request):
         auto_activate_sellers=request.POST.get("auto_activate_sellers") == "on",
         enforce_marketplace_cta=request.POST.get("enforce_marketplace_cta") == "on",
         auto_snap_on_sync=request.POST.get("auto_snap_on_sync") == "on",
+        enrich_descriptions=request.POST.get("enrich_descriptions") == "on",
+        default_product_currency=request.POST.get("default_product_currency", "KES").strip() or "KES",
+        webhook_url=request.POST.get("webhook_url", "").strip(),
+        webhook_secret=request.POST.get("webhook_secret", "").strip(),
+        settings={
+            "max_products_per_seller": int(request.POST.get("max_products_per_seller", 500)),
+            "webhook_events": DEFAULT_WEBHOOK_EVENTS,
+        },
         notes=request.POST.get("notes", "").strip(),
     )
 

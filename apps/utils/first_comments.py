@@ -92,7 +92,9 @@ def compose_first_comment(
 
     # ── Product link branch (highest priority) ──
     if product:
-        product_url = (getattr(product, "product_url", "") or "").strip()
+        from apps.products.product_cta import resolve_product_cta_url
+
+        product_url = resolve_product_cta_url(product).strip()
         if product_url:
             product_name = (getattr(product, "name", "") or "this product").strip()
             display_price = (getattr(product, "display_price", "") or "").strip()

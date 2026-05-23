@@ -675,7 +675,9 @@ Transform this raw idea into high-performing, platform-native content.
         if p.description:
             product_lines.append(f"- **Description**: {p.description}")
         if p.product_url:
-            product_lines.append(f"- **Purchase URL**: {p.product_url}")
+            from apps.products.product_cta import resolve_product_cta_url
+
+            product_lines.append(f"- **Purchase URL**: {resolve_product_cta_url(p)}")
             product_lines.append("→ Use this URL for 'Shop Now' / 'Buy Now' / 'Get Yours' CTAs.")
         if p.tags:
             product_lines.append(f"- **Tags**: {', '.join(p.tags)}")

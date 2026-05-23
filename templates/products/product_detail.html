@@ -6,6 +6,8 @@
   <span id="stock-badge">{% include "products/partials/stock_badge.html" %}</span>
   {% if product.is_featured %}<span class="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 font-medium">Featured</span>{% endif %}
   {% if product.source == 'snap' %}<span class="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 font-medium">Snap</span>{% endif %}
+  {% if product.sync_source_label %}<span class="text-xs px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 font-medium">{{ product.sync_source_label }}</span>{% endif %}
+  {% if product.last_synced_at %}<span class="text-xs text-gray-400 dark:text-gray-500">Synced {{ product.last_synced_at|timesince }} ago</span>{% endif %}
 </div>
 {% endblock %}
 
@@ -48,7 +50,7 @@
         {% endif %}
         {% if product.product_url %}
         <p class="text-xs text-gray-500 dark:text-gray-400">
-          <span class="font-medium">Purchase link:</span>
+          <span class="font-medium">{% if product.uses_external_buy_link %}Marketplace buy link{% else %}Purchase link{% endif %}:</span>
           <a href="{{ product.product_url }}" target="_blank" rel="noopener" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline">{{ product.product_url|truncatechars:60 }}</a>
         </p>
         {% endif %}
@@ -144,7 +146,7 @@
   {% if commerce_url %}
   <div class="card p-5 border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20">
     <h3 class="text-sm font-semibold text-emerald-900 dark:text-emerald-100 mb-1">Commerce Link</h3>
-    <p class="text-xs text-emerald-700 dark:text-emerald-300 mb-3">Share this page — customers can view, chat, and pay via M-Pesa. Google and WhatsApp show your photo &amp; price when shared.</p>
+    <p class="text-xs text-emerald-700 dark:text-emerald-300 mb-3">Share this page — customers can view, chat, and pay via M-Pesa. Google and WhatsApp show your photo &amp; price when shared.{% if product.uses_external_buy_link %} Social posts link to your marketplace listing; this Kova page supports M-Pesa &amp; WhatsApp.{% endif %}</p>
     <div class="flex flex-wrap items-center gap-2 mb-3">
       <input type="text" readonly value="{{ commerce_url }}" id="commerce-url"
              class="input text-xs flex-1 min-w-0 font-mono bg-white dark:bg-gray-900">

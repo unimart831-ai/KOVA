@@ -454,6 +454,30 @@ def shopify_disconnect(request, pk):
     return redirect("analytics:revenue")
 
 
+@login_required
+def shopify_sync_products(request, pk):
+    """Import / refresh products from a connected Shopify store."""
+    from apps.analytics.models import ShopifyStore
+    from apps.products.shopify_import import sync_shopify_store_products
+
+    if request.method != "POST":
+        return redirect("analytics:revenue")
+
+    store = get_object_or_404(ShopifyStore, pk=pk, user=request.user, is_active=True)
+    result = sync_shopify_store_products(store)
+
+    if result.get("error"):
+        messages.error(request, f"Shopify sync failed: {result['error']}")
+    else:
+        messages.success(
+            request,
+            f"Shopify sync complete — {result.get('created', 0)} new, "
+            f"{result.get('updated', 0)} updated"
+            f"{f', {result.get('autopilot_queued', 0)} queued for Autopilot' if result.get('autopilot_queued') else ''}.",
+        )
+    return redirect("analytics:revenue")
+
+
 # ─── Pixel JS Serve ──────────────────────────────────────────────────────────
 
 def serve_pixel_js(request):

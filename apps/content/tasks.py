@@ -1246,6 +1246,10 @@ def publish_post(self, post_id: str):
         ])
         account.mark_synced()
 
+        if post.product_id:
+            from apps.partners.webhooks import notify_post_published
+            notify_post_published(post)
+
         # Clear any outage flags — this platform is working
         from apps.platforms.outage import record_success as clear_outage
         clear_outage(account.platform)

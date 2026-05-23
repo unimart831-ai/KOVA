@@ -80,19 +80,51 @@
         <input type="number" name="max_sellers" value="1000" min="1"
           class="w-full text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-kova-500">
       </div>
-      <div class="flex items-center gap-6 pt-5">
+      <div class="flex flex-col gap-3 sm:col-span-2">
         <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
           <input type="checkbox" name="auto_activate_sellers" checked class="rounded border-gray-300 text-kova-600 focus:ring-kova-500">
           Auto-activate sellers
         </label>
         <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
           <input type="checkbox" name="enforce_marketplace_cta" checked class="rounded border-gray-300 text-kova-600 focus:ring-kova-500">
-          Enforce CTA
+          Enforce marketplace buy links in social posts
         </label>
         <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
           <input type="checkbox" name="auto_snap_on_sync" checked class="rounded border-gray-300 text-kova-600 focus:ring-kova-500">
-          Auto-snap
+          Auto Autopilot when products sync (requires image_url)
         </label>
+        <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
+          <input type="checkbox" name="enrich_descriptions" checked class="rounded border-gray-300 text-kova-600 focus:ring-kova-500">
+          Enrich product descriptions from specs/variants
+        </label>
+      </div>
+    </div>
+  </div>
+
+  {# ── Sync & Webhooks ─────────────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Sync &amp; Webhooks</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Default product currency</label>
+        <input type="text" name="default_product_currency" value="KES" maxlength="5"
+          class="w-full text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Max products per seller</label>
+        <input type="number" name="max_products_per_seller" value="500" min="1"
+          class="w-full text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2">
+      </div>
+      <div class="sm:col-span-2">
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Webhook URL (optional)</label>
+        <input type="url" name="webhook_url" placeholder="https://marketplace.example.com/kova/webhook"
+          class="w-full text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2">
+        <p class="text-[10px] text-gray-400 mt-1">Receives product.synced, content.generated, post.published events</p>
+      </div>
+      <div class="sm:col-span-2">
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Webhook secret (optional)</label>
+        <input type="password" name="webhook_secret" placeholder="HMAC signing secret"
+          class="w-full text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2">
       </div>
     </div>
   </div>

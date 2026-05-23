@@ -192,6 +192,28 @@ class Product(models.Model):
             urls.extend(self.additional_images)
         return urls
 
+    @property
+    def sync_source_label(self) -> str:
+        """Human label for where this product was imported from."""
+        if self.source == self.Source.MARKETPLACE and self.marketplace_partner_id:
+            return self.marketplace_partner.name
+        meta = self.marketplace_metadata or {}
+        if meta.get("shopify"):
+            domain = meta.get("shop_domain") or "Shopify"
+            return f"Shopify · {domain.replace('.myshopify.com', '')}"
+        if self.source == self.Source.API:
+            return "Connected store"
+        if self.source == self.Source.CSV:
+            return "CSV import"
+        if self.source == self.Source.SNAP:
+            return "Snap to Sell"
+        return ""
+
+    @property
+    def uses_external_buy_link(self) -> bool:
+        from apps.products.product_cta import uses_marketplace_cta
+        return uses_marketplace_cta(self)
+
     def check_low_stock(self):
         """Auto-update status if quantity drops below threshold. Skips services/digital."""
         if not self.tracks_stock:

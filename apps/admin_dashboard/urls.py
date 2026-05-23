@@ -154,6 +154,7 @@ urlpatterns = [
     path("partners/marketplaces/", partners.marketplace_list, name="marketplace_list"),
     path("partners/marketplaces/create/", partners.marketplace_create, name="marketplace_create"),
     path("partners/marketplaces/<int:pk>/", partners.marketplace_detail, name="marketplace_detail"),
+    path("partners/marketplaces/<int:pk>/update/", partners.marketplace_update, name="marketplace_update"),
 
     # Help Center
     path("help/", help.help_overview, name="help_overview"),
