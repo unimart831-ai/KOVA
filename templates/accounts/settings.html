@@ -226,6 +226,22 @@
                 {% if field.help_text %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ field.help_text }}</p>{% endif %}
               </div>
 
+            {% elif field.name == 'commerce_autopilot' %}
+              <div class="flex items-start space-x-3 mb-4 p-4 bg-purple-50 dark:bg-purple-950/30 rounded-xl border border-purple-200 dark:border-purple-800">
+                <input type="checkbox" name="{{ field.html_name }}" id="id_brand_{{ field.name }}"
+                       {% if field.value %}checked{% endif %}
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-purple-600 focus:ring-purple-500 dark:bg-gray-900">
+                <div>
+                  <label for="id_brand_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">{{ field.label }}</label>
+                  {% if field.help_text %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ field.help_text }}</p>{% endif %}
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Turn on for true one-tap selling: snap a photo at
+                    <a href="{% url 'products:snap' %}" class="text-purple-600 dark:text-purple-400 underline font-medium">Snap to Sell</a>
+                    and agents handle naming, listing, content, and publishing.
+                  </p>
+                </div>
+              </div>
+
             {% elif field.name == 'autopilot_enabled' %}
               <div class="flex items-start space-x-3 mb-4 p-4 bg-kova-50 dark:bg-kova-950/30 rounded-xl border border-kova-200 dark:border-kova-800">
                 <input type="checkbox" name="{{ field.html_name }}" id="id_brand_{{ field.name }}"

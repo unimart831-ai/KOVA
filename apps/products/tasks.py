@@ -239,6 +239,10 @@ def auto_promote_products():
     from apps.content.models import ContentSeed
     from apps.platforms.models import SocialAccount
     from apps.products.models import Product
+    from apps.products.commerce_autopilot import (
+        apply_ai_detected_product_fields,
+        commerce_autopilot_active,
+    )
     from apps.products.utils import (
         sample_products_for_content,
         user_should_receive_catalog_sample,
@@ -263,8 +267,9 @@ def auto_promote_products():
         if not platforms:
             continue
 
-        if not user_should_receive_catalog_sample(user, now.date()):
-            continue
+        if not commerce_autopilot_active(user):
+            if not user_should_receive_catalog_sample(user, now.date()):
+                continue
 
         today_samples = ContentSeed.objects.filter(
             user=user,
@@ -384,7 +389,9 @@ def _build_vision_prompt(*, offering_type, name, display_price, num_images, phot
             '  "visual_style": "Describe what the photo shows (portfolio piece, results, etc.)",\n'
             '  "campaign_angle": "Best angle — focus on AUTHORITY, TRUST, EXPERTISE, and RESULTS rather than just selling",\n'
             '  "work_evidence_type": "portfolio|results|in_action|testimonial|other",\n'
-            '  "credibility_hook": "One compelling sentence about why this work evidence proves expertise"'
+            '  "credibility_hook": "One compelling sentence about why this work evidence proves expertise",\n'
+            '  "detected_name": "Service name inferred from the image or null if unknown",\n'
+            '  "detected_price": null or number if a price is visible on a tag/sign'
         )
     elif offering_type == "digital":
         prompt = (
@@ -403,7 +410,9 @@ def _build_vision_prompt(*, offering_type, name, display_price, num_images, phot
             '  "target_audience": "Who would buy/download this",\n'
             '  "suggested_tags": ["tag1", "tag2", "tag3"],\n'
             '  "visual_style": "Describe the visual aesthetic of the screenshot/preview",\n'
-            '  "campaign_angle": "Best angle — focus on the OUTCOME the buyer gets, not just features"'
+            '  "campaign_angle": "Best angle — focus on the OUTCOME the buyer gets, not just features",\n'
+            '  "detected_name": "Product name inferred from the image or null if unknown",\n'
+            '  "detected_price": null or number if a price is visible'
         )
     else:  # product (default)
         prompt = (
@@ -418,7 +427,9 @@ def _build_vision_prompt(*, offering_type, name, display_price, num_images, phot
             '  "target_audience": "Who would buy this",\n'
             '  "suggested_tags": ["tag1", "tag2", "tag3"],\n'
             '  "visual_style": "Describe the visual aesthetic (colors, mood, quality)",\n'
-            '  "campaign_angle": "Best marketing angle for social media"'
+            '  "campaign_angle": "Best marketing angle for social media",\n'
+            '  "detected_name": "Product name read from packaging/label or inferred from the image, null if unknown",\n'
+            '  "detected_price": null or number if a price tag or label is visible'
         )
 
     if num_images > 1:
@@ -484,6 +495,7 @@ def create_product_carousel_posts(product_id: str, seed_id: str, key_features: l
     from apps.agents.models import AgentAction
     from apps.content.models import ContentSeed, Post
     from apps.platforms.models import SocialAccount
+    from apps.products.commerce_autopilot import initial_commerce_post_status
     from apps.products.models import Product
     from apps.utils import fire_task
 
@@ -510,7 +522,6 @@ def create_product_carousel_posts(product_id: str, seed_id: str, key_features: l
         logger.info("create_product_carousel_posts: no carousel-eligible accounts for user %s", user.email)
         return
 
-    profile = getattr(user, "profile", None)
     price_label = product.display_price or ""
     caption = product.name
     if key_features:
@@ -519,12 +530,8 @@ def create_product_carousel_posts(product_id: str, seed_id: str, key_features: l
         caption += f"\n\n💰 {price_label}"
 
     posts_created = 0
+    initial_status = initial_commerce_post_status(user)
     for account in accounts:
-        initial_status = (
-            Post.Status.APPROVED
-            if profile and getattr(profile, "auto_approve_posts", False)
-            else Post.Status.PENDING_APPROVAL
-        )
         post = Post.objects.create(
             user=user,
             seed=seed,
@@ -579,18 +586,27 @@ def create_product_carousel_posts(product_id: str, seed_id: str, key_features: l
 @shared_task(name="products.create_product_reel_posts")
 def create_product_reel_posts(product_id: str, seed_id: str, key_features: list):
     """
-    Create motion Reel variants from product carousel slides (same seed, two formats).
+    Create motion Reel variants from product images (carousel slides or single photo).
 
-    Uses existing product carousel images — no extra FLUX calls.
+    Uses existing product/carousel images — no extra FLUX calls.
     """
     from apps.agents.models import AgentAction
     from apps.content.models import ContentSeed, Post
-    from apps.content.tasks import compose_reel_video
+    from apps.content.tasks import _normalize_reel_image_source, compose_reel_video
     from apps.platforms.models import SocialAccount
+    from apps.products.commerce_autopilot import initial_commerce_post_status
     from apps.products.models import Product
     from apps.utils import fire_task
 
-REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
+    REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
+
+    def _product_reel_image_sources(product):
+        sources = []
+        for url in product.all_image_urls:
+            normalized = _normalize_reel_image_source(url)
+            if normalized:
+                sources.append(normalized)
+        return sources
 
     try:
         product = Product.objects.select_related("user").get(pk=product_id)
@@ -612,8 +628,15 @@ REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
         visual_strategy="carousel",
     ).order_by("-created_at")
 
-    if not carousel_posts.exists():
-        logger.info("create_product_reel_posts: no carousel posts for product %s", product_id)
+    use_carousel = carousel_posts.exists()
+    direct_images = [] if use_carousel else _product_reel_image_sources(product)
+
+    if use_carousel:
+        pass
+    elif direct_images:
+        pass
+    else:
+        logger.info("create_product_reel_posts: no images for product %s", product_id)
         return
 
     accounts = SocialAccount.objects.filter(
@@ -623,7 +646,6 @@ REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
         logger.info("create_product_reel_posts: no reel-eligible accounts for user %s", user.email)
         return
 
-    profile = getattr(user, "profile", None)
     price_label = product.display_price or ""
     caption = product.name
     if key_features:
@@ -632,23 +654,37 @@ REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
         caption += f"\n\n💰 {price_label}"
 
     posts_created = 0
+    initial_status = initial_commerce_post_status(user)
     for account in accounts:
-        source_post = carousel_posts.filter(platform=account.platform).first() or carousel_posts.first()
-        source_images = list(source_post.media_urls or [])
-        if len(source_images) < 2:
-            for att in source_post.attachments.filter(file_type="image").order_by("order"):
-                from apps.content.tasks import _public_url_for_file
-                url = _public_url_for_file(att.file.name)
-                if url:
-                    source_images.append(url)
+        source_post = None
+        if use_carousel:
+            source_post = carousel_posts.filter(platform=account.platform).first() or carousel_posts.first()
+            source_images = list(source_post.media_urls or [])
+            if len(source_images) < 2:
+                for att in source_post.attachments.filter(file_type="image").order_by("order"):
+                    from apps.content.tasks import _public_url_for_file
+                    url = _public_url_for_file(att.file.name)
+                    if url:
+                        source_images.append(url)
+            reel_template = "carousel_to_video"
+            visual_strategy = "carousel"
+        else:
+            source_images = list(direct_images)
+            reel_template = "slideshow"
+            visual_strategy = "single_photo" if len(source_images) == 1 else "carousel"
+
         if len(source_images) < 1:
             continue
 
-        initial_status = (
-            Post.Status.APPROVED
-            if profile and getattr(profile, "auto_approve_posts", False)
-            else Post.Status.PENDING_APPROVAL
-        )
+        visual_metadata = {
+            "reel_template": reel_template,
+            "source_images": source_images,
+            "music_mood": "upbeat",
+            "video_compose_status": "pending",
+        }
+        if source_post:
+            visual_metadata["source_carousel_post_id"] = str(source_post.pk)
+
         post = Post.objects.create(
             user=user,
             seed=seed,
@@ -660,16 +696,10 @@ REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
             status=initial_status,
             post_format=Post.PostFormat.REEL,
             aspect_ratio=Post.AspectRatio.STORY,
-            visual_strategy="carousel",
+            visual_strategy=visual_strategy,
             media_status=Post.MediaStatus.GENERATED,
             media_urls=source_images,
-            visual_metadata={
-                "reel_template": "carousel_to_video",
-                "source_images": source_images,
-                "source_carousel_post_id": str(source_post.pk),
-                "music_mood": "upbeat",
-                "video_compose_status": "pending",
-            },
+            visual_metadata=visual_metadata,
             generated_by_agent="create",
         )
         fire_task(compose_reel_video, str(post.pk))
@@ -815,6 +845,8 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = ""):
         }
 
     # ── Step 2: Enrich the product with AI analysis ──────────────────
+    apply_ai_detected_product_fields(product, analysis)
+
     if not product.description and analysis.get("description"):
         product.description = analysis["description"]
 
@@ -878,14 +910,23 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = ""):
 
     fire_task(generate_from_seed, str(seed.id))
 
-    # Auto-generate a product carousel when 2+ photos are available
+    # Auto-generate carousel (2+ photos) or reel-only (single photo)
     _CAROUSEL_PLATFORMS = {"instagram", "facebook", "linkedin"}
+    _REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
+    features = analysis.get("key_features", [])
     if num_images >= 2 and any(p in _CAROUSEL_PLATFORMS for p in platforms):
         fire_task(
             create_product_carousel_posts,
             str(product.pk),
             str(seed.pk),
-            analysis.get("key_features", []),
+            features,
+        )
+    elif num_images >= 1 and any(p in _REEL_PLATFORMS for p in platforms):
+        fire_task(
+            create_product_reel_posts,
+            str(product.pk),
+            str(seed.pk),
+            features,
         )
 
     logger.info(

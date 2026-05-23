@@ -22,7 +22,7 @@ def ig_account(user):
 
 @pytest.mark.django_db
 class TestSnapPipelineStatus:
-    def test_single_photo_skips_carousel_and_reel(self, user, ig_account):
+    def test_single_photo_enables_reel(self, user, ig_account):
         product = Product.objects.create(
             user=user,
             name="Solo item",
@@ -33,7 +33,16 @@ class TestSnapPipelineStatus:
         carousel = next(s for s in data["steps"] if s["id"] == "carousel")
         reel = next(s for s in data["steps"] if s["id"] == "reel")
         assert carousel["status"] == "skipped"
-        assert reel["status"] == "skipped"
+        assert data["single_photo_reel"] is False
+
+        product.additional_images = ["https://cdn.example.com/solo.jpg"]
+        product.save()
+        data = build_snap_pipeline_status(product, user)
+        assert data["photo_count"] == 1
+        assert data["reel_eligible"] is True
+        assert data["single_photo_reel"] is True
+        reel = next(s for s in data["steps"] if s["id"] == "reel")
+        assert reel["status"] in ("pending", "running")
 
     def test_analyzing_when_no_seed_yet(self, user, ig_account):
         product = Product.objects.create(

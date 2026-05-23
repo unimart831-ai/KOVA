@@ -133,6 +133,7 @@ class BrandProfileForm(forms.ModelForm):
             "posting_frequency",
             "autopilot_enabled",
             "autopilot_posts_per_week",
+            "commerce_autopilot",
             "auto_approve_posts",
             "engage_autonomy_level",
             "content_language",

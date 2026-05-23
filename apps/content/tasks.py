@@ -432,11 +432,11 @@ def generate_from_seed(seed_id: str):
     except Exception as e:
         logger.warning("Failed to queue post analytics for seed %s: %s", seed_id, e)
 
-    # Auto-schedule if Adapt Agent is active and user has auto_approve on
+    # Auto-schedule if user has Commerce Autopilot or auto-approve on
     from apps.agents.adapt_agent import auto_schedule_post
+    from apps.products.commerce_autopilot import should_auto_publish_commerce
 
-    profile = getattr(seed.user, "profile", None)
-    if profile and profile.auto_approve_posts:
+    if should_auto_publish_commerce(seed.user):
         for post in posts:
             try:
                 auto_schedule_post(post)

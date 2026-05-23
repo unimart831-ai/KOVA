@@ -16,3 +16,18 @@ def on_product_save(sender, instance, created, **kwargs):
     from apps.products.utils import invalidate_product_cache
 
     invalidate_product_cache(instance.user)
+
+    if instance.is_active and not instance.commerce_slug:
+        from apps.products.commerce_links import ensure_commerce_slug
+        from apps.products.models import Product
+
+        slug = ensure_commerce_slug(instance, save=False)
+        updates = {"commerce_slug": slug}
+        if not instance.product_url:
+            from apps.products.commerce_links import commerce_link_path
+            from django.conf import settings
+
+            path = commerce_link_path(instance, instance.user.profile)
+            site = getattr(settings, "SITE_URL", "").rstrip("/")
+            updates["product_url"] = f"{site}{path}" if site else path
+        Product.objects.filter(pk=instance.pk).update(**updates)

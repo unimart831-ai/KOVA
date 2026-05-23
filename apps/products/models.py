@@ -89,6 +89,12 @@ class Product(models.Model):
         blank=True,
         help_text="Direct purchase/product page URL — used for 'Shop Now' CTAs in generated content.",
     )
+    commerce_slug = models.SlugField(
+        max_length=60,
+        blank=True,
+        db_index=True,
+        help_text="Public slug for Commerce Link (/shop/<page>/<slug>/). Auto-generated.",
+    )
     external_id = models.CharField(
         max_length=255, blank=True,
         help_text="SKU or external platform product ID — for syncing with Shopify, WooCommerce, etc.",
@@ -150,6 +156,14 @@ class Product(models.Model):
             models.Index(fields=["user", "is_featured"]),
             models.Index(fields=["user", "is_active"]),
             models.Index(fields=["user", "offering_type"]),
+            models.Index(fields=["user", "commerce_slug"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "commerce_slug"],
+                condition=models.Q(commerce_slug__gt=""),
+                name="unique_commerce_slug_per_user",
+            ),
         ]
 
     def __str__(self):
@@ -329,3 +343,47 @@ class RestockScan(models.Model):
 
     def __str__(self):
         return f"RestockScan {self.pk} — {self.products_updated} updated ({self.get_status_display()})"
+
+
+class CommercePayment(models.Model):
+    """Tracks M-Pesa STK payments for product sales via Commerce Links / WhatsApp."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed"
+
+    class Source(models.TextChoices):
+        COMMERCE_LINK = "commerce_link", "Commerce Link"
+        WHATSAPP = "whatsapp", "WhatsApp"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="commerce_payments",
+    )
+    product = models.ForeignKey(
+        Product, on_delete=models.SET_NULL, null=True, blank=True, related_name="commerce_payments",
+    )
+    checkout_request_id = models.CharField(max_length=100, unique=True, db_index=True)
+    merchant_request_id = models.CharField(max_length=100, blank=True)
+    receipt_number = models.CharField(max_length=50, blank=True, db_index=True)
+    phone_number = models.CharField(max_length=15)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=5, default="KES")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    source = models.CharField(max_length=20, choices=Source.choices, default=Source.COMMERCE_LINK)
+    result_code = models.IntegerField(null=True, blank=True)
+    result_desc = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["product", "-created_at"]),
+            models.Index(fields=["status", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"Commerce {self.amount} {self.currency} — {self.get_status_display()}"

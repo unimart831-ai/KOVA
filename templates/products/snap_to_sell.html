@@ -6,9 +6,21 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-lg mx-auto space-y-6" x-data="snapToSell()">
+<div class="max-w-lg mx-auto space-y-6" x-data="snapToSell({{ commerce_autopilot|yesno:'true,false' }})">
 
   {% include "products/_products_subnav.html" %}
+
+  {% if commerce_autopilot %}
+  <div class="card px-5 py-4 border border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/30">
+    <div class="flex items-start gap-3">
+      <span class="text-xl" aria-hidden="true">⚡</span>
+      <div>
+        <p class="text-sm font-semibold text-purple-900 dark:text-purple-100">Commerce Autopilot is on</p>
+        <p class="text-xs text-purple-700 dark:text-purple-300 mt-0.5">Snap a photo and enter your price — agents name the listing, write copy, create posts, and publish.</p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
   {# Hero / explainer #}
   <div class="card px-6 py-5 text-center border-2 border-dashed border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/20">
@@ -124,28 +136,15 @@
       </div>
     </div>
 
-    {# Details #}
+    {# Price — always required #}
     <div class="card p-5 space-y-4">
-      <label class="label text-base font-semibold">2. Quick Details</label>
-
-      <div>
-        <label for="snap-name" class="label" x-text="offeringConfig[offeringType].nameLabel + ' *'">Name *</label>
-        <input type="text" id="snap-name" name="name" required
-               class="input" :placeholder="offeringConfig[offeringType].namePlaceholder"
-               x-model="name">
-      </div>
-
-      {# Service-specific: what does the photo show? #}
-      <div x-show="offeringType !== 'product'" x-cloak>
-        <label for="snap-context" class="label">What does this photo show? <span class="text-gray-400">(helps AI understand your work)</span></label>
-        <input type="text" id="snap-context" name="photo_context"
-               class="input" :placeholder="offeringConfig[offeringType].contextPlaceholder">
-      </div>
-
+      <label class="label text-base font-semibold mb-0">
+        <span x-text="autopilot ? '2. Price' : '2. Price'"></span> *
+      </label>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div class="sm:col-span-2">
-          <label for="snap-price" class="label" x-text="offeringConfig[offeringType].priceLabel">Price</label>
-          <input type="number" id="snap-price" name="price" step="0.01" min="0"
+          <label for="snap-price" class="label sr-only" x-text="offeringConfig[offeringType].priceLabel">Price</label>
+          <input type="number" id="snap-price" name="price" step="0.01" min="0.01" required
                  class="input" :placeholder="offeringConfig[offeringType].pricePlaceholder"
                  x-model="price">
         </div>
@@ -165,6 +164,37 @@
           </select>
         </div>
       </div>
+      <p class="text-xs text-gray-500 dark:text-gray-400">You set the price — AI won't guess it, so customers always see the correct amount.</p>
+    </div>
+
+    {# Optional details #}
+    <div class="card p-5 space-y-4" x-show="!autopilot || showDetails" x-cloak>
+      <div class="flex items-center justify-between">
+        <label class="label text-base font-semibold mb-0">
+          <span x-text="autopilot ? '3. Optional details' : '3. Quick Details'"></span>
+        </label>
+        <button type="button" x-show="autopilot" @click="showDetails = false"
+                class="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">Hide</button>
+      </div>
+
+      <div>
+        <label for="snap-name" class="label">
+          <span x-text="offeringConfig[offeringType].nameLabel"></span>
+          <span x-show="!autopilot"> *</span>
+          <span x-show="autopilot" class="text-gray-400 font-normal"> (AI will guess if blank)</span>
+        </label>
+        <input type="text" id="snap-name" name="name"
+               :required="!autopilot"
+               class="input" :placeholder="autopilot ? 'Leave blank — AI names it from your photo' : offeringConfig[offeringType].namePlaceholder"
+               x-model="name">
+      </div>
+
+      {# Service-specific: what does the photo show? #}
+      <div x-show="offeringType !== 'product'" x-cloak>
+        <label for="snap-context" class="label">What does this photo show? <span class="text-gray-400">(helps AI understand your work)</span></label>
+        <input type="text" id="snap-context" name="photo_context"
+               class="input" :placeholder="offeringConfig[offeringType].contextPlaceholder">
+      </div>
 
       <div>
         <label for="snap-desc" class="label">Description <span class="text-gray-400">(optional — AI will generate if blank)</span></label>
@@ -173,28 +203,38 @@
       </div>
     </div>
 
+    <button type="button" x-show="autopilot && !showDetails" @click="showDetails = true"
+            class="w-full text-sm text-purple-600 dark:text-purple-400 hover:underline py-1">
+      + Add name or description (optional)
+    </button>
+
     {# Launch button #}
     <button type="submit"
-            :disabled="photos.length === 0 || !name"
+            :disabled="photos.length === 0 || !price || (!autopilot && !name)"
             class="w-full btn-primary text-base py-3.5 rounded-xl font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-      <span x-text="photos.length <= 1
+      <span x-show="autopilot && !name" x-text="photos.length <= 1 ? 'Snap & Go — Agents handle the rest' : 'Snap & Go — ' + photos.length + ' photos'"></span>
+      <span x-show="!(autopilot && !name)" x-text="photos.length <= 1
         ? 'Snap to Sell — Launch Campaign'
         : 'Snap to Sell — Launch with ' + photos.length + ' Photos'"></span>
     </button>
 
-    <p class="text-xs text-center text-gray-500 dark:text-gray-400" x-text="offeringConfig[offeringType].launchHint">
+    <p class="text-xs text-center text-gray-500 dark:text-gray-400">
+      <span x-show="autopilot" x-cloak>Agents analyze your photo, list the product, generate carousel + reel posts, and publish when ready.</span>
+      <span x-show="!autopilot" x-text="offeringConfig[offeringType].launchHint"></span>
     </p>
   </form>
 
 </div>
 
 <script>
-function snapToSell() {
+function snapToSell(autopilot) {
   return {
     photos: [],   // [{file: File, preview: 'data:...'}]
     name: '',
     price: '',
     offeringType: 'product',
+    autopilot: !!autopilot,
+    showDetails: false,
 
     offeringConfig: {
       product: {

@@ -184,8 +184,19 @@ def mpesa_commerce_callback(request):
     # Daraja callback structure
     body = data.get("Body", {}).get("stkCallback", {})
     result_code = body.get("ResultCode")
+    checkout_id = body.get("CheckoutRequestID", "")
+
     if result_code != 0:
-        # Payment failed or cancelled
+        if checkout_id:
+            from apps.products.models import CommercePayment
+            CommercePayment.objects.filter(
+                checkout_request_id=checkout_id,
+                status=CommercePayment.Status.PENDING,
+            ).update(
+                status=CommercePayment.Status.FAILED,
+                result_code=result_code,
+                result_desc=body.get("ResultDesc", ""),
+            )
         return HttpResponse("OK", status=200)
 
     callback_metadata = body.get("CallbackMetadata", {}).get("Item", [])
@@ -196,6 +207,42 @@ def mpesa_commerce_callback(request):
     phone = str(meta.get("PhoneNumber", ""))
 
     if not receipt or not amount:
+        return HttpResponse("OK", status=200)
+
+    # Product commerce payments (Commerce Links / WhatsApp)
+    from apps.products.models import CommercePayment
+    from django.utils import timezone as tz
+
+    commerce_payment = CommercePayment.objects.filter(
+        checkout_request_id=checkout_id,
+    ).select_related("product", "user").first()
+    if commerce_payment:
+        if commerce_payment.status == CommercePayment.Status.COMPLETED:
+            return HttpResponse("OK (duplicate)", status=200)
+        commerce_payment.status = CommercePayment.Status.COMPLETED
+        commerce_payment.receipt_number = receipt
+        commerce_payment.result_code = result_code
+        commerce_payment.completed_at = tz.now()
+        commerce_payment.save()
+
+        Conversion.objects.create(
+            user=commerce_payment.user,
+            product=commerce_payment.product,
+            conversion_type=Conversion.ConversionType.SALE,
+            revenue=amount,
+            event_name=f"mpesa_{receipt}",
+            metadata={
+                "source": commerce_payment.source,
+                "receipt_number": receipt,
+                "phone_last4": phone[-4:],
+                "checkout_request_id": checkout_id,
+                "product_id": str(commerce_payment.product_id) if commerce_payment.product_id else "",
+            },
+        )
+        logger.info(
+            "M-Pesa commerce payment tracked: %s KES %s product=%s",
+            receipt, amount, commerce_payment.product_id,
+        )
         return HttpResponse("OK", status=200)
 
     # Find user by phone number match

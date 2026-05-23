@@ -285,6 +285,13 @@ class UserProfile(models.Model):
         default=True,
         help_text="If True, Kova auto-sends AI email campaigns and recycles top posts to your list.",
     )
+    commerce_autopilot = models.BooleanField(
+        default=False,
+        verbose_name="Commerce Autopilot",
+        help_text=(
+            "Snap a photo only — AI names, prices, creates posts, and publishes your catalog."
+        ),
+    )
 
     # ── Adapt Agent v2 (Phase 1 W3-4, May 2026) ──
     # The autonomous learning loop. Reads per-user post performance every

@@ -54,7 +54,8 @@ def build_snap_pipeline_status(product, user):
         )
     )
     carousel_eligible = photo_count >= 2 and bool(platforms & CAROUSEL_PLATFORMS)
-    reel_eligible = carousel_eligible and bool(platforms & REEL_PLATFORMS)
+    reel_eligible = photo_count >= 1 and bool(platforms & REEL_PLATFORMS)
+    single_photo_reel = photo_count == 1 and reel_eligible
 
     seed = product.content_seeds.order_by("-created_at").first()
 
@@ -185,10 +186,46 @@ def build_snap_pipeline_status(product, user):
     if not reel_eligible:
         reel_status = "skipped"
         reel_detail = (
-            "Need 2+ photos and Instagram, Facebook, or TikTok for motion reels"
-            if photo_count < 2
-            else "Connect Instagram, Facebook, or TikTok for motion reels"
+            "Connect Instagram, Facebook, TikTok, or LinkedIn for motion reels"
         )
+    elif single_photo_reel and analyze_status != "completed":
+        reel_status = "pending"
+        reel_detail = "Waiting for product analysis…"
+    elif single_photo_reel and analyze_status == "failed":
+        reel_status = "skipped"
+        reel_detail = "Skipped — analysis did not finish"
+    elif single_photo_reel and reel_posts:
+        composing = [p for p in reel_posts if p.reel_compose_pending]
+        ready = [p for p in reel_posts if p.reel_has_video]
+        failed = [
+            p for p in reel_posts
+            if p.reel_compose_status == "failed" and not p.reel_has_video
+        ]
+        if composing:
+            reel_status = "running"
+            reel_detail = (
+                f"FFmpeg is composing motion reel{'s' if len(composing) != 1 else ''} "
+                f"from your photo ({len(ready)}/{len(reel_posts)} ready)…"
+            )
+        elif ready:
+            reel_status = "completed"
+            reel_detail = f"{len(ready)} motion reel{'s' if len(ready) != 1 else ''} ready to preview"
+        elif failed:
+            reel_status = "failed"
+            reel_detail = "Video composition failed — use Retry on the post"
+            error_message = error_message or reel_detail
+        else:
+            reel_status = "running"
+            reel_detail = "Creating motion reel from your product photo…"
+    elif single_photo_reel and reel_action and reel_action.status == AgentAction.ActionStatus.FAILED:
+        reel_status = "failed"
+        reel_detail = "Reel creation failed"
+    elif single_photo_reel and seed and snap_stale:
+        reel_status = "failed"
+        reel_detail = "Reel composition timed out"
+    elif single_photo_reel and seed:
+        reel_status = "running"
+        reel_detail = "Creating motion reel from your product photo…"
     elif carousel_status in ("pending", "running"):
         reel_status = "pending"
         reel_detail = "Waiting for carousel slides…"
@@ -287,6 +324,7 @@ def build_snap_pipeline_status(product, user):
         "photo_count": photo_count,
         "carousel_eligible": carousel_eligible,
         "reel_eligible": reel_eligible,
+        "single_photo_reel": single_photo_reel,
         "seed_id": str(seed.pk) if seed else "",
         "seed_status": seed.status if seed else "",
         "status": overall,

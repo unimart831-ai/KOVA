@@ -112,6 +112,22 @@
     </div>
   </div>
 
+  {# Commerce Link — public sell page #}
+  {% if commerce_url %}
+  <div class="card p-5 border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20">
+    <h3 class="text-sm font-semibold text-emerald-900 dark:text-emerald-100 mb-1">Commerce Link</h3>
+    <p class="text-xs text-emerald-700 dark:text-emerald-300 mb-3">Share this page — customers can view, chat, and pay via M-Pesa.</p>
+    <div class="flex flex-wrap items-center gap-2">
+      <input type="text" readonly value="{{ commerce_url }}" id="commerce-url"
+             class="input text-xs flex-1 min-w-0 font-mono bg-white dark:bg-gray-900">
+      <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('commerce-url').value); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1500)"
+              class="btn-secondary text-sm px-3 py-1.5 shrink-0">Copy</button>
+      <a href="{{ commerce_url }}" target="_blank" rel="noopener"
+         class="btn-primary text-sm px-3 py-1.5 shrink-0">Open</a>
+    </div>
+  </div>
+  {% endif %}
+
   {# Stock alerts #}
   {% if alerts %}
   <div class="card border-l-4 border-amber-500 p-4">

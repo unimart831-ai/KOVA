@@ -111,6 +111,14 @@ def product_detail(request, product_id):
     alerts = product.alerts.filter(is_read=False)[:10]
     recent_posts = product.posts.order_by("-created_at")[:10]
 
+    from apps.products.commerce_links import commerce_link_url, ensure_commerce_slug
+
+    if not product.commerce_slug:
+        ensure_commerce_slug(product)
+        product.refresh_from_db()
+
+    commerce_url = commerce_link_url(product, request)
+
     return render(request, "products/product_detail.html", {
         "product": product,
         "stock_history": stock_history,
@@ -118,6 +126,7 @@ def product_detail(request, product_id):
         "recent_posts": recent_posts,
         "plan_ctx": _plan_ctx(request),
         "snap_building": request.GET.get("snap") == "1",
+        "commerce_url": commerce_url,
     })
 
 
@@ -524,7 +533,16 @@ def promote_product(request, product_id):
 @login_required
 def snap_to_sell(request):
     """Camera/upload page — user snaps a product photo."""
-    return render(request, "products/snap_to_sell.html", {"plan_ctx": _plan_ctx(request)})
+    from apps.products.commerce_autopilot import commerce_autopilot_active
+
+    return render(
+        request,
+        "products/snap_to_sell.html",
+        {
+            "plan_ctx": _plan_ctx(request),
+            "commerce_autopilot": commerce_autopilot_active(request.user),
+        },
+    )
 
 
 @login_required
@@ -535,6 +553,10 @@ def snap_launch(request):
     Snap to Sell background task (vision AI → content pipeline).
     """
     from apps.billing.models import get_plan_limits
+    from apps.products.commerce_autopilot import (
+        commerce_autopilot_active,
+        placeholder_name_for_offering,
+    )
     from apps.products.tasks import snap_to_sell_analyze
     from apps.utils import fire_task
     from django.core.files.storage import default_storage
@@ -548,10 +570,15 @@ def snap_launch(request):
         return redirect("products:snap")
 
     # Validate required fields
+    autopilot = commerce_autopilot_active(request.user)
     name = request.POST.get("name", "").strip()
     photos = request.FILES.getlist("photos")
 
-    if not name:
+    if not name and autopilot:
+        name = placeholder_name_for_offering(
+            request.POST.get("offering_type", "product").strip() or "product"
+        )
+    elif not name:
         messages.error(request, "Please enter a product name.")
         return redirect("products:snap")
     if not photos:
@@ -561,14 +588,18 @@ def snap_launch(request):
     # Cap at 6 images
     photos = photos[:6]
 
-    # Parse optional price
-    price = None
+    # Parse required price
     price_raw = request.POST.get("price", "").strip()
-    if price_raw:
-        try:
-            price = float(price_raw)
-        except ValueError:
-            pass
+    if not price_raw:
+        messages.error(request, "Please enter a price.")
+        return redirect("products:snap")
+    try:
+        price = float(price_raw)
+        if price <= 0:
+            raise ValueError("non-positive")
+    except ValueError:
+        messages.error(request, "Please enter a valid price greater than zero.")
+        return redirect("products:snap")
 
     currency = request.POST.get("currency", "KES").strip() or "KES"
     description = request.POST.get("description", "").strip()
@@ -615,11 +646,18 @@ def snap_launch(request):
     fire_task(snap_to_sell_analyze, str(product.pk), photo_context)
 
     photo_count = len(photos)
-    messages.success(
-        request,
-        f"📸 '{product.name}' added with {photo_count} photo{'s' if photo_count != 1 else ''}! "
-        f"AI is analyzing and creating content — watch the progress popup."
-    )
+    if autopilot and request.POST.get("name", "").strip() == "":
+        messages.success(
+            request,
+            f"📸 Snap & Go — {photo_count} photo{'s' if photo_count != 1 else ''} received! "
+            f"Agents are naming, listing, and creating your campaign."
+        )
+    else:
+        messages.success(
+            request,
+            f"📸 '{product.name}' added with {photo_count} photo{'s' if photo_count != 1 else ''}! "
+            f"AI is analyzing and creating content — watch the progress popup."
+        )
     url = reverse("products:detail", kwargs={"product_id": product.pk})
     return redirect(f"{url}?snap=1")
 
