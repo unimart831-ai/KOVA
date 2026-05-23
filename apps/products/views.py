@@ -555,7 +555,7 @@ def snap_launch(request):
     from apps.billing.models import get_plan_limits
     from apps.products.commerce_autopilot import (
         commerce_autopilot_active,
-        placeholder_name_for_offering,
+        unique_placeholder_name,
     )
     from apps.products.tasks import snap_to_sell_analyze
     from apps.utils import fire_task
@@ -574,10 +574,9 @@ def snap_launch(request):
     name = request.POST.get("name", "").strip()
     photos = request.FILES.getlist("photos")
 
+    offering_type = request.POST.get("offering_type", "product").strip() or "product"
     if not name and autopilot:
-        name = placeholder_name_for_offering(
-            request.POST.get("offering_type", "product").strip() or "product"
-        )
+        name = unique_placeholder_name(request.user, offering_type)
     elif not name:
         messages.error(request, "Please enter a product name.")
         return redirect("products:snap")
@@ -603,7 +602,6 @@ def snap_launch(request):
 
     currency = request.POST.get("currency", "KES").strip() or "KES"
     description = request.POST.get("description", "").strip()
-    offering_type = request.POST.get("offering_type", "product").strip()
     photo_context = request.POST.get("photo_context", "").strip()
 
     # Validate offering_type

@@ -36,6 +36,19 @@ def placeholder_name_for_offering(offering_type: str) -> str:
     }.get(offering_type, "New product")
 
 
+def unique_placeholder_name(user, offering_type: str) -> str:
+    """Placeholder name that won't collide with existing catalog entries."""
+    from apps.products.models import Product
+
+    base = placeholder_name_for_offering(offering_type)
+    if not Product.objects.filter(user=user, name__iexact=base, is_active=True).exists():
+        return base
+    n = 2
+    while Product.objects.filter(user=user, name__iexact=f"{base} {n}", is_active=True).exists():
+        n += 1
+    return f"{base} {n}"
+
+
 def is_placeholder_product_name(name: str) -> bool:
     n = (name or "").strip().lower()
     if not n:
@@ -44,6 +57,9 @@ def is_placeholder_product_name(name: str) -> bool:
         return True
     if "ai naming" in n:
         return True
+    for prefix in ("new product", "new service", "new digital product", "snap listing"):
+        if n == prefix or n.startswith(f"{prefix} "):
+            return True
     for prefix in ("product ", "service ", "digital product "):
         if n.startswith(prefix):
             return True

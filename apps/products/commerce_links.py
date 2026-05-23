@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from django.urls import reverse
 from django.utils.text import slugify
 
 
@@ -38,14 +37,12 @@ def ensure_commerce_slug(product, *, save: bool = True) -> str:
     return candidate
 
 
-def commerce_link_path(product, profile=None) -> str:
+def commerce_link_path(product, profile=None, *, save_slug: bool = False) -> str:
+    """Build the public shop path without reverse() — safe inside post_save signals."""
     profile = profile or product.user.profile
     page_slug = resolve_page_slug(profile)
-    slug = product.commerce_slug or ensure_commerce_slug(product)
-    return reverse(
-        "products:public_commerce",
-        kwargs={"page_slug": page_slug, "commerce_slug": slug},
-    )
+    slug = product.commerce_slug or ensure_commerce_slug(product, save=save_slug)
+    return f"/shop/{page_slug}/{slug}/"
 
 
 def commerce_link_url(product, request=None) -> str:

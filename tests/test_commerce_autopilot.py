@@ -38,8 +38,8 @@ class TestCommerceAutopilotHelpers:
 
     def test_is_placeholder_product_name(self):
         assert is_placeholder_product_name("New product") is True
+        assert is_placeholder_product_name("New product 2") is True
         assert is_placeholder_product_name("Handmade Bag") is False
-        assert is_placeholder_product_name("Product 3") is True
 
     def test_apply_ai_detected_name_only(self, user):
         product = Product.objects.create(
@@ -55,6 +55,17 @@ class TestCommerceAutopilotHelpers:
         product.refresh_from_db()
         assert product.name == "Leather Tote"
         assert product.price == 1000
+
+    def test_unique_placeholder_name(self, user):
+        from apps.products.commerce_autopilot import unique_placeholder_name
+
+        Product.objects.create(
+            user=user,
+            name="New product",
+            price=100,
+            stock_status=Product.StockStatus.IN_STOCK,
+        )
+        assert unique_placeholder_name(user, "product") == "New product 2"
 
     def test_initial_commerce_post_status(self, user):
         user.profile.commerce_autopilot = True

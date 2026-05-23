@@ -36,10 +36,7 @@ class TestCommerceLinks:
             stock_status=Product.StockStatus.IN_STOCK,
         )
         path = commerce_link_path(product)
-        assert path == reverse(
-            "public_commerce",
-            kwargs={"page_slug": "my-shop", "commerce_slug": "widget"},
-        )
+        assert path == "/shop/my-shop/widget/"
 
     def test_resolve_public_product(self, user):
         user.profile.page_slug = "kamau-shoes"

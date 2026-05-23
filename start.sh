@@ -64,5 +64,5 @@ else:
     print('    WARNING: R2 NOT configured — using local FileSystemStorage')
 " 2>&1
 
-echo "==> Starting gunicorn on port ${PORT:-8000}..."
-exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3 --timeout 120
+echo "==> Starting Daphne (HTTP + WebSocket) on port ${PORT:-8000}..."
+exec daphne config.asgi:application --bind 0.0.0.0 --port ${PORT:-8000}
