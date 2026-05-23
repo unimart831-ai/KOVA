@@ -596,6 +596,31 @@ def reidentify_product(request, product_id):
     return redirect(f"{reverse('products:detail', kwargs={'product_id': product.pk})}?snap=1")
 
 
+@login_required
+@require_POST
+def fix_and_promote(request, product_id):
+    """One tap: read name → quick photo post → full AI campaign."""
+    from apps.products.tasks import fix_and_promote_product
+    from apps.utils import fire_task
+
+    product = get_object_or_404(Product, pk=product_id, user=request.user)
+    if not product.image and not product.additional_images:
+        messages.error(request, "Add a product photo first.")
+        return redirect("products:detail", product_id=product.pk)
+
+    if product.stock_status == Product.StockStatus.OUT_OF_STOCK:
+        messages.error(request, f"Cannot promote '{product.name}' — it's out of stock.")
+        return redirect("products:detail", product_id=product.pk)
+
+    fire_task(fix_and_promote_product, str(product.pk))
+    messages.success(
+        request,
+        "Fix & Promote started — AI is reading your label, posting your photo, "
+        "then building reels and platform content. Watch the panel below.",
+    )
+    return redirect(f"{reverse('products:detail', kwargs={'product_id': product.pk})}?snap=1")
+
+
 # ── Snap to Sell ─────────────────────────────────────────────────────
 
 @login_required

@@ -868,8 +868,59 @@ def reidentify_product_from_photo(product_id: str):
     return {"product_id": str(product.pk), "name": product.name, "renamed": "name" in renamed_fields}
 
 
+@shared_task(name="products.fix_and_promote")
+def fix_and_promote_product(product_id: str):
+    """
+    One-tap Commerce Autopilot recovery:
+    1. Read product name from photo
+    2. Quick photo post (name + price + shop link)
+    3. Full AI campaign (platform copy, carousel or reel)
+    """
+    from apps.agents.models import AgentAction
+    from apps.products.models import Product
+    from apps.utils import fire_task
+
+    try:
+        product = Product.objects.select_related("user").get(pk=product_id)
+    except Product.DoesNotExist:
+        return {"error": "not_found"}
+
+    user = product.user
+    if not product.all_image_urls:
+        return {"error": "no_image"}
+
+    id_result = reidentify_product_from_photo(product_id)
+    product.refresh_from_db()
+
+    qp_result = quick_post_product_photo(product_id)
+
+    fire_task(snap_to_sell_analyze, product_id, skip_quick_post=True)
+
+    AgentAction.objects.create(
+        user=user,
+        agent_type="create",
+        action_type="commerce.fix_and_promote",
+        description=f"Fix & promote: {product.name}",
+        status=AgentAction.ActionStatus.COMPLETED,
+        input_data={"product_id": str(product.pk)},
+        output_data={
+            "renamed": id_result.get("renamed", False),
+            "name": product.name,
+            "quick_posts": qp_result.get("posts_created", 0),
+        },
+        completed_at=timezone.now(),
+    )
+    logger.info("fix_and_promote_product: product=%s name=%s", product_id, product.name)
+    return {
+        "product_id": str(product.pk),
+        "name": product.name,
+        "renamed": id_result.get("renamed", False),
+        "quick_posts": qp_result.get("posts_created", 0),
+    }
+
+
 @shared_task(name="products.snap_to_sell_analyze")
-def snap_to_sell_analyze(product_id: str, photo_context: str = ""):
+def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_post: bool = False):
     """
     Vision AI analyzes product photos, enriches the product description,
     then auto-creates a ContentSeed and fires the content pipeline.
@@ -1068,7 +1119,7 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = ""):
 
     fire_task(generate_from_seed, str(seed.id))
 
-    if commerce_autopilot_active(user):
+    if commerce_autopilot_active(user) and not skip_quick_post:
         fire_task(quick_post_product_photo, str(product.pk))
 
     # Auto-generate carousel (2+ photos) or reel-only (single photo)

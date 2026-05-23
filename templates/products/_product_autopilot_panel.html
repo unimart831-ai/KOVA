@@ -14,6 +14,12 @@
       </div>
       <div class="flex flex-wrap gap-2 shrink-0">
         {% if product.image %}
+        <form method="post" action="{% url 'products:fix_promote' product_id=product.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white text-purple-700 hover:bg-purple-50 shadow-sm">
+            Fix &amp; Promote
+          </button>
+        </form>
         <form method="post" action="{% url 'products:quick_post' product_id=product.pk %}">
           {% csrf_token %}
           <button type="submit" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white border border-white/30">
@@ -24,8 +30,8 @@
         {% if name_is_placeholder %}
         <form method="post" action="{% url 'products:reidentify' product_id=product.pk %}">
           {% csrf_token %}
-          <button type="submit" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white text-purple-700 hover:bg-purple-50">
-            Read name from photo
+          <button type="submit" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white border border-white/20">
+            Read name only
           </button>
         </form>
         {% endif %}
@@ -43,7 +49,7 @@
   <div class="p-5 space-y-4">
     {% if name_is_placeholder %}
     <div class="text-sm rounded-lg px-3 py-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200">
-      AI is identifying this product from your photo. Tap <strong>Read name from photo</strong> if the title stays generic.
+      Name still generic? Tap <strong>Fix &amp; Promote</strong> — AI reads the label, posts your photo, then builds reels and platform content.
     </div>
     {% endif %}
 
@@ -118,7 +124,7 @@ function productAutopilot(productId, initial) {
     },
     get headerSubtitle() {
       if (this.status === 'completed') return 'Photo posts, platform copy, carousel & reels — review or they auto-publish.';
-      if (this.status === 'failed') return 'Try Quick Post Photo or Promote with AI below.';
+      if (this.status === 'failed') return 'Try Fix & Promote or Quick Post Photo below.';
       return 'Naming, writing, photo posts, carousel, reels — live below.';
     },
     init() {
