@@ -242,9 +242,9 @@ def try_auto_send_campaign(campaign):
     if not mailable:
         return {"skipped": "no_subscribers"}
 
-    profile = getattr(campaign.user, "profile", None)
-    plan = getattr(profile, "plan", "starter") if profile else "starter"
-    limits = get_plan_limits(plan)
+    from apps.billing.models import get_user_plan_limits
+
+    limits = get_user_plan_limits(campaign.user)
     monthly_limit = limits.get("email_campaigns_per_month")
     if monthly_limit is not None:
         month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)

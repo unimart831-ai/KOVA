@@ -12,7 +12,7 @@ from django.contrib import messages
 from django.shortcuts import redirect
 
 from apps.billing.access import is_subscription_exempt_url, subscription_allows_app_access
-from apps.billing.models import get_plan_limits
+from apps.billing.models import get_user_plan_limits
 
 logger = logging.getLogger(__name__)
 
@@ -65,12 +65,9 @@ class PlanEnforcementMiddleware:
     def __call__(self, request):
         # Only process authenticated users
         if request.user.is_authenticated:
-            profile = getattr(request.user, "profile", None)
-            if profile:
-                request.plan_limits = get_plan_limits(profile.plan)
-            else:
-                request.plan_limits = get_plan_limits("starter")
+            request.plan_limits = get_user_plan_limits(request.user)
         else:
+            from apps.billing.models import get_plan_limits
             request.plan_limits = get_plan_limits("starter")
 
         response = self.get_response(request)
@@ -81,7 +78,7 @@ class PlanEnforcementMiddleware:
         from apps.platforms.models import SocialAccount
 
         profile = request.user.profile
-        limits = get_plan_limits(profile.plan)
+        limits = get_user_plan_limits(request.user)
         current_count = SocialAccount.objects.filter(
             user=request.user, is_active=True
         ).count()
@@ -103,7 +100,7 @@ class PlanEnforcementMiddleware:
         from apps.content.models import Post
 
         profile = request.user.profile
-        limits = get_plan_limits(profile.plan)
+        limits = get_user_plan_limits(request.user)
 
         # Unlimited check
         if limits["max_posts_per_month"] >= 999999:
@@ -132,7 +129,7 @@ class PlanEnforcementMiddleware:
         from apps.content.models import ContentSeed
 
         profile = request.user.profile
-        limits = get_plan_limits(profile.plan)
+        limits = get_user_plan_limits(request.user)
 
         # Unlimited check
         if limits["max_seeds_per_month"] >= 999999:
@@ -157,7 +154,7 @@ class PlanEnforcementMiddleware:
     def _check_competitor_access(self, request):
         """Check if user's plan includes competitor tracking."""
         profile = request.user.profile
-        limits = get_plan_limits(profile.plan)
+        limits = get_user_plan_limits(request.user)
 
         if not limits.get("competitor_tracking", False):
             messages.warning(
@@ -171,7 +168,7 @@ class PlanEnforcementMiddleware:
     def _check_engage_access(self, request):
         """Check if user's plan includes the engagement inbox."""
         profile = request.user.profile
-        limits = get_plan_limits(profile.plan)
+        limits = get_user_plan_limits(request.user)
 
         if not limits.get("engagement_agent", False):
             messages.warning(
@@ -185,7 +182,7 @@ class PlanEnforcementMiddleware:
     def _check_whatsapp_access(self, request):
         """Check if user's plan includes WhatsApp features."""
         profile = request.user.profile
-        limits = get_plan_limits(profile.plan)
+        limits = get_user_plan_limits(request.user)
 
         if not limits.get("whatsapp_enabled", False):
             messages.warning(
@@ -199,7 +196,7 @@ class PlanEnforcementMiddleware:
     def _check_memes_access(self, request):
         """Check if user's plan includes Meme Intelligence."""
         profile = request.user.profile
-        limits = get_plan_limits(profile.plan)
+        limits = get_user_plan_limits(request.user)
 
         if not limits.get("memes_enabled", False):
             messages.warning(

@@ -214,7 +214,9 @@ def _send_brief_email(user, brief):
     if not profile:
         return
 
-    limits = get_plan_limits(profile.plan)
+    from apps.billing.models import get_user_plan_limits
+
+    limits = get_user_plan_limits(user)
     if not limits.get("email_brief"):
         return  # Plan doesn't include email briefs
 

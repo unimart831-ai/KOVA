@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 
-from apps.billing.models import get_plan_limits
+from apps.billing.models import get_user_plan_limits
 from apps.links.forms import (
     KovaFormForm,
     KovaLinkForm,
@@ -32,17 +32,17 @@ logger = logging.getLogger(__name__)
 
 def _get_page_limit(user):
     """Return the max number of Kova pages this user can create."""
-    return get_plan_limits(user.profile.plan).get("kova_pages", 1)
+    return get_user_plan_limits(user).get("kova_pages", 1)
 
 
 def _get_link_limit(user):
     """Return the max number of links per page for this user's plan."""
-    return get_plan_limits(user.profile.plan).get("kova_links_per_page", 5)
+    return get_user_plan_limits(user).get("kova_links_per_page", 5)
 
 
 def _can_use_forms(user):
     """Forms require kova_forms on the user's plan."""
-    return bool(get_plan_limits(user.profile.plan).get("kova_forms"))
+    return bool(get_user_plan_limits(user).get("kova_forms"))
 
 
 # ─── Dashboard views (authenticated) ────────────────────────────────────────

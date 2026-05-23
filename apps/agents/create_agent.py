@@ -72,9 +72,9 @@ def _should_auto_approve(user, post):
     4. Post content length is within the platform's approved range
     5. No recent rejections on this platform (last 5 posts)
     """
-    from apps.billing.models import get_plan_limits
+    from apps.billing.models import get_user_plan_limits
 
-    if not get_plan_limits(user.profile.plan).get("auto_approve"):
+    if not get_user_plan_limits(user).get("auto_approve"):
         return False
 
     from django.db.models import Q
@@ -1413,9 +1413,8 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
             user_opted_in_images = getattr(seed, "generate_images", False)
 
             if has_visual_request and (platform_requires_media or user_opted_in_images) and not product_image_attached:
-                from apps.billing.models import get_plan_limits
-                user_plan = getattr(getattr(seed.user, "profile", None), "plan", "starter")
-                plan_limits = get_plan_limits(user_plan)
+                from apps.billing.models import get_user_plan_limits
+                plan_limits = get_user_plan_limits(seed.user)
                 if plan_limits.get("ai_image_generation", False):
                     # Enforce monthly image limit
                     from django.utils import timezone as tz

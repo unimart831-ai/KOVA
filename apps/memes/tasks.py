@@ -763,7 +763,9 @@ def scan_trends_for_users():
         if not profile:
             continue
 
-        limits = get_plan_limits(profile.plan or "starter")
+        from apps.billing.models import get_user_plan_limits
+
+        limits = get_user_plan_limits(user)
         if not limits.get("memes_enabled", False):
             continue
 

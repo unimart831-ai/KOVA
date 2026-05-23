@@ -17,7 +17,7 @@
           <h2 class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ profile.get_plan_display }}</h2>
           {% if profile.subscription_status == 'trialing' %}
             <p class="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
-              Trial ends {{ profile.trial_ends_at|date:"M d, Y" }}
+              Kazi trial — ends {{ profile.trial_ends_at|date:"M d, Y" }}
             </p>
           {% elif profile.subscription_status == 'active' and profile.current_period_end %}
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">

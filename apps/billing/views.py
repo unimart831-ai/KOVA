@@ -14,7 +14,15 @@ from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 
 from apps.billing.access import can_start_free_trial
-from apps.billing.models import PLAN_LIMITS, get_all_plan_limits, get_plan_limits
+from apps.billing.models import (
+    PLAN_LIMITS,
+    PUBLIC_PLAN_TIERS,
+    get_all_plan_limits,
+    get_plan_limits,
+    get_public_plan_limits,
+    get_user_plan_limits,
+    is_active_trial,
+)
 from apps.billing.services import (
     create_checkout_session,
     create_portal_session,
@@ -29,7 +37,7 @@ logger = logging.getLogger(__name__)
 def billing_overview(request):
     """Billing overview — current plan, usage, manage subscription."""
     profile = request.user.profile
-    limits = get_plan_limits(profile.plan)
+    limits = get_user_plan_limits(request.user)
 
     # Sync from Stripe if user has a Stripe subscription (keeps data fresh)
     if profile.stripe_subscription_id:
@@ -64,7 +72,9 @@ def billing_overview(request):
         "page_title": "Billing & Plan",
         "profile": profile,
         "limits": limits,
-        "all_plans": get_all_plan_limits(),
+        "all_plans": get_public_plan_limits(),
+        "is_kazi_trial": is_active_trial(profile),
+        "paid_plan_limits": get_plan_limits(profile.plan),
         "recent_payments": recent_payments,
         "stripe_publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
         "tokens_used_today": tokens_used_today,
@@ -78,9 +88,11 @@ def pricing(request):
     """Standalone pricing page (for logged-in users upgrading)."""
     return render(request, "billing/pricing.html", {
         "page_title": "Choose Your Plan",
-        "all_plans": get_all_plan_limits(),
+        "all_plans": get_public_plan_limits(),
         "current_plan": request.user.profile.plan,
         "can_start_free_trial": can_start_free_trial(request.user),
+        "is_kazi_trial": is_active_trial(request.user.profile),
+        "trial_days": get_plan_limits("growth")["trial_days"],
         "stripe_checkout_available": bool(getattr(settings, "STRIPE_SECRET_KEY", "")),
     })
 
@@ -90,11 +102,11 @@ def pricing(request):
 def checkout(request):
     """Create Stripe Checkout Session and redirect to Stripe."""
     plan_tier = request.POST.get("plan")
-    if plan_tier not in PLAN_LIMITS:
+    if plan_tier not in PUBLIC_PLAN_TIERS:
         messages.error(request, "Invalid plan selected.")
         return redirect("billing:pricing")
 
-    # All plans go through Stripe checkout (14-day free trial included)
+    # Stripe checkout includes a free trial; features during trial match Kazi (growth).
 
     try:
         session = create_checkout_session(request.user, plan_tier, request)
@@ -190,7 +202,7 @@ def mpesa_checkout(request):
     is_trial = request.POST.get("trial") == "1"
     discount_code_str = request.POST.get("discount_code", "").strip().upper()
 
-    if plan_tier not in PLAN_LIMITS:
+    if plan_tier not in PUBLIC_PLAN_TIERS:
         messages.error(request, "Invalid plan selected.")
         return redirect("billing:pricing")
 
@@ -210,7 +222,11 @@ def mpesa_checkout(request):
     if is_trial and can_start_free_trial(request.user):
         try:
             activate_trial(request.user, plan_tier, formatted_phone)
-            messages.success(request, f"🎉 Your 14-day free trial is active!")
+            trial_days = get_plan_limits("growth")["trial_days"]
+            messages.success(
+                request,
+                f"Your {trial_days}-day free trial is active — full Kazi plan features unlocked.",
+            )
             return redirect("billing:mpesa_success")
         except Exception as e:
             logger.exception("Trial activation error: %s", e)

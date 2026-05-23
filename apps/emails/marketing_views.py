@@ -17,7 +17,7 @@ from apps.emails.models import (
     EmailSequence,
     EmailSubscriber,
 )
-from apps.billing.models import get_plan_limits
+from apps.billing.models import get_user_plan_limits
 
 
 # ────────────────────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ def subscriber_list(request):
 @login_required
 def subscriber_add(request):
     """Add a subscriber manually."""
-    limits = get_plan_limits(request.user.profile.plan)
+    limits = get_user_plan_limits(request.user)
     max_subs = limits.get("email_subscribers", 50)
     current_count = EmailSubscriber.objects.filter(user=request.user).count()
     if current_count >= max_subs:
@@ -105,7 +105,7 @@ def list_index(request):
 @login_required
 def list_create(request):
     """Create an email list."""
-    limits = get_plan_limits(request.user.profile.plan)
+    limits = get_user_plan_limits(request.user)
     max_lists = limits.get("email_lists", 1)
     current_count = EmailList.objects.filter(user=request.user).count()
     if current_count >= max_lists:
@@ -203,7 +203,7 @@ def campaign_list(request):
 @login_required
 def campaign_create(request):
     """AI-generate and auto-send a campaign from a one-line prompt."""
-    limits = get_plan_limits(request.user.profile.plan)
+    limits = get_user_plan_limits(request.user)
     max_campaigns = limits.get("email_campaigns_per_month", 2)
     current_month_count = EmailCampaign.objects.filter(
         user=request.user,
@@ -308,9 +308,7 @@ def campaign_send(request, campaign_id):
         return redirect("emails:campaign_detail", campaign_id=campaign.pk)
 
     # Check plan limits
-    profile = getattr(request.user, "profile", None)
-    plan = getattr(profile, "plan", "starter") if profile else "starter"
-    limits = get_plan_limits(plan)
+    limits = get_user_plan_limits(request.user)
     monthly_limit = limits.get("email_campaigns_per_month")
     if monthly_limit is not None:
         from datetime import timedelta

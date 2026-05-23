@@ -29,7 +29,7 @@ from apps.analytics.models import (
     ConversionTouchpoint,
     WebsiteEvent,
 )
-from apps.billing.models import get_plan_limits
+from apps.billing.models import get_user_plan_limits
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +109,7 @@ def pixel_track(request):
         return response
 
     # Check plan allows pixel (multi_touch_attribution = Pro+)
-    limits = get_plan_limits(profile.plan)
+    limits = get_user_plan_limits(profile.user)
     if not limits.get("multi_touch_attribution"):
         response = JsonResponse({"error": "Pixel requires Pro or Agency plan"}, status=403)
         for k, v in cors_headers.items():
@@ -209,7 +209,7 @@ def pixel_settings(request):
         profile.save(update_fields=["pixel_token"])
 
     # Check plan eligibility
-    limits = get_plan_limits(profile.plan)
+    limits = get_user_plan_limits(profile.user)
     pixel_enabled = limits.get("multi_touch_attribution", False)
 
     # Stats (last 24h / 7d / 30d)
@@ -282,7 +282,7 @@ def pixel_events(request):
     from django.core.paginator import Paginator
 
     profile = request.user.profile
-    limits = get_plan_limits(profile.plan)
+    limits = get_user_plan_limits(profile.user)
     if not limits.get("multi_touch_attribution"):
         return render(request, "analytics/pixel_events.html", {"pixel_enabled": False})
 

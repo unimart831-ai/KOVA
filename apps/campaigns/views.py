@@ -5,7 +5,6 @@ from django.db.models import Count, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from apps.billing.models import get_plan_limits
 from apps.campaigns.forms import CampaignForm
 from apps.campaigns.models import Campaign, CampaignEmail, CampaignNote, CampaignSeed
 from apps.content.models import ContentSeed, Post
@@ -20,9 +19,9 @@ def campaign_list(request):
 @login_required
 def campaign_create(request):
     """Create a new campaign."""
-    profile = getattr(request.user, "profile", None)
-    plan = getattr(profile, "plan", "starter") if profile else "starter"
-    limits = get_plan_limits(plan)
+    from apps.billing.models import get_user_plan_limits
+
+    limits = get_user_plan_limits(request.user)
     max_campaigns = limits.get("max_campaigns", 3)
     current_count = Campaign.objects.filter(user=request.user).count()
 

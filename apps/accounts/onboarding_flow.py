@@ -78,9 +78,13 @@ def finish_onboarding(user, *, skipped_platform_connect=False):
         )
 
     if not profile.trial_ends_at:
-        profile.trial_ends_at = timezone.now() + timedelta(days=14)
+        from django.conf import settings
+
+        trial_days = getattr(settings, "MPESA_TRIAL_DAYS", 7)
+        profile.trial_ends_at = timezone.now() + timedelta(days=trial_days)
+        profile.current_period_end = profile.trial_ends_at
         profile.subscription_status = "trialing"
-        profile.save(update_fields=["trial_ends_at", "subscription_status"])
+        profile.save(update_fields=["trial_ends_at", "current_period_end", "subscription_status"])
 
     send_welcome_email.delay(str(user.pk))
     bootstrap_email_automation(user)

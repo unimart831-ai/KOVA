@@ -95,9 +95,9 @@ def public_commerce_link(request, page_slug, commerce_slug):
     )
     wa_url = _whatsapp_url(profile, wa_text)
 
-    from apps.billing.models import get_plan_limits
+    from apps.billing.models import get_user_plan_limits
 
-    seller_limits = get_plan_limits(profile.plan)
+    seller_limits = get_user_plan_limits(user)
     mpesa_commerce_enabled = bool(seller_limits.get("mpesa_commerce"))
     mpesa_available = bool(
         mpesa_commerce_enabled
@@ -143,9 +143,9 @@ def public_commerce_pay(request, page_slug, commerce_slug):
     if not product.price or product.currency != "KES":
         return JsonResponse({"error": "M-Pesa pay is only available for KES-priced items."}, status=400)
 
-    from apps.billing.models import get_plan_limits
+    from apps.billing.models import get_user_plan_limits
 
-    if not get_plan_limits(profile.plan).get("mpesa_commerce"):
+    if not get_user_plan_limits(user).get("mpesa_commerce"):
         return JsonResponse(
             {"error": "This shop has not enabled M-Pesa checkout on their plan."},
             status=403,

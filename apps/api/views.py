@@ -270,11 +270,11 @@ class ProductListCreateView(generics.ListCreateAPIView):
         return qs
 
     def perform_create(self, serializer):
-        from apps.billing.models import get_plan_limits
+        from apps.billing.models import get_user_plan_limits
         from apps.products.models import Product
         from rest_framework.exceptions import PermissionDenied
 
-        limits = get_plan_limits(self.request.user.profile.plan)
+        limits = get_user_plan_limits(self.request.user)
         max_products = limits.get("max_products", 5)
         current = Product.objects.filter(user=self.request.user, is_active=True).count()
         if current >= max_products:
@@ -321,7 +321,7 @@ class ProductBulkImportView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated, HasAPIAccess]
 
     def create(self, request, *args, **kwargs):
-        from apps.billing.models import get_plan_limits
+        from apps.billing.models import get_user_plan_limits
         from apps.products.models import Product
 
         products_data = request.data.get("products", [])
@@ -331,7 +331,7 @@ class ProductBulkImportView(generics.CreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        limits = get_plan_limits(request.user.profile.plan)
+        limits = get_user_plan_limits(request.user)
         max_products = limits.get("max_products", 5)
         current = Product.objects.filter(user=request.user, is_active=True).count()
         remaining = max_products - current

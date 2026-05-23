@@ -1,12 +1,12 @@
 """Plan limit helpers for Products features."""
 
-from apps.billing.models import get_plan_limits
+from apps.billing.models import get_effective_plan_tier, get_user_plan_limits
 
 
 def product_plan_context(user):
     profile = getattr(user, "profile", None)
-    plan = getattr(profile, "plan", "starter") if profile else "starter"
-    limits = get_plan_limits(plan)
+    plan = get_effective_plan_tier(profile) if profile else "starter"
+    limits = get_user_plan_limits(user)
     return {
         "plan": plan,
         "max_products": limits.get("max_products", 5),

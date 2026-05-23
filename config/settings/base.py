@@ -614,7 +614,7 @@ TAVILY_API_KEY = env("TAVILY_API_KEY", default="")
 # ─── STRIPE (kept for future international billing) ─────────────────────────
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY", default="")
-STRIPE_PRICE_STARTER = env("STRIPE_PRICE_STARTER", default="")  # KES 99/mo — 14-day trial
+STRIPE_PRICE_STARTER = env("STRIPE_PRICE_STARTER", default="")  # KES 499/mo — 7-day trial
 STRIPE_PRICE_GROWTH = env("STRIPE_PRICE_GROWTH", default="")
 STRIPE_PRICE_PRO = env("STRIPE_PRICE_PRO", default="")
 STRIPE_PRICE_AGENCY = env("STRIPE_PRICE_AGENCY", default="")
@@ -627,7 +627,7 @@ MPESA_SHORTCODE = env("MPESA_SHORTCODE", default="174379")       # Sandbox defau
 MPESA_PASSKEY = env("MPESA_PASSKEY", default="")
 MPESA_CALLBACK_URL = env("MPESA_CALLBACK_URL", default="")       # e.g. https://yourdomain.com/billing/webhook/mpesa/
 MPESA_WEBHOOK_SECRET = env("MPESA_WEBHOOK_SECRET", default="")   # Optional: append ?token=<secret> to callback URL
-MPESA_TRIAL_DAYS = env.int("MPESA_TRIAL_DAYS", default=14)
+MPESA_TRIAL_DAYS = env.int("MPESA_TRIAL_DAYS", default=7)
 
 # ─── SOCIAL PLATFORM OAUTH ───────────────────────────────────────────────────
 TWITTER_CLIENT_ID = env("TWITTER_CLIENT_ID", default="")

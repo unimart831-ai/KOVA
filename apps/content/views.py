@@ -54,9 +54,8 @@ def content_studio(request):
     seed_suggestions = get_seed_suggestions(request.user)
 
     # Check if user's plan supports AI image generation
-    from apps.billing.models import get_plan_limits
-    user_plan = getattr(getattr(request.user, "profile", None), "plan", "starter")
-    plan_limits = get_plan_limits(user_plan)
+    from apps.billing.models import get_user_plan_limits
+    plan_limits = get_user_plan_limits(request.user)
     can_generate_images = plan_limits.get("ai_image_generation", False)
 
     all_posts = [p for g in seed_groups for p in g["posts"]] + list(ungrouped)
@@ -1240,9 +1239,8 @@ def generate_image(request, post_id):
         return redirect("content:edit", post_id=post.id)
 
     # Check plan allows AI images
-    from apps.billing.models import get_plan_limits
-    user_plan = getattr(getattr(post.user, "profile", None), "plan", "starter")
-    plan_limits = get_plan_limits(user_plan)
+    from apps.billing.models import get_user_plan_limits
+    plan_limits = get_user_plan_limits(post.user)
     if not plan_limits.get("ai_image_generation", False):
         if request.headers.get("HX-Request"):
             return HttpResponse(

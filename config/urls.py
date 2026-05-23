@@ -23,9 +23,11 @@ admin.site.index_title = "Administration"
 def landing_page(request):
     if request.user.is_authenticated:
         return redirect("brief:home")
-    from apps.billing.models import get_all_plan_limits
-    all_plans = get_all_plan_limits()
-    return render(request, "pages/landing.html", {"all_plans": all_plans})
+    from apps.billing.models import get_plan_limits, get_public_plan_limits
+    return render(request, "pages/landing.html", {
+        "all_plans": get_public_plan_limits(),
+        "trial_days": get_plan_limits("growth")["trial_days"],
+    })
 
 
 def legal_page(template):

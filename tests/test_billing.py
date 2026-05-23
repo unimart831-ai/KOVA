@@ -6,7 +6,7 @@ import pytest
 from django.utils import timezone
 
 from apps.accounts.models import User, UserProfile
-from apps.billing.models import BillingEvent, MpesaPayment
+from apps.billing.models import BillingEvent, MpesaPayment, PLAN_LIMITS
 
 
 @pytest.mark.django_db
@@ -53,13 +53,33 @@ class TestMpesaPayment:
 @pytest.mark.django_db
 class TestPlanLimits:
     def test_plan_limits_exist(self):
-        from apps.billing.models import PLAN_LIMITS
-
         assert "starter" in PLAN_LIMITS
         assert "growth" in PLAN_LIMITS
         assert "pro" in PLAN_LIMITS
         assert "agency" in PLAN_LIMITS
         assert PLAN_LIMITS["starter"]["max_posts_per_month"] < PLAN_LIMITS["agency"]["max_posts_per_month"]
+
+    def test_public_pricing_tiers(self):
+        from apps.billing.models import PUBLIC_PLAN_TIERS, get_public_plan_limits
+
+        assert PUBLIC_PLAN_TIERS == ("starter", "growth", "pro")
+        public = get_public_plan_limits()
+        assert set(public.keys()) == set(PUBLIC_PLAN_TIERS)
+        assert "agency" not in public
+
+    def test_starter_pricing_and_accounts(self):
+        assert PLAN_LIMITS["starter"]["price_kes"] == 499
+        assert PLAN_LIMITS["starter"]["max_social_accounts"] == 2
+        assert PLAN_LIMITS["starter"]["trial_days"] == 7
+
+    def test_growth_platform_ladder(self):
+        assert PLAN_LIMITS["growth"]["max_social_accounts"] == 4
+        assert PLAN_LIMITS["growth"]["price_kes"] == 999
+
+    def test_pro_platform_ladder(self):
+        assert PLAN_LIMITS["pro"]["max_social_accounts"] == 5
+        assert PLAN_LIMITS["pro"]["whatsapp_enabled"] is True
+        assert PLAN_LIMITS["pro"]["price_kes"] == 1999
 
     def test_user_profile_default_plan(self, user):
         profile = user.profile
@@ -100,12 +120,39 @@ class TestBillingAccess:
         assert allowed is False
         assert "trial" in msg.lower()
 
+    def test_active_trial_unlocks_kazi_features(self, user):
+        from apps.billing.enforcement import check_mpesa_commerce, check_seed_limit
+        from apps.billing.models import get_effective_plan_tier, get_user_plan_limits
+        from apps.content.models import ContentSeed
+
+        profile = user.profile
+        profile.plan = "starter"
+        profile.subscription_status = "trialing"
+        profile.trial_ends_at = timezone.now() + timezone.timedelta(days=5)
+        profile.save(update_fields=["plan", "subscription_status", "trial_ends_at"])
+
+        assert get_effective_plan_tier(profile) == "growth"
+        assert get_user_plan_limits(user)["mpesa_commerce"] is True
+
+        allowed, _ = check_mpesa_commerce(user)
+        assert allowed is True
+
+        for i in range(5):
+            ContentSeed.objects.create(user=user, idea=f"seed {i}")
+        allowed, _ = check_seed_limit(user)
+        assert allowed is True
+
 
 @pytest.mark.django_db
 class TestEnforcement:
     def test_seed_limit_blocks_at_cap(self, user):
         from apps.billing.enforcement import check_seed_limit
         from apps.content.models import ContentSeed
+
+        profile = user.profile
+        profile.plan = "starter"
+        profile.subscription_status = "active"
+        profile.save(update_fields=["plan", "subscription_status"])
 
         for i in range(5):
             ContentSeed.objects.create(user=user, idea=f"seed {i}")
@@ -118,7 +165,8 @@ class TestEnforcement:
         from apps.billing.enforcement import check_ab_testing
 
         user.profile.plan = "starter"
-        user.profile.save(update_fields=["plan"])
+        user.profile.subscription_status = "active"
+        user.profile.save(update_fields=["plan", "subscription_status"])
         allowed, msg = check_ab_testing(user)
         assert allowed is False
 

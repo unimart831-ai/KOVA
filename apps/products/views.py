@@ -11,7 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from apps.billing.models import get_plan_limits
+from apps.billing.models import get_user_plan_limits
 from apps.products.forms import BulkImportForm, ProductCategoryForm, ProductForm
 from apps.products.models import Product, ProductCategory, RestockScan, StockAlert, StockUpdate
 from apps.products.plan_gates import product_plan_context
@@ -77,7 +77,7 @@ def product_list(request):
 @login_required
 def product_add(request):
     # Plan limit check
-    limits = get_plan_limits(request.user.profile.plan)
+    limits = get_user_plan_limits(request.user)
     current_count = Product.objects.filter(user=request.user, is_active=True).count()
     max_products = limits.get("max_products", 5)
     if current_count >= max_products:
@@ -297,7 +297,7 @@ def product_import(request):
     if request.method == "POST":
         form = BulkImportForm(request.POST, request.FILES)
         if form.is_valid():
-            limits = get_plan_limits(request.user.profile.plan)
+            limits = get_user_plan_limits(request.user)
             max_products = limits.get("max_products", 5)
             current_count = Product.objects.filter(user=request.user, is_active=True).count()
             remaining = max_products - current_count
@@ -670,7 +670,7 @@ def snap_launch(request):
     Receive multiple photos + name + price, create a Product, and fire the
     Snap to Sell background task (vision AI → content pipeline).
     """
-    from apps.billing.models import get_plan_limits
+    from apps.billing.models import get_user_plan_limits
     from apps.products.commerce_autopilot import commerce_autopilot_active, sanitize_product_name
     from apps.products.image_utils import normalize_uploaded_image
     from apps.products.tasks import snap_to_sell_analyze
@@ -678,7 +678,7 @@ def snap_launch(request):
     from django.core.files.storage import default_storage
 
     # Plan limit check
-    limits = get_plan_limits(request.user.profile.plan)
+    limits = get_user_plan_limits(request.user)
     current_count = Product.objects.filter(user=request.user, is_active=True).count()
     max_products = limits.get("max_products", 5)
     if current_count >= max_products:
@@ -781,12 +781,12 @@ def snap_batch_launch(request):
     Receive up to 10 photos of different products.
     Each photo becomes a separate Product with its own AI analysis + campaign.
     """
-    from apps.billing.models import get_plan_limits
+    from apps.billing.models import get_user_plan_limits
     from apps.products.tasks import snap_batch_process
     from apps.utils import fire_task
 
     # Plan limit check
-    limits = get_plan_limits(request.user.profile.plan)
+    limits = get_user_plan_limits(request.user)
     current_count = Product.objects.filter(user=request.user, is_active=True).count()
     max_products = limits.get("max_products", 5)
 
@@ -944,7 +944,7 @@ def restock_add_unmatched(request, scan_id):
         messages.error(request, "Product name is required.")
         return redirect("products:restock")
 
-    limits = get_plan_limits(request.user.profile.plan)
+    limits = get_user_plan_limits(request.user)
     max_products = limits.get("max_products", 5)
     if Product.objects.filter(user=request.user, is_active=True).count() >= max_products:
         messages.error(request, f"Your plan allows up to {max_products} products. Upgrade to add more.")

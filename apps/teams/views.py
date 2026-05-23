@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 
-from apps.billing.models import get_plan_limits
+from apps.billing.models import get_user_plan_limits
 
 from .models import Brand, Team, TeamActivity, TeamInvitation, TeamMember
 
@@ -35,7 +35,7 @@ def _require_membership(user, team, min_role=None):
 
 def _can_use_teams(user):
     """Check if user's plan includes team features."""
-    limits = get_plan_limits(user.profile.plan)
+    limits = get_user_plan_limits(user)
     return limits.get("max_team_members", 0) > 0
 
 
@@ -93,7 +93,7 @@ def team_detail(request, slug):
     members = team.members.select_related("user").all()
     pending_invitations = team.invitations.filter(accepted=False, expires_at__gt=timezone.now())
 
-    limits = get_plan_limits(team.owner.profile.plan)
+    limits = get_user_plan_limits(team.owner)
     max_members = limits.get("max_team_members", 0)
     current_count = members.count()
     brands = team.brands.all()
@@ -118,7 +118,7 @@ def team_invite(request, slug):
     team = get_object_or_404(Team, slug=slug)
     member = _require_membership(request.user, team, min_role="admin")
 
-    limits = get_plan_limits(team.owner.profile.plan)
+    limits = get_user_plan_limits(team.owner)
     max_members = limits.get("max_team_members", 0)
     current_count = team.members.count()
     if current_count >= max_members:

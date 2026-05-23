@@ -275,11 +275,11 @@ def activate_trial(user, plan_tier, phone_number):
     """
     Activate a free trial for a plan (no payment required).
 
-    Trial length is defined by MPESA_TRIAL_DAYS setting (default 14).
-    After trial, user must pay via M-Pesa to continue.
+    Trial length is defined by MPESA_TRIAL_DAYS setting (default 7).
+    During trial, feature limits match Kazi (growth) via get_effective_plan_tier().
     """
     formatted_phone = format_phone_number(phone_number)
-    trial_days = getattr(settings, "MPESA_TRIAL_DAYS", 14)
+    trial_days = getattr(settings, "MPESA_TRIAL_DAYS", 7)
     now = timezone.now()
 
     profile = user.profile

@@ -16,7 +16,7 @@ import stripe
 from django.conf import settings
 from django.urls import reverse
 
-from apps.billing.models import BillingEvent, get_plan_limits
+from apps.billing.models import PUBLIC_PLAN_TIERS, get_plan_limits
 
 logger = logging.getLogger(__name__)
 
@@ -57,13 +57,16 @@ def create_checkout_session(user, plan_tier, request):
 
     Returns the Checkout Session object (use .url to redirect).
     """
+    if plan_tier not in PUBLIC_PLAN_TIERS:
+        raise ValueError(f"Invalid plan tier: {plan_tier}")
+
     price_id = PLAN_PRICE_MAP.get(plan_tier)
     if not price_id:
         raise ValueError(f"No Stripe Price ID configured for plan: {plan_tier}")
 
     customer_id = get_or_create_customer(user)
     plan_limits = get_plan_limits(plan_tier)
-    trial_days = plan_limits.get("trial_days", 14)
+    trial_days = plan_limits.get("trial_days", 7)
 
     session = stripe.checkout.Session.create(
         customer=customer_id,

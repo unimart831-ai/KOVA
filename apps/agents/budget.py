@@ -26,8 +26,8 @@ from django.db.models import F
 from django.utils import timezone
 
 from apps.billing.exceptions import PlanLimitExceeded
-from apps.billing.models import get_plan_limits
-from apps.billing.enforcement import get_daily_llm_token_cap
+from apps.billing.enforcement import get_user_daily_llm_token_cap
+from apps.billing.models import get_effective_plan_tier, get_plan_limits, get_user_plan_limits
 
 logger = logging.getLogger(__name__)
 
@@ -38,13 +38,13 @@ def _cost_per_1k(model: str) -> tuple[float, float]:
     return get_cost_per_1k(model)
 
 
-def _plan_daily_cap(plan: str) -> int:
-    return get_daily_llm_token_cap(plan)
+def _plan_daily_cap(user) -> int:
+    return get_user_daily_llm_token_cap(user)
 
 
 def _user_plan(user) -> str:
     try:
-        return user.profile.plan
+        return get_effective_plan_tier(user.profile)
     except Exception:
         return "starter"
 
@@ -64,7 +64,7 @@ def check_budget(user, max_tokens: int) -> None:
     if user is None or not getattr(user, "is_authenticated", True):
         return
 
-    cap = _plan_daily_cap(_user_plan(user))
+    cap = _plan_daily_cap(user)
     if cap <= 0:
         # Plan with explicit zero cap (treat as disabled). Only flag if a
         # call is attempted at all so we surface the misconfig.
@@ -82,9 +82,10 @@ def check_budget(user, max_tokens: int) -> None:
     if used + max_tokens > cap:
         plan = _user_plan(user)
         suggested = _next_plan(plan)
+        limits = get_user_plan_limits(user)
         msg = (
             f"You've used {used:,} of your {cap:,} daily AI tokens on the "
-            f"{get_plan_limits(plan).get('label', plan)} plan. "
+            f"{limits.get('label', plan)} plan. "
         )
         if suggested:
             msg += f"Upgrade to {suggested.title()} for a higher daily allowance."

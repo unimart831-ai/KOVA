@@ -38,7 +38,9 @@ def run_daily_research():
     dispatched = 0
     now = timezone.now()
     for idx, user in enumerate(users_with_research):
-        plan = getattr(getattr(user, "profile", None), "plan", "starter")
+        from apps.billing.models import get_effective_plan_tier, get_plan_limits
+
+        plan = get_effective_plan_tier(getattr(user, "profile", None))
         if "research" not in get_plan_limits(plan).get("agents_enabled", []):
             continue
 
@@ -245,7 +247,9 @@ def run_engage_cycle():
 
     dispatched = 0
     for user in users_with_engage:
-        plan = getattr(getattr(user, "profile", None), "plan", "starter")
+        from apps.billing.models import get_effective_plan_tier, get_plan_limits
+
+        plan = get_effective_plan_tier(getattr(user, "profile", None))
         if not get_plan_limits(plan).get("engagement_agent", False):
             continue
         _run_engage_for_user.delay(user.pk)
@@ -363,7 +367,9 @@ def run_strategy_cycle():
 
     dispatched = 0
     for idx, user in enumerate(users_with_strategist):
-        plan = getattr(getattr(user, "profile", None), "plan", "starter")
+        from apps.billing.models import get_effective_plan_tier, get_plan_limits
+
+        plan = get_effective_plan_tier(getattr(user, "profile", None))
         if "strategist" not in get_plan_limits(plan).get("agents_enabled", []):
             continue
         _run_strategy_for_user.apply_async(args=[user.pk], countdown=idx * 5)

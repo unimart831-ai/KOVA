@@ -2,6 +2,7 @@
 Plan enforcement utilities — reusable limit checks for API, Celery tasks, and views.
 
 Use these instead of middleware when you need plan checks outside the HTTP request cycle.
+Trialing users receive Kazi (growth) limits via get_user_plan_limits().
 """
 
 from __future__ import annotations
@@ -10,7 +11,7 @@ import logging
 
 from django.utils import timezone
 
-from apps.billing.models import PLAN_LIMITS, get_plan_limits
+from apps.billing.models import PLAN_LIMITS, get_effective_plan_tier, get_plan_limits, get_user_plan_limits
 
 logger = logging.getLogger(__name__)
 
@@ -33,13 +34,20 @@ def get_daily_llm_token_cap(plan: str) -> int:
     return int(limits.get("daily_llm_tokens", PLAN_LIMITS["starter"]["daily_llm_tokens"]))
 
 
+def get_user_daily_llm_token_cap(user) -> int:
+    """Daily LLM cap for a user (respects active Kazi trial)."""
+    profile = getattr(user, "profile", None)
+    tier = get_effective_plan_tier(profile) if profile else "starter"
+    return get_daily_llm_token_cap(tier)
+
+
 def check_plan_feature(user, feature_key: str, feature_label: str | None = None) -> tuple[bool, str]:
-    """Check a boolean flag on the user's plan."""
+    """Check a boolean flag on the user's effective plan."""
     profile = getattr(user, "profile", None)
     if not profile:
         return False, "No user profile found."
 
-    limits = get_plan_limits(profile.plan)
+    limits = get_user_plan_limits(user)
     if limits.get(feature_key):
         return True, ""
 
@@ -61,7 +69,7 @@ def check_post_limit(user):
     if not profile:
         return False, "No user profile found."
 
-    limits = get_plan_limits(profile.plan)
+    limits = get_user_plan_limits(user)
     max_posts = limits["max_posts_per_month"]
 
     if max_posts >= 999999:
@@ -91,7 +99,7 @@ def check_seed_limit(user):
     if not profile:
         return False, "No user profile found."
 
-    limits = get_plan_limits(profile.plan)
+    limits = get_user_plan_limits(user)
     max_seeds = limits["max_seeds_per_month"]
 
     if max_seeds >= 999999:
@@ -121,11 +129,14 @@ def check_platform_limit(user):
     if not profile:
         return False, "No user profile found."
 
-    limits = get_plan_limits(profile.plan)
+    limits = get_user_plan_limits(user)
     current_count = SocialAccount.objects.filter(user=user, is_active=True).count()
 
     if current_count >= limits["max_social_accounts"]:
-        return False, f"Social account limit reached ({limits['max_social_accounts']} on {limits['label']} plan)."
+        return False, (
+            f"Social account limit reached ({limits['max_social_accounts']} "
+            f"on {limits['label']} plan)."
+        )
     return True, ""
 
 
@@ -140,7 +151,8 @@ def check_api_access(user):
     if not profile:
         return False, "No user profile found."
 
-    if profile.plan in ("pro", "agency"):
+    tier = get_effective_plan_tier(profile)
+    if tier in ("pro", "agency"):
         return True, ""
 
     return False, f"API access requires Pro or Agency plan. You're on {profile.get_plan_display()}."
@@ -173,7 +185,7 @@ def check_leads_limit(user, creating: bool = True) -> tuple[bool, str]:
     if not profile:
         return False, "No user profile found."
 
-    limits = get_plan_limits(profile.plan)
+    limits = get_user_plan_limits(user)
     max_leads = limits.get("max_leads", 10)
     if max_leads >= 999999:
         return True, ""
@@ -189,7 +201,7 @@ def check_leads_can_edit(user) -> tuple[bool, str]:
     if not profile:
         return False, "No user profile found."
 
-    limits = get_plan_limits(profile.plan)
+    limits = get_user_plan_limits(user)
     if limits.get("leads_can_edit"):
         return True, ""
     return False, f"Editing leads requires Growth or higher on your {limits['label']} plan."
@@ -204,7 +216,7 @@ def check_email_sequences_limit(user) -> tuple[bool, str]:
     if not profile:
         return False, "No user profile found."
 
-    limits = get_plan_limits(profile.plan)
+    limits = get_user_plan_limits(user)
     max_seq = limits.get("email_sequences", 0)
     if max_seq >= 999999:
         return True, ""

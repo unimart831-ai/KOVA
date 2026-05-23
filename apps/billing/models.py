@@ -94,17 +94,17 @@ class MpesaPayment(models.Model):
 
 # ─── Plan Limits ─────────────────────────────────────────────────────────────
 # Defines what each plan tier can do. Used by middleware and views.
-# Jipange is deliberately capped to keep AI cost < KES 40/user/month.
-# It's a conversion funnel — not a revenue tier.
-# Daily LLM token budgets per plan. Sized so that a fully-used Starter user
-# costs roughly 25% of their KES 299 in inference (with DeepSeek V3.2 at
-# $0.26/$0.38 per 1M tokens), leaving margin for image gen and infrastructure.
-# These are enforced in apps.agents.budget before each call and trigger a
-# PlanLimitExceeded when exceeded — adjust per real usage data.
+#
+# Public pricing: 3 tiers (starter / growth / pro). Agency is grandfather-only.
+# New users get a 7-day trial with Kazi (growth) features — see TRIAL_FEATURE_PLAN
+# and get_effective_plan_tier().
+#
+# Platform ladder (5 channels: FB, IG, TikTok, LinkedIn, WhatsApp):
+#   Starter 2 · Growth 4 (no WA) · Pro 5 (incl. WA)
 PLAN_LIMITS = {
     "starter": {
         "label": "Jipange / Starter",
-        "max_social_accounts": 1,
+        "max_social_accounts": 2,
         "max_posts_per_month": 15,
         "max_seeds_per_month": 5,
         "daily_llm_tokens": 50_000,
@@ -137,13 +137,13 @@ PLAN_LIMITS = {
         "whatsapp_enabled": False,
         "memes_enabled": False,
         "max_campaigns": 2,
-        "price_kes": 299,
-        "price_usd": 2,
-        "trial_days": 14,
+        "price_kes": 499,
+        "price_usd": 4,
+        "trial_days": 7,
     },
     "growth": {
         "label": "Kazi / Growth",
-        "max_social_accounts": 3,
+        "max_social_accounts": 4,
         "max_posts_per_month": 60,
         "max_seeds_per_month": 30,
         "daily_llm_tokens": 200_000,
@@ -178,11 +178,11 @@ PLAN_LIMITS = {
         "max_campaigns": 5,
         "price_kes": 999,
         "price_usd": 7,
-        "trial_days": 14,
+        "trial_days": 7,
     },
     "pro": {
         "label": "Biashara / Pro",
-        "max_social_accounts": 10,
+        "max_social_accounts": 5,
         "max_posts_per_month": 150,
         "max_seeds_per_month": 60,
         "daily_llm_tokens": 500_000,
@@ -217,7 +217,7 @@ PLAN_LIMITS = {
         "max_campaigns": 999999,
         "price_kes": 1999,
         "price_usd": 14,
-        "trial_days": 14,
+        "trial_days": 7,
     },
     "agency": {
         "label": "Wakala / Agency",
@@ -256,9 +256,16 @@ PLAN_LIMITS = {
         "max_campaigns": 999999,
         "price_kes": 2999,
         "price_usd": 21,
-        "trial_days": 14,
+        "trial_days": 7,
+        "public": False,
     },
 }
+
+# Customer-facing tiers (Agency is sales / grandfather only).
+PUBLIC_PLAN_TIERS = ("starter", "growth", "pro")
+
+# Active free trials unlock Kazi (growth) features regardless of selected plan.
+TRIAL_FEATURE_PLAN = "growth"
 
 
 def _get_db_prices():
@@ -285,6 +292,41 @@ def get_plan_limits(plan_tier):
         base["price_kes"] = overrides[plan_tier]["price_kes"]
         base["price_usd"] = overrides[plan_tier]["price_usd"]
     return base
+
+
+def is_active_trial(profile) -> bool:
+    """True when subscription_status is trialing and the trial window has not ended."""
+    if not profile or profile.subscription_status != "trialing":
+        return False
+    end = profile.trial_ends_at or profile.current_period_end
+    if not end:
+        return True
+    return end >= timezone.now()
+
+
+def get_effective_plan_tier(profile) -> str:
+    """Plan tier used for feature/limit enforcement (trial → Kazi features)."""
+    if is_active_trial(profile):
+        return TRIAL_FEATURE_PLAN
+    if profile and profile.plan in PLAN_LIMITS:
+        return profile.plan
+    return "starter"
+
+
+def get_user_plan_limits(user):
+    """Effective limits for a user — trialing users receive Kazi (growth) features."""
+    profile = getattr(user, "profile", None)
+    tier = get_effective_plan_tier(profile)
+    limits = get_plan_limits(tier)
+    if is_active_trial(profile):
+        limits = limits.copy()
+        limits["label"] = "Kazi trial"
+    return limits
+
+
+def get_public_plan_limits():
+    """Plans shown on the customer pricing page."""
+    return {tier: get_plan_limits(tier) for tier in PUBLIC_PLAN_TIERS}
 
 
 def get_all_plan_limits():
