@@ -666,10 +666,8 @@ def snap_launch(request):
     Snap to Sell background task (vision AI → content pipeline).
     """
     from apps.billing.models import get_plan_limits
-    from apps.products.commerce_autopilot import (
-        commerce_autopilot_active,
-        unique_placeholder_name,
-    )
+    from apps.products.commerce_autopilot import commerce_autopilot_active, sanitize_product_name
+    from apps.products.image_utils import normalize_uploaded_image
     from apps.products.tasks import snap_to_sell_analyze
     from apps.utils import fire_task
     from django.core.files.storage import default_storage
@@ -684,13 +682,11 @@ def snap_launch(request):
 
     # Validate required fields
     autopilot = commerce_autopilot_active(request.user)
-    name = request.POST.get("name", "").strip()
+    name = sanitize_product_name(request.POST.get("name", ""))
     photos = request.FILES.getlist("photos")
 
     offering_type = request.POST.get("offering_type", "product").strip() or "product"
-    if not name and autopilot:
-        name = unique_placeholder_name(request.user, offering_type)
-    elif not name:
+    if not name:
         messages.error(request, "Please enter a product name.")
         return redirect("products:snap")
     if not photos:
@@ -735,7 +731,7 @@ def snap_launch(request):
         price=price,
         currency=currency,
         description=description,
-        image=photos[0],
+        image=normalize_uploaded_image(photos[0]),
         stock_status=stock_status,
         source=Product.Source.SNAP,
     )
@@ -743,10 +739,9 @@ def snap_launch(request):
     # Save additional images (2nd onward) to storage, store URLs
     additional_urls = []
     for extra_photo in photos[1:]:
-        # Save to product_images/ folder
-        ext = extra_photo.name.rsplit(".", 1)[-1].lower() if "." in extra_photo.name else "jpg"
-        filename = f"product_images/{product.pk}_{len(additional_urls) + 1}.{ext}"
-        saved_path = default_storage.save(filename, extra_photo)
+        normalized = normalize_uploaded_image(extra_photo)
+        filename = f"product_images/{product.pk}_{len(additional_urls) + 1}.jpg"
+        saved_path = default_storage.save(filename, normalized)
         additional_urls.append(default_storage.url(saved_path))
 
     if additional_urls:
@@ -757,18 +752,11 @@ def snap_launch(request):
     fire_task(snap_to_sell_analyze, str(product.pk), photo_context)
 
     photo_count = len(photos)
-    if autopilot and request.POST.get("name", "").strip() == "":
-        messages.success(
-            request,
-            f"📸 Snap & Go — {photo_count} photo{'s' if photo_count != 1 else ''} received! "
-            f"Agents are naming, listing, and creating your campaign."
-        )
-    else:
-        messages.success(
-            request,
-            f"📸 '{product.name}' added with {photo_count} photo{'s' if photo_count != 1 else ''}! "
-            f"AI is analyzing and creating content — watch the progress popup."
-        )
+    messages.success(
+        request,
+        f"📸 '{product.name}' added with {photo_count} photo{'s' if photo_count != 1 else ''}! "
+        f"AI is analyzing and creating content — watch the progress popup."
+    )
     url = reverse("products:detail", kwargs={"product_id": product.pk})
     return redirect(f"{url}?snap=1")
 
@@ -832,10 +820,14 @@ def snap_batch_launch(request):
     product_ids = []
     contexts = []
     for i, photo in enumerate(photos):
-        name = request.POST.get(f"name_{i}", "").strip()
+        name = sanitize_product_name(request.POST.get(f"name_{i}", ""))
         price_raw = request.POST.get(f"price_{i}", "").strip()
         currency = request.POST.get(f"currency_{i}", "KES").strip() or "KES"
         context = request.POST.get(f"context_{i}", "").strip()
+
+        if not name:
+            messages.error(request, f"Please enter a name for photo {i + 1}.")
+            return redirect("products:snap_batch")
 
         price = None
         if price_raw:
@@ -844,10 +836,7 @@ def snap_batch_launch(request):
             except ValueError:
                 pass
 
-        # If no name provided, use a placeholder — AI will rename it
-        if not name:
-            type_label = {'product': 'Product', 'service': 'Service', 'digital': 'Digital Product'}[offering_type]
-            name = f"{type_label} {i + 1} (AI naming...)"
+        from apps.products.image_utils import normalize_uploaded_image
 
         product = Product.objects.create(
             user=request.user,
@@ -855,7 +844,7 @@ def snap_batch_launch(request):
             offering_type=offering_type,
             price=price,
             currency=currency,
-            image=photo,
+            image=normalize_uploaded_image(photo),
             stock_status=stock_status,
             source=Product.Source.SNAP,
         )

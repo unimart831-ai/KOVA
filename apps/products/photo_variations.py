@@ -19,6 +19,8 @@ from PIL import Image, ImageDraw, ImageFilter
 
 from apps.agents.carousel import _load_product_image
 from apps.agents.graphics import _draw_gradient, _get_brand_palette, _get_font, _hex_to_rgb
+from apps.products.commerce_autopilot import sanitize_product_name
+from apps.products.image_utils import apply_exif_orientation
 
 logger = logging.getLogger(__name__)
 
@@ -105,8 +107,9 @@ def _trim_transparent(image: Image.Image) -> Image.Image:
 
 def remove_product_background(rgb_image: Image.Image) -> Image.Image:
     """Cut out product with rembg; fall back to opaque full frame."""
+    rgb_image = apply_exif_orientation(rgb_image.convert("RGB"))
     buf = BytesIO()
-    rgb_image.convert("RGB").save(buf, format="JPEG", quality=95)
+    rgb_image.save(buf, format="JPEG", quality=95)
     raw = buf.getvalue()
 
     try:
@@ -167,23 +170,25 @@ def _paste_product_centered(
     canvas: Image.Image,
     foreground: Image.Image,
     *,
-    scale: float = 0.72,
+    scale: float = 1.0,
     shadow: bool = True,
-    y_bias: float = 0.0,
 ) -> Image.Image:
-    """Composite cutout onto canvas with optional drop shadow."""
+    """Composite cutout onto canvas with safe margins and drop shadow."""
     width, height = canvas.size
-    max_w = int(width * scale)
-    max_h = int(height * scale)
+    margin_x = int(width * 0.10)
+    margin_top = int(height * 0.08)
+    margin_bottom = int(height * 0.12)
+    max_w = int((width - margin_x * 2) * scale)
+    max_h = int((height - margin_top - margin_bottom) * scale)
     fg = _scale_foreground(foreground, max_w, max_h)
 
     base = canvas.convert("RGBA")
     x = (width - fg.width) // 2
-    y = (height - fg.height) // 2 + int(height * y_bias)
+    y = margin_top + max((height - margin_top - margin_bottom - fg.height) // 2, 0)
 
     if shadow:
         sh = _make_shadow_layer(fg)
-        base.paste(sh, (x, y + 10), sh)
+        base.paste(sh, (x, y + 12), sh)
 
     base.paste(fg, (x, y), fg)
     return base.convert("RGB")
@@ -198,15 +203,18 @@ def _render_promo_frame(
     shop_hint: str,
     colors: dict,
 ) -> Image.Image:
-    width, height = canvas.size
+    width, height = CANVAS_SIZE
     bg = _gradient_background(width, height, colors["primary"], colors["secondary"])
-    max_w = int(width * 0.46)
-    max_h = int(height * 0.78)
+    margin_x = int(width * 0.06)
+    margin_top = int(height * 0.10)
+    margin_bottom = int(height * 0.10)
+    max_w = int(width * 0.42)
+    max_h = height - margin_top - margin_bottom
     fg = _scale_foreground(foreground, max_w, max_h)
 
     base = bg.convert("RGBA")
-    x = int(width * 0.06)
-    y = (height - fg.height) // 2
+    x = margin_x
+    y = margin_top + max((height - margin_top - margin_bottom - fg.height) // 2, 0)
     sh = _make_shadow_layer(fg, blur=14, opacity=0.28)
     base.paste(sh, (x, y + 8), sh)
     base.paste(fg, (x, y), fg)
@@ -273,25 +281,25 @@ def _render_preset(
 
     if preset_id == PRESET_WHITE_STUDIO:
         bg = _solid_background(width, height, "#FFFFFF")
-        return _paste_product_centered(bg, foreground, scale=0.78)
+        return _paste_product_centered(bg, foreground, scale=0.92)
 
     if preset_id == PRESET_GRAY_STUDIO:
         bg = _solid_background(width, height, "#E8EAED")
-        return _paste_product_centered(bg, foreground, scale=0.76)
+        return _paste_product_centered(bg, foreground, scale=0.90)
 
     if preset_id == PRESET_BRAND_GRADIENT:
         top, bottom = dominant_colors[0], dominant_colors[-1] if len(dominant_colors) > 1 else "#1a1a2e"
         bg = _gradient_background(width, height, top, bottom)
-        return _paste_product_centered(bg, foreground, scale=0.74)
+        return _paste_product_centered(bg, foreground, scale=0.88)
 
     if preset_id == PRESET_SOFT_PASTEL:
         top = dominant_colors[0] if dominant_colors else "#dceefb"
         bg = _gradient_background(width, height, top, "#f7f9fc")
-        return _paste_product_centered(bg, foreground, scale=0.76, y_bias=-0.02)
+        return _paste_product_centered(bg, foreground, scale=0.90)
 
     if preset_id == PRESET_DARK_PREMIUM:
         bg = _gradient_background(width, height, "#0f0f14", "#2a2a38")
-        return _paste_product_centered(bg, foreground, scale=0.72)
+        return _paste_product_centered(bg, foreground, scale=0.86)
 
     if preset_id == PRESET_PROMO_FRAME:
         bg = _solid_background(width, height, brand_colors["primary"])
@@ -345,6 +353,7 @@ def expand_product_photos(product, analysis: dict | None = None) -> dict:
 
     foreground = remove_product_background(rgb)
     presets = select_presets(product, analysis)
+    display_name = sanitize_product_name(product.name) or "Product"
 
     shop_hint = ""
     if product.product_url:
@@ -357,7 +366,7 @@ def expand_product_photos(product, analysis: dict | None = None) -> dict:
                 preset_id,
                 foreground,
                 rgb,
-                product_name=product.name,
+                product_name=display_name,
                 display_price=product.display_price or "",
                 shop_hint=shop_hint,
                 dominant_colors=dominant,

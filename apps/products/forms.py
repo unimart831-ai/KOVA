@@ -1,5 +1,6 @@
 from django import forms
 
+from apps.products.commerce_autopilot import sanitize_product_name
 from apps.products.models import Product, ProductCategory
 
 
@@ -15,7 +16,7 @@ class ProductForm(forms.ModelForm):
         ]
         widgets = {
             "offering_type": forms.Select(attrs={"class": "input", "x-model": "offeringType"}),
-            "name": forms.TextInput(attrs={"class": "input", "placeholder": "e.g. Website Development, Running Shoes, Social Media Kit"}),
+            "name": forms.TextInput(attrs={"class": "input", "placeholder": "e.g. Handmade Leather Bag", "required": "required"}),
             "description": forms.Textarea(attrs={"class": "input", "rows": 3, "placeholder": "Brief description (optional)"}),
             "category": forms.Select(attrs={"class": "input"}),
             "price": forms.NumberInput(attrs={"class": "input", "placeholder": "e.g. 5000", "step": "0.01"}),
@@ -39,6 +40,13 @@ class ProductForm(forms.ModelForm):
                 if field in self.fields:
                     self.fields[field].widget = forms.HiddenInput()
                     self.fields[field].required = False
+        self.fields["name"].required = True
+
+    def clean_name(self):
+        name = sanitize_product_name(self.cleaned_data.get("name"))
+        if not name:
+            raise forms.ValidationError("Product name is required.")
+        return name
 
 
 class ProductCategoryForm(forms.ModelForm):

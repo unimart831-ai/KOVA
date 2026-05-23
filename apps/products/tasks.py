@@ -1343,14 +1343,16 @@ def snap_batch_process(product_ids: list, contexts: list = None):
 
         # ── Auto-name the product if user didn't provide a name ──────
         if needs_name and analysis.get("product_name"):
-            ai_name = analysis["product_name"][:200]
-            # Avoid duplicate names for this user
-            base_name = ai_name
-            suffix = 0
-            while Product.objects.filter(user=user, name=ai_name).exclude(pk=product.pk).exists():
-                suffix += 1
-                ai_name = f"{base_name} ({suffix})"
-            product.name = ai_name
+            from apps.products.commerce_autopilot import sanitize_product_name
+
+            ai_name = sanitize_product_name(analysis["product_name"])[:200]
+            if ai_name:
+                base_name = ai_name
+                suffix = 0
+                while Product.objects.filter(user=user, name=ai_name).exclude(pk=product.pk).exists():
+                    suffix += 1
+                    ai_name = f"{base_name} ({suffix})"
+                product.name = ai_name
 
         # ── Enrich product with AI analysis ──────────────────────────
         if not product.description and analysis.get("description"):

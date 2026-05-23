@@ -349,23 +349,24 @@ def _load_product_image(image_source: str):
             import base64
             _header, b64data = image_source.split(",", 1)
             raw = base64.b64decode(b64data)
-            return Image.open(_BytesIO(raw)).convert("RGB")
-
-        if image_source.startswith(("http://", "https://")):
+            img = Image.open(_BytesIO(raw))
+        elif image_source.startswith(("http://", "https://")):
             import requests
             resp = requests.get(image_source, timeout=12)
             resp.raise_for_status()
-            return Image.open(_BytesIO(resp.content)).convert("RGB")
+            img = Image.open(_BytesIO(resp.content))
+        else:
+            from django.core.files.storage import default_storage
+            try:
+                with default_storage.open(image_source.lstrip("/")) as f:
+                    img = Image.open(_BytesIO(f.read()))
+            except Exception:
+                img = Image.open(image_source)
 
-        # Relative or absolute path — try default_storage first
-        from django.core.files.storage import default_storage
-        try:
-            with default_storage.open(image_source.lstrip("/")) as f:
-                return Image.open(_BytesIO(f.read())).convert("RGB")
-        except Exception:
-            pass
+        from apps.products.image_utils import apply_exif_orientation
 
-        return Image.open(image_source).convert("RGB")
+        img = apply_exif_orientation(img)
+        return img.convert("RGB")
 
     except Exception as exc:
         logger.warning("Could not load product image %r: %s", image_source[:80], exc)

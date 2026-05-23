@@ -39,7 +39,15 @@ class TestCommerceAutopilotHelpers:
     def test_is_placeholder_product_name(self):
         assert is_placeholder_product_name("New product") is True
         assert is_placeholder_product_name("New product 2") is True
+        assert is_placeholder_product_name("null") is True
         assert is_placeholder_product_name("Handmade Bag") is False
+
+    def test_sanitize_product_name(self):
+        from apps.products.commerce_autopilot import sanitize_product_name
+
+        assert sanitize_product_name("null") == ""
+        assert sanitize_product_name("None") == ""
+        assert sanitize_product_name("  Fruit Toothpicks  ") == "Fruit Toothpicks"
 
     def test_apply_ai_detected_name_only(self, user):
         product = Product.objects.create(
@@ -55,6 +63,20 @@ class TestCommerceAutopilotHelpers:
         product.refresh_from_db()
         assert product.name == "Leather Tote"
         assert product.price == 1000
+
+    def test_apply_ai_detected_rejects_null_string(self, user):
+        product = Product.objects.create(
+            user=user,
+            name="New product",
+            price=1000,
+            source=Product.Source.SNAP,
+        )
+        apply_ai_detected_product_fields(
+            product,
+            {"detected_name": "null", "detected_price": 4500},
+        )
+        product.refresh_from_db()
+        assert product.name == "New product"
 
     def test_unique_placeholder_name(self, user):
         from apps.products.commerce_autopilot import unique_placeholder_name

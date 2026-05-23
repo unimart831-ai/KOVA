@@ -12,6 +12,31 @@ SNAP_PLACEHOLDER_NAMES = frozenset({
     "snap listing",
 })
 
+INVALID_PRODUCT_NAMES = frozenset({
+    "null",
+    "none",
+    "unknown",
+    "n/a",
+    "na",
+    "undefined",
+    "nil",
+})
+
+
+def sanitize_product_name(value) -> str:
+    """Reject empty, null-like, and junk names from forms or vision AI."""
+    if value is None:
+        return ""
+    text = str(value).strip()
+    if not text:
+        return ""
+    lowered = text.lower()
+    if lowered in INVALID_PRODUCT_NAMES:
+        return ""
+    if lowered in ("null", "none") or lowered.startswith("null "):
+        return ""
+    return text
+
 
 def commerce_autopilot_active(user) -> bool:
     """True when Commerce Autopilot is on and emergency pause is off."""
@@ -50,10 +75,12 @@ def unique_placeholder_name(user, offering_type: str) -> str:
 
 
 def is_placeholder_product_name(name: str) -> bool:
-    n = (name or "").strip().lower()
+    n = sanitize_product_name(name).lower()
     if not n:
         return True
     if n in SNAP_PLACEHOLDER_NAMES:
+        return True
+    if n in INVALID_PRODUCT_NAMES:
         return True
     if "ai naming" in n:
         return True
@@ -70,18 +97,18 @@ def apply_ai_detected_product_fields(product, analysis: dict) -> list[str]:
     """Fill placeholder name from vision analysis and refresh shop slug."""
     update_fields: list[str] = []
 
-    detected_name = (
+    detected_name = sanitize_product_name(
         analysis.get("detected_name")
         or analysis.get("product_name")
         or analysis.get("service_name")
         or analysis.get("name_on_package")
         or analysis.get("label_text")
         or ""
-    ).strip()
-    brand = (analysis.get("brand") or analysis.get("brand_name") or "").strip()
+    )
+    brand = sanitize_product_name(analysis.get("brand") or analysis.get("brand_name") or "")
     if not detected_name and brand:
-        variant = (analysis.get("variant") or analysis.get("product_line") or "").strip()
-        detected_name = f"{brand} {variant}".strip()
+        variant = sanitize_product_name(analysis.get("variant") or analysis.get("product_line") or "")
+        detected_name = sanitize_product_name(f"{brand} {variant}".strip())
 
     if detected_name and is_placeholder_product_name(product.name):
         product.name = detected_name[:200]
