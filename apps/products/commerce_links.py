@@ -15,9 +15,9 @@ def resolve_page_slug(profile) -> str:
     return str(user.pk).replace("-", "")[:12]
 
 
-def ensure_commerce_slug(product, *, save: bool = True) -> str:
+def ensure_commerce_slug(product, *, save: bool = True, force: bool = False) -> str:
     """Assign a unique commerce_slug for the product's owner."""
-    if product.commerce_slug:
+    if product.commerce_slug and not force:
         return product.commerce_slug
 
     from apps.products.models import Product

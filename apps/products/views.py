@@ -109,24 +109,59 @@ def product_detail(request, product_id):
     product = get_object_or_404(Product, pk=product_id, user=request.user)
     stock_history = product.stock_updates.all()[:20]
     alerts = product.alerts.filter(is_read=False)[:10]
-    recent_posts = product.posts.order_by("-created_at")[:10]
 
+    from apps.content.models import Post
+    from apps.products.commerce_autopilot import commerce_autopilot_active, is_placeholder_product_name
     from apps.products.commerce_links import commerce_link_url, ensure_commerce_slug
+    from apps.products.snap_pipeline import build_snap_pipeline_status
 
     if not product.commerce_slug:
         ensure_commerce_slug(product)
         product.refresh_from_db()
 
     commerce_url = commerce_link_url(product, request)
+    pipeline = build_snap_pipeline_status(product, request.user)
+
+    all_posts = list(
+        product.posts.select_related("social_account").order_by("-created_at")[:24]
+    )
+    reel_posts = [p for p in all_posts if p.post_format == Post.PostFormat.REEL]
+    carousel_posts = [
+        p for p in all_posts
+        if p.visual_strategy == "carousel" and p.post_format != Post.PostFormat.REEL
+    ]
+    feed_posts = [p for p in all_posts if p not in reel_posts and p not in carousel_posts]
+
+    show_autopilot_panel = (
+        request.GET.get("snap") == "1"
+        or pipeline["status"] == "processing"
+        or (
+            product.source == Product.Source.SNAP
+            and (
+                is_placeholder_product_name(product.name)
+                or not all_posts
+                or pipeline["status"] != "completed"
+            )
+        )
+    )
+
+    import json
 
     return render(request, "products/product_detail.html", {
         "product": product,
         "stock_history": stock_history,
         "alerts": alerts,
-        "recent_posts": recent_posts,
+        "reel_posts": reel_posts,
+        "carousel_posts": carousel_posts,
+        "feed_posts": feed_posts,
+        "recent_posts": all_posts[:10],
         "plan_ctx": _plan_ctx(request),
         "snap_building": request.GET.get("snap") == "1",
+        "show_autopilot_panel": show_autopilot_panel,
+        "commerce_autopilot": commerce_autopilot_active(request.user),
+        "name_is_placeholder": is_placeholder_product_name(product.name),
         "commerce_url": commerce_url,
+        "pipeline_initial_json": json.dumps(pipeline),
     })
 
 
@@ -524,8 +559,41 @@ def promote_product(request, product_id):
 
     fire_task(generate_from_seed, str(seed.id))
 
-    messages.success(request, f"Creating content for '{product.name}' — posts will appear in your Content Studio shortly.")
-    return redirect("content:studio")
+    messages.success(request, f"Creating content for '{product.name}' — watch the Autopilot panel below.")
+    return redirect(f"{reverse('products:detail', kwargs={'product_id': product.pk})}?snap=1")
+
+
+@login_required
+@require_POST
+def quick_post_product(request, product_id):
+    """Post product photo as-is to all connected platforms."""
+    from apps.products.tasks import quick_post_product_photo
+    from apps.utils import fire_task
+
+    product = get_object_or_404(Product, pk=product_id, user=request.user)
+    if not product.image and not product.additional_images:
+        messages.error(request, "Add a product photo first.")
+        return redirect("products:detail", product_id=product.pk)
+
+    fire_task(quick_post_product_photo, str(product.pk))
+    messages.success(
+        request,
+        f"Posting '{product.name}' photo to your connected platforms — appears below in ~30 seconds.",
+    )
+    return redirect(f"{reverse('products:detail', kwargs={'product_id': product.pk})}?snap=1")
+
+
+@login_required
+@require_POST
+def reidentify_product(request, product_id):
+    """Re-read product name from photo using vision AI."""
+    from apps.products.tasks import reidentify_product_from_photo
+    from apps.utils import fire_task
+
+    product = get_object_or_404(Product, pk=product_id, user=request.user)
+    fire_task(reidentify_product_from_photo, str(product.pk))
+    messages.success(request, "AI is reading the label on your photo to find the product name…")
+    return redirect(f"{reverse('products:detail', kwargs={'product_id': product.pk})}?snap=1")
 
 
 # ── Snap to Sell ─────────────────────────────────────────────────────

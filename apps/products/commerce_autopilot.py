@@ -67,18 +67,31 @@ def is_placeholder_product_name(name: str) -> bool:
 
 
 def apply_ai_detected_product_fields(product, analysis: dict) -> list[str]:
-    """Fill placeholder name / missing price from vision analysis."""
+    """Fill placeholder name from vision analysis and refresh shop slug."""
     update_fields: list[str] = []
 
     detected_name = (
         analysis.get("detected_name")
         or analysis.get("product_name")
         or analysis.get("service_name")
+        or analysis.get("name_on_package")
+        or analysis.get("label_text")
         or ""
     ).strip()
+    brand = (analysis.get("brand") or analysis.get("brand_name") or "").strip()
+    if not detected_name and brand:
+        variant = (analysis.get("variant") or analysis.get("product_line") or "").strip()
+        detected_name = f"{brand} {variant}".strip()
+
     if detected_name and is_placeholder_product_name(product.name):
         product.name = detected_name[:200]
         update_fields.append("name")
+        from apps.products.commerce_links import ensure_commerce_slug
+
+        product.commerce_slug = ""
+        slug = ensure_commerce_slug(product, save=False, force=True)
+        product.commerce_slug = slug
+        update_fields.append("commerce_slug")
 
     if update_fields:
         product.save(update_fields=[*update_fields, "updated_at"])

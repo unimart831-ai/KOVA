@@ -117,7 +117,37 @@ def build_snap_pipeline_status(product, user):
 
     steps.append(_step("analyze", "AI analyzing product", analyze_detail, analyze_status))
 
-    # 3 — Platform posts (Create Agent)
+    # 3 — Quick photo post (Commerce Autopilot fast path)
+    quick_post_action = _action("commerce.quick_post")
+    from apps.products.commerce_autopilot import commerce_autopilot_active
+
+    if not commerce_autopilot_active(user):
+        quick_status = "skipped"
+        quick_detail = "Enable Commerce Autopilot for instant photo posts"
+    elif analyze_status == "failed":
+        quick_status = "skipped"
+        quick_detail = "Skipped — analysis did not finish"
+    elif quick_post_action:
+        if quick_post_action.status == AgentAction.ActionStatus.FAILED:
+            quick_status = "failed"
+            quick_detail = "Quick photo post failed — use the button below"
+        else:
+            n = (quick_post_action.output_data or {}).get("posts_created", 0)
+            quick_status = "completed"
+            quick_detail = f"Photo posted to {n} platform{'s' if n != 1 else ''} with name, price & shop link"
+    elif analyze_status == "running":
+        quick_status = "pending"
+        quick_detail = "Waiting for product name from photo…"
+    elif snap_stale and seed:
+        quick_status = "failed"
+        quick_detail = "Quick post timed out — tap Quick Post Photo"
+    else:
+        quick_status = "running"
+        quick_detail = "Posting your photo with name, price & Commerce Link…"
+
+    steps.append(_step("quick_post", "Quick photo post", quick_detail, quick_status))
+
+    # 4 — Platform posts (Create Agent)
     if analyze_status == "failed":
         writing_status = "skipped"
         writing_detail = "Skipped — analysis did not finish"
@@ -147,7 +177,7 @@ def build_snap_pipeline_status(product, user):
 
     steps.append(_step("writing", "Writing platform posts", writing_detail, writing_status))
 
-    # 4 — Carousel slides
+    # 5 — Carousel slides
     if not carousel_eligible:
         carousel_status = "skipped"
         carousel_detail = (
@@ -182,7 +212,7 @@ def build_snap_pipeline_status(product, user):
 
     steps.append(_step("carousel", "Building carousel slides", carousel_detail, carousel_status))
 
-    # 5 — Motion reel
+    # 6 — Motion reel
     if not reel_eligible:
         reel_status = "skipped"
         reel_detail = (
@@ -306,7 +336,8 @@ def build_snap_pipeline_status(product, user):
         posts = [_post_payload(p) for p in product.posts.select_related("social_account").order_by("-created_at")[:12]]
 
     profile = getattr(user, "profile", None)
-    auto_approve_posts = bool(profile and profile.auto_approve_posts)
+    from apps.products.commerce_autopilot import should_auto_publish_commerce
+    auto_approve_posts = should_auto_publish_commerce(user)
     pending_count = sum(
         1 for p in (seed_posts if seed else product.posts.all())
         if p.status in ("pending_approval", "draft")

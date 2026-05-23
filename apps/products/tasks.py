@@ -239,10 +239,7 @@ def auto_promote_products():
     from apps.content.models import ContentSeed
     from apps.platforms.models import SocialAccount
     from apps.products.models import Product
-    from apps.products.commerce_autopilot import (
-        apply_ai_detected_product_fields,
-        commerce_autopilot_active,
-    )
+    from apps.products.commerce_autopilot import commerce_autopilot_active
     from apps.products.utils import (
         sample_products_for_content,
         user_should_receive_catalog_sample,
@@ -362,12 +359,22 @@ def _build_promotion_idea(product):
 
 # ── Offering-type-aware prompt builders ──────────────────────────────
 
-def _build_vision_prompt(*, offering_type, name, display_price, num_images, photo_context=""):
+def _build_vision_prompt(*, offering_type, name, display_price, num_images, photo_context="", name_is_placeholder=False):
     """Build the vision AI prompt based on offering type."""
 
     context_line = ""
     if photo_context:
         context_line = f"\nUser context about this photo: {photo_context}\n"
+
+    placeholder_hint = ""
+    if name_is_placeholder:
+        placeholder_hint = (
+            "\n\nCRITICAL — the seller has NOT named this item yet. "
+            "Read every visible word on packaging, labels, bottles, boxes, and screens. "
+            "Set detected_name to the full real product name (brand + product line, "
+            "e.g. 'Amara Body Lotion'). Include brand if visible. "
+            "Never return generic names like 'New product' or 'body lotion' alone if the label shows more.\n"
+        )
 
     if offering_type == "service":
         prompt = (
@@ -429,7 +436,9 @@ def _build_vision_prompt(*, offering_type, name, display_price, num_images, phot
             '  "visual_style": "Describe the visual aesthetic (colors, mood, quality)",\n'
             '  "campaign_angle": "Best marketing angle for social media",\n'
             '  "detected_name": "Product name read from packaging/label or inferred from the image, null if unknown",\n'
-            '  "detected_price": null or number if a price tag or label is visible'
+            '  "detected_price": null or number if a price tag or label is visible,\n'
+            '  "brand": "Brand name visible on packaging or null",\n'
+            '  "label_text": "All readable text on the product label"'
         )
 
     if num_images > 1:
@@ -439,7 +448,7 @@ def _build_vision_prompt(*, offering_type, name, display_price, num_images, phot
             f'] (provide {num_images} different angles, one per photo)'
         )
     prompt += "\n}"
-    return prompt
+    return prompt + placeholder_hint
 
 
 def _build_seed_idea(*, offering_type, name, display_price, features_text,
@@ -724,6 +733,141 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
 
 # ── Snap to Sell ─────────────────────────────────────────────────────
 
+@shared_task(name="products.quick_post_product_photo")
+def quick_post_product_photo(product_id: str):
+    """
+    Post the product's photo as-is to connected platforms — name, price, shop link.
+    Fast path for Commerce Autopilot and the Quick Post button.
+    """
+    from apps.agents.adapt_agent import auto_schedule_post
+    from apps.agents.models import AgentAction
+    from apps.content.models import Post
+    from apps.content.tasks import _normalize_reel_image_source
+    from apps.platforms.models import SocialAccount
+    from apps.products.commerce_autopilot import initial_commerce_post_status, should_auto_publish_commerce
+    from apps.products.commerce_links import commerce_link_url
+    from apps.products.models import Product
+
+    try:
+        product = Product.objects.select_related("user").get(pk=product_id)
+    except Product.DoesNotExist:
+        return {"error": "not_found"}
+
+    user = product.user
+    if not product.all_image_urls:
+        return {"error": "no_image"}
+
+    image_url = _normalize_reel_image_source(product.all_image_urls[0])
+    shop_link = commerce_link_url(product)
+    caption_parts = [product.name]
+    if product.display_price:
+        caption_parts.append(f"💰 {product.display_price}")
+    if shop_link:
+        caption_parts.append(f"🛒 {shop_link}")
+    caption = "\n\n".join(caption_parts)
+
+    accounts = SocialAccount.objects.filter(user=user, is_active=True)
+    if not accounts.exists():
+        return {"error": "no_platforms", "posts_created": 0}
+
+    status = initial_commerce_post_status(user)
+    posts_created = 0
+    for account in accounts:
+        post = Post.objects.create(
+            user=user,
+            product=product,
+            social_account=account,
+            platform=account.platform,
+            content_text=caption,
+            content_type="original",
+            status=status,
+            post_format=Post.PostFormat.IMAGE,
+            aspect_ratio=Post.AspectRatio.SQUARE,
+            visual_strategy="ai_photo",
+            media_urls=[image_url],
+            media_status=Post.MediaStatus.GENERATED,
+            generated_by_agent="create",
+        )
+        posts_created += 1
+        if should_auto_publish_commerce(user):
+            try:
+                auto_schedule_post(post)
+            except Exception:
+                pass
+
+    AgentAction.objects.create(
+        user=user,
+        agent_type="create",
+        action_type="commerce.quick_post",
+        description=f"Quick photo post: {product.name} ({posts_created} platform(s))",
+        status=AgentAction.ActionStatus.COMPLETED if posts_created else AgentAction.ActionStatus.FAILED,
+        input_data={"product_id": str(product.pk)},
+        output_data={"posts_created": posts_created},
+        completed_at=timezone.now(),
+    )
+    logger.info("quick_post_product_photo: %d posts for product %s", posts_created, product_id)
+    return {"posts_created": posts_created}
+
+
+@shared_task(name="products.reidentify_product_from_photo")
+def reidentify_product_from_photo(product_id: str):
+    """Re-run vision AI to read the product name from packaging (no new posts)."""
+    from apps.agents.llm import analyze_image, parse_llm_json
+    from apps.products.commerce_autopilot import apply_ai_detected_product_fields, is_placeholder_product_name
+    from apps.products.models import Product
+
+    try:
+        product = Product.objects.select_related("user").get(pk=product_id)
+    except Product.DoesNotExist:
+        return {"error": "not_found"}
+
+    all_images = product.all_image_urls
+    if not all_images:
+        return {"error": "no_image"}
+
+    image_url = all_images[0]
+    if not image_url.startswith("http"):
+        import base64
+        with open(product.image.path, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode("utf-8")
+        ext = product.image.name.rsplit(".", 1)[-1].lower()
+        mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+                "webp": "image/webp"}.get(ext, "image/jpeg")
+        image_url = f"data:{mime};base64,{encoded}"
+
+    vision_prompt = _build_vision_prompt(
+        offering_type=product.offering_type,
+        name=product.name,
+        display_price=product.display_price or "not set",
+        num_images=len(all_images),
+        name_is_placeholder=True,
+    )
+    try:
+        vision_resp = analyze_image(
+            image_url=image_url,
+            prompt=vision_prompt,
+            system="You are a product label reader. Always respond with valid JSON only.",
+            json_mode=True,
+            max_tokens=600,
+        )
+        analysis = parse_llm_json(vision_resp.content)
+    except Exception as exc:
+        logger.error("reidentify_product_from_photo failed: %s", exc)
+        return {"error": str(exc)}
+
+    renamed_fields = apply_ai_detected_product_fields(product, analysis)
+    if "name" in renamed_fields:
+        from apps.products.commerce_links import commerce_link_path
+        from django.conf import settings
+
+        path = commerce_link_path(product, product.user.profile)
+        site = getattr(settings, "SITE_URL", "").rstrip("/")
+        Product.objects.filter(pk=product.pk).update(
+            product_url=f"{site}{path}" if site else path,
+        )
+    return {"product_id": str(product.pk), "name": product.name, "renamed": "name" in renamed_fields}
+
+
 @shared_task(name="products.snap_to_sell_analyze")
 def snap_to_sell_analyze(product_id: str, photo_context: str = ""):
     """
@@ -745,6 +889,11 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = ""):
     from apps.content.models import ContentSeed
     from apps.content.tasks import generate_from_seed
     from apps.platforms.models import SocialAccount
+    from apps.products.commerce_autopilot import (
+        apply_ai_detected_product_fields,
+        commerce_autopilot_active,
+        is_placeholder_product_name,
+    )
     from apps.products.models import Product
     from apps.utils import fire_task
 
@@ -800,6 +949,7 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = ""):
         display_price=product.display_price or "not set",
         num_images=num_images,
         photo_context=photo_context,
+        name_is_placeholder=is_placeholder_product_name(product.name),
     )
 
     try:
@@ -845,7 +995,15 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = ""):
         }
 
     # ── Step 2: Enrich the product with AI analysis ──────────────────
-    apply_ai_detected_product_fields(product, analysis)
+    renamed_fields = apply_ai_detected_product_fields(product, analysis)
+    if renamed_fields:
+        from apps.products.commerce_links import commerce_link_path
+        from django.conf import settings
+
+        path = commerce_link_path(product, product.user.profile)
+        site = getattr(settings, "SITE_URL", "").rstrip("/")
+        product.product_url = f"{site}{path}" if site else path
+        product.save(update_fields=["product_url", "updated_at"])
 
     if not product.description and analysis.get("description"):
         product.description = analysis["description"]
@@ -909,6 +1067,9 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = ""):
     )
 
     fire_task(generate_from_seed, str(seed.id))
+
+    if commerce_autopilot_active(user):
+        fire_task(quick_post_product_photo, str(product.pk))
 
     # Auto-generate carousel (2+ photos) or reel-only (single photo)
     _CAROUSEL_PLATFORMS = {"instagram", "facebook", "linkedin"}
