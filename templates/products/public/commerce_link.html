@@ -13,9 +13,12 @@
     .header p { font-size: 12px; color: #6b7280; }
     .header h1 { font-size: 14px; font-weight: 600; color: #374151; margin-top: 4px; }
     .hero { border-radius: 16px; overflow: hidden; background: #fff; border: 1px solid #e5e7eb; margin-bottom: 16px; }
-    .hero img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
-    .thumbs { display: flex; gap: 8px; padding: 8px; overflow-x: auto; }
-    .thumbs img { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; border: 1px solid #e5e7eb; }
+    .hero img.hero-main { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+    .thumbs { display: flex; gap: 8px; padding: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .thumb-btn { flex-shrink: 0; padding: 0; border: 2px solid transparent; border-radius: 10px; background: none; cursor: pointer; transition: border-color 0.15s; }
+    .thumb-btn:hover { border-color: #a7f3d0; }
+    .thumb-btn.active { border-color: #059669; box-shadow: 0 0 0 1px #059669; }
+    .thumb-btn img { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; display: block; }
     .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 16px; margin-bottom: 12px; }
     .title { font-size: 22px; font-weight: 700; line-height: 1.2; }
     .price { font-size: 20px; font-weight: 700; color: #059669; margin-top: 8px; }
@@ -40,16 +43,23 @@
   </div>
 
   <div class="hero">
-    {% if product.image %}
-    <img src="{{ product.image.url }}" alt="{{ product.name }}">
-    {% endif %}
-    {% if product.additional_images %}
-    <div class="thumbs">
-      {% for img in product.additional_images %}
-      <img src="{{ img }}" alt="">
+    {% with gallery=product.all_image_urls %}
+    {% if gallery %}
+    <img id="hero-img" class="hero-main" src="{{ gallery.0 }}" alt="{{ product.name }}">
+    {% if gallery|length > 1 %}
+    <div class="thumbs" role="tablist" aria-label="Product photos">
+      {% for img in gallery %}
+      <button type="button" class="thumb-btn{% if forloop.first %} active{% endif %}"
+              role="tab" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+              aria-label="View photo {{ forloop.counter }}"
+              data-src="{{ img }}">
+        <img src="{{ img }}" alt="{{ product.name }} — photo {{ forloop.counter }}">
+      </button>
       {% endfor %}
     </div>
     {% endif %}
+    {% endif %}
+    {% endwith %}
   </div>
 
   <div class="card">
@@ -122,5 +132,25 @@ document.getElementById('pay-form').addEventListener('submit', async function(e)
 });
 </script>
 {% endif %}
+
+<script>
+(function () {
+  var hero = document.getElementById('hero-img');
+  if (!hero) return;
+  document.querySelectorAll('.thumb-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var src = btn.getAttribute('data-src');
+      if (!src) return;
+      hero.src = src;
+      document.querySelectorAll('.thumb-btn').forEach(function (b) {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+    });
+  });
+})();
+</script>
 </body>
 </html>
