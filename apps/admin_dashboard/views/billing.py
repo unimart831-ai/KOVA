@@ -229,6 +229,7 @@ def billing_overview(request):
 @staff_required
 def payment_list(request):
     """M-Pesa + billing event log with search/filter/sort/paginate."""
+    now = timezone.now()
     qs = MpesaPayment.objects.select_related("user").all()
 
     search = request.GET.get("q", "").strip()
