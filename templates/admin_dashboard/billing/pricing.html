@@ -4,7 +4,8 @@
 {% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Set plan prices from the dashboard — no code changes needed</p>{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
+<div class="max-w-5xl mx-auto">
+{% include "admin_dashboard/billing/_nav.html" %}
   <!-- Info Banner -->
   <div class="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-xl p-4 mb-6">
     <div class="flex items-start gap-3">
@@ -13,7 +14,7 @@
       </svg>
       <div class="text-sm text-blue-800 dark:text-blue-300">
         <p class="font-medium">How pricing works</p>
-        <p class="mt-1 text-blue-700 dark:text-blue-400">Each plan has a default hardcoded price. When you set a custom price here, it overrides the default across the entire system — landing page, pricing page, checkout, and admin dashboard. Reset to revert to the original default.</p>
+        <p class="mt-1 text-blue-700 dark:text-blue-400">Custom prices override defaults across pricing page, M-Pesa checkout, and Stripe. Limits below come from <code class="text-[10px]">PLAN_LIMITS</code> — edit in code or sync with Cost Economics / LLM admin.</p>
       </div>
     </div>
   </div>
@@ -33,6 +34,18 @@
           </p>
         </div>
         <span class="text-lg font-bold text-gray-900 dark:text-white">KES {{ plan.current_kes }} / ${{ plan.current_usd }}</span>
+      </div>
+
+      <div class="px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/30">
+        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Enforced limits (from PLAN_LIMITS)</p>
+        <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
+          <span>{{ plan.daily_llm_tokens|format_number }} LLM tokens/day</span>
+          <span>{{ plan.max_posts_per_month }} posts/mo</span>
+          <span>{{ plan.max_seeds_per_month }} seeds/mo</span>
+          <span>{{ plan.max_social_accounts }} social account{{ plan.max_social_accounts|pluralize }}</span>
+          <span>{{ plan.ai_images_per_month }} AI images/mo</span>
+          <span>{{ plan.trial_days }}d trial</span>
+        </div>
       </div>
 
       <form method="post" action="{% url 'admin_dashboard:plan_pricing_update' %}" class="p-5">

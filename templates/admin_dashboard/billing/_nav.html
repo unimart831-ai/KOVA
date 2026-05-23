@@ -1,0 +1,35 @@
+{% load dashboard_tags %}
+<nav class="flex flex-wrap items-center gap-1 mb-6 border-b border-gray-200 dark:border-gray-800 pb-3">
+  <a href="{% url 'admin_dashboard:billing_overview' %}"
+     class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {% if billing_section == 'overview' %}bg-kova-100 text-kova-700 dark:bg-kova-900/40 dark:text-kova-300{% else %}text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800{% endif %}">
+    Overview
+  </a>
+  <a href="{% url 'admin_dashboard:subscription_management' %}"
+     class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {% if billing_section == 'subscriptions' %}bg-kova-100 text-kova-700 dark:bg-kova-900/40 dark:text-kova-300{% else %}text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800{% endif %}">
+    Subscriptions
+  </a>
+  <a href="{% url 'admin_dashboard:payment_list' %}"
+     class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {% if billing_section == 'payments' %}bg-kova-100 text-kova-700 dark:bg-kova-900/40 dark:text-kova-300{% else %}text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800{% endif %}">
+    M-Pesa Payments
+  </a>
+  <a href="{% url 'admin_dashboard:billing_events' %}"
+     class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {% if billing_section == 'events' %}bg-kova-100 text-kova-700 dark:bg-kova-900/40 dark:text-kova-300{% else %}text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800{% endif %}">
+    Webhooks
+  </a>
+  <a href="{% url 'admin_dashboard:plan_pricing' %}"
+     class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {% if billing_section == 'pricing' %}bg-kova-100 text-kova-700 dark:bg-kova-900/40 dark:text-kova-300{% else %}text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800{% endif %}">
+    Plan Pricing
+  </a>
+  <a href="{% url 'admin_dashboard:discount_list' %}"
+     class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {% if billing_section == 'discounts' %}bg-kova-100 text-kova-700 dark:bg-kova-900/40 dark:text-kova-300{% else %}text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800{% endif %}">
+    Discounts
+  </a>
+  <a href="{% url 'admin_dashboard:override_log' %}"
+     class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {% if billing_section == 'overrides' %}bg-kova-100 text-kova-700 dark:bg-kova-900/40 dark:text-kova-300{% else %}text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800{% endif %}">
+    Override Log
+  </a>
+  <a href="{% url 'admin_dashboard:cost_overview' %}"
+     class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 ml-auto">
+    Cost Economics →
+  </a>
+</nav>

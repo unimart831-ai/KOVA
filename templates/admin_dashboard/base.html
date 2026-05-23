@@ -354,6 +354,18 @@
         </svg>
         Billing
       </a>
+      <a href="{% url 'admin_dashboard:subscription_management' %}"
+         class="{% if '/dashboard/billing/subscriptions' in request.path %}nav-link-active{% else %}nav-link{% endif %} ml-6">
+        Subscriptions
+      </a>
+      <a href="{% url 'admin_dashboard:payment_list' %}"
+         class="{% if '/dashboard/billing/payments' in request.path %}nav-link-active{% else %}nav-link{% endif %} ml-6">
+        M-Pesa Payments
+      </a>
+      <a href="{% url 'admin_dashboard:plan_pricing' %}"
+         class="{% if '/dashboard/billing/pricing' in request.path %}nav-link-active{% else %}nav-link{% endif %} ml-6">
+        Plan Pricing
+      </a>
 
       <a href="{% url 'admin_dashboard:cost_overview' %}"
          class="{% if '/dashboard/costs' in request.path %}nav-link-active{% else %}nav-link{% endif %}">

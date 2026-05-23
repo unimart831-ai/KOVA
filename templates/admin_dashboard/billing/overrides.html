@@ -5,10 +5,7 @@
 {% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ total_count }} override{{ total_count|pluralize }} recorded</p>{% endblock %}
 
 {% block content %}
-<a href="{% url 'admin_dashboard:subscription_management' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4">
-  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-  Subscription Management
-</a>
+{% include "admin_dashboard/billing/_nav.html" %}
 
 <!-- ── Django Messages ────────────────────────────────────────────────── -->
 {% if messages %}

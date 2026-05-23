@@ -2,11 +2,23 @@
 {% load dashboard_tags %}
 
 {% block page_title %}{{ page_title }}{% endblock %}
-{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Revenue, subscriptions &amp; payment health</p>{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Subscription MRR, M-Pesa cash, commerce revenue &amp; payment health</p>{% endblock %}
 
 {% block content %}
+{% include "admin_dashboard/billing/_nav.html" %}
+
+<div class="mb-6 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50 dark:bg-blue-950/20 px-5 py-4">
+  <p class="text-sm font-semibold text-blue-900 dark:text-blue-100">How to read these numbers</p>
+  <p class="text-xs text-blue-800 dark:text-blue-300 mt-1">
+    <strong>Est. MRR</strong> = active subscribers × list price (not trialing).
+    <strong>M-Pesa Collected</strong> = actual subscription STK payments.
+    <strong>Commerce checkout</strong> = buyer payments on public shop links (separate revenue stream).
+    Compare MRR vs 30d cash to spot billing lag or churn.
+  </p>
+</div>
+
 <!-- ── Revenue Cards ─────────────────────────────────────────────────── -->
-<div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Est. MRR (active subs)</p>
     <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">KES {{ total_mrr_kes|format_number }}</p>
@@ -36,9 +48,59 @@
     <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">KES {{ revenue_month|format_number }}</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">ARR (USD)</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">${{ arr_usd|format_number }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">From active MRR only</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Commerce Checkout (30d)</p>
+    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">KES {{ commerce_revenue_30d|format_number }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">KES {{ commerce_revenue_all_time|format_number }} all time</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">M-Pesa Success Rate (30d)</p>
+    <p class="text-2xl font-bold {% if mpesa_success_rate >= 80 %}text-emerald-600{% elif mpesa_success_rate >= 60 %}text-amber-500{% else %}text-red-500{% endif %} mt-1">{{ mpesa_success_rate }}%</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">{{ mpesa_new_30d }} new · {{ mpesa_renewals_30d }} renewals</p>
+  </div>
+</div>
+
+{% if expiring_soon or expired_trials_live %}
+<div class="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+  {% if expiring_soon %}
+  <a href="{% url 'admin_dashboard:subscription_management' %}?preset=expiring" class="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 px-5 py-4 hover:border-amber-400 transition-colors">
+    <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">{{ expiring_soon }} subscription{{ expiring_soon|pluralize }} expiring in 3 days</p>
+    <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">Review and send renewal reminders →</p>
+  </a>
+  {% endif %}
+  {% if expired_trials_live %}
+  <a href="{% url 'admin_dashboard:subscription_management' %}?preset=expired_trials" class="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/20 px-5 py-4 hover:border-red-400 transition-colors">
+    <p class="text-sm font-semibold text-red-800 dark:text-red-200">{{ expired_trials_live }} expired trial{{ expired_trials_live|pluralize }} (status not yet updated)</p>
+    <p class="text-xs text-red-700 dark:text-red-300 mt-1">Celery may not have run — review users →</p>
+  </a>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Trial Conversion (30d)</p>
     <p class="text-2xl font-bold {% if trial_conversion >= 50 %}text-emerald-600{% elif trial_conversion >= 25 %}text-amber-500{% else %}text-red-500{% endif %} mt-1">{{ trial_conversion }}%</p>
     <p class="text-[10px] text-gray-400 mt-0.5">{{ converted_trials }} of {{ expired_trials }} trials</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">M-Pesa Subscribers</p>
+    <p class="text-2xl font-bold text-green-600 mt-1">{{ mpesa_paid_users }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">Active / trialing / past due</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Stripe Subscribers</p>
+    <p class="text-2xl font-bold text-blue-600 mt-1">{{ stripe_paid_users }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">Includes legacy stripe_subscription_id</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Unknown Provider</p>
+    <p class="text-2xl font-bold text-gray-600 mt-1">{{ unknown_provider_paid }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">Paid status but no provider set</p>
   </div>
 </div>
 
@@ -47,6 +109,7 @@
   <div class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
     <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
       <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Subscription Breakdown</h2>
+      <p class="text-[10px] text-gray-400 mt-0.5">KES/USD columns = MRR from active subscribers only</p>
     </div>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
@@ -85,10 +148,10 @@
     </div>
   </div>
 
-  <!-- Plan Distribution Donut -->
+  <!-- Payment provider mix -->
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
-    <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Plan Distribution</h2>
-    <canvas id="planChart" height="260"></canvas>
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Payment Provider Mix</h2>
+    <canvas id="providerChart" height="260"></canvas>
   </div>
 </div>
 
@@ -148,88 +211,20 @@
 <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5 mb-6">
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Monthly Revenue Trend</h2>
-    <span class="text-xs text-gray-400">Last 12 months (KES)</span>
+    <span class="text-xs text-gray-400">M-Pesa subscription payments only (KES)</span>
   </div>
   <canvas id="revenueChart" height="120"></canvas>
 </div>
 
-<!-- ── Quick Links ───────────────────────────────────────────────────── -->
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-  <a href="{% url 'admin_dashboard:plan_pricing' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-emerald-400 dark:hover:border-emerald-500 transition-all">
-    <div class="w-9 h-9 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
-      <svg class="w-4.5 h-4.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-    </div>
-    <div>
-      <p class="text-sm font-medium text-gray-900 dark:text-white">Plan Pricing</p>
-      <p class="text-xs text-gray-400">Change plan prices live</p>
-    </div>
+<!-- ── Quick admin actions ───────────────────────────────────────────── -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+  <a href="{% url 'admin_dashboard:bulk_grant' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-indigo-400 transition-all">
+    <div class="w-9 h-9 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center text-indigo-600 font-bold text-xs">BG</div>
+    <div><p class="text-sm font-medium text-gray-900 dark:text-white">Bulk Grant Access</p><p class="text-xs text-gray-400">Partnerships &amp; promos</p></div>
   </a>
-  <a href="{% url 'admin_dashboard:discount_list' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-pink-400 dark:hover:border-pink-500 transition-all">
-    <div class="w-9 h-9 bg-pink-100 dark:bg-pink-900/30 rounded-lg flex items-center justify-center">
-      <svg class="w-4.5 h-4.5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-    </div>
-    <div>
-      <p class="text-sm font-medium text-gray-900 dark:text-white">Discount Codes</p>
-      <p class="text-xs text-gray-400">Create &amp; manage promo codes</p>
-    </div>
-  </a>
-  <a href="{% url 'admin_dashboard:subscription_management' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-purple-400 dark:hover:border-purple-500 transition-all">
-    <div class="w-9 h-9 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-      <svg class="w-4.5 h-4.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-    </div>
-    <div>
-      <p class="text-sm font-medium text-gray-900 dark:text-white">Manage Subscriptions</p>
-      <p class="text-xs text-gray-400">Change plans, extend trials, grant comps</p>
-    </div>
-  </a>
-</div>
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-  <a href="{% url 'admin_dashboard:bulk_grant' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-indigo-400 dark:hover:border-indigo-500 transition-all">
-    <div class="w-9 h-9 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
-      <svg class="w-4.5 h-4.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-    </div>
-    <div>
-      <p class="text-sm font-medium text-gray-900 dark:text-white">Bulk Grant Access</p>
-      <p class="text-xs text-gray-400">Partnership &amp; promo upgrades</p>
-    </div>
-  </a>
-  <a href="{% url 'admin_dashboard:override_log' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-amber-400 dark:hover:border-amber-500 transition-all">
-    <div class="w-9 h-9 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
-      <svg class="w-4.5 h-4.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-    </div>
-    <div>
-      <p class="text-sm font-medium text-gray-900 dark:text-white">Override Log</p>
-      <p class="text-xs text-gray-400">Audit trail of admin changes</p>
-    </div>
-  </a>
-</div>
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-  <a href="{% url 'admin_dashboard:payment_list' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-kova-400 dark:hover:border-kova-500 transition-all">
-    <div class="w-9 h-9 bg-kova-100 dark:bg-kova-900/30 rounded-lg flex items-center justify-center">
-      <svg class="w-4.5 h-4.5 text-kova-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-    </div>
-    <div>
-      <p class="text-sm font-medium text-gray-900 dark:text-white">Payment History</p>
-      <p class="text-xs text-gray-400">All M-Pesa transactions</p>
-    </div>
-  </a>
-  <a href="{% url 'admin_dashboard:billing_events' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-kova-400 dark:hover:border-kova-500 transition-all">
-    <div class="w-9 h-9 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
-      <svg class="w-4.5 h-4.5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-    </div>
-    <div>
-      <p class="text-sm font-medium text-gray-900 dark:text-white">Billing Events</p>
-      <p class="text-xs text-gray-400">Webhook audit trail</p>
-    </div>
-  </a>
-  <a href="{% url 'admin_dashboard:payment_list' %}?status=failed" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-red-400 dark:hover:border-red-500 transition-all">
-    <div class="w-9 h-9 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-      <svg class="w-4.5 h-4.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
-    </div>
-    <div>
-      <p class="text-sm font-medium text-gray-900 dark:text-white">Failed Payments</p>
-      <p class="text-xs text-gray-400">Payments needing attention</p>
-    </div>
+  <a href="{% url 'admin_dashboard:payment_list' %}?status=failed" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-red-400 transition-all">
+    <div class="w-9 h-9 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center text-red-600 font-bold text-xs">!</div>
+    <div><p class="text-sm font-medium text-gray-900 dark:text-white">Failed M-Pesa Payments</p><p class="text-xs text-gray-400">{{ mpesa_failed }} in last 30 days</p></div>
   </a>
 </div>
 {% endblock %}
@@ -237,15 +232,15 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  const planData = {{ plan_chart_json|safe }};
-  const planColors = ['#6366f1','#3b82f6','#8b5cf6','#f59e0b','#10b981','#ef4444'];
+  const providerData = {{ provider_chart_json|safe }};
+  const providerColors = ['#16a34a','#2563eb','#9ca3af'];
 
-  if (planData.length > 0) {
-    new Chart(document.getElementById('planChart'), {
+  if (providerData.some(d => d.count > 0)) {
+    new Chart(document.getElementById('providerChart'), {
       type: 'doughnut',
       data: {
-        labels: planData.map(d => d.label),
-        datasets: [{ data: planData.map(d => d.count), backgroundColor: planColors.slice(0, planData.length), borderWidth: 0, hoverOffset: 4 }]
+        labels: providerData.map(d => d.label),
+        datasets: [{ data: providerData.map(d => d.count), backgroundColor: providerColors, borderWidth: 0, hoverOffset: 4 }]
       },
       options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyle: 'circle', font: { size: 11 }, color: '#9ca3af' } } } }
     });

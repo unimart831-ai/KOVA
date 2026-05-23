@@ -5,10 +5,27 @@
 {% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ total_count }} payment{{ total_count|pluralize }} total</p>{% endblock %}
 
 {% block content %}
-<a href="{% url 'admin_dashboard:billing_overview' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4">
-  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-  Billing Overview
-</a>
+{% include "admin_dashboard/billing/_nav.html" %}
+
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500">Completed (30d)</p>
+    <p class="text-xl font-bold text-emerald-600 mt-1">KES {{ summary_30d_total|format_number }}</p>
+    <p class="text-[10px] text-gray-400">{{ summary_30d_count }} payment{{ summary_30d_count|pluralize }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500">New subs (30d)</p>
+    <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">{{ summary_30d_new }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500">Renewals (30d)</p>
+    <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">{{ summary_30d_renewals }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500">Note</p>
+    <p class="text-xs text-gray-500 mt-2">Subscription M-Pesa only — commerce buyer payments are under Commerce → Payments.</p>
+  </div>
+</div>
 
 <!-- ── Search & Filters ──────────────────────────────────────────────── -->
 <form method="get" class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm mb-6">

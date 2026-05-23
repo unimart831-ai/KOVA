@@ -1,5 +1,6 @@
 from datetime import timedelta
 from decimal import Decimal
+import json
 import uuid as uuid_mod
 
 from django.contrib import messages
@@ -12,6 +13,7 @@ from django.views.decorators.http import require_POST
 from apps.accounts.models import User, UserProfile
 from apps.admin_dashboard.decorators import senior_staff_required, staff_required, superuser_required
 from apps.billing.models import PLAN_LIMITS, BillingEvent, DiscountCode, DiscountRedemption, MpesaPayment, PlanPrice, SubscriptionOverride, get_all_plan_limits
+from apps.products.models import CommercePayment
 
 
 @staff_required
@@ -91,6 +93,54 @@ def billing_overview(request):
     ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
     mrr_vs_cash_delta = total_mrr_kes - revenue_30d
 
+    # ── Commerce checkout revenue (separate from subscriptions) ─────
+    commerce_revenue_30d = CommercePayment.objects.filter(
+        status=CommercePayment.Status.COMPLETED,
+        completed_at__gte=last_30d,
+    ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
+    commerce_revenue_all_time = CommercePayment.objects.filter(
+        status=CommercePayment.Status.COMPLETED,
+    ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
+
+    # ── Payment provider breakdown (paid subs) ───────────────────────
+    paid_statuses = ("active", "trialing", "past_due")
+    mpesa_paid_users = UserProfile.objects.filter(
+        subscription_status__in=paid_statuses, payment_provider="mpesa",
+    ).count()
+    stripe_paid_users = UserProfile.objects.filter(
+        subscription_status__in=paid_statuses,
+    ).filter(Q(payment_provider="stripe") | Q(stripe_subscription_id__gt="")).count()
+    unknown_provider_paid = UserProfile.objects.filter(
+        subscription_status__in=paid_statuses,
+        payment_provider="none",
+        stripe_subscription_id="",
+    ).count()
+
+    # ── Attention needed ─────────────────────────────────────────────
+    expiring_soon = UserProfile.objects.filter(
+        subscription_status__in=("active", "trialing", "past_due"),
+        current_period_end__isnull=False,
+        current_period_end__gte=now,
+        current_period_end__lte=now + timedelta(days=3),
+    ).count()
+    expired_trials_live = UserProfile.objects.filter(
+        subscription_status="trialing",
+        trial_ends_at__lt=now,
+    ).count()
+
+    mpesa_payments_30d = MpesaPayment.objects.filter(created_at__gte=last_30d)
+    mpesa_new_30d = mpesa_payments_30d.filter(is_renewal=False, status="completed").count()
+    mpesa_renewals_30d = mpesa_payments_30d.filter(is_renewal=True, status="completed").count()
+    mpesa_success_rate = round(
+        mpesa_completed / (mpesa_completed + mpesa_failed + mpesa_expired) * 100, 1
+    ) if (mpesa_completed + mpesa_failed + mpesa_expired) else 0
+
+    provider_chart = [
+        {"label": "M-Pesa", "count": mpesa_paid_users},
+        {"label": "Stripe", "count": stripe_paid_users},
+        {"label": "Unknown", "count": unknown_provider_paid},
+    ]
+
     # ── Plan distribution chart ──────────────────────────────────────
     plan_chart = [
         {"label": p["label"], "count": p["count"]}
@@ -136,20 +186,35 @@ def billing_overview(request):
 
     context = {
         "page_title": "Billing & Revenue",
+        "billing_section": "overview",
         # Revenue cards
         "total_mrr_kes": total_mrr_kes,
         "total_mrr_usd": total_mrr_usd,
         "est_mrr_if_trials_convert_kes": est_mrr_if_trials_convert_kes,
         "revenue_30d": revenue_30d,
         "mrr_vs_cash_delta": mrr_vs_cash_delta,
+        "commerce_revenue_30d": commerce_revenue_30d,
+        "commerce_revenue_all_time": commerce_revenue_all_time,
         "arr_usd": arr_usd,
         "arpu": round(arpu, 2),
         "total_revenue": total_revenue,
         "revenue_month": revenue_month,
         "total_paying": total_paying,
+        "mpesa_new_30d": mpesa_new_30d,
+        "mpesa_renewals_30d": mpesa_renewals_30d,
+        "mpesa_success_rate": mpesa_success_rate,
+        # Providers
+        "mpesa_paid_users": mpesa_paid_users,
+        "stripe_paid_users": stripe_paid_users,
+        "unknown_provider_paid": unknown_provider_paid,
+        "provider_chart_json": json.dumps(provider_chart),
+        # Attention
+        "expiring_soon": expiring_soon,
+        "expired_trials_live": expired_trials_live,
         # Plan breakdown
         "plan_breakdown": plan_breakdown,
-        "plan_chart_json": plan_chart,
+        "plan_chart_json": json.dumps(plan_chart),
+        "all_plans": all_plans,
         # Subscription lifecycle
         "active_subs": active_subs,
         "trialing": trialing,
@@ -164,7 +229,7 @@ def billing_overview(request):
         "mpesa_expired": mpesa_expired,
         "mpesa_pending": mpesa_pending,
         # Charts
-        "revenue_trend_json": revenue_trend,
+        "revenue_trend_json": json.dumps(revenue_trend),
     }
     return render(request, "admin_dashboard/billing/overview.html", context)
 
@@ -201,8 +266,19 @@ def payment_list(request):
     paginator = Paginator(qs, 30)
     page = paginator.get_page(request.GET.get("page", 1))
 
+    last_30d = now - timedelta(days=30)
+    summary_30d = MpesaPayment.objects.filter(
+        created_at__gte=last_30d, status=MpesaPayment.Status.COMPLETED,
+    ).aggregate(
+        total=Sum("amount"),
+        count=Count("id"),
+        renewals=Count("id", filter=Q(is_renewal=True)),
+        new_subs=Count("id", filter=Q(is_renewal=False)),
+    )
+
     context = {
         "page_title": "Payment History",
+        "billing_section": "payments",
         "page_obj": page,
         "search": search,
         "current_status": status_filter,
@@ -211,6 +287,10 @@ def payment_list(request):
         "total_count": paginator.count,
         "status_choices": MpesaPayment.Status.choices,
         "plan_choices": UserProfile.PlanTier.choices,
+        "summary_30d_total": summary_30d["total"] or Decimal("0"),
+        "summary_30d_count": summary_30d["count"] or 0,
+        "summary_30d_renewals": summary_30d["renewals"] or 0,
+        "summary_30d_new": summary_30d["new_subs"] or 0,
     }
     return render(request, "admin_dashboard/billing/payments.html", context)
 
@@ -243,6 +323,7 @@ def billing_events(request):
 
     context = {
         "page_title": "Billing Events",
+        "billing_section": "events",
         "page_obj": page,
         "search": search,
         "current_provider": provider,
@@ -270,6 +351,14 @@ def subscription_management(request):
         created_at__gte=last_30d,
     ).count()
 
+    total_past_due = UserProfile.objects.filter(subscription_status="past_due").count()
+    expiring_soon = UserProfile.objects.filter(
+        subscription_status__in=("active", "trialing", "past_due"),
+        current_period_end__isnull=False,
+        current_period_end__gte=now,
+        current_period_end__lte=now + timedelta(days=3),
+    ).count()
+
     # User search
     qs = User.objects.select_related("profile").none()
     search = request.GET.get("q", "").strip()
@@ -279,33 +368,68 @@ def subscription_management(request):
             | Q(full_name__icontains=search)
             | Q(profile__company_name__icontains=search)
         ).order_by("-date_joined")
+    elif request.GET.get("preset") == "expiring":
+        qs = User.objects.select_related("profile").filter(
+            profile__subscription_status__in=("active", "trialing", "past_due"),
+            profile__current_period_end__isnull=False,
+            profile__current_period_end__gte=now,
+            profile__current_period_end__lte=now + timedelta(days=3),
+        ).order_by("profile__current_period_end")
+    elif request.GET.get("preset") == "past_due":
+        qs = User.objects.select_related("profile").filter(
+            profile__subscription_status="past_due",
+        ).order_by("-profile__updated_at")
+    elif request.GET.get("preset") == "expired_trials":
+        qs = User.objects.select_related("profile").filter(
+            profile__subscription_status="trialing",
+            profile__trial_ends_at__lt=now,
+        ).order_by("profile__trial_ends_at")
 
     plan_filter = request.GET.get("plan", "")
-    if plan_filter:
+    has_query = bool(search or request.GET.get("preset"))
+    if plan_filter and has_query:
         qs = qs.filter(profile__plan=plan_filter)
 
     status_filter = request.GET.get("status", "")
-    if status_filter:
+    if status_filter and has_query:
         qs = qs.filter(profile__subscription_status=status_filter)
+
+    provider_filter = request.GET.get("provider", "")
+    if provider_filter and has_query:
+        if provider_filter == "stripe":
+            qs = qs.filter(
+                Q(profile__payment_provider="stripe") | Q(profile__stripe_subscription_id__gt="")
+            )
+        else:
+            qs = qs.filter(profile__payment_provider=provider_filter)
 
     paginator = Paginator(qs, 25)
     page = paginator.get_page(request.GET.get("page", 1))
 
     context = {
         "page_title": "Subscription Management",
+        "billing_section": "subscriptions",
         "page_obj": page,
         "search": search,
         "current_plan": plan_filter,
         "current_status": status_filter,
+        "current_provider": provider_filter,
+        "current_preset": request.GET.get("preset", ""),
         "total_count": paginator.count,
         "total_active": total_active,
         "total_trialing": total_trialing,
+        "total_past_due": total_past_due,
+        "expiring_soon": expiring_soon,
         "total_comps": total_comps,
         "overrides_month": overrides_month,
+        "all_plans": get_all_plan_limits(),
         "plan_choices": UserProfile.PlanTier.choices,
         "status_choices": [
             ("active", "Active"), ("trialing", "Trialing"),
             ("past_due", "Past Due"), ("canceled", "Canceled"), ("none", "None"),
+        ],
+        "provider_choices": [
+            ("mpesa", "M-Pesa"), ("stripe", "Stripe"), ("none", "None"),
         ],
     }
     return render(request, "admin_dashboard/billing/subscriptions.html", context)
@@ -454,6 +578,7 @@ def bulk_grant(request):
                 messages.error(request, e)
             context = {
                 "page_title": "Bulk Grant Access",
+                "billing_section": "subscriptions",
                 "plan_choices": UserProfile.PlanTier.choices,
                 "form_plan": plan, "form_days": days,
                 "form_reason": reason, "form_emails": emails_raw,
@@ -471,6 +596,7 @@ def bulk_grant(request):
             plan_info = PLAN_LIMITS.get(plan, {})
             context = {
                 "page_title": "Bulk Grant Access",
+                "billing_section": "subscriptions",
                 "plan_choices": UserProfile.PlanTier.choices,
                 "step": "confirm",
                 "preview_users": found_users,
@@ -519,6 +645,7 @@ def bulk_grant(request):
 
     context = {
         "page_title": "Bulk Grant Access",
+        "billing_section": "subscriptions",
         "plan_choices": UserProfile.PlanTier.choices,
     }
     return render(request, "admin_dashboard/billing/bulk_grant.html", context)
@@ -549,6 +676,7 @@ def override_log(request):
 
     context = {
         "page_title": "Override Log",
+        "billing_section": "overrides",
         "page_obj": page,
         "search": search,
         "current_action": action_filter,
@@ -571,19 +699,27 @@ def plan_pricing(request):
     plans = []
     for tier, info in PLAN_LIMITS.items():
         db = db_prices.get(tier)
+        live = all_plans[tier]
         plans.append({
             "tier": tier,
             "label": info["label"],
             "default_kes": info["price_kes"],
             "default_usd": info["price_usd"],
-            "current_kes": all_plans[tier]["price_kes"],
-            "current_usd": all_plans[tier]["price_usd"],
+            "current_kes": live["price_kes"],
+            "current_usd": live["price_usd"],
             "has_override": db is not None and db.is_active,
             "db_obj": db,
+            "daily_llm_tokens": live.get("daily_llm_tokens", 0),
+            "max_posts_per_month": live.get("max_posts_per_month", 0),
+            "max_seeds_per_month": live.get("max_seeds_per_month", 0),
+            "max_social_accounts": live.get("max_social_accounts", 0),
+            "ai_images_per_month": live.get("ai_images_per_month", 0),
+            "trial_days": live.get("trial_days", 14),
         })
 
     context = {
         "page_title": "Plan Pricing",
+        "billing_section": "pricing",
         "plans": plans,
     }
     return render(request, "admin_dashboard/billing/pricing.html", context)
@@ -675,6 +811,7 @@ def discount_list(request):
 
     context = {
         "page_title": "Discount Codes",
+        "billing_section": "discounts",
         "page_obj": page,
         "search": search,
         "current_status": status_filter,
