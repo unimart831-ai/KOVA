@@ -1,0 +1,18 @@
+{# Single featured product reel — muted autoplay, tap to toggle sound. #}
+{% if product_reel %}
+<section class="product-reel-section" aria-label="Product reel">
+  <div class="product-reel-head">
+    <h2 class="product-reel-title">See it in action</h2>
+    <button type="button" class="reel-unmute-btn" id="reel-unmute-btn" aria-pressed="false">Tap for sound</button>
+  </div>
+  <div class="product-reel-frame">
+    <video id="product-reel-video"
+           class="product-reel-video"
+           src="{{ product_reel.video_url }}"
+           {% if product_reel.poster_url %}poster="{{ product_reel.poster_url }}"{% endif %}
+           muted autoplay loop playsinline preload="metadata"
+           aria-label="{{ product.name }} reel"></video>
+    <span class="reel-badge">Reel</span>
+  </div>
+</section>
+{% endif %}

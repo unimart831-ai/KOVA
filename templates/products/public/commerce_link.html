@@ -16,6 +16,7 @@
   <meta name="twitter:description" content="{{ seo_description }}">
   {% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}
   <script type="application/ld+json">{{ product_schema_json|safe }}</script>
+  {% include "products/public/_shop_reels_styles.html" %}
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     body { background: #f9fafb; min-height: 100vh; color: #111; }
@@ -55,6 +56,8 @@
     <p>Shop with</p>
     <h1><a href="{{ shop_index_url }}">{{ brand_name }}</a></h1>
   </div>
+
+  {% include "products/public/_product_reel_hero.html" %}
 
   <div class="hero">
     {% with gallery=product.all_image_urls %}
@@ -168,5 +171,6 @@ document.getElementById('pay-form').addEventListener('submit', async function(e)
   });
 })();
 </script>
+{% include "products/public/_shop_reels_autoplay.js.html" %}
 </body>
 </html>

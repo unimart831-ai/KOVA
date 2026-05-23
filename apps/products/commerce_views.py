@@ -17,6 +17,7 @@ from apps.products.commerce_links import (
     resolve_public_product,
     resolve_public_shop,
 )
+from apps.products.commerce_reels import get_public_product_reel, get_public_shop_reels
 from apps.products.commerce_seo import (
     brand_name,
     build_commerce_page_seo,
@@ -62,6 +63,7 @@ def public_shop_index(request, page_slug):
     brand = brand_name(profile, user)
     wa_text = f"Hi! I'd like to browse your shop — {brand}."
     seo = build_shop_page_seo(request, profile, user, products)
+    shop_reels = get_public_shop_reels(profile)
 
     return render(request, "products/public/shop_index.html", {
         "profile": profile,
@@ -70,6 +72,7 @@ def public_shop_index(request, page_slug):
         "shop_slug": resolve_page_slug(profile),
         "brand_name": brand,
         "wa_url": _whatsapp_url(profile, wa_text),
+        "shop_reels": shop_reels,
         **seo,
     })
 
@@ -107,6 +110,7 @@ def public_commerce_link(request, page_slug, commerce_slug):
         mpesa_available=mpesa_available,
         whatsapp_available=bool(whatsapp),
     )
+    product_reel = get_public_product_reel(product)
 
     return render(request, "products/public/commerce_link.html", {
         "profile": profile,
@@ -117,6 +121,7 @@ def public_commerce_link(request, page_slug, commerce_slug):
         "whatsapp": whatsapp,
         "wa_url": wa_url,
         "mpesa_available": mpesa_available,
+        "product_reel": product_reel,
         **seo,
     })
 
