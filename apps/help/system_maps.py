@@ -389,10 +389,10 @@ flowchart LR
     ),
     SystemMap(
         slug="products-commerce",
-        title="Products & Snap to Sell",
+        title="Commerce & Snap to Sell",
         nav_group="Business",
         print_order=14,
-        summary="Catalog, vision AI, stock alerts, auto-promote.",
+        summary="Catalog, public shops, M-Pesa payments, Shopify/marketplace sync, Snap to Sell.",
         audit=[
             "Snap to Sell: photo → vision AI → Product + content seeds async.",
             "auto_promote_products daily creates seeds for under-promoted products.",

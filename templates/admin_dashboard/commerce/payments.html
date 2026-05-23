@@ -1,0 +1,87 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+  KES {{ total_revenue|floatformat:0 }} collected · {{ pending_count }} pending
+</p>
+{% endblock %}
+
+{% block content %}
+{% include "admin_dashboard/commerce/_nav.html" %}
+
+<div class="flex flex-wrap items-center gap-3 mb-6">
+  <form method="get" class="flex items-center gap-2">
+    <input type="text" name="email" value="{{ current_email }}" placeholder="Seller email…" class="input text-xs w-44">
+    <select name="status" class="input text-xs w-32">
+      <option value="">All statuses</option>
+      {% for value, label in status_choices %}
+      <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="source" class="input text-xs w-36">
+      <option value="">All sources</option>
+      {% for value, label in source_choices %}
+      <option value="{{ value }}" {% if current_source == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn-primary text-xs px-3 py-1.5">Filter</button>
+    {% if current_status or current_source or current_email %}
+    <a href="{% url 'admin_dashboard:commerce_payments' %}" class="text-xs text-gray-400">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Amount</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Product</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Seller</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Phone</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-center">Status</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Source</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">When</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for pay in page_obj %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-2.5 text-xs font-semibold">{{ pay.currency }} {{ pay.amount|floatformat:0 }}</td>
+          <td class="px-4 py-2.5 text-xs">
+            {% if pay.product %}
+            <a href="{% url 'admin_dashboard:commerce_product_detail' pay.product.pk %}" class="text-kova-600 hover:underline">{{ pay.product.name }}</a>
+            {% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-2.5">
+            <a href="{% url 'admin_dashboard:user_detail' pay.user.pk %}" class="text-xs text-gray-600 hover:underline">{{ pay.user.email }}</a>
+          </td>
+          <td class="px-4 py-2.5 text-xs font-mono text-gray-500">{{ pay.phone_number }}</td>
+          <td class="px-4 py-2.5 text-center">
+            <span class="text-[10px] px-1.5 py-0.5 rounded
+              {% if pay.status == 'completed' %}bg-green-100 text-green-700{% elif pay.status == 'pending' %}bg-amber-100 text-amber-700{% else %}bg-red-100 text-red-700{% endif %}">
+              {{ pay.get_status_display }}
+            </span>
+          </td>
+          <td class="px-4 py-2.5 text-xs text-gray-500">{{ pay.get_source_display }}</td>
+          <td class="px-4 py-2.5 text-right text-xs text-gray-400">{{ pay.created_at|timesince }} ago</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="px-4 py-12 text-center text-sm text-gray-400">No commerce payments yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.has_other_pages %}
+  <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-800 flex justify-between">
+    <p class="text-xs text-gray-400">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</p>
+    <div class="flex gap-1">
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 text-xs rounded bg-gray-100">Prev</a>{% endif %}
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 text-xs rounded bg-gray-100">Next</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

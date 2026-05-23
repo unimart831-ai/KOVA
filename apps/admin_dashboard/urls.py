@@ -183,11 +183,20 @@ urlpatterns = [
     path("media-queue/<uuid:pk>/toggle/", media_queue.media_queue_toggle, name="media_queue_toggle"),
     path("media-queue/process-now/", media_queue.media_queue_process_now, name="media_queue_process_now"),
 
-    # Products / Stock Intelligence
-    path("products/", products.products_overview, name="products_overview"),
-    path("products/list/", products.product_list_admin, name="admin_product_list"),
-    path("products/alerts/", products.stock_alerts_admin, name="admin_stock_alerts"),
-    path("products/updates/", products.stock_updates_admin, name="admin_stock_updates"),
+    # Commerce (catalog, shops, payments, integrations)
+    path("commerce/", products.commerce_overview, name="commerce_overview"),
+    path("commerce/catalog/", products.commerce_catalog, name="commerce_catalog"),
+    path("commerce/catalog/<uuid:pk>/", products.commerce_product_detail, name="commerce_product_detail"),
+    path("commerce/shops/", products.commerce_shops, name="commerce_shops"),
+    path("commerce/payments/", products.commerce_payments, name="commerce_payments"),
+    path("commerce/integrations/", products.commerce_integrations, name="commerce_integrations"),
+    path("commerce/alerts/", products.commerce_stock_alerts, name="commerce_stock_alerts"),
+    path("commerce/stock/", products.commerce_stock_updates, name="commerce_stock_updates"),
+    # Legacy product URLs (same views)
+    path("products/", products.commerce_overview, name="products_overview"),
+    path("products/list/", products.commerce_catalog, name="admin_product_list"),
+    path("products/alerts/", products.commerce_stock_alerts, name="admin_stock_alerts"),
+    path("products/updates/", products.commerce_stock_updates, name="admin_stock_updates"),
 
     # Campaigns
     path("campaigns/", campaigns.campaigns_overview, name="campaigns_overview"),

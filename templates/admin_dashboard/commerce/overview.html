@@ -1,0 +1,259 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+  {{ public_shops }} public shop{{ public_shops|pluralize }} · {{ with_commerce_slug }} commerce link{{ with_commerce_slug|pluralize }} · KES {{ payment_revenue|floatformat:0 }} collected via M-Pesa
+</p>
+{% endblock %}
+
+{% block content %}
+{% include "admin_dashboard/commerce/_nav.html" %}
+
+{# ── Commerce hub stats ─────────────────────────────────────────────── #}
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+  <a href="{% url 'admin_dashboard:commerce_catalog' %}" class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-kova-300 transition-colors">
+    <p class="text-xs font-medium text-gray-500">Catalog items</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ total_products|format_number }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">{{ total_users_with_products }} seller{{ total_users_with_products|pluralize }}</p>
+  </a>
+  <a href="{% url 'admin_dashboard:commerce_shops' %}" class="bg-white dark:bg-gray-900 rounded-xl border border-emerald-200 dark:border-emerald-900/50 p-4 shadow-sm hover:border-emerald-400 transition-colors">
+    <p class="text-xs font-medium text-emerald-600">Public shops</p>
+    <p class="text-2xl font-bold text-emerald-600 mt-1">{{ public_shops }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">{{ with_commerce_slug }} shareable links</p>
+  </a>
+  <a href="{% url 'admin_dashboard:commerce_payments' %}" class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 shadow-sm hover:border-green-400 transition-colors">
+    <p class="text-xs font-medium text-green-600">M-Pesa payments</p>
+    <p class="text-2xl font-bold text-green-600 mt-1">{{ payment_completed }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">KES {{ payment_revenue|floatformat:0 }} · {{ payments_7d }} this week</p>
+  </a>
+  <a href="{% url 'admin_dashboard:commerce_integrations' %}" class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 p-4 shadow-sm hover:border-purple-400 transition-colors">
+    <p class="text-xs font-medium text-purple-600">Integrations</p>
+    <p class="text-2xl font-bold text-purple-600 mt-1">{{ shopify_stores|add:active_marketplaces }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">{{ shopify_stores }} Shopify · {{ active_marketplaces }} marketplaces</p>
+  </a>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-sky-200 dark:border-sky-900/50 p-4 shadow-sm">
+    <p class="text-xs font-medium text-sky-600">SEO-ready products</p>
+    <p class="text-2xl font-bold text-sky-600 mt-1">{{ seo_ready }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">slug + photo + description</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-amber-200 dark:border-amber-900/50 p-4 shadow-sm">
+    <p class="text-xs font-medium text-amber-600">Autopilot sellers</p>
+    <p class="text-2xl font-bold text-amber-600 mt-1">{{ autopilot_sellers }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">auto content on sync/snap</p>
+  </div>
+</div>
+
+{# ── Catalog source breakdown ───────────────────────────────────────── #}
+<div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+  <a href="{% url 'admin_dashboard:commerce_catalog' %}?source=manual" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-gray-400 transition-colors">
+    <p class="text-lg font-bold text-gray-900 dark:text-white">{{ manual_products }}</p>
+    <p class="text-[10px] text-gray-500">Manual</p>
+  </a>
+  <a href="{% url 'admin_dashboard:commerce_catalog' %}?source=snap" class="bg-white dark:bg-gray-900 rounded-lg border border-purple-200 dark:border-purple-900/50 p-3 text-center hover:border-purple-400 transition-colors">
+    <p class="text-lg font-bold text-purple-600">{{ snap_products }}</p>
+    <p class="text-[10px] text-gray-500">Snap to Sell</p>
+  </a>
+  <a href="{% url 'admin_dashboard:commerce_catalog' %}?source=marketplace" class="bg-white dark:bg-gray-900 rounded-lg border border-indigo-200 dark:border-indigo-900/50 p-3 text-center hover:border-indigo-400 transition-colors">
+    <p class="text-lg font-bold text-indigo-600">{{ marketplace_products }}</p>
+    <p class="text-[10px] text-gray-500">Marketplace sync</p>
+  </a>
+  <a href="{% url 'admin_dashboard:commerce_catalog' %}?source=shopify" class="bg-white dark:bg-gray-900 rounded-lg border border-emerald-200 dark:border-emerald-900/50 p-3 text-center hover:border-emerald-400 transition-colors">
+    <p class="text-lg font-bold text-emerald-600">{{ shopify_products }}</p>
+    <p class="text-[10px] text-gray-500">Shopify import</p>
+  </a>
+  <a href="{% url 'admin_dashboard:commerce_stock_alerts' %}" class="bg-white dark:bg-gray-900 rounded-lg border {% if unread_alerts %}border-red-200 dark:border-red-900/50{% else %}border-gray-200 dark:border-gray-800{% endif %} p-3 text-center hover:border-red-400 transition-colors">
+    <p class="text-lg font-bold {% if unread_alerts %}text-red-600{% else %}text-gray-900 dark:text-white{% endif %}">{{ unread_alerts }}</p>
+    <p class="text-[10px] text-gray-500">Unread alerts</p>
+  </a>
+</div>
+
+{# ── Stock status ───────────────────────────────────────────────────── #}
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+  <a href="{% url 'admin_dashboard:commerce_catalog' %}?status=in_stock" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-green-300 transition-colors">
+    <p class="text-lg font-bold text-green-600">{{ in_stock }}</p>
+    <p class="text-[10px] text-gray-500">In Stock</p>
+  </a>
+  <a href="{% url 'admin_dashboard:commerce_catalog' %}?status=low_stock" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-yellow-300 transition-colors">
+    <p class="text-lg font-bold text-yellow-600">{{ low_stock }}</p>
+    <p class="text-[10px] text-gray-500">Low Stock</p>
+  </a>
+  <a href="{% url 'admin_dashboard:commerce_catalog' %}?status=out_of_stock" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-red-300 transition-colors">
+    <p class="text-lg font-bold text-red-600">{{ out_of_stock }}</p>
+    <p class="text-[10px] text-gray-500">Out of Stock</p>
+  </a>
+  <a href="{% url 'admin_dashboard:commerce_catalog' %}?status=made_to_order" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-blue-300 transition-colors">
+    <p class="text-lg font-bold text-blue-600">{{ made_to_order }}</p>
+    <p class="text-[10px] text-gray-500">Made to Order</p>
+  </a>
+  <a href="{% url 'admin_dashboard:commerce_catalog' %}?status=unlimited" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-purple-300 transition-colors">
+    <p class="text-lg font-bold text-purple-600">{{ unlimited }}</p>
+    <p class="text-[10px] text-gray-500">Unlimited</p>
+  </a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+  {# ── Content pipeline ─────────────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 shadow-sm p-5">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Content &amp; Autopilot</h2>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+      <div class="text-center">
+        <p class="text-2xl font-bold text-purple-600">{{ snap_total }}</p>
+        <p class="text-[10px] text-gray-500">Snaps ({{ snap_7d }} 7d)</p>
+      </div>
+      <div class="text-center">
+        <p class="text-2xl font-bold text-violet-600">{{ snap_reel }}</p>
+        <p class="text-[10px] text-gray-500">Reels composed</p>
+      </div>
+      <div class="text-center">
+        <p class="text-2xl font-bold text-rose-600">{{ reel_posts }}</p>
+        <p class="text-[10px] text-gray-500">Reel posts</p>
+      </div>
+      <div class="text-center">
+        <p class="text-2xl font-bold text-indigo-600">{{ never_promoted }}</p>
+        <p class="text-[10px] text-gray-500">Never promoted</p>
+      </div>
+    </div>
+    <p class="text-[10px] text-gray-400 border-t border-gray-100 dark:border-gray-800 pt-3">
+      Public shop pages include muted autoplay product reels. SEO via sitemap at <code class="text-[10px]">{{ site_url }}/sitemap.xml</code>
+    </p>
+  </div>
+
+  {# ── Integrations summary ───────────────────────────────────────── #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Integrations</h2>
+      <a href="{% url 'admin_dashboard:commerce_integrations' %}" class="text-xs text-kova-600 hover:underline">Manage →</a>
+    </div>
+    <div class="space-y-3 text-xs">
+      <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
+        <span class="text-gray-600 dark:text-gray-400">Shopify stores</span>
+        <span class="font-semibold">{{ shopify_stores }} active · {{ shopify_products_synced }} products synced</span>
+      </div>
+      <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
+        <span class="text-gray-600 dark:text-gray-400">Marketplace partners</span>
+        <span class="font-semibold">{{ active_marketplaces }} active · {{ marketplace_sellers }} sellers</span>
+      </div>
+      <div class="flex justify-between items-center py-2">
+        <span class="text-gray-600 dark:text-gray-400">Marketplace products in Kova</span>
+        <span class="font-semibold">{{ marketplace_products }}</span>
+      </div>
+    </div>
+    <div class="mt-4 flex flex-wrap gap-2">
+      <a href="{% url 'admin_dashboard:shopify_stores' %}" class="text-[10px] px-2 py-1 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 hover:underline">Shopify stores</a>
+      <a href="{% url 'admin_dashboard:marketplace_list' %}" class="text-[10px] px-2 py-1 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 hover:underline">Marketplaces</a>
+      <a href="{% url 'admin_dashboard:revenue_overview' %}" class="text-[10px] px-2 py-1 rounded bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:underline">Revenue attribution</a>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Top Sellers by Catalog</h2>
+      <a href="{% url 'admin_dashboard:commerce_catalog' %}" class="text-xs text-kova-600 hover:underline">All items →</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Seller</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">Items</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">Low</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">OOS</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for u in top_users %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+            <td class="px-4 py-2.5">
+              <a href="{% url 'admin_dashboard:user_detail' u.user__id %}" class="text-xs font-medium text-kova-600 hover:underline">{{ u.user__full_name|default:u.user__email }}</a>
+            </td>
+            <td class="px-4 py-2.5 text-right text-xs font-semibold">{{ u.product_count }}</td>
+            <td class="px-4 py-2.5 text-right text-xs {% if u.low > 0 %}text-yellow-600 font-semibold{% else %}text-gray-400{% endif %}">{{ u.low }}</td>
+            <td class="px-4 py-2.5 text-right text-xs {% if u.oos > 0 %}text-red-600 font-semibold{% else %}text-gray-400{% endif %}">{{ u.oos }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="px-4 py-8 text-center text-sm text-gray-400">No catalog items yet</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Recent Stock Alerts</h2>
+      <a href="{% url 'admin_dashboard:commerce_stock_alerts' %}" class="text-xs text-kova-600 hover:underline">All alerts →</a>
+    </div>
+    <div class="divide-y divide-gray-100 dark:divide-gray-800 max-h-80 overflow-y-auto">
+      {% for alert in recent_alerts %}
+      <div class="px-5 py-3">
+        <div class="flex items-center gap-2 mb-0.5">
+          <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium
+            {% if alert.alert_type == 'out_of_stock' %}bg-red-100 text-red-700{% elif alert.alert_type == 'low_stock' %}bg-yellow-100 text-yellow-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+            {{ alert.get_alert_type_display }}
+          </span>
+          <span class="text-[10px] text-gray-400">{{ alert.user.email }}</span>
+        </div>
+        <p class="text-xs text-gray-600">{{ alert.product.name }} — {{ alert.message|truncatechars:80 }}</p>
+      </div>
+      {% empty %}
+      <div class="px-5 py-8 text-center text-sm text-gray-400">No alerts this week</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Recently Added</h2>
+    <a href="{% url 'admin_dashboard:commerce_stock_updates' %}" class="text-xs text-gray-500 hover:underline mr-3">Stock history →</a>
+    <a href="{% url 'admin_dashboard:commerce_catalog' %}" class="text-xs text-kova-600 hover:underline">View catalog →</a>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Product</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Seller</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Source</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-center">Stock</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">Price</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">Added</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for p in recent_products %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-2.5">
+            <a href="{% url 'admin_dashboard:commerce_product_detail' p.pk %}" class="text-xs font-medium text-kova-600 hover:underline">{{ p.name }}</a>
+            {% if p.commerce_slug %}<p class="text-[10px] text-gray-400 font-mono">/shop/…/{{ p.commerce_slug }}/</p>{% endif %}
+          </td>
+          <td class="px-4 py-2.5">
+            <a href="{% url 'admin_dashboard:user_detail' p.user.pk %}" class="text-xs text-gray-600 hover:underline">{{ p.user.email }}</a>
+          </td>
+          <td class="px-4 py-2.5">
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600">{{ p.sync_source_label }}</span>
+          </td>
+          <td class="px-4 py-2.5 text-center">
+            <span class="text-[10px] px-1.5 py-0.5 rounded
+              {% if p.stock_status == 'in_stock' %}bg-green-100 text-green-700{% elif p.stock_status == 'low_stock' %}bg-yellow-100 text-yellow-700{% elif p.stock_status == 'out_of_stock' %}bg-red-100 text-red-700{% else %}bg-gray-100 text-gray-700{% endif %}">
+              {{ p.get_stock_status_display }}
+            </span>
+          </td>
+          <td class="px-4 py-2.5 text-right text-xs">{% if p.price %}{{ p.currency }} {{ p.price|floatformat:0 }}{% else %}—{% endif %}</td>
+          <td class="px-4 py-2.5 text-right text-xs text-gray-400">{{ p.created_at|timesince }} ago</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-4 py-8 text-center text-sm text-gray-400">No products yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

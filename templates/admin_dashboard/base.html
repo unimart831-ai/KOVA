@@ -140,12 +140,44 @@
         Media Queue
       </a>
 
-      <a href="{% url 'admin_dashboard:products_overview' %}"
-         class="{% if '/dashboard/products' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
-        <svg class="mr-3 h-5 w-5 {% if '/dashboard/products' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <a href="{% url 'admin_dashboard:commerce_overview' %}"
+         class="{% if '/dashboard/commerce' in request.path or '/dashboard/products' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/dashboard/commerce' in request.path or '/dashboard/products' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+        </svg>
+        Commerce
+      </a>
+
+      <a href="{% url 'admin_dashboard:commerce_catalog' %}"
+         class="{% if '/dashboard/commerce/catalog' in request.path %}nav-link-active{% else %}nav-link{% endif %} ml-6">
+        <svg class="mr-3 h-5 w-5 {% if '/dashboard/commerce/catalog' in request.path %}text-emerald-600 dark:text-emerald-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
         </svg>
-        Products
+        Catalog
+      </a>
+
+      <a href="{% url 'admin_dashboard:commerce_shops' %}"
+         class="{% if '/dashboard/commerce/shops' in request.path %}nav-link-active{% else %}nav-link{% endif %} ml-6">
+        <svg class="mr-3 h-5 w-5 {% if '/dashboard/commerce/shops' in request.path %}text-emerald-600 dark:text-emerald-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        Public Shops
+      </a>
+
+      <a href="{% url 'admin_dashboard:commerce_payments' %}"
+         class="{% if '/dashboard/commerce/payments' in request.path %}nav-link-active{% else %}nav-link{% endif %} ml-6">
+        <svg class="mr-3 h-5 w-5 {% if '/dashboard/commerce/payments' in request.path %}text-green-600 dark:text-green-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+        Payments
+      </a>
+
+      <a href="{% url 'admin_dashboard:commerce_integrations' %}"
+         class="{% if '/dashboard/commerce/integrations' in request.path %}nav-link-active{% else %}nav-link{% endif %} ml-6">
+        <svg class="mr-3 h-5 w-5 {% if '/dashboard/commerce/integrations' in request.path %}text-purple-600 dark:text-purple-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+        </svg>
+        Integrations
       </a>
 
       <p class="nav-section">Growth & CRM</p>

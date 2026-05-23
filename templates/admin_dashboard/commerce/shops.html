@@ -1,0 +1,76 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Live public shop pages at /shop/&lt;slug&gt;/</p>{% endblock %}
+
+{% block content %}
+{% include "admin_dashboard/commerce/_nav.html" %}
+
+<div class="flex flex-wrap items-center gap-3 mb-6">
+  <form method="get" class="flex items-center gap-2">
+    <input type="text" name="q" value="{{ current_q }}" placeholder="Search seller, slug, company…" class="input text-xs w-56">
+    <label class="flex items-center gap-1 text-xs text-gray-500">
+      <input type="checkbox" name="autopilot" value="1" {% if current_autopilot == '1' %}checked{% endif %} class="rounded border-gray-300 text-kova-600"> Autopilot only
+    </label>
+    <button type="submit" class="btn-primary text-xs px-3 py-1.5">Filter</button>
+    {% if current_q or current_autopilot %}<a href="{% url 'admin_dashboard:commerce_shops' %}" class="text-xs text-gray-400">Clear</a>{% endif %}
+  </form>
+</div>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Shop</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Seller</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">Products</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">Commerce links</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-center">Autopilot</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Public URL</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for profile in page_obj %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-2.5">
+            <p class="text-xs font-semibold text-gray-900 dark:text-white">{{ profile.company_name|default:profile.user.full_name|default:profile.user.email }}</p>
+            <p class="text-[10px] text-gray-400 font-mono">{{ profile.page_slug }}</p>
+          </td>
+          <td class="px-4 py-2.5">
+            <a href="{% url 'admin_dashboard:user_detail' profile.user.pk %}" class="text-xs text-kova-600 hover:underline">{{ profile.user.email }}</a>
+          </td>
+          <td class="px-4 py-2.5 text-right text-xs font-semibold">{{ profile.active_products }}</td>
+          <td class="px-4 py-2.5 text-right text-xs">{{ profile.commerce_links }}</td>
+          <td class="px-4 py-2.5 text-center">
+            {% if profile.commerce_autopilot %}
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">ON</span>
+            {% else %}
+            <span class="text-[10px] text-gray-400">Off</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-2.5">
+            {% if profile.page_slug %}
+            <a href="{{ site_url }}/shop/{{ profile.page_slug }}/" target="_blank" rel="noopener" class="text-[10px] text-emerald-600 hover:underline font-mono">/shop/{{ profile.page_slug }}/ ↗</a>
+            {% else %}
+            <span class="text-[10px] text-gray-400">No slug</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-4 py-12 text-center text-sm text-gray-400">No public shops yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.has_other_pages %}
+  <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-800 flex justify-between">
+    <p class="text-xs text-gray-400">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</p>
+    <div class="flex gap-1">
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 text-xs rounded bg-gray-100">Prev</a>{% endif %}
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 text-xs rounded bg-gray-100">Next</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

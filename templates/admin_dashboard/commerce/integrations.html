@@ -1,0 +1,104 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Shopify product import and marketplace partner sync</p>{% endblock %}
+
+{% block content %}
+{% include "admin_dashboard/commerce/_nav.html" %}
+
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-emerald-200 dark:border-emerald-900/50 p-4 text-center">
+    <p class="text-xl font-bold text-emerald-600">{{ shopify_active }}</p>
+    <p class="text-[10px] text-gray-500 uppercase">Shopify stores</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 text-center">
+    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ shopify_products_synced }}</p>
+    <p class="text-[10px] text-gray-500 uppercase">Shopify products</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 p-4 text-center">
+    <p class="text-xl font-bold text-purple-600">{{ marketplace_active }}</p>
+    <p class="text-[10px] text-gray-500 uppercase">Marketplaces</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 text-center">
+    <a href="{% url 'admin_dashboard:marketplace_create' %}" class="text-xs text-kova-600 hover:underline">+ New marketplace</a>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Shopify Stores</h2>
+      <a href="{% url 'admin_dashboard:shopify_stores' %}" class="text-xs text-kova-600 hover:underline">Manage all →</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Store</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Seller</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">Products</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-center">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for store in shopify_stores %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+            <td class="px-4 py-2.5 text-xs font-mono">{{ store.shop_domain }}</td>
+            <td class="px-4 py-2.5">
+              <a href="{% url 'admin_dashboard:user_detail' store.user.pk %}" class="text-xs text-kova-600 hover:underline">{{ store.user.email }}</a>
+            </td>
+            <td class="px-4 py-2.5 text-right text-xs">{{ store.products_synced }}</td>
+            <td class="px-4 py-2.5 text-center">
+              <span class="text-[10px] px-1.5 py-0.5 rounded {% if store.is_active %}bg-emerald-100 text-emerald-700{% else %}bg-gray-100 text-gray-500{% endif %}">
+                {% if store.is_active %}Active{% else %}Inactive{% endif %}
+              </span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="px-4 py-8 text-center text-sm text-gray-400">No Shopify stores connected</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Marketplace Partners</h2>
+      <a href="{% url 'admin_dashboard:marketplace_list' %}" class="text-xs text-kova-600 hover:underline">Manage all →</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Partner</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">Sellers</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">Products</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-center">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for mp in marketplaces %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+            <td class="px-4 py-2.5">
+              <a href="{% url 'admin_dashboard:marketplace_detail' mp.pk %}" class="text-xs font-medium text-kova-600 hover:underline">{{ mp.name }}</a>
+              <p class="text-[10px] text-gray-400">{{ mp.slug }}</p>
+            </td>
+            <td class="px-4 py-2.5 text-right text-xs">{{ mp.active_sellers }}</td>
+            <td class="px-4 py-2.5 text-right text-xs">{{ mp.products_count }}</td>
+            <td class="px-4 py-2.5 text-center">
+              <span class="text-[10px] px-1.5 py-0.5 rounded {% if mp.is_active %}bg-emerald-100 text-emerald-700{% else %}bg-red-100 text-red-700{% endif %}">
+                {% if mp.is_active %}Active{% else %}Inactive{% endif %}
+              </span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="px-4 py-8 text-center text-sm text-gray-400">No marketplace partners yet</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ page_obj.paginator.count }} stock update{{ page_obj.paginator.count|pluralize }}</p>{% endblock %}
+
+{% block content %}
+{% include "admin_dashboard/commerce/_nav.html" %}
+
+<div class="flex flex-wrap items-center gap-3 mb-6">
+  <form method="get" class="flex items-center gap-2">
+    <select name="reason" class="input text-xs w-36">
+      <option value="">All reasons</option>
+      <option value="manual" {% if current_reason == 'manual' %}selected{% endif %}>Manual</option>
+      <option value="sale" {% if current_reason == 'sale' %}selected{% endif %}>Sale</option>
+      <option value="restock" {% if current_reason == 'restock' %}selected{% endif %}>Restock</option>
+      <option value="adjustment" {% if current_reason == 'adjustment' %}selected{% endif %}>Adjustment</option>
+    </select>
+    <button type="submit" class="btn-primary text-xs px-3 py-1.5">Filter</button>
+    {% if current_reason %}
+    <a href="{% url 'admin_dashboard:commerce_stock_updates' %}" class="text-xs text-gray-400">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Product</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Seller</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Reason</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-center">Status</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-center">Qty</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Notes</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">When</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for update in page_obj %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-2.5">
+            <a href="{% url 'admin_dashboard:commerce_product_detail' update.product.pk %}" class="text-xs font-medium text-kova-600 hover:underline">{{ update.product.name }}</a>
+          </td>
+          <td class="px-4 py-2.5">
+            <a href="{% url 'admin_dashboard:user_detail' update.product.user.pk %}" class="text-xs text-gray-600 hover:underline">{{ update.product.user.email }}</a>
+          </td>
+          <td class="px-4 py-2.5">
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-700">{{ update.get_reason_display }}</span>
+          </td>
+          <td class="px-4 py-2.5 text-center text-xs">
+            {% if update.previous_status and update.new_status %}
+            {{ update.previous_status }} → {{ update.new_status }}
+            {% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-2.5 text-center text-xs">
+            {% if update.previous_quantity is not None and update.new_quantity is not None %}
+            {{ update.previous_quantity }} → {{ update.new_quantity }}
+            {% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-2.5 text-xs text-gray-500 truncate max-w-xs">{{ update.notes|default:"—" }}</td>
+          <td class="px-4 py-2.5 text-right text-xs text-gray-400">{{ update.created_at|timesince }} ago</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="px-4 py-12 text-center text-sm text-gray-400">No stock updates found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.has_other_pages %}
+  <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-800 flex justify-between">
+    <p class="text-xs text-gray-400">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</p>
+    <div class="flex gap-1">
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 text-xs rounded bg-gray-100">Prev</a>{% endif %}
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 text-xs rounded bg-gray-100">Next</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
