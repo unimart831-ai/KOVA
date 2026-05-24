@@ -690,14 +690,17 @@ def expand_product_photos_view(request, product_id):
 def snap_to_sell(request):
     """Camera/upload page — user snaps a product photo."""
     from apps.products.commerce_autopilot import commerce_autopilot_active
+    from apps.products.photoroom import studio_polish_unavailable_message
 
+    plan_ctx = _plan_ctx(request)
     return render(
         request,
         "products/snap_to_sell.html",
         {
-            "plan_ctx": _plan_ctx(request),
+            "plan_ctx": plan_ctx,
             "commerce_autopilot": commerce_autopilot_active(request.user),
-            "visual_credits": _plan_ctx(request).get("visual_credits"),
+            "visual_credits": plan_ctx.get("visual_credits"),
+            "studio_polish_notice": studio_polish_unavailable_message(),
         },
     )
 
@@ -766,6 +769,7 @@ def snap_launch(request):
 
     if visual_mode == Product.VisualMode.PRO_SCENE:
         from apps.billing.visual_credits import check_visual_credit_limit
+        from apps.products.photoroom import studio_polish_unavailable_message
 
         allowed, msg = check_visual_credit_limit(request.user)
         if not allowed:
@@ -774,6 +778,9 @@ def snap_launch(request):
                 msg,
                 "products:snap",
             )
+        notice = studio_polish_unavailable_message()
+        if notice:
+            messages.warning(request, notice)
 
     # Validate offering_type
     valid_types = {c[0] for c in Product.OfferingType.choices}

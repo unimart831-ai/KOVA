@@ -34,6 +34,26 @@ def photoroom_enabled() -> bool:
     return bool(getattr(settings, "PHOTOROOM_API_KEY", ""))
 
 
+def studio_polish_unavailable_message() -> str | None:
+    """Short UI copy when Studio polish cannot call Photoroom."""
+    if not getattr(settings, "VISUAL_ENHANCE_ENABLED", True):
+        return "Studio polish is off on this server — Quick polish will be used."
+    if not photoroom_enabled():
+        return "Photoroom API key missing — Quick polish will be used (no credit)."
+    return None
+
+
+def studio_polish_fallback_message(reason: str | None) -> str | None:
+    """User-facing copy after Studio polish fell back to Quick polish."""
+    if reason == "photoroom_not_configured":
+        return "Studio polish isn’t configured — Quick polish was used (no credit)."
+    if reason == "photoroom_failed":
+        return "Studio polish failed — Quick polish was used instead."
+    if reason == "save_failed":
+        return "Couldn’t save studio polish — Quick polish was used instead."
+    return None
+
+
 def pick_background_color_hex(product, brand_colors: dict | None = None) -> str:
     """Solid studio background for Basic tier (no AI scenes)."""
     brand_colors = brand_colors or {}

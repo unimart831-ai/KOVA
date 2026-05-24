@@ -119,10 +119,27 @@ def build_snap_pipeline_status(product, user):
 
     # 3 — Photo set expansion (local rembg + Pillow)
     variation_action = _action("commerce.photo_variations")
+    studio_polish_action = (
+        AgentAction.objects.filter(
+            user=user,
+            action_type__in=("commerce.studio_polish", "commerce.pro_scene"),
+            input_data__product_id=product_id,
+        )
+        .order_by("-created_at")
+        .first()
+    )
     variation_count = sum(
         1 for u in (product.additional_images or [])
         if f"product_variations/{product_id}/" in u
     )
+
+    studio_polish_notice = ""
+    if getattr(product, "visual_mode", None) == "pro_scene" and not studio_polish_action:
+        out = (variation_action.output_data or {}) if variation_action else {}
+        if out.get("fallback") == "quick_polish":
+            from apps.products.photoroom import studio_polish_fallback_message
+
+            studio_polish_notice = studio_polish_fallback_message(out.get("reason")) or ""
 
     if analyze_status == "failed":
         expand_status = "skipped"
@@ -397,6 +414,7 @@ def build_snap_pipeline_status(product, user):
         "pending_count": pending_count,
         "auto_approve_posts": auto_approve_posts,
         "error_message": error_message,
+        "studio_polish_notice": studio_polish_notice,
         "terminal": terminal,
         "progress_percent": progress_percent,
     }

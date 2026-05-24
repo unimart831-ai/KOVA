@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-lg mx-auto space-y-6" x-data="snapToSell({{ commerce_autopilot|yesno:'true,false' }}, {{ visual_credits.remaining|default:15 }}, {{ visual_credits.at_limit|yesno:'true,false' }})">
+<div class="max-w-lg mx-auto space-y-6" x-data="snapToSell({{ commerce_autopilot|yesno:'true,false' }}, {{ visual_credits.remaining|default:15 }}, {{ visual_credits.at_limit|yesno:'true,false' }}, {{ studio_polish_notice|yesno:'true,false' }})">
 
   {% include "products/_products_subnav.html" %}
 
@@ -245,6 +245,12 @@
           </span>
         </label>
       </div>
+      {% if studio_polish_notice %}
+      <p x-show="visualMode === 'pro_scene'" x-cloak
+         class="text-[11px] leading-snug text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 rounded-lg px-2.5 py-2">
+        {{ studio_polish_notice }}
+      </p>
+      {% endif %}
     </div>
 
     {# Launch button #}
@@ -265,7 +271,7 @@
 </div>
 
 <script>
-function snapToSell(autopilot, creditsRemaining, creditsAtLimit) {
+function snapToSell(autopilot, creditsRemaining, creditsAtLimit, studioPolishUnavailable) {
   return {
     photos: [],   // [{file: File, preview: 'data:...'}]
     name: '',
@@ -274,6 +280,7 @@ function snapToSell(autopilot, creditsRemaining, creditsAtLimit) {
     autopilot: !!autopilot,
     showDetails: false,
     visualMode: 'quick_polish',
+    studioPolishUnavailable: !!studioPolishUnavailable,
     proSceneDisabled: !!creditsAtLimit || (creditsRemaining !== undefined && creditsRemaining <= 0),
 
     offeringConfig: {

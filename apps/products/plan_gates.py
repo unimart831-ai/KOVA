@@ -1,6 +1,7 @@
 """Plan limit helpers for Products features."""
 
 from apps.billing.models import get_effective_plan_tier, get_user_plan_limits
+from apps.products.photoroom import studio_polish_unavailable_message
 
 
 def product_plan_context(user):
@@ -18,4 +19,5 @@ def product_plan_context(user):
         "mpesa_commerce": bool(limits.get("mpesa_commerce")),
         "visual_credits": get_visual_credit_usage(user),
         "visual_enhance_premium": bool(limits.get("visual_enhance_premium")),
+        "studio_polish_notice": studio_polish_unavailable_message(),
     }
