@@ -94,7 +94,9 @@ Good morning {{1}}! ☀️
 
 {{2}}
 
-Score: {{3}} — Reply HELP for commands.
+Score: {{3}}
+
+Tap a button below to act.
 ```
 
 | Variable | Content from Kova |
@@ -103,7 +105,17 @@ Score: {{3}} — Reply HELP for commands.
 | `{{2}}` | 2-line brief summary (max ~160 chars) |
 | `{{3}}` | Score line e.g. `72/100 (+4)` |
 
-**Optional:** Add a URL button "Open brief" → `https://YOUR-DOMAIN.com/brief/`
+**Buttons (add in template builder — max 3 for Utility):**
+
+| Index | Type | Label | Value |
+|-------|------|-------|-------|
+| 0 | **Visit website** (URL) | `Open brief` | `https://YOUR-DOMAIN.com/brief?{{1}}` |
+| 1 | **Quick reply** | `Approve` | (fixed — sends "Approve" when tapped) |
+| 2 | **Quick reply** | `Score` | (fixed — sends "Score" when tapped) |
+
+The URL variable `{{1}}` is filled at send time from `KOVA_DAILY_BRIEF_URL_SUFFIX` (default: `utm_source=whatsapp`).
+
+After the user taps any button or replies, Kova sends **session quick-action buttons** (Approve / Posts / Score) with each response — no extra Meta approval needed.
 
 ### Template B — Onboarding completion (if not already live)
 
@@ -137,6 +149,9 @@ WHATSAPP_APP_SECRET=your-meta-app-secret
 # Daily brief template (must match Meta-approved name exactly)
 KOVA_DAILY_BRIEF_TEMPLATE_NAME=kova_daily_brief
 KOVA_DAILY_BRIEF_TEMPLATE_LANG=en
+# URL button variable for template: https://YOUR-DOMAIN/brief?{{1}}
+KOVA_DAILY_BRIEF_URL_SUFFIX=utm_source=whatsapp
+# Set KOVA_DAILY_BRIEF_URL_SUFFIX= (empty) if URL button has no variable
 
 # Onboarding ping (optional)
 KOVA_ONBOARDING_TEMPLATE_NAME=kova_onboarding_ready

@@ -18,11 +18,34 @@
 
 | Code name | Env var | Category | Variables | Body template |
 |-----------|---------|----------|-----------|---------------|
-| **Daily brief morning ping** | `KOVA_DAILY_BRIEF_TEMPLATE_NAME` | Utility | `{{1}}` first name, `{{2}}` summary snippet, `{{3}}` score line | "Good morning {{1}}! ☀️ {{2}} Score: {{3}} — Reply HELP for commands." |
+| **Daily brief morning ping** | `KOVA_DAILY_BRIEF_TEMPLATE_NAME` | Utility | Body: `{{1}}` name, `{{2}}` summary, `{{3}}` score. URL btn `{{1}}` = utm suffix | See button layout below |
 | Onboarding completion ping | `KOVA_ONBOARDING_TEMPLATE_NAME` | Utility | `{{1}}` first name, `{{2}}` next step URL | "Karibu {{1}}! Your Kova agency is ready. Your daily brief and content plan are live. Open: {{2}}" |
 | Booking confirmation (customer) | `booking_confirmed_customer` | Utility | `{{1}}` service, `{{2}}` date, `{{3}}` time, `{{4}}` business | "Karibu! Your {{1}} is confirmed for {{2}} at {{3}}. Save this WhatsApp number for changes. Asante! — {{4}}" |
 | Booking notification (owner) | `booking_new_owner` | Utility | `{{1}}` customer, `{{2}}` phone, `{{3}}` service, `{{4}}` date, `{{5}}` time, `{{6}}` price, `{{7}}` source | "New booking: {{1}} ({{2}}) — {{3}} · {{4}} {{5}} · KES {{6}} · Source: {{7}}" |
 | Review request (24h after conversion) | `review_request_customer` | Utility | `{{1}}` customer name, `{{2}}` business | "Hi {{1}}! Quick favour — could you share a few words about your experience with {{2}}? Even one line helps a lot. Asante! 🙏" |
+
+### Daily brief template — full spec
+
+**Body:**
+```
+Good morning {{1}}! ☀️
+
+{{2}}
+
+Score: {{3}}
+
+Tap a button below to act.
+```
+
+**Buttons (in this order):**
+
+| # | Type | Label | URL / action |
+|---|------|-------|----------------|
+| 0 | URL | Open brief | `https://YOUR-DOMAIN.com/brief?{{1}}` → send `utm_source=whatsapp` |
+| 1 | Quick reply | Approve | User message: `Approve` |
+| 2 | Quick reply | Score | User message: `Score` |
+
+**Session buttons** (after any reply, within 24h): Kova sends interactive Approve / Posts / Score automatically.
 
 ## Reply-to-act (after daily brief ping)
 

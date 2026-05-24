@@ -103,8 +103,9 @@ class TestDispatchCommand:
 
 
 class TestBriefWhatsAppLog:
+    @patch("apps.briefs.whatsapp_commands._send_owner_action_buttons", return_value=True)
     @patch("apps.briefs.whatsapp_commands._send_owner_reply", return_value=True)
-    def test_handle_owner_command_logs(self, _reply, pro_user, today_brief):
+    def test_handle_owner_command_logs(self, _reply, _buttons, pro_user, today_brief):
         from apps.briefs.whatsapp_commands import handle_owner_brief_command
 
         msg = {
@@ -114,3 +115,19 @@ class TestBriefWhatsAppLog:
         }
         assert handle_owner_brief_command(msg) is True
         assert BriefWhatsAppLog.objects.filter(user=pro_user, command="help").exists()
+
+    @patch("apps.briefs.whatsapp_commands._send_owner_action_buttons", return_value=True)
+    @patch("apps.briefs.whatsapp_commands._send_owner_reply", return_value=True)
+    def test_button_reply_id_maps_to_approve(self, mock_reply, _buttons, pro_user, today_brief):
+        from apps.briefs.whatsapp_commands import handle_owner_brief_command
+
+        msg = {
+            "from": "254712345678",
+            "type": "interactive",
+            "interactive": {
+                "type": "button_reply",
+                "button_reply": {"id": "brief_approve", "title": "Approve"},
+            },
+        }
+        assert handle_owner_brief_command(msg) is True
+        assert BriefWhatsAppLog.objects.filter(user=pro_user, command="approve").exists()

@@ -705,10 +705,13 @@ KOVA_ONBOARDING_TEMPLATE_NAME = env("KOVA_ONBOARDING_TEMPLATE_NAME", default="")
 KOVA_ONBOARDING_TEMPLATE_LANG = env("KOVA_ONBOARDING_TEMPLATE_LANG", default="en")
 
 # Daily brief WhatsApp ping — fires after each DailyBrief is generated (Pro+).
-# Template body suggestion (3 variables: first_name, summary_snippet, score_line):
-#   "Good morning {{1}}! ☀️ {{2}} Score: {{3}}. Tap to open your brief."
+# Template: body (3 vars) + URL button index 0 + Quick reply "Approve" + "Score"
+# See docs/DAILY_BRIEF_WHATSAPP_SETUP.md
 KOVA_DAILY_BRIEF_TEMPLATE_NAME = env("KOVA_DAILY_BRIEF_TEMPLATE_NAME", default="")
 KOVA_DAILY_BRIEF_TEMPLATE_LANG = env("KOVA_DAILY_BRIEF_TEMPLATE_LANG", default="en")
+# Dynamic URL suffix for template button 0 (template URL: https://domain/brief/{{1}}).
+# Set empty string if your template uses a fully static URL with no variable.
+KOVA_DAILY_BRIEF_URL_SUFFIX = env("KOVA_DAILY_BRIEF_URL_SUFFIX", default="utm_source=whatsapp")
 
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
 

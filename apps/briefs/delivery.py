@@ -187,14 +187,11 @@ def _send_brief_whatsapp(user, brief, digest: dict) -> bool:
     summary_snippet = _truncate(digest.get("whatsapp_body") or digest.get("headline", ""), 160)
     score_line = digest.get("score_line") or f"{brief.kova_score or 0}/100"
 
-    components = [{
-        "type": "body",
-        "parameters": [
-            {"type": "text", "text": first_name},
-            {"type": "text", "text": summary_snippet},
-            {"type": "text", "text": score_line},
-        ],
-    }]
+    from apps.briefs.whatsapp_buttons import build_daily_brief_template_components
+
+    components = build_daily_brief_template_components(
+        first_name, summary_snippet, score_line,
+    )
 
     from apps.platforms.providers.whatsapp import WhatsAppProvider
 
@@ -224,7 +221,8 @@ def _record_whatsapp_delivery(user, brief, result: dict, to_number: str) -> None
         "sent_at": timezone.now().isoformat(),
         "to": to_number,
         "wamid": result.get("wamid", ""),
-        "reply_commands": "HELP · SCORE · APPROVE · IDEA 1",
+        "reply_commands": "Tap Approve · Score · Open brief",
+        "template_buttons": ["url:Open brief", "qr:Approve", "qr:Score"],
     }
     brief.performance_summary = ps
     brief.save(update_fields=["performance_summary"])

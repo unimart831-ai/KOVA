@@ -67,12 +67,13 @@ def handle_owner_brief_command(msg_data: dict, contacts: dict | None = None) -> 
             wa_id,
             "WhatsApp brief commands need Biashara (Pro). Upgrade at "
             f"{getattr(settings, 'SITE_URL', '').rstrip('/')}/billing/",
+            send_buttons=False,
         )
         _log_command(user, wa_id, text, "plan_blocked", success=False)
         return True
 
     response, command_key, success, metadata = _dispatch_command(user, text)
-    _send_owner_reply(wa_id, response)
+    _send_owner_reply(wa_id, response, user=user, brief=_get_today_brief(user))
     _log_command(user, wa_id, text, command_key, response, success=success, metadata=metadata)
     return True
 
@@ -90,15 +91,25 @@ def find_user_by_whatsapp_id(wa_id: str):
 
 
 def _extract_command_text(msg_data: dict, msg_type: str) -> str:
+    from apps.briefs.whatsapp_buttons import map_button_inbound
+
     if msg_type == "text":
         return (msg_data.get("text", {}).get("body", "") or "").strip()
     if msg_type == "interactive":
         interactive = msg_data.get("interactive", {})
         inter_type = interactive.get("type", "")
         if inter_type == "button_reply":
-            return (interactive.get("button_reply", {}).get("title", "") or "").strip()
+            reply = interactive.get("button_reply", {})
+            mapped = map_button_inbound(
+                reply.get("id", ""),
+                reply.get("title", ""),
+            )
+            return mapped
         if inter_type == "list_reply":
-            return (interactive.get("list_reply", {}).get("title", "") or "").strip()
+            row_id = interactive.get("list_reply", {}).get("id", "")
+            title = interactive.get("list_reply", {}).get("title", "")
+            mapped = map_button_inbound(row_id, title)
+            return mapped or title
     return ""
 
 
@@ -273,7 +284,7 @@ def _handle_idea(user, text: str) -> tuple[str, str, bool, dict]:
     )
 
 
-def _send_owner_reply(wa_id: str, body: str) -> bool:
+def _send_owner_reply(wa_id: str, body: str, *, user=None, brief=None, send_buttons: bool = True) -> bool:
     token = getattr(settings, "WHATSAPP_ACCESS_TOKEN", "") or ""
     phone_id = getattr(settings, "WHATSAPP_PHONE_NUMBER_ID", "") or ""
     if not (token and phone_id):
@@ -283,15 +294,50 @@ def _send_owner_reply(wa_id: str, body: str) -> bool:
     from apps.platforms.providers.whatsapp import WhatsAppProvider
 
     provider = WhatsAppProvider()
-    result = provider.send_text_message(
+    sent = False
+
+    if body:
+        result = provider.send_text_message(
+            access_token=token,
+            to=wa_id,
+            body=body[:4096],
+            phone_number_id=phone_id,
+        )
+        if not result.get("success"):
+            logger.warning("Owner WA reply failed for %s: %s", wa_id, result.get("error"))
+        sent = bool(result.get("success"))
+
+    if send_buttons and user is not None:
+        sent = _send_owner_action_buttons(wa_id, user, brief=brief) or sent
+
+    return sent
+
+
+def _send_owner_action_buttons(wa_id: str, user, *, brief=None) -> bool:
+    """Send up to 3 quick-action buttons (works inside 24h customer service window)."""
+    from apps.briefs.whatsapp_buttons import action_buttons_for_user
+    from apps.platforms.providers.whatsapp import WhatsAppProvider
+
+    token = getattr(settings, "WHATSAPP_ACCESS_TOKEN", "") or ""
+    phone_id = getattr(settings, "WHATSAPP_PHONE_NUMBER_ID", "") or ""
+    if not (token and phone_id):
+        return False
+
+    pending = brief.posts_pending if brief else 0
+    buttons = action_buttons_for_user(user, posts_pending=pending)
+    provider = WhatsAppProvider()
+    result = provider.send_interactive_buttons(
         access_token=token,
         to=wa_id,
-        body=body[:4096],
+        body="Quick actions:",
+        buttons=buttons,
+        footer="Or type HELP for all commands",
         phone_number_id=phone_id,
     )
     if not result.get("success"):
-        logger.warning("Owner WA reply failed for %s: %s", wa_id, result.get("error"))
-    return bool(result.get("success"))
+        logger.debug("Action buttons not sent for %s: %s", wa_id, result.get("error"))
+        return False
+    return True
 
 
 def _log_command(user, wa_id, inbound, command_key, response="", *, success=True, metadata=None):
