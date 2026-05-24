@@ -510,21 +510,7 @@ def brief_home(request):
         date=brief.date if brief else today,
     )[:7]
 
-    published_today = request.user.posts.filter(
-        status="published",
-        published_at__date=today,
-    ).count()
-    failed_count = request.user.posts.filter(status="failed").count()
-    scheduled_count = request.user.posts.filter(
-        status__in=["approved", "scheduled"],
-    ).count()
-
     superfans = Superfan.objects.filter(user=request.user)[:5]
-
-    from apps.platforms.models import SocialAccount
-    has_connected_platform = SocialAccount.objects.filter(
-        user=request.user, is_active=True,
-    ).exists()
 
     upcoming_moments = []
     holiday_drafts_ready = 0
@@ -539,43 +525,12 @@ def brief_home(request):
     except Exception:
         pass
 
-    profile_health_alerts = []
-    try:
-        from apps.profile_audit.models import ProfileAudit, ProfileUpdateSuggestion
-        from django.db.models import Max
-        latest_ids = list(
-            ProfileAudit.objects.filter(user=request.user)
-            .values("social_account_id")
-            .annotate(latest_id=Max("id"))
-            .values_list("latest_id", flat=True)
-        )
-        for audit in (
-            ProfileAudit.objects
-            .filter(id__in=latest_ids, completeness_score__lt=70, error="")
-            .select_related("social_account")[:3]
-        ):
-            profile_health_alerts.append({
-                "platform": audit.social_account.platform,
-                "score": audit.completeness_score,
-                "pending": audit.suggestions.filter(
-                    status=ProfileUpdateSuggestion.Status.PENDING,
-                ).count(),
-                "account_id": audit.social_account_id,
-            })
-    except Exception:
-        pass
-
     performance = brief.performance_summary if brief else {}
     decisions_needed = _enrich_decisions(performance.get("decisions_needed", []))
-
-    try:
-        from apps.briefs.operations_report import build_operations_report
-
-        operations_report = build_operations_report(request.user, hours=24)
-    except Exception:
-        operations_report = {"has_activity": False, "categories": [], "recent_tasks": []}
-
     operations_update = performance.get("operations_update", "")
+
+    from apps.briefs.dashboard import get_cached_home_extras
+    home_extras = get_cached_home_extras(request.user, brief)
 
     return render(request, "briefs/home.html", {
         "brief": brief,
@@ -586,28 +541,16 @@ def brief_home(request):
         "your_move": _extract_your_move(brief.summary if brief else ""),
         "decisions_needed": decisions_needed,
         "score_breakdown": _get_score_breakdown(brief),
-        "customer_pulse": _build_customer_pulse(request.user),
         "recent_briefs": recent_briefs,
-        "published_today": published_today,
-        "failed_count": failed_count,
-        "scheduled_count": scheduled_count,
         "superfans": superfans,
-        "has_connected_platform": has_connected_platform,
-        "setup_checklist": _build_setup_checklist(request.user),
-        "value_summary": _build_value_summary(request.user),
-        "brief_streak": _build_brief_streak(request.user),
-        "quick_actions": _build_quick_actions(request.user, brief),
-        "momentum": _build_momentum_data(request.user),
         "research_updated_at": _parse_research_updated_at(brief),
         "dismissed_decisions": _get_dismissed_decisions(brief),
         "trending_topics": _normalize_trending_topics(brief),
         "upcoming_moments": upcoming_moments,
         "holiday_drafts_ready": holiday_drafts_ready,
-        "profile_health_alerts": profile_health_alerts,
-        "revenue_stat": _safe_revenue_stat(request.user),
-        "operations_report": operations_report,
         "operations_update": operations_update,
         "page_title": "Home",
+        **home_extras,
     })
 
 
@@ -627,6 +570,24 @@ def _safe_revenue_stat(user):
             "Revenue stat card failed for %s — hiding card", user.email,
         )
         return None
+
+
+@login_required
+def operations_report_partial(request):
+    """HTMX lazy-load for the operations report panel."""
+    from apps.briefs.dashboard import get_cached_operations_report
+
+    today = timezone.now().date()
+    brief = DailyBrief.objects.filter(user=request.user, date=today).first()
+    operations_report = get_cached_operations_report(request.user, hours=24)
+    operations_update = ""
+    if brief and brief.performance_summary:
+        operations_update = brief.performance_summary.get("operations_update", "")
+
+    return render(request, "briefs/_operations_report.html", {
+        "operations_report": operations_report,
+        "operations_update": operations_update,
+    })
 
 
 @login_required

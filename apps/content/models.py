@@ -280,6 +280,7 @@ class Post(SoftDeleteMixin, models.Model):
             models.Index(fields=["user", "-scheduled_at"]),
             models.Index(fields=["user", "media_status"]),
             models.Index(fields=["seed", "status"]),
+            models.Index(fields=["user", "status", "published_at"], name="content_post_user_pub_idx"),
         ]
 
     def __str__(self):

@@ -1,5 +1,6 @@
-"""Middleware to enforce onboarding completion for authenticated users."""
+"""Middleware for accounts app."""
 
+from django.contrib.auth import get_user_model
 from django.shortcuts import redirect
 
 
@@ -36,4 +37,20 @@ class OnboardingMiddleware:
             and not any(request.path.startswith(p) for p in self.ALLOWED_PREFIXES)
         ):
             return redirect("accounts:onboarding")
+        return self.get_response(request)
+
+
+class ProfilePrefetchMiddleware:
+    """Load user + profile in one query after authentication."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if getattr(request, "user", None) and request.user.is_authenticated:
+            User = get_user_model()
+            try:
+                request.user = User.objects.select_related("profile").get(pk=request.user.pk)
+            except User.DoesNotExist:
+                pass
         return self.get_response(request)

@@ -10,6 +10,19 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
+@shared_task(name="analytics.flush_pageview_buffer")
+def flush_pageview_buffer():
+    """Drain buffered PageView rows from Redis into Postgres."""
+    from apps.analytics.pageview_buffer import drain_pageview_buffer
+    total = 0
+    while True:
+        n = drain_pageview_buffer(batch_size=200)
+        total += n
+        if n < 200:
+            break
+    return total
+
+
 @shared_task(name="analyze-competitor")
 def analyze_competitor_task(user_id, competitor_id):
     """Run AI analysis on a single competitor, then alert on high-priority insights."""

@@ -14,20 +14,10 @@
   <meta property="og:url" content="{{ request.build_absolute_uri }}">
   <meta name="twitter:card" content="summary_large_image">
 
-  {# Tailwind CDN for public pages (no build step needed) #}
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            accent: '{{ page.accent_color }}',
-          }
-        }
-      }
-    }
-  </script>
+  {# Compiled Tailwind — no runtime CDN compiler #}
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+  <script defer src="{% static 'js/vendor/htmx.min.js' %}"></script>
   <style>
     body {
       background-color: {{ page.background_color }};

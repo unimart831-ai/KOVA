@@ -80,7 +80,11 @@ AVAILABLE_PLATFORMS = ACTIVE_PLATFORMS
 @login_required
 def platform_list(request):
     """Show connected platforms and connect buttons."""
-    accounts = request.user.social_accounts.all()
+    accounts = (
+        request.user.social_accounts
+        .defer("access_token", "refresh_token", "token_scope")
+        .all()
+    )
     connected_platforms = set(
         accounts.filter(is_active=True).values_list("platform", flat=True)
     )

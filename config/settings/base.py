@@ -108,6 +108,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.accounts.middleware.ProfilePrefetchMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
@@ -156,6 +157,8 @@ if REDIS_URL:
             "LOCATION": REDIS_URL,
         }
     }
+    SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+    SESSION_CACHE_ALIAS = "default"
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -249,6 +252,10 @@ CELERY_BEAT_SCHEDULE = {
     "process-media-queues-every-5-min": {
         "task": "media_queue.process_queues",
         "schedule": 300.0,  # every 5 minutes — publish queued media
+    },
+    "flush-pageview-buffer": {
+        "task": "analytics.flush_pageview_buffer",
+        "schedule": 30.0,  # every 30 seconds — drain analytics buffer
     },
     "check-stock-alerts": {
         "task": "check-stock-alerts",

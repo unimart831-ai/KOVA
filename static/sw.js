@@ -1,18 +1,21 @@
-// Kova Agent — Service Worker (PWA offline shell + push notifications ready)
-const CACHE_NAME = "kova-v1";
+// Kova Agent — Service Worker (PWA shell + static precache)
+const CACHE_NAME = "kova-v2";
 const OFFLINE_URL = "/brief/";
+const PRECACHE = [
+  OFFLINE_URL,
+  "/static/css/output.css",
+  "/static/js/vendor/htmx.min.js",
+  "/static/js/vendor/alpine.min.js",
+  "/static/js/kova-realtime.js",
+];
 
-// Cache the app shell on install
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll([OFFLINE_URL]);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE))
   );
   self.skipWaiting();
 });
 
-// Clean old caches on activate
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -22,11 +25,23 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Network-first strategy — serve from network, fall back to cache
 self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request).catch(() => caches.match(OFFLINE_URL))
+    );
+    return;
+  }
+  if (url.pathname.startsWith("/static/")) {
+    event.respondWith(
+      caches.match(event.request).then((cached) =>
+        cached || fetch(event.request).then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          return response;
+        })
+      )
     );
   }
 });

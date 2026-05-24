@@ -524,6 +524,18 @@ def retry_image_generation(post_id: str):
         return {"error": str(exc)}
 
 
+def _notify_post_status(post):
+    """Push WebSocket update so studio cards refresh without aggressive polling."""
+    try:
+        from apps.notifications.realtime import send_user_event
+        send_user_event(post.user_id, "post_status", {
+            "post_id": str(post.pk),
+            "status": post.media_status,
+        })
+    except Exception:
+        pass
+
+
 @shared_task(name="content.generate_post_images", soft_time_limit=180, time_limit=240)
 def generate_post_images(post_id: str):
     """
@@ -639,6 +651,7 @@ def generate_post_images(post_id: str):
             pass
         return {"error": str(exc)}
 
+    _notify_post_status(post)
     return {"post_id": post_id, "status": post.media_status}
 
 
@@ -782,6 +795,7 @@ def compose_reel_video(post_id: str):
     post.save(update_fields=[
         "visual_metadata", "media_urls", "aspect_ratio", "media_status", "updated_at",
     ])
+    _notify_post_status(post)
 
     logger.info("compose_reel_video: post %s composed (%d bytes)", post_id, len(mp4_bytes))
     return {"post_id": post_id, "video_url": public_url, "status": "done"}

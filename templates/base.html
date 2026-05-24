@@ -39,17 +39,14 @@
     }
   </style>
 
-  <!-- Inter Font -->
+  <!-- Inter Font (400 + 600 only — faster load) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 
-  <!-- HTMX -->
-  <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
-
-  <!-- Alpine.js + Intersect plugin -->
-  <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/intersect@3.14.8/dist/cdn.min.js" integrity="sha384-eA6+k1peuuIgxPHwWoQHx6OoDZ7hFJ+SKfMOhop5+zMV4SWR5OWBMatbIdoqA4lZ" crossorigin="anonymous"></script>
-  <script defer src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js"></script>
+  <!-- HTMX + Alpine (self-hosted — no CDN round-trips) -->
+  <script defer src="{% static 'js/vendor/htmx.min.js' %}"></script>
+  <script defer src="{% static 'js/vendor/alpine.min.js' %}"></script>
 
   <!-- HTMX config -->
   <meta name="htmx-config" content='{"getCsrfToken": true}'>
@@ -139,6 +136,7 @@
   </script>
 
   {% if user.is_authenticated %}
+  <script defer src="{% static 'js/kova-realtime.js' %}"></script>
   <script nonce="{{ request.csp_nonce }}">
     (function() {
       var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';

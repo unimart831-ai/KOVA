@@ -81,15 +81,19 @@ class FeatureUsageMiddleware:
         if section is None:
             return response
 
-        # Fire-and-forget insert — non-blocking; if it fails, we just lose one row
+        # Buffer analytics — flushed to DB via Celery (non-blocking)
         try:
-            from apps.analytics.models import PageView
-            PageView.objects.create(
-                user=request.user,
-                section=section,
-                path=request.path[:500],
-            )
+            from apps.analytics.pageview_buffer import buffer_pageview
+            buffer_pageview(request.user.pk, section, request.path)
         except Exception:
-            pass  # never break the request for analytics
+            try:
+                from apps.analytics.models import PageView
+                PageView.objects.create(
+                    user=request.user,
+                    section=section,
+                    path=request.path[:500],
+                )
+            except Exception:
+                pass
 
         return response

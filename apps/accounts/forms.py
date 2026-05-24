@@ -23,9 +23,18 @@ class UserSettingsForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        import zoneinfo
+        from apps.accounts.timezones import CURATED_TIMEZONES
 
-        self.fields["timezone"].widget.choices = [(tz, tz) for tz in sorted(zoneinfo.available_timezones())]
+        choices = [(tz, tz.replace("_", " ")) for tz in CURATED_TIMEZONES]
+        current = ""
+        if self.instance and getattr(self.instance, "timezone", None):
+            current = self.instance.timezone
+        if current and current not in CURATED_TIMEZONES:
+            choices.insert(0, (current, f"{current} (current)"))
+        self.fields["timezone"].widget = forms.Select(
+            choices=choices,
+            attrs={"class": "input"},
+        )
 
 
 class BrandProfileForm(forms.ModelForm):
