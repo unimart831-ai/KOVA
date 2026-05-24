@@ -1,251 +1,90 @@
-# Kova Visual Enhancement Spec (BIOS)
+# Kova Visual Enhancement Spec (BIOS) — Photoroom Plus Full Pack
 
-> **Status:** Plus plan (v2/edit) — quality-first, no local fallbacks  
-> **Last updated:** May 2026  
-> **Scope:** Photo enhancement for commerce + Studio outputs. **No AI video generation.** Not a Canva clone.
-
----
-
-## 1. Product Position
-
-Kova is a **Business Intelligence Operating System (BIOS)** with commerce — not a design tool.
-
-Visuals are **one output** of the OS. The user **chooses** how each photo is treated:
-
-| Mode | User intent | Kova action | API cost |
-|------|-------------|-------------|----------|
-| **Use as-is** | Photo is already professional | Platform crop, caption, schedule | $0 |
-| **Studio polish** | Needs pro cutout + shadow + studio background | Photoroom Plus v2/edit | 1 visual credit |
-
-**Unlimited on all plans ($0 COGS):**
-- Carousels (Pillow / PDF)
-- Motion reels (FFmpeg Ken Burns + music library)
-- Use-as-is uploads
-- Branded promo frame derived from Plus hero (local Pillow only)
-
-**Metered (paid API):**
-- Studio polish only → **visual credits**
-
-**Quality policy:** We do **not** fall back to local rembg/quick polish when Plus fails or is unavailable. The original photo is kept and the user sees a clear notice.
+> **Status:** Plus pack — all v2/edit feature groups via smart variant selection  
+> **Last updated:** May 2026
 
 ---
 
-## 2. User Control Principles
+## 1. What “Studio polish pack” does
 
-1. **Default recommendation, not default transformation** — Studio polish is the default when credits are available.
-2. **Never auto-burn credits** on Snap launch unless user selected Studio polish.
-3. **Badge on outputs** — `Original` | `Studio` in queue and product gallery.
-4. **At cap** — Compact plan-limit banner; user can choose **Use as-is** (no degraded free polish).
+One Snap to Sell launch (when **Studio polish pack** is selected) runs **multiple Photoroom Plus API calls** — one per scene variant — capped by plan and remaining credits.
 
----
+| Plan | Credits/mo | Max scenes per product |
+|------|------------|------------------------|
+| Jipange / Starter | 30 | 3 |
+| Kazi / Growth | 100 | 5 |
+| Biashara / Pro | 200 | 7 |
+| Wakala / Agency | 500 | 10 |
 
-## 3. API Stack
-
-### Primary: Photoroom **Image Editing API** (Plus plan)
-
-| API | Plan | Endpoint | Use |
-|-----|------|----------|-----|
-| Remove Background API | Basic ($100/5k) | `POST sdk.photoroom.com/v1/segment` | **Not used** |
-| **Image Editing API** | **Plus ($500/5k)** | `GET/POST image-api.photoroom.com/v2/edit` | **Studio polish** |
-
-**Endpoint:** `GET/POST https://image-api.photoroom.com/v2/edit`
-
-Query / form params (we use POST with `imageFile` when URL is not public):
-
-| Param | Example | Purpose |
-|-------|---------|---------|
-| `removeBackground` | `true` | Pro cutout |
-| `background.color` | `FFFFFF` | Solid studio background (hex, no `#`) |
-| `outputSize` | `1080x1080` | Exact square output |
-| `padding` | `0.12` | Product breathing room |
-| `shadow.mode` | `ai.soft` | AI soft shadow |
-| `export.format` | `jpeg` | JPEG output |
-
-Header: `x-api-key: PHOTOROOM_API_KEY`
-
-**Sandbox (free, watermarked):** Prepend `sandbox_` to your API key, or use a key that already starts with `sandbox_`. Set `PHOTOROOM_SANDBOX=True` — we auto-prefix only when the key does not already start with `sandbox_`.
-
-Env (see `.env.example`):
-
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `PHOTOROOM_API_KEY` | — | Required for studio polish |
-| `VISUAL_ENHANCE_ENABLED` | `True` | Master switch |
-| `PHOTOROOM_SANDBOX` | `False` | Prepend `sandbox_` to key when true |
-| `PHOTOROOM_MONTHLY_POOL` | `5000` | Platform pool size |
-| `PHOTOROOM_POOL_RESERVE` | `500` | Headroom (usable = pool − reserve) |
-| `PHOTOROOM_MONTHLY_COST_USD` | `500` | Admin cost dashboard |
-| `PHOTOROOM_OUTPUT_SIZE` | `1080x1080` | Plus output dimensions |
-| `PHOTOROOM_PADDING` | `0.12` | Padding around product |
-| `PHOTOROOM_DEFAULT_SHADOW` | `ai.soft` | Shadow mode |
-
-**Production (Railway / live):** Use your **live Plus** API key, set `PHOTOROOM_SANDBOX=False`, and run migrations:
-
-```bash
-python manage.py migrate products
-```
-
-### Free tier (always)
-
-- **Pillow** promo frame from Plus hero (`photo_variations.py`)
-- **FFmpeg** reels (`video_compose.py`)
-
-### Not in scope
-
-- Local rembg quick polish in production paths
-- Kling / Runway / AI video generation
-- Canva-style canvas editor
+**1 credit = 1 Plus API call.** A free local promo frame is appended after Plus scenes (no credit).
 
 ---
 
-## 4. Plan Limits
+## 2. Plus variants (catalog)
 
-| Plan | KES | Studio polish/mo | AI images (FLUX) | Carousels | Reels |
-|------|-----|------------------|------------------|-----------|-------|
-| Jipange / Starter | 499 | **15** | 0 | Unlimited | Unlimited |
-| Kazi / Growth | 999 | **40** | 50 | Unlimited | Unlimited |
-| Biashara / Pro | 1,999 | **80** | 100 | Unlimited | Unlimited |
-| Wakala / Agency | — | **200** | 500 | Unlimited | Unlimited |
+Module: `apps/products/photoroom_plus.py`
 
-**1 visual credit = 1 Photoroom Plus API call** (~$0.10 at $500/5k pool).
+| Variant ID | Plus feature | When used |
+|------------|--------------|-----------|
+| `studio_white` | Cutout + white bg + shadow | Always (products) |
+| `studio_brand` | Brand color studio | Always |
+| `studio_dark` | Premium dark studio | Jewelry, electronics |
+| `ai_lifestyle` | AI background (Studio model) | Always |
+| `ai_lifestyle_alt` | Second AI scene | Always |
+| `ai_contextual` | Audience-aware AI scene | Growth+ |
+| `relight` | `lighting.mode=ai.auto` | Growth+ |
+| `beautify` | `beautify.mode=ai.auto` | Beauty, jewelry |
+| `background_blur` | Depth blur | General, electronics |
+| `text_removal` | Clean label clutter | Food, beauty (Pro+) |
+| `outline` | Product outline | Pro+ |
+| `flat_lay` | Flat lay generation | Food, beauty, home |
+| `ghost_mannequin` | Apparel ghost mannequin | Fashion |
+| `virtual_model` | Virtual model | Fashion (Growth+) |
+| `upscale` | AI upscale | Pro+ |
+| `expand` | AI expand canvas | Pro+ |
+| `uncrop` | AI uncrop | Agency |
+| `ai_touchup` | Edit with AI | Agency |
+| `service_hero` / `service_context` | AI backgrounds | Services & digital |
 
-Platform enforcement: when pool is exhausted, studio polish is **blocked** (original photo kept).
+Selection is automatic from product name, tags, vision analysis, offering type, and plan tier.
 
 ---
 
-## 5. Credit Metering
-
-Module: `apps/billing/visual_credits.py`
-
-- `get_visual_credit_usage(user)` — per-user monthly quota + platform pool status
-- `get_platform_photoroom_usage()` — platform-wide pool consumption
-- `check_visual_credit_limit(user)` — blocks user quota OR platform pool
-- `record_studio_polish(user, product_id, provider, output_data)`
-
-AgentAction:
-- `action_type`: `commerce.studio_polish` (legacy: `commerce.pro_scene`)
-- `input_data.provider`: `photoroom_plus`
-
----
-
-## 6. Pipeline (Studio polish)
+## 3. Pipeline
 
 ```
-User selects Studio polish on Snap to Sell
-    → check_visual_credit_limit (user + platform pool)
-    → pick_background_color_hex(product, brand palette)
-    → POST image-api.photoroom.com/v2/edit (cutout + bg + shadow + 1080×1080)
-    → Save hero JPEG to studio_polish/{product_id}/
-    → record_studio_polish (1 credit)
-    → Local Pillow: branded promo frame from hero (free)
-    → Append URLs to product.additional_images
-    → Carousels + reels from all images (free, local)
+Snap → vision analysis → select_plus_variants(product, analysis)
+    → for each variant (until credits or cap):
+        POST/GET image-api.photoroom.com/v2/edit
+        → save studio_polish/{product_id}/{variant_id}_*.jpg
+        → record_studio_polish (1 credit)
+    → free Pillow promo frame from first hero
+    → carousels / reels / posts use all images
 ```
 
-**1 credit → 2 images** (1 Plus hero + 1 local promo frame).
-
-On failure (API error, missing key, at cap): **no fallback** — original photo unchanged, user notified.
+No rembg fallback. Partial success is allowed (some variants may fail; successes are kept).
 
 ---
 
-## 7. UI Surfaces
-
-| Surface | Modes | Notes |
-|---------|-------|-------|
-| **Snap to Sell** | as_is / studio_polish | Two radio cards; default studio when credits available |
-| **Product detail → Expand Photo Set** | Uses product `visual_mode` | Plus studio polish |
-| **Pricing page** | — | Studio polish count per plan |
-| **Admin costs** | — | Photoroom pool meter |
-
-DB field: `Product.visual_mode` — value `pro_scene`, label **Studio polish**. Legacy `quick_polish` rows migrate to `pro_scene`.
-
----
-
-## 8. File Map
+## 4. Key files
 
 | File | Role |
 |------|------|
-| `apps/products/photoroom.py` | Photoroom Plus v2/edit client |
-| `apps/products/photo_variations.py` | Mode routing + promo frame |
-| `apps/billing/visual_credits.py` | Usage + enforcement |
-| `apps/billing/models.py` | `visual_enhancements_per_month` in PLAN_LIMITS |
-| `scripts/test_photoroom_sandbox.py` | Standalone Plus API smoke test |
-| `config/settings/base.py` | Photoroom env vars |
-| `docs/VISUAL_ENHANCEMENT_SPEC.md` | This document |
+| `apps/products/photoroom_plus.py` | Full Plus catalog + selection + API |
+| `apps/products/photoroom.py` | Shared helpers, messages, save |
+| `apps/products/photo_variations.py` | Multi-variant pack orchestration |
+| `apps/billing/models.py` | Credits + `plus_max_variants_per_product` |
+| `tests/test_photoroom_plus.py` | Variant selection tests |
 
 ---
 
-## 9. Testing
+## 5. Env & testing
 
-### 9.1 Prerequisites
-
-1. Pull latest `main`.
-2. Install deps (`pip install -r requirements.txt`).
-3. Add to `kova_agent/.env`:
-
-```env
-PHOTOROOM_API_KEY=your_plus_key_here
-VISUAL_ENHANCE_ENABLED=True
-PHOTOROOM_SANDBOX=True
-PHOTOROOM_MONTHLY_POOL=5000
-PHOTOROOM_POOL_RESERVE=500
-PHOTOROOM_MONTHLY_COST_USD=500
-```
-
-4. Run migrations:
+Same as before — `PHOTOROOM_API_KEY`, Plus plan, `PHOTOROOM_SANDBOX` for local.
 
 ```bash
-cd kova_agent
-python manage.py migrate products
+python scripts/test_photoroom_sandbox.py   # single studio call smoke test
+pytest tests/test_photoroom_plus.py -q     # variant selection
 ```
 
-5. Celery worker must be running for Snap to Sell / Expand Photo Set background jobs.
-
----
-
-### 9.2 Level 1 — API smoke test (fastest)
-
-```bash
-cd kova_agent
-python scripts/test_photoroom_sandbox.py
-```
-
-**Expected:**
-- `POST https://image-api.photoroom.com/v2/edit`
-- `OK — Plus sandbox test passed`
-- Output: `tmp/photoroom_test/plus_sandbox_result.jpg` (1080×1080, watermark in sandbox)
-
----
-
-### 9.3 Level 2 — Snap to Sell (full user flow)
-
-1. Start web + worker + Redis.
-2. Log in as a user on **Jipange** or higher.
-3. Open **Snap to Sell** → upload photo → select **Studio polish**.
-4. Launch campaign → wait for pipeline (~1–2 min).
-
-**Verify:**
-- Gallery shows Plus hero (`studio_polish/{product_id}/`) + optional promo frame.
-- One `commerce.studio_polish` action with `provider=photoroom_plus`.
-- Credit counter decrements by 1.
-
-**Failure behavior:**
-- `PHOTOROOM_API_KEY` unset → amber notice on Snap; launch with studio blocked or kept as-is.
-- At cap → plan-limit banner; original photo only.
-
----
-
-### 9.4 Production checklist (Railway)
-
-1. Set `PHOTOROOM_API_KEY` (live Plus key), `PHOTOROOM_SANDBOX=False`, `PHOTOROOM_MONTHLY_COST_USD=500`.
-2. Deploy and run `python manage.py migrate products`.
-3. Confirm one live studio polish — URLs must contain `studio_polish/`, not `product_variations/white_studio`.
-4. Monitor `/dashboard/costs/` — Photoroom Plus pool meter.
-
----
-
-## 10. Success Metrics
-
-- Studio polish completion rate > 95%
-- Zero silent fallback to local rembg in production
-- Platform pool utilization < 90% at steady state
+Production: verify multiple `studio_polish/{id}/` URLs with different variant suffixes after Snap.

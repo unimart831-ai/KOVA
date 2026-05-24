@@ -1,0 +1,69 @@
+"""Tests for Photoroom Plus variant selection."""
+
+from apps.products.photoroom_plus import (
+    PLUS_VARIANT_CATALOG,
+    build_lifestyle_prompt,
+    detect_product_category,
+    select_plus_variants,
+)
+
+
+class _Product:
+    def __init__(self, name="Test", tags=None, offering_type="product"):
+        self.name = name
+        self.tags = tags or []
+        self.offering_type = offering_type
+
+
+def test_detect_apparel_category():
+    p = _Product(name="Blue Cotton Shirt", tags=["fashion"])
+    assert detect_product_category(p, {}) == "apparel"
+
+
+def test_select_variants_includes_studio_and_lifestyle():
+    p = _Product(name="USB Cable", tags=["electronics"])
+    specs = select_plus_variants(p, {}, plan_tier="starter", max_count=5)
+    ids = [s.id for s in specs]
+    assert "studio_white" in ids
+    assert "ai_lifestyle" in ids
+
+
+def test_apparel_gets_mannequin_or_model():
+    p = _Product(name="Summer Dress", tags=["fashion", "apparel"])
+    specs = select_plus_variants(p, {}, plan_tier="growth", max_count=8)
+    ids = {s.id for s in specs}
+    assert "ghost_mannequin" in ids or "virtual_model" in ids
+
+
+def test_starter_plan_excludes_pro_only_variants():
+    p = _Product(name="Serum", tags=["beauty"])
+    specs = select_plus_variants(p, {}, plan_tier="starter", max_count=10)
+    ids = {s.id for s in specs}
+    assert "text_removal" not in ids
+    assert "upscale" not in ids
+
+
+def test_service_offering_uses_service_variants():
+    p = _Product(name="Home Cleaning", offering_type="service")
+    specs = select_plus_variants(p, {"campaign_angle": "trusted local pros"}, plan_tier="growth", max_count=4)
+    ids = {s.id for s in specs}
+    assert "service_hero" in ids
+    assert "ghost_mannequin" not in ids
+
+
+def test_lifestyle_prompt_mentions_product():
+    p = _Product(name="Amara Lotion", tags=["beauty"])
+    prompt = build_lifestyle_prompt(p, {"campaign_angle": "glow"}, variant="primary")
+    assert "Amara Lotion" in prompt or "lotion" in prompt.lower()
+
+
+def test_catalog_covers_plus_feature_groups():
+    ids = set(PLUS_VARIANT_CATALOG)
+    assert "ai_lifestyle" in ids
+    assert "flat_lay" in ids
+    assert "ghost_mannequin" in ids
+    assert "virtual_model" in ids
+    assert "relight" in ids
+    assert "beautify" in ids
+    assert "upscale" in ids
+    assert "ai_touchup" in ids

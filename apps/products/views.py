@@ -672,7 +672,7 @@ def expand_product_photos_view(request, product_id):
     fire_task(expand_product_photo_set, str(product.pk))
     messages.success(
         request,
-        f"Studio polish started for '{product.name}' — pro cutout, shadow & studio background in ~1 minute.",
+        f"Plus scene pack started for '{product.name}' — AI backgrounds, studio, and category scenes in ~2 minutes.",
     )
     return redirect(f"{reverse('products:detail', kwargs={'product_id': product.pk})}?snap=1")
 

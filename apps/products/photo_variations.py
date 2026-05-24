@@ -449,13 +449,14 @@ def _studio_polish_error(reason: str, *, limit_message: str = "") -> dict:
 
 
 def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
-    """Photoroom Plus v2/edit (1 credit) + local promo frame from hero."""
-    from apps.billing.visual_credits import check_visual_credit_limit, record_studio_polish
-    from apps.products.photoroom import (
-        photoroom_enabled,
-        pick_background_color_hex,
-        save_studio_polish_image,
-        studio_polish_via_photoroom,
+    """Photoroom Plus pack — all applicable v2/edit variants (1 credit each)."""
+    from apps.billing.models import get_effective_plan_tier
+    from apps.billing.visual_credits import check_visual_credit_limit, get_visual_credit_usage, record_studio_polish
+    from apps.products.photoroom import photoroom_enabled, save_studio_polish_image
+    from apps.products.photoroom_plus import (
+        get_max_variants_for_plan,
+        run_plus_variant,
+        select_plus_variants,
     )
 
     if not getattr(settings, "PHOTO_VARIATIONS_ENABLED", True):
@@ -474,35 +475,73 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
         logger.warning("Studio polish unavailable — PHOTOROOM_API_KEY missing")
         return _studio_polish_error("photoroom_not_configured")
 
-    source = product.image.url if hasattr(product.image, "url") else str(product.image)
     profile = getattr(product.user, "profile", None)
+    plan_tier = get_effective_plan_tier(profile) if profile else "starter"
     brand_colors = _get_brand_palette(profile)
-    background_hex = pick_background_color_hex(product, brand_colors)
+    usage = get_visual_credit_usage(product.user)
+    plan_max = get_max_variants_for_plan(plan_tier)
+    if usage.get("unlimited"):
+        max_to_run = plan_max
+    else:
+        max_to_run = min(plan_max, max(0, usage.get("remaining", 0)))
+    if max_to_run <= 0:
+        return _studio_polish_error("at_limit", limit_message=msg)
 
-    image_bytes = studio_polish_via_photoroom(source, background_color=background_hex)
-    if not image_bytes:
-        return _studio_polish_error("photoroom_failed")
-
-    try:
-        hero_url = save_studio_polish_image(product.pk, image_bytes, suffix="hero")
-    except Exception as exc:
-        logger.error("Studio polish save failed: %s", exc)
-        return _studio_polish_error("save_failed")
-
-    record_studio_polish(
-        product.user,
-        product_id=product.pk,
-        provider="photoroom_plus",
-        output_data={
-            "background_color": background_hex,
-            "url": hero_url,
-            "api": "v2/edit",
-        },
+    source = product.image.url if hasattr(product.image, "url") else str(product.image)
+    variants = select_plus_variants(
+        product,
+        analysis,
+        plan_tier=plan_tier,
+        max_count=max_to_run,
     )
 
-    new_urls = [hero_url]
+    new_urls: list[str] = []
+    variant_ids: list[str] = []
+    failed_ids: list[str] = []
+    first_hero_bytes: bytes | None = None
+
+    for spec in variants:
+        ok, cap_msg = check_visual_credit_limit(product.user)
+        if not ok:
+            logger.info("Stopping Plus pack — credit cap for user %s", product.user_id)
+            break
+
+        image_bytes = run_plus_variant(source, spec, product, analysis, brand_colors)
+        if not image_bytes:
+            failed_ids.append(spec.id)
+            continue
+
+        if first_hero_bytes is None:
+            first_hero_bytes = image_bytes
+
+        try:
+            hero_url = save_studio_polish_image(product.pk, image_bytes, suffix=spec.id)
+        except Exception as exc:
+            logger.error("Plus save failed [%s]: %s", spec.id, exc)
+            failed_ids.append(spec.id)
+            continue
+
+        record_studio_polish(
+            product.user,
+            product_id=product.pk,
+            provider="photoroom_plus",
+            output_data={
+                "variant": spec.id,
+                "label": spec.label,
+                "url": hero_url,
+                "api": "v2/edit",
+            },
+        )
+        new_urls.append(hero_url)
+        variant_ids.append(spec.id)
+
+    if not new_urls:
+        reason = "photoroom_failed" if failed_ids else "photoroom_failed"
+        return _studio_polish_error(reason)
+
     try:
-        hero_img = Image.open(BytesIO(image_bytes)).convert("RGB")
+        if first_hero_bytes:
+            hero_img = Image.open(BytesIO(first_hero_bytes)).convert("RGB")
         display_name = sanitize_product_name(product.name) or "Product"
         shop_hint = "Shop link in bio" if product.product_url else ""
         promo = _render_promo_from_hero(
@@ -514,19 +553,27 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
         )
         new_urls.append(_save_variation_jpeg(product.pk, PRESET_PROMO_FRAME, promo))
     except Exception as exc:
-        logger.debug("Promo frame from hero failed: %s", exc)
+        logger.debug("Promo frame from Plus hero failed: %s", exc)
 
     kept = _strip_generated_variations(product.additional_images, product.pk)
     product.additional_images = kept + new_urls
     product.save(update_fields=["additional_images", "updated_at"])
 
-    logger.info("Studio polish (Plus): product=%s urls=%d bg=%s", product.pk, len(new_urls), background_hex)
+    logger.info(
+        "Plus pack: product=%s variants=%d/%d failed=%s",
+        product.pk,
+        len(variant_ids),
+        len(variants),
+        failed_ids,
+    )
     return {
         "variations_created": len(new_urls),
+        "plus_variants": len(variant_ids),
+        "variant_ids": variant_ids,
+        "failed_variants": failed_ids,
         "mode": VISUAL_MODE_PRO_SCENE,
         "provider": "photoroom_plus",
         "urls": new_urls,
-        "background_color": background_hex,
     }
 
 

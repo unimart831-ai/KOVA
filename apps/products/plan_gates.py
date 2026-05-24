@@ -19,5 +19,6 @@ def product_plan_context(user):
         "mpesa_commerce": bool(limits.get("mpesa_commerce")),
         "visual_credits": get_visual_credit_usage(user),
         "visual_enhance_premium": bool(limits.get("visual_enhance_premium")),
+        "plus_max_variants_per_product": limits.get("plus_max_variants_per_product", 3),
         "studio_polish_notice": studio_polish_unavailable_message(),
     }

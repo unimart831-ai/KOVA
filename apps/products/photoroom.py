@@ -13,7 +13,6 @@ import logging
 import uuid
 from io import BytesIO
 
-import requests
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
@@ -145,14 +144,8 @@ def studio_polish_via_photoroom(
     shadow_mode: str | None = None,
     export_format: str = "jpeg",
 ) -> bytes | None:
-    """
-    Photoroom Plus v2/edit: pro cutout + color bg + shadow + exact output size.
-    Returns JPEG bytes or None.
-    """
-    api_key, headers = _api_key_headers()
-    if not api_key:
-        logger.info("Studio polish skipped: PHOTOROOM_API_KEY not set")
-        return None
+    """Single studio Plus call (legacy helper / tests)."""
+    from apps.products.photoroom_plus import photoroom_edit
 
     output_size = output_size or getattr(settings, "PHOTOROOM_OUTPUT_SIZE", "1080x1080")
     padding = padding if padding is not None else str(getattr(settings, "PHOTOROOM_PADDING", 0.12))
@@ -164,41 +157,8 @@ def studio_polish_via_photoroom(
         shadow_mode=shadow_mode,
         export_format=export_format,
     )
-
-    public_url = _resolve_public_image_url(image_url)
-    if public_url:
-        try:
-            resp = requests.get(
-                PHOTOROOM_EDIT_URL,
-                headers=headers,
-                params={"imageUrl": public_url, **params},
-                timeout=120,
-            )
-            resp.raise_for_status()
-            if resp.content:
-                return resp.content
-        except Exception as exc:
-            logger.warning("Photoroom GET v2/edit failed, trying POST: %s", exc)
-
-    loaded = _load_image_bytes(image_url)
-    if not loaded:
-        logger.warning("Studio polish: could not load source image")
-        return None
-    file_bytes, filename = loaded
-
-    try:
-        resp = requests.post(
-            PHOTOROOM_EDIT_URL,
-            headers=headers,
-            files={"imageFile": (filename, file_bytes, "image/jpeg")},
-            data=params,
-            timeout=120,
-        )
-        resp.raise_for_status()
-        return resp.content or None
-    except Exception as exc:
-        logger.error("Photoroom POST v2/edit failed: %s", exc)
-        return None
+    params["referenceBox"] = "originalImage"
+    return photoroom_edit(image_url, params)
 
 
 def save_studio_polish_image(product_id, image_bytes: bytes, suffix: str = "hero") -> str:

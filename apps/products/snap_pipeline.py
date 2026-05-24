@@ -158,8 +158,20 @@ def build_snap_pipeline_status(product, user):
             if variation_action
             else 1
         )
+        plus_n = 0
+        if studio_polish_action:
+            plus_n = len(
+                AgentAction.objects.filter(
+                    user=user,
+                    action_type__in=("commerce.studio_polish", "commerce.pro_scene"),
+                    input_data__product_id=product_id,
+                )
+            )
         expand_status = "completed"
-        expand_detail = f"{n} studio version{'s' if n != 1 else ''} ready for carousel & posts"
+        if plus_n > 1:
+            expand_detail = f"{plus_n} Plus scenes + promo ready for carousel & posts"
+        else:
+            expand_detail = f"{n} studio version{'s' if n != 1 else ''} ready for carousel & posts"
     elif analyze_status == "running":
         expand_status = "pending"
         expand_detail = "Waiting for product analysis…"
@@ -168,7 +180,7 @@ def build_snap_pipeline_status(product, user):
         expand_detail = "Studio polish timed out — tap Expand Photo Set"
     elif analyze_status == "completed":
         expand_status = "running"
-        expand_detail = "Applying Photoroom studio polish to your photo…"
+        expand_detail = "Running Photoroom Plus scene pack (AI backgrounds, studio, flat lay…)…"
     else:
         expand_status = "pending"
         expand_detail = "Waiting for analysis…"
