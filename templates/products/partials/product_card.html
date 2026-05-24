@@ -1,12 +1,8 @@
 <a href="{% url 'products:detail' product_id=product.pk %}" class="card block hover:ring-2 hover:ring-kova-500/30 transition-all">
   <div class="p-4 flex gap-4">
-    {% if product.image %}
+    {% if product.cover_image_url %}
     <div class="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
-      <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-full object-cover" loading="lazy">
-    </div>
-    {% elif product.additional_images %}
-    <div class="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
-      <img src="{{ product.additional_images.0 }}" alt="{{ product.name }}" class="w-full h-full object-cover" loading="lazy">
+      <img src="{{ product.cover_image_url }}" alt="{{ product.name }}" class="w-full h-full object-cover" loading="lazy">
     </div>
     {% endif %}
     <div class="min-w-0 flex-1">

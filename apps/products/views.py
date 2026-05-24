@@ -677,6 +677,43 @@ def expand_product_photos_view(request, product_id):
     return redirect(f"{reverse('products:detail', kwargs={'product_id': product.pk})}?snap=1")
 
 
+@login_required
+@require_POST
+def toggle_primary_image_view(request, product_id):
+    """Hide or restore the original upload in carousels/posts (requires other photos)."""
+    product = get_object_or_404(Product, pk=product_id, user=request.user)
+
+    if not product.image:
+        messages.error(request, "This product has no original photo.")
+        return redirect("products:detail", product_id=product.pk)
+
+    action = request.POST.get("action", "toggle")
+    if action == "exclude":
+        if not product.additional_images:
+            messages.warning(
+                request,
+                "Generate or add other photos first — you need at least one scene besides the original.",
+            )
+            return redirect("products:detail", product_id=product.pk)
+        product.exclude_primary_image = True
+        messages.success(request, "Original photo hidden from carousels and posts. Plus scenes will be used.")
+    elif action == "include":
+        product.exclude_primary_image = False
+        messages.success(request, "Original photo restored for carousels and posts.")
+    else:
+        if not product.exclude_primary_image and not product.additional_images:
+            messages.warning(request, "Add other photos before hiding the original.")
+            return redirect("products:detail", product_id=product.pk)
+        product.exclude_primary_image = not product.exclude_primary_image
+        if product.exclude_primary_image:
+            messages.success(request, "Original photo hidden from carousels and posts.")
+        else:
+            messages.success(request, "Original photo restored for carousels and posts.")
+
+    product.save(update_fields=["exclude_primary_image", "updated_at"])
+    return redirect("products:detail", product_id=product.pk)
+
+
 # ── Snap to Sell ─────────────────────────────────────────────────────
 
 @login_required

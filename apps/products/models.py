@@ -83,6 +83,10 @@ class Product(models.Model):
         default=list, blank=True,
         help_text='URLs of extra product images for carousel content, e.g. ["/media/product_images/side.jpg", "https://cdn.example.com/img.jpg"]',
     )
+    exclude_primary_image = models.BooleanField(
+        default=False,
+        help_text="When true, original upload is kept on file but omitted from carousels and posts.",
+    )
 
     # External integration (e-commerce platforms)
     product_url = models.URLField(
@@ -196,13 +200,23 @@ class Product(models.Model):
 
     @property
     def all_image_urls(self):
-        """Return list of all image URLs (primary + additional). Used for carousel content."""
+        """Return list of image URLs used for carousel and post content."""
         urls = []
-        if self.image:
+        if self.image and not self.exclude_primary_image:
             urls.append(self.image.url)
         if self.additional_images:
             urls.extend(self.additional_images)
         return urls
+
+    @property
+    def cover_image_url(self):
+        """Best thumbnail: first active content image, else original if nothing else."""
+        active = self.all_image_urls
+        if active:
+            return active[0]
+        if self.image:
+            return self.image.url
+        return ""
 
     @property
     def sync_source_label(self) -> str:
