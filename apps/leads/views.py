@@ -59,7 +59,7 @@ def lead_create(request):
 
     if request.method == "POST":
         allowed, msg = check_leads_limit(request.user, creating=True)
-        if blocked := enforce_or_redirect(request, allowed, msg):
+        if blocked := enforce_or_redirect(request, allowed, msg, "leads:list"):
             return blocked
 
         form = LeadForm(request.POST)
@@ -107,7 +107,7 @@ def lead_edit(request, lead_id):
     from apps.billing.enforcement import check_leads_can_edit, enforce_or_redirect
 
     allowed, msg = check_leads_can_edit(request.user)
-    if blocked := enforce_or_redirect(request, allowed, msg):
+    if blocked := enforce_or_redirect(request, allowed, msg, "leads:list"):
         return blocked
 
     lead = get_object_or_404(Lead, pk=lead_id, user=request.user)

@@ -406,7 +406,7 @@ def shopify_connect(request):
     from apps.billing.enforcement import check_shopify_integration, enforce_or_redirect
 
     allowed, msg = check_shopify_integration(request.user)
-    if blocked := enforce_or_redirect(request, allowed, msg):
+    if blocked := enforce_or_redirect(request, allowed, msg, "analytics:revenue"):
         return blocked
 
     if request.method != "POST":
@@ -465,7 +465,7 @@ def shopify_sync_products(request, pk):
     from apps.billing.enforcement import check_shopify_integration, enforce_or_redirect
 
     allowed, msg = check_shopify_integration(request.user)
-    if blocked := enforce_or_redirect(request, allowed, msg):
+    if blocked := enforce_or_redirect(request, allowed, msg, "analytics:revenue"):
         return blocked
 
     from apps.analytics.models import ShopifyStore

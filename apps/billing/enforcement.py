@@ -93,27 +93,56 @@ def check_seed_limit(user):
     Returns:
         (allowed: bool, message: str)
     """
+    usage = get_seed_usage(user)
+    if usage["unlimited"] or not usage["at_limit"]:
+        return True, ""
+    return False, (
+        f"You've used all {usage['max']} content seeds for this month "
+        f"on your {usage['plan_label']} plan."
+    )
+
+
+def get_seed_usage(user) -> dict:
+    """Monthly seed quota for Studio UI and enforcement."""
     from apps.content.models import ContentSeed
 
     profile = getattr(user, "profile", None)
-    if not profile:
-        return False, "No user profile found."
-
-    limits = get_user_plan_limits(user)
+    limits = get_user_plan_limits(user) if profile else get_plan_limits("starter")
     max_seeds = limits["max_seeds_per_month"]
+    unlimited = max_seeds >= 999999
 
-    if max_seeds >= 999999:
-        return True, ""
+    if unlimited:
+        return {
+            "used": 0,
+            "max": max_seeds,
+            "remaining": max_seeds,
+            "at_limit": False,
+            "unlimited": True,
+            "plan_label": limits.get("label", "Starter"),
+        }
 
     now = timezone.now()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    month_count = ContentSeed.objects.filter(
-        user=user, created_at__gte=month_start,
-    ).count()
+    used = ContentSeed.objects.filter(user=user, created_at__gte=month_start).count()
 
-    if month_count >= max_seeds:
-        return False, f"Monthly seed limit reached ({max_seeds} on {limits['label']} plan)."
-    return True, ""
+    return {
+        "used": used,
+        "max": max_seeds,
+        "remaining": max(0, max_seeds - used),
+        "at_limit": used >= max_seeds,
+        "unlimited": False,
+        "plan_label": limits.get("label", "Starter"),
+    }
+
+
+DEFAULT_SEED_LIMIT_MESSAGE = "Monthly content seed limit reached."
+
+
+def seed_limit_block_response(request, message: str = ""):
+    """Stay on Studio with a compact inline warning — never dump the pricing page."""
+    from apps.billing.plan_limit_ui import plan_limit_block_response
+
+    return plan_limit_block_response(request, message or DEFAULT_SEED_LIMIT_MESSAGE, "content:studio")
 
 
 def check_platform_limit(user):
@@ -230,12 +259,10 @@ def check_email_sequences_limit(user) -> tuple[bool, str]:
     return True, ""
 
 
-def enforce_or_redirect(request, allowed: bool, message: str):
-    """Helper for views — returns redirect response when blocked."""
+def enforce_or_redirect(request, allowed: bool, message: str, redirect_to: str = "brief:home", *args, **kwargs):
+    """Helper for views — redirects with compact banner when blocked."""
     if allowed:
         return None
-    from django.contrib import messages
-    from django.shortcuts import redirect
+    from apps.billing.plan_limit_ui import plan_limit_redirect
 
-    messages.warning(request, message)
-    return redirect("billing:pricing")
+    return plan_limit_redirect(request, message, redirect_to, *args, **kwargs)

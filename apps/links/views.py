@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 
 from apps.billing.models import get_user_plan_limits
+from apps.billing.plan_limit_ui import plan_limit_redirect
 from apps.links.forms import (
     KovaFormForm,
     KovaLinkForm,
@@ -74,8 +75,11 @@ def page_create(request):
     page_limit = _get_page_limit(request.user)
     current_count = KovaPage.objects.filter(user=request.user).count()
     if current_count >= page_limit:
-        messages.warning(request, f"Your plan allows up to {page_limit} Kova page(s). Upgrade for more.")
-        return redirect("billing:pricing")
+        return plan_limit_redirect(
+            request,
+            f"Your plan allows up to {page_limit} Kova page(s). Upgrade for more.",
+            "links:list",
+        )
 
     if request.method == "POST":
         form = KovaPageForm(request.POST)
@@ -169,8 +173,12 @@ def link_add(request, page_id):
     page = get_object_or_404(KovaPage, pk=page_id, user=request.user)
     link_limit = _get_link_limit(request.user)
     if page.links.count() >= link_limit:
-        messages.warning(request, f"Your plan allows up to {link_limit} links per page. Upgrade for more.")
-        return redirect("links:page_detail", page_id=page.pk)
+        return plan_limit_redirect(
+            request,
+            f"Your plan allows up to {link_limit} links per page. Upgrade for more.",
+            "links:page_detail",
+            page_id=page.pk,
+        )
 
     if request.method == "POST":
         form = KovaLinkForm(request.POST)
@@ -236,8 +244,12 @@ def link_delete(request, page_id, link_id):
 def form_add(request, page_id):
     """Add a lead capture form to a Kova page (Growth+ only)."""
     if not _can_use_forms(request.user):
-        messages.warning(request, "Lead capture forms are available on Growth+ plans.")
-        return redirect("billing:pricing")
+        return plan_limit_redirect(
+            request,
+            "Lead capture forms are available on Growth+ plans.",
+            "links:page_detail",
+            page_id=page_id,
+        )
 
     page = get_object_or_404(KovaPage, pk=page_id, user=request.user)
 

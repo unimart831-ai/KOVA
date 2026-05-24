@@ -60,12 +60,18 @@
       </div>
     </div>
     <div class="card-body">
+      {% if not at_seed_limit and not seed_usage.unlimited and seed_usage.remaining <= 3 %}
+      <p class="mb-4 text-xs text-gray-500 dark:text-gray-400">
+        {{ seed_usage.remaining }} content seed{{ seed_usage.remaining|pluralize }} left this month.
+        <a href="{% url 'billing:pricing' %}" class="text-kova-600 dark:text-kova-400 hover:underline">Upgrade</a> for more.
+      </p>
+      {% endif %}
       <form method="post" action="{% url 'content:submit_seed' %}"
             hx-post="{% url 'content:submit_seed' %}"
             hx-target="#seed-processing-zone"
             hx-swap="afterbegin"
             hx-on::after-request="if(event.detail.successful) this.reset()"
-            class="space-y-4 group/form" x-data="seedForm()">
+            class="space-y-4 group/form" x-data="seedForm()"{% if at_seed_limit %} data-seed-limit="1"{% endif %}>
         {% csrf_token %}
         <div>
           <label for="idea-input" class="label">What do you want to post about?</label>
@@ -162,7 +168,8 @@
 
           <button type="submit"
                   class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kova-600 px-5 text-sm font-semibold text-white shadow-sm shadow-kova-600/25 transition hover:bg-kova-700 focus:outline-none focus:ring-2 focus:ring-kova-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 dark:hover:bg-kova-500 w-full sm:w-auto sm:min-w-[10rem] disabled:opacity-60 disabled:cursor-not-allowed group"
-                  :disabled="$el.closest('form')?.classList.contains('htmx-request')"
+                  {% if at_seed_limit %}disabled aria-disabled="true" title="Monthly seed limit reached — upgrade to continue"{% endif %}
+                  :disabled="$el.closest('form')?.classList.contains('htmx-request') || $el.closest('form')?.dataset.seedLimit === '1'"
                   >
             {# Normal state #}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="shrink-0 opacity-95 group-[.htmx-request]/form:hidden" aria-hidden="true">

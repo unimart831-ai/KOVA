@@ -18,6 +18,7 @@ from apps.emails.models import (
     EmailSubscriber,
 )
 from apps.billing.models import get_user_plan_limits
+from apps.billing.plan_limit_ui import plan_limit_redirect
 
 
 # ────────────────────────────────────────────────────────────────────
@@ -59,8 +60,11 @@ def subscriber_add(request):
     max_subs = limits.get("email_subscribers", 50)
     current_count = EmailSubscriber.objects.filter(user=request.user).count()
     if current_count >= max_subs:
-        messages.warning(request, f"Your plan allows up to {max_subs:,} subscribers. Upgrade for more.")
-        return redirect("billing:pricing")
+        return plan_limit_redirect(
+            request,
+            f"Your plan allows up to {max_subs:,} subscribers. Upgrade for more.",
+            "emails:subscribers",
+        )
 
     if request.method == "POST":
         form = EmailSubscriberForm(request.POST)
@@ -109,8 +113,11 @@ def list_create(request):
     max_lists = limits.get("email_lists", 1)
     current_count = EmailList.objects.filter(user=request.user).count()
     if current_count >= max_lists:
-        messages.warning(request, f"Your plan allows up to {max_lists} email list(s). Upgrade for more.")
-        return redirect("billing:pricing")
+        return plan_limit_redirect(
+            request,
+            f"Your plan allows up to {max_lists} email list(s). Upgrade for more.",
+            "emails:lists",
+        )
 
     if request.method == "POST":
         form = EmailListForm(request.POST)
@@ -211,8 +218,11 @@ def campaign_create(request):
         created_at__year=timezone.now().year,
     ).count()
     if current_month_count >= max_campaigns:
-        messages.warning(request, f"Your plan allows up to {max_campaigns} campaigns per month. Upgrade for more.")
-        return redirect("billing:pricing")
+        return plan_limit_redirect(
+            request,
+            f"Your plan allows up to {max_campaigns} campaigns per month. Upgrade for more.",
+            "emails:campaigns",
+        )
 
     if request.method == "POST":
         prompt = request.POST.get("prompt", "").strip()
@@ -319,8 +329,12 @@ def campaign_send(request, campaign_id):
             sent_at__gte=month_start,
         ).count()
         if sent_this_month >= monthly_limit:
-            messages.error(request, f"You've reached your plan limit of {monthly_limit} campaigns this month.")
-            return redirect("emails:campaign_detail", campaign_id=campaign.pk)
+            return plan_limit_redirect(
+                request,
+                f"You've reached your plan limit of {monthly_limit} campaigns this month.",
+                "emails:campaign_detail",
+                campaign_id=campaign.pk,
+            )
 
     from apps.emails.tasks import send_campaign_task
     send_campaign_task.delay(str(campaign.pk))

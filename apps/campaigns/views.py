@@ -20,14 +20,18 @@ def campaign_list(request):
 def campaign_create(request):
     """Create a new campaign."""
     from apps.billing.models import get_user_plan_limits
+    from apps.billing.plan_limit_ui import plan_limit_redirect
 
     limits = get_user_plan_limits(request.user)
     max_campaigns = limits.get("max_campaigns", 3)
     current_count = Campaign.objects.filter(user=request.user).count()
 
     if current_count >= max_campaigns and max_campaigns < 999999:
-        messages.error(request, f"You've reached your plan limit of {max_campaigns} campaigns. Upgrade for more.")
-        return redirect("campaigns:list")
+        return plan_limit_redirect(
+            request,
+            f"You've reached your plan limit of {max_campaigns} campaigns. Upgrade for more.",
+            "content:voice_campaign",
+        )
 
     if request.method == "POST":
         form = CampaignForm(request.POST, user=request.user)

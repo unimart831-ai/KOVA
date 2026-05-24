@@ -137,6 +137,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.products.context_processors.product_nav",
+                "apps.billing.context_processors.plan_limit_notice",
             ],
         },
     },

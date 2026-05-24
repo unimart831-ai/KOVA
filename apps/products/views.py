@@ -12,6 +12,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from apps.billing.models import get_user_plan_limits
+from apps.billing.plan_limit_ui import plan_limit_redirect
 from apps.products.forms import BulkImportForm, ProductCategoryForm, ProductForm
 from apps.products.models import Product, ProductCategory, RestockScan, StockAlert, StockUpdate
 from apps.products.plan_gates import product_plan_context
@@ -81,8 +82,11 @@ def product_add(request):
     current_count = Product.objects.filter(user=request.user, is_active=True).count()
     max_products = limits.get("max_products", 5)
     if current_count >= max_products:
-        messages.error(request, f"Your plan allows up to {max_products} products. Upgrade to add more.")
-        return redirect("products:list")
+        return plan_limit_redirect(
+            request,
+            f"Your plan allows up to {max_products} products. Upgrade to add more.",
+            "products:list",
+        )
 
     if request.method == "POST":
         form = ProductForm(request.POST, request.FILES, user=request.user, plan_ctx=_plan_ctx(request))
@@ -291,8 +295,11 @@ def product_update_stock(request, product_id):
 def product_import(request):
     plan_ctx = _plan_ctx(request)
     if not plan_ctx["csv_import"]:
-        messages.error(request, "CSV import is available on Growth and Pro plans. Upgrade to import products in bulk.")
-        return redirect("products:list")
+        return plan_limit_redirect(
+            request,
+            "CSV import is available on Growth and Pro plans. Upgrade to import products in bulk.",
+            "products:list",
+        )
 
     if request.method == "POST":
         form = BulkImportForm(request.POST, request.FILES)
@@ -365,8 +372,12 @@ def product_record_sale(request, product_id):
     product = get_object_or_404(Product, pk=product_id, user=request.user)
     plan_ctx = _plan_ctx(request)
     if not plan_ctx["quantity_tracking"]:
-        messages.error(request, "Quantity tracking is available on Growth and Pro plans.")
-        return redirect("products:detail", product_id=product.pk)
+        return plan_limit_redirect(
+            request,
+            "Quantity tracking is available on Growth and Pro plans.",
+            "products:detail",
+            product_id=product.pk,
+        )
 
     qty_raw = request.POST.get("quantity", "1").strip()
     try:
@@ -682,8 +693,11 @@ def snap_launch(request):
     current_count = Product.objects.filter(user=request.user, is_active=True).count()
     max_products = limits.get("max_products", 5)
     if current_count >= max_products:
-        messages.error(request, f"Your plan allows up to {max_products} products. Upgrade to add more.")
-        return redirect("products:snap")
+        return plan_limit_redirect(
+            request,
+            f"Your plan allows up to {max_products} products. Upgrade to add more.",
+            "products:snap",
+        )
 
     # Validate required fields
     autopilot = commerce_autopilot_active(request.user)
@@ -799,8 +813,11 @@ def snap_batch_launch(request):
 
     remaining_slots = max_products - current_count
     if remaining_slots <= 0:
-        messages.error(request, f"Your plan allows up to {max_products} products. Upgrade to add more.")
-        return redirect("products:snap_batch")
+        return plan_limit_redirect(
+            request,
+            f"Your plan allows up to {max_products} products. Upgrade to add more.",
+            "products:snap_batch",
+        )
 
     if len(photos) > remaining_slots:
         photos = photos[:remaining_slots]
@@ -947,8 +964,11 @@ def restock_add_unmatched(request, scan_id):
     limits = get_user_plan_limits(request.user)
     max_products = limits.get("max_products", 5)
     if Product.objects.filter(user=request.user, is_active=True).count() >= max_products:
-        messages.error(request, f"Your plan allows up to {max_products} products. Upgrade to add more.")
-        return redirect("products:restock")
+        return plan_limit_redirect(
+            request,
+            f"Your plan allows up to {max_products} products. Upgrade to add more.",
+            "products:restock",
+        )
 
     qty_raw = request.POST.get("quantity", "1").strip()
     price_raw = request.POST.get("unit_price", "").strip()

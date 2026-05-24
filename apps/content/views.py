@@ -54,12 +54,23 @@ def content_studio(request):
     seed_suggestions = get_seed_suggestions(request.user)
 
     # Check if user's plan supports AI image generation
+    from apps.billing.enforcement import get_seed_usage
     from apps.billing.models import get_user_plan_limits
+
     plan_limits = get_user_plan_limits(request.user)
     can_generate_images = plan_limits.get("ai_image_generation", False)
 
     all_posts = [p for g in seed_groups for p in g["posts"]] + list(ungrouped)
     pending_images = sum(1 for p in all_posts if p.media_status == "pending")
+
+    seed_usage = get_seed_usage(request.user)
+    at_seed_limit = seed_usage["at_limit"]
+    plan_limit_notice = None
+    if at_seed_limit:
+        plan_limit_notice = (
+            f"You've used all {seed_usage['max']} content seeds this month "
+            f"({seed_usage['plan_label']})."
+        )
 
     return render(request, "content/studio.html", {
         "seed_groups": seed_groups,
@@ -73,6 +84,9 @@ def content_studio(request):
         "pending_images": pending_images,
         "seed_suggestions": seed_suggestions,
         "can_generate_images": can_generate_images,
+        "seed_usage": seed_usage,
+        "at_seed_limit": at_seed_limit,
+        "plan_limit_notice": plan_limit_notice,
         "studio_value": _build_studio_value_stats(request.user),
         "current_status": request.GET.get("status", ""),
         "current_platform": request.GET.get("platform", ""),
@@ -229,11 +243,11 @@ def submit_seed(request):
     if request.method != "POST":
         return redirect("content:studio")
 
-    from apps.billing.enforcement import check_seed_limit, enforce_or_redirect
+    from apps.billing.enforcement import check_seed_limit, seed_limit_block_response
 
     allowed, msg = check_seed_limit(request.user)
-    if blocked := enforce_or_redirect(request, allowed, msg):
-        return blocked
+    if not allowed:
+        return seed_limit_block_response(request, msg)
 
     is_htmx = request.headers.get("HX-Request") == "true"
 
@@ -295,11 +309,14 @@ def voice_to_seed(request):
     mode = request.POST.get("mode", "transcribe")
 
     if mode == "submit":
-        from apps.billing.enforcement import check_seed_limit, enforce_or_redirect
+        from apps.billing.enforcement import check_seed_limit
 
         allowed, msg = check_seed_limit(request.user)
-        if blocked := enforce_or_redirect(request, allowed, msg):
-            return JsonResponse({"error": msg}, status=402)
+        if not allowed:
+            return JsonResponse({
+                "error": msg,
+                "upgrade_url": reverse("billing:pricing"),
+            }, status=402)
 
         # Create seed directly from transcription
         target_platforms = request.POST.get("target_platforms", "[]")
@@ -1240,17 +1257,21 @@ def generate_image(request, post_id):
 
     # Check plan allows AI images
     from apps.billing.models import get_user_plan_limits
+    from apps.billing.plan_limit_ui import plan_limit_banner_html, plan_limit_redirect
+
     plan_limits = get_user_plan_limits(post.user)
     if not plan_limits.get("ai_image_generation", False):
         if request.headers.get("HX-Request"):
             return HttpResponse(
-                '<span class="text-[10px] font-medium px-2 py-0.5 rounded-md '
-                'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400">'
-                'Upgrade your plan for AI images</span>',
+                plan_limit_banner_html("Your plan doesn't include AI image generation."),
                 status=403,
             )
-        messages.error(request, "Your plan doesn't include AI image generation.")
-        return redirect("content:edit", post_id=post.id)
+        return plan_limit_redirect(
+            request,
+            "Your plan doesn't include AI image generation.",
+            "content:edit",
+            post_id=post.id,
+        )
 
     # Check monthly limit
     from django.utils import timezone as tz
@@ -1260,14 +1281,15 @@ def generate_image(request, post_id):
         user=post.user, media_status="generated", created_at__gte=month_start,
     ).count()
     if images_this_month >= monthly_limit:
+        limit_msg = f"Monthly image limit reached ({images_this_month}/{monthly_limit})."
         if request.headers.get("HX-Request"):
-            return HttpResponse(
-                f'<span class="text-[10px] font-medium px-2 py-0.5 rounded-md '
-                f'bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400">'
-                f'Monthly limit reached ({images_this_month}/{monthly_limit})</span>'
-            )
-        messages.warning(request, f"Monthly image limit reached ({images_this_month}/{monthly_limit}).")
-        return redirect("content:edit", post_id=post.id)
+            return HttpResponse(plan_limit_banner_html(limit_msg), status=403)
+        return plan_limit_redirect(
+            request,
+            limit_msg,
+            "content:edit",
+            post_id=post.id,
+        )
 
     # Use stored prompt or generate a basic one from content
     prompt = post.media_prompt
@@ -1497,7 +1519,7 @@ def ab_test_list(request):
     from apps.billing.enforcement import check_ab_testing, enforce_or_redirect
 
     allowed, msg = check_ab_testing(request.user)
-    if blocked := enforce_or_redirect(request, allowed, msg):
+    if blocked := enforce_or_redirect(request, allowed, msg, "content:ab_test_list"):
         return blocked
 
     tests = request.user.ab_tests.select_related(
@@ -1519,7 +1541,7 @@ def ab_test_create(request):
     from apps.platforms.models import SocialAccount
 
     allowed, msg = check_ab_testing(request.user)
-    if blocked := enforce_or_redirect(request, allowed, msg):
+    if blocked := enforce_or_redirect(request, allowed, msg, "content:ab_test_list"):
         return blocked
 
     accounts = SocialAccount.objects.filter(user=request.user, is_active=True)
@@ -1539,7 +1561,7 @@ def ab_test_create(request):
             return redirect("content:ab_test_create")
 
         seed_allowed, seed_msg = check_seed_limit(request.user)
-        if blocked := enforce_or_redirect(request, seed_allowed, seed_msg):
+        if blocked := enforce_or_redirect(request, seed_allowed, seed_msg, "content:ab_test_list"):
             return blocked
 
         account = get_object_or_404(SocialAccount, id=account_id, user=request.user)

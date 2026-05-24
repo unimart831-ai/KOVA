@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from apps.billing.models import get_user_plan_limits
+from apps.billing.plan_limit_ui import plan_limit_redirect
 
 from .models import Brand, Team, TeamActivity, TeamInvitation, TeamMember
 
@@ -57,8 +58,11 @@ def team_list(request):
 def team_create(request):
     """Create a new team."""
     if not _can_use_teams(request.user):
-        messages.error(request, "Upgrade to Pro or Agency to use team features.")
-        return redirect("billing:pricing")
+        return plan_limit_redirect(
+            request,
+            "Upgrade to Pro or Agency to use team features.",
+            "teams:list",
+        )
 
     if request.method == "POST":
         name = request.POST.get("name", "").strip()
@@ -122,8 +126,12 @@ def team_invite(request, slug):
     max_members = limits.get("max_team_members", 0)
     current_count = team.members.count()
     if current_count >= max_members:
-        messages.error(request, f"Team is at capacity ({max_members} members). Upgrade the owner's plan for more.")
-        return redirect("teams:detail", slug=slug)
+        return plan_limit_redirect(
+            request,
+            f"Team is at capacity ({max_members} members). Upgrade the owner's plan for more.",
+            "teams:detail",
+            slug=slug,
+        )
 
     if request.method == "POST":
         email = request.POST.get("email", "").strip().lower()
