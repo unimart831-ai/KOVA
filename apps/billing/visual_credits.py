@@ -1,4 +1,4 @@
-"""Visual credit metering — Photoroom Basic studio polish (platform + per-user)."""
+"""Visual credit metering — Photoroom Plus studio polish (platform + per-user)."""
 
 from __future__ import annotations
 
@@ -38,9 +38,9 @@ def get_platform_photoroom_usage() -> dict:
         "usable": usable,
         "remaining": max(0, usable - used),
         "at_limit": used >= usable,
-        "cost_usd_monthly": float(getattr(settings, "PHOTOROOM_MONTHLY_COST_USD", 100)),
+        "cost_usd_monthly": float(getattr(settings, "PHOTOROOM_MONTHLY_COST_USD", 500)),
         "cost_per_image": round(
-            float(getattr(settings, "PHOTOROOM_MONTHLY_COST_USD", 100)) / max(pool, 1),
+            float(getattr(settings, "PHOTOROOM_MONTHLY_COST_USD", 500)) / max(pool, 1),
             4,
         ),
     }
@@ -94,14 +94,14 @@ def check_visual_credit_limit(user) -> tuple[bool, str]:
         if usage.get("platform_blocked"):
             return False, (
                 "Studio polish is temporarily unavailable — platform monthly capacity reached. "
-                "Use Quick polish (free) or try again next month."
+                "Use as-is or try again next month."
             )
         return True, ""
 
     if usage.get("platform_blocked"):
         return False, (
             "Studio polish is temporarily unavailable — platform monthly capacity reached. "
-            "Use Quick polish (free) or try again next month."
+            "Use as-is or try again next month."
         )
 
     if not usage["user_at_limit"]:
@@ -109,11 +109,11 @@ def check_visual_credit_limit(user) -> tuple[bool, str]:
 
     return False, (
         f"You've used all {usage['max']} studio polish credits this month "
-        f"on your {usage['plan_label']} plan. Use Quick polish or upgrade for more."
+        f"on your {usage['plan_label']} plan. Use as-is or upgrade for more."
     )
 
 
-def record_studio_polish(user, *, product_id, provider: str = "photoroom", output_data: dict | None = None) -> None:
+def record_studio_polish(user, *, product_id, provider: str = "photoroom_plus", output_data: dict | None = None) -> None:
     from apps.agents.models import AgentAction
 
     AgentAction.objects.create(

@@ -77,11 +77,11 @@ NON_LLM_PRICING = {
         "provider": "On-device (Pillow)",
         "types": ["Quote Cards", "Tip Graphics", "Stat Highlights", "CTA Banners"],
     },
-    "visual_photoroom_basic": {
-        "label": "Photoroom Basic (Studio polish)",
-        "cost_per_image": 0.02,
+    "visual_photoroom_plus": {
+        "label": "Photoroom Plus (Studio polish)",
+        "cost_per_image": 0.10,
         "provider": "Photoroom",
-        "note": "1 credit per studio polish — $100/5,000 pool; see docs/VISUAL_ENHANCEMENT_SPEC.md",
+        "note": "1 credit per studio polish — $500/5,000 pool; v2/edit API",
     },
     "vision_gpt4o_mini": {
         "label": "GPT-4o Mini Vision (Snap to Sell)",

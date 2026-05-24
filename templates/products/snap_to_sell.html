@@ -215,22 +215,14 @@
         </span>
         {% endif %}
       </div>
-      <p class="text-xs text-gray-500 dark:text-gray-400">Your photo is already great? Use as-is. Need a pro cutout + studio background? Try Studio polish (1 credit).</p>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <p class="text-xs text-gray-500 dark:text-gray-400">Your photo is already great? Use as-is. For pro cutout, AI shadow, and studio background — Studio polish (Photoroom Plus, 1 credit).</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <label class="relative flex cursor-pointer rounded-lg border-2 p-3 transition-colors"
                :class="visualMode === 'as_is' ? 'border-kova-500 bg-kova-50/80 dark:bg-kova-950/30' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'">
           <input type="radio" name="visual_mode" value="as_is" class="sr-only" x-model="visualMode">
           <span>
             <span class="block text-sm font-semibold text-gray-900 dark:text-white">Use as-is</span>
             <span class="block text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">No editing · Free</span>
-          </span>
-        </label>
-        <label class="relative flex cursor-pointer rounded-lg border-2 p-3 transition-colors"
-               :class="visualMode === 'quick_polish' ? 'border-kova-500 bg-kova-50/80 dark:bg-kova-950/30' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'">
-          <input type="radio" name="visual_mode" value="quick_polish" class="sr-only" x-model="visualMode">
-          <span>
-            <span class="block text-sm font-semibold text-gray-900 dark:text-white">Quick polish</span>
-            <span class="block text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Studio frames · Free</span>
           </span>
         </label>
         <label class="relative flex cursor-pointer rounded-lg border-2 p-3 transition-colors"
@@ -241,7 +233,7 @@
           <input type="radio" name="visual_mode" value="pro_scene" class="sr-only" x-model="visualMode" :disabled="proSceneDisabled">
           <span>
             <span class="block text-sm font-semibold text-gray-900 dark:text-white">Studio polish</span>
-            <span class="block text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Pro cutout + studio bg · 1 credit</span>
+            <span class="block text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Pro cutout + shadow + studio bg · 1 credit</span>
           </span>
         </label>
       </div>
@@ -272,6 +264,7 @@
 
 <script>
 function snapToSell(autopilot, creditsRemaining, creditsAtLimit, studioPolishUnavailable) {
+  const proSceneDisabled = !!creditsAtLimit || (creditsRemaining !== undefined && creditsRemaining <= 0);
   return {
     photos: [],   // [{file: File, preview: 'data:...'}]
     name: '',
@@ -279,9 +272,9 @@ function snapToSell(autopilot, creditsRemaining, creditsAtLimit, studioPolishUna
     offeringType: 'product',
     autopilot: !!autopilot,
     showDetails: false,
-    visualMode: 'quick_polish',
+    visualMode: proSceneDisabled ? 'as_is' : 'pro_scene',
     studioPolishUnavailable: !!studioPolishUnavailable,
-    proSceneDisabled: !!creditsAtLimit || (creditsRemaining !== undefined && creditsRemaining <= 0),
+    proSceneDisabled,
 
     offeringConfig: {
       product: {

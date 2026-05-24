@@ -1,11 +1,10 @@
 """
-Photoroom Remove Background API (Basic plan) — cutout + color background.
+Photoroom Image Editing API (Plus) — cutout, studio background, shadow, resize.
 
-Uses POST https://sdk.photoroom.com/v1/segment (NOT Image Editing v2 / Plus).
+Uses https://image-api.photoroom.com/v2/edit (NOT Basic v1/segment).
 
-See:
-- https://docs.photoroom.com/remove-background-api-basic-plan/quickstart-guide
-- https://docs.photoroom.com/remove-background-api-basic-plan/background-color-size-and-crop
+See docs/VISUAL_ENHANCEMENT_SPEC.md and:
+https://docs.photoroom.com/image-editing-api-plus-plan/quickstart-guide
 """
 
 from __future__ import annotations
@@ -18,12 +17,11 @@ import requests
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
-from PIL import Image
 
 logger = logging.getLogger(__name__)
 
 STUDIO_POLISH_FOLDER = "studio_polish"
-PHOTOROOM_SEGMENT_URL = "https://sdk.photoroom.com/v1/segment"
+PHOTOROOM_EDIT_URL = "https://image-api.photoroom.com/v2/edit"
 CANVAS_SIZE = (1080, 1080)
 JPEG_QUALITY = 92
 
@@ -37,25 +35,26 @@ def photoroom_enabled() -> bool:
 def studio_polish_unavailable_message() -> str | None:
     """Short UI copy when Studio polish cannot call Photoroom."""
     if not getattr(settings, "VISUAL_ENHANCE_ENABLED", True):
-        return "Studio polish is off on this server — Quick polish will be used."
+        return "Studio polish is off on this server — use as-is or try again later."
     if not photoroom_enabled():
-        return "Photoroom API key missing — Quick polish will be used (no credit)."
+        return "Photoroom is not configured — use as-is or contact support."
     return None
 
 
-def studio_polish_fallback_message(reason: str | None) -> str | None:
-    """User-facing copy after Studio polish fell back to Quick polish."""
-    if reason == "photoroom_not_configured":
-        return "Studio polish isn’t configured — Quick polish was used (no credit)."
-    if reason == "photoroom_failed":
-        return "Studio polish failed — Quick polish was used instead."
-    if reason == "save_failed":
-        return "Couldn’t save studio polish — Quick polish was used instead."
-    return None
+def studio_polish_failure_message(reason: str | None) -> str | None:
+    """User-facing copy when Studio polish could not complete."""
+    messages = {
+        "photoroom_not_configured": "Studio polish isn’t configured — your original photo was kept.",
+        "photoroom_failed": "Studio polish failed — your original photo was kept.",
+        "save_failed": "Couldn’t save studio polish — your original photo was kept.",
+        "at_limit": "Studio polish credits used up — your original photo was kept.",
+        "platform_blocked": "Studio polish is at capacity — your original photo was kept.",
+    }
+    return messages.get(reason or "")
 
 
 def pick_background_color_hex(product, brand_colors: dict | None = None) -> str:
-    """Solid studio background for Basic tier (no AI scenes)."""
+    """Solid studio background for Plus static background."""
     brand_colors = brand_colors or {}
     primary = (brand_colors.get("primary") or "#FFFFFF").lstrip("#").upper()
     if len(primary) == 6 and primary not in ("FFFFFF", "FFF"):
@@ -71,13 +70,34 @@ def pick_background_color_hex(product, brand_colors: dict | None = None) -> str:
     return "FFFFFF"
 
 
-def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
-    h = hex_color.lstrip("#").upper()[:6]
-    return int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+def _api_key_headers() -> tuple[str, dict] | tuple[None, dict]:
+    api_key = getattr(settings, "PHOTOROOM_API_KEY", "").strip()
+    if not api_key:
+        return None, {}
+    if getattr(settings, "PHOTOROOM_SANDBOX", False) and not api_key.startswith("sandbox_"):
+        api_key = f"sandbox_{api_key}"
+    return api_key, {"x-api-key": api_key}
+
+
+def _resolve_public_image_url(image_url: str) -> str | None:
+    if image_url.startswith(("http://", "https://")):
+        return image_url
+
+    from apps.content.tasks import _public_url_for_file
+
+    path = image_url.lstrip("/")
+    if path.startswith("media/"):
+        path = path[6:]
+    public = _public_url_for_file(path)
+    if public.startswith("http"):
+        return public
+    site = getattr(settings, "SITE_URL", "").rstrip("/")
+    if site:
+        return f"{site}/{public.lstrip('/')}"
+    return None
 
 
 def _load_image_bytes(image_url: str) -> tuple[bytes, str] | None:
-    """Load image bytes for multipart upload (Basic API requires image_file)."""
     from apps.agents.carousel import _load_product_image
 
     if image_url.startswith(("http://", "https://")):
@@ -97,43 +117,68 @@ def _load_image_bytes(image_url: str) -> tuple[bytes, str] | None:
     return buf.getvalue(), "product.jpg"
 
 
-def _fit_to_square_jpeg(image_bytes: bytes, *, background_color: str) -> bytes:
-    """Basic API has no outputSize — normalize to 1080×1080 locally (free)."""
-    bg = _hex_to_rgb(background_color)
-    img = Image.open(BytesIO(image_bytes)).convert("RGB")
-    img.thumbnail(CANVAS_SIZE, Image.Resampling.LANCZOS)
-    canvas = Image.new("RGB", CANVAS_SIZE, bg)
-    x = (CANVAS_SIZE[0] - img.width) // 2
-    y = (CANVAS_SIZE[1] - img.height) // 2
-    canvas.paste(img, (x, y))
-    out = BytesIO()
-    canvas.save(out, format="JPEG", quality=JPEG_QUALITY, optimize=True)
-    return out.getvalue()
+def _edit_params(
+    *,
+    background_color: str,
+    output_size: str,
+    padding: str,
+    shadow_mode: str,
+    export_format: str,
+) -> dict:
+    bg = background_color.lstrip("#").upper()[:6]
+    return {
+        "removeBackground": "true",
+        "background.color": bg,
+        "outputSize": output_size,
+        "padding": padding,
+        "shadow.mode": shadow_mode,
+        "export.format": export_format,
+    }
 
 
 def studio_polish_via_photoroom(
     image_url: str,
     *,
     background_color: str = "FFFFFF",
-    size: str = "hd",
+    output_size: str | None = None,
+    padding: str | None = None,
+    shadow_mode: str | None = None,
+    export_format: str = "jpeg",
 ) -> bytes | None:
     """
-    Photoroom Basic v1/segment: remove background + solid color background.
-
-    Params per docs: bg_color, size (preview|medium|hd|full), format, crop.
-    Returns 1080×1080 JPEG bytes or None.
+    Photoroom Plus v2/edit: pro cutout + color bg + shadow + exact output size.
+    Returns JPEG bytes or None.
     """
-    api_key = getattr(settings, "PHOTOROOM_API_KEY", "")
+    api_key, headers = _api_key_headers()
     if not api_key:
         logger.info("Studio polish skipped: PHOTOROOM_API_KEY not set")
         return None
 
-    bg = background_color.lstrip("#").upper()[:6]
-    bg_color_param = f"#{bg}"
-    api_key = api_key.strip()
-    if getattr(settings, "PHOTOROOM_SANDBOX", False) and not api_key.startswith("sandbox_"):
-        api_key = f"sandbox_{api_key}"
-    headers = {"x-api-key": api_key}
+    output_size = output_size or getattr(settings, "PHOTOROOM_OUTPUT_SIZE", "1080x1080")
+    padding = padding if padding is not None else str(getattr(settings, "PHOTOROOM_PADDING", 0.12))
+    shadow_mode = shadow_mode or getattr(settings, "PHOTOROOM_DEFAULT_SHADOW", "ai.soft")
+    params = _edit_params(
+        background_color=background_color,
+        output_size=output_size,
+        padding=padding,
+        shadow_mode=shadow_mode,
+        export_format=export_format,
+    )
+
+    public_url = _resolve_public_image_url(image_url)
+    if public_url:
+        try:
+            resp = requests.get(
+                PHOTOROOM_EDIT_URL,
+                headers=headers,
+                params={"imageUrl": public_url, **params},
+                timeout=120,
+            )
+            resp.raise_for_status()
+            if resp.content:
+                return resp.content
+        except Exception as exc:
+            logger.warning("Photoroom GET v2/edit failed, trying POST: %s", exc)
 
     loaded = _load_image_bytes(image_url)
     if not loaded:
@@ -143,29 +188,27 @@ def studio_polish_via_photoroom(
 
     try:
         resp = requests.post(
-            PHOTOROOM_SEGMENT_URL,
+            PHOTOROOM_EDIT_URL,
             headers=headers,
-            files={"image_file": (filename, file_bytes, "image/jpeg")},
-            data={
-                "bg_color": bg_color_param,
-                "size": size,
-                "format": "jpg",
-                "crop": "false",
-            },
+            files={"imageFile": (filename, file_bytes, "image/jpeg")},
+            data=params,
             timeout=120,
         )
         resp.raise_for_status()
-        if not resp.content:
-            return None
-        return _fit_to_square_jpeg(resp.content, background_color=bg)
+        return resp.content or None
     except Exception as exc:
-        logger.error("Photoroom v1/segment failed: %s", exc)
+        logger.error("Photoroom POST v2/edit failed: %s", exc)
         return None
 
 
 def save_studio_polish_image(product_id, image_bytes: bytes, suffix: str = "hero") -> str:
     from apps.content.tasks import _public_url_for_file
 
-    filename = f"{STUDIO_POLISH_FOLDER}/{product_id}/{suffix}_{uuid.uuid4().hex[:10]}.jpg"
+    ext = "jpg" if image_bytes[:3] == b"\xff\xd8\xff" else "png"
+    filename = f"{STUDIO_POLISH_FOLDER}/{product_id}/{suffix}_{uuid.uuid4().hex[:10]}.{ext}"
     saved = default_storage.save(filename, ContentFile(image_bytes))
     return _public_url_for_file(saved)
+
+
+# Legacy alias
+studio_polish_via_photoroom_basic = studio_polish_via_photoroom

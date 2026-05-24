@@ -875,7 +875,7 @@ def reidentify_product_from_photo(product_id: str):
 
 @shared_task(name="products.expand_product_photo_set", soft_time_limit=180, time_limit=240)
 def expand_product_photo_set(product_id: str):
-    """Generate scene variations from the product's primary photo (local and/or Photoroom)."""
+    """Generate studio polish from the product's primary photo (Photoroom Plus)."""
     from apps.agents.models import AgentAction
     from apps.products.models import Product
     from apps.products.photo_variations import expand_product_photos
@@ -1104,7 +1104,7 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
 
     product.save(update_fields=["description", "tags", "updated_at"])
 
-    # ── Step 2b: Expand photo set (local rembg + Pillow presets) ─────
+    # ── Step 2b: Studio polish (Photoroom Plus + promo frame) ────────
     from apps.products.photo_variations import expand_product_photos
 
     variation_result = expand_product_photos(product, analysis=analysis)

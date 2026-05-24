@@ -605,15 +605,18 @@ MODEL_TOKEN_COSTS = {
 # Multi-provider with fallback: Hugging Face → Together.ai → Pollinations.ai
 AI_IMAGE_GENERATION_ENABLED = env.bool("AI_IMAGE_GENERATION_ENABLED", default=True)
 
-# Local product photo expansion (rembg + Pillow — no paid image APIs)
+# Local product photo expansion (Photoroom Plus + Pillow promo frames)
 PHOTO_VARIATIONS_ENABLED = env.bool("PHOTO_VARIATIONS_ENABLED", default=True)
 
-# Studio polish (Photoroom Basic) — see docs/VISUAL_ENHANCEMENT_SPEC.md
+# Studio polish (Photoroom Plus v2/edit) — see docs/VISUAL_ENHANCEMENT_SPEC.md
 VISUAL_ENHANCE_ENABLED = env.bool("VISUAL_ENHANCE_ENABLED", default=True)
 PHOTOROOM_API_KEY = env("PHOTOROOM_API_KEY", default="")
 PHOTOROOM_MONTHLY_POOL = env.int("PHOTOROOM_MONTHLY_POOL", default=5000)
 PHOTOROOM_POOL_RESERVE = env.int("PHOTOROOM_POOL_RESERVE", default=500)
-PHOTOROOM_MONTHLY_COST_USD = env.float("PHOTOROOM_MONTHLY_COST_USD", default=100.0)
+PHOTOROOM_MONTHLY_COST_USD = env.float("PHOTOROOM_MONTHLY_COST_USD", default=500.0)
+PHOTOROOM_OUTPUT_SIZE = env("PHOTOROOM_OUTPUT_SIZE", default="1080x1080")
+PHOTOROOM_PADDING = env.float("PHOTOROOM_PADDING", default=0.12)
+PHOTOROOM_DEFAULT_SHADOW = env("PHOTOROOM_DEFAULT_SHADOW", default="ai.soft")
 PHOTOROOM_SANDBOX = env.bool("PHOTOROOM_SANDBOX", default=False)
 # Legacy — unused; kept so existing .env files do not break
 FAL_KEY = env("FAL_KEY", default="")

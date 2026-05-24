@@ -117,7 +117,7 @@ def build_snap_pipeline_status(product, user):
 
     steps.append(_step("analyze", "AI analyzing product", analyze_detail, analyze_status))
 
-    # 3 — Photo set expansion (local rembg + Pillow)
+    # 3 — Photo set expansion (Photoroom Plus + promo frame)
     variation_action = _action("commerce.photo_variations")
     studio_polish_action = (
         AgentAction.objects.filter(
@@ -128,35 +128,47 @@ def build_snap_pipeline_status(product, user):
         .order_by("-created_at")
         .first()
     )
+    studio_count = sum(
+        1 for u in (product.additional_images or [])
+        if f"studio_polish/{product_id}/" in u
+    )
     variation_count = sum(
         1 for u in (product.additional_images or [])
         if f"product_variations/{product_id}/" in u
     )
+    enhanced_count = studio_count + variation_count
 
     studio_polish_notice = ""
-    if getattr(product, "visual_mode", None) == "pro_scene" and not studio_polish_action:
-        out = (variation_action.output_data or {}) if variation_action else {}
-        if out.get("fallback") == "quick_polish":
-            from apps.products.photoroom import studio_polish_fallback_message
+    from apps.products.photo_variations import is_studio_polish_mode
 
-            studio_polish_notice = studio_polish_fallback_message(out.get("reason")) or ""
+    if is_studio_polish_mode(getattr(product, "visual_mode", None)) and analyze_status == "completed":
+        if not studio_polish_action and studio_count == 0:
+            from apps.products.photoroom import studio_polish_failure_message
+
+            out = (variation_action.output_data or {}) if variation_action else {}
+            reason = out.get("reason") or out.get("error") or "photoroom_failed"
+            studio_polish_notice = studio_polish_failure_message(reason) or ""
 
     if analyze_status == "failed":
         expand_status = "skipped"
         expand_detail = "Skipped — analysis did not finish"
-    elif variation_action or variation_count >= 3:
-        n = (variation_action.output_data or {}).get("variations_created", variation_count) if variation_action else variation_count
+    elif studio_polish_action or variation_action or enhanced_count >= 1:
+        n = enhanced_count or (
+            (variation_action.output_data or {}).get("variations_created", 1)
+            if variation_action
+            else 1
+        )
         expand_status = "completed"
-        expand_detail = f"{n} scene version{'s' if n != 1 else ''} ready for carousel & posts"
+        expand_detail = f"{n} studio version{'s' if n != 1 else ''} ready for carousel & posts"
     elif analyze_status == "running":
         expand_status = "pending"
         expand_detail = "Waiting for product analysis…"
     elif snap_stale and seed:
         expand_status = "failed"
-        expand_detail = "Photo expansion timed out — tap Expand Photo Set"
+        expand_detail = "Studio polish timed out — tap Expand Photo Set"
     elif analyze_status == "completed":
         expand_status = "running"
-        expand_detail = "Creating studio, gradient & promo scenes from your photo…"
+        expand_detail = "Applying Photoroom studio polish to your photo…"
     else:
         expand_status = "pending"
         expand_detail = "Waiting for analysis…"

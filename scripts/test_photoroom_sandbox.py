@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Smoke test Photoroom Basic sandbox (v1/segment) — no Django required."""
+"""Smoke test Photoroom Plus sandbox (v2/edit) — no Django required."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ import requests
 from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
-SEGMENT_URL = "https://sdk.photoroom.com/v1/segment"
+EDIT_URL = "https://image-api.photoroom.com/v2/edit"
 
 
 def _load_dotenv() -> None:
@@ -39,19 +39,6 @@ def _make_test_product_jpeg() -> bytes:
     return buf.getvalue()
 
 
-def _fit_to_square_jpeg(image_bytes: bytes, bg_hex: str = "FFFFFF") -> bytes:
-    bg = tuple(int(bg_hex[i : i + 2], 16) for i in (0, 2, 4))
-    img = Image.open(BytesIO(image_bytes)).convert("RGB")
-    img.thumbnail((1080, 1080), Image.Resampling.LANCZOS)
-    canvas = Image.new("RGB", (1080, 1080), bg)
-    x = (1080 - img.width) // 2
-    y = (1080 - img.height) // 2
-    canvas.paste(img, (x, y))
-    out = BytesIO()
-    canvas.save(out, format="JPEG", quality=92, optimize=True)
-    return out.getvalue()
-
-
 def main() -> int:
     _load_dotenv()
     api_key = os.environ.get("PHOTOROOM_API_KEY", "").strip()
@@ -66,34 +53,43 @@ def main() -> int:
     test_dir = ROOT / "tmp" / "photoroom_test"
     test_dir.mkdir(parents=True, exist_ok=True)
     input_path = test_dir / "input.jpg"
-    output_path = test_dir / "sandbox_result.jpg"
+    output_path = test_dir / "plus_sandbox_result.jpg"
     input_path.write_bytes(_make_test_product_jpeg())
+
+    params = {
+        "removeBackground": "true",
+        "background.color": "FFFFFF",
+        "outputSize": "1080x1080",
+        "padding": "0.12",
+        "shadow.mode": "ai.soft",
+        "export.format": "jpeg",
+    }
 
     print(f"Input:  {input_path} ({input_path.stat().st_size} bytes)")
     print(f"Mode:   {'sandbox' if sandbox else 'live'}")
-    print("POST   https://sdk.photoroom.com/v1/segment")
+    print(f"POST   {EDIT_URL}")
 
     resp = requests.post(
-        SEGMENT_URL,
+        EDIT_URL,
         headers={"x-api-key": api_key},
-        files={"image_file": ("input.jpg", input_path.read_bytes(), "image/jpeg")},
-        data={"bg_color": "#FFFFFF", "size": "hd", "format": "jpg", "crop": "false"},
+        files={"imageFile": ("input.jpg", input_path.read_bytes(), "image/jpeg")},
+        data=params,
         timeout=120,
     )
 
     if resp.status_code != 200:
         print(f"ERROR: HTTP {resp.status_code}")
-        print(resp.text[:500])
+        print(resp.text[:800])
         return 1
 
     if not resp.content:
         print("ERROR: empty response body")
         return 1
 
-    result = _fit_to_square_jpeg(resp.content, "FFFFFF")
-    output_path.write_bytes(result)
-    print(f"Output: {output_path} ({output_path.stat().st_size} bytes)")
-    print("OK — sandbox test passed (watermark expected in sandbox mode)")
+    output_path.write_bytes(resp.content)
+    with Image.open(output_path) as img:
+        print(f"Output: {output_path} ({output_path.stat().st_size} bytes, {img.size[0]}x{img.size[1]})")
+    print("OK — Plus sandbox test passed (watermark expected in sandbox mode)")
     return 0
 
 

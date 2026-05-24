@@ -642,7 +642,7 @@ def fix_and_promote(request, product_id):
 def expand_product_photos_view(request, product_id):
     """Manually regenerate scene variations from the primary product photo."""
     from apps.billing.visual_credits import check_visual_credit_limit
-    from apps.products.photo_variations import VISUAL_MODE_PRO_SCENE
+    from apps.products.photo_variations import VISUAL_MODE_PRO_SCENE, normalize_visual_mode
     from apps.products.tasks import expand_product_photo_set
     from apps.utils import fire_task
 
@@ -651,10 +651,9 @@ def expand_product_photos_view(request, product_id):
         messages.error(request, "Add a product photo first.")
         return redirect("products:detail", product_id=product.pk)
 
-    visual_mode = request.POST.get("visual_mode", product.visual_mode)
-    valid_modes = {c[0] for c in Product.VisualMode.choices}
-    if visual_mode not in valid_modes:
-        visual_mode = product.visual_mode
+    visual_mode = normalize_visual_mode(request.POST.get("visual_mode", product.visual_mode))
+    if visual_mode not in (Product.VisualMode.AS_IS, VISUAL_MODE_PRO_SCENE):
+        visual_mode = normalize_visual_mode(product.visual_mode)
 
     if visual_mode == VISUAL_MODE_PRO_SCENE:
         allowed, msg = check_visual_credit_limit(request.user)
@@ -671,16 +670,10 @@ def expand_product_photos_view(request, product_id):
     product.save(update_fields=["visual_mode", "updated_at"])
 
     fire_task(expand_product_photo_set, str(product.pk))
-    if visual_mode == VISUAL_MODE_PRO_SCENE:
-        messages.success(
-            request,
-            f"Studio polish started for '{product.name}' — pro cutout + studio background in ~1 minute.",
-        )
-    else:
-        messages.success(
-            request,
-            f"Expanding photo set for '{product.name}' — scene versions in ~30 seconds.",
-        )
+    messages.success(
+        request,
+        f"Studio polish started for '{product.name}' — pro cutout, shadow & studio background in ~1 minute.",
+    )
     return redirect(f"{reverse('products:detail', kwargs={'product_id': product.pk})}?snap=1")
 
 
@@ -715,6 +708,7 @@ def snap_launch(request):
     from apps.billing.models import get_user_plan_limits
     from apps.products.commerce_autopilot import commerce_autopilot_active, sanitize_product_name
     from apps.products.image_utils import normalize_uploaded_image
+    from apps.products.photo_variations import normalize_visual_mode
     from apps.products.tasks import snap_to_sell_analyze
     from apps.utils import fire_task
     from django.core.files.storage import default_storage
@@ -762,10 +756,10 @@ def snap_launch(request):
     currency = request.POST.get("currency", "KES").strip() or "KES"
     description = request.POST.get("description", "").strip()
     photo_context = request.POST.get("photo_context", "").strip()
-    visual_mode = request.POST.get("visual_mode", "quick_polish").strip()
-    valid_modes = {c[0] for c in Product.VisualMode.choices}
-    if visual_mode not in valid_modes:
-        visual_mode = Product.VisualMode.QUICK_POLISH
+    raw_visual = request.POST.get("visual_mode", Product.VisualMode.PRO_SCENE).strip()
+    if raw_visual not in (Product.VisualMode.AS_IS, Product.VisualMode.PRO_SCENE):
+        raw_visual = Product.VisualMode.PRO_SCENE
+    visual_mode = normalize_visual_mode(raw_visual)
 
     if visual_mode == Product.VisualMode.PRO_SCENE:
         from apps.billing.visual_credits import check_visual_credit_limit

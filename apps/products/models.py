@@ -150,7 +150,7 @@ class Product(models.Model):
     visual_mode = models.CharField(
         max_length=20,
         choices=VisualMode.choices,
-        default=VisualMode.QUICK_POLISH,
+        default=VisualMode.PRO_SCENE,
         help_text="How Kova treats product photos before content generation.",
     )
 
