@@ -43,7 +43,7 @@ class SocialAccount(models.Model):
     platform_user_id = models.CharField(max_length=255)
     username = models.CharField(max_length=255, blank=True)
     display_name = models.CharField(max_length=255, blank=True)
-    avatar_url = models.URLField(blank=True)
+    avatar_url = models.URLField(max_length=2048, blank=True)
     access_token = EncryptedTokenField(blank=True)
     refresh_token = EncryptedTokenField(blank=True)
     token_expires_at = models.DateTimeField(null=True, blank=True)
