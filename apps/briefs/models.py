@@ -39,3 +39,39 @@ class DailyBrief(models.Model):
 
     def __str__(self):
         return f"Brief: {self.user} - {self.date}"
+
+
+class BriefWhatsAppLog(models.Model):
+    """Audit trail for owner reply-to-act commands on the daily brief."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="brief_whatsapp_logs",
+    )
+    brief = models.ForeignKey(
+        DailyBrief,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="whatsapp_logs",
+    )
+    wa_id = models.CharField(max_length=20, db_index=True)
+    inbound_text = models.CharField(max_length=500, blank=True)
+    command = models.CharField(max_length=64, db_index=True)
+    response_text = models.TextField(blank=True)
+    success = models.BooleanField(default=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["-created_at"]),
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["command", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} · {self.command} · {self.created_at:%Y-%m-%d %H:%M}"

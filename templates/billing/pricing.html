@@ -84,6 +84,11 @@
         {% else %}
           <li class="flex items-center"><span class="text-gray-300 dark:text-gray-600 mr-2">✗</span> <span class="text-gray-400 dark:text-gray-500">Email brief reports</span></li>
         {% endif %}
+        {% if plan.whatsapp_brief %}
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> WhatsApp morning brief</li>
+        {% else %}
+          <li class="flex items-center"><span class="text-gray-300 dark:text-gray-600 mr-2">✗</span> <span class="text-gray-400 dark:text-gray-500">WhatsApp morning brief</span></li>
+        {% endif %}
         {% if plan.engagement_agent %}
           <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Engagement inbox</li>
         {% else %}

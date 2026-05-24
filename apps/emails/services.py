@@ -279,6 +279,27 @@ class EmailService:
             context={"report": report_data},
         )
 
+    def send_daily_brief(self, user, *, brief, your_move="", top_decisions=None,
+                         brief_url="", approve_url=""):
+        delta = brief.kova_score_delta or 0
+        subject = f"Your Daily Brief — {brief.date.strftime('%b %d, %Y')}"
+        if delta > 0:
+            subject = f"☀️ Score +{delta} — {subject}"
+        elif brief.posts_pending:
+            subject = f"📋 {brief.posts_pending} posts waiting — {subject}"
+
+        return self._send(
+            "daily_brief", user.email, user=user,
+            context={
+                "brief": brief,
+                "your_move": your_move,
+                "top_decisions": top_decisions or [],
+                "brief_url": brief_url,
+                "approve_url": approve_url,
+            },
+            subject=subject,
+        )
+
     def send_monthly_report(self, user, report_data):
         return self._send(
             "monthly_report", user.email, user=user,

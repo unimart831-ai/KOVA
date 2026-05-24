@@ -1,19 +1,92 @@
 {% extends "emails/base_email.html" %}
-{# Daily brief email — wrapper for the existing brief template structure #}
-{% block title %}Your Daily Brief{% endblock %}
+{% block title %}Your Daily Brief — {{ brief.date|date:"M d, Y" }}{% endblock %}
+{% block header_bg %}#7c3aed{% endblock %}
 {% block header_title %}Good morning{% if first_name %}, {{ first_name }}{% endif %}!{% endblock %}
-{% block header_subtitle %}<p style="margin:4px 0 0;color:#ddd6fe;font-size:14px;">Your daily brief is ready</p>{% endblock %}
+{% block header_subtitle %}
+<p style="margin:4px 0 0;color:#ddd6fe;font-size:14px;">Your daily brief for {{ brief.date|date:"l, M d" }}</p>
+{% endblock %}
+{% block header_badge %}Kova Score {{ brief.kova_score }}{% if brief.kova_score_delta %} {% if brief.kova_score_delta > 0 %}+{% endif %}{{ brief.kova_score_delta }}{% endif %}{% endblock %}
 
 {% block content %}
-<p style="margin:0 0 16px;font-size:14px;line-height:1.7;color:#374151;">
-  Your daily brief has been generated. Head to your dashboard to review today's content ideas, performance highlights, and trending topics.
-</p>
+{% if your_move %}
+<div style="background-color:#faf5ff;border-left:4px solid #7c3aed;padding:16px;border-radius:0 8px 8px 0;margin-bottom:20px;">
+  <h3 style="margin:0 0 6px;font-size:13px;font-weight:600;color:#581c87;">Your move today</h3>
+  <p style="margin:0;font-size:14px;line-height:1.6;color:#4c1d95;">{{ your_move }}</p>
+</div>
+{% endif %}
+
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:20px;">
+  <tr>
+    <td width="33%" style="text-align:center;padding:14px 8px;background-color:#f9fafb;border-radius:8px;">
+      <div style="font-size:22px;font-weight:700;color:#7c3aed;">{{ brief.posts_pending }}</div>
+      <div style="font-size:11px;color:#6b7280;margin-top:2px;">Pending approval</div>
+    </td>
+    <td width="4"></td>
+    <td width="33%" style="text-align:center;padding:14px 8px;background-color:#f9fafb;border-radius:8px;">
+      <div style="font-size:22px;font-weight:700;color:#059669;">{{ brief.trending_topics|length }}</div>
+      <div style="font-size:11px;color:#6b7280;margin-top:2px;">Trending topics</div>
+    </td>
+    <td width="4"></td>
+    <td width="33%" style="text-align:center;padding:14px 8px;background-color:#f9fafb;border-radius:8px;">
+      <div style="font-size:22px;font-weight:700;color:#d97706;">{{ brief.suggested_posts|length }}</div>
+      <div style="font-size:11px;color:#6b7280;margin-top:2px;">Content ideas</div>
+    </td>
+  </tr>
+</table>
+
+{% if brief.summary %}
+<h2 style="margin:0 0 10px;font-size:15px;font-weight:600;color:#111827;">Today's summary</h2>
+<p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#374151;white-space:pre-line;">{{ brief.summary }}</p>
+{% endif %}
+
+{% if brief.performance_summary.highlight %}
+<div style="background-color:#f0fdf4;border-left:4px solid #22c55e;padding:16px;border-radius:0 8px 8px 0;margin-bottom:20px;">
+  <h3 style="margin:0 0 4px;font-size:13px;font-weight:600;color:#166534;">Performance highlight</h3>
+  <p style="margin:0;font-size:14px;color:#15803d;">{{ brief.performance_summary.highlight }}</p>
+</div>
+{% endif %}
+
+{% if top_decisions %}
+<h2 style="margin:0 0 10px;font-size:15px;font-weight:600;color:#111827;">Needs your attention</h2>
+{% for decision in top_decisions %}
+<div style="padding:12px 14px;background-color:#fff7ed;border-radius:8px;margin-bottom:8px;border:1px solid #fed7aa;">
+  <p style="margin:0;font-size:14px;font-weight:600;color:#9a3412;">{{ decision.item }}</p>
+  {% if decision.recommended_action %}<p style="margin:4px 0 0;font-size:13px;color:#c2410c;">→ {{ decision.recommended_action }}</p>{% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+{% if brief.suggested_posts %}
+<h2 style="margin:20px 0 10px;font-size:15px;font-weight:600;color:#111827;">Content ideas</h2>
+{% for post in brief.suggested_posts|slice:":2" %}
+<div style="padding:12px 16px;background-color:#faf5ff;border-radius:8px;margin-bottom:8px;">
+  <p style="margin:0;font-size:14px;font-weight:600;color:#581c87;">{{ post.idea }}</p>
+  {% if post.reasoning %}<p style="margin:4px 0 0;font-size:12px;color:#7c3aed;">{{ post.reasoning }}</p>{% endif %}
+</div>
+{% endfor %}
+{% endif %}
 {% endblock %}
 
 {% block cta %}
 <tr>
+  <td align="center" style="padding:0 32px 12px;">
+    <a href="{{ brief_url }}" style="display:inline-block;background-color:#7c3aed;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">Open full brief →</a>
+  </td>
+</tr>
+{% if brief.posts_pending %}
+<tr>
   <td align="center" style="padding:0 32px 28px;">
-    <a href="{{ site_url }}/brief/" style="display:inline-block;background-color:#7c3aed;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">View full brief →</a>
+    <a href="{{ approve_url }}" style="display:inline-block;color:#7c3aed;text-decoration:none;font-size:13px;font-weight:600;">Approve {{ brief.posts_pending }} pending post{{ brief.posts_pending|pluralize }} →</a>
+  </td>
+</tr>
+{% else %}
+<tr><td style="padding-bottom:16px;"></td></tr>
+{% endif %}
+<tr>
+  <td align="center" style="padding:0 32px 24px;">
+    <p style="margin:0;font-size:12px;color:#6b7280;line-height:1.5;">
+      On Pro? Enable WhatsApp brief in Settings — then reply <strong>APPROVE</strong> or <strong>IDEA 1</strong> to act from your phone.
+    </p>
   </td>
 </tr>
 {% endblock %}

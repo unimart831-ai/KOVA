@@ -12,18 +12,35 @@ class KovaSignupForm(forms.Form):
 
 
 class UserSettingsForm(forms.ModelForm):
+    phone_number = forms.CharField(
+        required=False,
+        max_length=15,
+        widget=forms.TextInput(attrs={
+            "class": "input",
+            "placeholder": "0712345678",
+            "autocomplete": "tel",
+        }),
+        help_text="For WhatsApp daily brief pings (Pro plan). Kenyan format 07xx…",
+    )
+
     class Meta:
         model = User
-        fields = ["full_name", "timezone", "daily_brief_time", "avatar"]
+        fields = [
+            "full_name", "timezone", "daily_brief_time", "phone_number",
+            "brief_email_enabled", "brief_whatsapp_enabled", "avatar",
+        ]
         widgets = {
             "full_name": forms.TextInput(attrs={"class": "input", "placeholder": "Your full name"}),
             "timezone": forms.Select(attrs={"class": "input"}),
             "daily_brief_time": forms.TimeInput(attrs={"class": "input", "type": "time"}),
+            "brief_email_enabled": forms.CheckboxInput(attrs={"class": "rounded border-gray-300 text-kova-600 focus:ring-kova-500"}),
+            "brief_whatsapp_enabled": forms.CheckboxInput(attrs={"class": "rounded border-gray-300 text-kova-600 focus:ring-kova-500"}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         from apps.accounts.timezones import CURATED_TIMEZONES
+        from apps.billing.models import get_user_plan_limits
 
         choices = [(tz, tz.replace("_", " ")) for tz in CURATED_TIMEZONES]
         current = ""
@@ -35,6 +52,34 @@ class UserSettingsForm(forms.ModelForm):
             choices=choices,
             attrs={"class": "input"},
         )
+
+        if self.instance and self.instance.pk:
+            limits = get_user_plan_limits(self.instance)
+            if not limits.get("email_brief"):
+                self.fields["brief_email_enabled"].disabled = True
+            if not limits.get("whatsapp_brief"):
+                self.fields["brief_whatsapp_enabled"].disabled = True
+
+    def clean_phone_number(self):
+        from apps.accounts.phone_utils import is_valid_phone, normalize_phone
+
+        phone = normalize_phone(self.cleaned_data.get("phone_number", ""))
+        if phone and not is_valid_phone(phone):
+            raise forms.ValidationError("Enter a valid phone number (e.g. 0712345678).")
+        return phone
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        from apps.accounts.phone_utils import apply_phone_to_user
+
+        apply_phone_to_user(user, self.cleaned_data.get("phone_number", ""))
+        if self.fields["brief_email_enabled"].disabled:
+            user.brief_email_enabled = self.instance.brief_email_enabled
+        if self.fields["brief_whatsapp_enabled"].disabled:
+            user.brief_whatsapp_enabled = self.instance.brief_whatsapp_enabled
+        if commit:
+            user.save()
+        return user
 
 
 class BrandProfileForm(forms.ModelForm):

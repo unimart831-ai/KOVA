@@ -12,6 +12,7 @@ from apps.accounts.forms import (
     OnboardingStep1Form,
     OnboardingStep2ReviewForm,
 )
+from apps.billing.models import get_user_plan_limits
 from apps.accounts.onboarding_flow import (
     SETUP_TOTAL_STEPS,
     apply_url_inference_to_profile,
@@ -63,6 +64,7 @@ def settings_view(request):
     return render(request, "accounts/settings.html", {
         "user_form": user_form,
         "brand_form": brand_form,
+        "plan_limits": get_user_plan_limits(request.user),
         "page_title": "Settings",
     })
 

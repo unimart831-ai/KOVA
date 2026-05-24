@@ -169,7 +169,16 @@
 <!-- ── Quick Actions ─────────────────────────────────────────────────── -->
 <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
   <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+    <a href="{% url 'admin_dashboard:whatsapp_brief_delivery' %}" class="flex items-center gap-3 p-3 rounded-lg border border-kova-200 dark:border-kova-800 hover:border-kova-400 dark:hover:border-kova-500 hover:bg-kova-50 dark:hover:bg-kova-950/30 transition-all">
+      <div class="w-8 h-8 bg-kova-100 dark:bg-kova-900/30 rounded-lg flex items-center justify-center">
+        <svg class="w-4 h-4 text-kova-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+      </div>
+      <div>
+        <p class="text-sm font-medium text-gray-900 dark:text-white">Daily Brief Delivery</p>
+        <p class="text-xs text-gray-400">Morning pings + reply-to-act logs</p>
+      </div>
+    </a>
     <a href="{% url 'admin_dashboard:whatsapp_conversations' %}" class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-green-400 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all">
       <div class="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
         <svg class="w-4 h-4 text-[#25D366]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>

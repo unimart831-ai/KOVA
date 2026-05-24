@@ -241,19 +241,7 @@ def _build_quick_actions(user, brief):
     return sorted(actions, key=lambda a: a["priority"])[:3]
 
 
-def _extract_your_move(summary):
-    """Pull the actionable 'Your move today' paragraph from the brief summary."""
-    if not summary:
-        return ""
-    for paragraph in summary.split("\n\n"):
-        stripped = paragraph.strip()
-        if stripped.lower().startswith("your move"):
-            return stripped
-    parts = [p.strip() for p in summary.split("\n\n") if p.strip()]
-    return parts[-1] if len(parts) >= 3 else ""
-
-
-def _guess_decision_url(decision):
+from apps.briefs.delivery import extract_your_move
     """Map a decision item to the most relevant in-app destination."""
     if not isinstance(decision, dict):
         return None
@@ -538,7 +526,7 @@ def brief_home(request):
         "brief_time_passed": _brief_time_has_passed(request.user),
         "strategist_active": _strategist_is_active(request.user),
         "greeting_name": greeting_name(request.user),
-        "your_move": _extract_your_move(brief.summary if brief else ""),
+        "your_move": extract_your_move(brief.summary if brief else ""),
         "decisions_needed": decisions_needed,
         "score_breakdown": _get_score_breakdown(brief),
         "recent_briefs": recent_briefs,

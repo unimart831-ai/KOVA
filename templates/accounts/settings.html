@@ -29,6 +29,9 @@
         {% csrf_token %}
 
         {% for field in user_form %}
+          {% if field.name == 'brief_email_enabled' or field.name == 'brief_whatsapp_enabled' %}
+            {# rendered in Daily Brief section below #}
+          {% else %}
           <div>
             <label for="id_{{ field.name }}" class="label">{{ field.label }}</label>
             {{ field }}
@@ -37,7 +40,47 @@
               <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ error }}</p>
             {% endfor %}
           </div>
+          {% endif %}
         {% endfor %}
+
+        {# Daily Brief delivery #}
+        <div class="p-4 rounded-xl bg-kova-50/60 dark:bg-kova-950/20 border border-kova-200 dark:border-kova-800/50 space-y-4">
+          <div>
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Daily brief delivery</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Your brief is always available in-app. Choose where else to receive it each morning at
+              <strong>{{ user_form.daily_brief_time.value|default:"09:00" }}</strong> (your timezone).
+            </p>
+          </div>
+
+          <div class="flex items-start gap-3">
+            {{ user_form.brief_email_enabled }}
+            <div>
+              <label for="id_brief_email_enabled" class="text-sm font-medium text-gray-900 dark:text-white">Email digest</label>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {% if plan_limits.email_brief %}
+                  Rich morning summary with score, your move, and top decisions.
+                {% else %}
+                  Available on <a href="{% url 'billing:pricing' %}" class="text-kova-600 dark:text-kova-400 underline">Kazi (Growth)</a> and above.
+                {% endif %}
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3 {% if not plan_limits.whatsapp_brief %}opacity-60{% endif %}">
+            {{ user_form.brief_whatsapp_enabled }}
+            <div class="flex-1">
+              <label for="id_brief_whatsapp_enabled" class="text-sm font-medium text-gray-900 dark:text-white">WhatsApp morning ping</label>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {% if plan_limits.whatsapp_brief %}
+                  2-line summary each morning. Reply <strong>HELP</strong> for commands (APPROVE, IDEA 1, SCORE).
+                {% else %}
+                  Available on <a href="{% url 'billing:pricing' %}" class="text-kova-600 dark:text-kova-400 underline">Biashara (Pro)</a>.
+                {% endif %}
+              </p>
+            </div>
+          </div>
+        </div>
 
         {# ═══════ Brand Basics ═══════ #}
         <div id="settings-brand" class="pt-6 border-t border-gray-100 dark:border-gray-800 scroll-mt-24" x-data="{ industry: '{{ brand_form.industry.value|default:'' }}' }">

@@ -208,37 +208,6 @@ def _gather_overnight_work(user):
     })
 
 
-def _send_brief_email(user, brief):
-    """Send the daily brief via email if the user's plan includes email briefs."""
-    profile = getattr(user, "profile", None)
-    if not profile:
-        return
-
-    from apps.billing.models import get_user_plan_limits
-
-    limits = get_user_plan_limits(user)
-    if not limits.get("email_brief"):
-        return  # Plan doesn't include email briefs
-
-    try:
-        from apps.emails.services import email_service
-        email_service._send(
-            email_type="daily_brief",
-            to_email=user.email,
-            context={
-                "first_name": user.first_name,
-                "user": user,
-                "brief": brief,
-                "site_url": settings.SITE_URL if hasattr(settings, "SITE_URL") else "",
-            },
-            user=user,
-            subject=f"Your Daily Brief — {brief.date.strftime('%b %d, %Y')}",
-        )
-        logger.info("Email brief sent to %s", user.email)
-    except Exception as e:
-        logger.warning("Failed to send email brief to %s: %s", user.email, e)
-
-
 def _build_action_summary(user) -> dict:
     """Aggregate concrete agent actions over the last 24h.
 
@@ -731,6 +700,8 @@ def _generate_brief_with_llm(user, brief_data):
             '- "suggested_posts": 2 post ideas to get started with, even without real data\n'
             '- "performance_highlight": "" (empty — no data yet)\n'
             '- All other fields: empty strings or empty lists\n'
+            '- "mobile_digest": {headline: max 80 chars, whatsapp_body: max 200 chars, '
+            'one-line morning ping for WhatsApp}\n'
         )
         onboarding_prompt = (
             f"Generate a welcoming first brief for {first_name}. "
@@ -863,6 +834,9 @@ def _generate_brief_with_llm(user, brief_data):
         'revenue when there is literally no pipeline). '
         'NEVER use generic phrases like "revenue is up" or "great week" — '
         'always name specifics or say nothing.\n'
+        '- "mobile_digest": {headline: max 80 chars punchy status line, '
+        'whatsapp_body: max 200 chars, no newlines — morning ping with counts + '
+        'one move; do NOT include URLs}\n'
     )
 
     holiday_hint = ""
@@ -994,6 +968,10 @@ def generate_daily_brief(user, *, user_date=None):
         score_delta = _get_kova_score_delta(user, kova_score)
         overnight = _gather_overnight_work(user)
 
+        mobile_digest = llm_result.get("mobile_digest") or {}
+        if not isinstance(mobile_digest, dict):
+            mobile_digest = {}
+
         brief = DailyBrief.objects.create(
             user=user,
             date=today,
@@ -1021,6 +999,7 @@ def generate_daily_brief(user, *, user_date=None):
                 "research_updated_at": brief_data.get("research_updated_at").isoformat() if brief_data.get("research_updated_at") else None,
                 "is_onboarding_mode": not brief_data.get("has_meaningful_data", True),
                 "operations_report": brief_data.get("operations_report", {}),
+                "mobile_digest": mobile_digest,
             },
             agent_activity=[
                 {"type": a["agent_type"], "action": a["action_type"], "status": a["status"]}
@@ -1039,8 +1018,9 @@ def generate_daily_brief(user, *, user_date=None):
             message="Your daily brief is ready. Good morning!",
         )
 
-        # Send email brief (if plan includes it)
-        _send_brief_email(user, brief)
+        # Multi-channel delivery (email, WhatsApp, WebSocket)
+        from apps.briefs.delivery import deliver_daily_brief
+        deliver_daily_brief(user, brief)
 
         action.status = AgentAction.ActionStatus.COMPLETED
         action.output_data = {"brief_id": str(brief.id)}

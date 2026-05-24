@@ -277,3 +277,75 @@ def whatsapp_broadcasts(request):
         "status_choices": WhatsAppBroadcast.BroadcastStatus.choices,
     }
     return render(request, "admin_dashboard/whatsapp/broadcasts.html", context)
+
+
+@staff_required
+def whatsapp_brief_delivery(request):
+    """Daily Brief WhatsApp delivery + reply-to-act command logs."""
+    from django.conf import settings
+
+    from apps.briefs.models import BriefWhatsAppLog, DailyBrief
+    from apps.billing.models import get_plan_limits
+
+    now = timezone.now()
+    last_7d = now - timedelta(days=7)
+    last_24h = now - timedelta(hours=24)
+
+    briefs_7d = DailyBrief.objects.filter(created_at__gte=last_7d).count()
+    recent_briefs = DailyBrief.objects.filter(created_at__gte=last_7d).only("performance_summary")
+    wa_delivered_7d = sum(
+        1 for b in recent_briefs if (b.performance_summary or {}).get("last_whatsapp_delivery")
+    )
+
+    commands_7d = BriefWhatsAppLog.objects.filter(created_at__gte=last_7d)
+    commands_24h = commands_7d.filter(created_at__gte=last_24h)
+    total_commands_7d = commands_7d.count()
+    success_commands_7d = commands_7d.filter(success=True).count()
+    approve_commands_7d = commands_7d.filter(command__startswith="approve").count()
+    idea_commands_7d = commands_7d.filter(command__startswith="idea").count()
+
+    by_command = (
+        commands_7d.values("command")
+        .annotate(count=Count("id"))
+        .order_by("-count")[:10]
+    )
+
+    qs = BriefWhatsAppLog.objects.select_related("user", "brief").order_by("-created_at")
+    search = request.GET.get("q", "").strip()
+    if search:
+        qs = qs.filter(
+            Q(user__email__icontains=search)
+            | Q(wa_id__icontains=search)
+            | Q(inbound_text__icontains=search)
+            | Q(command__icontains=search)
+        )
+
+    command_filter = request.GET.get("command", "")
+    if command_filter:
+        qs = qs.filter(command__startswith=command_filter)
+
+    paginator = Paginator(qs, 40)
+    page = paginator.get_page(request.GET.get("page", 1))
+
+    pro_limits = get_plan_limits("pro")
+
+    context = {
+        "page_title": "Daily Brief WhatsApp",
+        "briefs_7d": briefs_7d,
+        "wa_delivered_7d": wa_delivered_7d,
+        "total_commands_7d": total_commands_7d,
+        "commands_24h": commands_24h.count(),
+        "success_commands_7d": success_commands_7d,
+        "approve_commands_7d": approve_commands_7d,
+        "idea_commands_7d": idea_commands_7d,
+        "by_command": by_command,
+        "page_obj": page,
+        "search": search,
+        "current_command": command_filter,
+        "total_count": paginator.count,
+        "master_phone_id": getattr(settings, "WHATSAPP_PHONE_NUMBER_ID", ""),
+        "brief_template": getattr(settings, "KOVA_DAILY_BRIEF_TEMPLATE_NAME", ""),
+        "onboarding_template": getattr(settings, "KOVA_ONBOARDING_TEMPLATE_NAME", ""),
+        "whatsapp_brief_pro": pro_limits.get("whatsapp_brief"),
+    }
+    return render(request, "admin_dashboard/whatsapp/brief_delivery.html", context)

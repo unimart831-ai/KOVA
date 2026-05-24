@@ -23,6 +23,28 @@
       if (seedEl) htmx.trigger(seedEl, "kovaRefresh");
     }
 
+    if (type === "brief_ready" && data.headline) {
+      var toast = document.getElementById("brief-ready-toast");
+      if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "brief-ready-toast";
+        toast.className =
+          "fixed bottom-4 right-4 z-50 max-w-sm rounded-xl border border-kova-200 " +
+          "bg-white dark:bg-gray-900 shadow-lg p-4 text-sm";
+        toast.innerHTML =
+          '<p class="font-semibold text-gray-900 dark:text-white">Your daily brief is ready</p>' +
+          '<p class="text-gray-600 dark:text-gray-400 mt-1 brief-ready-headline"></p>' +
+          '<a href="/brief/" class="inline-block mt-2 text-kova-600 dark:text-kova-400 font-medium">Open brief →</a>';
+        document.body.appendChild(toast);
+      }
+      var headlineEl = toast.querySelector(".brief-ready-headline");
+      if (headlineEl) headlineEl.textContent = data.headline;
+      toast.classList.remove("hidden");
+      setTimeout(function () {
+        toast.classList.add("hidden");
+      }, 12000);
+    }
+
     if (type === "connected" && data.unread_count != null) {
       var badge = document.getElementById("notification-count");
       if (badge) {

@@ -23,6 +23,14 @@ class User(SoftDeleteMixin, AbstractUser):
         max_length=15, blank=True, default="",
         help_text="Kenyan phone number (07xx, 01xx, 02xx). Multiple users can share a number.",
     )
+    brief_email_enabled = models.BooleanField(
+        default=True,
+        help_text="Send the daily brief to your email (Growth plan and above).",
+    )
+    brief_whatsapp_enabled = models.BooleanField(
+        default=True,
+        help_text="Send a morning brief ping to WhatsApp (Pro plan and above).",
+    )
 
     # Override the default SoftDeleteManager with UserManager-compatible version
     objects = SoftDeleteUserManager()

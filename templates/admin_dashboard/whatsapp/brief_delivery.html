@@ -1,0 +1,156 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+  Morning brief pings + owner reply-to-act (APPROVE, IDEA, SCORE)
+</p>
+{% endblock %}
+
+{% block content %}
+<a href="{% url 'admin_dashboard:whatsapp_overview' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4">
+  ← WhatsApp overview
+</a>
+
+<!-- Config status -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Master phone ID</p>
+    <p class="text-sm font-mono mt-1 text-gray-900 dark:text-white truncate">{{ master_phone_id|default:"Not set" }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Daily brief template</p>
+    <p class="text-sm font-mono mt-1 text-gray-900 dark:text-white truncate">{{ brief_template|default:"Not set" }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Onboarding template</p>
+    <p class="text-sm font-mono mt-1 text-gray-900 dark:text-white truncate">{{ onboarding_template|default:"Not set" }}</p>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Briefs generated (7d)</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ briefs_7d|format_number }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">WA pings sent (7d)</p>
+    <p class="text-2xl font-bold text-[#25D366] mt-1">{{ wa_delivered_7d|format_number }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Reply commands (7d)</p>
+    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">{{ total_commands_7d|format_number }}</p>
+    <p class="text-[10px] text-gray-400 mt-1">{{ commands_24h }} in last 24h</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Success rate (7d)</p>
+    <p class="text-2xl font-bold text-emerald-600 mt-1">
+      {% if total_commands_7d %}{% widthratio success_commands_7d total_commands_7d 100 %}%{% else %}—{% endif %}
+    </p>
+    <p class="text-[10px] text-gray-400 mt-1">{{ approve_commands_7d }} approve · {{ idea_commands_7d }} idea</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+  <div class="lg:col-span-1 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Top commands (7d)</h3>
+    {% if by_command %}
+    <ul class="space-y-2">
+      {% for row in by_command %}
+      <li class="flex justify-between text-sm">
+        <span class="font-mono text-gray-700 dark:text-gray-300">{{ row.command }}</span>
+        <span class="text-gray-500">{{ row.count }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-xs text-gray-500">No commands yet — owners reply HELP to the morning ping.</p>
+    {% endif %}
+  </div>
+
+  <div class="lg:col-span-2 bg-kova-50/50 dark:bg-kova-950/20 rounded-xl border border-kova-200 dark:border-kova-800/50 p-4">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Reply-to-act commands</h3>
+    <p class="text-xs text-gray-600 dark:text-gray-400 mb-3">Pro users reply to Kova's morning WhatsApp ping within 24 hours:</p>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+      <span class="px-2 py-1 bg-white dark:bg-gray-900 rounded border">HELP</span>
+      <span class="px-2 py-1 bg-white dark:bg-gray-900 rounded border">SCORE</span>
+      <span class="px-2 py-1 bg-white dark:bg-gray-900 rounded border">BRIEF</span>
+      <span class="px-2 py-1 bg-white dark:bg-gray-900 rounded border">POSTS</span>
+      <span class="px-2 py-1 bg-white dark:bg-gray-900 rounded border">APPROVE</span>
+      <span class="px-2 py-1 bg-white dark:bg-gray-900 rounded border">APPROVE ALL</span>
+      <span class="px-2 py-1 bg-white dark:bg-gray-900 rounded border">APPROVE 2</span>
+      <span class="px-2 py-1 bg-white dark:bg-gray-900 rounded border">IDEA 1</span>
+    </div>
+    <p class="text-[10px] text-gray-500 mt-3">
+      Setup guide: <code class="bg-gray-100 dark:bg-gray-800 px-1 rounded">docs/DAILY_BRIEF_WHATSAPP_SETUP.md</code>
+      · Pro plan gate: {% if whatsapp_brief_pro %}enabled{% else %}disabled{% endif %}
+    </p>
+  </div>
+</div>
+
+<!-- Filters -->
+<form method="get" class="flex flex-wrap gap-3 mb-4">
+  <input type="search" name="q" value="{{ search }}" placeholder="Search user, phone, command…"
+         class="input text-sm max-w-xs">
+  <select name="command" class="input text-sm">
+    <option value="">All commands</option>
+    <option value="approve" {% if current_command == "approve" %}selected{% endif %}>approve*</option>
+    <option value="idea" {% if current_command == "idea" %}selected{% endif %}>idea*</option>
+    <option value="help" {% if current_command == "help" %}selected{% endif %}>help</option>
+    <option value="score" {% if current_command == "score" %}selected{% endif %}>score</option>
+  </select>
+  <button type="submit" class="btn-secondary btn-sm">Filter</button>
+  <a href="{% url 'admin_dashboard:whatsapp_brief_delivery' %}" class="btn-sm text-gray-500">Reset</a>
+</form>
+
+<!-- Log table -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Command log ({{ total_count }})</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-800/50 text-left text-xs text-gray-500 uppercase">
+        <tr>
+          <th class="px-4 py-2">Time</th>
+          <th class="px-4 py-2">User</th>
+          <th class="px-4 py-2">Inbound</th>
+          <th class="px-4 py-2">Command</th>
+          <th class="px-4 py-2">OK</th>
+          <th class="px-4 py-2">Response</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for log in page_obj %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30">
+          <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-500">{{ log.created_at|date:"M d H:i" }}</td>
+          <td class="px-4 py-2">
+            <a href="{% url 'admin_dashboard:user_detail' log.user_id %}" class="text-kova-600 dark:text-kova-400 hover:underline">{{ log.user.email }}</a>
+            <div class="text-[10px] text-gray-400 font-mono">{{ log.wa_id }}</div>
+          </td>
+          <td class="px-4 py-2 max-w-[120px] truncate">{{ log.inbound_text }}</td>
+          <td class="px-4 py-2 font-mono text-xs">{{ log.command }}</td>
+          <td class="px-4 py-2">{% if log.success %}<span class="text-emerald-600">✓</span>{% else %}<span class="text-red-500">✗</span>{% endif %}</td>
+          <td class="px-4 py-2 max-w-md truncate text-xs text-gray-600 dark:text-gray-400">{{ log.response_text|truncatechars:80 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No reply-to-act commands logged yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.has_other_pages %}
+  <div class="px-4 py-3 border-t border-gray-100 dark:border-gray-800 flex justify-center gap-2">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&q={{ search }}&command={{ current_command }}" class="btn-sm btn-secondary">← Prev</a>
+    {% endif %}
+    <span class="text-xs text-gray-500 self-center">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&q={{ search }}&command={{ current_command }}" class="btn-sm btn-secondary">Next →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

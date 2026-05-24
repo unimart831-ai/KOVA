@@ -254,21 +254,14 @@ def _send_completion_whatsapp_ping(user) -> bool:
         logger.debug("Onboarding ping: master WhatsApp creds missing — skipping")
         return False
 
+    from apps.accounts.phone_utils import phone_to_whatsapp_digits
+
     raw_phone = (getattr(user, "phone_number", "") or "").strip()
-    if not raw_phone:
-        logger.debug("Onboarding ping: user %s has no phone_number — skipping", user.email)
+    to_number = phone_to_whatsapp_digits(raw_phone)
+    if not to_number:
+        logger.debug("Onboarding ping: user %s has no valid phone — skipping", user.email)
         return False
 
-    # Convert Kenyan local (0XX...) to E.164 without the "+" — WhatsApp API
-    # wants the bare digits, e.g. "254712345678".
-    if raw_phone.startswith("0") and len(raw_phone) == 10:
-        to_number = "254" + raw_phone[1:]
-    elif raw_phone.startswith("+"):
-        to_number = raw_phone[1:]
-    else:
-        to_number = raw_phone
-
-    # Build template parameters — single body variable: the user's first name.
     first_name = (user.full_name or user.email or "there").split(" ")[0]
     components = [{
         "type": "body",

@@ -704,6 +704,12 @@ ADAPT_AGENT_V2_ENABLED = env.bool("ADAPT_AGENT_V2_ENABLED", default=False)
 KOVA_ONBOARDING_TEMPLATE_NAME = env("KOVA_ONBOARDING_TEMPLATE_NAME", default="")
 KOVA_ONBOARDING_TEMPLATE_LANG = env("KOVA_ONBOARDING_TEMPLATE_LANG", default="en")
 
+# Daily brief WhatsApp ping — fires after each DailyBrief is generated (Pro+).
+# Template body suggestion (3 variables: first_name, summary_snippet, score_line):
+#   "Good morning {{1}}! ☀️ {{2}} Score: {{3}}. Tap to open your brief."
+KOVA_DAILY_BRIEF_TEMPLATE_NAME = env("KOVA_DAILY_BRIEF_TEMPLATE_NAME", default="")
+KOVA_DAILY_BRIEF_TEMPLATE_LANG = env("KOVA_DAILY_BRIEF_TEMPLATE_LANG", default="en")
+
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
 
 # ─── SITE URL ────────────────────────────────────────────────────────────────

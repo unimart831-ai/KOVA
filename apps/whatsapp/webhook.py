@@ -125,19 +125,33 @@ def _handle_event(request):
             if not phone_number_id:
                 continue
 
-            # Find the SocialAccount this webhook belongs to
+            contacts = {c["wa_id"]: c for c in value.get("contacts", [])}
+            messages = value.get("messages", [])
+            statuses = value.get("statuses", [])
+
+            # Kova master number — owner reply-to-act for daily brief (not customer inbox)
+            master_phone_id = getattr(settings, "WHATSAPP_PHONE_NUMBER_ID", "") or ""
+            if master_phone_id and phone_number_id == master_phone_id:
+                for msg_data in messages:
+                    try:
+                        from apps.briefs.whatsapp_commands import handle_owner_brief_command
+                        handle_owner_brief_command(msg_data, contacts)
+                    except Exception:
+                        logger.exception("Brief WhatsApp command handler failed")
+                for status_data in statuses:
+                    _process_status_update(status_data)
+                continue
+
+            # User-connected WhatsApp Business accounts (customer inbox)
             social_account = _find_social_account(phone_number_id)
             if not social_account:
                 logger.warning("No SocialAccount found for phone_number_id=%s", phone_number_id)
                 continue
 
-            # Process inbound messages
-            contacts = {c["wa_id"]: c for c in value.get("contacts", [])}
-            for msg_data in value.get("messages", []):
+            for msg_data in messages:
                 _process_inbound_message(social_account, msg_data, contacts)
 
-            # Process status updates
-            for status_data in value.get("statuses", []):
+            for status_data in statuses:
                 _process_status_update(status_data)
 
     # Always return 200 to Meta — they retry on non-200 and may throttle

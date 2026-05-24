@@ -27,6 +27,19 @@ def is_valid_phone(phone: str) -> bool:
     return phone.isdigit() and 8 <= len(phone) <= 15
 
 
+def phone_to_whatsapp_digits(raw: str) -> str:
+    """Convert stored phone to bare E.164 digits for Meta WhatsApp API (no +)."""
+    phone = normalize_phone(raw)
+    if not phone:
+        return ""
+    if phone.startswith("+"):
+        digits = phone[1:]
+        return digits if digits.isdigit() else ""
+    if phone.startswith("0") and len(phone) == 10:
+        return "254" + phone[1:]
+    return phone if phone.isdigit() else ""
+
+
 def apply_phone_to_user(user, phone: str):
     """Set timezone/country hints from phone when appropriate."""
     profile = getattr(user, "profile", None)

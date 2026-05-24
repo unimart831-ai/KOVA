@@ -224,6 +224,7 @@ urlpatterns = [
     path("whatsapp/conversations/", whatsapp.whatsapp_conversations, name="whatsapp_conversations"),
     path("whatsapp/templates/", whatsapp.whatsapp_templates, name="whatsapp_templates"),
     path("whatsapp/broadcasts/", whatsapp.whatsapp_broadcasts, name="whatsapp_broadcasts"),
+    path("whatsapp/brief-delivery/", whatsapp.whatsapp_brief_delivery, name="whatsapp_brief_delivery"),
 
     # Innovations
     path("innovations/", innovations.innovations_overview, name="innovations_overview"),
