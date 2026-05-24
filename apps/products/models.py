@@ -142,6 +142,18 @@ class Product(models.Model):
     is_active = models.BooleanField(default=True)
     tags = models.JSONField(default=list, blank=True, help_text='E.g. ["bestseller", "new arrival"]')
 
+    class VisualMode(models.TextChoices):
+        AS_IS = "as_is", "Use as-is"
+        QUICK_POLISH = "quick_polish", "Quick polish"
+        PRO_SCENE = "pro_scene", "Studio polish"
+
+    visual_mode = models.CharField(
+        max_length=20,
+        choices=VisualMode.choices,
+        default=VisualMode.QUICK_POLISH,
+        help_text="How Kova treats product photos before content generation.",
+    )
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

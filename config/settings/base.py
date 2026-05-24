@@ -608,6 +608,16 @@ AI_IMAGE_GENERATION_ENABLED = env.bool("AI_IMAGE_GENERATION_ENABLED", default=Tr
 # Local product photo expansion (rembg + Pillow — no paid image APIs)
 PHOTO_VARIATIONS_ENABLED = env.bool("PHOTO_VARIATIONS_ENABLED", default=True)
 
+# Studio polish (Photoroom Basic) — see docs/VISUAL_ENHANCEMENT_SPEC.md
+VISUAL_ENHANCE_ENABLED = env.bool("VISUAL_ENHANCE_ENABLED", default=True)
+PHOTOROOM_API_KEY = env("PHOTOROOM_API_KEY", default="")
+PHOTOROOM_MONTHLY_POOL = env.int("PHOTOROOM_MONTHLY_POOL", default=5000)
+PHOTOROOM_POOL_RESERVE = env.int("PHOTOROOM_POOL_RESERVE", default=500)
+PHOTOROOM_MONTHLY_COST_USD = env.float("PHOTOROOM_MONTHLY_COST_USD", default=100.0)
+PHOTOROOM_SANDBOX = env.bool("PHOTOROOM_SANDBOX", default=False)
+# Legacy — unused; kept so existing .env files do not break
+FAL_KEY = env("FAL_KEY", default="")
+
 HF_TOKEN = env("HF_TOKEN", default="")                        # https://huggingface.co/settings/tokens — FLUX.1-schnell (free)
 TOGETHER_API_KEY = env("TOGETHER_API_KEY", default="")        # https://api.together.xyz — sign up, add $5 credit
 TOGETHER_IMAGE_MODEL = env("TOGETHER_IMAGE_MODEL", default="black-forest-labs/FLUX.1-schnell")  # $0.003/image

@@ -35,6 +35,18 @@ PRESET_SOFT_PASTEL = "soft_pastel"
 PRESET_DARK_PREMIUM = "dark_premium"
 PRESET_PROMO_FRAME = "promo_frame"
 
+VISUAL_MODE_AS_IS = "as_is"
+VISUAL_MODE_QUICK_POLISH = "quick_polish"
+VISUAL_MODE_PRO_SCENE = "pro_scene"  # DB value — UI label: Studio polish
+VISUAL_MODE_STUDIO_POLISH = "studio_polish"  # alias
+
+PRESET_STUDIO_HERO = "studio_hero"
+STUDIO_POLISH_MODES = frozenset({VISUAL_MODE_PRO_SCENE, VISUAL_MODE_STUDIO_POLISH})
+
+
+def is_studio_polish_mode(mode: str | None) -> bool:
+    return mode in STUDIO_POLISH_MODES
+
 
 def variation_storage_marker(product_id) -> str:
     return f"{VARIATION_FOLDER}/{product_id}/"
@@ -328,14 +340,130 @@ def _save_variation_jpeg(product_id, preset_id: str, image: Image.Image) -> str:
 
 def _strip_generated_variations(additional_images: list, product_id) -> list:
     marker = variation_storage_marker(product_id)
-    return [url for url in (additional_images or []) if marker not in url]
+    studio_marker = f"studio_polish/{product_id}/"
+    return [
+        url for url in (additional_images or [])
+        if marker not in url and studio_marker not in url
+    ]
 
 
-def expand_product_photos(product, analysis: dict | None = None) -> dict:
+def expand_product_photos(product, analysis: dict | None = None, mode: str | None = None) -> dict:
     """
     Generate scene variations from the product's primary photo.
     Appends URLs to product.additional_images (replaces prior auto-variations).
+
+    mode: as_is | quick_polish | pro_scene / studio_polish (defaults to product.visual_mode)
     """
+    mode = mode or getattr(product, "visual_mode", None) or VISUAL_MODE_QUICK_POLISH
+
+    if mode == VISUAL_MODE_AS_IS:
+        return {"skipped": True, "reason": "as_is", "variations_created": 0}
+
+    if is_studio_polish_mode(mode):
+        return _expand_studio_polish(product, analysis)
+
+    return _expand_quick_polish(product, analysis)
+
+
+def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
+    """One Photoroom Basic call (1 credit) + free local Pillow variants."""
+    from apps.billing.visual_credits import check_visual_credit_limit, record_studio_polish
+    from apps.products.photoroom import (
+        photoroom_enabled,
+        pick_background_color_hex,
+        save_studio_polish_image,
+        studio_polish_via_photoroom,
+    )
+
+    if not getattr(settings, "PHOTO_VARIATIONS_ENABLED", True):
+        return {"skipped": True, "reason": "disabled"}
+
+    if not product.image:
+        return {"error": "no_image", "variations_created": 0}
+
+    allowed, msg = check_visual_credit_limit(product.user)
+    if not allowed:
+        logger.info("Studio polish cap reached for %s — falling back to quick polish", product.user_id)
+        result = _expand_quick_polish(product, analysis)
+        result["fallback"] = "quick_polish"
+        result["limit_message"] = msg
+        return result
+
+    if not photoroom_enabled():
+        logger.info("Studio polish unavailable — PHOTOROOM_API_KEY missing; using quick polish")
+        result = _expand_quick_polish(product, analysis)
+        result["fallback"] = "quick_polish"
+        result["reason"] = "photoroom_not_configured"
+        return result
+
+    source = product.image.url if hasattr(product.image, "url") else str(product.image)
+    profile = getattr(product.user, "profile", None)
+    brand_colors = _get_brand_palette(profile)
+    background_hex = pick_background_color_hex(product, brand_colors)
+
+    image_bytes = studio_polish_via_photoroom(source, background_color=background_hex)
+
+    if not image_bytes:
+        result = _expand_quick_polish(product, analysis)
+        result["fallback"] = "quick_polish"
+        result["reason"] = "photoroom_failed"
+        return result
+
+    try:
+        hero_url = save_studio_polish_image(product.pk, image_bytes, suffix="hero")
+    except Exception as exc:
+        logger.error("Studio polish save failed: %s", exc)
+        result = _expand_quick_polish(product, analysis)
+        result["fallback"] = "quick_polish"
+        result["reason"] = "save_failed"
+        return result
+
+    record_studio_polish(
+        product.user,
+        product_id=product.pk,
+        provider="photoroom",
+        output_data={"background_color": background_hex, "url": hero_url},
+    )
+
+    rgb = _load_product_image(source)
+    new_urls = [hero_url]
+    if rgb is not None:
+        dominant = _dominant_hex_colors(rgb)
+        foreground = remove_product_background(rgb)
+        display_name = sanitize_product_name(product.name) or "Product"
+        shop_hint = "Shop link in bio" if product.product_url else ""
+        for preset_id in (PRESET_WHITE_STUDIO, PRESET_DARK_PREMIUM, PRESET_PROMO_FRAME):
+            try:
+                rendered = _render_preset(
+                    preset_id,
+                    foreground,
+                    rgb,
+                    product_name=display_name,
+                    display_price=product.display_price or "",
+                    shop_hint=shop_hint,
+                    dominant_colors=dominant,
+                    brand_colors=brand_colors,
+                )
+                new_urls.append(_save_variation_jpeg(product.pk, preset_id, rendered))
+            except Exception as exc:
+                logger.debug("Studio polish bonus preset %s failed: %s", preset_id, exc)
+
+    kept = _strip_generated_variations(product.additional_images, product.pk)
+    product.additional_images = kept + new_urls
+    product.save(update_fields=["additional_images", "updated_at"])
+
+    logger.info("Studio polish: product=%s urls=%d bg=%s", product.pk, len(new_urls), background_hex)
+    return {
+        "variations_created": len(new_urls),
+        "mode": VISUAL_MODE_PRO_SCENE,
+        "provider": "photoroom",
+        "urls": new_urls,
+        "background_color": background_hex,
+    }
+
+
+def _expand_quick_polish(product, analysis: dict | None = None) -> dict:
+    """Generate scene variations from the product's primary photo (local rembg + Pillow)."""
     if not getattr(settings, "PHOTO_VARIATIONS_ENABLED", True):
         return {"skipped": True, "reason": "disabled"}
 

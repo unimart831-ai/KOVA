@@ -875,7 +875,7 @@ def reidentify_product_from_photo(product_id: str):
 
 @shared_task(name="products.expand_product_photo_set", soft_time_limit=180, time_limit=240)
 def expand_product_photo_set(product_id: str):
-    """Generate scene variations from the product's primary photo (CPU, no API cost)."""
+    """Generate scene variations from the product's primary photo (local and/or Photoroom)."""
     from apps.agents.models import AgentAction
     from apps.products.models import Product
     from apps.products.photo_variations import expand_product_photos
@@ -886,7 +886,7 @@ def expand_product_photo_set(product_id: str):
         return {"error": "not_found"}
 
     result = expand_product_photos(product)
-    if result.get("variations_created", 0) > 0:
+    if result.get("variations_created", 0) > 0 and result.get("mode") not in ("pro_scene", "studio_polish"):
         AgentAction.objects.create(
             user=product.user,
             agent_type="create",
@@ -1112,19 +1112,22 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
     num_images = len(product.all_image_urls)
 
     if variation_result.get("variations_created", 0) > 0:
-        AgentAction.objects.create(
-            user=user,
-            agent_type="create",
-            action_type="commerce.photo_variations",
-            description=(
-                f"Expanded photo set: {product.name} "
-                f"({variation_result['variations_created']} scene versions)"
-            ),
-            status=AgentAction.ActionStatus.COMPLETED,
-            input_data={"product_id": str(product.pk), "source": "snap_to_sell"},
-            output_data=variation_result,
-            completed_at=timezone.now(),
-        )
+        if variation_result.get("mode") not in ("pro_scene", "studio_polish"):
+            AgentAction.objects.create(
+                user=user,
+                agent_type="create",
+                action_type="commerce.photo_variations",
+                description=(
+                    f"Expanded photo set: {product.name} "
+                    f"({variation_result['variations_created']} scene versions)"
+                ),
+                status=AgentAction.ActionStatus.COMPLETED,
+                input_data={"product_id": str(product.pk), "source": "snap_to_sell"},
+                output_data=variation_result,
+                completed_at=timezone.now(),
+            )
+    elif variation_result.get("reason") == "as_is":
+        logger.info("Snap to Sell: as-is photos for product %s", product.pk)
 
     # ── Step 3: Create a content seed and launch the campaign ────────
     platforms = list(

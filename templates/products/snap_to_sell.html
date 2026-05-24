@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-lg mx-auto space-y-6" x-data="snapToSell({{ commerce_autopilot|yesno:'true,false' }})">
+<div class="max-w-lg mx-auto space-y-6" x-data="snapToSell({{ commerce_autopilot|yesno:'true,false' }}, {{ visual_credits.remaining|default:15 }}, {{ visual_credits.at_limit|yesno:'true,false' }})">
 
   {% include "products/_products_subnav.html" %}
 
@@ -205,6 +205,48 @@
       + Add description (optional)
     </button>
 
+    {# Visual treatment — user controls enhancement #}
+    <div class="card p-5 space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        <label class="label text-base font-semibold mb-0">Photo treatment</label>
+        {% if visual_credits %}
+        <span class="text-[10px] text-gray-500 dark:text-gray-400 tabular-nums">
+          Studio polish: {{ visual_credits.remaining }}/{{ visual_credits.max }} left
+        </span>
+        {% endif %}
+      </div>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Your photo is already great? Use as-is. Need a pro cutout + studio background? Try Studio polish (1 credit).</p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <label class="relative flex cursor-pointer rounded-lg border-2 p-3 transition-colors"
+               :class="visualMode === 'as_is' ? 'border-kova-500 bg-kova-50/80 dark:bg-kova-950/30' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'">
+          <input type="radio" name="visual_mode" value="as_is" class="sr-only" x-model="visualMode">
+          <span>
+            <span class="block text-sm font-semibold text-gray-900 dark:text-white">Use as-is</span>
+            <span class="block text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">No editing · Free</span>
+          </span>
+        </label>
+        <label class="relative flex cursor-pointer rounded-lg border-2 p-3 transition-colors"
+               :class="visualMode === 'quick_polish' ? 'border-kova-500 bg-kova-50/80 dark:bg-kova-950/30' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'">
+          <input type="radio" name="visual_mode" value="quick_polish" class="sr-only" x-model="visualMode">
+          <span>
+            <span class="block text-sm font-semibold text-gray-900 dark:text-white">Quick polish</span>
+            <span class="block text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Studio frames · Free</span>
+          </span>
+        </label>
+        <label class="relative flex cursor-pointer rounded-lg border-2 p-3 transition-colors"
+               :class="[
+                 visualMode === 'pro_scene' ? 'border-kova-500 bg-kova-50/80 dark:bg-kova-950/30' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300',
+                 proSceneDisabled ? 'opacity-50 cursor-not-allowed' : ''
+               ]">
+          <input type="radio" name="visual_mode" value="pro_scene" class="sr-only" x-model="visualMode" :disabled="proSceneDisabled">
+          <span>
+            <span class="block text-sm font-semibold text-gray-900 dark:text-white">Studio polish</span>
+            <span class="block text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Pro cutout + studio bg · 1 credit</span>
+          </span>
+        </label>
+      </div>
+    </div>
+
     {# Launch button #}
     <button type="submit"
             :disabled="photos.length === 0 || !price || !name.trim()"
@@ -223,7 +265,7 @@
 </div>
 
 <script>
-function snapToSell(autopilot) {
+function snapToSell(autopilot, creditsRemaining, creditsAtLimit) {
   return {
     photos: [],   // [{file: File, preview: 'data:...'}]
     name: '',
@@ -231,6 +273,8 @@ function snapToSell(autopilot) {
     offeringType: 'product',
     autopilot: !!autopilot,
     showDetails: false,
+    visualMode: 'quick_polish',
+    proSceneDisabled: !!creditsAtLimit || (creditsRemaining !== undefined && creditsRemaining <= 0),
 
     offeringConfig: {
       product: {

@@ -28,6 +28,7 @@ staticfiles/
 
 # Environment
 .env
+tmp/
 
 # IDE
 .vscode/
