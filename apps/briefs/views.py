@@ -242,6 +242,9 @@ def _build_quick_actions(user, brief):
 
 
 from apps.briefs.delivery import extract_your_move
+
+
+def _guess_decision_url(decision):
     """Map a decision item to the most relevant in-app destination."""
     if not isinstance(decision, dict):
         return None
