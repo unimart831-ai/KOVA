@@ -87,3 +87,55 @@ def test_channel_export_specs_in_catalog():
     assert "channel_story" in ids
     assert "channel_banner" in ids
     assert "channel_story_uncrop" in ids
+
+
+def test_slide_role_order_starts_with_hero():
+    from apps.products.photoroom_plus import order_variants_by_slide_role
+
+    candidates = [
+        PLUS_VARIANT_CATALOG["ai_lifestyle"],
+        PLUS_VARIANT_CATALOG["studio_white"],
+        PLUS_VARIANT_CATALOG["relight"],
+        PLUS_VARIANT_CATALOG["background_blur"],
+    ]
+    ordered = order_variants_by_slide_role(
+        candidates,
+        offering="product",
+        category="electronics",
+        max_count=4,
+    )
+    assert ordered[0].id == "studio_white"
+    assert ordered[1].id == "ai_lifestyle"
+
+
+def test_apparel_proof_prefers_ghost_mannequin():
+    from apps.products.photoroom_plus import order_variants_by_slide_role
+
+    candidates = [
+        PLUS_VARIANT_CATALOG["studio_white"],
+        PLUS_VARIANT_CATALOG["ai_lifestyle"],
+        PLUS_VARIANT_CATALOG["ghost_mannequin"],
+        PLUS_VARIANT_CATALOG["virtual_model"],
+    ]
+    ordered = order_variants_by_slide_role(
+        candidates,
+        offering="product",
+        category="apparel",
+        max_count=4,
+    )
+    ids = [s.id for s in ordered]
+    assert ids[0] == "studio_white"
+    assert "ghost_mannequin" in ids or "virtual_model" in ids
+
+
+def test_filter_carousel_urls_excludes_channel():
+    from apps.products.photoroom_plus import filter_carousel_urls
+
+    urls = [
+        "/media/studio_polish/x/studio_white_abc.jpg",
+        "/media/studio_polish/x/channel_story_def.jpg",
+        "/media/studio_polish/x/preflight_relight_ghi.jpg",
+    ]
+    filtered = filter_carousel_urls(urls)
+    assert len(filtered) == 1
+    assert "studio_white" in filtered[0]

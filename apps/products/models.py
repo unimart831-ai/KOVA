@@ -209,6 +209,13 @@ class Product(models.Model):
         return urls
 
     @property
+    def carousel_image_urls(self):
+        """Square feed images for carousels — excludes story/banner/preflight assets."""
+        from apps.products.photoroom_plus import filter_carousel_urls
+
+        return filter_carousel_urls(self.all_image_urls)
+
+    @property
     def cover_image_url(self):
         """Best thumbnail: first active content image, else original if nothing else."""
         active = self.all_image_urls

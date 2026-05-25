@@ -23,6 +23,34 @@ AI_BG_SEEDS = (117879368, 55994449, 48672244, 65080068)
 
 PLAN_TIER_ORDER = ("starter", "growth", "pro", "agency")
 
+# Phase C — carousel slide roles (variant pick order)
+SLIDE_ROLE_PRODUCT = (
+    ("hero", ("studio_white", "studio_brand")),
+    ("desire", ("ai_lifestyle", "ai_lifestyle_alt", "ai_contextual")),
+    ("proof", ()),  # filled per category below
+    ("standout", ("studio_dark", "outline", "background_blur")),
+)
+SLIDE_ROLE_SERVICE = (
+    ("hero", ("service_hero",)),
+    ("context", ("service_context",)),
+    ("trust", ("relight", "background_blur", "beautify")),
+)
+SLIDE_ROLE_DIGITAL = (
+    ("hero", ("digital_desk_hero",)),
+    ("mockup", ("digital_device_mockup",)),
+    ("desire", ("ai_contextual", "ai_lifestyle", "ai_lifestyle_alt")),
+)
+CATEGORY_PROOF_VARIANTS: dict[str, tuple[str, ...]] = {
+    "apparel": ("ghost_mannequin", "virtual_model"),
+    "food": ("flat_lay", "text_removal"),
+    "beauty": ("flat_lay", "beautify"),
+    "jewelry": ("beautify", "studio_dark"),
+    "electronics": ("relight", "background_blur"),
+    "home": ("flat_lay", "ai_contextual"),
+    "general": ("relight", "flat_lay", "background_blur"),
+}
+CAROUSEL_EXCLUDE_URL_MARKERS = ("channel_story", "channel_banner", "preflight_")
+
 PRODUCT_CATEGORIES = (
     "apparel",
     "food",
@@ -669,6 +697,71 @@ def resolve_variant_params(
     return resolved
 
 
+def _slide_roles_for(offering: str, category: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
+    if offering == "service":
+        return SLIDE_ROLE_SERVICE
+    if offering == "digital":
+        return SLIDE_ROLE_DIGITAL
+    proof_ids = CATEGORY_PROOF_VARIANTS.get(category, CATEGORY_PROOF_VARIANTS["general"])
+    roles: list[tuple[str, tuple[str, ...]]] = []
+    for role_name, variant_ids in SLIDE_ROLE_PRODUCT:
+        if role_name == "proof":
+            roles.append((role_name, proof_ids))
+        else:
+            roles.append((role_name, variant_ids))
+    return tuple(roles)
+
+
+def slide_role_for_variant(variant_id: str, offering: str, category: str) -> str:
+    """Carousel role label for a variant id."""
+    for role_name, variant_ids in _slide_roles_for(offering, category):
+        if variant_id in variant_ids:
+            return role_name
+    return "extra"
+
+
+def filter_carousel_urls(urls: list[str]) -> list[str]:
+    """Square carousel slides — exclude channel exports and preflight intermediates."""
+    return [
+        u for u in urls
+        if u and not any(marker in u for marker in CAROUSEL_EXCLUDE_URL_MARKERS)
+    ]
+
+
+def order_variants_by_slide_role(
+    candidates: list[PlusVariantSpec],
+    *,
+    offering: str,
+    category: str,
+    max_count: int,
+) -> list[PlusVariantSpec]:
+    """Pick variants to fill hero → desire → proof → standout carousel roles."""
+    by_id = {s.id: s for s in candidates}
+    picked: list[PlusVariantSpec] = []
+    picked_ids: set[str] = set()
+
+    for role_name, preferred_ids in _slide_roles_for(offering, category):
+        for vid in preferred_ids:
+            spec = by_id.get(vid)
+            if spec and vid not in picked_ids:
+                picked.append(spec)
+                picked_ids.add(vid)
+                break
+        if len(picked) >= max_count:
+            break
+
+    if len(picked) < max_count:
+        for spec in sorted(candidates, key=lambda s: -s.priority):
+            if spec.id in picked_ids:
+                continue
+            picked.append(spec)
+            picked_ids.add(spec.id)
+            if len(picked) >= max_count:
+                break
+
+    return picked[: max(1, max_count)]
+
+
 def select_plus_variants(
     product,
     analysis: dict | None,
@@ -729,6 +822,13 @@ def select_plus_variants(
         seen.add(spec.id)
         ordered.append(spec)
 
+    if getattr(settings, "PHOTOROOM_SLIDE_ROLES_ENABLED", True):
+        return order_variants_by_slide_role(
+            ordered,
+            offering=offering,
+            category=category,
+            max_count=max_count,
+        )
     return ordered[: max(1, max_count)]
 
 

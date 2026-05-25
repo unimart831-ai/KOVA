@@ -484,7 +484,7 @@ def generate_product_carousel(
 
     Up to 5 photo slides, then the closing CTA. Returns list of saved media URLs.
     """
-    all_images = product.all_image_urls
+    all_images = product.carousel_image_urls or product.all_image_urls
     if not all_images:
         logger.warning("generate_product_carousel: product %s has no images", product.pk)
         return []

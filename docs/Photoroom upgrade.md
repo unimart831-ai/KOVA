@@ -1,6 +1,6 @@
 # Photoroom Upgrade — Preflight Repair & Channel Exports
 
-> **Status:** Phase A + B in implementation  
+> **Status:** Phase A + B + C shipped  
 > **Last updated:** May 2026  
 > **Builds on:** `docs/VISUAL_ENHANCEMENT_SPEC.md`, `apps/products/photoroom_plus.py`
 
@@ -203,18 +203,37 @@ Preflight and channel runs record:
 
 ---
 
-## 8. Future phases (not in this build)
+## 8. Future phases
 
-| Phase | Feature |
-|-------|---------|
-| C | Slide-role orchestration (hero → lifestyle → proof → CTA) |
-| D | Seller brand template (locked shadow, padding, prompt seed) |
-| E | Edit-with-AI UI + Create Any Image promos |
-| F | PhotoRoom batch API for catalog imports |
+| Phase | Feature | Status |
+|-------|---------|--------|
+| C | Slide-role orchestration (hero → lifestyle → proof → CTA) | **Shipped** |
+| D | Seller brand template (locked shadow, padding, prompt seed) | Planned |
+| E | Edit-with-AI UI + Create Any Image promos | Planned |
+| F | PhotoRoom batch API for catalog imports | Planned |
 
 ---
 
-## 9. Testing
+## 9. Phase C — Slide-role orchestration (shipped)
+
+Scene variants are selected and **run in carousel story order**, not raw priority:
+
+| Role | Product variants | Service | Digital |
+|------|------------------|---------|---------|
+| Hero | `studio_white`, `studio_brand` | `service_hero` | `digital_desk_hero` |
+| Desire / context | `ai_lifestyle`, `ai_contextual` | `service_context` | `digital_device_mockup` |
+| Proof / trust | Category: flat lay, ghost, virtual model… | `relight`, blur | `ai_lifestyle` |
+| Standout | `studio_dark`, `outline` | — | — |
+
+**Carousel safety:** `Product.carousel_image_urls` and `filter_carousel_urls()` exclude `channel_story`, `channel_banner`, and `preflight_*` assets. Promo frame (local CTA slide) still appended last.
+
+**Setting:** `PHOTOROOM_SLIDE_ROLES_ENABLED` (default `true`).
+
+**AgentAction `output_data`:** scene runs include `slide_role` (`hero`, `desire`, `proof`, `standout`, etc.).
+
+---
+
+## 10. Testing
 
 ```bash
 pytest tests/test_photoroom_preflight.py tests/test_photoroom_plus.py -q
@@ -224,7 +243,7 @@ Manual: Snap a dark/blurry phone photo → confirm `preflight_*` URLs then `chan
 
 ---
 
-## 10. Rollout
+## 11. Rollout
 
 1. Deploy with `PHOTOROOM_PREFLIGHT_ENABLED=true`, `PHOTOROOM_CHANNEL_EXPORTS_ENABLED=true`.
 2. Monitor credit usage in admin Photoroom tab.

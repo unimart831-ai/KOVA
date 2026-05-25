@@ -25,3 +25,15 @@ def test_cover_image_url_falls_back_to_plus_scene(db):
     product.image = "product_images/original.jpg"
     product.save()
     assert product.cover_image_url == "https://cdn.example.com/hero.jpg"
+
+
+def test_carousel_image_urls_excludes_channel(db):
+    product = Product.objects.create(
+        name="Test",
+        additional_images=[
+            "https://cdn.example.com/studio_white.jpg",
+            "https://cdn.example.com/channel_story_abc.jpg",
+        ],
+    )
+    assert len(product.carousel_image_urls) == 1
+    assert "studio_white" in product.carousel_image_urls[0]

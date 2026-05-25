@@ -454,9 +454,11 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
     from apps.billing.visual_credits import check_visual_credit_limit, get_visual_credit_usage, record_studio_polish
     from apps.products.photoroom import photoroom_enabled, save_studio_polish_image
     from apps.products.photoroom_plus import (
+        detect_product_category,
         get_max_variants_for_plan,
         run_plus_variant,
         select_plus_variants,
+        slide_role_for_variant,
     )
 
     if not getattr(settings, "PHOTO_VARIATIONS_ENABLED", True):
@@ -559,6 +561,11 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
                 "label": spec.label,
                 "url": hero_url,
                 "phase": "scene",
+                "slide_role": slide_role_for_variant(
+                    spec.id,
+                    getattr(product, "offering_type", "product") or "product",
+                    detect_product_category(product, analysis),
+                ),
                 "api": "v2/edit",
             },
         )
