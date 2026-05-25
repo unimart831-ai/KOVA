@@ -2,6 +2,7 @@
 
 from apps.products.product_copy import (
     build_product_carousel_plan,
+    format_feature_bullets,
     format_product_description,
     improve_product_name,
     should_improve_product_name,
@@ -54,6 +55,30 @@ def test_format_description_as_paragraphs():
     assert "32-inch smart TV" in out
 
 
+def test_format_feature_bullets_varies_emojis():
+    features = ["Magnetic Wireless Charging", "22.5W fast charge", "Compact travel size"]
+    out = format_feature_bullets(features, seed="product-123", platform="instagram")
+    lines = out.split("\n")
+    assert len(lines) == 3
+    emojis = [line.split(" ", 1)[0] for line in lines]
+    assert len(set(emojis)) == 3
+    assert "✅" not in emojis or emojis.count("✅") <= 1
+
+
+def test_format_feature_bullets_differs_by_platform():
+    features = ["Feature A", "Feature B", "Feature C"]
+    ig = format_feature_bullets(features, seed="p1", platform="instagram")
+    li = format_feature_bullets(features, seed="p1", platform="linkedin")
+    assert ig.split("\n")[0] != li.split("\n")[0]
+
+
+def test_strip_feature_bullet():
+    from apps.products.product_copy import strip_feature_bullet
+
+    assert strip_feature_bullet("✅ Fast charging") == "Fast charging"
+    assert strip_feature_bullet("✓ Magnetic mount") == "Magnetic mount"
+
+
 def test_carousel_plan_includes_story_and_price():
     product = _Product(name='Samsung 32" Smart TV', price=43000)
     analysis = {
@@ -71,3 +96,5 @@ def test_carousel_plan_includes_story_and_price():
     assert "story_card" in layouts
     assert "price_reveal" in layouts
     assert len(plan) >= 4
+    benefit_headlines = [s["headline"] for s in plan if s["layout"].startswith("benefit")]
+    assert len({h.split(" ", 1)[0] for h in benefit_headlines}) >= 2

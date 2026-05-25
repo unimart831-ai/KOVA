@@ -573,19 +573,27 @@ def create_product_carousel_posts(product_id: str, seed_id: str, key_features: l
         return
 
     price_label = product.display_price or ""
-    caption = product.name
+    base_caption = product.name
     if product.description:
         lead = product.description.split("\n\n")[0].strip()
         if lead:
-            caption += f"\n\n{lead}"
-    if key_features:
-        caption += "\n\n" + "\n".join(f"✅ {f}" for f in key_features[:3])
-    if price_label:
-        caption += f"\n\n💰 {price_label}"
+            base_caption += f"\n\n{lead}"
 
     posts_created = 0
     initial_status = initial_commerce_post_status(user)
     for account in accounts:
+        caption = base_caption
+        if key_features:
+            from apps.products.product_copy import format_feature_bullets
+
+            caption += "\n\n" + format_feature_bullets(
+                key_features,
+                seed=str(product.pk),
+                platform=account.platform,
+            )
+        if price_label:
+            caption += f"\n\n💰 {price_label}"
+
         post = Post.objects.create(
             user=user,
             seed=seed,
@@ -707,11 +715,6 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
         return
 
     price_label = product.display_price or ""
-    caption = product.name
-    if key_features:
-        caption += "\n\n" + "\n".join(f"✅ {f}" for f in key_features[:3])
-    if price_label:
-        caption += f"\n\n💰 {price_label}"
 
     posts_created = 0
     initial_status = initial_commerce_post_status(user)
@@ -745,6 +748,18 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
         }
         if source_post:
             visual_metadata["source_carousel_post_id"] = str(source_post.pk)
+
+        caption = product.name
+        if key_features:
+            from apps.products.product_copy import format_feature_bullets
+
+            caption += "\n\n" + format_feature_bullets(
+                key_features,
+                seed=str(product.pk),
+                platform=account.platform,
+            )
+        if price_label:
+            caption += f"\n\n💰 {price_label}"
 
         post = Post.objects.create(
             user=user,

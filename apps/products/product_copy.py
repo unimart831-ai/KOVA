@@ -23,6 +23,73 @@ SIZE_HINT_RE = re.compile(
     re.I,
 )
 
+# Rotating markers for social captions and carousel slides — avoids repetitive ✅ lines.
+FEATURE_BULLET_EMOJIS: tuple[str, ...] = (
+    "✨",
+    "⚡",
+    "🔥",
+    "💎",
+    "🎯",
+    "⭐",
+    "💡",
+    "📦",
+    "🛡️",
+    "👌",
+    "🚀",
+    "✅",
+)
+
+_LEADING_BULLET_RE = re.compile(
+    r"^[\s✅✓✔☑️⭐🌟💫🔥⚡✨💎🎯💡📦🛡️👌🚀•\-–—→]+",
+)
+
+
+def strip_feature_bullet(text: str) -> str:
+    """Remove an existing leading emoji/bullet so we can re-style consistently."""
+    cleaned = (text or "").strip()
+    while cleaned:
+        nxt = _LEADING_BULLET_RE.sub("", cleaned).strip()
+        if nxt == cleaned:
+            break
+        cleaned = nxt
+    return cleaned
+
+
+def _bullet_offset(seed: str, platform: str = "") -> int:
+    key = f"{seed}:{platform}".encode()
+    return sum(key) % len(FEATURE_BULLET_EMOJIS)
+
+
+def format_feature_bullets(
+    features: list[str],
+    *,
+    seed: str = "",
+    platform: str = "",
+    limit: int = 3,
+) -> str:
+    """Format key features with varied emoji bullets for captions."""
+    if not features:
+        return ""
+    offset = _bullet_offset(seed or "kova", platform)
+    lines: list[str] = []
+    for i, raw in enumerate(features[:limit]):
+        feat = strip_feature_bullet(str(raw))
+        if not feat:
+            continue
+        emoji = FEATURE_BULLET_EMOJIS[(offset + i) % len(FEATURE_BULLET_EMOJIS)]
+        lines.append(f"{emoji} {feat}")
+    return "\n".join(lines)
+
+
+def feature_slide_headline(feature: str, index: int, *, seed: str = "") -> str:
+    """Single carousel slide headline with a rotated marker."""
+    feat = strip_feature_bullet(feature)
+    if not feat:
+        return ""
+    offset = _bullet_offset(seed or "kova")
+    emoji = FEATURE_BULLET_EMOJIS[(offset + index + 2) % len(FEATURE_BULLET_EMOJIS)]
+    return f"{emoji} {feat}"
+
 
 def split_description_sentences(text: str) -> list[str]:
     """Split prose into sentence chunks."""
@@ -211,7 +278,9 @@ def build_product_carousel_plan(
 
     benefit_layouts = ("benefit_bottom", "benefit_side", "benefit_badge")
     for i, feat in enumerate(features[:3]):
-        headline = feat if feat.startswith(("✓", "✅", "•")) else f"✓ {feat}"
+        headline = feature_slide_headline(feat, i, seed=str(getattr(product, "pk", "")))
+        if not headline:
+            continue
         plan.append({
             "layout": benefit_layouts[i % len(benefit_layouts)],
             "headline": headline[:120],
