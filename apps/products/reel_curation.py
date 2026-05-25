@@ -19,6 +19,9 @@ def _variant_tier(url: str) -> tuple[int, int, str]:
         return (0, 1, url)
     if any(m in u for m in ("studio_white", "service_hero", "digital_desk_hero")):
         return (1, 0, url)
+    if "ai_scene_" in u:
+        idx = u.find("ai_scene_")
+        return (2, hash(u[idx : idx + 20]) % 100, url)
     if "ai_creative_" in u:
         idx = u.find("ai_creative_")
         return (2, hash(u[idx : idx + 24]) % 100, url)
@@ -49,7 +52,7 @@ def curate_reel_image_urls(urls: list[str], *, max_slides: int = REEL_MAX_SLIDES
     ordered = sorted(clean, key=_variant_tier)
 
     # Keep at most 3 AI/creative/lifestyle scenes for rhythm (avoid slideshow fatigue).
-    ai_markers = ("ai_creative_", "ai_lifestyle", "ai_contextual")
+    ai_markers = ("ai_scene_", "ai_creative_", "ai_lifestyle", "ai_contextual")
     ai_kept = 0
     max_ai = 3
     result: list[str] = []

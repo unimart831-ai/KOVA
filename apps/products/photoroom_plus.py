@@ -21,29 +21,42 @@ PHOTOROOM_EDIT_URL = "https://image-api.photoroom.com/v2/edit"
 AI_BG_MODEL_HEADER = "background-studio-beta-2025-03-17"
 AI_BG_SEEDS = (117879368, 55994449, 48672244, 65080068, 88210391, 33120477)
 
-# Creative AI backgrounds — category → preferred variant ids (Phase: Creative Scene Pack)
-CATEGORY_CREATIVE_VARIANTS: dict[str, tuple[str, ...]] = {
-    "food": ("ai_creative_splash", "ai_creative_powder"),
-    "beauty": ("ai_creative_splash", "ai_creative_marble", "ai_creative_botanical"),
-    "jewelry": ("ai_creative_marble", "ai_creative_podium"),
-    "electronics": ("ai_creative_neon", "ai_creative_podium"),
-    "apparel": ("ai_creative_neon", "ai_creative_botanical"),
-    "home": ("ai_creative_botanical", "ai_creative_marble"),
-    "general": ("ai_creative_podium", "ai_creative_marble"),
+# Commerce-first AI scenes — category → grounded scene variant ids (Option A)
+CATEGORY_COMMERCE_SCENES: dict[str, tuple[str, ...]] = {
+    "apparel": ("ai_scene_table", "ai_scene_shelf", "ai_scene_retail"),
+    "food": ("ai_scene_table", "ai_creative_marble", "ai_scene_shelf"),
+    "beauty": ("ai_scene_table", "ai_creative_marble", "ai_scene_shelf"),
+    "jewelry": ("ai_scene_table", "ai_creative_marble", "ai_scene_wall"),
+    "electronics": ("ai_scene_table", "ai_scene_shelf", "ai_creative_podium"),
+    "home": ("ai_scene_shelf", "ai_scene_wall", "ai_scene_table"),
+    "general": ("ai_scene_table", "ai_scene_shelf", "ai_scene_retail"),
 }
-CREATIVE_VARIANT_IDS = frozenset({
-    "ai_creative_splash",
+# Backward-compatible alias used by settings flag PHOTOROOM_CREATIVE_SCENES_ENABLED
+CATEGORY_CREATIVE_VARIANTS = CATEGORY_COMMERCE_SCENES
+
+COMMERCE_SCENE_VARIANT_IDS = frozenset({
+    "ai_scene_table",
+    "ai_scene_shelf",
+    "ai_scene_wall",
+    "ai_scene_retail",
+})
+SOFT_CREATIVE_VARIANT_IDS = frozenset({
     "ai_creative_marble",
     "ai_creative_botanical",
-    "ai_creative_neon",
-    "ai_creative_powder",
     "ai_creative_podium",
 })
+# Dramatic effects — kept in catalog for manual use, excluded from auto Snap packs
+DEPRECATED_CREATIVE_VARIANT_IDS = frozenset({
+    "ai_creative_splash",
+    "ai_creative_neon",
+    "ai_creative_powder",
+})
+CREATIVE_VARIANT_IDS = COMMERCE_SCENE_VARIANT_IDS | SOFT_CREATIVE_VARIANT_IDS | DEPRECATED_CREATIVE_VARIANT_IDS
 AI_SCENE_VARIANT_IDS = frozenset({
     "ai_lifestyle",
     "ai_lifestyle_alt",
     "ai_contextual",
-}) | CREATIVE_VARIANT_IDS
+}) | COMMERCE_SCENE_VARIANT_IDS | SOFT_CREATIVE_VARIANT_IDS
 
 # Per-scene product framing — avoids “same product, different background” look.
 VARIANT_LAYOUT_STYLES: tuple[dict[str, str], ...] = (
@@ -207,7 +220,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         },
         headers=_ai_bg_headers(),
         categories=(),
-        priority=90,
+        priority=98,
     ),
     "ai_lifestyle_alt": PlusVariantSpec(
         id="ai_lifestyle_alt",
@@ -220,7 +233,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         },
         headers=_ai_bg_headers(),
         categories=(),
-        priority=85,
+        priority=97,
     ),
     "ai_contextual": PlusVariantSpec(
         id="ai_contextual",
@@ -234,9 +247,66 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         headers=_ai_bg_headers(),
         categories=(),
         min_plan="growth",
-        priority=80,
+        priority=96,
     ),
-    # ── Creative AI backgrounds (splash, marble, neon…) ─────────────────
+    # ── Commerce AI scenes (product-forward surfaces) ────────────────────
+    "ai_scene_table": PlusVariantSpec(
+        id="ai_scene_table",
+        label="Table / counter",
+        params={
+            **_shadow_studio(),
+            "background.prompt": "{commerce_table_prompt}",
+            "background.seed": str(AI_BG_SEEDS[0]),
+            **_export_defaults(),
+        },
+        headers=_ai_bg_headers(),
+        categories=(),
+        min_plan="growth",
+        priority=95,
+    ),
+    "ai_scene_shelf": PlusVariantSpec(
+        id="ai_scene_shelf",
+        label="Shelf display",
+        params={
+            **_shadow_studio(),
+            "background.prompt": "{commerce_shelf_prompt}",
+            "background.seed": str(AI_BG_SEEDS[1]),
+            **_export_defaults(),
+        },
+        headers=_ai_bg_headers(),
+        categories=(),
+        min_plan="growth",
+        priority=94,
+    ),
+    "ai_scene_wall": PlusVariantSpec(
+        id="ai_scene_wall",
+        label="Wall / ledge",
+        params={
+            **_shadow_studio(),
+            "background.prompt": "{commerce_wall_prompt}",
+            "background.seed": str(AI_BG_SEEDS[2]),
+            **_export_defaults(),
+        },
+        headers=_ai_bg_headers(),
+        categories=(),
+        min_plan="growth",
+        priority=93,
+    ),
+    "ai_scene_retail": PlusVariantSpec(
+        id="ai_scene_retail",
+        label="Retail display",
+        params={
+            **_shadow_studio(),
+            "background.prompt": "{commerce_retail_prompt}",
+            "background.seed": str(AI_BG_SEEDS[3]),
+            **_export_defaults(),
+        },
+        headers=_ai_bg_headers(),
+        categories=(),
+        min_plan="growth",
+        priority=92,
+    ),
+    # ── Soft studio creatives (subtle surfaces — still commerce-safe) ───
     "ai_creative_splash": PlusVariantSpec(
         id="ai_creative_splash",
         label="Water splash hero",
@@ -249,11 +319,12 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         headers=_ai_bg_headers(),
         categories=("food", "beauty", "general"),
         min_plan="growth",
-        priority=91,
+        priority=40,
+        pack_eligible=False,
     ),
     "ai_creative_marble": PlusVariantSpec(
         id="ai_creative_marble",
-        label="Luxury marble",
+        label="Luxury marble surface",
         params={
             **_shadow_studio(),
             "background.prompt": "{creative_marble_prompt}",
@@ -261,13 +332,13 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
             **_export_defaults(),
         },
         headers=_ai_bg_headers(),
-        categories=("beauty", "jewelry", "home", "general"),
+        categories=("beauty", "jewelry", "home", "food", "general"),
         min_plan="growth",
-        priority=90,
+        priority=88,
     ),
     "ai_creative_botanical": PlusVariantSpec(
         id="ai_creative_botanical",
-        label="Botanical fresh",
+        label="Soft botanical",
         params={
             **_shadow_studio(),
             "background.prompt": "{creative_botanical_prompt}",
@@ -277,7 +348,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         headers=_ai_bg_headers(),
         categories=("beauty", "food", "home", "apparel"),
         min_plan="growth",
-        priority=89,
+        priority=87,
     ),
     "ai_creative_neon": PlusVariantSpec(
         id="ai_creative_neon",
@@ -291,7 +362,8 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         headers=_ai_bg_headers(),
         categories=("electronics", "apparel", "general"),
         min_plan="growth",
-        priority=88,
+        priority=35,
+        pack_eligible=False,
     ),
     "ai_creative_powder": PlusVariantSpec(
         id="ai_creative_powder",
@@ -305,7 +377,8 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         headers=_ai_bg_headers(),
         categories=("beauty", "food"),
         min_plan="pro",
-        priority=87,
+        priority=34,
+        pack_eligible=False,
     ),
     "ai_creative_podium": PlusVariantSpec(
         id="ai_creative_podium",
@@ -317,7 +390,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
             **_export_defaults(),
         },
         headers=_ai_bg_headers(),
-        categories=(),
+        categories=("electronics", "general"),
         min_plan="growth",
         priority=86,
     ),
@@ -650,6 +723,126 @@ def _clean_name(product) -> str:
     return sanitize_product_name(product.name) or "the product"
 
 
+_COMMERCE_VISIBILITY_RULES = (
+    "The product must be the clear hero — fully visible, sharp, and unobstructed, "
+    "occupying at least half the frame. Use a simple realistic surface or setting with "
+    "soft natural or studio light. No water splash, liquid, powder burst, neon glow, "
+    "smoke, or particles covering the product. No text, logos, or extra products."
+)
+
+
+def _commerce_prompt(base: str) -> str:
+    return f"{base.rstrip('.')}. {_COMMERCE_VISIBILITY_RULES}"
+
+
+def build_commerce_scene_prompt(scene: str, product, analysis: dict | None) -> str:
+    """Grounded e-commerce scenes — table, shelf, wall, retail display."""
+    name = _clean_name(product)
+    category = detect_product_category(product, analysis)
+    analysis = analysis or {}
+    angle = analysis.get("campaign_angle") or analysis.get("visual_style") or ""
+    mood = f" Mood: {angle}." if angle else ""
+
+    table_by_category = {
+        "apparel": (
+            f"{name} placed on a clean wooden table or light concrete surface, "
+            f"angled product shot with soft daylight from the side, minimal props, "
+            f"footwear and fashion e-commerce style"
+        ),
+        "food": (
+            f"{name} on a rustic wooden table or clean kitchen counter, warm natural "
+            f"daylight, simple complementary ingredients kept small and out of the way"
+        ),
+        "beauty": (
+            f"{name} on a white vanity tray or marble bathroom counter, soft diffused "
+            f"light, minimal spa props, premium skincare product photography"
+        ),
+        "jewelry": (
+            f"{name} on a neutral stone or velvet display pad on a table, elegant soft "
+            f"studio lighting, luxury boutique product shot"
+        ),
+        "electronics": (
+            f"{name} on a modern desk or light oak table, minimal workspace props pushed "
+            f"to the background, crisp professional tech product photography"
+        ),
+        "home": (
+            f"{name} on a styled side table or kitchen counter, cozy interior daylight, "
+            f"home decor e-commerce styling"
+        ),
+        "general": (
+            f"{name} on a clean neutral table surface, balanced soft studio lighting, "
+            f"simple uncluttered product photography"
+        ),
+    }
+    shelf_by_category = {
+        "apparel": (
+            f"{name} displayed on a minimal retail shelf or wall-mounted ledge, "
+            f"clean boutique interior, product facing camera clearly"
+        ),
+        "food": (
+            f"{name} on a grocery or pantry shelf with soft depth of field, label readable, "
+            f"clean market styling"
+        ),
+        "beauty": (
+            f"{name} on a bright bathroom or boutique shelf, organized minimal layout, "
+            f"soft flattering light"
+        ),
+        "jewelry": (
+            f"{name} on a glass or wooden display shelf, subtle reflections, luxury retail"
+        ),
+        "electronics": (
+            f"{name} on a clean tech store shelf or minimalist wall unit, modern retail display"
+        ),
+        "home": (
+            f"{name} on a styled floating shelf in a bright Scandinavian room, lifestyle home retail"
+        ),
+        "general": (
+            f"{name} on a simple wall shelf or retail ledge, neutral background, product clearly visible"
+        ),
+    }
+    wall_by_category = {
+        "apparel": (
+            f"{name} mounted or placed on a wall hook or peg rail in a clean closet-boutique "
+            f"setting, front-facing product visibility"
+        ),
+        "jewelry": (
+            f"{name} on a wall-mounted jewelry display or neutral ledge, soft spotlight, "
+            f"elegant minimal backdrop"
+        ),
+        "home": (
+            f"{name} on a wall-mounted ledge or picture shelf in a modern living room, "
+            f"natural window light"
+        ),
+        "general": (
+            f"{name} on a wall ledge or minimal wall-mounted display, clean neutral wall, "
+            f"product centered and fully visible"
+        ),
+    }
+    retail_by_category = {
+        "apparel": (
+            f"{name} on a clean shoe-store display table or boutique counter, organized retail "
+            f"presentation, bright even lighting"
+        ),
+        "electronics": (
+            f"{name} on a tech retail counter with minimal signage area left blank, "
+            f"premium launch display aesthetic"
+        ),
+        "general": (
+            f"{name} on a shop counter or retail display table, professional store presentation, "
+            f"product as the focal point"
+        ),
+    }
+
+    prompts = {
+        "ai_scene_table": table_by_category.get(category, table_by_category["general"]),
+        "ai_scene_shelf": shelf_by_category.get(category, shelf_by_category["general"]),
+        "ai_scene_wall": wall_by_category.get(category, wall_by_category.get("general", table_by_category["general"])),
+        "ai_scene_retail": retail_by_category.get(category, retail_by_category["general"]),
+    }
+    base = prompts.get(scene, table_by_category["general"])
+    return _commerce_prompt(f"{base}.{mood}")
+
+
 def build_lifestyle_prompt(product, analysis: dict | None, *, variant: str = "primary") -> str:
     name = _clean_name(product)
     category = detect_product_category(product, analysis)
@@ -658,12 +851,12 @@ def build_lifestyle_prompt(product, analysis: dict | None, *, variant: str = "pr
     templates = {
         "apparel": {
             "primary": (
-                f"A professional product photo of {name} displayed on a clean minimal studio set "
-                f"with soft natural lighting, subtle props, and a modern lifestyle feel. {angle}."
+                f"A professional product photo of {name} on a clean wooden table or neutral "
+                f"floor surface with soft natural lighting and minimal props"
             ),
             "alt": (
-                f"{name} styled in an urban streetwear scene with warm golden hour light, "
-                f"shallow depth of field, and a premium editorial look."
+                f"{name} displayed on a boutique shelf or retail table with warm even light "
+                f"and a polished e-commerce look"
             ),
         },
         "food": {
@@ -729,11 +922,14 @@ def build_lifestyle_prompt(product, analysis: dict | None, *, variant: str = "pr
     }
     bucket = templates.get(category, templates["general"])
     key = "alt" if variant.endswith("alt") else "primary"
-    return bucket[key]
+    base = bucket[key]
+    if angle and angle != "professional marketing":
+        base = f"{base}. {angle}"
+    return _commerce_prompt(base)
 
 
 def build_creative_prompt(style: str, product, analysis: dict | None) -> str:
-    """Bold PhotoRoom-style AI backgrounds — splash, marble, neon, etc."""
+    """Soft studio surfaces — marble, botanical, podium (commerce-safe)."""
     name = _clean_name(product)
     analysis = analysis or {}
     angle = analysis.get("campaign_angle") or analysis.get("visual_style") or ""
@@ -746,14 +942,14 @@ def build_creative_prompt(style: str, product, analysis: dict | None) -> str:
             f"premium beverage or skincare hero shot, clean background blur, no text.{angle_clause}"
         ),
         "ai_creative_marble": (
-            f"Luxury white and soft gold marble surface with elegant reflections, premium "
-            f"product pedestal hero shot for {name}, high-end boutique advertising, soft "
-            f"diffused light, minimal props, no text.{angle_clause}"
+            f"{name} resting on a clean white and soft gold marble counter surface, subtle "
+            f"reflection beneath the product, premium boutique advertising, soft diffused light, "
+            f"minimal props, no text.{angle_clause}"
         ),
         "ai_creative_botanical": (
-            f"Lush tropical monstera leaves and fresh botanical greenery with warm dappled "
-            f"sunlight, organic natural atmosphere showcasing {name}, fresh clean skincare "
-            f"or food campaign aesthetic, soft bokeh, no text.{angle_clause}"
+            f"{name} on a neutral surface with soft blurred greenery in the far background only, "
+            f"fresh natural daylight, organic calm atmosphere, product stays sharp and dominant, "
+            f"no text.{angle_clause}"
         ),
         "ai_creative_neon": (
             f"Bold cyberpunk neon gradient backdrop with magenta, cyan, and deep purple glow, "
@@ -766,15 +962,18 @@ def build_creative_prompt(style: str, product, analysis: dict | None) -> str:
             f"premium, clean product focus, no text.{angle_clause}"
         ),
         "ai_creative_podium": (
-            f"Minimal geometric product podium on a soft pastel gradient studio backdrop, "
-            f"subtle spotlight and soft floor reflection, modern launch presentation for "
-            f"{name}, Apple-style product reveal aesthetic, no text.{angle_clause}"
+            f"{name} on a minimal geometric product podium with a soft pastel gradient studio "
+            f"backdrop, subtle floor reflection, modern launch presentation, clean Apple-style "
+            f"reveal aesthetic, no text.{angle_clause}"
         ),
     }
-    return prompts.get(
+    raw = prompts.get(
         style,
-        f"A bold creative marketing background for {name}, premium social commerce hero shot.{angle_clause}",
+        f"A clean marketing background for {name}, premium social commerce hero shot.{angle_clause}",
     )
+    if style in DEPRECATED_CREATIVE_VARIANT_IDS:
+        return raw
+    return _commerce_prompt(raw)
 
 
 def build_contextual_prompt(product, analysis: dict | None) -> str:
@@ -783,7 +982,7 @@ def build_contextual_prompt(product, analysis: dict | None) -> str:
     audience = analysis.get("target_audience") or "customers"
     features = ", ".join((analysis.get("key_features") or [])[:3])
     feature_clause = f" Highlight: {features}." if features else ""
-    return (
+    return _commerce_prompt(
         f"Create a photorealistic marketing scene featuring {name} designed to appeal to {audience}. "
         f"The setting should feel authentic, aspirational, and ready for social commerce.{feature_clause}"
     )
@@ -881,6 +1080,14 @@ def resolve_variant_params(
             resolved[key] = build_creative_prompt("ai_creative_powder", product, analysis)
         elif value == "{creative_podium_prompt}":
             resolved[key] = build_creative_prompt("ai_creative_podium", product, analysis)
+        elif value == "{commerce_table_prompt}":
+            resolved[key] = build_commerce_scene_prompt("ai_scene_table", product, analysis)
+        elif value == "{commerce_shelf_prompt}":
+            resolved[key] = build_commerce_scene_prompt("ai_scene_shelf", product, analysis)
+        elif value == "{commerce_wall_prompt}":
+            resolved[key] = build_commerce_scene_prompt("ai_scene_wall", product, analysis)
+        elif value == "{commerce_retail_prompt}":
+            resolved[key] = build_commerce_scene_prompt("ai_scene_retail", product, analysis)
         elif value == "{contextual_prompt}":
             resolved[key] = build_contextual_prompt(product, analysis)
         elif value == "{flat_lay_prompt}":
@@ -912,16 +1119,17 @@ def _slide_roles_for(offering: str, category: str) -> tuple[tuple[str, tuple[str
     if offering == "digital":
         return SLIDE_ROLE_DIGITAL
     proof_ids = CATEGORY_PROOF_VARIANTS.get(category, CATEGORY_PROOF_VARIANTS["general"])
-    creative_ids = ()
+    commerce_ids: tuple[str, ...] = ()
     if getattr(settings, "PHOTOROOM_CREATIVE_SCENES_ENABLED", True):
-        creative_ids = CATEGORY_CREATIVE_VARIANTS.get(
-            category, CATEGORY_CREATIVE_VARIANTS["general"]
+        commerce_ids = CATEGORY_COMMERCE_SCENES.get(
+            category, CATEGORY_COMMERCE_SCENES["general"]
         )
-    desire_ids = creative_ids + (
+    # Lifestyle scenes first, then grounded commerce surfaces
+    desire_ids = (
         "ai_lifestyle",
         "ai_lifestyle_alt",
         "ai_contextual",
-    )
+    ) + commerce_ids
     roles: list[tuple[str, tuple[str, ...]]] = []
     for role_name, variant_ids in SLIDE_ROLE_PRODUCT:
         if role_name == "proof":
@@ -935,7 +1143,9 @@ def _slide_roles_for(offering: str, category: str) -> tuple[tuple[str, tuple[str
 
 def slide_role_for_variant(variant_id: str, offering: str, category: str) -> str:
     """Carousel role label for a variant id."""
-    if variant_id in CREATIVE_VARIANT_IDS:
+    if variant_id in COMMERCE_SCENE_VARIANT_IDS:
+        return "commerce"
+    if variant_id in SOFT_CREATIVE_VARIANT_IDS | DEPRECATED_CREATIVE_VARIANT_IDS:
         return "creative"
     for role_name, variant_ids in _slide_roles_for(offering, category):
         if variant_id in variant_ids:
@@ -1088,7 +1298,7 @@ def select_plus_variants(
         offering == "product"
         and getattr(settings, "PHOTOROOM_CREATIVE_SCENES_ENABLED", True)
     ):
-        for vid in CATEGORY_CREATIVE_VARIANTS.get(category, CATEGORY_CREATIVE_VARIANTS["general"]):
+        for vid in CATEGORY_COMMERCE_SCENES.get(category, CATEGORY_COMMERCE_SCENES["general"]):
             spec = PLUS_VARIANT_CATALOG.get(vid)
             if spec and spec not in candidates:
                 candidates.append(spec)

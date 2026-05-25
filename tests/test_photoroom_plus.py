@@ -1,7 +1,11 @@
 """Tests for Photoroom Plus variant selection."""
 
 from apps.products.photoroom_plus import (
+    COMMERCE_SCENE_VARIANT_IDS,
+    DEPRECATED_CREATIVE_VARIANT_IDS,
     PLUS_VARIANT_CATALOG,
+    build_commerce_scene_prompt,
+    build_creative_prompt,
     build_lifestyle_prompt,
     detect_product_category,
     select_plus_variants,
@@ -17,6 +21,11 @@ class _Product:
 
 def test_detect_apparel_category():
     p = _Product(name="Blue Cotton Shirt", tags=["fashion"])
+    assert detect_product_category(p, {}) == "apparel"
+
+
+def test_detect_sneaker_as_apparel():
+    p = _Product(name="Stylish High-Top Sneaker", tags=["footwear"])
     assert detect_product_category(p, {}) == "apparel"
 
 
@@ -62,15 +71,19 @@ def test_digital_offering_uses_digital_variants():
     assert "ghost_mannequin" not in ids
 
 
-def test_lifestyle_prompt_mentions_product():
+def test_lifestyle_prompt_mentions_product_and_visibility_rules():
     p = _Product(name="Amara Lotion", tags=["beauty"])
     prompt = build_lifestyle_prompt(p, {"campaign_angle": "glow"}, variant="primary")
     assert "Amara Lotion" in prompt or "lotion" in prompt.lower()
+    assert "fully visible" in prompt.lower()
+    assert "no water splash" in prompt.lower()
 
 
 def test_catalog_covers_plus_feature_groups():
     ids = set(PLUS_VARIANT_CATALOG)
     assert "ai_lifestyle" in ids
+    assert "ai_scene_table" in ids
+    assert "ai_scene_shelf" in ids
     assert "flat_lay" in ids
     assert "ghost_mannequin" in ids
     assert "virtual_model" in ids
@@ -141,12 +154,22 @@ def test_filter_carousel_urls_excludes_channel():
     assert "studio_white" in filtered[0]
 
 
-def test_beauty_gets_creative_splash_in_pack():
+def test_beauty_gets_commerce_table_not_splash():
     p = _Product(name="Glow Serum", tags=["beauty", "skincare"])
     specs = select_plus_variants(p, {"campaign_angle": "radiant glow"}, plan_tier="growth", max_count=4)
     ids = [s.id for s in specs]
     assert ids[0] == "studio_white"
-    assert "ai_creative_splash" in ids
+    assert "ai_scene_table" in ids
+    assert "ai_creative_splash" not in ids
+
+
+def test_apparel_gets_table_and_shelf_not_neon():
+    p = _Product(name="High-Top Sneaker", tags=["footwear", "sneaker"])
+    specs = select_plus_variants(p, {}, plan_tier="growth", max_count=5)
+    ids = [s.id for s in specs]
+    assert "ai_scene_table" in ids or "ai_scene_retail" in ids
+    assert "ai_creative_neon" not in ids
+    assert "ai_creative_splash" not in ids
 
 
 def test_beauty_gets_multiple_ai_scenes_with_budget():
@@ -161,8 +184,8 @@ def test_apply_variant_layout_shifts_ai_scenes():
     from apps.products.photoroom_plus import apply_variant_layout
 
     base = {"padding": "0.12", "background.prompt": "test"}
-    a = apply_variant_layout(base, "ai_creative_splash", 0)
-    b = apply_variant_layout(base, "ai_creative_splash", 1)
+    a = apply_variant_layout(base, "ai_scene_table", 0)
+    b = apply_variant_layout(base, "ai_scene_table", 1)
     assert a["horizontalAlignment"] != b.get("horizontalAlignment", "center") or a.get("padding") != b.get("padding")
     assert "padding" not in a or a.get("paddingLeft")
 
@@ -175,24 +198,50 @@ def test_studio_white_layout_unchanged():
     assert out == base
 
 
-def test_food_creative_splash_prompt():
-    from apps.products.photoroom_plus import build_creative_prompt
+def test_commerce_table_prompt_for_sneaker():
+    p = _Product(name="High-Top Sneaker", tags=["footwear"])
+    prompt = build_commerce_scene_prompt("ai_scene_table", p, {})
+    assert "table" in prompt.lower() or "surface" in prompt.lower()
+    assert "High-Top Sneaker" in prompt
+    assert "fully visible" in prompt.lower()
 
+
+def test_marble_prompt_is_commerce_safe():
+    p = _Product(name="Glow Serum", tags=["beauty"])
+    prompt = build_creative_prompt("ai_creative_marble", p, {"campaign_angle": "radiant"})
+    assert "marble" in prompt.lower()
+    assert "fully visible" in prompt.lower()
+    assert "water splash" not in prompt.lower()
+
+
+def test_deprecated_splash_prompt_unchanged_for_manual_use():
     p = _Product(name="Mango Juice", tags=["food", "drink"])
     prompt = build_creative_prompt("ai_creative_splash", p, {"campaign_angle": "refreshing"})
     assert "water splash" in prompt.lower()
-    assert "Mango Juice" in prompt
 
 
-def test_creative_slide_role_tag():
+def test_commerce_slide_role_tag():
     from apps.products.photoroom_plus import slide_role_for_variant
 
-    assert slide_role_for_variant("ai_creative_splash", "product", "beauty") == "creative"
+    assert slide_role_for_variant("ai_scene_table", "product", "apparel") == "commerce"
+    assert slide_role_for_variant("ai_creative_marble", "product", "beauty") == "creative"
     assert slide_role_for_variant("studio_white", "product", "beauty") == "hero"
 
 
-def test_starter_plan_excludes_creative_variants():
+def test_starter_plan_excludes_commerce_scenes_and_creative_variants():
     p = _Product(name="Serum", tags=["beauty"])
     specs = select_plus_variants(p, {}, plan_tier="starter", max_count=10)
     ids = {s.id for s in specs}
     assert "ai_creative_splash" not in ids
+    assert "ai_scene_table" not in ids
+
+
+def test_deprecated_creatives_not_pack_eligible():
+    for vid in DEPRECATED_CREATIVE_VARIANT_IDS:
+        assert PLUS_VARIANT_CATALOG[vid].pack_eligible is False
+
+
+def test_commerce_scene_variants_in_catalog():
+    for vid in COMMERCE_SCENE_VARIANT_IDS:
+        assert vid in PLUS_VARIANT_CATALOG
+        assert PLUS_VARIANT_CATALOG[vid].pack_eligible is True

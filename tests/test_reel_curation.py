@@ -22,9 +22,9 @@ def test_curate_orders_story_then_ai_then_promo():
 def test_curate_caps_ai_scenes_at_three():
     urls = [
         "/media/studio_white.jpg",
-        "/media/ai_creative_splash.jpg",
+        "/media/ai_scene_table.jpg",
+        "/media/ai_scene_shelf.jpg",
         "/media/ai_creative_marble.jpg",
-        "/media/ai_creative_neon.jpg",
         "/media/ai_lifestyle.jpg",
         "/media/ai_lifestyle_alt.jpg",
     ]
