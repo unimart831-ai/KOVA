@@ -39,7 +39,7 @@
       Grouped by user job: CREATE, CUSTOMERS, BUSINESS, SETTINGS.
       Broken features hidden. Related features merged into host pages.
     {% endcomment %}
-    <nav class="flex-1 px-3 py-4 overflow-y-auto" aria-label="Primary">
+    <nav class="sidebar-scroll flex-1 px-3 py-4 overflow-y-auto" aria-label="Primary">
 
       <a href="{% url 'brief:home' %}"
          {% if request.resolver_match.url_name == 'home' and request.resolver_match.namespace == 'brief' %}aria-current="page"{% endif %}
