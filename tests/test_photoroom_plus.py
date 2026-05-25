@@ -149,6 +149,32 @@ def test_beauty_gets_creative_splash_in_pack():
     assert "ai_creative_splash" in ids
 
 
+def test_beauty_gets_multiple_ai_scenes_with_budget():
+    p = _Product(name="Glow Serum", tags=["beauty", "skincare"])
+    specs = select_plus_variants(p, {"campaign_angle": "radiant glow"}, plan_tier="growth", max_count=5)
+    ids = [s.id for s in specs]
+    ai_ids = [i for i in ids if i.startswith("ai_")]
+    assert len(ai_ids) >= 2
+
+
+def test_apply_variant_layout_shifts_ai_scenes():
+    from apps.products.photoroom_plus import apply_variant_layout
+
+    base = {"padding": "0.12", "background.prompt": "test"}
+    a = apply_variant_layout(base, "ai_creative_splash", 0)
+    b = apply_variant_layout(base, "ai_creative_splash", 1)
+    assert a["horizontalAlignment"] != b.get("horizontalAlignment", "center") or a.get("padding") != b.get("padding")
+    assert "padding" not in a or a.get("paddingLeft")
+
+
+def test_studio_white_layout_unchanged():
+    from apps.products.photoroom_plus import apply_variant_layout
+
+    base = {"padding": "0.12"}
+    out = apply_variant_layout(base, "studio_white", 2)
+    assert out == base
+
+
 def test_food_creative_splash_prompt():
     from apps.products.photoroom_plus import build_creative_prompt
 

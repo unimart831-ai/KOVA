@@ -39,6 +39,52 @@ CREATIVE_VARIANT_IDS = frozenset({
     "ai_creative_powder",
     "ai_creative_podium",
 })
+AI_SCENE_VARIANT_IDS = frozenset({
+    "ai_lifestyle",
+    "ai_lifestyle_alt",
+    "ai_contextual",
+}) | CREATIVE_VARIANT_IDS
+
+# Per-scene product framing — avoids “same product, different background” look.
+VARIANT_LAYOUT_STYLES: tuple[dict[str, str], ...] = (
+    {
+        "horizontalAlignment": "left",
+        "verticalAlignment": "bottom",
+        "paddingLeft": "0.06",
+        "paddingRight": "0.24",
+        "paddingTop": "0.20",
+        "paddingBottom": "0.06",
+    },
+    {
+        "horizontalAlignment": "center",
+        "verticalAlignment": "center",
+        "padding": "0.16",
+    },
+    {
+        "horizontalAlignment": "right",
+        "verticalAlignment": "top",
+        "paddingLeft": "0.22",
+        "paddingRight": "0.06",
+        "paddingTop": "0.08",
+        "paddingBottom": "0.18",
+    },
+    {
+        "horizontalAlignment": "center",
+        "verticalAlignment": "bottom",
+        "paddingLeft": "0.10",
+        "paddingRight": "0.10",
+        "paddingTop": "0.22",
+        "paddingBottom": "0.05",
+    },
+    {
+        "horizontalAlignment": "left",
+        "verticalAlignment": "center",
+        "paddingLeft": "0.05",
+        "paddingRight": "0.28",
+        "paddingTop": "0.12",
+        "paddingBottom": "0.12",
+    },
+)
 
 PLAN_TIER_ORDER = ("starter", "growth", "pro", "agency")
 
@@ -905,6 +951,40 @@ def filter_carousel_urls(urls: list[str]) -> list[str]:
     ]
 
 
+def apply_variant_layout(
+    params: dict[str, str],
+    variant_id: str,
+    layout_index: int,
+) -> dict[str, str]:
+    """Shift product position/size per AI scene so slides feel distinct."""
+    if not getattr(settings, "PHOTOROOM_VARIANT_LAYOUTS_ENABLED", True):
+        return params
+    if variant_id not in AI_SCENE_VARIANT_IDS:
+        return params
+
+    style = VARIANT_LAYOUT_STYLES[layout_index % len(VARIANT_LAYOUT_STYLES)]
+    out = dict(params)
+    out.pop("padding", None)
+    out.update(style)
+    return out
+
+
+def _target_ai_scene_count(max_count: int) -> int:
+    """How many AI background scenes to generate when budget allows."""
+    min_ai = int(getattr(settings, "PHOTOROOM_MIN_AI_SCENES", 2))
+    max_ai = int(getattr(settings, "PHOTOROOM_MAX_AI_SCENES", 3))
+    if max_count <= 1:
+        return 0
+    available = max_count - 1  # reserve hero
+    if max_count >= 5:
+        target = max_ai
+    elif max_count >= 3:
+        target = min_ai
+    else:
+        target = 1
+    return min(target, available, max_ai)
+
+
 def order_variants_by_slide_role(
     candidates: list[PlusVariantSpec],
     *,
@@ -912,12 +992,25 @@ def order_variants_by_slide_role(
     category: str,
     max_count: int,
 ) -> list[PlusVariantSpec]:
-    """Pick variants to fill hero → desire → proof → standout carousel roles."""
+    """Pick variants to fill hero → desire (2–3 AI) → proof → standout."""
     by_id = {s.id: s for s in candidates}
     picked: list[PlusVariantSpec] = []
     picked_ids: set[str] = set()
+    ai_target = _target_ai_scene_count(max_count)
 
     for role_name, preferred_ids in _slide_roles_for(offering, category):
+        if role_name == "desire":
+            picked_desire = 0
+            for vid in preferred_ids:
+                if len(picked) >= max_count or picked_desire >= ai_target:
+                    break
+                spec = by_id.get(vid)
+                if spec and vid not in picked_ids:
+                    picked.append(spec)
+                    picked_ids.add(vid)
+                    picked_desire += 1
+            continue
+
         for vid in preferred_ids:
             spec = by_id.get(vid)
             if spec and vid not in picked_ids:
@@ -1100,10 +1193,13 @@ def run_plus_variant(
     analysis: dict | None,
     brand_colors: dict | None,
     brand_template=None,
+    *,
+    layout_index: int = 0,
 ) -> bytes | None:
     params = resolve_variant_params(
         spec, product, analysis, brand_colors, brand_template=brand_template
     )
+    params = apply_variant_layout(params, spec.id, layout_index)
     return photoroom_edit(image_url, params, extra_headers=spec.headers)
 
 

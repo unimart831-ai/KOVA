@@ -4,6 +4,7 @@ from apps.content.video_compose import (
     REEL_TRANSITIONS,
     _build_xfade_filter,
     _ken_burns_filter,
+    _slide_durations_for,
 )
 
 
@@ -24,3 +25,14 @@ def test_xfade_single_clip():
     graph, vout = _build_xfade_filter(1, slide_sec=3.0, transition_sec=0.5)
     assert vout == "vout"
     assert "format=yuv420p" in graph
+
+
+def test_slide_durations_hook_longer_than_middle():
+    d = _slide_durations_for(5)
+    assert d[0] >= d[2]
+    assert len(d) == 5
+
+
+def test_ken_burns_has_ten_variants():
+    variants = {_ken_burns_filter(90, variant=i) for i in range(10)}
+    assert len(variants) == 10

@@ -626,18 +626,18 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
     from apps.platforms.models import SocialAccount
     from apps.products.commerce_autopilot import initial_commerce_post_status
     from apps.products.models import Product
+    from apps.products.reel_curation import curate_reel_image_urls
     from apps.utils import fire_task
 
     REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
 
     def _product_reel_image_sources(product):
-        sources = []
+        from apps.products.reel_curation import curate_reel_image_urls
+
         urls = list(product.all_image_urls)
-        story_first = sorted(
-            urls,
-            key=lambda u: (0 if "channel_story" in u else 1, u),
-        )
-        for url in story_first:
+        curated = curate_reel_image_urls(urls)
+        sources = []
+        for url in curated:
             normalized = _normalize_reel_image_source(url)
             if normalized:
                 sources.append(normalized)
@@ -701,6 +701,7 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
                     url = _public_url_for_file(att.file.name)
                     if url:
                         source_images.append(url)
+            source_images = curate_reel_image_urls(source_images)
             reel_template = "carousel_to_video"
             visual_strategy = "carousel"
         else:

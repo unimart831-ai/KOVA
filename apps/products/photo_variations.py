@@ -516,6 +516,7 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
     from apps.billing.visual_credits import check_visual_credit_limit, get_visual_credit_usage, record_studio_polish
     from apps.products.photoroom import photoroom_enabled, save_studio_polish_image
     from apps.products.photoroom_plus import (
+        AI_SCENE_VARIANT_IDS,
         detect_product_category,
         get_max_variants_for_plan,
         run_plus_variant,
@@ -581,8 +582,13 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
     source = preflight.master_url
 
     channel_slots = channel_export_budget(plan_tier)
-    channel_budget = min(channel_slots, max(0, credit_pool - 1))
-    scene_budget = max(1, credit_pool - channel_budget)
+    min_scenes = int(getattr(django_settings, "PHOTOROOM_MIN_SCENE_VARIANTS", 3))
+    if credit_pool > min_scenes and channel_slots > 0:
+        channel_budget = min(channel_slots, credit_pool - min_scenes)
+        scene_budget = credit_pool - channel_budget
+    else:
+        channel_budget = 0
+        scene_budget = max(1, credit_pool)
 
     variants = select_plus_variants(
         product,
@@ -595,6 +601,7 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
     variant_ids: list[str] = []
     failed_ids: list[str] = []
     first_hero_bytes: bytes | None = None
+    ai_layout_index = 0
 
     for spec in variants:
         ok, cap_msg = check_visual_credit_limit(product.user)
@@ -602,9 +609,18 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
             logger.info("Stopping Plus pack — credit cap for user %s", product.user_id)
             break
 
+        layout_idx = ai_layout_index if spec.id in AI_SCENE_VARIANT_IDS else 0
         image_bytes = run_plus_variant(
-            source, spec, product, analysis, brand_colors, brand_template=brand_template
+            source,
+            spec,
+            product,
+            analysis,
+            brand_colors,
+            brand_template=brand_template,
+            layout_index=layout_idx,
         )
+        if spec.id in AI_SCENE_VARIANT_IDS and image_bytes:
+            ai_layout_index += 1
         if not image_bytes:
             failed_ids.append(spec.id)
             continue
