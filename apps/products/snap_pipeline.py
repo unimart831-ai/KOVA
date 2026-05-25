@@ -12,6 +12,58 @@ SNAP_TIMEOUT = timedelta(minutes=10)
 SEED_TIMEOUT = timedelta(minutes=5)
 
 
+def _offering_copy(product) -> dict:
+    """User-facing pipeline labels keyed by offering_type."""
+    from apps.products.models import Product
+
+    ot = getattr(product, "offering_type", Product.OfferingType.PRODUCT) or Product.OfferingType.PRODUCT
+
+    if ot == Product.OfferingType.SERVICE:
+        return {
+            "offering_type": "service",
+            "item_noun": "service",
+            "photos_noun": "work photos",
+            "analyze_title": "AI analyzing your service",
+            "analyze_running": "Vision AI is reading your work evidence…",
+            "analyze_done": "AI extracted service details, tags, and campaign angle",
+            "expand_running": "Running Photoroom Plus scenes for your service…",
+            "expand_done": "Service scenes ready for carousel & posts",
+            "reel_running": "Creating motion reel from your work photos…",
+            "reel_single": "Creating motion reel from your portfolio shot…",
+            "quick_waiting": "Waiting for service name from photo…",
+            "carousel_waiting": "Waiting for service analysis…",
+        }
+    if ot == Product.OfferingType.DIGITAL:
+        return {
+            "offering_type": "digital",
+            "item_noun": "digital product",
+            "photos_noun": "screenshots",
+            "analyze_title": "AI analyzing your digital product",
+            "analyze_running": "Vision AI is reading your screenshots…",
+            "analyze_done": "AI extracted product details, value prop, and campaign angle",
+            "expand_running": "Running Photoroom Plus scenes (desk hero, device mockup…)…",
+            "expand_done": "Digital product scenes ready for carousel & posts",
+            "reel_running": "Creating motion reel from your screenshots…",
+            "reel_single": "Creating motion reel from your screenshot…",
+            "quick_waiting": "Waiting for product name from screenshot…",
+            "carousel_waiting": "Waiting for digital product analysis…",
+        }
+    return {
+        "offering_type": "product",
+        "item_noun": "product",
+        "photos_noun": "photos",
+        "analyze_title": "AI analyzing product",
+        "analyze_running": "Vision AI is reading your product photos…",
+        "analyze_done": "AI extracted product details, tags, and campaign angle",
+        "expand_running": "Running Photoroom Plus scene pack (AI backgrounds, studio, flat lay…)…",
+        "expand_done": "Studio versions ready for carousel & posts",
+        "reel_running": "Creating motion reel from your product photos…",
+        "reel_single": "Creating motion reel from your product photo…",
+        "quick_waiting": "Waiting for product name from photo…",
+        "carousel_waiting": "Waiting for product analysis…",
+    }
+
+
 def _step(step_id, message, detail="", status="pending"):
     return {"id": step_id, "message": message, "detail": detail, "status": status}
 
@@ -47,6 +99,7 @@ def build_snap_pipeline_status(product, user):
     product_id = str(product.pk)
     now = tz.now()
     snap_stale = product.created_at < now - SNAP_TIMEOUT
+    copy = _offering_copy(product)
 
     platforms = set(
         SocialAccount.objects.filter(user=user, is_active=True).values_list(
@@ -98,7 +151,7 @@ def build_snap_pipeline_status(product, user):
         _step(
             "photos",
             "Photos uploaded",
-            f"{photo_count} photo{'s' if photo_count != 1 else ''} attached",
+            f"{photo_count} {copy['photos_noun']} attached",
             "completed",
         )
     )
@@ -106,16 +159,16 @@ def build_snap_pipeline_status(product, user):
     # 2 — Vision analysis
     if seed or vision_action:
         analyze_status = "completed"
-        analyze_detail = "AI extracted product details, tags, and campaign angle"
+        analyze_detail = copy["analyze_done"]
     elif snap_stale:
         analyze_status = "failed"
         analyze_detail = "Analysis timed out — try launching Snap to Sell again"
         error_message = analyze_detail
     else:
         analyze_status = "running"
-        analyze_detail = "Vision AI is reading your product photos…"
+        analyze_detail = copy["analyze_running"]
 
-    steps.append(_step("analyze", "AI analyzing product", analyze_detail, analyze_status))
+    steps.append(_step("analyze", copy["analyze_title"], analyze_detail, analyze_status))
 
     # 3 — Photo set expansion (Photoroom Plus + promo frame)
     variation_action = _action("commerce.photo_variations")
@@ -171,16 +224,16 @@ def build_snap_pipeline_status(product, user):
         if plus_n > 1:
             expand_detail = f"{plus_n} Plus scenes + promo ready for carousel & posts"
         else:
-            expand_detail = f"{n} studio version{'s' if n != 1 else ''} ready for carousel & posts"
+            expand_detail = copy["expand_done"] if n == 1 else f"{n} scenes ready for carousel & posts"
     elif analyze_status == "running":
         expand_status = "pending"
-        expand_detail = "Waiting for product analysis…"
+        expand_detail = copy["carousel_waiting"]
     elif snap_stale and seed:
         expand_status = "failed"
         expand_detail = "Studio polish timed out — tap Expand Photo Set"
     elif analyze_status == "completed":
         expand_status = "running"
-        expand_detail = "Running Photoroom Plus scene pack (AI backgrounds, studio, flat lay…)…"
+        expand_detail = copy["expand_running"]
     else:
         expand_status = "pending"
         expand_detail = "Waiting for analysis…"
@@ -207,7 +260,7 @@ def build_snap_pipeline_status(product, user):
             quick_detail = f"Photo posted to {n} platform{'s' if n != 1 else ''} with name, price & shop link"
     elif analyze_status == "running":
         quick_status = "pending"
-        quick_detail = "Waiting for product name from photo…"
+        quick_detail = copy["quick_waiting"]
     elif snap_stale and seed:
         quick_status = "failed"
         quick_detail = "Quick post timed out — tap Quick Post Photo"
@@ -257,7 +310,7 @@ def build_snap_pipeline_status(product, user):
         )
     elif analyze_status != "completed":
         carousel_status = "pending"
-        carousel_detail = "Waiting for product analysis…"
+        carousel_detail = copy["carousel_waiting"]
     elif carousel_action and carousel_action.status == AgentAction.ActionStatus.FAILED:
         carousel_status = "failed"
         carousel_detail = "Carousel generation failed"
@@ -290,7 +343,7 @@ def build_snap_pipeline_status(product, user):
         )
     elif single_photo_reel and analyze_status != "completed":
         reel_status = "pending"
-        reel_detail = "Waiting for product analysis…"
+        reel_detail = copy["carousel_waiting"]
     elif single_photo_reel and analyze_status == "failed":
         reel_status = "skipped"
         reel_detail = "Skipped — analysis did not finish"
@@ -316,7 +369,7 @@ def build_snap_pipeline_status(product, user):
             error_message = error_message or reel_detail
         else:
             reel_status = "running"
-            reel_detail = "Creating motion reel from your product photo…"
+            reel_detail = copy["reel_single"]
     elif single_photo_reel and reel_action and reel_action.status == AgentAction.ActionStatus.FAILED:
         reel_status = "failed"
         reel_detail = "Reel creation failed"
@@ -325,7 +378,7 @@ def build_snap_pipeline_status(product, user):
         reel_detail = "Reel composition timed out"
     elif single_photo_reel and seed:
         reel_status = "running"
-        reel_detail = "Creating motion reel from your product photo…"
+        reel_detail = copy["reel_single"]
     elif carousel_status in ("pending", "running"):
         reel_status = "pending"
         reel_detail = "Waiting for carousel slides…"
@@ -357,7 +410,7 @@ def build_snap_pipeline_status(product, user):
             error_message = error_message or reel_detail
         else:
             reel_status = "running"
-            reel_detail = "Preparing motion reel from carousel slides…"
+            reel_detail = copy["reel_running"]
     elif reel_action and reel_action.status == AgentAction.ActionStatus.FAILED:
         reel_status = "failed"
         reel_detail = "Reel creation failed"
@@ -366,7 +419,7 @@ def build_snap_pipeline_status(product, user):
         reel_detail = "Reel composition timed out"
     elif carousel_status == "completed":
         reel_status = "running"
-        reel_detail = "Creating motion reel posts from carousel…"
+        reel_detail = copy["reel_running"]
     else:
         reel_status = "pending"
         reel_detail = "Waiting for carousel to finish…"
@@ -422,6 +475,8 @@ def build_snap_pipeline_status(product, user):
     return {
         "product_id": product_id,
         "product_name": product.name,
+        "offering_type": copy["offering_type"],
+        "item_noun": copy["item_noun"],
         "photo_count": photo_count,
         "carousel_eligible": carousel_eligible,
         "reel_eligible": reel_eligible,

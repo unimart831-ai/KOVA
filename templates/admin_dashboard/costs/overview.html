@@ -52,11 +52,11 @@
       {{ gross_margin }}% gross margin (est.)
     </p>
   </div>
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
-    <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Photoroom Pool (month)</p>
+  <a href="{% url 'admin_dashboard:commerce_photoroom' %}" class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 p-4 shadow-sm hover:border-purple-400 transition-colors block">
+    <p class="text-[10px] font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Photoroom Pool (month)</p>
     <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">{{ photoroom_pool.used|format_number }} / {{ photoroom_pool.usable|format_number }}</p>
-    <p class="text-[10px] text-gray-400 mt-0.5">${{ photoroom_cost_30d|floatformat:2 }} est. · {{ photoroom_pool.remaining|format_number }} left</p>
-  </div>
+    <p class="text-[10px] text-gray-400 mt-0.5">${{ photoroom_cost_30d|floatformat:2 }} est. · {{ photoroom_pool.remaining|format_number }} left · Manage →</p>
+  </a>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Free vs Paid Calls</p>
     <p class="text-sm font-bold text-gray-900 dark:text-white mt-1">{{ free_calls_30d|format_number }} <span class="text-xs text-gray-400 font-normal">free</span></p>

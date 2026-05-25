@@ -49,6 +49,17 @@ def test_service_offering_uses_service_variants():
     ids = {s.id for s in specs}
     assert "service_hero" in ids
     assert "ghost_mannequin" not in ids
+    assert "digital_desk_hero" not in ids
+
+
+def test_digital_offering_uses_digital_variants():
+    p = _Product(name="Notion Template Pack", offering_type="digital")
+    specs = select_plus_variants(p, {"campaign_angle": "productivity boost"}, plan_tier="growth", max_count=4)
+    ids = {s.id for s in specs}
+    assert "digital_desk_hero" in ids
+    assert "digital_device_mockup" in ids
+    assert "service_hero" not in ids
+    assert "ghost_mannequin" not in ids
 
 
 def test_lifestyle_prompt_mentions_product():
@@ -67,3 +78,5 @@ def test_catalog_covers_plus_feature_groups():
     assert "beautify" in ids
     assert "upscale" in ids
     assert "ai_touchup" in ids
+    assert "digital_desk_hero" in ids
+    assert "digital_device_mockup" in ids

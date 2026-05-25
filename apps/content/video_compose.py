@@ -25,9 +25,27 @@ OUTPUT_WIDTH = 1080
 OUTPUT_HEIGHT = 1920
 DEFAULT_FPS = 30
 DEFAULT_SLIDE_SEC = 3.5
-DEFAULT_TRANSITION_SEC = 0.5
+DEFAULT_TRANSITION_SEC = 0.55
 MIN_SLIDE_SEC = 2.0
 MAX_SLIDE_SEC = 6.0
+
+# Rotating FFmpeg xfade transitions — each slide change gets a distinct motion style.
+REEL_TRANSITIONS = (
+    "slideup",
+    "slidedown",
+    "slideleft",
+    "slideright",
+    "wipeup",
+    "wipedown",
+    "smoothup",
+    "smoothdown",
+    "circleopen",
+    "dissolve",
+    "zoomin",
+    "wipetl",
+    "wipebr",
+    "fade",
+)
 
 
 class VideoComposeError(Exception):
@@ -88,22 +106,50 @@ def _write_story_frame(image_bytes: bytes, dest: Path) -> None:
 
 
 def _ken_burns_filter(slide_frames: int, variant: int = 0) -> str:
-    """zoompan filter — slow zoom for Ken Burns effect."""
-    if variant % 3 == 1:
-        zoom_expr = "if(lte(zoom,1.0),1.12,max(1.001,zoom-0.0012))"
-    elif variant % 3 == 2:
-        zoom_expr = "min(zoom+0.0018,1.18)"
-    else:
+    """zoompan filter — Ken Burns with directional pan (rise, descend, drift)."""
+    v = variant % 6
+    h, w = OUTPUT_HEIGHT, OUTPUT_WIDTH
+    pan_y = int(h * 0.10)
+    pan_x = int(w * 0.08)
+
+    if v == 0:
         zoom_expr = "min(zoom+0.0015,1.15)"
+        x_expr = "iw/2-(iw/zoom/2)"
+        y_expr = "ih/2-(ih/zoom/2)"
+    elif v == 1:
+        zoom_expr = "if(lte(on,1),1.14,max(1.001,zoom-0.0018))"
+        x_expr = "iw/2-(iw/zoom/2)"
+        y_expr = "ih/2-(ih/zoom/2)"
+    elif v == 2:
+        zoom_expr = "min(zoom+0.0012,1.12)"
+        x_expr = "iw/2-(iw/zoom/2)"
+        y_expr = f"ih/2-(ih/zoom/2)+{pan_y}*(1-on/{slide_frames})"
+    elif v == 3:
+        zoom_expr = "min(zoom+0.0012,1.12)"
+        x_expr = "iw/2-(iw/zoom/2)"
+        y_expr = f"ih/2-(ih/zoom/2)-{pan_y}*(1-on/{slide_frames})"
+    elif v == 4:
+        zoom_expr = "min(zoom+0.0012,1.12)"
+        x_expr = f"iw/2-(iw/zoom/2)-{pan_x}*(1-on/{slide_frames})"
+        y_expr = "ih/2-(ih/zoom/2)"
+    else:
+        zoom_expr = "min(zoom+0.0012,1.12)"
+        x_expr = f"iw/2-(iw/zoom/2)+{pan_x}*(1-on/{slide_frames})"
+        y_expr = "ih/2-(ih/zoom/2)"
+
     return (
         f"zoompan=z='{zoom_expr}':"
-        f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
-        f"d={slide_frames}:s={OUTPUT_WIDTH}x{OUTPUT_HEIGHT}:fps={DEFAULT_FPS}"
+        f"x='{x_expr}':y='{y_expr}':"
+        f"d={slide_frames}:s={w}x{h}:fps={DEFAULT_FPS}"
     )
 
 
+def _pick_transition(index: int) -> str:
+    return REEL_TRANSITIONS[index % len(REEL_TRANSITIONS)]
+
+
 def _build_xfade_filter(num_clips: int, slide_sec: float, transition_sec: float) -> tuple[str, str]:
-    """Build filter_complex for chained xfade transitions."""
+    """Build filter_complex for chained xfade transitions with varied motion styles."""
     if num_clips == 1:
         return "[0:v]format=yuv420p[vout]", "vout"
 
@@ -112,8 +158,9 @@ def _build_xfade_filter(num_clips: int, slide_sec: float, transition_sec: float)
     prev = "0:v"
     for i in range(1, num_clips):
         out = f"v{i}"
+        transition = _pick_transition(i - 1)
         parts.append(
-            f"[{prev}][{i}:v]xfade=transition=fade:duration={transition_sec:.3f}:offset={offset:.3f}[{out}]"
+            f"[{prev}][{i}:v]xfade=transition={transition}:duration={transition_sec:.3f}:offset={offset:.3f}[{out}]"
         )
         prev = out
         offset += slide_sec - transition_sec

@@ -315,7 +315,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         min_plan="agency",
         priority=42,
     ),
-    # ── Service / digital (no physical product shots) ──────────────────────
+    # ── Service (work evidence, no physical product) ───────────────────────
     "service_hero": PlusVariantSpec(
         id="service_hero",
         label="Service hero",
@@ -327,7 +327,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         },
         headers=_ai_bg_headers(),
         categories=(),
-        offering_types=("service", "digital"),
+        offering_types=("service",),
         priority=100,
     ),
     "service_context": PlusVariantSpec(
@@ -340,9 +340,40 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
             **_export_defaults(),
         },
         headers=_ai_bg_headers(),
-        offering_types=("service", "digital"),
+        categories=(),
+        offering_types=("service",),
         min_plan="growth",
         priority=90,
+    ),
+    # ── Digital (screenshots, SaaS, templates) ───────────────────────────
+    "digital_desk_hero": PlusVariantSpec(
+        id="digital_desk_hero",
+        label="Clean desk hero",
+        params={
+            **_shadow_studio(),
+            "background.prompt": "{digital_desk_prompt}",
+            "background.seed": str(AI_BG_SEEDS[1]),
+            **_export_defaults(),
+        },
+        headers=_ai_bg_headers(),
+        categories=(),
+        offering_types=("digital",),
+        priority=100,
+    ),
+    "digital_device_mockup": PlusVariantSpec(
+        id="digital_device_mockup",
+        label="Device mockup",
+        params={
+            **_shadow_studio(),
+            "background.prompt": "{digital_device_prompt}",
+            "background.seed": str(AI_BG_SEEDS[2]),
+            **_export_defaults(),
+        },
+        headers=_ai_bg_headers(),
+        categories=(),
+        offering_types=("digital",),
+        min_plan="growth",
+        priority=95,
     ),
 }
 
@@ -526,6 +557,26 @@ def build_service_prompt(product, analysis: dict | None, *, context: bool = Fals
     )
 
 
+def build_digital_desk_prompt(product, analysis: dict | None) -> str:
+    name = _clean_name(product)
+    analysis = analysis or {}
+    hook = analysis.get("campaign_angle") or analysis.get("value_proposition") or "premium digital product"
+    return (
+        f"A clean minimal desk setup hero shot showcasing {name} on a laptop screen: {hook}. "
+        f"Modern workspace, soft natural light, uncluttered surface, no text overlays, marketing ready."
+    )
+
+
+def build_digital_device_prompt(product, analysis: dict | None) -> str:
+    name = _clean_name(product)
+    analysis = analysis or {}
+    hook = analysis.get("campaign_angle") or "professional digital offering"
+    return (
+        f"A floating device mockup (laptop and smartphone at a dynamic angle) displaying {name}: {hook}. "
+        f"Sleek tech aesthetic, subtle gradient background, premium SaaS launch visual, no UI text."
+    )
+
+
 def resolve_variant_params(
     spec: PlusVariantSpec,
     product,
@@ -553,6 +604,10 @@ def resolve_variant_params(
             resolved[key] = build_service_prompt(product, analysis, context=False)
         elif value == "{service_context_prompt}":
             resolved[key] = build_service_prompt(product, analysis, context=True)
+        elif value == "{digital_desk_prompt}":
+            resolved[key] = build_digital_desk_prompt(product, analysis)
+        elif value == "{digital_device_prompt}":
+            resolved[key] = build_digital_device_prompt(product, analysis)
         elif value == "{touchup_prompt}":
             resolved[key] = build_touchup_prompt(product, analysis)
         else:
@@ -585,6 +640,16 @@ def select_plus_variants(
     # Always include universal studio + lifestyle for physical products
     if offering == "product":
         for required_id in ("studio_white", "ai_lifestyle"):
+            req = PLUS_VARIANT_CATALOG.get(required_id)
+            if req and req not in candidates:
+                candidates.append(req)
+    elif offering == "service":
+        for required_id in ("service_hero", "service_context"):
+            req = PLUS_VARIANT_CATALOG.get(required_id)
+            if req and req not in candidates:
+                candidates.append(req)
+    elif offering == "digital":
+        for required_id in ("digital_desk_hero", "digital_device_mockup"):
             req = PLUS_VARIANT_CATALOG.get(required_id)
             if req and req not in candidates:
                 candidates.append(req)

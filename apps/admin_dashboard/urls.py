@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, bookings, calendar_intel, campaigns, content, costs, emails, engage, feature_usage, help, innovations, leads, llm, logs, media_queue, memes, notifications, onboarding, operations, overview, partners, partials, pixel, platforms, products, profile_audit, qr, reel_music, revenue, reviews, system, system_maps, teams, user_health, users, whatsapp
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, bookings, calendar_intel, campaigns, content, costs, emails, engage, feature_usage, help, innovations, leads, llm, logs, media_queue, memes, notifications, onboarding, operations, overview, partners, partials, photoroom, pixel, platforms, products, profile_audit, qr, reel_music, revenue, reviews, system, system_maps, teams, user_health, users, whatsapp
 
 app_name = "admin_dashboard"
 
@@ -192,6 +192,7 @@ urlpatterns = [
     path("commerce/integrations/", products.commerce_integrations, name="commerce_integrations"),
     path("commerce/alerts/", products.commerce_stock_alerts, name="commerce_stock_alerts"),
     path("commerce/stock/", products.commerce_stock_updates, name="commerce_stock_updates"),
+    path("commerce/photoroom/", photoroom.photoroom_config, name="commerce_photoroom"),
     # Legacy product URLs (same views)
     path("products/", products.commerce_overview, name="products_overview"),
     path("products/list/", products.commerce_catalog, name="admin_product_list"),

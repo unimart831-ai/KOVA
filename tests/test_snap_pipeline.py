@@ -6,7 +6,7 @@ from django.urls import reverse
 from apps.content.models import ContentSeed, Post
 from apps.platforms.models import SocialAccount
 from apps.products.models import Product
-from apps.products.snap_pipeline import build_snap_pipeline_status
+from apps.products.snap_pipeline import _offering_copy, build_snap_pipeline_status
 
 
 @pytest.fixture
@@ -97,3 +97,30 @@ class TestSnapPipelineStatus:
         assert payload["product_id"] == str(product.pk)
         assert "steps" in payload
         assert payload["status"] == "processing"
+
+    def test_service_offering_labels(self, user, ig_account):
+        product = Product.objects.create(
+            user=user,
+            name="House Cleaning",
+            source=Product.Source.SNAP,
+            offering_type=Product.OfferingType.SERVICE,
+        )
+        data = build_snap_pipeline_status(product, user)
+        analyze = next(s for s in data["steps"] if s["id"] == "analyze")
+        assert data["offering_type"] == "service"
+        assert "service" in analyze["message"].lower()
+        assert "work" in next(s for s in data["steps"] if s["id"] == "photos")["detail"].lower()
+
+    def test_digital_offering_labels(self, user, ig_account):
+        product = Product.objects.create(
+            user=user,
+            name="UI Kit",
+            source=Product.Source.SNAP,
+            offering_type=Product.OfferingType.DIGITAL,
+        )
+        copy = _offering_copy(product)
+        assert "screenshot" in copy["photos_noun"]
+        data = build_snap_pipeline_status(product, user)
+        assert data["offering_type"] == "digital"
+        analyze = next(s for s in data["steps"] if s["id"] == "analyze")
+        assert "digital" in analyze["message"].lower()
