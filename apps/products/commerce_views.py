@@ -23,6 +23,7 @@ from apps.products.commerce_seo import (
     build_commerce_page_seo,
     build_shop_page_seo,
 )
+from apps.products.product_copy import format_product_description
 
 logger = logging.getLogger(__name__)
 
@@ -116,18 +117,9 @@ def public_commerce_link(request, page_slug, commerce_slug):
         whatsapp_available=bool(whatsapp),
     )
     product_reel = get_public_product_reel(product)
-    from apps.products.commerce_seo import brand_name
-    from apps.products.product_copy import format_product_description
-
-    product_description = format_product_description(
-        product.description or "",
-        product_name=product.name,
-        brand=brand_name(profile, user),
-        price=product.display_price or "",
+    product_description, product_description_paragraphs = _product_description_paragraphs(
+        product, profile, user,
     )
-    product_description_paragraphs = [
-        p.strip() for p in product_description.split("\n\n") if p.strip()
-    ]
 
     return render(request, "products/public/commerce_link.html", {
         "profile": profile,
@@ -159,7 +151,7 @@ def public_commerce_pay(request, page_slug, commerce_slug):
 
     from apps.billing.models import get_user_plan_limits
 
-    if not get_user_plan_limits(user).get("mpesa_commerce"):
+    if not get_user_plan_limits(product.user).get("mpesa_commerce"):
         return JsonResponse(
             {"error": "This shop has not enabled M-Pesa checkout on their plan."},
             status=403,

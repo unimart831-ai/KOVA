@@ -72,3 +72,49 @@ class TestCommerceLinks:
         assert response.status_code == 200
         assert b"Test Item" in response.content
         assert b"Pay with M-Pesa" in response.content
+
+    def test_public_commerce_page_tolerates_bad_additional_images(self, client, user):
+        user.profile.page_slug = "demo-shop"
+        user.profile.save()
+        product = Product.objects.create(
+            user=user,
+            name="Sneaker",
+            description="Comfortable high-top sneaker for daily wear.",
+            price=1500,
+            currency="KES",
+            commerce_slug="sneaker",
+            stock_status=Product.StockStatus.IN_STOCK,
+            additional_images=[
+                "https://cdn.example.com/hero.jpg",
+                {"bad": "entry"},
+                "",
+                123,
+                "https://cdn.example.com/side.jpg",
+            ],
+        )
+        url = reverse(
+            "public_commerce",
+            kwargs={"page_slug": "demo-shop", "commerce_slug": product.commerce_slug},
+        )
+        response = client.get(url)
+        assert response.status_code == 200
+        assert b"Sneaker" in response.content
+
+    def test_public_commerce_pay_requires_phone_not_500(self, client, user):
+        user.profile.page_slug = "demo-shop"
+        user.profile.save()
+        product = Product.objects.create(
+            user=user,
+            name="Pay Test",
+            price=500,
+            currency="KES",
+            commerce_slug="pay-test",
+            stock_status=Product.StockStatus.IN_STOCK,
+        )
+        url = reverse(
+            "public_commerce_pay",
+            kwargs={"page_slug": "demo-shop", "commerce_slug": product.commerce_slug},
+        )
+        response = client.post(url)
+        assert response.status_code == 400
+        assert response.json()["error"] == "Phone number is required."

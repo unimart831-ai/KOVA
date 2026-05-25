@@ -57,7 +57,7 @@ def ffmpeg_available() -> bool:
 
 
 def is_video_url(url: str) -> bool:
-    if not url:
+    if not url or not isinstance(url, str):
         return False
     path = urlparse(url).path.lower()
     return path.endswith((".mp4", ".mov", ".webm", ".m4v"))

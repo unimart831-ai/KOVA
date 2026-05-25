@@ -37,3 +37,19 @@ def test_carousel_image_urls_excludes_channel(db):
     )
     assert len(product.carousel_image_urls) == 1
     assert "studio_white" in product.carousel_image_urls[0]
+
+
+def test_all_image_urls_skips_non_string_entries(db):
+    product = Product.objects.create(
+        name="Test",
+        additional_images=[
+            "https://cdn.example.com/a.jpg",
+            {"ignored": True},
+            99,
+            "https://cdn.example.com/b.jpg",
+        ],
+    )
+    assert product.all_image_urls == [
+        "https://cdn.example.com/a.jpg",
+        "https://cdn.example.com/b.jpg",
+    ]

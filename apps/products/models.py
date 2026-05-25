@@ -198,14 +198,27 @@ class Product(models.Model):
             return f"{self.currency} {self.price_range_min:,.0f}–{self.price_range_max:,.0f}"
         return ""
 
+    @staticmethod
+    def _coerce_image_url(value) -> str:
+        if isinstance(value, str):
+            return value.strip()
+        return ""
+
     @property
     def all_image_urls(self):
         """Return list of image URLs used for carousel and post content."""
-        urls = []
+        urls: list[str] = []
         if self.image and not self.exclude_primary_image:
-            urls.append(self.image.url)
-        if self.additional_images:
-            urls.extend(self.additional_images)
+            try:
+                primary = self._coerce_image_url(self.image.url)
+            except Exception:
+                primary = ""
+            if primary:
+                urls.append(primary)
+        for item in self.additional_images or []:
+            url = self._coerce_image_url(item)
+            if url and url not in urls:
+                urls.append(url)
         return urls
 
     @property

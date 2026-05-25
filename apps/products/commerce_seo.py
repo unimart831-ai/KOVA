@@ -24,6 +24,9 @@ def brand_name(profile, user) -> str:
 
 
 def absolute_media_url(request, url: str) -> str:
+    if not url or not isinstance(url, str):
+        return ""
+    url = url.strip()
     if not url:
         return ""
     if url.startswith(("http://", "https://")):
