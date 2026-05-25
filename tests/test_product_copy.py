@@ -79,6 +79,27 @@ def test_strip_feature_bullet():
     assert strip_feature_bullet("✓ Magnetic mount") == "Magnetic mount"
 
 
+def test_clean_description_sentence_removes_labels():
+    from apps.products.product_copy import clean_description_sentence, format_product_description
+
+    assert clean_description_sentence(
+        "Sentence 1: This is a VON microwave that provides effective cooking."
+    ) == "This is a VON microwave that provides effective cooking."
+    assert clean_description_sentence(
+        "Sentence 4 (optional): Enhance your kitchen with this essential appliance."
+    ) == "Enhance your kitchen with this essential appliance."
+
+    raw = (
+        "Sentence 1: This is a VON microwave.\n\n"
+        "Sentence 2: With its sleek design, it stands out.\n\n"
+        "Sentence 3: Perfect for busy families."
+    )
+    out = format_product_description(raw)
+    assert "Sentence 1" not in out
+    assert "Sentence 2" not in out
+    assert "VON microwave" in out
+
+
 def test_carousel_plan_includes_story_and_price():
     product = _Product(name='Samsung 32" Smart TV', price=43000)
     analysis = {

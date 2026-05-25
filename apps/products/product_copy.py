@@ -43,6 +43,12 @@ _LEADING_BULLET_RE = re.compile(
     r"^[\s✅✓✔☑️⭐🌟💫🔥⚡✨💎🎯💡📦🛡️👌🚀•\-–—→]+",
 )
 
+# Vision models sometimes copy schema labels like "Sentence 1:" into output.
+_SENTENCE_LABEL_RE = re.compile(
+    r"^sentence\s+\d+\s*(\(\s*optional\s*\))?\s*[:\-\.]?\s*",
+    re.I,
+)
+
 
 def strip_feature_bullet(text: str) -> str:
     """Remove an existing leading emoji/bullet so we can re-style consistently."""
@@ -89,6 +95,17 @@ def feature_slide_headline(feature: str, index: int, *, seed: str = "") -> str:
     offset = _bullet_offset(seed or "kova")
     emoji = FEATURE_BULLET_EMOJIS[(offset + index + 2) % len(FEATURE_BULLET_EMOJIS)]
     return f"{emoji} {feat}"
+
+
+def clean_description_sentence(text: str) -> str:
+    """Strip schema placeholders like 'Sentence 1:' from customer-facing copy."""
+    cleaned = (text or "").strip()
+    cleaned = _SENTENCE_LABEL_RE.sub("", cleaned)
+    return cleaned.strip()
+
+
+def normalize_description_sentences(parts: list[str]) -> list[str]:
+    return [s for s in (clean_description_sentence(p) for p in parts) if s]
 
 
 def split_description_sentences(text: str) -> list[str]:
@@ -173,7 +190,7 @@ def format_product_description(text: str, analysis: dict | None = None) -> str:
     analysis = analysis or {}
     raw_sentences = analysis.get("description_sentences")
     if isinstance(raw_sentences, list):
-        cleaned = [str(s).strip() for s in raw_sentences if str(s).strip()]
+        cleaned = normalize_description_sentences([str(s) for s in raw_sentences if str(s).strip()])
         if len(cleaned) >= 2:
             return "\n\n".join(cleaned[:4])[:1000]
 
@@ -181,11 +198,19 @@ def format_product_description(text: str, analysis: dict | None = None) -> str:
     if not source:
         return ""
 
-    sentences = split_description_sentences(source)
+    if "\n\n" in source:
+        cleaned = normalize_description_sentences(source.split("\n\n"))
+        if len(cleaned) >= 2:
+            return "\n\n".join(cleaned[:4])[:1000]
+        if len(cleaned) == 1:
+            return cleaned[0][:1000]
+
+    sentences = normalize_description_sentences(split_description_sentences(source))
     if len(sentences) >= 2:
         return "\n\n".join(sentences[:4])[:1000]
 
-    return source[:1000]
+    single = clean_description_sentence(source)
+    return single[:1000]
 
 
 def enrich_product_copy(product, analysis: dict, profile) -> list[str]:

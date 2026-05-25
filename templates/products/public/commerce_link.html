@@ -89,8 +89,8 @@
     {% elif product.stock_status == 'low_stock' %}
     <span class="badge">Limited stock</span>
     {% endif %}
-    {% if product.description %}
-    <p class="desc">{{ product.description }}</p>
+    {% if product_description %}
+    <p class="desc">{{ product_description }}</p>
     {% endif %}
   </div>
 

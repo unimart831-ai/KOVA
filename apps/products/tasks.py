@@ -388,13 +388,15 @@ def _build_vision_prompt(*, offering_type, name, display_price, num_images, phot
 
     description_block = (
         '  "description_sentences": [\n'
-        '    "Sentence 1: what the product/service is (specific, factual)",\n'
-        '    "Sentence 2: standout benefit, spec, or quality shown",\n'
-        '    "Sentence 3: who it is perfect for",\n'
-        '    "Sentence 4 (optional): subtle reason to buy now — no hype"\n'
+        '    "Plain sentence about what the product/service is — no labels or numbering",\n'
+        '    "Plain sentence about a standout benefit, spec, or quality",\n'
+        '    "Plain sentence about who it is perfect for",\n'
+        '    "Optional plain sentence with a subtle reason to buy — no hype"\n'
         '  ],\n'
-        '  "description": "Same content as description_sentences joined into one string",\n'
+        '  "description": "Join description_sentences into one string — never include Sentence 1/2 labels",\n'
         '  "improved_name": "Marketing-ready catalog title merging seller hint + visible brand/specs",\n'
+        'IMPORTANT: description_sentences must be customer-ready prose only. '
+        'Never prefix with "Sentence 1", "Sentence 2", or any schema labels.\n'
     )
 
     if offering_type == "service":

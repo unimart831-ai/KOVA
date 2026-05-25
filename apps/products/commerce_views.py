@@ -116,10 +116,14 @@ def public_commerce_link(request, page_slug, commerce_slug):
         whatsapp_available=bool(whatsapp),
     )
     product_reel = get_public_product_reel(product)
+    from apps.products.product_copy import format_product_description
+
+    product_description = format_product_description(product.description or "")
 
     return render(request, "products/public/commerce_link.html", {
         "profile": profile,
         "product": product,
+        "product_description": product_description,
         "user": user,
         "shop_slug": shop_slug,
         "brand_name": brand,
