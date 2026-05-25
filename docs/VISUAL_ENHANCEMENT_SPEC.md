@@ -32,7 +32,13 @@ Module: `apps/products/photoroom_plus.py`
 | `studio_dark` | Premium dark studio | Jewelry, electronics |
 | `ai_lifestyle` | AI background (Studio model) | Always |
 | `ai_lifestyle_alt` | Second AI scene | Always |
-| `ai_contextual` | Audience-aware AI scene | Growth+ |
+| `ai_contextual` | AI contextual scene | Growth+ |
+| `ai_creative_splash` | Water splash hero | food, beauty (Growth+) |
+| `ai_creative_marble` | Luxury marble | beauty, jewelry (Growth+) |
+| `ai_creative_botanical` | Botanical fresh | beauty, food, home (Growth+) |
+| `ai_creative_neon` | Neon tech glow | electronics, apparel (Growth+) |
+| `ai_creative_powder` | Powder explosion | beauty, food (Pro+) |
+| `ai_creative_podium` | Gradient podium | all (Growth+) |
 | `relight` | `lighting.mode=ai.auto` | Growth+ |
 | `beautify` | `beautify.mode=ai.auto` | Beauty, jewelry |
 | `background_blur` | Depth blur | General, electronics |

@@ -208,6 +208,7 @@ Preflight and channel runs record:
 | Phase | Feature | Status |
 |-------|---------|--------|
 | C | Slide-role orchestration (hero → lifestyle → proof → CTA) | **Shipped** |
+| **Creative** | Bold AI backgrounds (splash, marble, neon, powder…) | **Shipped** |
 | D | Seller brand template (locked shadow, padding, prompt seed) | Planned |
 | E | Edit-with-AI UI + Create Any Image promos | Planned |
 | F | PhotoRoom batch API for catalog imports | Planned |
@@ -233,7 +234,26 @@ Scene variants are selected and **run in carousel story order**, not raw priorit
 
 ---
 
-## 10. Testing
+## 10. Creative Scene Pack (shipped)
+
+Bold PhotoRoom-style AI backgrounds — selected by **product category** and run in the **desire** carousel slot (before standard lifestyle).
+
+| Variant ID | Look | Categories | Plan |
+|------------|------|------------|------|
+| `ai_creative_splash` | Water splash, droplets | food, beauty | Growth+ |
+| `ai_creative_marble` | Luxury marble pedestal | beauty, jewelry, home | Growth+ |
+| `ai_creative_botanical` | Tropical leaves, organic | beauty, food, home, apparel | Growth+ |
+| `ai_creative_neon` | Cyberpunk neon glow | electronics, apparel | Growth+ |
+| `ai_creative_powder` | Cosmetic powder burst | beauty, food | Pro+ |
+| `ai_creative_podium` | Gradient podium reveal | all products | Growth+ |
+
+Prompts include product name + vision `campaign_angle`. Tagged `slide_role: creative` in usage logs.
+
+**Setting:** `PHOTOROOM_CREATIVE_SCENES_ENABLED` (default `true`).
+
+---
+
+## 11. Testing
 
 ```bash
 pytest tests/test_photoroom_preflight.py tests/test_photoroom_plus.py -q
@@ -243,7 +263,7 @@ Manual: Snap a dark/blurry phone photo → confirm `preflight_*` URLs then `chan
 
 ---
 
-## 11. Rollout
+## 12. Rollout
 
 1. Deploy with `PHOTOROOM_PREFLIGHT_ENABLED=true`, `PHOTOROOM_CHANNEL_EXPORTS_ENABLED=true`.
 2. Monitor credit usage in admin Photoroom tab.

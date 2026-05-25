@@ -139,3 +139,34 @@ def test_filter_carousel_urls_excludes_channel():
     filtered = filter_carousel_urls(urls)
     assert len(filtered) == 1
     assert "studio_white" in filtered[0]
+
+
+def test_beauty_gets_creative_splash_in_pack():
+    p = _Product(name="Glow Serum", tags=["beauty", "skincare"])
+    specs = select_plus_variants(p, {"campaign_angle": "radiant glow"}, plan_tier="growth", max_count=4)
+    ids = [s.id for s in specs]
+    assert ids[0] == "studio_white"
+    assert "ai_creative_splash" in ids
+
+
+def test_food_creative_splash_prompt():
+    from apps.products.photoroom_plus import build_creative_prompt
+
+    p = _Product(name="Mango Juice", tags=["food", "drink"])
+    prompt = build_creative_prompt("ai_creative_splash", p, {"campaign_angle": "refreshing"})
+    assert "water splash" in prompt.lower()
+    assert "Mango Juice" in prompt
+
+
+def test_creative_slide_role_tag():
+    from apps.products.photoroom_plus import slide_role_for_variant
+
+    assert slide_role_for_variant("ai_creative_splash", "product", "beauty") == "creative"
+    assert slide_role_for_variant("studio_white", "product", "beauty") == "hero"
+
+
+def test_starter_plan_excludes_creative_variants():
+    p = _Product(name="Serum", tags=["beauty"])
+    specs = select_plus_variants(p, {}, plan_tier="starter", max_count=10)
+    ids = {s.id for s in specs}
+    assert "ai_creative_splash" not in ids

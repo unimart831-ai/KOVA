@@ -19,7 +19,26 @@ logger = logging.getLogger(__name__)
 
 PHOTOROOM_EDIT_URL = "https://image-api.photoroom.com/v2/edit"
 AI_BG_MODEL_HEADER = "background-studio-beta-2025-03-17"
-AI_BG_SEEDS = (117879368, 55994449, 48672244, 65080068)
+AI_BG_SEEDS = (117879368, 55994449, 48672244, 65080068, 88210391, 33120477)
+
+# Creative AI backgrounds — category → preferred variant ids (Phase: Creative Scene Pack)
+CATEGORY_CREATIVE_VARIANTS: dict[str, tuple[str, ...]] = {
+    "food": ("ai_creative_splash", "ai_creative_powder"),
+    "beauty": ("ai_creative_splash", "ai_creative_marble", "ai_creative_botanical"),
+    "jewelry": ("ai_creative_marble", "ai_creative_podium"),
+    "electronics": ("ai_creative_neon", "ai_creative_podium"),
+    "apparel": ("ai_creative_neon", "ai_creative_botanical"),
+    "home": ("ai_creative_botanical", "ai_creative_marble"),
+    "general": ("ai_creative_podium", "ai_creative_marble"),
+}
+CREATIVE_VARIANT_IDS = frozenset({
+    "ai_creative_splash",
+    "ai_creative_marble",
+    "ai_creative_botanical",
+    "ai_creative_neon",
+    "ai_creative_powder",
+    "ai_creative_podium",
+})
 
 PLAN_TIER_ORDER = ("starter", "growth", "pro", "agency")
 
@@ -170,6 +189,91 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         categories=(),
         min_plan="growth",
         priority=80,
+    ),
+    # ── Creative AI backgrounds (splash, marble, neon…) ─────────────────
+    "ai_creative_splash": PlusVariantSpec(
+        id="ai_creative_splash",
+        label="Water splash hero",
+        params={
+            **_shadow_studio(),
+            "background.prompt": "{creative_splash_prompt}",
+            "background.seed": str(AI_BG_SEEDS[4]),
+            **_export_defaults(),
+        },
+        headers=_ai_bg_headers(),
+        categories=("food", "beauty", "general"),
+        min_plan="growth",
+        priority=91,
+    ),
+    "ai_creative_marble": PlusVariantSpec(
+        id="ai_creative_marble",
+        label="Luxury marble",
+        params={
+            **_shadow_studio(),
+            "background.prompt": "{creative_marble_prompt}",
+            "background.seed": str(AI_BG_SEEDS[0]),
+            **_export_defaults(),
+        },
+        headers=_ai_bg_headers(),
+        categories=("beauty", "jewelry", "home", "general"),
+        min_plan="growth",
+        priority=90,
+    ),
+    "ai_creative_botanical": PlusVariantSpec(
+        id="ai_creative_botanical",
+        label="Botanical fresh",
+        params={
+            **_shadow_studio(),
+            "background.prompt": "{creative_botanical_prompt}",
+            "background.seed": str(AI_BG_SEEDS[1]),
+            **_export_defaults(),
+        },
+        headers=_ai_bg_headers(),
+        categories=("beauty", "food", "home", "apparel"),
+        min_plan="growth",
+        priority=89,
+    ),
+    "ai_creative_neon": PlusVariantSpec(
+        id="ai_creative_neon",
+        label="Neon tech glow",
+        params={
+            **_shadow_studio(),
+            "background.prompt": "{creative_neon_prompt}",
+            "background.seed": str(AI_BG_SEEDS[2]),
+            **_export_defaults(),
+        },
+        headers=_ai_bg_headers(),
+        categories=("electronics", "apparel", "general"),
+        min_plan="growth",
+        priority=88,
+    ),
+    "ai_creative_powder": PlusVariantSpec(
+        id="ai_creative_powder",
+        label="Powder explosion",
+        params={
+            **_shadow_studio(),
+            "background.prompt": "{creative_powder_prompt}",
+            "background.seed": str(AI_BG_SEEDS[3]),
+            **_export_defaults(),
+        },
+        headers=_ai_bg_headers(),
+        categories=("beauty", "food"),
+        min_plan="pro",
+        priority=87,
+    ),
+    "ai_creative_podium": PlusVariantSpec(
+        id="ai_creative_podium",
+        label="Gradient podium",
+        params={
+            **_shadow_studio(),
+            "background.prompt": "{creative_podium_prompt}",
+            "background.seed": str(AI_BG_SEEDS[5]),
+            **_export_defaults(),
+        },
+        headers=_ai_bg_headers(),
+        categories=(),
+        min_plan="growth",
+        priority=86,
     ),
     # ── Enhancement ──────────────────────────────────────────────────────
     "relight": PlusVariantSpec(
@@ -582,6 +686,51 @@ def build_lifestyle_prompt(product, analysis: dict | None, *, variant: str = "pr
     return bucket[key]
 
 
+def build_creative_prompt(style: str, product, analysis: dict | None) -> str:
+    """Bold PhotoRoom-style AI backgrounds — splash, marble, neon, etc."""
+    name = _clean_name(product)
+    analysis = analysis or {}
+    angle = analysis.get("campaign_angle") or analysis.get("visual_style") or ""
+    angle_clause = f" Campaign mood: {angle}." if angle else ""
+
+    prompts = {
+        "ai_creative_splash": (
+            f"Dynamic high-speed water splash photography behind {name}: crystal-clear "
+            f"water droplets, fresh splash motion, crisp studio strobe lighting, refreshing "
+            f"premium beverage or skincare hero shot, clean background blur, no text.{angle_clause}"
+        ),
+        "ai_creative_marble": (
+            f"Luxury white and soft gold marble surface with elegant reflections, premium "
+            f"product pedestal hero shot for {name}, high-end boutique advertising, soft "
+            f"diffused light, minimal props, no text.{angle_clause}"
+        ),
+        "ai_creative_botanical": (
+            f"Lush tropical monstera leaves and fresh botanical greenery with warm dappled "
+            f"sunlight, organic natural atmosphere showcasing {name}, fresh clean skincare "
+            f"or food campaign aesthetic, soft bokeh, no text.{angle_clause}"
+        ),
+        "ai_creative_neon": (
+            f"Bold cyberpunk neon gradient backdrop with magenta, cyan, and deep purple glow, "
+            f"futuristic tech product showcase for {name}, dramatic rim light, social media "
+            f"scroll-stopping aesthetic, no text or UI.{angle_clause}"
+        ),
+        "ai_creative_powder": (
+            f"Dramatic cosmetic powder explosion with soft colorful particles frozen mid-air "
+            f"behind {name}, high-fashion beauty campaign studio lighting, vibrant yet "
+            f"premium, clean product focus, no text.{angle_clause}"
+        ),
+        "ai_creative_podium": (
+            f"Minimal geometric product podium on a soft pastel gradient studio backdrop, "
+            f"subtle spotlight and soft floor reflection, modern launch presentation for "
+            f"{name}, Apple-style product reveal aesthetic, no text.{angle_clause}"
+        ),
+    }
+    return prompts.get(
+        style,
+        f"A bold creative marketing background for {name}, premium social commerce hero shot.{angle_clause}",
+    )
+
+
 def build_contextual_prompt(product, analysis: dict | None) -> str:
     name = _clean_name(product)
     analysis = analysis or {}
@@ -672,6 +821,18 @@ def resolve_variant_params(
             resolved[key] = build_lifestyle_prompt(product, analysis, variant="primary")
         elif value == "{lifestyle_prompt_alt}":
             resolved[key] = build_lifestyle_prompt(product, analysis, variant="alt")
+        elif value == "{creative_splash_prompt}":
+            resolved[key] = build_creative_prompt("ai_creative_splash", product, analysis)
+        elif value == "{creative_marble_prompt}":
+            resolved[key] = build_creative_prompt("ai_creative_marble", product, analysis)
+        elif value == "{creative_botanical_prompt}":
+            resolved[key] = build_creative_prompt("ai_creative_botanical", product, analysis)
+        elif value == "{creative_neon_prompt}":
+            resolved[key] = build_creative_prompt("ai_creative_neon", product, analysis)
+        elif value == "{creative_powder_prompt}":
+            resolved[key] = build_creative_prompt("ai_creative_powder", product, analysis)
+        elif value == "{creative_podium_prompt}":
+            resolved[key] = build_creative_prompt("ai_creative_podium", product, analysis)
         elif value == "{contextual_prompt}":
             resolved[key] = build_contextual_prompt(product, analysis)
         elif value == "{flat_lay_prompt}":
@@ -703,10 +864,22 @@ def _slide_roles_for(offering: str, category: str) -> tuple[tuple[str, tuple[str
     if offering == "digital":
         return SLIDE_ROLE_DIGITAL
     proof_ids = CATEGORY_PROOF_VARIANTS.get(category, CATEGORY_PROOF_VARIANTS["general"])
+    creative_ids = ()
+    if getattr(settings, "PHOTOROOM_CREATIVE_SCENES_ENABLED", True):
+        creative_ids = CATEGORY_CREATIVE_VARIANTS.get(
+            category, CATEGORY_CREATIVE_VARIANTS["general"]
+        )
+    desire_ids = creative_ids + (
+        "ai_lifestyle",
+        "ai_lifestyle_alt",
+        "ai_contextual",
+    )
     roles: list[tuple[str, tuple[str, ...]]] = []
     for role_name, variant_ids in SLIDE_ROLE_PRODUCT:
         if role_name == "proof":
             roles.append((role_name, proof_ids))
+        elif role_name == "desire":
+            roles.append((role_name, desire_ids))
         else:
             roles.append((role_name, variant_ids))
     return tuple(roles)
@@ -714,6 +887,8 @@ def _slide_roles_for(offering: str, category: str) -> tuple[tuple[str, tuple[str
 
 def slide_role_for_variant(variant_id: str, offering: str, category: str) -> str:
     """Carousel role label for a variant id."""
+    if variant_id in CREATIVE_VARIANT_IDS:
+        return "creative"
     for role_name, variant_ids in _slide_roles_for(offering, category):
         if variant_id in variant_ids:
             return role_name
@@ -813,6 +988,15 @@ def select_plus_variants(
         spec = PLUS_VARIANT_CATALOG.get("flat_lay")
         if spec and spec not in candidates:
             candidates.append(spec)
+
+    if (
+        offering == "product"
+        and getattr(settings, "PHOTOROOM_CREATIVE_SCENES_ENABLED", True)
+    ):
+        for vid in CATEGORY_CREATIVE_VARIANTS.get(category, CATEGORY_CREATIVE_VARIANTS["general"]):
+            spec = PLUS_VARIANT_CATALOG.get(vid)
+            if spec and spec not in candidates:
+                candidates.append(spec)
 
     seen: set[str] = set()
     ordered: list[PlusVariantSpec] = []
