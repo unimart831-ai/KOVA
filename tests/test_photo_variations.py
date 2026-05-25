@@ -11,6 +11,7 @@ from apps.products.photo_variations import (
     PRESET_WHITE_STUDIO,
     _dominant_hex_colors,
     _render_preset,
+    _render_promo_from_hero,
     remove_product_background,
     select_presets,
     variation_storage_marker,
@@ -78,3 +79,25 @@ def test_render_white_studio_preset():
     )
     assert out.size == (1080, 1080)
     assert out.mode == "RGB"
+
+
+def test_render_promo_from_hero_long_title():
+    hero = Image.new("RGB", (800, 800), (255, 255, 255))
+    colors = {
+        "primary": "#1A1A2E",
+        "secondary": "#16213E",
+        "accent": "#E94560",
+        "text": "#FFFFFF",
+        "text_muted": "#B0B0B0",
+    }
+    out = _render_promo_from_hero(
+        hero,
+        product_name="ORAIMO Power Bank 20000mAh Fast Charge",
+        display_price="KES 4,300",
+        shop_hint="Shop link in bio",
+        colors=colors,
+    )
+    assert out.size == (1080, 1080)
+    # Product stays in left column — right side should remain dark (text area).
+    right_px = out.getpixel((950, 200))
+    assert sum(right_px) < 400

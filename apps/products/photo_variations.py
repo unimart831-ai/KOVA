@@ -7,7 +7,6 @@ Legacy rembg/Pillow presets remain for tests only; production uses v2/edit.
 from __future__ import annotations
 
 import logging
-import textwrap
 import uuid
 from io import BytesIO
 
@@ -191,6 +190,152 @@ def _gradient_background(width: int, height: int, top: str, bottom: str) -> Imag
     return img
 
 
+def _wrap_text_to_width(
+    draw: ImageDraw.ImageDraw,
+    text: str,
+    font,
+    max_width: int,
+) -> str:
+    """Word-wrap text using pixel width (Pillow textbbox)."""
+    words = text.split()
+    if not words:
+        return ""
+    lines: list[str] = []
+    current: list[str] = []
+    for word in words:
+        trial = " ".join(current + [word])
+        bbox = draw.textbbox((0, 0), trial, font=font)
+        if bbox[2] - bbox[0] <= max_width:
+            current.append(word)
+        else:
+            if current:
+                lines.append(" ".join(current))
+                current = [word]
+            else:
+                lines.append(word)
+                current = []
+    if current:
+        lines.append(" ".join(current))
+    return "\n".join(lines)
+
+
+def _paste_promo_product(
+    base: Image.Image,
+    product: Image.Image,
+    *,
+    cutout: bool,
+) -> tuple[int, int, int, int]:
+    """Place product in left column; return text column start x."""
+    width, height = base.size
+    col_left = int(width * 0.05)
+    col_w = int(width * 0.34)
+    margin_v = int(height * 0.14)
+    max_h = height - 2 * margin_v
+    max_w = int(width * (0.30 if cutout else 0.26))
+
+    if cutout:
+        fg = _scale_foreground(product, max_w, max_h)
+    else:
+        fg = product.convert("RGB")
+        fg.thumbnail((max_w, max_h), Image.Resampling.LANCZOS)
+
+    x = col_left + (col_w - fg.width) // 2
+    y = margin_v + (max_h - fg.height) // 2
+
+    if cutout:
+        sh = _make_shadow_layer(fg, blur=14, opacity=0.28)
+        base.paste(sh, (x, y + 8), sh)
+        base.paste(fg, (x, y), fg)
+    else:
+        pad = 12
+        card_draw = ImageDraw.Draw(base)
+        card_draw.rounded_rectangle(
+            [(x - pad, y - pad), (x + fg.width + pad, y + fg.height + pad)],
+            radius=14,
+            fill=(255, 255, 255),
+        )
+        base.paste(fg, (x, y))
+
+    text_x = col_left + col_w + int(width * 0.04)
+    return text_x, width - int(width * 0.05), y
+
+
+def _draw_promo_text(
+    img: Image.Image,
+    *,
+    text_x: int,
+    text_right: int,
+    product_name: str,
+    display_price: str,
+    shop_hint: str,
+    colors: dict,
+) -> Image.Image:
+    """Draw title, price, and shop hint in the right column."""
+    width, height = img.size
+    text_w = text_right - text_x
+    draw = ImageDraw.Draw(img)
+    title_y = int(height * 0.16)
+
+    title_size = int(height * 0.052)
+    font_title = _get_font(title_size, bold=True)
+    wrapped_name = _wrap_text_to_width(draw, product_name[:80], font_title, text_w)
+    draw.multiline_text(
+        (text_x, title_y),
+        wrapped_name,
+        font=font_title,
+        fill=_hex_to_rgb(colors["text"]),
+        spacing=int(title_size * 0.22),
+    )
+
+    name_bbox = draw.multiline_textbbox(
+        (text_x, title_y),
+        wrapped_name,
+        font=font_title,
+        spacing=int(title_size * 0.22),
+    )
+    price_y = name_bbox[3] + int(height * 0.05)
+
+    if display_price:
+        price_size = int(height * 0.072)
+        font_price = _get_font(price_size, bold=True)
+        draw.text(
+            (text_x, price_y),
+            display_price,
+            font=font_price,
+            fill=_hex_to_rgb(colors["accent"]),
+        )
+        price_bbox = draw.textbbox((text_x, price_y), display_price, font=font_price)
+        hint_y = price_bbox[3] + int(height * 0.05)
+    else:
+        hint_y = price_y
+
+    if shop_hint:
+        hint_size = int(height * 0.026)
+        font_hint = _get_font(hint_size)
+        wrapped_hint = _wrap_text_to_width(draw, shop_hint[:120], font_hint, text_w)
+        draw.multiline_text(
+            (text_x, hint_y),
+            wrapped_hint,
+            font=font_hint,
+            fill=_hex_to_rgb(colors.get("text_muted", "#B0B0B0")),
+            spacing=int(hint_size * 0.35),
+        )
+
+    return img
+
+
+def _draw_promo_border(img: Image.Image, colors: dict) -> Image.Image:
+    width, height = img.size
+    draw = ImageDraw.Draw(img)
+    draw.rounded_rectangle(
+        [(int(width * 0.04), int(height * 0.04)), (width - int(width * 0.04), height - int(height * 0.04))],
+        radius=24,
+        outline=_hex_to_rgb(colors["accent"]),
+        width=3,
+    )
+    return img
+
+
 def _paste_product_centered(
     canvas: Image.Image,
     foreground: Image.Image,
@@ -230,65 +375,19 @@ def _render_promo_frame(
 ) -> Image.Image:
     width, height = CANVAS_SIZE
     bg = _gradient_background(width, height, colors["primary"], colors["secondary"])
-    margin_x = int(width * 0.06)
-    margin_top = int(height * 0.10)
-    margin_bottom = int(height * 0.10)
-    max_w = int(width * 0.42)
-    max_h = height - margin_top - margin_bottom
-    fg = _scale_foreground(foreground, max_w, max_h)
-
     base = bg.convert("RGBA")
-    x = margin_x
-    y = margin_top + max((height - margin_top - margin_bottom - fg.height) // 2, 0)
-    sh = _make_shadow_layer(fg, blur=14, opacity=0.28)
-    base.paste(sh, (x, y + 8), sh)
-    base.paste(fg, (x, y), fg)
-
+    text_x, text_right, _ = _paste_promo_product(base, foreground, cutout=True)
     img = base.convert("RGB")
-    draw = ImageDraw.Draw(img)
-    text_x = int(width * 0.54)
-    text_w = width - text_x - int(width * 0.06)
-
-    title_size = int(height * 0.062)
-    font_title = _get_font(title_size, bold=True)
-    wrapped_name = textwrap.fill(product_name[:80], width=14)
-    draw.multiline_text(
-        (text_x, int(height * 0.22)),
-        wrapped_name,
-        font=font_title,
-        fill=_hex_to_rgb(colors["text"]),
-        spacing=int(title_size * 0.25),
+    img = _draw_promo_text(
+        img,
+        text_x=text_x,
+        text_right=text_right,
+        product_name=product_name,
+        display_price=display_price,
+        shop_hint=shop_hint,
+        colors=colors,
     )
-
-    if display_price:
-        price_size = int(height * 0.085)
-        font_price = _get_font(price_size, bold=True)
-        draw.text(
-            (text_x, int(height * 0.48)),
-            display_price,
-            font=font_price,
-            fill=_hex_to_rgb(colors["accent"]),
-        )
-
-    if shop_hint:
-        hint_size = int(height * 0.028)
-        font_hint = _get_font(hint_size)
-        wrapped_hint = textwrap.fill(shop_hint[:120], width=28)
-        draw.multiline_text(
-            (text_x, int(height * 0.62)),
-            wrapped_hint,
-            font=font_hint,
-            fill=_hex_to_rgb(colors.get("text_muted", "#B0B0B0")),
-            spacing=int(hint_size * 0.35),
-        )
-
-    draw.rounded_rectangle(
-        [(int(width * 0.04), int(height * 0.04)), (width - int(width * 0.04), height - int(height * 0.04))],
-        radius=24,
-        outline=_hex_to_rgb(colors["accent"]),
-        width=3,
-    )
-    return img
+    return _draw_promo_border(img, colors)
 
 
 def _render_promo_from_hero(
@@ -302,56 +401,19 @@ def _render_promo_from_hero(
     """Promo layout using Plus hero (no rembg)."""
     width, height = CANVAS_SIZE
     bg = _gradient_background(width, height, colors["primary"], colors["secondary"])
-    fg = hero.convert("RGB")
-    max_w = int(width * 0.44)
-    max_h = height - int(height * 0.18)
-    fg.thumbnail((max_w, max_h), Image.Resampling.LANCZOS)
-
     base = bg.convert("RGBA")
-    x = int(width * 0.05)
-    y = (height - fg.height) // 2
-    base.paste(fg, (x, y))
-
+    text_x, text_right, _ = _paste_promo_product(base, hero, cutout=False)
     img = base.convert("RGB")
-    draw = ImageDraw.Draw(img)
-    text_x = int(width * 0.54)
-    title_size = int(height * 0.062)
-    font_title = _get_font(title_size, bold=True)
-    wrapped_name = textwrap.fill(product_name[:80], width=14)
-    draw.multiline_text(
-        (text_x, int(height * 0.22)),
-        wrapped_name,
-        font=font_title,
-        fill=_hex_to_rgb(colors["text"]),
-        spacing=int(title_size * 0.25),
+    img = _draw_promo_text(
+        img,
+        text_x=text_x,
+        text_right=text_right,
+        product_name=product_name,
+        display_price=display_price,
+        shop_hint=shop_hint,
+        colors=colors,
     )
-    if display_price:
-        price_size = int(height * 0.085)
-        font_price = _get_font(price_size, bold=True)
-        draw.text(
-            (text_x, int(height * 0.48)),
-            display_price,
-            font=font_price,
-            fill=_hex_to_rgb(colors["accent"]),
-        )
-    if shop_hint:
-        hint_size = int(height * 0.028)
-        font_hint = _get_font(hint_size)
-        wrapped_hint = textwrap.fill(shop_hint[:120], width=28)
-        draw.multiline_text(
-            (text_x, int(height * 0.62)),
-            wrapped_hint,
-            font=font_hint,
-            fill=_hex_to_rgb(colors.get("text_muted", "#B0B0B0")),
-            spacing=int(hint_size * 0.35),
-        )
-    draw.rounded_rectangle(
-        [(int(width * 0.04), int(height * 0.04)), (width - int(width * 0.04), height - int(height * 0.04))],
-        radius=24,
-        outline=_hex_to_rgb(colors["accent"]),
-        width=3,
-    )
-    return img
+    return _draw_promo_border(img, colors)
 
 
 def _render_preset(
