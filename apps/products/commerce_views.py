@@ -54,6 +54,22 @@ def _whatsapp_url(profile, text: str) -> str:
     return f"https://wa.me/{whatsapp}?text={quote(text)}"
 
 
+def _product_description_paragraphs(product, profile, user) -> tuple[str, list[str]]:
+    """Buyer-facing description blocks; fall back to stored copy on format errors."""
+    try:
+        description = format_product_description(
+            product.description or "",
+            product_name=product.name,
+            brand=brand_name(profile, user),
+            price=product.display_price or "",
+        )
+    except Exception:
+        logger.exception("format_product_description failed for product %s", product.pk)
+        description = (product.description or "").strip()
+    paragraphs = [p.strip() for p in description.split("\n\n") if p.strip()]
+    return description, paragraphs
+
+
 @require_GET
 def public_shop_index(request, page_slug):
     profile, products = resolve_public_shop(page_slug)
