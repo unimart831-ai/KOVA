@@ -374,10 +374,28 @@ def _build_vision_prompt(*, offering_type, name, display_price, num_images, phot
         placeholder_hint = (
             "\n\nCRITICAL — the seller has NOT named this item yet. "
             "Read every visible word on packaging, labels, bottles, boxes, and screens. "
-            "Set detected_name to the full real product name (brand + product line, "
+            "Set detected_name and improved_name to the full real product name (brand + product line, "
             "e.g. 'Amara Body Lotion'). Include brand if visible. "
             "Never return generic names like 'New product' or 'body lotion' alone if the label shows more.\n"
         )
+    elif name:
+        placeholder_hint = (
+            f"\n\nThe seller entered a short working title: \"{name}\". "
+            "Combine this hint with packaging, labels, and visible specs to set improved_name — "
+            "a polished catalog title (brand + size + product type when visible). "
+            "Example: user \"32 TV\" → \"Samsung 32\\\" Full HD Smart LED TV\".\n"
+        )
+
+    description_block = (
+        '  "description_sentences": [\n'
+        '    "Sentence 1: what the product/service is (specific, factual)",\n'
+        '    "Sentence 2: standout benefit, spec, or quality shown",\n'
+        '    "Sentence 3: who it is perfect for",\n'
+        '    "Sentence 4 (optional): subtle reason to buy now — no hype"\n'
+        '  ],\n'
+        '  "description": "Same content as description_sentences joined into one string",\n'
+        '  "improved_name": "Marketing-ready catalog title merging seller hint + visible brand/specs",\n'
+    )
 
     if offering_type == "service":
         prompt = (
@@ -392,7 +410,7 @@ def _build_vision_prompt(*, offering_type, name, display_price, num_images, phot
             "- Client results, metrics, or testimonials\n\n"
             "Analyze this work evidence and return JSON with:\n"
             "{\n"
-            '  "description": "A compelling 2-3 sentence description of this service and the quality of work shown",\n'
+            f"{description_block}"
             '  "key_features": ["what makes this service stand out — based on the work evidence"],\n'
             '  "target_audience": "Who would hire this service provider",\n'
             '  "suggested_tags": ["tag1", "tag2", "tag3"],\n'
@@ -421,7 +439,7 @@ def _build_vision_prompt(*, offering_type, name, display_price, num_images, phot
             "- Results or outcomes from using the digital product\n\n"
             "Analyze this and return JSON with:\n"
             "{\n"
-            '  "description": "A compelling 2-3 sentence description focused on what the buyer GETS and the TRANSFORMATION/VALUE",\n'
+            f"{description_block}"
             '  "key_features": ["feature1", "feature2", "feature3"],\n'
             '  "target_audience": "Who would buy/download this",\n'
             '  "suggested_tags": ["tag1", "tag2", "tag3"],\n'
@@ -444,7 +462,7 @@ def _build_vision_prompt(*, offering_type, name, display_price, num_images, phot
             f"Number of product photos available: {num_images}\n\n"
             "Analyze this product image and return JSON with:\n"
             "{\n"
-            '  "description": "A compelling 2-3 sentence product description for social media marketing",\n'
+            f"{description_block}"
             '  "key_features": ["feature1", "feature2", "feature3"],\n'
             '  "target_audience": "Who would buy this",\n'
             '  "suggested_tags": ["tag1", "tag2", "tag3"],\n'
@@ -473,7 +491,7 @@ def _build_vision_prompt(*, offering_type, name, display_price, num_images, phot
 
 
 def _build_seed_idea(*, offering_type, name, display_price, features_text,
-                     campaign_angle, audience_text, image_note):
+                     campaign_angle, audience_text, image_note, description_text=""):
     """Build the ContentSeed idea text based on offering type."""
 
     if offering_type == "service":
@@ -503,9 +521,11 @@ def _build_seed_idea(*, offering_type, name, display_price, features_text,
             f"{image_note}"
         )
     else:  # product
+        desc_note = f" Product description: {description_text[:400]}." if description_text else ""
         return (
             f"📸 Snap to Sell: Promote {name}."
             f"{f' Price: {display_price}.' if display_price else ''}"
+            f"{desc_note}"
             f"{features_text}"
             f" Campaign angle: {campaign_angle}."
             f"{audience_text}"
@@ -516,7 +536,7 @@ def _build_seed_idea(*, offering_type, name, display_price, features_text,
 # ── Snap to Sell Carousel ────────────────────────────────────────────
 
 @shared_task(name="products.create_product_carousel_posts")
-def create_product_carousel_posts(product_id: str, seed_id: str, key_features: list):
+def create_product_carousel_posts(product_id: str, seed_id: str, key_features: list, analysis: dict | None = None):
     """
     Create carousel posts for a product after Snap to Sell analysis.
     Fires automatically when a product has 2+ images and Instagram/Facebook/LinkedIn is connected.
@@ -554,6 +574,10 @@ def create_product_carousel_posts(product_id: str, seed_id: str, key_features: l
 
     price_label = product.display_price or ""
     caption = product.name
+    if product.description:
+        lead = product.description.split("\n\n")[0].strip()
+        if lead:
+            caption += f"\n\n{lead}"
     if key_features:
         caption += "\n\n" + "\n".join(f"✅ {f}" for f in key_features[:3])
     if price_label:
@@ -579,6 +603,7 @@ def create_product_carousel_posts(product_id: str, seed_id: str, key_features: l
         media_urls = generate_product_carousel(
             post, product,
             key_features=key_features,
+            analysis=analysis or {},
             closing_cta="Shop Now",
         )
 
@@ -1070,7 +1095,7 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
             prompt=vision_prompt,
             system=system_prompts.get(offering_type, system_prompts["product"]),
             json_mode=True,
-            max_tokens=800,
+            max_tokens=1000,
         )
         analysis = parse_llm_json(vision_resp.content)
 
@@ -1114,19 +1139,13 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
         product.product_url = f"{site}{path}" if site else path
         product.save(update_fields=["product_url", "updated_at"])
 
-    if not product.description and analysis.get("description"):
-        product.description = analysis["description"]
-
-    from apps.products.commerce_seo import ensure_commerce_seo_copy
-
-    ensure_commerce_seo_copy(product, user.profile, analysis)
+    product.refresh_from_db()
 
     if analysis.get("suggested_tags"):
         existing_tags = set(product.tags or [])
         new_tags = list(existing_tags | set(analysis["suggested_tags"][:5]))
-        product.tags = new_tags[:8]  # Cap at 8 tags
-
-    product.save(update_fields=["description", "tags", "updated_at"])
+        product.tags = new_tags[:8]
+        product.save(update_fields=["tags", "updated_at"])
 
     # ── Step 2b: Studio polish (Photoroom Plus + promo frame) ────────
     from apps.products.photo_variations import expand_product_photos
@@ -1191,6 +1210,7 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
             campaign_angle=analysis.get("campaign_angle", "showcase"),
             audience_text=audience_text,
             image_note=image_note,
+            description_text=product.description or "",
         ),
         notes=(
             f"AI Vision Analysis:\n"
@@ -1219,6 +1239,7 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
             str(product.pk),
             str(seed.pk),
             features,
+            analysis,
         )
     elif num_images >= 1 and any(p in _REEL_PLATFORMS for p in platforms):
         fire_task(

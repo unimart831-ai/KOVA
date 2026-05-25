@@ -94,43 +94,11 @@ def is_placeholder_product_name(name: str) -> bool:
 
 
 def apply_ai_detected_product_fields(product, analysis: dict) -> list[str]:
-    """Fill placeholder name from vision analysis and refresh shop slug."""
-    update_fields: list[str] = []
-
-    detected_name = sanitize_product_name(
-        analysis.get("detected_name")
-        or analysis.get("product_name")
-        or analysis.get("service_name")
-        or analysis.get("name_on_package")
-        or analysis.get("label_text")
-        or ""
-    )
-    brand = sanitize_product_name(analysis.get("brand") or analysis.get("brand_name") or "")
-    if not detected_name and brand:
-        variant = sanitize_product_name(analysis.get("variant") or analysis.get("product_line") or "")
-        detected_name = sanitize_product_name(f"{brand} {variant}".strip())
-
-    if detected_name and is_placeholder_product_name(product.name):
-        product.name = detected_name[:200]
-        update_fields.append("name")
-        from apps.products.commerce_links import ensure_commerce_slug
-
-        product.commerce_slug = ""
-        slug = ensure_commerce_slug(product, save=False, force=True)
-        product.commerce_slug = slug
-        update_fields.append("commerce_slug")
-
-    if update_fields:
-        product.save(update_fields=[*update_fields, "updated_at"])
-
-    from apps.products.commerce_seo import ensure_commerce_seo_copy
+    """Improve name/description from vision analysis and refresh shop slug when needed."""
+    from apps.products.product_copy import enrich_product_copy
 
     profile = product.user.profile
-    if ensure_commerce_seo_copy(product, profile, analysis):
-        if "description" not in update_fields:
-            update_fields.append("description")
-
-    return update_fields
+    return enrich_product_copy(product, analysis, profile)
 
 
 def initial_commerce_post_status(user) -> str:

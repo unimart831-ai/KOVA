@@ -373,6 +373,296 @@ def _load_product_image(image_source: str):
         return None
 
 
+def _wrap_text(draw, text: str, font, max_width: int) -> str:
+    words = text.split()
+    if not words:
+        return ""
+    lines: list[str] = []
+    current: list[str] = []
+    for word in words:
+        trial = " ".join(current + [word])
+        bbox = draw.textbbox((0, 0), trial, font=font)
+        if bbox[2] - bbox[0] <= max_width:
+            current.append(word)
+        else:
+            if current:
+                lines.append(" ".join(current))
+                current = [word]
+            else:
+                lines.append(word)
+                current = []
+    if current:
+        lines.append(" ".join(current))
+    return "\n".join(lines)
+
+
+def _render_product_hero_hook_slide(
+    width: int,
+    height: int,
+    image_source: str,
+    headline: str,
+    subtext: str,
+    colors: dict,
+    *,
+    badge: str = "",
+    slide_num: int = 1,
+    total_slides: int = 1,
+) -> Image.Image:
+    raw = _load_product_image(image_source)
+    if raw is None:
+        return _render_title_slide(width, height, headline, subtext, colors)
+
+    img = ImageOps.fit(raw, (width, height), method=Image.Resampling.LANCZOS).convert("RGBA")
+    overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    o_draw = ImageDraw.Draw(overlay)
+    for y in range(int(height * 0.55)):
+        alpha = int(180 * (1 - y / (height * 0.55)))
+        o_draw.rectangle([(0, y), (width, y + 1)], fill=(0, 0, 0, alpha))
+    img = Image.alpha_composite(img, overlay).convert("RGB")
+    draw = ImageDraw.Draw(img)
+    padding_x = int(width * 0.07)
+
+    if badge:
+        badge_size = int(min(width, height) * 0.028)
+        font_badge = _get_font(badge_size, bold=True)
+        badge_text = badge.upper()
+        bb = draw.textbbox((0, 0), badge_text, font=font_badge)
+        bw, bh = bb[2] - bb[0], bb[3] - bb[1]
+        bx, by = padding_x, int(height * 0.06)
+        draw.rounded_rectangle(
+            [(bx - 8, by - 4), (bx + bw + 8, by + bh + 4)],
+            radius=8,
+            fill=_hex_to_rgb(colors["accent"]),
+        )
+        draw.text((bx, by), badge_text, font=font_badge, fill=(255, 255, 255))
+
+    title_size = int(min(width, height) * 0.062)
+    font_title = _get_font(title_size, bold=True)
+    wrapped_title = _wrap_text(draw, headline, font_title, width - padding_x * 2)
+    draw.multiline_text(
+        (padding_x, int(height * 0.12)),
+        wrapped_title,
+        font=font_title,
+        fill=(255, 255, 255),
+        spacing=int(title_size * 0.2),
+    )
+
+    if subtext:
+        sub_size = int(min(width, height) * 0.034)
+        font_sub = _get_font(sub_size)
+        wrapped_sub = _wrap_text(draw, subtext, font_sub, width - padding_x * 2)
+        title_bbox = draw.multiline_textbbox(
+            (padding_x, int(height * 0.12)), wrapped_title, font=font_title,
+            spacing=int(title_size * 0.2),
+        )
+        draw.multiline_text(
+            (padding_x, title_bbox[3] + int(height * 0.02)),
+            wrapped_sub,
+            font=font_sub,
+            fill=_hex_to_rgb(colors["text_muted"]),
+            spacing=int(sub_size * 0.25),
+        )
+
+    draw.text(
+        (padding_x, height - int(height * 0.08)),
+        f"{slide_num}/{total_slides}  ·  Swipe →",
+        font=_get_font(int(min(width, height) * 0.028), bold=True),
+        fill=_hex_to_rgb(colors["accent"]),
+    )
+    return img
+
+
+def _render_product_story_slide(
+    width: int,
+    height: int,
+    image_source: str,
+    headline: str,
+    body: str,
+    colors: dict,
+    *,
+    slide_num: int,
+    total_slides: int,
+) -> Image.Image:
+    raw = _load_product_image(image_source)
+    if raw is None:
+        return _render_content_slide(width, height, slide_num, total_slides, body, headline, colors)
+
+    img = ImageOps.fit(raw, (width, height), method=Image.Resampling.LANCZOS).convert("RGBA")
+    card_h = int(height * 0.42)
+    card = Image.new("RGBA", (width, card_h), (26, 26, 46, 210))
+    img.paste(card, (0, 0), card)
+    img = img.convert("RGB")
+    draw = ImageDraw.Draw(img)
+    padding_x = int(width * 0.08)
+
+    font_label = _get_font(int(min(width, height) * 0.028), bold=True)
+    draw.text(
+        (padding_x, int(height * 0.05)),
+        headline.upper(),
+        font=font_label,
+        fill=_hex_to_rgb(colors["accent"]),
+    )
+
+    body_size = int(min(width, height) * 0.038)
+    font_body = _get_font(body_size)
+    wrapped = _wrap_text(draw, body, font_body, width - padding_x * 2)
+    draw.multiline_text(
+        (padding_x, int(height * 0.10)),
+        wrapped,
+        font=font_body,
+        fill=(255, 255, 255),
+        spacing=int(body_size * 0.35),
+    )
+
+    draw.text(
+        (padding_x, height - int(height * 0.06)),
+        f"{slide_num}/{total_slides}",
+        font=_get_font(int(min(width, height) * 0.028), bold=True),
+        fill=_hex_to_rgb(colors["accent"]),
+    )
+    return img
+
+
+def _render_product_benefit_slide(
+    width: int,
+    height: int,
+    image_source: str,
+    headline: str,
+    body: str,
+    colors: dict,
+    *,
+    layout: str,
+    slide_num: int,
+    total_slides: int,
+) -> Image.Image:
+    raw = _load_product_image(image_source)
+    if raw is None:
+        return _render_content_slide(width, height, slide_num, total_slides, headline, "", colors)
+
+    img = ImageOps.fit(raw, (width, height), method=Image.Resampling.LANCZOS).convert("RGBA")
+    padding_x = int(width * 0.07)
+
+    if layout == "benefit_side":
+        panel_w = int(width * 0.52)
+        panel = Image.new("RGBA", (panel_w, height), (0, 0, 0, 180))
+        img.paste(panel, (0, 0), panel)
+        text_x, text_max_w, text_y = padding_x, panel_w - padding_x * 2, int(height * 0.28)
+    elif layout == "benefit_badge":
+        badge_h = int(height * 0.38)
+        gradient = Image.new("RGBA", (width, badge_h), (0, 0, 0, 0))
+        g_draw = ImageDraw.Draw(gradient)
+        for y in range(badge_h):
+            g_draw.rectangle([(0, y), (width, y + 1)], fill=(0, 0, 0, int(210 * (y / badge_h))))
+        img.paste(gradient, (0, height - badge_h), gradient)
+        text_x, text_max_w = padding_x, width - padding_x * 2
+        text_y = height - badge_h + int(height * 0.06)
+    else:
+        overlay_h = int(height * 0.40)
+        gradient = Image.new("RGBA", (width, overlay_h), (0, 0, 0, 0))
+        g_draw = ImageDraw.Draw(gradient)
+        for y in range(overlay_h):
+            g_draw.rectangle([(0, y), (width, y + 1)], fill=(0, 0, 0, int(220 * (y / overlay_h))))
+        img.paste(gradient, (0, height - overlay_h), gradient)
+        text_x, text_max_w = padding_x, width - padding_x * 2
+        text_y = height - overlay_h + int(height * 0.05)
+
+    img = img.convert("RGB")
+    draw = ImageDraw.Draw(img)
+    title_size = int(min(width, height) * 0.048)
+    font_title = _get_font(title_size, bold=True)
+    wrapped = _wrap_text(draw, headline, font_title, text_max_w)
+    draw.multiline_text(
+        (text_x, text_y), wrapped, font=font_title, fill=(255, 255, 255),
+        spacing=int(title_size * 0.25),
+    )
+
+    if body:
+        body_size = int(min(width, height) * 0.030)
+        font_body = _get_font(body_size)
+        title_bbox = draw.multiline_textbbox((text_x, text_y), wrapped, font=font_title)
+        wrapped_body = _wrap_text(draw, body, font_body, text_max_w)
+        draw.multiline_text(
+            (text_x, title_bbox[3] + int(height * 0.02)),
+            wrapped_body,
+            font=font_body,
+            fill=_hex_to_rgb(colors["text_muted"]),
+            spacing=int(body_size * 0.3),
+        )
+
+    draw.text(
+        (padding_x, int(height * 0.05)),
+        f"{slide_num}/{total_slides}",
+        font=_get_font(int(min(width, height) * 0.028), bold=True),
+        fill=_hex_to_rgb(colors["accent"]),
+    )
+    return img
+
+
+def _render_product_price_slide(
+    width: int,
+    height: int,
+    image_source: str,
+    price: str,
+    body: str,
+    subtext: str,
+    colors: dict,
+    *,
+    slide_num: int,
+    total_slides: int,
+) -> Image.Image:
+    raw = _load_product_image(image_source)
+    if raw is None:
+        return _render_closing_slide(width, height, price, subtext, colors)
+
+    img = ImageOps.fit(raw, (width, height), method=Image.Resampling.LANCZOS).convert("RGBA")
+    dim = Image.new("RGBA", (width, height), (0, 0, 0, 90))
+    img = Image.alpha_composite(img, dim).convert("RGB")
+    draw = ImageDraw.Draw(img)
+    padding_x = int(width * 0.08)
+
+    price_size = int(min(width, height) * 0.10)
+    font_price = _get_font(price_size, bold=True)
+    pb = draw.textbbox((0, 0), price, font=font_price)
+    pw, ph = pb[2] - pb[0], pb[3] - pb[1]
+    px = (width - pw) // 2
+    py = int(height * 0.32)
+    draw.rounded_rectangle(
+        [(px - 20, py - 12), (px + pw + 20, py + ph + 12)],
+        radius=16,
+        fill=_hex_to_rgb(colors["accent"]),
+    )
+    draw.text((px, py), price, font=font_price, fill=(255, 255, 255))
+
+    if subtext:
+        sub_size = int(min(width, height) * 0.034)
+        font_sub = _get_font(sub_size, bold=True)
+        sb = draw.textbbox((0, 0), subtext, font=font_sub)
+        sw = sb[2] - sb[0]
+        draw.text(((width - sw) // 2, py + ph + int(height * 0.04)), subtext, font=font_sub, fill=(255, 255, 255))
+
+    if body:
+        body_size = int(min(width, height) * 0.032)
+        font_body = _get_font(body_size)
+        wrapped = _wrap_text(draw, body, font_body, width - padding_x * 2)
+        bb = draw.multiline_textbbox((0, 0), wrapped, font=font_body)
+        bw = bb[2] - bb[0]
+        draw.multiline_text(
+            ((width - bw) // 2, int(height * 0.62)),
+            wrapped,
+            font=font_body,
+            fill=_hex_to_rgb(colors["text_muted"]),
+            spacing=int(body_size * 0.3),
+        )
+
+    draw.text(
+        (padding_x, height - int(height * 0.06)),
+        f"{slide_num}/{total_slides}",
+        font=_get_font(int(min(width, height) * 0.028), bold=True),
+        fill=_hex_to_rgb(colors["accent"]),
+    )
+    return img
+
+
 def _render_photo_slide(
     width: int,
     height: int,
@@ -472,54 +762,88 @@ def generate_product_carousel(
     product,
     *,
     key_features: list[str] | None = None,
+    analysis: dict | None = None,
     closing_cta: str = "Shop Now",
 ) -> list[str]:
     """
-    Generate a product photo carousel using the actual product images.
+    Story-driven product carousel: hook → story → benefits → price → CTA.
 
-    Slide structure:
-      Slide 1   — hero: primary photo + product name + price
-      Slides 2+ — one per additional photo, key feature as overlay text
-      Last      — branded CTA (brand-gradient, no photo)
-
-    Up to 5 photo slides, then the closing CTA. Returns list of saved media URLs.
+    Uses vision analysis for accurate copy and varied slide layouts.
     """
+    from apps.products.product_copy import build_product_carousel_plan
+
     all_images = product.carousel_image_urls or product.all_image_urls
     if not all_images:
         logger.warning("generate_product_carousel: product %s has no images", product.pk)
         return []
 
-    width, height = 1080, 1080  # always square for carousel
+    width, height = 1080, 1080
     profile = getattr(post.user, "profile", None)
     colors = _get_brand_palette(profile)
     brand_name = getattr(profile, "company_name", "") if profile else ""
-    price_label = product.display_price or ""
-    features = key_features or []
 
-    photo_sources = all_images[:5]
-    total_slides = len(photo_sources) + 1  # +1 closing CTA
+    slide_plan = build_product_carousel_plan(product, analysis, key_features)
+    total_slides = len(slide_plan) + 1
 
     media_urls = []
     try:
         slide_images = []
 
-        for idx, img_src in enumerate(photo_sources):
-            is_first = idx == 0
-            if is_first:
-                hero_text = f"{product.name}\n{price_label}" if price_label else product.name
-                slide = _render_photo_slide(
-                    width, height, img_src, hero_text, colors,
-                    slide_num=1, total_slides=total_slides, is_first=True,
+        for idx, spec in enumerate(slide_plan):
+            slide_num = idx + 1
+            img_src = all_images[spec.get("image_index", idx) % len(all_images)]
+            layout = spec.get("layout", "benefit_bottom")
+
+            if layout == "hero_hook":
+                slide = _render_product_hero_hook_slide(
+                    width, height, img_src,
+                    spec.get("headline", product.name),
+                    spec.get("subtext", ""),
+                    colors,
+                    badge=spec.get("badge", ""),
+                    slide_num=slide_num,
+                    total_slides=total_slides,
+                )
+            elif layout == "story_card":
+                slide = _render_product_story_slide(
+                    width, height, img_src,
+                    spec.get("headline", "The details"),
+                    spec.get("body", ""),
+                    colors,
+                    slide_num=slide_num,
+                    total_slides=total_slides,
+                )
+            elif layout == "price_reveal":
+                slide = _render_product_price_slide(
+                    width, height, img_src,
+                    spec.get("headline", product.display_price or ""),
+                    spec.get("body", ""),
+                    spec.get("subtext", product.name),
+                    colors,
+                    slide_num=slide_num,
+                    total_slides=total_slides,
+                )
+            elif layout.startswith("benefit"):
+                slide = _render_product_benefit_slide(
+                    width, height, img_src,
+                    spec.get("headline", ""),
+                    spec.get("body", ""),
+                    colors,
+                    layout=layout,
+                    slide_num=slide_num,
+                    total_slides=total_slides,
                 )
             else:
-                feature_text = features[(idx - 1) % len(features)] if features else product.name
                 slide = _render_photo_slide(
-                    width, height, img_src, feature_text, colors,
-                    slide_num=idx + 1, total_slides=total_slides, is_first=False,
+                    width, height, img_src,
+                    spec.get("headline", product.name),
+                    colors,
+                    slide_num=slide_num,
+                    total_slides=total_slides,
+                    is_first=idx == 0,
                 )
             slide_images.append(slide)
 
-        # Branded closing CTA — pure brand gradient, no product photo
         slide_images.append(
             _render_closing_slide(width, height, closing_cta, brand_name, colors)
         )
@@ -549,7 +873,7 @@ def generate_product_carousel(
         post.save(update_fields=["media_urls", "media_status", "updated_at"])
 
         logger.info(
-            "Generated %d-slide product carousel for post %s (product=%s, platform=%s)",
+            "Generated %d-slide story carousel for post %s (product=%s, platform=%s)",
             len(slide_images), post.id, product.pk, post.platform,
         )
         return media_urls

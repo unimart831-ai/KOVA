@@ -10,6 +10,7 @@ from django.conf import settings
 
 from apps.products.commerce_autopilot import is_placeholder_product_name
 from apps.products.commerce_links import commerce_link_url, resolve_page_slug
+from apps.products.product_copy import format_product_description, split_description_sentences
 
 MIN_SEO_DESCRIPTION_LEN = 40
 
@@ -277,8 +278,10 @@ def ensure_commerce_seo_copy(product, profile, analysis: dict | None = None) -> 
     city = (profile.city or "").strip()
     price = product.display_price
 
-    if analysis and (analysis.get("description") or "").strip():
-        new_desc = analysis["description"].strip()
+    if analysis and (analysis.get("description") or analysis.get("description_sentences")):
+        new_desc = format_product_description("", analysis)
+    elif analysis and (analysis.get("description") or "").strip():
+        new_desc = format_product_description(analysis["description"].strip(), analysis)
     else:
         parts = [f"Shop {product.name}"]
         if price:
@@ -313,9 +316,9 @@ def commerce_seo_checklist(product, profile) -> dict[str, Any]:
         },
         {
             "id": "description",
-            "label": "Product description (2+ sentences)",
-            "done": len(desc) >= MIN_SEO_DESCRIPTION_LEN,
-            "tip": "Add what it is, who it’s for, and why buy from you.",
+            "label": "Product description (3–4 sentences)",
+            "done": len(desc) >= MIN_SEO_DESCRIPTION_LEN and ("\n\n" in desc or len(split_description_sentences(desc)) >= 2),
+            "tip": "Describe what it is, who it’s for, key benefits, and why buy from you.",
         },
         {
             "id": "photo",
