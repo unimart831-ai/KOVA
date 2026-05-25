@@ -479,6 +479,7 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
 
     from django.conf import settings as django_settings
 
+    from apps.products.photoroom_brand_template import build_photoroom_brand_template
     from apps.products.photoroom_preflight import (
         channel_export_budget,
         run_channel_exports,
@@ -488,6 +489,7 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
     profile = getattr(product.user, "profile", None)
     plan_tier = get_effective_plan_tier(profile) if profile else "starter"
     brand_colors = _get_brand_palette(profile)
+    brand_template = build_photoroom_brand_template(profile, product.user_id)
     usage = get_visual_credit_usage(product.user)
     plan_max = get_max_variants_for_plan(plan_tier)
     if usage.get("unlimited"):
@@ -511,6 +513,7 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
         brand_colors,
         budget=repair_budget,
         plan_tier=plan_tier,
+        brand_template=brand_template,
     )
     credit_pool -= len(preflight.repairs_run)
     source = preflight.master_url
@@ -537,7 +540,9 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
             logger.info("Stopping Plus pack — credit cap for user %s", product.user_id)
             break
 
-        image_bytes = run_plus_variant(source, spec, product, analysis, brand_colors)
+        image_bytes = run_plus_variant(
+            source, spec, product, analysis, brand_colors, brand_template=brand_template
+        )
         if not image_bytes:
             failed_ids.append(spec.id)
             continue
@@ -566,6 +571,7 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
                     getattr(product, "offering_type", "product") or "product",
                     detect_product_category(product, analysis),
                 ),
+                "brand_template": brand_template.as_log_dict() if brand_template else {},
                 "api": "v2/edit",
             },
         )
@@ -589,6 +595,7 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
             brand_colors,
             budget=channel_budget,
             aspect_ratio=preflight.quality.aspect_ratio,
+            brand_template=brand_template,
         )
         new_urls.extend(channel_urls)
 
@@ -634,6 +641,7 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
             "sharpness": preflight.quality.sharpness,
             "crop": preflight.quality.crop,
         },
+        "brand_template": brand_template.as_log_dict() if brand_template else {},
         "mode": VISUAL_MODE_PRO_SCENE,
         "provider": "photoroom_plus",
         "urls": new_urls,

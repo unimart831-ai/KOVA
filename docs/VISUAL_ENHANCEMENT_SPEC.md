@@ -78,6 +78,8 @@ No rembg fallback. Partial success is allowed (some variants may fail; successes
 | File | Role |
 |------|------|
 | `apps/products/photoroom_plus.py` | Full Plus catalog + selection + API |
+| `apps/products/photoroom_brand_template.py` | Phase D seller-locked shadow, padding, seed |
+| `apps/products/photoroom_preflight.py` | Phase A preflight repair chain |
 | `apps/products/photoroom.py` | Shared helpers, messages, save |
 | `apps/products/photo_variations.py` | Multi-variant pack orchestration |
 | `apps/billing/models.py` | Credits + `plus_max_variants_per_product` |

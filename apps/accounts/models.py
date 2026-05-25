@@ -207,6 +207,14 @@ class UserProfile(models.Model):
         blank=True,
         help_text="Public URL to brand logo for overlay on graphics.",
     )
+    photoroom_brand_template = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text=(
+            "Optional locked Photoroom Plus styling: shadow_mode, padding, ai_seed, "
+            "outline_color, style_suffix, enabled."
+        ),
+    )
     # Subscription
     plan = models.CharField(max_length=20, choices=PlanTier.choices, default=PlanTier.STARTER)
     payment_provider = models.CharField(

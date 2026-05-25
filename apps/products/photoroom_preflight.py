@@ -174,6 +174,7 @@ def run_preflight_repairs(
     *,
     budget: int,
     plan_tier: str = "starter",
+    brand_template=None,
 ) -> PreflightResult:
     """
     Run up to `budget` repair Plus calls; return master URL for scene pack.
@@ -208,7 +209,9 @@ def run_preflight_repairs(
             repairs_failed.append(variant_id)
             continue
 
-        image_bytes = run_plus_variant(master_url, spec, product, analysis, brand_colors)
+        image_bytes = run_plus_variant(
+            master_url, spec, product, analysis, brand_colors, brand_template=brand_template
+        )
         if not image_bytes:
             repairs_failed.append(variant_id)
             continue
@@ -279,6 +282,7 @@ def run_channel_exports(
     *,
     budget: int,
     aspect_ratio: float = 1.0,
+    brand_template=None,
 ) -> tuple[list[str], list[str]]:
     """
     Export story + banner from best scene hero. Returns (urls, variant_ids).
@@ -303,7 +307,9 @@ def run_channel_exports(
         if not spec:
             continue
 
-        image_bytes = run_plus_variant(hero_url, spec, product, analysis, brand_colors)
+        image_bytes = run_plus_variant(
+            hero_url, spec, product, analysis, brand_colors, brand_template=brand_template
+        )
         if not image_bytes:
             continue
 

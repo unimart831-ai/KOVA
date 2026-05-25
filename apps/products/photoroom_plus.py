@@ -809,8 +809,10 @@ def resolve_variant_params(
     product,
     analysis: dict | None,
     brand_colors: dict | None,
+    brand_template=None,
 ) -> dict[str, str]:
     from apps.products.photoroom import pick_background_color_hex
+    from apps.products.photoroom_brand_template import apply_brand_template
 
     brand_colors = brand_colors or {}
     resolved: dict[str, str] = {}
@@ -855,7 +857,7 @@ def resolve_variant_params(
             resolved[key] = build_touchup_prompt(product, analysis)
         else:
             resolved[key] = value
-    return resolved
+    return apply_brand_template(resolved, brand_template, spec)
 
 
 def _slide_roles_for(offering: str, category: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
@@ -1097,8 +1099,11 @@ def run_plus_variant(
     product,
     analysis: dict | None,
     brand_colors: dict | None,
+    brand_template=None,
 ) -> bytes | None:
-    params = resolve_variant_params(spec, product, analysis, brand_colors)
+    params = resolve_variant_params(
+        spec, product, analysis, brand_colors, brand_template=brand_template
+    )
     return photoroom_edit(image_url, params, extra_headers=spec.headers)
 
 

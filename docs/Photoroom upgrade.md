@@ -1,6 +1,6 @@
 # Photoroom Upgrade — Preflight Repair & Channel Exports
 
-> **Status:** Phase A + B + C shipped  
+> **Status:** Phase A–D shipped  
 > **Last updated:** May 2026  
 > **Builds on:** `docs/VISUAL_ENHANCEMENT_SPEC.md`, `apps/products/photoroom_plus.py`
 
@@ -209,7 +209,7 @@ Preflight and channel runs record:
 |-------|---------|--------|
 | C | Slide-role orchestration (hero → lifestyle → proof → CTA) | **Shipped** |
 | **Creative** | Bold AI backgrounds (splash, marble, neon, powder…) | **Shipped** |
-| D | Seller brand template (locked shadow, padding, prompt seed) | Planned |
+| D | Seller brand template (locked shadow, padding, prompt seed) | **Shipped** |
 | E | Edit-with-AI UI + Create Any Image promos | Planned |
 | F | PhotoRoom batch API for catalog imports | Planned |
 
@@ -253,17 +253,55 @@ Prompts include product name + vision `campaign_angle`. Tagged `slide_role: crea
 
 ---
 
-## 11. Testing
+## 11. Phase D — Seller brand template (shipped)
+
+Every Plus call for a seller uses a **locked brand template** so their catalog looks cohesive.
+
+| Setting | Source | Applied to |
+|---------|--------|------------|
+| `shadow.mode` | Industry (+ override) | All cutout studio variants |
+| `padding` | Industry (+ override) | All studio variants |
+| `background.seed` | Stable hash of `user_id` | All AI background variants |
+| `outline.color` | Brand accent color | Outline variant |
+| `background.color` | Brand primary | `studio_brand` only |
+| Prompt suffix | `visual_style` + brand voice | AI / flat lay / model prompts |
+
+**Industry defaults:**
+
+- SaaS / media → `ai.floating` shadow, tighter padding  
+- Finance / legal / real estate → `ai.hard` shadow, wider padding  
+- Retail / beauty / food → `ai.soft` shadow  
+
+**Profile overrides:** `UserProfile.photoroom_brand_template` JSON:
+
+```json
+{
+  "shadow_mode": "ai.floating",
+  "padding": "0.11",
+  "ai_seed": 117879368,
+  "outline_color": "FF5733",
+  "style_suffix": "Warm Kenyan boutique aesthetic",
+  "enabled": true
+}
+```
+
+**Setting:** `PHOTOROOM_BRAND_TEMPLATE_ENABLED` (default `true`).
+
+**Migration:** `accounts.0022_userprofile_photoroom_brand_template`
+
+---
+
+## 12. Testing
 
 ```bash
-pytest tests/test_photoroom_preflight.py tests/test_photoroom_plus.py -q
+pytest tests/test_photoroom_preflight.py tests/test_photoroom_plus.py tests/test_photoroom_brand_template.py -q
 ```
 
 Manual: Snap a dark/blurry phone photo → confirm `preflight_*` URLs then `channel_story_*` in `additional_images`; reel should use story asset.
 
 ---
 
-## 12. Rollout
+## 13. Rollout
 
 1. Deploy with `PHOTOROOM_PREFLIGHT_ENABLED=true`, `PHOTOROOM_CHANNEL_EXPORTS_ENABLED=true`.
 2. Monitor credit usage in admin Photoroom tab.
