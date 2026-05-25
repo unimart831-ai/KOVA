@@ -1,17 +1,21 @@
-{# Shared reel styles for public commerce pages #}
+{# Shared reel styles for public commerce pages — flat, no floating cards #}
 <style>
   :root {
     --commerce-gallery: #16162a;
     --commerce-gallery-border: #2a2a42;
+    --commerce-radius-sm: 4px;
+    --commerce-radius-md: 6px;
   }
 
   .reels-section {
-    margin-bottom: 22px;
-    padding: 16px 14px 14px;
-    border-radius: 20px;
-    background: linear-gradient(165deg, #16162a 0%, #1e1e38 55%, #12121f 100%);
-    border: 1px solid var(--commerce-gallery-border);
-    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+    margin: 0 -16px 16px;
+    padding: 14px 16px 12px;
+    border-radius: 0;
+    background: var(--commerce-gallery);
+    border: 0;
+    border-top: 1px solid var(--commerce-gallery-border);
+    border-bottom: 1px solid var(--commerce-gallery-border);
+    box-shadow: none;
   }
 
   .reels-head {
@@ -19,7 +23,7 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   .reels-head-copy {
@@ -27,7 +31,7 @@
   }
 
   .reels-title {
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 700;
     color: #f9fafb;
     letter-spacing: -0.02em;
@@ -43,35 +47,35 @@
     font-size: 11px;
     color: #a7f3d0;
     white-space: nowrap;
-    padding: 6px 10px;
-    border-radius: 999px;
+    padding: 4px 8px;
+    border-radius: var(--commerce-radius-sm);
     background: rgba(5, 150, 105, 0.15);
-    border: 1px solid rgba(167, 243, 208, 0.25);
+    border: 1px solid rgba(167, 243, 208, 0.2);
     flex-shrink: 0;
   }
 
   .reels-track {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     overflow-x: auto;
-    padding: 2px 2px 6px;
+    padding: 2px 0 4px;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x mandatory;
   }
 
   .reels-track::-webkit-scrollbar {
-    height: 4px;
+    height: 3px;
   }
 
   .reels-track::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.18);
-    border-radius: 999px;
+    border-radius: 0;
   }
 
   .reel-card {
     position: relative;
     flex-shrink: 0;
-    width: 148px;
+    width: 140px;
     scroll-snap-align: start;
   }
 
@@ -83,7 +87,7 @@
 
   .reel-frame {
     position: relative;
-    border-radius: 16px;
+    border-radius: 0;
     overflow: hidden;
     background: #0b0b14;
     aspect-ratio: 9/16;
@@ -103,12 +107,12 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    margin-top: 8px;
-    padding: 0 2px;
+    margin-top: 6px;
+    padding: 0;
   }
 
   .reel-meta {
-    padding: 6px 2px 0;
+    padding: 4px 0 0;
   }
 
   .reel-link-meta {
@@ -122,18 +126,18 @@
     letter-spacing: 0.05em;
     color: #fff;
     background: rgba(249, 115, 22, 0.92);
-    padding: 4px 8px;
-    border-radius: 999px;
+    padding: 3px 7px;
+    border-radius: var(--commerce-radius-sm);
     pointer-events: none;
   }
 
   .reel-sound-btn {
-    width: 30px;
-    height: 30px;
-    border: 0;
-    border-radius: 999px;
-    background: #ecfdf5;
-    color: #065f46;
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(167, 243, 208, 0.35);
+    border-radius: var(--commerce-radius-sm);
+    background: rgba(236, 253, 245, 0.12);
+    color: #ecfdf5;
     font-size: 13px;
     line-height: 1;
     cursor: pointer;
@@ -161,7 +165,7 @@
 
   /* Product page hero reel */
   .product-reel-hero {
-    margin-bottom: 14px;
+    margin-bottom: 0;
   }
 
   .product-reel-head {
@@ -169,11 +173,11 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    padding: 16px 18px 0;
+    padding: 12px 16px 0;
   }
 
   .product-reel-title {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     color: var(--commerce-text, #111827);
   }
@@ -190,9 +194,9 @@
     font-weight: 600;
     color: #059669;
     background: #ecfdf5;
-    border: 1px solid #a7f3d0;
-    border-radius: 999px;
-    padding: 7px 12px;
+    border: 1px solid #d1fae5;
+    border-radius: var(--commerce-radius-sm);
+    padding: 6px 10px;
     cursor: pointer;
     white-space: nowrap;
   }
@@ -200,14 +204,15 @@
   .product-reel-frame {
     position: relative;
     width: 100%;
-    max-width: 280px;
-    margin: 12px auto 0;
-    border-radius: 18px;
+    max-width: 100%;
+    margin: 8px 0 0;
+    border-radius: 0;
     overflow: hidden;
     background: var(--commerce-gallery);
     aspect-ratio: 9/16;
-    max-height: min(68vh, 480px);
-    border: 1px solid var(--commerce-gallery-border);
+    max-height: min(62vh, 440px);
+    border: 0;
+    border-top: 1px solid var(--commerce-divider, #e5e7eb);
   }
 
   .product-reel-video {
