@@ -1,9 +1,12 @@
-{# Horizontal product reel strip with muted autoplay (visible cards only). #}
+{# Horizontal product reel strip — controls live below video, never on top of product. #}
 {% if shop_reels %}
 <section class="reels-section" aria-label="{{ reels_title|default:'Shop reels' }}">
   <div class="reels-head">
-    <h2 class="reels-title">{{ reels_title|default:"Shop reels" }}</h2>
-    <span class="reels-hint">Autoplay · tap 🔊 for sound</span>
+    <div class="reels-head-copy">
+      <h2 class="reels-title">{{ reels_title|default:"Shop reels" }}</h2>
+      <p class="reels-sub">Short clips — swipe to explore</p>
+    </div>
+    <span class="reels-hint">Tap 🔊 for sound</span>
   </div>
   <div class="reels-track" role="list">
     {% for reel in shop_reels %}
@@ -16,8 +19,14 @@
                  {% if reel.poster_url %}poster="{{ reel.poster_url }}"{% endif %}
                  muted autoplay loop playsinline preload="metadata"
                  aria-label="{{ reel.product_name }} reel"></video>
-          <span class="reel-badge">Reel</span>
         </div>
+      </a>
+      <div class="reel-bar">
+        <span class="reel-badge">Reel</span>
+        <button type="button" class="reel-sound-btn" aria-label="Toggle sound for {{ reel.product_name }}" aria-pressed="false">🔇</button>
+      </div>
+      <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=reel.commerce_slug %}"
+         class="reel-link reel-link-meta">
         <div class="reel-meta">
           <span class="reel-name">{{ reel.product_name }}</span>
           {% if reel.product_price %}
@@ -25,7 +34,6 @@
           {% endif %}
         </div>
       </a>
-      <button type="button" class="reel-sound-btn" aria-label="Toggle sound for {{ reel.product_name }}" aria-pressed="false">🔇</button>
     </article>
     {% endfor %}
   </div>

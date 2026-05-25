@@ -128,6 +128,7 @@ CATEGORY_PROOF_VARIANTS: dict[str, tuple[str, ...]] = {
     "general": ("relight", "flat_lay", "background_blur"),
 }
 CAROUSEL_EXCLUDE_URL_MARKERS = ("channel_story", "channel_banner", "preflight_")
+SHOP_GALLERY_EXCLUDE_MARKERS = CAROUSEL_EXCLUDE_URL_MARKERS + ("promo_frame",)
 
 PRODUCT_CATEGORIES = (
     "apparel",
@@ -1158,6 +1159,14 @@ def filter_carousel_urls(urls: list[str]) -> list[str]:
     return [
         u for u in urls
         if u and not any(marker in u for marker in CAROUSEL_EXCLUDE_URL_MARKERS)
+    ]
+
+
+def filter_shop_gallery_urls(urls: list[str]) -> list[str]:
+    """Buyer-facing shop galleries — product photos only, no promo/text slides."""
+    return [
+        u for u in urls
+        if u and not any(marker in u for marker in SHOP_GALLERY_EXCLUDE_MARKERS)
     ]
 
 

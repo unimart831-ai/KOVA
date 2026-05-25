@@ -39,6 +39,19 @@ def test_carousel_image_urls_excludes_channel(db):
     assert "studio_white" in product.carousel_image_urls[0]
 
 
+def test_shop_gallery_urls_excludes_promo_frame(db):
+    product = Product.objects.create(
+        name="Test",
+        additional_images=[
+            "https://cdn.example.com/studio_white.jpg",
+            "https://cdn.example.com/promo_frame_abc.jpg",
+            "https://cdn.example.com/ai_scene_table.jpg",
+        ],
+    )
+    assert len(product.shop_gallery_urls) == 2
+    assert not any("promo_frame" in u for u in product.shop_gallery_urls)
+
+
 def test_all_image_urls_skips_non_string_entries(db):
     product = Product.objects.create(
         name="Test",

@@ -3,7 +3,7 @@
 from apps.products.reel_curation import curate_reel_image_urls
 
 
-def test_curate_orders_story_then_ai_then_promo():
+def test_curate_orders_story_then_ai():
     urls = [
         "/media/promo_frame_x.jpg",
         "/media/studio_polish/x/ai_creative_neon_a.jpg",
@@ -15,7 +15,7 @@ def test_curate_orders_story_then_ai_then_promo():
     out = curate_reel_image_urls(urls)
     assert "channel_story" in out[0]
     assert "studio_white" in out[1]
-    assert out[-1] == "/media/promo_frame_x.jpg"
+    assert not any("promo_frame" in u for u in out)
     assert not any("preflight" in u for u in out)
 
 

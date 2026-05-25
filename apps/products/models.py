@@ -229,6 +229,16 @@ class Product(models.Model):
         return filter_carousel_urls(self.all_image_urls)
 
     @property
+    def shop_gallery_urls(self):
+        """Clean product photos for public shop pages — no promo/text overlay slides."""
+        from apps.products.photoroom_plus import filter_shop_gallery_urls
+
+        urls = filter_shop_gallery_urls(self.all_image_urls)
+        if urls:
+            return urls
+        return self.carousel_image_urls
+
+    @property
     def cover_image_url(self):
         """Best thumbnail: first active content image, else original if nothing else."""
         active = self.all_image_urls

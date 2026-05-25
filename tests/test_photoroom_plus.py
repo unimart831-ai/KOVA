@@ -154,6 +154,19 @@ def test_filter_carousel_urls_excludes_channel():
     assert "studio_white" in filtered[0]
 
 
+def test_filter_shop_gallery_urls_excludes_promo_frame():
+    from apps.products.photoroom_plus import filter_shop_gallery_urls
+
+    urls = [
+        "/media/studio_polish/x/studio_white_abc.jpg",
+        "/media/studio_polish/x/promo_frame_def.jpg",
+        "/media/studio_polish/x/ai_scene_table_ghi.jpg",
+    ]
+    filtered = filter_shop_gallery_urls(urls)
+    assert len(filtered) == 2
+    assert not any("promo_frame" in u for u in filtered)
+
+
 def test_beauty_gets_commerce_table_not_splash():
     p = _Product(name="Glow Serum", tags=["beauty", "skincare"])
     specs = select_plus_variants(p, {"campaign_angle": "radiant glow"}, plan_tier="growth", max_count=4)

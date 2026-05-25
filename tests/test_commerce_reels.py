@@ -92,6 +92,7 @@ class TestCommerceReels:
         content = response.content.decode()
         assert response.status_code == 200
         assert "Shop reels" in content
+        assert "Shop all" in content
         assert "reel-video" in content
         assert "muted autoplay loop playsinline" in content
         assert "https://cdn.example.com/reel.mp4" in content
@@ -119,3 +120,7 @@ class TestCommerceReels:
         assert "See it in action" in content
         assert "product-reel-video" in content
         assert "reel-unmute-btn" in content
+        reel_pos = content.find("product-reel-hero")
+        gallery_pos = content.find("gallery-card")
+        if reel_pos >= 0 and gallery_pos >= 0:
+            assert reel_pos < gallery_pos

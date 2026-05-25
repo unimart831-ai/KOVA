@@ -91,10 +91,28 @@
     background: var(--commerce-gallery);
   }
 
+  .gallery-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px 0;
+    background: var(--commerce-gallery);
+  }
+
+  .gallery-counter {
+    font-size: 11px;
+    font-weight: 600;
+    color: #d1d5db;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 5px 12px;
+    border-radius: 999px;
+    pointer-events: none;
+  }
+
   .gallery-thumbs {
     display: flex;
     gap: 10px;
-    padding: 12px 14px 14px;
+    padding: 10px 14px 14px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x proximity;
@@ -140,20 +158,6 @@
     object-fit: contain;
     background: var(--commerce-gallery);
     display: block;
-  }
-
-  .gallery-counter {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    font-size: 11px;
-    font-weight: 600;
-    color: #fff;
-    background: rgba(0, 0, 0, 0.45);
-    padding: 4px 10px;
-    border-radius: 999px;
-    pointer-events: none;
-    backdrop-filter: blur(6px);
   }
 
   /* ── Product info ── */
@@ -211,80 +215,14 @@
     border-left: 3px solid var(--commerce-accent-soft);
   }
 
-  /* ── Reel block (inside surface card) ── */
+  /* ── Reel hero (top of product page) ── */
+  .product-reel-hero {
+    margin-bottom: 14px;
+  }
+
   .product-reel-section {
-    margin-bottom: 0;
+    margin-bottom: 14px;
   }
-
-  .product-reel-section .surface-card {
-    margin-bottom: 0;
-  }
-
-  .product-reel-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 16px 18px 0;
-  }
-
-  .product-reel-title {
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--commerce-text);
-  }
-
-  .reel-unmute-btn {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--commerce-accent);
-    background: var(--commerce-accent-soft);
-    border: 1px solid #a7f3d0;
-    border-radius: 999px;
-    padding: 7px 12px;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  .product-reel-frame {
-    position: relative;
-    width: 100%;
-    max-width: 100%;
-    margin: 12px 0 0;
-    border-radius: 0;
-    overflow: hidden;
-    background: var(--commerce-gallery);
-    aspect-ratio: 9/16;
-    max-height: min(72vh, 520px);
-    border: 0;
-    border-top: 1px solid var(--commerce-border);
-    border-bottom: 1px solid var(--commerce-border);
-  }
-
-  .product-reel-video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    background: var(--commerce-gallery);
-  }
-
-  .reel-badge {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #fff;
-    background: rgba(249, 115, 22, 0.92);
-    padding: 4px 8px;
-    border-radius: 999px;
-    pointer-events: none;
-  }
-
-  /* ── Actions ── */
   .actions-title {
     font-size: 13px;
     font-weight: 700;

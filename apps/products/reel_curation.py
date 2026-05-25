@@ -6,7 +6,7 @@ Ensures reels use 2–3 distinct AI backgrounds with varied pacing, not every ex
 
 from __future__ import annotations
 
-REEL_EXCLUDE_MARKERS = ("preflight_", "channel_banner")
+REEL_EXCLUDE_MARKERS = ("preflight_", "channel_banner", "promo_frame")
 REEL_MAX_SLIDES = 7
 
 

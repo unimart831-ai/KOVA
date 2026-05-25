@@ -36,16 +36,36 @@
     <a class="brand-link" href="{{ shop_index_url }}">{{ brand_name }}</a>
   </header>
 
-  {% with gallery=product.all_image_urls %}
+  {% if product_reel %}
+  <section class="surface-card product-reel-hero" aria-label="Product reel">
+    <div class="product-reel-head">
+      <h2 class="product-reel-title">See it in action</h2>
+      <div class="product-reel-head-badges">
+        <span class="reel-badge">Reel</span>
+        <button type="button" class="reel-unmute-btn" id="reel-unmute-btn" aria-pressed="false">Tap for sound</button>
+      </div>
+    </div>
+    <div class="product-reel-frame">
+      <video id="product-reel-video"
+             class="product-reel-video"
+             src="{{ product_reel.video_url }}"
+             {% if product_reel.poster_url %}poster="{{ product_reel.poster_url }}"{% endif %}
+             muted autoplay loop playsinline preload="metadata"
+             aria-label="{{ product.name }} reel"></video>
+    </div>
+  </section>
+  {% endif %}
+
+  {% with gallery=product.shop_gallery_urls %}
   {% if gallery %}
   <section class="surface-card gallery-card" aria-label="Product photos">
     <div class="gallery-stage">
       <img id="hero-img" class="hero-main" src="{{ gallery.0 }}" alt="{{ product.name }}">
-      {% if gallery|length > 1 %}
-      <span class="gallery-counter" id="gallery-counter">1 / {{ gallery|length }}</span>
-      {% endif %}
     </div>
     {% if gallery|length > 1 %}
+    <div class="gallery-toolbar">
+      <span class="gallery-counter" id="gallery-counter">Photo 1 of {{ gallery|length }}</span>
+    </div>
     <div class="gallery-thumbs" role="tablist" aria-label="Product photos">
       {% for img in gallery %}
       <button type="button" class="thumb-btn{% if forloop.first %} active{% endif %}"
@@ -82,24 +102,6 @@
     </div>
     {% endif %}
   </section>
-
-  {% if product_reel %}
-  <section class="surface-card product-reel-section" aria-label="Product reel">
-    <div class="product-reel-head">
-      <h2 class="product-reel-title">See it in action</h2>
-      <button type="button" class="reel-unmute-btn" id="reel-unmute-btn" aria-pressed="false">Tap for sound</button>
-    </div>
-    <div class="product-reel-frame">
-      <video id="product-reel-video"
-             class="product-reel-video"
-             src="{{ product_reel.video_url }}"
-             {% if product_reel.poster_url %}poster="{{ product_reel.poster_url }}"{% endif %}
-             muted autoplay loop playsinline preload="metadata"
-             aria-label="{{ product.name }} reel"></video>
-      <span class="reel-badge">Reel</span>
-    </div>
-  </section>
-  {% endif %}
 
   {% if product.stock_status != 'out_of_stock' %}
   <section class="surface-card pad" aria-label="Buy options">
@@ -179,7 +181,7 @@ document.getElementById('pay-form').addEventListener('submit', async function(e)
       if (counter) {
         var idx = btn.getAttribute('data-index');
         var total = document.querySelectorAll('.thumb-btn').length;
-        counter.textContent = idx + ' / ' + total;
+        counter.textContent = 'Photo ' + idx + ' of ' + total;
       }
     });
   });
