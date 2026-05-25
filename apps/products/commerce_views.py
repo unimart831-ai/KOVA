@@ -125,11 +125,15 @@ def public_commerce_link(request, page_slug, commerce_slug):
         brand=brand_name(profile, user),
         price=product.display_price or "",
     )
+    product_description_paragraphs = [
+        p.strip() for p in product_description.split("\n\n") if p.strip()
+    ]
 
     return render(request, "products/public/commerce_link.html", {
         "profile": profile,
         "product": product,
         "product_description": product_description,
+        "product_description_paragraphs": product_description_paragraphs,
         "user": user,
         "shop_slug": shop_slug,
         "brand_name": brand,

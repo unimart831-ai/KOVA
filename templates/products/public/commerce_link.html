@@ -17,85 +17,93 @@
   {% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}
   <script type="application/ld+json">{{ product_schema_json|safe }}</script>
   {% include "products/public/_shop_reels_styles.html" %}
+  {% include "products/public/_commerce_page_styles.html" %}
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    body { background: #f9fafb; min-height: 100vh; color: #111; }
-    .wrap { max-width: 480px; margin: 0 auto; padding: 16px 16px 80px; }
-    .header { text-align: center; padding: 16px 0 8px; }
-    .header p { font-size: 12px; color: #6b7280; }
-    .header h1 { font-size: 14px; font-weight: 600; color: #374151; margin-top: 4px; }
-    .header a { color: #059669; text-decoration: none; }
-    .header a:hover { text-decoration: underline; }
-    .hero { border-radius: 16px; overflow: hidden; background: #1a1a2e; border: 1px solid #e5e7eb; margin-bottom: 16px; }
-    .hero img.hero-main { width: 100%; aspect-ratio: 1; object-fit: contain; display: block; background: #1a1a2e; }
-    .thumbs { display: flex; gap: 8px; padding: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .thumb-btn { flex-shrink: 0; padding: 0; border: 2px solid transparent; border-radius: 10px; background: none; cursor: pointer; transition: border-color 0.15s; }
-    .thumb-btn:hover { border-color: #a7f3d0; }
-    .thumb-btn.active { border-color: #059669; box-shadow: 0 0 0 1px #059669; }
-    .thumb-btn img { width: 56px; height: 56px; border-radius: 8px; object-fit: contain; background: #1a1a2e; display: block; }
-    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 16px; margin-bottom: 12px; }
-    .product-title { font-size: 22px; font-weight: 700; line-height: 1.2; }
-    .price { font-size: 20px; font-weight: 700; color: #059669; margin-top: 8px; }
-    .desc { font-size: 14px; color: #4b5563; margin-top: 12px; line-height: 1.6; white-space: pre-line; }
-    .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 999px; background: #fef3c7; color: #92400e; margin-top: 8px; }
-    .btn { display: block; width: 100%; text-align: center; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: 600; text-decoration: none; border: 0; cursor: pointer; margin-top: 10px; }
-    .btn-wa { background: #25D366; color: #fff; }
-    .btn-mpesa { background: #059669; color: #fff; }
-    .btn-outline { background: #fff; color: #059669; border: 1px solid #059669; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .field { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #e5e7eb; border-radius: 10px; margin-top: 8px; }
-    .msg { font-size: 13px; margin-top: 10px; padding: 10px; border-radius: 8px; display: none; }
-    .msg.ok { background: #ecfdf5; color: #065f46; display: block; }
-    .msg.err { background: #fef2f2; color: #991b1b; display: block; }
-    .footer { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 24px; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--commerce-bg);
+      color: var(--commerce-text);
+      -webkit-font-smoothing: antialiased;
+    }
   </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="header">
-    <p>Shop with</p>
-    <h1><a href="{{ shop_index_url }}">{{ brand_name }}</a></h1>
-  </div>
+<div class="commerce-page">
 
-  {% include "products/public/_product_reel_hero.html" %}
+  <header class="shop-header">
+    <p class="eyebrow">Shop with</p>
+    <a class="brand-link" href="{{ shop_index_url }}">{{ brand_name }}</a>
+  </header>
 
-  <div class="hero">
-    {% with gallery=product.all_image_urls %}
-    {% if gallery %}
-    <img id="hero-img" class="hero-main" src="{{ gallery.0 }}" alt="{{ product.name }}">
+  {% with gallery=product.all_image_urls %}
+  {% if gallery %}
+  <section class="surface-card gallery-card" aria-label="Product photos">
+    <div class="gallery-stage">
+      <img id="hero-img" class="hero-main" src="{{ gallery.0 }}" alt="{{ product.name }}">
+      {% if gallery|length > 1 %}
+      <span class="gallery-counter" id="gallery-counter">1 / {{ gallery|length }}</span>
+      {% endif %}
+    </div>
     {% if gallery|length > 1 %}
-    <div class="thumbs" role="tablist" aria-label="Product photos">
+    <div class="gallery-thumbs" role="tablist" aria-label="Product photos">
       {% for img in gallery %}
       <button type="button" class="thumb-btn{% if forloop.first %} active{% endif %}"
               role="tab" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
               aria-label="View photo {{ forloop.counter }}"
-              data-src="{{ img }}">
+              data-src="{{ img }}"
+              data-index="{{ forloop.counter }}">
         <img src="{{ img }}" alt="{{ product.name }} — photo {{ forloop.counter }}">
       </button>
       {% endfor %}
     </div>
     {% endif %}
-    {% endif %}
-    {% endwith %}
-  </div>
+  </section>
+  {% endif %}
+  {% endwith %}
 
-  <div class="card">
+  <section class="surface-card pad" aria-label="Product details">
     <h1 class="product-title">{{ product.name }}</h1>
-    {% if product.display_price %}
-    <div class="price">{{ product.display_price }}</div>
+    <div class="price-row">
+      {% if product.display_price %}
+      <div class="price">{{ product.display_price }}</div>
+      {% endif %}
+      {% if product.stock_status == 'out_of_stock' %}
+      <span class="stock-badge out">Out of stock</span>
+      {% elif product.stock_status == 'low_stock' %}
+      <span class="stock-badge">Limited stock</span>
+      {% endif %}
+    </div>
+    {% if product_description_paragraphs %}
+    <div class="desc-blocks">
+      {% for para in product_description_paragraphs %}
+      <p>{{ para }}</p>
+      {% endfor %}
+    </div>
     {% endif %}
-    {% if product.stock_status == 'out_of_stock' %}
-    <span class="badge">Out of stock</span>
-    {% elif product.stock_status == 'low_stock' %}
-    <span class="badge">Limited stock</span>
-    {% endif %}
-    {% if product_description %}
-    <p class="desc">{{ product_description }}</p>
-    {% endif %}
-  </div>
+  </section>
+
+  {% if product_reel %}
+  <section class="surface-card product-reel-section" aria-label="Product reel">
+    <div class="product-reel-head">
+      <h2 class="product-reel-title">See it in action</h2>
+      <button type="button" class="reel-unmute-btn" id="reel-unmute-btn" aria-pressed="false">Tap for sound</button>
+    </div>
+    <div class="product-reel-frame">
+      <video id="product-reel-video"
+             class="product-reel-video"
+             src="{{ product_reel.video_url }}"
+             {% if product_reel.poster_url %}poster="{{ product_reel.poster_url }}"{% endif %}
+             muted autoplay loop playsinline preload="metadata"
+             aria-label="{{ product.name }} reel"></video>
+      <span class="reel-badge">Reel</span>
+    </div>
+  </section>
+  {% endif %}
 
   {% if product.stock_status != 'out_of_stock' %}
-  <div class="card">
+  <section class="surface-card pad" aria-label="Buy options">
+    <p class="actions-title">Get this product</p>
     {% if wa_url %}
     <a href="{{ wa_url }}" class="btn btn-wa" target="_blank" rel="noopener">Chat on WhatsApp</a>
     {% endif %}
@@ -103,19 +111,19 @@
     {% if mpesa_available %}
     <form id="pay-form">
       {% csrf_token %}
-      <input class="field" type="tel" name="phone" id="phone" placeholder="M-Pesa number (07… or 254…)" required>
+      <input class="field" type="tel" name="phone" id="phone" placeholder="M-Pesa number (07… or 254…)" required autocomplete="tel">
       <button type="submit" class="btn btn-mpesa" id="pay-btn">Pay with M-Pesa</button>
     </form>
     <div id="pay-msg" class="msg"></div>
     {% elif product.display_price and product.currency != 'KES' %}
-    <p class="desc" style="margin-top:0">Contact the seller to complete payment.</p>
+    <p style="margin-top:10px;font-size:14px;color:var(--commerce-muted);line-height:1.5;">Contact the seller to complete payment.</p>
     {% endif %}
 
     <a href="{{ shop_index_url }}" class="btn btn-outline">View all products</a>
-  </div>
+  </section>
   {% endif %}
 
-  <p class="footer">Powered by Kova Commerce</p>
+  <p class="page-footer">Powered by Kova Commerce</p>
 </div>
 
 {% if mpesa_available %}
@@ -155,6 +163,7 @@ document.getElementById('pay-form').addEventListener('submit', async function(e)
 <script>
 (function () {
   var hero = document.getElementById('hero-img');
+  var counter = document.getElementById('gallery-counter');
   if (!hero) return;
   document.querySelectorAll('.thumb-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -167,6 +176,11 @@ document.getElementById('pay-form').addEventListener('submit', async function(e)
       });
       btn.classList.add('active');
       btn.setAttribute('aria-selected', 'true');
+      if (counter) {
+        var idx = btn.getAttribute('data-index');
+        var total = document.querySelectorAll('.thumb-btn').length;
+        counter.textContent = idx + ' / ' + total;
+      }
     });
   });
 })();
