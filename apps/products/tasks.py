@@ -401,7 +401,13 @@ def _build_vision_prompt(*, offering_type, name, display_price, num_images, phot
             '  "work_evidence_type": "portfolio|results|in_action|testimonial|other",\n'
             '  "credibility_hook": "One compelling sentence about why this work evidence proves expertise",\n'
             '  "detected_name": "Service name inferred from the image or null if unknown",\n'
-            '  "detected_price": null or number if a price is visible on a tag/sign'
+            '  "detected_price": null or number if a price is visible on a tag/sign",\n'
+            '  "photo_quality": {\n'
+            '    "lighting": "good|dark|uneven",\n'
+            '    "sharpness": "sharp|soft|blurry",\n'
+            '    "has_distracting_text": false,\n'
+            '    "crop": "comfortable|tight|very_tight"\n'
+            '  }'
         )
     elif offering_type == "digital":
         prompt = (
@@ -422,7 +428,13 @@ def _build_vision_prompt(*, offering_type, name, display_price, num_images, phot
             '  "visual_style": "Describe the visual aesthetic of the screenshot/preview",\n'
             '  "campaign_angle": "Best angle — focus on the OUTCOME the buyer gets, not just features",\n'
             '  "detected_name": "Product name inferred from the image or null if unknown",\n'
-            '  "detected_price": null or number if a price is visible'
+            '  "detected_price": null or number if a price is visible",\n'
+            '  "photo_quality": {\n'
+            '    "lighting": "good|dark|uneven",\n'
+            '    "sharpness": "sharp|soft|blurry",\n'
+            '    "has_distracting_text": false,\n'
+            '    "crop": "comfortable|tight|very_tight"\n'
+            '  }'
         )
     else:  # product (default)
         prompt = (
@@ -441,7 +453,13 @@ def _build_vision_prompt(*, offering_type, name, display_price, num_images, phot
             '  "detected_name": "Product name read from packaging/label or inferred from the image, null if unknown",\n'
             '  "detected_price": null or number if a price tag or label is visible,\n'
             '  "brand": "Brand name visible on packaging or null",\n'
-            '  "label_text": "All readable text on the product label"'
+            '  "label_text": "All readable text on the product label",\n'
+            '  "photo_quality": {\n'
+            '    "lighting": "good|dark|uneven",\n'
+            '    "sharpness": "sharp|soft|blurry",\n'
+            '    "has_distracting_text": false,\n'
+            '    "crop": "comfortable|tight|very_tight"\n'
+            '  }'
         )
 
     if num_images > 1:
@@ -614,7 +632,12 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
 
     def _product_reel_image_sources(product):
         sources = []
-        for url in product.all_image_urls:
+        urls = list(product.all_image_urls)
+        story_first = sorted(
+            urls,
+            key=lambda u: (0 if "channel_story" in u else 1, u),
+        )
+        for url in story_first:
             normalized = _normalize_reel_image_source(url)
             if normalized:
                 sources.append(normalized)

@@ -475,24 +475,53 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
         logger.warning("Studio polish unavailable — PHOTOROOM_API_KEY missing")
         return _studio_polish_error("photoroom_not_configured")
 
+    from django.conf import settings as django_settings
+
+    from apps.products.photoroom_preflight import (
+        channel_export_budget,
+        run_channel_exports,
+        run_preflight_repairs,
+    )
+
     profile = getattr(product.user, "profile", None)
     plan_tier = get_effective_plan_tier(profile) if profile else "starter"
     brand_colors = _get_brand_palette(profile)
     usage = get_visual_credit_usage(product.user)
     plan_max = get_max_variants_for_plan(plan_tier)
     if usage.get("unlimited"):
-        max_to_run = plan_max
+        credit_pool = plan_max
     else:
-        max_to_run = min(plan_max, max(0, usage.get("remaining", 0)))
-    if max_to_run <= 0:
+        credit_pool = min(plan_max, max(0, usage.get("remaining", 0)))
+    if credit_pool <= 0:
         return _studio_polish_error("at_limit", limit_message=msg)
 
     source = product.image.url if hasattr(product.image, "url") else str(product.image)
+
+    preflight_max = int(getattr(django_settings, "PHOTOROOM_PREFLIGHT_MAX_REPAIRS", 2))
+    repair_budget = 0
+    if getattr(django_settings, "PHOTOROOM_PREFLIGHT_ENABLED", True):
+        repair_budget = min(preflight_max, max(0, credit_pool - 1))
+
+    preflight = run_preflight_repairs(
+        source,
+        product,
+        analysis,
+        brand_colors,
+        budget=repair_budget,
+        plan_tier=plan_tier,
+    )
+    credit_pool -= len(preflight.repairs_run)
+    source = preflight.master_url
+
+    channel_slots = channel_export_budget(plan_tier)
+    channel_budget = min(channel_slots, max(0, credit_pool - 1))
+    scene_budget = max(1, credit_pool - channel_budget)
+
     variants = select_plus_variants(
         product,
         analysis,
         plan_tier=plan_tier,
-        max_count=max_to_run,
+        max_count=scene_budget,
     )
 
     new_urls: list[str] = []
@@ -529,6 +558,7 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
                 "variant": spec.id,
                 "label": spec.label,
                 "url": hero_url,
+                "phase": "scene",
                 "api": "v2/edit",
             },
         )
@@ -538,6 +568,22 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
     if not new_urls:
         reason = "photoroom_failed" if failed_ids else "photoroom_failed"
         return _studio_polish_error(reason)
+
+    channel_ids: list[str] = []
+    if channel_budget > 0 and new_urls:
+        hero_url = next(
+            (u for u in new_urls if "studio_white" in u),
+            new_urls[0],
+        )
+        channel_urls, channel_ids = run_channel_exports(
+            hero_url,
+            product,
+            analysis,
+            brand_colors,
+            budget=channel_budget,
+            aspect_ratio=preflight.quality.aspect_ratio,
+        )
+        new_urls.extend(channel_urls)
 
     try:
         if first_hero_bytes:
@@ -560,17 +606,27 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
     product.save(update_fields=["additional_images", "updated_at"])
 
     logger.info(
-        "Plus pack: product=%s variants=%d/%d failed=%s",
+        "Plus pack: product=%s variants=%d/%d failed=%s preflight=%s channel=%s",
         product.pk,
         len(variant_ids),
         len(variants),
         failed_ids,
+        preflight.repairs_run,
+        channel_ids,
     )
     return {
         "variations_created": len(new_urls),
         "plus_variants": len(variant_ids),
         "variant_ids": variant_ids,
         "failed_variants": failed_ids,
+        "preflight_repairs": preflight.repairs_run,
+        "preflight_failed": preflight.repairs_failed,
+        "channel_exports": channel_ids,
+        "photo_quality": {
+            "lighting": preflight.quality.lighting,
+            "sharpness": preflight.quality.sharpness,
+            "crop": preflight.quality.crop,
+        },
         "mode": VISUAL_MODE_PRO_SCENE,
         "provider": "photoroom_plus",
         "urls": new_urls,

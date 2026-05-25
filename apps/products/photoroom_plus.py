@@ -44,6 +44,7 @@ class PlusVariantSpec:
     offering_types: tuple[str, ...] = ("product",)
     min_plan: str = "starter"
     priority: int = 50
+    pack_eligible: bool = True  # False = preflight/channel only, not scene pack
 
 
 def _export_defaults() -> dict[str, str]:
@@ -375,6 +376,55 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         min_plan="growth",
         priority=95,
     ),
+    # ── Channel exports (Phase B — not scene pack) ───────────────────────
+    "channel_story": PlusVariantSpec(
+        id="channel_story",
+        label="Story / Reel (9:16)",
+        params={
+            **_shadow_studio(),
+            "expand.mode": "ai.auto",
+            "outputSize": "{story_output_size}",
+            "export.format": "jpeg",
+            "referenceBox": "originalImage",
+        },
+        categories=(),
+        offering_types=("product", "service", "digital"),
+        min_plan="growth",
+        priority=30,
+        pack_eligible=False,
+    ),
+    "channel_story_uncrop": PlusVariantSpec(
+        id="channel_story_uncrop",
+        label="Story / Reel uncrop (9:16)",
+        params={
+            **_shadow_studio(),
+            "uncrop.mode": "ai.auto",
+            "outputSize": "{story_output_size}",
+            "export.format": "jpeg",
+            "referenceBox": "originalImage",
+        },
+        categories=(),
+        offering_types=("product", "service", "digital"),
+        min_plan="growth",
+        priority=29,
+        pack_eligible=False,
+    ),
+    "channel_banner": PlusVariantSpec(
+        id="channel_banner",
+        label="Banner (16:9)",
+        params={
+            **_shadow_studio(),
+            "expand.mode": "ai.auto",
+            "outputSize": "{banner_output_size}",
+            "export.format": "jpeg",
+            "referenceBox": "originalImage",
+        },
+        categories=(),
+        offering_types=("product", "service", "digital"),
+        min_plan="growth",
+        priority=28,
+        pack_eligible=False,
+    ),
 }
 
 
@@ -608,6 +658,10 @@ def resolve_variant_params(
             resolved[key] = build_digital_desk_prompt(product, analysis)
         elif value == "{digital_device_prompt}":
             resolved[key] = build_digital_device_prompt(product, analysis)
+        elif value == "{story_output_size}":
+            resolved[key] = str(getattr(settings, "PHOTOROOM_STORY_SIZE", "1080x1920"))
+        elif value == "{banner_output_size}":
+            resolved[key] = str(getattr(settings, "PHOTOROOM_BANNER_SIZE", "1920x1080"))
         elif value == "{touchup_prompt}":
             resolved[key] = build_touchup_prompt(product, analysis)
         else:
@@ -629,6 +683,8 @@ def select_plus_variants(
 
     candidates: list[PlusVariantSpec] = []
     for spec in PLUS_VARIANT_CATALOG.values():
+        if not spec.pack_eligible:
+            continue
         if offering not in spec.offering_types:
             continue
         if _plan_rank(spec.min_plan) > plan_rank:

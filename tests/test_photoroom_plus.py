@@ -80,3 +80,10 @@ def test_catalog_covers_plus_feature_groups():
     assert "ai_touchup" in ids
     assert "digital_desk_hero" in ids
     assert "digital_device_mockup" in ids
+
+
+def test_channel_export_specs_in_catalog():
+    ids = set(PLUS_VARIANT_CATALOG)
+    assert "channel_story" in ids
+    assert "channel_banner" in ids
+    assert "channel_story_uncrop" in ids

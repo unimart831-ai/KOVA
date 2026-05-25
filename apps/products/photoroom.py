@@ -101,7 +101,9 @@ def _load_image_bytes(image_url: str) -> tuple[bytes, str] | None:
 
     if image_url.startswith(("http://", "https://")):
         try:
-            resp = requests.get(image_url, timeout=60)
+            import httpx
+
+            resp = httpx.get(image_url, timeout=60, follow_redirects=True)
             resp.raise_for_status()
             return resp.content, "image.jpg"
         except Exception as exc:
@@ -114,6 +116,12 @@ def _load_image_bytes(image_url: str) -> tuple[bytes, str] | None:
     buf = BytesIO()
     rgb.save(buf, format="JPEG", quality=95)
     return buf.getvalue(), "product.jpg"
+
+
+def _download_bytes_for_preflight(image_url: str) -> bytes | None:
+    """Load raw bytes for local quality metrics."""
+    loaded = _load_image_bytes(image_url)
+    return loaded[0] if loaded else None
 
 
 def _edit_params(

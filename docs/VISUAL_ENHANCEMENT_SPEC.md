@@ -1,7 +1,8 @@
 # Kova Visual Enhancement Spec (BIOS) — Photoroom Plus Full Pack
 
-> **Status:** Plus pack — all v2/edit feature groups via smart variant selection  
-> **Last updated:** May 2026
+> **Status:** Plus pack + Phase A/B preflight & channel exports  
+> **Last updated:** May 2026  
+> **See also:** `docs/Photoroom upgrade.md`
 
 ---
 
