@@ -289,6 +289,8 @@ Every Plus call for a seller uses a **locked brand template** so their catalog l
 
 **Migration:** `accounts.0022_userprofile_photoroom_brand_template`
 
+**Deploy:** Railway runs `scripts/release.sh` (Procfile `release` + `railway.toml` `releaseCommand`) before each deploy. Set `SKIP_STARTUP_MIGRATE=true` on web service to avoid duplicate migrate in `start.sh`.
+
 ---
 
 ## 12. Testing

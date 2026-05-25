@@ -25,7 +25,11 @@ fi
 echo "==> Running migrations..."
 echo "    DATABASE_URL is set: $(if [ -n \"$DATABASE_URL\" ]; then echo 'YES'; else echo 'NO - THIS IS THE PROBLEM'; fi)"
 echo "    DB host: $(echo $DATABASE_URL | sed 's/.*@\(.*\):.*/\1/' 2>/dev/null || echo 'could not parse')"
-python manage.py migrate --noinput 2>&1 || echo "WARNING: migrate failed"
+if [ "${SKIP_STARTUP_MIGRATE:-}" = "true" ]; then
+    echo "    Skipped (SKIP_STARTUP_MIGRATE=true; release phase should have run migrate)"
+else
+    python manage.py migrate --noinput
+fi
 
 echo "==> Seeding reel music beds (FFmpeg placeholders if missing)..."
 python manage.py seed_reel_music_beds 2>&1 || echo "WARNING: reel music seed failed"
