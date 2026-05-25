@@ -108,12 +108,133 @@ def normalize_description_sentences(parts: list[str]) -> list[str]:
     return [s for s in (clean_description_sentence(p) for p in parts) if s]
 
 
+MIN_DESCRIPTION_SENTENCES = 3
+MAX_DESCRIPTION_SENTENCES = 4
+
+
 def split_description_sentences(text: str) -> list[str]:
     """Split prose into sentence chunks."""
     if not text:
         return []
     parts = re.split(r"(?<=[.!?])\s+", text.strip())
     return [p.strip() for p in parts if p.strip()]
+
+
+def description_sentence_count(text: str) -> int:
+    """Count customer-facing description sentences (paragraphs or split prose)."""
+    if not (text or "").strip():
+        return 0
+    if "\n\n" in text:
+        return len(normalize_description_sentences(text.split("\n\n")))
+    return len(normalize_description_sentences(split_description_sentences(text)))
+
+
+def expand_to_description_sentences(
+    sentences: list[str],
+    *,
+    product_name: str = "",
+    analysis: dict | None = None,
+    brand: str = "",
+    price: str = "",
+) -> list[str]:
+    """Ensure at least 3 and at most 4 plain sentences for shop copy."""
+    analysis = analysis or {}
+    out: list[str] = []
+    seen: set[str] = set()
+
+    def _add(candidate: str) -> None:
+        s = clean_description_sentence(candidate)
+        if not s:
+            return
+        key = s.lower()
+        if key in seen:
+            return
+        seen.add(key)
+        out.append(s if s.endswith((".", "!", "?")) else f"{s}.")
+
+    for s in sentences:
+        _add(s)
+        if len(out) >= MAX_DESCRIPTION_SENTENCES:
+            return out[:MAX_DESCRIPTION_SENTENCES]
+
+    for s in split_description_sentences(analysis.get("description") or ""):
+        _add(s)
+        if len(out) >= MAX_DESCRIPTION_SENTENCES:
+            return out[:MAX_DESCRIPTION_SENTENCES]
+
+    name = (product_name or "This product").strip()
+    for feat in analysis.get("key_features") or []:
+        if len(out) >= MAX_DESCRIPTION_SENTENCES:
+            break
+        feat_text = strip_feature_bullet(str(feat))
+        if feat_text:
+            _add(f"Includes {feat_text.rstrip('.')}")
+
+    audience = (analysis.get("target_audience") or "").strip().rstrip(".")
+    if len(out) < MIN_DESCRIPTION_SENTENCES and audience:
+        _add(f"Ideal for {audience}")
+
+    angle = (analysis.get("campaign_angle") or "").strip().rstrip(".")
+    if len(out) < MIN_DESCRIPTION_SENTENCES and angle:
+        _add(angle)
+
+    if len(out) < MIN_DESCRIPTION_SENTENCES and brand:
+        _add(f"Available from {brand}")
+
+    if len(out) < MIN_DESCRIPTION_SENTENCES and price:
+        _add(f"Priced at {price}")
+
+    if len(out) < MIN_DESCRIPTION_SENTENCES:
+        _add(f"{name} is a quality pick for everyday use")
+
+    return out[:MAX_DESCRIPTION_SENTENCES]
+
+
+def format_product_description(
+    text: str,
+    analysis: dict | None = None,
+    *,
+    product_name: str = "",
+    brand: str = "",
+    price: str = "",
+) -> str:
+    """
+    Normalize to 3–4 sentences separated by blank lines (not one dense paragraph).
+    """
+    analysis = analysis or {}
+    sentences: list[str] = []
+
+    if isinstance(analysis.get("description_sentences"), list):
+        sentences = normalize_description_sentences(
+            [str(s) for s in analysis["description_sentences"] if str(s).strip()]
+        )
+
+    source = (text or analysis.get("description") or "").strip()
+    if source:
+        if "\n\n" in source:
+            for s in normalize_description_sentences(source.split("\n\n")):
+                if s not in sentences:
+                    sentences.append(s)
+        else:
+            for s in normalize_description_sentences(split_description_sentences(source)):
+                if s not in sentences:
+                    sentences.append(s)
+
+    sentences = expand_to_description_sentences(
+        sentences,
+        product_name=product_name,
+        analysis=analysis,
+        brand=brand,
+        price=price,
+    )
+    if len(sentences) >= MIN_DESCRIPTION_SENTENCES:
+        return "\n\n".join(sentences[:MAX_DESCRIPTION_SENTENCES])[:1000]
+
+    if sentences:
+        return "\n\n".join(sentences)[:1000]
+
+    single = clean_description_sentence(source)
+    return single[:1000]
 
 
 def should_improve_product_name(name: str, analysis: dict | None = None) -> bool:
@@ -183,36 +304,6 @@ def improve_product_name(current_name: str, analysis: dict | None) -> str:
     return user_hint[:200]
 
 
-def format_product_description(text: str, analysis: dict | None = None) -> str:
-    """
-    Normalize to 3–4 sentences separated by blank lines (not one dense paragraph).
-    """
-    analysis = analysis or {}
-    raw_sentences = analysis.get("description_sentences")
-    if isinstance(raw_sentences, list):
-        cleaned = normalize_description_sentences([str(s) for s in raw_sentences if str(s).strip()])
-        if len(cleaned) >= 2:
-            return "\n\n".join(cleaned[:4])[:1000]
-
-    source = (text or analysis.get("description") or "").strip()
-    if not source:
-        return ""
-
-    if "\n\n" in source:
-        cleaned = normalize_description_sentences(source.split("\n\n"))
-        if len(cleaned) >= 2:
-            return "\n\n".join(cleaned[:4])[:1000]
-        if len(cleaned) == 1:
-            return cleaned[0][:1000]
-
-    sentences = normalize_description_sentences(split_description_sentences(source))
-    if len(sentences) >= 2:
-        return "\n\n".join(sentences[:4])[:1000]
-
-    single = clean_description_sentence(source)
-    return single[:1000]
-
-
 def enrich_product_copy(product, analysis: dict, profile) -> list[str]:
     """
     Apply improved name + formatted description from vision analysis.
@@ -232,11 +323,23 @@ def enrich_product_copy(product, analysis: dict, profile) -> list[str]:
             product.commerce_slug = ensure_commerce_slug(product, save=False, force=True)
             update_fields.append("commerce_slug")
 
-    new_desc = format_product_description(product.description or "", analysis)
+    from apps.products.commerce_seo import brand_name
+
+    brand = brand_name(profile, product.user)
+    new_desc = format_product_description(
+        product.description or "",
+        analysis,
+        product_name=product.name,
+        brand=brand,
+        price=product.display_price or "",
+    )
+    current_count = description_sentence_count(product.description or "")
+    new_count = description_sentence_count(new_desc)
     should_update_desc = (
         not (product.description or "").strip()
-        or (analysis.get("description_sentences") and "\n\n" not in (product.description or ""))
-        or len((product.description or "").strip()) < 40
+        or current_count < MIN_DESCRIPTION_SENTENCES
+        or (new_count >= MIN_DESCRIPTION_SENTENCES and new_count > current_count)
+        or (analysis.get("description_sentences") and new_desc != (product.description or "").strip())
     )
     if should_update_desc and new_desc and new_desc != (product.description or "").strip():
         product.description = new_desc[:1000]

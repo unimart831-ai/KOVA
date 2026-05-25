@@ -10,7 +10,11 @@ from django.conf import settings
 
 from apps.products.commerce_autopilot import is_placeholder_product_name
 from apps.products.commerce_links import commerce_link_url, resolve_page_slug
-from apps.products.product_copy import format_product_description, split_description_sentences
+from apps.products.product_copy import (
+    MIN_DESCRIPTION_SENTENCES,
+    description_sentence_count,
+    format_product_description,
+)
 
 MIN_SEO_DESCRIPTION_LEN = 40
 
@@ -270,7 +274,7 @@ def build_shop_page_seo(request, profile, user, products) -> dict[str, Any]:
 def ensure_commerce_seo_copy(product, profile, analysis: dict | None = None) -> bool:
     """Fill thin product descriptions for SEO. Returns True if updated."""
     desc = (product.description or "").strip()
-    if len(desc) >= MIN_SEO_DESCRIPTION_LEN:
+    if desc and description_sentence_count(desc) >= MIN_DESCRIPTION_SENTENCES:
         return False
 
     user = product.user
@@ -279,17 +283,43 @@ def ensure_commerce_seo_copy(product, profile, analysis: dict | None = None) -> 
     price = product.display_price
 
     if analysis and (analysis.get("description") or analysis.get("description_sentences")):
-        new_desc = format_product_description("", analysis)
-    elif analysis and (analysis.get("description") or "").strip():
-        new_desc = format_product_description(analysis["description"].strip(), analysis)
+        new_desc = format_product_description(
+            "",
+            analysis,
+            product_name=product.name,
+            brand=brand,
+            price=price or "",
+        )
+    elif desc:
+        new_desc = format_product_description(
+            desc,
+            analysis,
+            product_name=product.name,
+            brand=brand,
+            price=price or "",
+        )
     else:
+        new_desc = format_product_description(
+            "",
+            analysis or {},
+            product_name=product.name,
+            brand=brand,
+            price=price or "",
+        )
+    if not new_desc:
         parts = [f"Shop {product.name}"]
         if price:
             parts.append(f"for {price}")
         parts.append(f"from {brand}")
         if city:
             parts.append(f"in {city}")
-        new_desc = " ".join(parts) + ". Pay with M-Pesa or WhatsApp."
+        new_desc = format_product_description(
+            " ".join(parts) + ". Pay with M-Pesa or WhatsApp.",
+            analysis or {},
+            product_name=product.name,
+            brand=brand,
+            price=price or "",
+        )
 
     product.description = new_desc[:1000]
     product.save(update_fields=["description", "updated_at"])
@@ -317,7 +347,7 @@ def commerce_seo_checklist(product, profile) -> dict[str, Any]:
         {
             "id": "description",
             "label": "Product description (3–4 sentences)",
-            "done": len(desc) >= MIN_SEO_DESCRIPTION_LEN and ("\n\n" in desc or len(split_description_sentences(desc)) >= 2),
+            "done": description_sentence_count(desc) >= MIN_DESCRIPTION_SENTENCES,
             "tip": "Describe what it is, who it’s for, key benefits, and why buy from you.",
         },
         {

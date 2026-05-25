@@ -2,6 +2,7 @@
 
 from apps.products.product_copy import (
     build_product_carousel_plan,
+    description_sentence_count,
     format_feature_bullets,
     format_product_description,
     improve_product_name,
@@ -51,8 +52,24 @@ def test_format_description_as_paragraphs():
         ]
     }
     out = format_product_description("", analysis)
-    assert out.count("\n\n") == 3
+    assert out.count("\n\n") >= 2
+    assert description_sentence_count(out) >= 3
     assert "32-inch smart TV" in out
+
+
+def test_format_description_expands_short_ai_output():
+    from apps.products.product_copy import description_sentence_count
+
+    analysis = {
+        "description_sentences": [
+            "This is a VON 20L microwave for quick meals.",
+            "It has a sleek design for modern kitchens.",
+        ],
+        "key_features": ["20L capacity", "Easy controls"],
+        "target_audience": "busy families",
+    }
+    out = format_product_description("", analysis, product_name="VON Microwave")
+    assert description_sentence_count(out) >= 3
 
 
 def test_format_feature_bullets_varies_emojis():
@@ -98,6 +115,7 @@ def test_clean_description_sentence_removes_labels():
     assert "Sentence 1" not in out
     assert "Sentence 2" not in out
     assert "VON microwave" in out
+    assert description_sentence_count(out) >= 3
 
 
 def test_carousel_plan_includes_story_and_price():
