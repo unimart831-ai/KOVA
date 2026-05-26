@@ -35,9 +35,10 @@
 
     <!-- Navigation -->
     {% comment %}
-      The Founder's Cut — 35 surfaces → 19.
-      Grouped by user job: CREATE, CUSTOMERS, BUSINESS, SETTINGS.
-      Broken features hidden. Related features merged into host pages.
+      Social-first navigation:
+      Home + Command stay at the top, then the app groups work into
+      SOCIAL, CUSTOMERS, COMMERCE, DEMAND, and BACKSTAGE.
+      This consolidates related tabs without deleting any capabilities.
     {% endcomment %}
     <nav class="sidebar-scroll flex-1 px-3 py-4 overflow-y-auto" aria-label="Primary">
 
@@ -47,7 +48,7 @@
         <svg class="mr-3 h-5 w-5 {% if request.resolver_match.url_name == 'home' and request.resolver_match.namespace == 'brief' %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
         </svg>
-        Home
+        Today
       </a>
 
       <a href="{% url 'command:home' %}"
@@ -56,7 +57,7 @@
         <svg class="mr-3 h-5 w-5 {% if '/command/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M5 8h14M5 12h5m4 0h5M5 16h14M7 21h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z"/>
         </svg>
-        Command
+        Workspace
       </a>
 
       {% if '/command/' in request.path %}
@@ -68,7 +69,7 @@
       </div>
       {% endif %}
 
-      <p class="nav-section">Create</p>
+      <p class="nav-section">Channels</p>
 
       {% nav_active request.path '/content/studio' '/content/voice-campaign' '/content/autopilot' '/memes/' '/media-queue/' '/content/edit/' as create_active %}
       <a href="{% url 'content:studio' %}"
@@ -100,8 +101,6 @@
         </svg>
         Queue
       </a>
-
-      <p class="nav-section">Customers</p>
 
       <a href="{% if request.plan_limits.engagement_agent %}{% url 'engage:inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}"
          {% if '/engage/' in request.path %}aria-current="page"{% endif %}
@@ -138,6 +137,8 @@
         <a href="{% url 'whatsapp:wa_analytics' %}" class="block text-xs py-1 px-2 rounded {% if 'analytics' in request.resolver_match.url_name or 'digest' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Analytics</a>
       </div>
       {% endif %}
+
+      <p class="nav-section">Leads</p>
 
       <a href="{% url 'leads:list' %}"
          {% if '/leads/' in request.path %}aria-current="page"{% endif %}
@@ -183,7 +184,7 @@
         Bookings
       </a>
 
-      <p class="nav-section">Commerce</p>
+      <p class="nav-section">Snap2sell</p>
 
       {% nav_active request.path '/analytics/revenue' '/analytics/attribution' as revenue_active %}
       <a href="{% url 'analytics:revenue' %}"
@@ -214,6 +215,8 @@
         <a href="{% url 'products:categories' %}" class="block text-xs py-1 px-2 rounded {% if '/products/categories' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Categories</a>
       </div>
       {% endif %}
+
+      <p class="nav-section">Reach</p>
 
       <a href="{% url 'links:list' %}"
          {% if '/links/' in request.path %}aria-current="page"{% endif %}
@@ -255,7 +258,7 @@
       </a>
       {% endif %}
 
-      <p class="nav-section">Settings</p>
+      <p class="nav-section">Control</p>
 
       {% nav_active request.path '/accounts/settings' '/platforms/' '/teams/' '/billing/' '/agents/' '/help/' '/analytics/pixel' '/calendar/' '/profile-health/' '/ai-learning' as settings_active %}
       <a href="{% url 'accounts:settings' %}"
@@ -418,25 +421,25 @@
   <nav class="fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 lg:hidden pb-[env(safe-area-inset-bottom)]"
        aria-label="Mobile quick navigation">
     <div class="flex items-center justify-around h-14 px-2">
-      <a href="{% url 'brief:home' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if request.resolver_match.url_name == 'home' and request.resolver_match.namespace == 'brief' %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Home">
+      <a href="{% url 'brief:home' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if request.resolver_match.url_name == 'home' and request.resolver_match.namespace == 'brief' %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Today">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-        <span class="text-[10px] font-medium">Home</span>
+        <span class="text-[10px] font-medium">Today</span>
       </a>
-      <a href="{% url 'content:studio' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/content/' in request.path or '/memes/' in request.path or '/media-queue/' in request.path or '/campaigns/' in request.path or '/emails/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Create">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-        <span class="text-[10px] font-medium">Create</span>
+      <a href="{% url 'command:home' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/command/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Workspace">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M5 8h14M5 12h5m4 0h5M5 16h14M7 21h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        <span class="text-[10px] font-medium">Workspace</span>
       </a>
-      <a href="{% url 'engage:inbox' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/engage/' in request.path or '/whatsapp/' in request.path or '/leads/' in request.path or '/bookings/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Customers">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        <span class="text-[10px] font-medium">Customers</span>
+      <a href="{% url 'content:queue' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/content/' in request.path or '/memes/' in request.path or '/media-queue/' in request.path or '/engage/' in request.path or '/whatsapp/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Channels">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+        <span class="text-[10px] font-medium">Channels</span>
       </a>
-      <a href="{% url 'products:list' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/products/' in request.path or '/analytics/revenue' in request.path or '/links/' in request.path or '/qr/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Commerce">
+      <a href="{% url 'products:list' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/products/' in request.path or '/analytics/revenue' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Snap2sell">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        <span class="text-[10px] font-medium">Commerce</span>
+        <span class="text-[10px] font-medium">Snap2sell</span>
       </a>
-      <a href="{% url 'analytics:insights' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/analytics/' in request.path and '/analytics/revenue' not in request.path and '/analytics/attribution' not in request.path and '/analytics/pixel' not in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Insights">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-        <span class="text-[10px] font-medium">Insights</span>
+      <a href="{% url 'leads:list' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/leads/' in request.path or '/emails/' in request.path or '/bookings/' in request.path or '/book/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Leads">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span class="text-[10px] font-medium">Leads</span>
       </a>
     </div>
   </nav>

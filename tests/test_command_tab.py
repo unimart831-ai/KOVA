@@ -82,3 +82,21 @@ class TestCommandTab:
         assert resp.status_code == 302
         assert resp["Location"].endswith("/command/listen/#composer")
         assert len(calls) == 1
+
+    def test_layout_uses_social_first_navigation_groups(self, client, user):
+        self._activate_user(user)
+        client.force_login(user)
+
+        resp = client.get(reverse("command:home"))
+
+        assert resp.status_code == 200
+        assert b'nav-section">Channels<' in resp.content
+        assert b'nav-section">Leads<' in resp.content
+        assert b'nav-section">Snap2sell<' in resp.content
+        assert b'nav-section">Reach<' in resp.content
+        assert b'nav-section">Control<' in resp.content
+        assert b'aria-label="Today"' in resp.content
+        assert b'aria-label="Workspace"' in resp.content
+        assert b'aria-label="Channels"' in resp.content
+        assert b'aria-label="Snap2sell"' in resp.content
+        assert b'aria-label="Leads"' in resp.content
