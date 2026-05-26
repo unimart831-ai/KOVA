@@ -1,13 +1,17 @@
-"""Batch Snap pipeline status for the live progress modal."""
+"""Batch Snap pipeline status for the live progress modal (Market Day Mode)."""
 
 from __future__ import annotations
 
 from apps.products.snap_pipeline import build_snap_pipeline_status
 
 
-def build_batch_snap_pipeline_status(product_ids, user):
+def build_batch_snap_pipeline_status(product_ids, user, session_id=None):
     """Aggregate Snap pipeline status across multiple batch-created products."""
-    from apps.products.models import Product
+    from apps.products.models import BatchSnapSession, Product
+
+    session = None
+    if session_id:
+        session = BatchSnapSession.objects.filter(pk=session_id, user=user).first()
 
     if not product_ids:
         return {
@@ -22,10 +26,13 @@ def build_batch_snap_pipeline_status(product_ids, user):
             "progress_percent": 0,
             "steps": [],
             "log": [],
+            "session_status": session.status if session else "",
+            "shop_url": session.shop_url if session else "",
+            "stall_title": session.stall_title if session else "",
         }
 
     products = list(
-        Product.objects.filter(pk__in=product_ids, user=user).order_by("created_at")
+        Product.objects.filter(pk__in=product_ids, user=user).order_by("batch_index", "created_at")
     )
     items = []
     completed = processing = failed = 0
@@ -63,37 +70,73 @@ def build_batch_snap_pipeline_status(product_ids, user):
         })
 
     total = len(items)
-    if processing:
+    session_finalizing = session and session.status == BatchSnapSession.Status.FINALIZING
+    session_done = session and session.status == BatchSnapSession.Status.COMPLETED
+
+    if session_finalizing:
         overall = "processing"
+        terminal = False
+    elif processing:
+        overall = "processing"
+        terminal = False
+    elif session and session.launch_bundle and not session_done:
+        overall = "processing"
+        terminal = False
     elif failed and not completed:
         overall = "failed"
+        terminal = True
     elif failed:
         overall = "completed"
+        terminal = True
     else:
         overall = "completed"
+        terminal = True
 
-    terminal = processing == 0
-
+    stall_label = (session.stall_title if session else "") or "Market Day"
     steps = [
         {
             "id": "batch",
-            "message": "Batch Snap launched",
-            "detail": f"{total} product{'s' if total != 1 else ''} queued for AI analysis",
+            "message": "Stall snap launched",
+            "detail": f"{total} photo{'s' if total != 1 else ''} queued — {stall_label}",
             "status": "completed",
         },
         {
             "id": "analyze",
-            "message": "Analyzing each product photo",
-            "detail": f"{completed}/{total} complete · {processing} in progress",
+            "message": "AI identifying each item",
+            "detail": f"{completed}/{total} catalogued · {processing} in progress",
             "status": "running" if processing else "completed",
         },
         {
             "id": "content",
-            "message": "Generating platform posts",
-            "detail": f"{sum(i['post_count'] for i in items)} posts drafted so far",
+            "message": "Writing posts for each item",
+            "detail": f"{sum(i['post_count'] for i in items)} platform posts drafted",
             "status": "running" if processing else ("completed" if completed else "pending"),
         },
     ]
+
+    if session and session.launch_bundle:
+        bundle_status = "pending"
+        bundle_detail = "Waiting for items to finish"
+        if session_finalizing:
+            bundle_status = "running"
+            bundle_detail = "Building showcase reel + stall announcement"
+        elif session_done:
+            bundle_status = "completed"
+            parts = ["Shop updated"]
+            if session.bundle_post_ids:
+                parts.append("showcase reel")
+            if session.bundle_seed_id:
+                parts.append("collection post")
+            if session.whatsapp_sent:
+                parts.append("WhatsApp ping sent")
+            bundle_detail = " · ".join(parts)
+
+        steps.append({
+            "id": "bundle",
+            "message": "Opening your stall",
+            "detail": bundle_detail,
+            "status": bundle_status,
+        })
 
     log = []
     for item in items:
@@ -103,17 +146,25 @@ def build_batch_snap_pipeline_status(product_ids, user):
                 "message": item["product_name"],
                 "detail": item["current_detail"] or item["current_step"],
             })
+    if session_finalizing:
+        log.append({
+            "step": "bundle",
+            "message": "Stall launch",
+            "detail": "Creating showcase reel and collection post…",
+        })
     if not log and terminal:
         log.append({
             "step": "done",
-            "message": "Batch complete",
-            "detail": f"{completed} product{'s' if completed != 1 else ''} ready",
+            "message": "Stall ready",
+            "detail": f"{completed} item{'s' if completed != 1 else ''} live in your shop",
         })
 
-    progress_percent = min(
-        98 if overall == "processing" else 100,
-        round(((completed + failed) / max(total, 1)) * 100),
-    )
+    progress_base = ((completed + failed) / max(total, 1)) * 85
+    if session_finalizing:
+        progress_base = max(progress_base, 88)
+    elif session_done:
+        progress_base = 100
+    progress_percent = min(98 if overall == "processing" else 100, round(progress_base))
 
     return {
         "status": overall,
@@ -126,5 +177,9 @@ def build_batch_snap_pipeline_status(product_ids, user):
         "steps": steps,
         "log": log[:12],
         "progress_percent": progress_percent,
-        "error_message": "" if not failed else f"{failed} product(s) failed — check catalog for details",
+        "error_message": "" if not failed else f"{failed} item(s) failed — check catalog",
+        "session_status": session.status if session else "",
+        "shop_url": session.shop_url if session else "",
+        "stall_title": session.stall_title if session else "",
+        "whatsapp_message": session.whatsapp_message if session else "",
     }

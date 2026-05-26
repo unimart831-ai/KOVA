@@ -2,35 +2,114 @@
 
 {% block page_title %}Batch Snap{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Snap multiple products → AI creates campaigns for each</p>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Market Day Mode — walk your table, open your stall</p>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto space-y-6" x-data="batchSnap()">
+<div class="max-w-2xl mx-auto space-y-6" x-data="batchSnapMarketDay('{{ voice_transcribe_url|escapejs }}')">
 
   {% include "products/_products_subnav.html" %}
 
-  {# Hero #}
-  <div class="card px-6 py-5 text-center border-2 border-dashed border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/20">
-    
-    <h2 class="text-lg font-bold text-gray-900 dark:text-white">Batch Snap — Multiple Offerings at Once</h2>
-    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-      Snap up to 10 <strong>different offerings</strong>. AI will identify each one,
-      create separate listings, and generate unique social media content for every item.
-    </p>
-    <a href="{% url 'products:snap' %}" class="inline-block mt-3 text-xs text-purple-600 dark:text-purple-400 hover:underline font-medium">
-      Just one offering? Use Snap to Sell →
-    </a>
+  {# Hero — Market Day #}
+  <div class="card px-6 py-5 border-2 border-dashed border-orange-200 dark:border-orange-800 bg-gradient-to-br from-orange-50/80 to-amber-50/50 dark:from-orange-950/30 dark:to-amber-950/20">
+    <div class="flex items-start gap-3">
+      <span class="text-2xl" aria-hidden="true">🏪</span>
+      <div>
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white">Market Day Mode</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          Photograph your whole table — AI names each item, lists your shop, writes every post,
+          and builds a showcase reel when you're done.
+        </p>
+        <a href="{% url 'products:snap' %}" class="inline-block mt-2 text-xs text-purple-600 dark:text-purple-400 hover:underline font-medium">
+          One hero product? Use Snap to Sell →
+        </a>
+      </div>
+    </div>
   </div>
 
-  {# Offering type selector — applies to all items in the batch #}
+  {# Stall setup #}
+  <div class="card p-4 space-y-4">
+    <div>
+      <label class="label text-sm font-semibold">Stall name <span class="font-normal text-gray-400">(optional)</span></label>
+      <input type="text" name="stall_title" form="batch-form" class="input text-sm"
+             placeholder="e.g. Amara's Sunday table, New shipment drop"
+             x-model="stallTitle">
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="label text-sm font-semibold">Default price</label>
+        <input type="number" name="default_price" form="batch-form" step="0.01" min="0"
+               class="input text-sm" placeholder="800" x-model="defaultPrice">
+        <p class="text-[10px] text-gray-400 mt-1">Applied when a row has no price</p>
+      </div>
+      <div>
+        <label class="label text-sm font-semibold">Currency</label>
+        <select name="default_currency" form="batch-form" class="input text-sm" x-model="defaultCurrency">
+          <option value="KES">KES</option>
+          <option value="USD">USD</option>
+          <option value="UGX">UGX</option>
+          <option value="TZS">TZS</option>
+          <option value="NGN">NGN</option>
+          <option value="GHS">GHS</option>
+        </select>
+      </div>
+    </div>
+
+    {# Voice brief #}
+    <div class="rounded-xl border border-orange-200 dark:border-orange-800/60 bg-orange-50/40 dark:bg-orange-950/20 p-4">
+      <div class="flex items-center justify-between gap-2 mb-2">
+        <label class="text-sm font-semibold text-gray-900 dark:text-white">Voice price brief</label>
+        <span class="text-[10px] text-gray-400">Optional · Swahili OK</span>
+      </div>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+        Say prices once: <em>"Everything 800 bob, XL dresses 1200, Kawaida market today."</em>
+      </p>
+
+      <div class="flex flex-wrap gap-2 mb-3">
+        <template x-if="voiceState === 'idle'">
+          <button type="button" @click="startVoice()" class="btn-secondary text-sm px-4 py-2 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-red-500"></span> Record brief
+          </button>
+        </template>
+        <template x-if="voiceState === 'recording'">
+          <button type="button" @click="stopVoice()" class="btn-primary text-sm px-4 py-2 bg-red-600 hover:bg-red-700 animate-pulse">
+            Stop · <span x-text="voiceTimer"></span>
+          </button>
+        </template>
+        <template x-if="voiceState === 'transcribing'">
+          <span class="text-sm text-gray-500 animate-pulse">Transcribing…</span>
+        </template>
+        <template x-if="voiceState === 'error'">
+          <span class="text-xs text-red-500" x-text="voiceError"></span>
+          <button type="button" @click="voiceState='idle'; voiceError=''" class="text-xs text-kova-600 underline">Retry</button>
+        </template>
+      </div>
+
+      <textarea name="voice_transcript" form="batch-form" rows="2" class="input text-sm"
+                placeholder="Or type your price notes here…"
+                x-model="voiceTranscript"></textarea>
+      <input type="hidden" name="stall_notes" form="batch-form" :value="stallNotes">
+    </div>
+
+    <label class="flex items-start gap-3 cursor-pointer">
+      <input type="checkbox" name="launch_bundle" form="batch-form" value="1" checked
+             class="mt-1 rounded border-gray-300 text-orange-600 focus:ring-orange-500">
+      <span class="text-sm text-gray-700 dark:text-gray-300">
+        <strong>Open my stall</strong> — update shop, showcase reel, collection post
+        {% if whatsapp_configured %} + WhatsApp ping{% endif %}
+      </span>
+    </label>
+  </div>
+
+  {# Offering type #}
   <div class="card p-4">
     <label class="label text-sm font-semibold mb-2">What are you selling?</label>
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
       <button type="button" @click="offeringType = 'product'"
               class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
               :class="offeringType === 'product'
-                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
                 : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
         Products
       </button>
@@ -52,28 +131,41 @@
     <p class="text-xs text-gray-500 dark:text-gray-400 mt-2" x-text="typeHints[offeringType]"></p>
   </div>
 
-  <form method="post" action="{% url 'products:snap_batch_launch' %}" enctype="multipart/form-data"
+  <form id="batch-form" method="post" action="{% url 'products:snap_batch_launch' %}" enctype="multipart/form-data"
         class="space-y-5" @submit="prepareSubmit($event)">
     {% csrf_token %}
     <input type="hidden" name="offering_type" :value="offeringType">
 
+    {# Walk mode toggle #}
+    <div class="flex items-center justify-between gap-3 px-1">
+      <div>
+        <p class="text-sm font-semibold text-gray-900 dark:text-white">Walk &amp; snap</p>
+        <p class="text-xs text-gray-500">Auto-open camera after each photo</p>
+      </div>
+      <button type="button" @click="walkMode = !walkMode"
+              class="relative w-11 h-6 rounded-full transition-colors"
+              :class="walkMode ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-600'"
+              role="switch" :aria-checked="walkMode">
+        <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
+              :class="walkMode ? 'translate-x-5' : ''"></span>
+      </button>
+    </div>
+
     {# Product cards #}
     <div class="space-y-4">
       <div class="flex items-center justify-between">
-        <label class="label text-base font-semibold mb-0">Products</label>
-        <span class="text-xs text-gray-500 dark:text-gray-400"
-              x-text="items.length + '/10 products'"></span>
+        <label class="label text-base font-semibold mb-0">Your table</label>
+        <span class="text-xs text-gray-500 dark:text-gray-400" x-text="items.length + '/10 photos'"></span>
       </div>
 
       <template x-for="(item, index) in items" :key="item.id">
-        <div class="card p-4 space-y-3 border-l-4"
-             :class="item.preview ? 'border-l-emerald-500' : 'border-l-gray-300 dark:border-l-gray-600'">
+        <div class="card p-4 space-y-3 border-l-4 transition-all"
+             :class="item.preview ? 'border-l-orange-500' : 'border-l-gray-300 dark:border-l-gray-600'">
           <div class="flex gap-4">
-            {# Photo #}
             <div class="flex-shrink-0">
               <template x-if="item.preview">
-                <div class="relative w-24 h-24 rounded-lg overflow-hidden">
-                  <img :src="item.preview" alt="Product" class="w-full h-full object-cover">
+                <div class="relative w-24 h-24 rounded-lg overflow-hidden ring-2 ring-orange-200 dark:ring-orange-800">
+                  <img :src="item.preview" alt="" class="w-full h-full object-cover">
                   <button type="button" @click="retakePhoto(index)"
                           class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] py-0.5 text-center">
                     Retake
@@ -81,49 +173,37 @@
                 </div>
               </template>
               <template x-if="!item.preview">
-                <div class="w-24 h-24 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 transition-colors"
+                <div class="w-24 h-24 border-2 border-dashed border-orange-300 dark:border-orange-700 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-orange-500 hover:bg-orange-50/50 dark:hover:bg-orange-950/20 transition-all"
                      @click="captureForItem(index)">
-                  <svg class="w-6 h-6 text-gray-400 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                  <p class="text-[9px] text-gray-400 mt-0.5">Add photo</p>
+                  <svg class="w-7 h-7 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                  <p class="text-[9px] text-orange-500 mt-1 font-medium">Snap</p>
                 </div>
               </template>
             </div>
 
-            {# Details #}
             <div class="flex-1 min-w-0 space-y-2">
               <div class="flex items-start justify-between gap-2">
-                <span class="text-xs font-bold text-gray-400 dark:text-gray-500 mt-1"
-                      x-text="'#' + (index + 1)"></span>
-                <button type="button" @click="removeItem(index)"
-                        class="text-red-400 hover:text-red-600 text-xs flex-shrink-0"
+                <span class="text-xs font-bold text-orange-500/80 mt-1" x-text="'#' + (index + 1)"></span>
+                <button type="button" @click="removeItem(index)" class="text-red-400 hover:text-red-600 text-xs"
                         x-show="items.length > 1">&times; Remove</button>
               </div>
-              <input type="text" :name="'name_' + index"
-                     class="input text-sm py-1.5"
-                     :placeholder="namePlaceholders[offeringType]"
-                     x-model="item.name">
-              {# Context field for services/digital #}
-              <input x-show="offeringType !== 'product'" x-cloak
-                     type="text" :name="'context_' + index"
-                     class="input text-sm py-1.5"
-                     :placeholder="contextPlaceholders[offeringType]"
+              <input type="text" :name="'name_' + index" class="input text-sm py-1.5"
+                     :placeholder="namePlaceholders[offeringType]" x-model="item.name">
+              <input x-show="offeringType !== 'product'" x-cloak type="text" :name="'context_' + index"
+                     class="input text-sm py-1.5" :placeholder="contextPlaceholders[offeringType]"
                      x-model="item.context">
               <div class="flex gap-2">
                 <input type="number" :name="'price_' + index" step="0.01" min="0"
                        class="input text-sm py-1.5 flex-1"
-                       placeholder="Price (optional)"
+                       :placeholder="defaultPrice ? 'Default ' + defaultPrice : 'Price (optional)'"
                        x-model="item.price">
-                <select :name="'currency_' + index" class="input text-sm py-1.5 w-20" x-model="item.currency">
+                <select :name="'currency_' + index" class="input text-sm py-1.5 w-20"
+                        x-model="item.currency || defaultCurrency">
                   <option value="KES">KES</option>
                   <option value="USD">USD</option>
                   <option value="UGX">UGX</option>
                   <option value="TZS">TZS</option>
-                  <option value="RWF">RWF</option>
                   <option value="NGN">NGN</option>
-                  <option value="GHS">GHS</option>
-                  <option value="ZAR">ZAR</option>
-                  <option value="EUR">EUR</option>
-                  <option value="GBP">GBP</option>
                 </select>
               </div>
             </div>
@@ -131,88 +211,98 @@
         </div>
       </template>
 
-      {# Add another product button #}
       <template x-if="items.length < 10">
         <div class="flex gap-3">
-          <button type="button" @click="addItem(); $nextTick(() => captureForItem(items.length - 1))"
-                  class="btn-secondary text-sm px-4 py-2.5 flex-1">
-            + Snap Another Product
+          <button type="button" @click="addAndSnap()"
+                  class="btn-primary text-sm px-4 py-3 flex-1 bg-orange-600 hover:bg-orange-700 shadow-lg shadow-orange-500/20">
+            + Snap next item
           </button>
-          <button type="button" @click="addFromGalleryBatch()"
-                  class="btn-secondary text-sm px-4 py-2.5 flex-1">
-            + From Gallery
+          <button type="button" @click="addFromGalleryBatch()" class="btn-secondary text-sm px-4 py-3 flex-1">
+            From gallery
           </button>
         </div>
       </template>
     </div>
 
-    {# Hidden file inputs #}
     <input type="file" accept="image/*" capture="environment"
            x-ref="cameraInput" @change="handleCapture($event)" class="hidden">
     <input type="file" accept="image/*" multiple
            x-ref="galleryBatch" @change="handleGalleryBatch($event)" class="hidden">
-
-    {# Hidden multi-file for form submit #}
     <input type="file" name="photos" multiple x-ref="submitInput" class="hidden">
-    {# Hidden field with item count #}
     <input type="hidden" name="item_count" :value="items.length">
 
-    {# Summary + Launch #}
-    <div class="card p-4 bg-gray-50 dark:bg-gray-800/50">
+    <div class="card p-4 bg-gray-50 dark:bg-gray-800/50 space-y-2">
       <div class="flex items-center justify-between text-sm">
-        <span class="text-gray-600 dark:text-gray-400">
-          <strong x-text="readyCount()"></strong> product<span x-show="readyCount() !== 1">s</span> with photos
+        <span class="text-gray-700 dark:text-gray-300">
+          <strong x-text="readyCount()"></strong> photo<span x-show="readyCount() !== 1">s</span> ready
         </span>
-        <span class="text-gray-500 dark:text-gray-400 text-xs">
-          AI will auto-name products without names
-        </span>
+        <span class="text-xs text-gray-500">AI names blank rows from photos</span>
       </div>
+      <p x-show="voiceTranscript" class="text-xs text-orange-600 dark:text-orange-400 line-clamp-2">
+        Voice brief: <span x-text="voiceTranscript"></span>
+      </p>
     </div>
 
-    <button type="submit"
-            :disabled="readyCount() === 0"
-            class="w-full btn-primary text-base py-3.5 rounded-xl font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 bg-orange-600 hover:bg-orange-700">
-      
-      <span x-text="readyCount() === 1
-        ? 'Launch 1 Product Campaign'
-        : 'Launch ' + readyCount() + ' Product Campaigns'"></span>
+    <button type="submit" :disabled="readyCount() === 0"
+            class="w-full btn-primary text-base py-4 rounded-xl font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 bg-orange-600 hover:bg-orange-700">
+      <span x-text="readyCount() <= 1
+        ? 'Open stall with 1 item'
+        : 'Open stall with ' + readyCount() + ' items'"></span>
     </button>
 
-    <p class="text-xs text-center text-gray-500 dark:text-gray-400">
-      Each product gets its own AI analysis, description, and social media content — all running in parallel.
+    <p class="text-xs text-center text-gray-500 dark:text-gray-400 leading-relaxed">
+      Each photo → catalog listing + platform posts. When done, your shop updates with a showcase reel
+      and stall announcement you can share on WhatsApp.
     </p>
   </form>
-
 </div>
 
 <script>
-function batchSnap() {
+function batchSnapMarketDay(transcribeUrl) {
   let nextId = 1;
 
   return {
     items: [{ id: nextId++, file: null, preview: null, name: '', price: '', currency: 'KES', context: '' }],
     captureTargetIndex: null,
     offeringType: 'product',
+    walkMode: true,
+    stallTitle: '',
+    defaultPrice: '',
+    defaultCurrency: 'KES',
+    voiceTranscript: '',
+    stallNotes: '',
+    voiceState: 'idle',
+    voiceError: '',
+    voiceTimer: '0:00',
+    _mediaRecorder: null,
+    _audioChunks: [],
+    _voiceInterval: null,
+    _voiceStarted: null,
 
     typeHints: {
-      product: 'Physical items: clothes, food, electronics, crafts, etc.',
-      service: 'Web design, consulting, photography, event planning, training, beauty, etc.',
-      digital: 'Templates, courses, ebooks, apps, presets, printables, etc.',
+      product: 'Walk your table — clothes, shoes, electronics, produce, each item one photo.',
+      service: 'Portfolio shots, before/after, work samples — one service per photo.',
+      digital: 'Screenshots or previews — one digital product per photo.',
     },
     namePlaceholders: {
-      product: 'Product name (or leave blank — AI will name it)',
-      service: 'Service name (e.g. Website Design, Brand Strategy)',
-      digital: 'Product name (e.g. Template Pack, Online Course)',
+      product: 'Name (optional — AI reads the label)',
+      service: 'Service name (optional)',
+      digital: 'Product name (optional)',
     },
     contextPlaceholders: {
       product: '',
-      service: 'What does this photo show? e.g. "Website I built for a café"',
-      digital: 'What does this show? e.g. "Dashboard view of the app"',
+      service: 'What does this show? e.g. Website for a café client',
+      digital: 'What does this show? e.g. App dashboard screenshot',
     },
 
     addItem() {
       if (this.items.length >= 10) return;
-      this.items.push({ id: nextId++, file: null, preview: null, name: '', price: '', currency: 'KES', context: '' });
+      this.items.push({ id: nextId++, file: null, preview: null, name: '', price: '', currency: this.defaultCurrency, context: '' });
+    },
+
+    addAndSnap() {
+      this.addItem();
+      this.$nextTick(() => this.captureForItem(this.items.length - 1));
     },
 
     removeItem(index) {
@@ -243,6 +333,15 @@ function batchSnap() {
       reader.onload = function(e) {
         self.items[idx].file = file;
         self.items[idx].preview = e.target.result;
+        if (!self.items[idx].currency) self.items[idx].currency = self.defaultCurrency;
+
+        if (self.walkMode && self.items.length < 10) {
+          const last = self.items[self.items.length - 1];
+          if (last.file && idx === self.items.length - 1) {
+            self.addItem();
+            self.$nextTick(() => self.captureForItem(self.items.length - 1));
+          }
+        }
       };
       reader.readAsDataURL(file);
       event.target.value = '';
@@ -259,10 +358,9 @@ function batchSnap() {
         if (!file.type.startsWith('image/')) continue;
         if (file.size > 10 * 1024 * 1024) continue;
 
-        // If the last item has no photo, fill it; otherwise add new
         let target = this.items.find(it => !it.file);
         if (!target) {
-          target = { id: nextId++, file: null, preview: null, name: '', price: '', currency: 'KES', context: '' };
+          target = { id: nextId++, file: null, preview: null, name: '', price: '', currency: this.defaultCurrency, context: '' };
           this.items.push(target);
         }
 
@@ -280,24 +378,75 @@ function batchSnap() {
       return this.items.filter(it => it.file).length;
     },
 
+    async startVoice() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus' : 'audio/webm';
+        this._audioChunks = [];
+        this._mediaRecorder = new MediaRecorder(stream, { mimeType });
+        this._mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) this._audioChunks.push(e.data); };
+        this._mediaRecorder.onstop = () => {
+          stream.getTracks().forEach(t => t.stop());
+          this._uploadVoice();
+        };
+        this._mediaRecorder.start(250);
+        this.voiceState = 'recording';
+        this._voiceStarted = Date.now();
+        this._voiceInterval = setInterval(() => {
+          const s = Math.floor((Date.now() - this._voiceStarted) / 1000);
+          this.voiceTimer = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+        }, 500);
+      } catch (err) {
+        this.voiceError = err.name === 'NotAllowedError'
+          ? 'Microphone access denied.' : err.message;
+        this.voiceState = 'error';
+      }
+    },
+
+    stopVoice() {
+      if (this._mediaRecorder && this._mediaRecorder.state === 'recording') {
+        this._mediaRecorder.stop();
+      }
+      clearInterval(this._voiceInterval);
+    },
+
+    async _uploadVoice() {
+      this.voiceState = 'transcribing';
+      const blob = new Blob(this._audioChunks, { type: this._mediaRecorder.mimeType });
+      const formData = new FormData();
+      formData.append('audio', blob, 'stall-brief.webm');
+      try {
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const resp = await fetch(transcribeUrl, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrf },
+          body: formData,
+        });
+        const data = await resp.json();
+        if (!resp.ok || data.error) {
+          this.voiceError = data.error || 'Transcription failed';
+          this.voiceState = 'error';
+          return;
+        }
+        this.voiceTranscript = data.text || '';
+        this.stallNotes = data.text || '';
+        this.voiceState = 'idle';
+      } catch (e) {
+        this.voiceError = 'Network error — type your brief instead.';
+        this.voiceState = 'error';
+      }
+    },
+
     prepareSubmit(event) {
-      // Filter to only items with photos
       const ready = this.items.filter(it => it.file);
       if (ready.length === 0) { event.preventDefault(); return; }
 
-      // Pack files in order into the hidden input
       const dt = new DataTransfer();
-      for (const item of ready) {
-        dt.items.add(item.file);
-      }
+      for (const item of ready) dt.items.add(item.file);
       this.$refs.submitInput.files = dt.files;
-
-      // Update item_count to match ready items
-      // Names/prices are sent via name_0, name_1, etc. — reindex to match file order
-      // We need to ensure the indices match the files. Let's rebuild:
-      // Remove items without photos and reindex
       this.items = ready;
-    }
+    },
   };
 }
 </script>

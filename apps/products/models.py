@@ -162,6 +162,20 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    batch_snap_session = models.ForeignKey(
+        "products.BatchSnapSession",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="products",
+        help_text="Market Day batch this product was created in (Batch Snap)",
+    )
+    batch_index = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text="Order within a Batch Snap session (0-based)",
+    )
+
     objects = ProductManager()
 
     class Meta:
@@ -421,6 +435,67 @@ class RestockScan(models.Model):
 
     def __str__(self):
         return f"RestockScan {self.pk} — {self.products_updated} updated ({self.get_status_display()})"
+
+
+class BatchSnapSession(models.Model):
+    """Market Day Mode — one Batch Snap launch (stall table → shop + content bundle)."""
+
+    class Status(models.TextChoices):
+        PROCESSING = "processing", "Processing items"
+        FINALIZING = "finalizing", "Building stall launch"
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="batch_snap_sessions",
+    )
+    stall_title = models.CharField(max_length=120, blank=True)
+    voice_transcript = models.TextField(blank=True)
+    stall_notes = models.TextField(blank=True)
+    stall_context = models.JSONField(default=dict, blank=True)
+    offering_type = models.CharField(max_length=10, default="product")
+    default_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    default_currency = models.CharField(max_length=5, default="KES")
+    launch_bundle = models.BooleanField(
+        default=True,
+        help_text="When true, create stall showcase reel + collection post + seller ping",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PROCESSING,
+        db_index=True,
+    )
+    product_count = models.PositiveSmallIntegerField(default=0)
+    items_processed = models.PositiveSmallIntegerField(default=0)
+    shop_url = models.URLField(blank=True, max_length=500)
+    bundle_seed = models.ForeignKey(
+        "content.ContentSeed",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="batch_snap_sessions",
+    )
+    bundle_post_ids = models.JSONField(default=list, blank=True)
+    whatsapp_message = models.TextField(blank=True)
+    whatsapp_sent = models.BooleanField(default=False)
+    error_message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    finalized_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["user", "status"]),
+        ]
+
+    def __str__(self):
+        title = self.stall_title or f"Batch {self.product_count} items"
+        return f"BatchSnapSession {title} ({self.get_status_display()})"
 
 
 class CommercePayment(models.Model):

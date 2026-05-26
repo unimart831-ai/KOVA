@@ -1284,55 +1284,89 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
     }
 
 
-# ── Batch Snap ───────────────────────────────────────────────────────
+# ── Batch Snap (Market Day Mode) ─────────────────────────────────────
+
+def _batch_item_form_prices(session, product_ids: list) -> dict[str, object]:
+    """Prices captured at launch time, keyed by product id string."""
+    stored = (session.stall_context or {}).get("_form_prices") or {}
+    return stored
+
 
 @shared_task(name="products.snap_batch_process")
-def snap_batch_process(product_ids: list, contexts: list = None):
+def snap_batch_process(session_id: str):
     """
-    Process a batch of products from Batch Snap.
-    Each product has one photo of a DIFFERENT product/service/digital item.
+    Market Day Mode — process every product in a BatchSnapSession.
 
-    Offering-type-aware: reads each product's offering_type and adapts
-    the vision prompt and content strategy accordingly.
-
-    For each product:
-      1. Vision AI analyzes the photo (with offering-type-aware prompt)
-      2. Auto-names the product if user left it blank (AI naming)
-      3. Enriches description, tags
-      4. Creates a ContentSeed and fires the content pipeline
+    1. Parse stall voice/text brief into structured context
+    2. Vision-identify each item with batch-aware prompts
+    3. Apply stall pricing rules + AI naming
+    4. Create per-item ContentSeeds
+    5. Finalize stall launch bundle (collection post + showcase reel)
     """
     from apps.agents.llm import analyze_image, parse_llm_json
     from apps.agents.models import AgentAction
     from apps.content.models import ContentSeed
     from apps.content.tasks import generate_from_seed
     from apps.platforms.models import SocialAccount
-    from apps.products.models import Product
+    from apps.products.batch_snap_intelligence import (
+        build_batch_identification_prompt,
+        build_batch_seed_idea,
+        build_batch_vision_system_prompt,
+        is_batch_placeholder_name,
+        parse_stall_brief,
+        resolve_batch_item_price,
+    )
+    from apps.products.commerce_seo import ensure_commerce_seo_copy
+    from apps.products.models import BatchSnapSession, Product
     from apps.utils import fire_task
 
-    if contexts is None:
-        contexts = [""] * len(product_ids)
+    try:
+        session = BatchSnapSession.objects.select_related("user", "user__profile").get(pk=session_id)
+    except BatchSnapSession.DoesNotExist:
+        logger.error("Batch Snap: session %s not found", session_id)
+        return {"error": "session_not_found"}
 
+    user = session.user
+    products = list(
+        Product.objects.filter(batch_snap_session=session, user=user).order_by("batch_index", "created_at")
+    )
+    if not products:
+        session.status = BatchSnapSession.Status.FAILED
+        session.error_message = "No products linked to this batch session."
+        session.save(update_fields=["status", "error_message"])
+        return {"error": "no_products"}
+
+    product_ids = [str(p.pk) for p in products]
+    form_prices = _batch_item_form_prices(session, product_ids)
+
+    if not session.stall_context:
+        session.stall_context = parse_stall_brief(
+            transcript=session.voice_transcript,
+            stall_title=session.stall_title,
+            default_price=session.default_price,
+            default_currency=session.default_currency,
+            offering_type=session.offering_type,
+            item_count=len(products),
+            stall_notes=session.stall_notes,
+        )
+        session.stall_context["_form_prices"] = form_prices
+        session.save(update_fields=["stall_context"])
+
+    stall_context = session.stall_context or {}
+    offering_type = session.offering_type
+    sibling_names: list[str] = []
     results = []
 
-    for product_id in product_ids:
-        try:
-            product = Product.objects.select_related("user", "category").get(pk=product_id)
-        except Product.DoesNotExist:
-            logger.error("Batch Snap: product %s not found", product_id)
-            results.append({"product_id": product_id, "error": "Not found"})
-            continue
-
-        user = product.user
-
+    for product in products:
+        pid = str(product.pk)
         if not product.all_image_urls:
-            logger.warning("Batch Snap: product %s has no image", product_id)
-            results.append({"product_id": product_id, "error": "No image"})
+            results.append({"product_id": pid, "error": "No image"})
             continue
 
-        # ── Convert image to base64 if needed ────────────────────────
         image_url = product.all_image_urls[0]
         if not image_url.startswith("http"):
             import base64
+
             try:
                 from django.core.files.storage import default_storage
 
@@ -1343,60 +1377,45 @@ def snap_batch_process(product_ids: list, contexts: list = None):
                 with open(file_path, "rb") as f:
                     encoded = base64.b64encode(f.read()).decode("utf-8")
                 ext = file_path.rsplit(".", 1)[-1].lower()
-                mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
-                        "webp": "image/webp", "gif": "image/gif"}.get(ext, "image/jpeg")
+                mime = {
+                    "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+                    "webp": "image/webp", "gif": "image/gif",
+                }.get(ext, "image/jpeg")
                 image_url = f"data:{mime};base64,{encoded}"
             except Exception as exc:
-                logger.error("Batch Snap: could not read image for %s: %s", product_id, exc)
-                results.append({"product_id": product_id, "error": str(exc)})
+                logger.error("Batch Snap: could not read image for %s: %s", pid, exc)
+                results.append({"product_id": pid, "error": str(exc)})
                 continue
 
-        # ── Vision AI — identify and analyze (offering-type-aware) ────
-        offering_type = product.offering_type
-        needs_name = "AI naming" in product.name or product.name.startswith("Product ") or product.name.startswith("Service ") or product.name.startswith("Digital Product ")
+        needs_name = is_batch_placeholder_name(product.name)
+        batch_index = product.batch_index if product.batch_index is not None else 0
+        photo_context = (stall_context.get("item_contexts") or {}).get(pid, "")
 
-        # Get photo context for this item
-        idx = product_ids.index(product_id) if product_id in product_ids else 0
-        photo_context = contexts[idx] if idx < len(contexts) else ""
-
-        # Build offering-type-aware identification prompt
-        type_labels = {"product": "product", "service": "service/work evidence", "digital": "digital product"}
-        type_label = type_labels.get(offering_type, "product")
-
-        identification_prompt = _build_vision_prompt(
+        identification_prompt = build_batch_identification_prompt(
             offering_type=offering_type,
-            name=product.name if not needs_name else "Unknown — identify from photo",
+            name=product.name,
             display_price=product.display_price or "not set",
-            num_images=1,
             photo_context=photo_context,
+            stall_context=stall_context,
+            batch_index=batch_index,
+            batch_total=len(products),
+            sibling_names=sibling_names,
+            needs_name=needs_name,
         )
-        # Add identification request for batch (AI needs to name it)
-        identification_prompt = identification_prompt.rstrip("}")
-        identification_prompt += (
-            ',\n  "product_name": "A specific, descriptive name for this '
-            f'{type_label} (identify it from the image)",\n'
-            '  "product_category": "General category"\n}'
-        )
-
-        if not needs_name:
-            identification_prompt += f"\nThe user named this: {product.name}"
 
         try:
-            system_prompts = {
-                "product": "You are a product identification expert. Always respond with valid JSON only.",
-                "service": "You are a service business expert. Identify the type of work shown and its quality. Always respond with valid JSON only.",
-                "digital": "You are a digital product expert. Identify the product type and its value proposition. Always respond with valid JSON only.",
-            }
             vision_resp = analyze_image(
                 image_url=image_url,
                 prompt=identification_prompt,
-                system=system_prompts.get(offering_type, system_prompts["product"]),
+                system=build_batch_vision_system_prompt(
+                    offering_type=offering_type,
+                    stall_context=stall_context,
+                ),
                 json_mode=True,
-                max_tokens=600,
+                max_tokens=900,
             )
             analysis = parse_llm_json(vision_resp.content)
 
-            # Log the vision call for cost tracking
             AgentAction.objects.create(
                 user=user,
                 agent_type="create",
@@ -1408,46 +1427,65 @@ def snap_batch_process(product_ids: list, contexts: list = None):
                 output_tokens=vision_resp.output_tokens,
                 tokens_used=vision_resp.total_tokens,
                 duration_ms=vision_resp.duration_ms,
-                input_data={"product_id": str(product.pk), "offering_type": offering_type, "batch": True},
+                input_data={
+                    "product_id": pid,
+                    "session_id": str(session.pk),
+                    "offering_type": offering_type,
+                    "batch_index": batch_index,
+                },
                 output_data={"analysis_keys": list(analysis.keys())},
                 completed_at=timezone.now(),
             )
         except Exception as exc:
-            logger.error("Batch Snap vision failed for %s: %s", product_id, exc)
+            logger.error("Batch Snap vision failed for %s: %s", pid, exc)
             fallback_desc = {
-                "product": "Quality product — check it out!",
+                "product": "Fresh from today's stall — quality you can trust.",
                 "service": "Professional service — see our work!",
-                "digital": "Premium digital product — get instant access!",
+                "digital": "Premium digital product — instant access.",
             }
             analysis = {
                 "product_name": product.name,
                 "description": fallback_desc.get(offering_type, fallback_desc["product"]),
                 "key_features": [],
-                "target_audience": "General consumers",
+                "target_audience": stall_context.get("category_hint") or "Local buyers",
                 "suggested_tags": [],
-                "visual_style": "Photo",
-                "campaign_angle": "showcase",
-                "product_category": "",
+                "visual_style": "Market stall photo",
+                "campaign_angle": stall_context.get("collection_angle") or "showcase",
+                "product_category": stall_context.get("category_hint") or "",
             }
 
-        # ── Auto-name the product if user didn't provide a name ──────
-        if needs_name and analysis.get("product_name"):
-            from apps.products.commerce_autopilot import sanitize_product_name
-
-            ai_name = sanitize_product_name(analysis["product_name"])[:200]
+        if needs_name:
+            ai_name = (
+                analysis.get("improved_name")
+                or analysis.get("product_name")
+                or analysis.get("detected_name")
+            )
             if ai_name:
-                base_name = ai_name
-                suffix = 0
-                while Product.objects.filter(user=user, name=ai_name).exclude(pk=product.pk).exists():
-                    suffix += 1
-                    ai_name = f"{base_name} ({suffix})"
-                product.name = ai_name
+                from apps.products.commerce_autopilot import sanitize_product_name
 
-        # ── Enrich product with AI analysis ──────────────────────────
+                ai_name = sanitize_product_name(str(ai_name))[:200]
+                if ai_name:
+                    base_name = ai_name
+                    suffix = 0
+                    while Product.objects.filter(user=user, name=ai_name).exclude(pk=product.pk).exists():
+                        suffix += 1
+                        ai_name = f"{base_name} ({suffix})"
+                    product.name = ai_name
+
+        form_price = form_prices.get(pid)
+        resolved_price, price_source = resolve_batch_item_price(
+            product=product,
+            analysis=analysis,
+            stall_context=stall_context,
+            form_price=form_price,
+        )
+        if resolved_price is not None:
+            product.price = resolved_price
+            if stall_context.get("pricing_rules", {}).get("default_currency"):
+                product.currency = stall_context["pricing_rules"]["default_currency"]
+
         if not product.description and analysis.get("description"):
             product.description = analysis["description"]
-
-        from apps.products.commerce_seo import ensure_commerce_seo_copy
 
         ensure_commerce_seo_copy(product, user.profile, analysis)
 
@@ -1456,12 +1494,11 @@ def snap_batch_process(product_ids: list, contexts: list = None):
             new_tags = list(existing_tags | set(analysis["suggested_tags"][:5]))
             product.tags = new_tags[:8]
 
-        product.save(update_fields=["name", "description", "tags", "updated_at"])
+        product.save(update_fields=["name", "description", "price", "currency", "tags", "updated_at"])
+        sibling_names.append(product.name)
 
-        # ── Create content seed and launch pipeline ──────────────────
         platforms = list(
-            SocialAccount.objects.filter(user=user, is_active=True)
-            .values_list("platform", flat=True)
+            SocialAccount.objects.filter(user=user, is_active=True).values_list("platform", flat=True)
         )
 
         features_text = ""
@@ -1475,42 +1512,237 @@ def snap_batch_process(product_ids: list, contexts: list = None):
         seed = ContentSeed.objects.create(
             user=user,
             product=product,
-            idea=_build_seed_idea(
+            idea=build_batch_seed_idea(
                 offering_type=offering_type,
-                name=product.name,
-                display_price=product.display_price,
+                product=product,
+                analysis=analysis,
+                stall_context=stall_context,
                 features_text=features_text,
-                campaign_angle=analysis.get("campaign_angle", "showcase"),
                 audience_text=audience_text,
-                image_note=" Use the uploaded photo as the hero image.",
+                image_note=" Use the uploaded stall photo as the hero image.",
             ),
             notes=(
-                f"AI Vision Analysis (Batch Snap):\n"
+                f"AI Vision Analysis (Batch Snap — Market Day):\n"
+                f"Session: {session.stall_title or session.pk}\n"
                 f"Offering type: {offering_type}\n"
-                f"Identified as: {analysis.get('product_name', product.name)}\n"
+                f"Identified as: {product.name}\n"
+                f"Price source: {price_source}\n"
                 f"Description: {analysis.get('description', '')}\n"
-                f"Category: {analysis.get('product_category', '')}\n"
-                f"Visual style: {analysis.get('visual_style', '')}\n"
-                f"Source: Batch Snap — auto-identified from photo"
+                f"Market context: {stall_context.get('market_context', '')}\n"
+                f"Campaign tone: {stall_context.get('campaign_tone', '')}"
             ),
             target_platforms=platforms[:3] if platforms else [],
         )
 
         fire_task(generate_from_seed, str(seed.id))
 
-        logger.info(
-            "Batch Snap processed: product=%s (%s), seed=%s",
-            product_id, product.name, seed.id,
-        )
+        session.items_processed = (session.items_processed or 0) + 1
+        session.save(update_fields=["items_processed"])
+
         results.append({
-            "product_id": str(product.pk),
+            "product_id": pid,
             "product_name": product.name,
             "seed_id": str(seed.pk),
             "ai_named": needs_name,
+            "price_source": price_source,
         })
 
-    logger.info("Batch Snap complete: %d/%d products processed", len(results), len(product_ids))
-    return {"processed": len(results), "results": results}
+    logger.info(
+        "Batch Snap items complete: session=%s processed=%d/%d",
+        session_id, len(results), len(products),
+    )
+
+    if session.launch_bundle:
+        fire_task(finalize_batch_snap_session, str(session.pk))
+    else:
+        session.status = BatchSnapSession.Status.COMPLETED
+        session.finalized_at = timezone.now()
+        session.save(update_fields=["status", "finalized_at"])
+
+    return {"processed": len(results), "results": results, "session_id": str(session.pk)}
+
+
+@shared_task(name="products.finalize_batch_snap_session")
+def finalize_batch_snap_session(session_id: str):
+    """Stall launch bundle: collection seed, showcase reel, seller WhatsApp ping."""
+    from apps.agents.models import AgentAction
+    from apps.content.models import ContentSeed, Post
+    from apps.content.tasks import compose_reel_video, generate_from_seed, _normalize_reel_image_source
+    from apps.platforms.models import SocialAccount
+    from apps.products.batch_snap_intelligence import build_stall_launch_campaign
+    from apps.products.commerce_autopilot import initial_commerce_post_status
+    from apps.products.commerce_links import resolve_page_slug
+    from apps.products.models import BatchSnapSession, Product
+    from apps.utils import fire_task
+
+    try:
+        session = BatchSnapSession.objects.select_related("user", "user__profile").get(pk=session_id)
+    except BatchSnapSession.DoesNotExist:
+        return {"error": "session_not_found"}
+
+    session.status = BatchSnapSession.Status.FINALIZING
+    session.save(update_fields=["status"])
+
+    user = session.user
+    profile = user.profile
+    products = list(
+        Product.objects.filter(batch_snap_session=session, user=user, is_active=True)
+        .order_by("batch_index", "created_at")
+    )
+
+    from django.conf import settings
+
+    page_slug = resolve_page_slug(profile)
+    site = getattr(settings, "SITE_URL", "").rstrip("/")
+    shop_url = f"{site}/shop/{page_slug}/" if site else f"/shop/{page_slug}/"
+    session.shop_url = shop_url
+
+    stall_context = session.stall_context or {}
+    campaign = build_stall_launch_campaign(
+        stall_context=stall_context,
+        products=products,
+        profile=profile,
+        shop_url=shop_url,
+    )
+    session.whatsapp_message = campaign.get("whatsapp_message", "")
+
+    platforms = list(
+        SocialAccount.objects.filter(user=user, is_active=True).values_list("platform", flat=True)
+    )
+
+    collection_seed = ContentSeed.objects.create(
+        user=user,
+        idea=campaign.get("collection_idea", ""),
+        notes=(
+            f"Batch Snap stall launch — {session.stall_title or 'Market Day'}\n"
+            f"Products: {', '.join(p.name for p in products[:15])}\n"
+            f"Shop: {shop_url}\n"
+            f"WhatsApp hook: {campaign.get('whatsapp_message', '')}"
+        ),
+        target_platforms=platforms[:4] if platforms else [],
+    )
+    session.bundle_seed = collection_seed
+    fire_task(generate_from_seed, str(collection_seed.pk))
+
+    REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
+    reel_accounts = SocialAccount.objects.filter(
+        user=user, is_active=True, platform__in=REEL_PLATFORMS,
+    )
+
+    image_sources = []
+    for product in products[:10]:
+        if product.image:
+            normalized = _normalize_reel_image_source(product.image.url)
+            if normalized:
+                image_sources.append(normalized)
+
+    bundle_post_ids = []
+    initial_status = initial_commerce_post_status(user)
+    reel_caption = campaign.get("reel_caption") or f"Shop today: {shop_url}"
+
+    if len(image_sources) >= 2 and reel_accounts.exists():
+        for account in reel_accounts:
+            post = Post.objects.create(
+                user=user,
+                platform=account.platform,
+                content_text=reel_caption[:2200],
+                status=initial_status,
+                visual_strategy="carousel",
+                visual_metadata={
+                    "reel_template": "slideshow",
+                    "source_images": image_sources,
+                    "music_mood": "upbeat",
+                    "video_compose_status": "pending",
+                    "batch_snap_session_id": str(session.pk),
+                    "reel_hook_text": campaign.get("reel_hook_text", ""),
+                },
+            )
+            bundle_post_ids.append(str(post.pk))
+            fire_task(compose_reel_video, str(post.pk))
+
+    session.bundle_post_ids = bundle_post_ids
+
+    AgentAction.objects.create(
+        user=user,
+        agent_type="create",
+        action_type="snap.stall_launch",
+        description=(
+            f"Stall launch bundle: {len(products)} items, "
+            f"{len(bundle_post_ids)} showcase reel(s)"
+        ),
+        status=AgentAction.ActionStatus.COMPLETED,
+        input_data={"session_id": str(session.pk), "product_count": len(products)},
+        output_data={
+            "shop_url": shop_url,
+            "collection_seed_id": str(collection_seed.pk),
+            "reel_post_ids": bundle_post_ids,
+        },
+        completed_at=timezone.now(),
+    )
+
+    sent = _send_batch_snap_seller_whatsapp(user, session.whatsapp_message, shop_url)
+    session.whatsapp_sent = sent
+    session.status = BatchSnapSession.Status.COMPLETED
+    session.finalized_at = timezone.now()
+    session.save(update_fields=[
+        "shop_url", "whatsapp_message", "bundle_seed", "bundle_post_ids",
+        "whatsapp_sent", "status", "finalized_at",
+    ])
+
+    logger.info("Batch Snap finalized: session=%s shop=%s", session_id, shop_url)
+    return {
+        "session_id": str(session.pk),
+        "shop_url": shop_url,
+        "collection_seed_id": str(collection_seed.pk),
+        "reel_posts": bundle_post_ids,
+        "whatsapp_sent": sent,
+    }
+
+
+def _send_batch_snap_seller_whatsapp(user, message: str, shop_url: str) -> bool:
+    """Notify seller their stall is live — template if configured, else skip gracefully."""
+    from django.conf import settings
+
+    if not message:
+        message = f"Your stall is live! Share: {shop_url}"
+
+    template_name = getattr(settings, "KOVA_BATCH_SNAP_TEMPLATE_NAME", "") or ""
+    phone_id = getattr(settings, "WHATSAPP_PHONE_NUMBER_ID", "") or ""
+    token = getattr(settings, "WHATSAPP_ACCESS_TOKEN", "") or ""
+
+    from apps.accounts.phone_utils import phone_to_whatsapp_digits
+
+    to_number = phone_to_whatsapp_digits(getattr(user, "phone_number", "") or "")
+    if not (to_number and phone_id and token):
+        logger.debug("Batch Snap WhatsApp: missing phone or creds — skipping")
+        return False
+
+    from apps.platforms.providers.whatsapp import WhatsAppProvider
+
+    provider = WhatsAppProvider()
+    first_name = (user.full_name or user.email or "there").split(" ")[0]
+
+    if template_name:
+        components = [{
+            "type": "body",
+            "parameters": [
+                {"type": "text", "text": first_name[:40]},
+                {"type": "text", "text": shop_url[:200]},
+            ],
+        }]
+        result = provider.send_template_message(
+            access_token=token,
+            to=to_number,
+            template_name=template_name,
+            language_code=getattr(settings, "KOVA_BATCH_SNAP_TEMPLATE_LANG", "en"),
+            components=components,
+            phone_number_id=phone_id,
+        )
+        if result.get("success"):
+            return True
+        logger.warning("Batch Snap template send failed: %s", result.get("error"))
+
+    return False
 
 
 # ══════════════════════════════════════════════════════════════════════════════

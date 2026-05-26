@@ -1,6 +1,6 @@
 {# Live Batch Snap pipeline modal — opens when ?batch=id1,id2,... #}
 {% if batch_product_ids %}
-<div x-data="batchSnapPipelineModal('{{ batch_product_ids|escapejs }}')"
+<div x-data="batchSnapPipelineModal('{{ batch_product_ids|escapejs }}', '{{ batch_session_id|escapejs }}')"
      x-init="init()"
      x-cloak>
   <div x-show="open"
@@ -14,7 +14,7 @@
       <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-orange-600 to-purple-600 dark:from-orange-700 dark:to-purple-700">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <p class="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Batch Snap</p>
+            <p class="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Market Day · Batch Snap</p>
             <h2 id="batch-snap-pipeline-title" class="text-lg font-bold text-white mt-0.5" x-text="headerTitle"></h2>
             <p class="text-xs text-white/80 mt-1" x-text="headerSubtitle"></p>
           </div>
@@ -94,8 +94,12 @@
 
       <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row gap-2">
         <template x-if="status === 'completed'">
+          <a x-show="shopUrl" :href="shopUrl" target="_blank" rel="noopener"
+             class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg bg-orange-600 text-white hover:bg-orange-700 text-center">
+            View shop
+          </a>
           <button type="button" @click="refreshPage()" class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg bg-purple-600 text-white hover:bg-purple-700">View catalog</button>
-          <a :href="studioUrl" class="px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-center">Open Studio</a>
+          <a :href="studioUrl" class="px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-center">Studio</a>
           <button type="button" @click="close()" class="px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600">Close</button>
         </template>
         <template x-if="processing">
@@ -112,10 +116,11 @@
 </div>
 
 <script>
-function batchSnapPipelineModal(productIdsCsv) {
+function batchSnapPipelineModal(productIdsCsv, sessionId) {
   return {
     open: true,
     productIds: productIdsCsv,
+    sessionId: sessionId || '',
     status: 'processing',
     steps: [],
     items: [],
@@ -124,17 +129,19 @@ function batchSnapPipelineModal(productIdsCsv) {
     errorMessage: '',
     progressPercent: 5,
     studioUrl: '/content/studio/',
+    shopUrl: '',
+    stallTitle: '',
     pollTimer: null,
     get processing() { return this.status === 'processing'; },
     get headerTitle() {
-      if (this.status === 'completed') return 'Batch campaigns ready';
-      if (this.status === 'failed') return 'Some products failed';
-      return 'Processing your batch';
+      if (this.status === 'completed') return this.stallTitle ? `${this.stallTitle} is live` : 'Your stall is open';
+      if (this.status === 'failed') return 'Some items failed';
+      return 'Opening your stall…';
     },
     get headerSubtitle() {
-      if (this.status === 'completed') return 'Each product got its own AI analysis and platform posts.';
-      if (this.status === 'failed') return 'Check the catalog for products that completed.';
-      return 'AI identifies each photo, names products, and writes content in parallel.';
+      if (this.status === 'completed') return 'Shop updated · posts drafted · showcase reel queued.';
+      if (this.status === 'failed') return 'Check the catalog for items that completed.';
+      return 'AI is naming each photo and building your market-day campaign.';
     },
     init() {
       this.poll();
@@ -145,6 +152,7 @@ function batchSnapPipelineModal(productIdsCsv) {
       if (this.pollTimer) clearInterval(this.pollTimer);
       const url = new URL(window.location.href);
       url.searchParams.delete('batch');
+      url.searchParams.delete('session');
       window.history.replaceState({}, '', url);
     },
     refreshPage() {
@@ -154,7 +162,9 @@ function batchSnapPipelineModal(productIdsCsv) {
     async poll() {
       if (!this.productIds) return;
       try {
-        const resp = await fetch(`/products/snap/batch/status/?ids=${encodeURIComponent(this.productIds)}`, {
+        let fetchUrl = `/products/snap/batch/status/?ids=${encodeURIComponent(this.productIds)}`;
+        if (this.sessionId) fetchUrl += `&session=${encodeURIComponent(this.sessionId)}`;
+        const resp = await fetch(fetchUrl, {
           headers: { 'Accept': 'application/json' },
           credentials: 'same-origin',
         });
@@ -168,6 +178,8 @@ function batchSnapPipelineModal(productIdsCsv) {
         this.errorMessage = data.error_message || '';
         this.progressPercent = data.progress_percent || 10;
         this.studioUrl = data.studio_url || '/content/studio/';
+        this.shopUrl = data.shop_url || '';
+        this.stallTitle = data.stall_title || '';
         if (data.terminal && this.pollTimer) {
           clearInterval(this.pollTimer);
           this.pollTimer = null;

@@ -33,6 +33,7 @@ urlpatterns = [
     # Batch Snap
     path("snap/batch/", views.snap_batch, name="snap_batch"),
     path("snap/batch/launch/", views.snap_batch_launch, name="snap_batch_launch"),
+    path("snap/batch/transcribe/", views.snap_batch_transcribe, name="snap_batch_transcribe"),
     path("snap/batch/status/", views.batch_snap_pipeline_status, name="batch_snap_status"),
     # Receipt to Restock
     path("restock/", views.restock_scan, name="restock"),

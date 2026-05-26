@@ -72,6 +72,7 @@ def product_list(request):
         "current_q": q,
         "plan_ctx": _plan_ctx(request),
         "batch_product_ids": request.GET.get("batch", ""),
+        "batch_session_id": request.GET.get("session", ""),
     })
 
 
@@ -206,7 +207,10 @@ def batch_snap_pipeline_status(request):
 
     raw = request.GET.get("ids", "")
     product_ids = [p.strip() for p in raw.split(",") if p.strip()]
-    data = build_batch_snap_pipeline_status(product_ids, request.user)
+    session_id = request.GET.get("session", "").strip() or None
+    data = build_batch_snap_pipeline_status(
+        product_ids, request.user, session_id=session_id,
+    )
     data["studio_url"] = reverse("content:studio")
     data["queue_url"] = reverse("content:queue")
     data["catalog_url"] = reverse("products:list")
@@ -866,22 +870,49 @@ def snap_launch(request):
 
 @login_required
 def snap_batch(request):
-    """Batch snap page — user snaps multiple different products."""
-    return render(request, "products/snap_batch.html", {"plan_ctx": _plan_ctx(request)})
+    """Batch Snap — Market Day Mode: photograph your whole stall."""
+    from django.conf import settings
+
+    return render(request, "products/snap_batch.html", {
+        "plan_ctx": _plan_ctx(request),
+        "voice_transcribe_url": reverse("products:snap_batch_transcribe"),
+        "whatsapp_configured": bool(
+            getattr(settings, "WHATSAPP_PHONE_NUMBER_ID", "")
+            and getattr(settings, "WHATSAPP_ACCESS_TOKEN", "")
+        ),
+    })
+
+
+@login_required
+@require_POST
+def snap_batch_transcribe(request):
+    """Transcribe a voice price brief for Batch Snap."""
+    from apps.content.voice import transcribe_audio
+
+    audio = request.FILES.get("audio")
+    if not audio:
+        return JsonResponse({"error": "No audio file provided."}, status=400)
+
+    content_type = audio.content_type or "audio/webm"
+    result = transcribe_audio(audio, content_type)
+    if result.get("error"):
+        return JsonResponse({"error": result["error"]}, status=400)
+    return JsonResponse({"text": result.get("text", ""), "duration": result.get("duration")})
 
 
 @login_required
 @require_POST
 def snap_batch_launch(request):
     """
-    Receive up to 10 photos of different products.
-    Each photo becomes a separate Product with its own AI analysis + campaign.
+    Market Day Mode launch — up to 10 stall photos → BatchSnapSession → AI pipeline.
     """
+    from decimal import Decimal, InvalidOperation
+
     from apps.billing.models import get_user_plan_limits
+    from apps.products.models import BatchSnapSession
     from apps.products.tasks import snap_batch_process
     from apps.utils import fire_task
 
-    # Plan limit check
     limits = get_user_plan_limits(request.user)
     current_count = Product.objects.filter(user=request.user, is_active=True).count()
     max_products = limits.get("max_products", 5)
@@ -891,8 +922,7 @@ def snap_batch_launch(request):
         messages.error(request, "Please add at least one product photo.")
         return redirect("products:snap_batch")
 
-    photos = photos[:10]  # Cap at 10
-
+    photos = photos[:10]
     remaining_slots = max_products - current_count
     if remaining_slots <= 0:
         return plan_limit_redirect(
@@ -900,20 +930,41 @@ def snap_batch_launch(request):
             f"Your plan allows up to {max_products} products. Upgrade to add more.",
             "products:snap_batch",
         )
-
     if len(photos) > remaining_slots:
         photos = photos[:remaining_slots]
         messages.warning(
             request,
-            f"Only processing {remaining_slots} product(s) — you've reached your plan limit of {max_products}."
+            f"Only processing {remaining_slots} product(s) — plan limit is {max_products}.",
         )
 
-    # Create products — one per photo
-    # Match up names/prices from the form (name_0, price_0, etc.)
     offering_type = request.POST.get("offering_type", "product").strip()
     valid_types = {c[0] for c in Product.OfferingType.choices}
     if offering_type not in valid_types:
         offering_type = "product"
+
+    stall_title = request.POST.get("stall_title", "").strip()[:120]
+    stall_notes = request.POST.get("stall_notes", "").strip()
+    voice_transcript = request.POST.get("voice_transcript", "").strip()
+    launch_bundle = request.POST.get("launch_bundle", "1") in ("1", "true", "on")
+
+    default_price = None
+    default_price_raw = request.POST.get("default_price", "").strip()
+    default_currency = request.POST.get("default_currency", "KES").strip() or "KES"
+    if default_price_raw:
+        try:
+            default_price = Decimal(default_price_raw)
+            if default_price <= 0:
+                default_price = None
+        except (InvalidOperation, ValueError):
+            default_price = None
+
+    if not voice_transcript and request.FILES.get("voice_note"):
+        from apps.content.voice import transcribe_audio
+
+        vn = request.FILES["voice_note"]
+        tr = transcribe_audio(vn, vn.content_type or "audio/webm")
+        if tr.get("text"):
+            voice_transcript = tr["text"].strip()
 
     stock_status = (
         Product.StockStatus.UNLIMITED
@@ -921,26 +972,39 @@ def snap_batch_launch(request):
         else Product.StockStatus.IN_STOCK
     )
 
+    session = BatchSnapSession.objects.create(
+        user=request.user,
+        stall_title=stall_title,
+        voice_transcript=voice_transcript,
+        stall_notes=stall_notes,
+        offering_type=offering_type,
+        default_price=default_price,
+        default_currency=default_currency,
+        launch_bundle=launch_bundle,
+        product_count=len(photos),
+    )
+
     product_ids = []
-    contexts = []
+    form_prices = {}
+    from apps.products.image_utils import normalize_uploaded_image
+
     for i, photo in enumerate(photos):
         name = sanitize_product_name(request.POST.get(f"name_{i}", ""))
         price_raw = request.POST.get(f"price_{i}", "").strip()
-        currency = request.POST.get(f"currency_{i}", "KES").strip() or "KES"
+        currency = request.POST.get(f"currency_{i}", default_currency).strip() or default_currency
         context = request.POST.get(f"context_{i}", "").strip()
 
         if not name:
-            messages.error(request, f"Please enter a name for photo {i + 1}.")
-            return redirect("products:snap_batch")
+            name = f"Listing {i + 1}"
 
         price = None
         if price_raw:
             try:
                 price = float(price_raw)
             except ValueError:
-                pass
-
-        from apps.products.image_utils import normalize_uploaded_image
+                price = None
+        elif default_price is not None:
+            price = float(default_price)
 
         product = Product.objects.create(
             user=request.user,
@@ -951,22 +1015,29 @@ def snap_batch_launch(request):
             image=normalize_uploaded_image(photo),
             stock_status=stock_status,
             source=Product.Source.SNAP,
+            batch_snap_session=session,
+            batch_index=i,
         )
-        product_ids.append(str(product.pk))
-        contexts.append(context)
+        pid = str(product.pk)
+        product_ids.append(pid)
+        form_prices[pid] = price_raw or (str(default_price) if default_price else "")
+        if context:
+            session.stall_context.setdefault("item_contexts", {})[pid] = context
 
-    # Fire batch processing task
-    fire_task(snap_batch_process, product_ids, contexts)
+    session.stall_context["_form_prices"] = form_prices
+    session.save(update_fields=["stall_context"])
+
+    fire_task(snap_batch_process, str(session.pk))
 
     count = len(product_ids)
     messages.success(
         request,
-        f"⚡ {count} product{'s' if count != 1 else ''} created! "
-        f"Watch the progress popup as AI analyzes each photo."
+        f"Market day launched — {count} item{'s' if count != 1 else ''} queued. "
+        "AI is identifying each photo and opening your stall.",
     )
     ids_param = ",".join(product_ids)
     url = reverse("products:list")
-    return redirect(f"{url}?batch={ids_param}")
+    return redirect(f"{url}?batch={ids_param}&session={session.pk}")
 
 
 # ─── RECEIPT TO RESTOCK ─────────────────────────────────────────────────────
