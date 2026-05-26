@@ -1,6 +1,8 @@
 """Tests for Batch Snap Market Day Mode intelligence."""
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.urls import reverse
 
 from apps.products.batch_snap_intelligence import (
     build_batch_identification_prompt,
@@ -97,3 +99,56 @@ class TestBatchPriceResolution:
         )
         assert price == 999
         assert source == "tag"
+
+
+@pytest.mark.django_db
+class TestBatchSnapLaunchView:
+    def test_launch_creates_session_and_products(self, client, user, monkeypatch):
+        from apps.products.models import BatchSnapSession, Product
+
+        user.onboarding_completed = True
+        user.phone_number = "0712345678"
+        user.save(update_fields=["onboarding_completed", "phone_number"])
+        client.force_login(user)
+
+        calls = []
+
+        def fake_fire_task(*args):
+            calls.append(args)
+
+        monkeypatch.setattr("apps.utils.fire_task", fake_fire_task)
+
+        photo = SimpleUploadedFile(
+            "dress.jpg",
+            (
+                b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00"
+                b"\xff\xdb\x00C\x00" + b"\x08" * 64 +
+                b"\xff\xc0\x00\x11\x08\x00\x01\x00\x01\x03\x01\x11\x00\x02\x11\x01\x03\x11\x01"
+                b"\xff\xda\x00\x08\x01\x01\x00\x00?\x00\xd2\xcf \xff\xd9"
+            ),
+            content_type="image/jpeg",
+        )
+
+        resp = client.post(
+            reverse("products:snap_batch_launch"),
+            {
+                "stall_title": "Sunday Drop",
+                "default_price": "800",
+                "default_currency": "KES",
+                "offering_type": "product",
+                "name_0": "",
+                "price_0": "",
+                "currency_0": "KES",
+                "context_0": "",
+                "photos": [photo],
+            },
+            follow=False,
+        )
+
+        assert resp.status_code == 302
+        assert resp["Location"].startswith(reverse("products:list") + "?batch=")
+        assert BatchSnapSession.objects.filter(user=user, stall_title="Sunday Drop").count() == 1
+        product = Product.objects.get(user=user, batch_index=0)
+        assert product.name == "Listing 1"
+        assert product.batch_snap_session is not None
+        assert len(calls) == 1

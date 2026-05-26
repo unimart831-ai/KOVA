@@ -909,6 +909,7 @@ def snap_batch_launch(request):
     from decimal import Decimal, InvalidOperation
 
     from apps.billing.models import get_user_plan_limits
+    from apps.products.commerce_autopilot import sanitize_product_name
     from apps.products.models import BatchSnapSession
     from apps.products.tasks import snap_batch_process
     from apps.utils import fire_task
