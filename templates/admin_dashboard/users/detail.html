@@ -6,6 +6,7 @@
 <div class="flex items-center gap-2 mt-0.5">
   <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {{ profile.plan|status_color }}">{{ profile.get_plan_display }}</span>
   <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {{ profile.subscription_status|status_color }}">{{ profile.subscription_status|default:"none" }}</span>
+  <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {% if business_mode.key == 'service' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300{% elif business_mode.key == 'digital' %}bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300{% elif business_mode.key == 'expert' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300{% else %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300{% endif %}">{{ business_mode.label }}</span>
   {% if target_user.is_staff %}<span class="px-1.5 py-0.5 text-[10px] font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded">STAFF</span>{% endif %}
   {% if not target_user.is_active %}<span class="px-1.5 py-0.5 text-[10px] font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded">INACTIVE</span>{% endif %}
 </div>
@@ -122,6 +123,10 @@
         <dd class="text-sm text-gray-900 dark:text-white">{{ profile.get_industry_display|default:"—" }}</dd>
       </div>
       <div class="flex justify-between">
+        <dt class="text-xs text-gray-500 dark:text-gray-400">Business Mode</dt>
+        <dd class="text-sm text-gray-900 dark:text-white">{{ business_mode.label }}</dd>
+      </div>
+      <div class="flex justify-between">
         <dt class="text-xs text-gray-500 dark:text-gray-400">Timezone</dt>
         <dd class="text-sm text-gray-900 dark:text-white">{{ target_user.timezone }}</dd>
       </div>
@@ -171,6 +176,10 @@
         <dt class="text-xs text-gray-500 dark:text-gray-400">Website</dt>
         <dd class="text-sm text-gray-900 dark:text-white truncate max-w-[200px]">{{ profile.website_url|default:"—" }}</dd>
       </div>
+      <div class="flex justify-between">
+        <dt class="text-xs text-gray-500 dark:text-gray-400">Connected Platforms</dt>
+        <dd class="text-sm text-gray-900 dark:text-white">{{ active_platforms|length }}</dd>
+      </div>
       <div>
         <dt class="text-xs text-gray-500 dark:text-gray-400 mb-1">Brand Voice</dt>
         <dd class="text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg p-3">{{ profile.brand_voice|default:"Not set"|truncatechars:300 }}</dd>
@@ -180,6 +189,73 @@
         <dd class="text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg p-3">{{ profile.goals|default:"Not set"|truncatechars:300 }}</dd>
       </div>
     </dl>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Offer Surface</h3>
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3">
+        <p class="text-xl font-bold text-gray-900 dark:text-white">{{ offer_counts.total }}</p>
+        <p class="text-[10px] text-gray-500 mt-0.5">Active offers</p>
+      </div>
+      <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3">
+        <p class="text-xl font-bold text-kova-600 dark:text-kova-400">{{ offer_counts.physical }}</p>
+        <p class="text-[10px] text-gray-500 mt-0.5">Physical</p>
+      </div>
+      <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3">
+        <p class="text-xl font-bold text-emerald-600">{{ offer_counts.service }}</p>
+        <p class="text-[10px] text-gray-500 mt-0.5">Service</p>
+      </div>
+      <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3">
+        <p class="text-xl font-bold text-violet-600">{{ offer_counts.digital }}</p>
+        <p class="text-[10px] text-gray-500 mt-0.5">Digital</p>
+      </div>
+    </div>
+    <p class="text-xs text-gray-500 dark:text-gray-400">Staff can now see whether this user is operating a mixed offer workspace, not just a product catalog.</p>
+  </div>
+
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Fulfillment Readiness</h3>
+    <div class="space-y-3 text-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-gray-500 dark:text-gray-400">Service offers ready</span>
+        <span class="font-semibold text-gray-900 dark:text-white">{{ fulfillment_counts.service_ready }}/{{ offer_counts.service }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-gray-500 dark:text-gray-400">Digital offers ready</span>
+        <span class="font-semibold text-gray-900 dark:text-white">{{ fulfillment_counts.digital_ready }}/{{ offer_counts.digital }}</span>
+      </div>
+      <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
+        <div class="bg-emerald-500 h-2 rounded-full" style="width: {% if offer_counts.service %}{% widthratio fulfillment_counts.service_ready offer_counts.service 100 %}{% else %}0{% endif %}%"></div>
+      </div>
+      <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
+        <div class="bg-violet-500 h-2 rounded-full" style="width: {% if offer_counts.digital %}{% widthratio fulfillment_counts.digital_ready offer_counts.digital 100 %}{% else %}0{% endif %}%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Today & Workspace</h3>
+    <div class="space-y-3 text-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-gray-500 dark:text-gray-400">Daily briefs</span>
+        <span class="font-semibold text-gray-900 dark:text-white">{{ command_counts.briefs }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-gray-500 dark:text-gray-400">Voice launches</span>
+        <span class="font-semibold text-gray-900 dark:text-white">{{ command_counts.voice_briefs }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-gray-500 dark:text-gray-400">Moment packs ready</span>
+        <span class="font-semibold text-gray-900 dark:text-white">{{ command_counts.ready_moments }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-gray-500 dark:text-gray-400">Campaigns created</span>
+        <span class="font-semibold text-gray-900 dark:text-white">{{ command_counts.campaigns }}</span>
+      </div>
+    </div>
   </div>
 </div>
 

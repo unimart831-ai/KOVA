@@ -13,9 +13,12 @@ def overview(request):
     """Admin dashboard home — key metrics, charts data, activity feed."""
     from apps.accounts.models import User, UserProfile
     from apps.agents.models import AgentAction, AgentConfig
-    from apps.analytics.models import Conversion
+    from apps.analytics.models import Conversion, PageView
     from apps.billing.models import MpesaPayment
+    from apps.briefs.models import DailyBrief
+    from apps.calendar_intel.models import HolidayDraft
     from apps.content.models import ABTest, ContentSeed, Post
+    from apps.content.models import VoiceBrief
     from apps.engage.models import Interaction, Superfan
     from apps.help.models import HelpPageView
     from apps.platforms.models import SocialAccount
@@ -36,6 +39,15 @@ def overview(request):
         Q(posts__created_at__gte=seven_days_ago) |
         Q(content_seeds__created_at__gte=seven_days_ago)
     ).distinct().count()
+    workspace_views_7d = PageView.objects.filter(
+        viewed_at__gte=seven_days_ago,
+        section__in=["brief", "command"],
+    ).count()
+    today_briefs_7d = DailyBrief.objects.filter(date__gte=today - timedelta(days=6)).count()
+    voice_launches_7d = VoiceBrief.objects.filter(created_at__gte=seven_days_ago).count()
+    moment_packs_ready = HolidayDraft.objects.filter(
+        status=HolidayDraft.Status.DRAFTS_READY,
+    ).count()
 
     posts_today = Post.objects.filter(
         status="published", published_at__date=today,
@@ -400,5 +412,9 @@ def overview(request):
         "ops_tasks_24h": ops_tasks_24h,
         "automation_types_7d": automation_types_7d,
         "automation_labels": automation_labels,
+        "workspace_views_7d": workspace_views_7d,
+        "today_briefs_7d": today_briefs_7d,
+        "voice_launches_7d": voice_launches_7d,
+        "moment_packs_ready": moment_packs_ready,
     }
     return render(request, "admin_dashboard/overview.html", context)

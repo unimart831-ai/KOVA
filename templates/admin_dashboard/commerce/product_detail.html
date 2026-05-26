@@ -3,7 +3,7 @@
 {% block page_title %}{{ page_title }}{% endblock %}
 {% block page_subtitle %}
 <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-  <a href="{% url 'admin_dashboard:commerce_catalog' %}" class="hover:text-kova-600">Catalog</a>
+  <a href="{% url 'admin_dashboard:commerce_catalog' %}" class="hover:text-kova-600">Offers</a>
   <span class="mx-1">/</span> {{ product.sync_source_label }}
 </p>
 {% endblock %}
@@ -18,7 +18,7 @@
       <div class="flex items-start justify-between gap-4 mb-4">
         <div>
           <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ product.name }}</h2>
-          <p class="text-xs text-gray-500 mt-1">{{ product.get_offering_type_display }} · {{ product.get_stock_status_display }}{% if product.quantity is not None %} ({{ product.quantity }}){% endif %}</p>
+          <p class="text-xs text-gray-500 mt-1">{{ product.get_offering_type_display }} · {{ business_mode.label }} mode · {{ product.get_stock_status_display }}{% if product.quantity is not None %} ({{ product.quantity }}){% endif %}</p>
         </div>
         {% if product.price %}
         <p class="text-lg font-bold text-emerald-600">{{ product.currency }} {{ product.price|floatformat:0 }}</p>
@@ -29,6 +29,7 @@
       {% endif %}
       <dl class="grid grid-cols-2 gap-3 text-xs">
         <div><dt class="text-gray-400 uppercase text-[10px]">Seller</dt><dd><a href="{% url 'admin_dashboard:user_detail' product.user.pk %}" class="text-kova-600 hover:underline">{{ product.user.email }}</a></dd></div>
+        <div><dt class="text-gray-400 uppercase text-[10px]">Business mode</dt><dd>{{ business_mode.label }}</dd></div>
         <div><dt class="text-gray-400 uppercase text-[10px]">Source</dt><dd>{{ product.sync_source_label }}</dd></div>
         <div><dt class="text-gray-400 uppercase text-[10px]">Category</dt><dd>{{ product.category.name|default:"—" }}</dd></div>
         <div><dt class="text-gray-400 uppercase text-[10px]">External ID</dt><dd class="font-mono">{{ product.external_id|default:"—" }}</dd></div>
@@ -40,6 +41,7 @@
         {% endif %}
         <div><dt class="text-gray-400 uppercase text-[10px]">Featured</dt><dd>{% if product.is_featured %}Yes{% else %}No{% endif %}</div>
         <div><dt class="text-gray-400 uppercase text-[10px]">Posts</dt><dd>{{ published_posts }} published / {{ posts_count }} total</dd></div>
+        <div><dt class="text-gray-400 uppercase text-[10px]">Fulfillment</dt><dd>{{ fulfillment_state.label }}</dd></div>
       </dl>
     </div>
 
@@ -63,25 +65,43 @@
 
   <div class="space-y-6">
     <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
-      <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Commerce Links</h2>
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Public Page & Fulfillment</h2>
       <dl class="space-y-3 text-xs">
         <div>
-          <dt class="text-[10px] text-gray-400 uppercase">Commerce slug</dt>
+          <dt class="text-[10px] text-gray-400 uppercase">Offer slug</dt>
           <dd class="font-mono text-gray-900 dark:text-white">{{ product.commerce_slug|default:"—" }}</dd>
         </div>
         {% if commerce_url %}
         <div>
-          <dt class="text-[10px] text-gray-400 uppercase">Product page</dt>
+          <dt class="text-[10px] text-gray-400 uppercase">Offer page</dt>
           <dd><a href="{{ commerce_url }}" target="_blank" rel="noopener" class="text-emerald-600 hover:underline break-all">{{ commerce_url }} ↗</a></dd>
         </div>
         {% endif %}
         <div>
-          <dt class="text-[10px] text-gray-400 uppercase">Shop index</dt>
+          <dt class="text-[10px] text-gray-400 uppercase">Owner page</dt>
           <dd><a href="{{ shop_url }}" target="_blank" rel="noopener" class="text-emerald-600 hover:underline break-all">{{ shop_url }} ↗</a></dd>
         </div>
+        {% if product.booking_link %}
+        <div>
+          <dt class="text-[10px] text-gray-400 uppercase">Booking link</dt>
+          <dd class="text-gray-900 dark:text-white">{{ product.booking_link.title|default:"Kova booking flow" }}</dd>
+        </div>
+        {% endif %}
+        {% if product.fulfillment_url %}
+        <div>
+          <dt class="text-[10px] text-gray-400 uppercase">Fulfillment URL</dt>
+          <dd><a href="{{ product.fulfillment_url }}" target="_blank" rel="noopener" class="text-blue-600 hover:underline break-all">{{ product.fulfillment_url|truncatechars:60 }} ↗</a></dd>
+        </div>
+        {% endif %}
+        {% if product.fulfillment_notes %}
+        <div>
+          <dt class="text-[10px] text-gray-400 uppercase">Fulfillment notes</dt>
+          <dd class="text-gray-700 dark:text-gray-300">{{ product.fulfillment_notes|truncatechars:180 }}</dd>
+        </div>
+        {% endif %}
         {% if product.product_url %}
         <div>
-          <dt class="text-[10px] text-gray-400 uppercase">External buy URL</dt>
+          <dt class="text-[10px] text-gray-400 uppercase">External sales URL</dt>
           <dd><a href="{{ product.product_url }}" target="_blank" rel="noopener" class="text-blue-600 hover:underline break-all">{{ product.product_url|truncatechars:50 }} ↗</a></dd>
         </div>
         {% endif %}
@@ -105,7 +125,7 @@
 
     {% if profile.commerce_autopilot %}
     <div class="bg-purple-50 dark:bg-purple-950/20 rounded-xl border border-purple-200 dark:border-purple-900/40 p-4">
-      <p class="text-xs text-purple-800 dark:text-purple-300"><strong>Commerce Autopilot</strong> is enabled for this seller — new snaps and syncs auto-generate content.</p>
+      <p class="text-xs text-purple-800 dark:text-purple-300"><strong>Offer Autopilot</strong> is enabled for this operator — new snaps and syncs auto-generate content.</p>
     </div>
     {% endif %}
   </div>

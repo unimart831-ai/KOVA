@@ -9,13 +9,23 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.accounts.models import User, UserProfile
+from apps.accounts.segments import get_mode_label, infer_business_mode
 from apps.admin_dashboard.decorators import senior_staff_required, staff_required, superuser_required
+
+
+def _user_mode_payload(user):
+    connected_platforms = [account.platform for account in user.social_accounts.all() if account.is_active]
+    mode = infer_business_mode(user.profile, connected_platforms)
+    return {
+        "key": mode,
+        "label": get_mode_label(mode),
+    }
 
 
 @staff_required
 def user_list(request):
     """User management list with search, filter, sort."""
-    qs = User.objects.select_related("profile").all()
+    qs = User.objects.select_related("profile").prefetch_related("social_accounts").all()
 
     # ── Search ───────────────────────────────────────────────────────────
     search = request.GET.get("q", "").strip()
@@ -62,6 +72,29 @@ def user_list(request):
     qs = qs.annotate(
         post_count=Count("posts", distinct=True),
         platform_count=Count("social_accounts", filter=Q(social_accounts__is_active=True), distinct=True),
+        offer_count=Count("products", filter=Q(products__is_active=True), distinct=True),
+        service_offer_count=Count(
+            "products",
+            filter=Q(products__is_active=True, products__offering_type="service"),
+            distinct=True,
+        ),
+        digital_offer_count=Count(
+            "products",
+            filter=Q(products__is_active=True, products__offering_type="digital"),
+            distinct=True,
+        ),
+        service_ready_count=Count(
+            "products",
+            filter=Q(products__is_active=True, products__offering_type="service")
+            & (Q(products__booking_link__isnull=False) | Q(products__fulfillment_url__gt="")),
+            distinct=True,
+        ),
+        digital_ready_count=Count(
+            "products",
+            filter=Q(products__is_active=True, products__offering_type="digital")
+            & (Q(products__fulfillment_url__gt="") | Q(products__product_url__gt="")),
+            distinct=True,
+        ),
     )
 
     # ── Sort ─────────────────────────────────────────────────────────────
@@ -77,6 +110,8 @@ def user_list(request):
     # ── Pagination ───────────────────────────────────────────────────────
     paginator = Paginator(qs, 25)
     page = paginator.get_page(request.GET.get("page", 1))
+    for user in page.object_list:
+        user.admin_business_mode = _user_mode_payload(user)
 
     context = {
         "page_title": "User Management",
@@ -107,19 +142,61 @@ def user_detail(request, pk):
     from apps.analytics.models import PostMetric
     from apps.billing.models import MpesaPayment
     from apps.briefs.models import DailyBrief
+    from apps.calendar_intel.models import HolidayDraft
+    from apps.campaigns.models import Campaign
     from apps.content.models import ContentSeed, Post
+    from apps.content.models import VoiceBrief
     from apps.engage.models import Interaction, Superfan
     from apps.platforms.models import SocialAccount
+    from apps.products.models import Product
 
-    user = get_object_or_404(User.objects.select_related("profile"), pk=pk)
+    user = get_object_or_404(
+        User.objects.select_related("profile").prefetch_related("social_accounts"),
+        pk=pk,
+    )
     now = timezone.now()
     tab = request.GET.get("tab", "profile")
+    business_mode = _user_mode_payload(user)
+    active_platforms = SocialAccount.objects.filter(user=user, is_active=True).order_by("platform")
+    offer_qs = Product.objects.filter(user=user, is_active=True)
+    offer_counts = {
+        "total": offer_qs.count(),
+        "physical": offer_qs.filter(offering_type=Product.OfferingType.PRODUCT).count(),
+        "service": offer_qs.filter(offering_type=Product.OfferingType.SERVICE).count(),
+        "digital": offer_qs.filter(offering_type=Product.OfferingType.DIGITAL).count(),
+    }
+    fulfillment_counts = {
+        "service_ready": offer_qs.filter(
+            offering_type=Product.OfferingType.SERVICE,
+        ).filter(
+            Q(booking_link__isnull=False) | Q(fulfillment_url__gt=""),
+        ).count(),
+        "digital_ready": offer_qs.filter(
+            offering_type=Product.OfferingType.DIGITAL,
+        ).filter(
+            Q(fulfillment_url__gt="") | Q(product_url__gt=""),
+        ).count(),
+    }
+    command_counts = {
+        "briefs": DailyBrief.objects.filter(user=user).count(),
+        "voice_briefs": VoiceBrief.objects.filter(user=user).count(),
+        "ready_moments": HolidayDraft.objects.filter(
+            user=user,
+            status=HolidayDraft.Status.DRAFTS_READY,
+        ).count(),
+        "campaigns": Campaign.objects.filter(user=user).count(),
+    }
 
     context = {
         "page_title": f"User: {user.full_name or user.email}",
         "target_user": user,
         "profile": user.profile,
         "tab": tab,
+        "business_mode": business_mode,
+        "active_platforms": active_platforms,
+        "offer_counts": offer_counts,
+        "fulfillment_counts": fulfillment_counts,
+        "command_counts": command_counts,
     }
 
     if tab == "profile":

@@ -12,10 +12,11 @@ from django.shortcuts import render
 from django.utils import timezone
 
 from apps.accounts.models import User
+from apps.accounts.segments import get_mode_label, infer_business_mode
 from apps.admin_dashboard.decorators import staff_required
 
 
-def _compute_churn_risk(user, now):
+def _compute_churn_risk(user, now, business_mode):
     """
     Compute a 0-100 churn risk score for a user.
 
@@ -54,13 +55,30 @@ def _compute_churn_risk(user, now):
         risk += 20
         signals.append("No platforms connected")
 
-    # Factor 3b: Commerce intent but no products
+    # Factor 3b: Segment-specific launch readiness
     product_count = getattr(user, "_product_count", 0)
-    from apps.accounts.setup_mission import get_onboarding_intent, is_commerce_industry
-    if is_commerce_industry(profile.industry) or get_onboarding_intent(profile) in ("sell", "both"):
+    service_count = getattr(user, "_service_count", 0)
+    digital_count = getattr(user, "_digital_count", 0)
+    service_ready = getattr(user, "_service_ready_count", 0)
+    digital_ready = getattr(user, "_digital_ready_count", 0)
+    if business_mode == "merchant":
         if product_count == 0:
             risk += 15
-            signals.append("No products listed")
+            signals.append("No offers listed")
+    elif business_mode == "service":
+        if service_count == 0:
+            risk += 15
+            signals.append("No service offers")
+        elif service_ready == 0:
+            risk += 15
+            signals.append("No booking path")
+    elif business_mode == "digital":
+        if digital_count == 0:
+            risk += 15
+            signals.append("No digital offers")
+        elif digital_ready == 0:
+            risk += 15
+            signals.append("No access path")
 
     # Factor 4: Trial ending soon, no upgrade signals
     if profile.subscription_status == "trialing" and profile.trial_ends_at:
@@ -87,7 +105,7 @@ def user_health(request):
 
     # Focus on users who matter: trialing or recently active
     status_filter = request.GET.get("status", "trialing")
-    qs = User.objects.select_related("profile").filter(
+    qs = User.objects.select_related("profile").prefetch_related("social_accounts").filter(
         onboarding_completed=True,
     )
 
@@ -107,28 +125,58 @@ def user_health(request):
 
     qs = qs.annotate(
         _published_count=Count(
-            "posts", filter=Q(posts__status="published"),
+            "posts", filter=Q(posts__status="published"), distinct=True,
         ),
         _platform_count=Count(
-            "social_accounts", filter=Q(social_accounts__is_active=True),
+            "social_accounts", filter=Q(social_accounts__is_active=True), distinct=True,
         ),
         _product_count=Count(
-            "products", filter=Q(products__is_active=True),
+            "products", filter=Q(products__is_active=True), distinct=True,
+        ),
+        _service_count=Count(
+            "products",
+            filter=Q(products__is_active=True, products__offering_type="service"),
+            distinct=True,
+        ),
+        _digital_count=Count(
+            "products",
+            filter=Q(products__is_active=True, products__offering_type="digital"),
+            distinct=True,
+        ),
+        _service_ready_count=Count(
+            "products",
+            filter=Q(products__is_active=True, products__offering_type="service")
+            & (Q(products__booking_link__isnull=False) | Q(products__fulfillment_url__gt="")),
+            distinct=True,
+        ),
+        _digital_ready_count=Count(
+            "products",
+            filter=Q(products__is_active=True, products__offering_type="digital")
+            & (Q(products__fulfillment_url__gt="") | Q(products__product_url__gt="")),
+            distinct=True,
         ),
     )
 
     # Compute risk scores
     users_with_risk = []
     for user in qs:
-        risk_score, risk_signals = _compute_churn_risk(user, now)
+        connected_platforms = [account.platform for account in user.social_accounts.all() if account.is_active]
+        business_mode = infer_business_mode(user.profile, connected_platforms)
+        risk_score, risk_signals = _compute_churn_risk(user, now, business_mode)
         users_with_risk.append({
             "user": user,
+            "mode_key": business_mode,
+            "mode_label": get_mode_label(business_mode),
             "risk_score": risk_score,
             "risk_signals": risk_signals,
             "risk_level": "critical" if risk_score >= 70 else "warning" if risk_score >= 40 else "healthy",
             "published_count": user._published_count,
             "platform_count": user._platform_count,
             "product_count": user._product_count,
+            "service_count": user._service_count,
+            "digital_count": user._digital_count,
+            "service_ready_count": user._service_ready_count,
+            "digital_ready_count": user._digital_ready_count,
             "days_since_signup": (now - user.date_joined).days,
             "days_since_login": (now - user.last_login).days if user.last_login else None,
             "trial_days_left": (

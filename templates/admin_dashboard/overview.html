@@ -107,6 +107,28 @@
   </div>
 </div>
 
+<div class="mt-6">
+  <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Today & Workspace Control</h3>
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-blue-200 dark:border-blue-900/50 p-4 shadow-sm text-center">
+      <p class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ today_briefs_7d }}</p>
+      <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Today Briefs (7d)</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 p-4 shadow-sm text-center">
+      <p class="text-xl font-bold text-purple-600 dark:text-purple-400">{{ workspace_views_7d }}</p>
+      <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Workspace Views (7d)</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-amber-200 dark:border-amber-900/50 p-4 shadow-sm text-center">
+      <p class="text-xl font-bold text-amber-600 dark:text-amber-400">{{ moment_packs_ready }}</p>
+      <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Moment Packs Ready</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-emerald-200 dark:border-emerald-900/50 p-4 shadow-sm text-center">
+      <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400">{{ voice_launches_7d }}</p>
+      <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Voice Launches (7d)</p>
+    </div>
+  </div>
+</div>
+
 <!-- ── Bottom Row: Activity Feed + Platform Health + Failures ────────── -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mt-6">
 

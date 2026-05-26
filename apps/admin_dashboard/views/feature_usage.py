@@ -149,7 +149,7 @@ def feature_usage(request):
     hours_data = [hour_counts.get(h, 0) for h in range(24)]
 
     context = {
-        "page_title": "Feature Usage",
+        "page_title": "Surface Usage",
         "days": days,
         "total_views": total_views,
         "total_active_users": total_active_users,

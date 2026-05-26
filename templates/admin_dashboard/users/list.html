@@ -95,13 +95,15 @@
           <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phone</th>
           <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Plan</th>
           <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Industry</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Mode</th>
           <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">
             <a href="?sort={% if current_sort == '-post_count' %}post_count{% else %}-post_count{% endif %}&q={{ search }}&plan={{ current_plan }}&status={{ current_status }}&industry={{ current_industry }}" class="hover:text-gray-900 dark:hover:text-white">
               Posts {% if current_sort == '-post_count' %}↓{% elif current_sort == 'post_count' %}↑{% endif %}
             </a>
           </th>
           <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">Platforms</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">Offers</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Launch readiness</th>
           <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
             <a href="?sort={% if current_sort == '-date_joined' %}date_joined{% else %}-date_joined{% endif %}&q={{ search }}&plan={{ current_plan }}&status={{ current_status }}&industry={{ current_industry }}" class="hover:text-gray-900 dark:hover:text-white">
               Joined {% if current_sort == '-date_joined' %}↓{% elif current_sort == 'date_joined' %}↑{% endif %}
@@ -144,9 +146,33 @@
               {{ user.profile.subscription_status|default:"none" }}
             </span>
           </td>
-          <td class="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">{{ user.profile.get_industry_display|default:"—" }}</td>
+          <td class="px-4 py-3">
+            <div class="flex flex-col gap-1">
+              <span class="inline-flex w-fit px-2 py-0.5 text-[10px] font-medium rounded-full {% if user.admin_business_mode.key == 'service' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300{% elif user.admin_business_mode.key == 'digital' %}bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300{% elif user.admin_business_mode.key == 'expert' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300{% else %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300{% endif %}">
+                {{ user.admin_business_mode.label }}
+              </span>
+              <span class="text-[10px] text-gray-500 dark:text-gray-400">{{ user.profile.get_industry_display|default:"—" }}</span>
+            </div>
+          </td>
           <td class="px-4 py-3 text-center text-sm font-medium text-gray-900 dark:text-white">{{ user.post_count }}</td>
           <td class="px-4 py-3 text-center text-sm font-medium text-gray-900 dark:text-white">{{ user.platform_count }}</td>
+          <td class="px-4 py-3 text-center">
+            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ user.offer_count }}</p>
+            <p class="text-[10px] text-gray-500 dark:text-gray-400">{{ user.service_offer_count }} service · {{ user.digital_offer_count }} digital</p>
+          </td>
+          <td class="px-4 py-3">
+            {% if user.admin_business_mode.key == 'service' %}
+            <span class="text-xs {% if user.service_offer_count and user.service_ready_count == user.service_offer_count %}text-emerald-600{% elif user.service_ready_count %}text-amber-600{% else %}text-red-600{% endif %}">
+              {{ user.service_ready_count }}/{{ user.service_offer_count }} booking-ready
+            </span>
+            {% elif user.admin_business_mode.key == 'digital' %}
+            <span class="text-xs {% if user.digital_offer_count and user.digital_ready_count == user.digital_offer_count %}text-emerald-600{% elif user.digital_ready_count %}text-amber-600{% else %}text-red-600{% endif %}">
+              {{ user.digital_ready_count }}/{{ user.digital_offer_count }} access-ready
+            </span>
+            {% else %}
+            <span class="text-xs text-gray-500 dark:text-gray-400">{{ user.offer_count }} active offer{{ user.offer_count|pluralize }}</span>
+            {% endif %}
+          </td>
           <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{{ user.date_joined|date:"M j, Y" }}</td>
           <td class="px-4 py-3 text-center">
             <div class="flex items-center justify-center gap-1">
@@ -166,7 +192,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="9" class="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+          <td colspan="11" class="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
             No users found matching your criteria.
           </td>
         </tr>

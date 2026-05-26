@@ -1,7 +1,7 @@
 {% extends "admin_dashboard/base.html" %}
 
 {% block page_title %}{{ page_title }}{% endblock %}
-{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ page_obj.paginator.count }} active catalog item{{ page_obj.paginator.count|pluralize }}</p>{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ page_obj.paginator.count }} active offer{{ page_obj.paginator.count|pluralize }}</p>{% endblock %}
 
 {% block content %}
 {% include "admin_dashboard/commerce/_nav.html" %}
@@ -9,7 +9,7 @@
 <div class="flex flex-wrap items-center gap-3 mb-6">
   <form method="get" class="flex flex-wrap items-center gap-2">
     <input type="text" name="q" value="{{ current_q }}" placeholder="Search name, slug…" class="input text-xs w-44">
-    <input type="text" name="email" value="{{ current_email }}" placeholder="Seller email…" class="input text-xs w-40">
+    <input type="text" name="email" value="{{ current_email }}" placeholder="Owner email…" class="input text-xs w-40">
     <select name="status" class="input text-xs w-32">
       <option value="">All stock</option>
       <option value="in_stock" {% if current_status == 'in_stock' %}selected{% endif %}>In Stock</option>
@@ -25,16 +25,22 @@
       {% endfor %}
       <option value="shopify" {% if current_source == 'shopify' %}selected{% endif %}>Shopify</option>
     </select>
+    <select name="offering_type" class="input text-xs w-32">
+      <option value="">All types</option>
+      {% for value, label in offering_type_choices %}
+      <option value="{{ value }}" {% if current_type == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
     <select name="commerce" class="input text-xs w-36">
-      <option value="">Commerce link</option>
-      <option value="1" {% if current_commerce == '1' %}selected{% endif %}>Has link</option>
-      <option value="0" {% if current_commerce == '0' %}selected{% endif %}>Missing link</option>
+      <option value="">Public page</option>
+      <option value="1" {% if current_commerce == '1' %}selected{% endif %}>Has page</option>
+      <option value="0" {% if current_commerce == '0' %}selected{% endif %}>Missing page</option>
     </select>
     <label class="flex items-center gap-1 text-xs text-gray-500">
       <input type="checkbox" name="featured" value="1" {% if current_featured == '1' %}checked{% endif %} class="rounded border-gray-300 text-kova-600"> Featured
     </label>
     <button type="submit" class="btn-primary text-xs px-3 py-1.5">Filter</button>
-    {% if current_status or current_email or current_q or current_featured or current_source or current_commerce %}
+    {% if current_status or current_email or current_q or current_featured or current_source or current_commerce or current_type %}
     <a href="{% url 'admin_dashboard:commerce_catalog' %}" class="text-xs text-gray-400 hover:text-gray-600">Clear</a>
     {% endif %}
   </form>
@@ -45,12 +51,14 @@
     <table class="w-full text-sm">
       <thead>
         <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
-          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Product</th>
-          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Seller</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Offer</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Owner</th>
           <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Source</th>
-          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-center">Stock</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Type</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Mode</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Fulfillment</th>
           <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">Price</th>
-          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Commerce</th>
+          <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Public Page</th>
           <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">Added</th>
         </tr>
       </thead>
@@ -67,10 +75,22 @@
           <td class="px-4 py-2.5">
             <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600">{{ p.sync_source_label }}</span>
           </td>
-          <td class="px-4 py-2.5 text-center">
+          <td class="px-4 py-2.5">
             <span class="text-[10px] px-1.5 py-0.5 rounded
-              {% if p.stock_status == 'in_stock' %}bg-green-100 text-green-700{% elif p.stock_status == 'low_stock' %}bg-yellow-100 text-yellow-700{% elif p.stock_status == 'out_of_stock' %}bg-red-100 text-red-700{% else %}bg-gray-100 text-gray-700{% endif %}">
-              {{ p.get_stock_status_display }}
+              {% if p.offering_type == 'service' %}bg-emerald-100 text-emerald-700{% elif p.offering_type == 'digital' %}bg-violet-100 text-violet-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+              {{ p.get_offering_type_display }}
+            </span>
+          </td>
+          <td class="px-4 py-2.5">
+            <span class="text-[10px] px-1.5 py-0.5 rounded
+              {% if p.admin_business_mode.key == 'service' %}bg-emerald-100 text-emerald-700{% elif p.admin_business_mode.key == 'digital' %}bg-violet-100 text-violet-700{% elif p.admin_business_mode.key == 'expert' %}bg-amber-100 text-amber-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+              {{ p.admin_business_mode.label }}
+            </span>
+          </td>
+          <td class="px-4 py-2.5">
+            <span class="text-[10px] px-1.5 py-0.5 rounded
+              {% if p.admin_fulfillment.status == 'ready' %}bg-emerald-100 text-emerald-700{% elif p.admin_fulfillment.status == 'missing' %}bg-red-100 text-red-700{% else %}bg-amber-100 text-amber-700{% endif %}">
+              {{ p.admin_fulfillment.label }}
             </span>
           </td>
           <td class="px-4 py-2.5 text-right text-xs">{% if p.price %}{{ p.currency }} {{ p.price|floatformat:0 }}{% else %}—{% endif %}</td>
@@ -78,13 +98,13 @@
             {% if p.commerce_slug %}
             <span class="text-[10px] font-mono text-emerald-600">{{ p.commerce_slug }}</span>
             {% else %}
-            <span class="text-[10px] text-gray-400">No slug</span>
+            <span class="text-[10px] text-gray-400">Not live</span>
             {% endif %}
           </td>
           <td class="px-4 py-2.5 text-right text-xs text-gray-400">{{ p.created_at|date:"M d" }}</td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" class="px-4 py-12 text-center text-sm text-gray-400">No catalog items found.</td></tr>
+        <tr><td colspan="9" class="px-4 py-12 text-center text-sm text-gray-400">No offers found.</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -93,8 +113,8 @@
   <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
     <p class="text-xs text-gray-400">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</p>
     <div class="flex gap-1">
-      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 text-xs rounded bg-gray-100 dark:bg-gray-800">Prev</a>{% endif %}
-      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 text-xs rounded bg-gray-100 dark:bg-gray-800">Next</a>{% endif %}
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}{% if current_q %}&q={{ current_q }}{% endif %}{% if current_email %}&email={{ current_email }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_source %}&source={{ current_source }}{% endif %}{% if current_type %}&offering_type={{ current_type }}{% endif %}{% if current_commerce %}&commerce={{ current_commerce }}{% endif %}{% if current_featured %}&featured={{ current_featured }}{% endif %}" class="px-3 py-1 text-xs rounded bg-gray-100 dark:bg-gray-800">Prev</a>{% endif %}
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if current_q %}&q={{ current_q }}{% endif %}{% if current_email %}&email={{ current_email }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_source %}&source={{ current_source }}{% endif %}{% if current_type %}&offering_type={{ current_type }}{% endif %}{% if current_commerce %}&commerce={{ current_commerce }}{% endif %}{% if current_featured %}&featured={{ current_featured }}{% endif %}" class="px-3 py-1 text-xs rounded bg-gray-100 dark:bg-gray-800">Next</a>{% endif %}
     </div>
   </div>
   {% endif %}

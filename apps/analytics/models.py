@@ -672,7 +672,8 @@ class PageView(models.Model):
     """
 
     SECTION_CHOICES = [
-        ("brief", "Daily Brief"),
+        ("brief", "Today"),
+        ("command", "Workspace"),
         ("content", "Content Studio"),
         ("engage", "Inbox (Engage)"),
         ("whatsapp", "WhatsApp"),
@@ -684,7 +685,7 @@ class PageView(models.Model):
         ("leads", "Lead Inbox"),
         ("nurture", "Nurture Sequences"),
         ("links", "Kova Links"),
-        ("products", "Products"),
+        ("products", "Snap2sell"),
         ("campaigns", "Campaigns"),
         ("memes", "Meme Studio"),
         ("media_queue", "Media Queue"),

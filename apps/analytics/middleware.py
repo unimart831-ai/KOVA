@@ -23,6 +23,7 @@ _SECTION_MAP = [
     (re.compile(r"^/accounts/settings"), "settings"),
     # Main sections
     (re.compile(r"^/brief/"), "brief"),
+    (re.compile(r"^/command/"), "command"),
     (re.compile(r"^/content/"), "content"),
     (re.compile(r"^/engage/"), "engage"),
     (re.compile(r"^/whatsapp/"), "whatsapp"),

@@ -8,6 +8,7 @@ from django.db.models.functions import Length, TruncDate
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
+from apps.accounts.segments import get_mode_label, infer_business_mode
 from apps.accounts.models import UserProfile
 from apps.admin_dashboard.decorators import staff_required
 from apps.agents.models import AgentAction
@@ -26,6 +27,76 @@ def _commerce_context(extra=None):
     if extra:
         ctx.update(extra)
     return ctx
+
+
+def _profile_mode_payload(profile):
+    connected_platforms = list(
+        profile.user.social_accounts.filter(is_active=True).values_list("platform", flat=True)
+    )
+    mode = infer_business_mode(profile, connected_platforms)
+    return {
+        "key": mode,
+        "label": get_mode_label(mode),
+    }
+
+
+def _offer_fulfillment_payload(product):
+    if product.offering_type == Product.OfferingType.SERVICE:
+        if product.booking_link_id:
+            return {
+                "status": "ready",
+                "label": "Booking link ready",
+                "detail": "Uses Kova booking flow",
+            }
+        if (product.fulfillment_url or "").strip():
+            return {
+                "status": "ready",
+                "label": "External booking ready",
+                "detail": "Uses external booking or inquiry URL",
+            }
+        return {
+            "status": "missing",
+            "label": "Missing booking path",
+            "detail": "No booking link or fulfillment URL",
+        }
+
+    if product.offering_type == Product.OfferingType.DIGITAL:
+        if (product.fulfillment_url or "").strip():
+            return {
+                "status": "ready",
+                "label": "Access URL ready",
+                "detail": "Uses fulfillment URL for delivery",
+            }
+        if (product.product_url or "").strip():
+            return {
+                "status": "partial",
+                "label": "Sales page only",
+                "detail": "Has sales page but no explicit access URL",
+            }
+        return {
+            "status": "missing",
+            "label": "Missing access path",
+            "detail": "No fulfillment or access URL configured",
+        }
+
+    if product.commerce_slug:
+        return {
+            "status": "ready",
+            "label": "Public page live",
+            "detail": "Offer page can be shared publicly",
+        }
+    return {
+        "status": "partial",
+        "label": "Internal only",
+        "detail": "No public offer page slug yet",
+    }
+
+
+def _decorate_offer(product):
+    mode = _profile_mode_payload(product.user.profile)
+    product.admin_business_mode = mode
+    product.admin_fulfillment = _offer_fulfillment_payload(product)
+    return product
 
 
 @staff_required
@@ -78,10 +149,11 @@ def commerce_overview(request):
     )
 
     total_categories = ProductCategory.objects.filter(is_active=True).count()
-    recent_products = (
+    recent_products = list(
         active_qs.select_related("user", "category", "marketplace_partner")
         .order_by("-created_at")[:15]
     )
+    recent_products = [_decorate_offer(product) for product in recent_products]
 
     catalog_sample_seeds = ContentSeed.objects.filter(notes__startswith="Catalog sample:").count()
     catalog_sample_7d = ContentSeed.objects.filter(
@@ -114,6 +186,18 @@ def commerce_overview(request):
     products_count = offering_breakdown.get("product", 0)
     services_count = offering_breakdown.get("service", 0)
     digital_count = offering_breakdown.get("digital", 0)
+    service_fulfillment_ready = active_qs.filter(
+        offering_type=Product.OfferingType.SERVICE,
+    ).filter(
+        Q(booking_link__isnull=False) | Q(fulfillment_url__gt=""),
+    ).count()
+    digital_fulfillment_ready = active_qs.filter(
+        offering_type=Product.OfferingType.DIGITAL,
+    ).filter(
+        Q(fulfillment_url__gt="") | Q(product_url__gt=""),
+    ).count()
+    services_missing_fulfillment = max(services_count - service_fulfillment_ready, 0)
+    digital_missing_fulfillment = max(digital_count - digital_fulfillment_ready, 0)
 
     snap_actions = AgentAction.objects.filter(action_type__startswith="snap.")
     snap_total = snap_actions.count()
@@ -190,6 +274,10 @@ def commerce_overview(request):
         "products_count": products_count,
         "services_count": services_count,
         "digital_count": digital_count,
+        "service_fulfillment_ready": service_fulfillment_ready,
+        "digital_fulfillment_ready": digital_fulfillment_ready,
+        "services_missing_fulfillment": services_missing_fulfillment,
+        "digital_missing_fulfillment": digital_missing_fulfillment,
         "snap_total": snap_total,
         "snap_7d": snap_7d,
         "snap_single": snap_single,
@@ -241,6 +329,10 @@ def commerce_catalog(request):
     elif source == "shopify":
         qs = qs.filter(marketplace_metadata__shopify=True)
 
+    offering_type = request.GET.get("offering_type")
+    if offering_type in dict(Product.OfferingType.choices):
+        qs = qs.filter(offering_type=offering_type)
+
     user_email = request.GET.get("email")
     if user_email:
         qs = qs.filter(user__email__icontains=user_email)
@@ -261,14 +353,17 @@ def commerce_catalog(request):
 
     paginator = Paginator(qs, 50)
     page = paginator.get_page(request.GET.get("page", 1))
+    page.object_list = [_decorate_offer(product) for product in page.object_list]
 
     return render(request, COMMERCE_TEMPLATE.format(name="catalog"), _commerce_context({
-        "page_title": "Catalog",
+        "page_title": "Offer Catalog",
         "commerce_section": "catalog",
         "page_obj": page,
         "source_choices": Product.Source.choices,
+        "offering_type_choices": Product.OfferingType.choices,
         "current_status": status,
         "current_source": source,
+        "current_type": offering_type,
         "current_email": user_email or "",
         "current_q": q or "",
         "current_featured": featured_only,
@@ -291,6 +386,7 @@ def commerce_product_detail(request, pk):
     payment_total = product.commerce_payments.filter(
         status=CommercePayment.Status.COMPLETED,
     ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    product = _decorate_offer(product)
 
     return render(request, COMMERCE_TEMPLATE.format(name="product_detail"), _commerce_context({
         "page_title": product.name,
@@ -304,6 +400,8 @@ def commerce_product_detail(request, pk):
         "published_posts": published_posts,
         "payments": payments,
         "payment_total": payment_total,
+        "business_mode": product.admin_business_mode,
+        "fulfillment_state": product.admin_fulfillment,
     }))
 
 
@@ -317,10 +415,52 @@ def commerce_shops(request):
             active_products=Count(
                 "user__products",
                 filter=Q(user__products__is_active=True),
+                distinct=True,
             ),
             commerce_links=Count(
                 "user__products",
                 filter=Q(user__products__is_active=True, user__products__commerce_slug__gt=""),
+                distinct=True,
+            ),
+            product_offers=Count(
+                "user__products",
+                filter=Q(
+                    user__products__is_active=True,
+                    user__products__offering_type=Product.OfferingType.PRODUCT,
+                ),
+                distinct=True,
+            ),
+            service_offers=Count(
+                "user__products",
+                filter=Q(
+                    user__products__is_active=True,
+                    user__products__offering_type=Product.OfferingType.SERVICE,
+                ),
+                distinct=True,
+            ),
+            digital_offers=Count(
+                "user__products",
+                filter=Q(
+                    user__products__is_active=True,
+                    user__products__offering_type=Product.OfferingType.DIGITAL,
+                ),
+                distinct=True,
+            ),
+            booking_ready=Count(
+                "user__products",
+                filter=Q(
+                    user__products__is_active=True,
+                    user__products__offering_type=Product.OfferingType.SERVICE,
+                ) & (Q(user__products__booking_link__isnull=False) | Q(user__products__fulfillment_url__gt="")),
+                distinct=True,
+            ),
+            access_ready=Count(
+                "user__products",
+                filter=Q(
+                    user__products__is_active=True,
+                    user__products__offering_type=Product.OfferingType.DIGITAL,
+                ) & (Q(user__products__fulfillment_url__gt="") | Q(user__products__product_url__gt="")),
+                distinct=True,
             ),
         )
         .filter(active_products__gt=0)
@@ -343,9 +483,11 @@ def commerce_shops(request):
     paginator = Paginator(qs, 50)
     page = paginator.get_page(request.GET.get("page", 1))
     site_url = getattr(settings, "SITE_URL", "").rstrip("/")
+    for profile in page.object_list:
+        profile.admin_business_mode = _profile_mode_payload(profile)
 
     return render(request, COMMERCE_TEMPLATE.format(name="shops"), _commerce_context({
-        "page_title": "Public Shops",
+        "page_title": "Public Offer Pages",
         "commerce_section": "shops",
         "page_obj": page,
         "site_url": site_url,
