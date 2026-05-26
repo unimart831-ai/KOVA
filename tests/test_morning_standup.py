@@ -47,6 +47,10 @@ class TestStandup:
         decisions = enrich_decisions([{"item": "Approve draft posts in studio"}])
         assert decisions[0]["action_url"].endswith("/content/studio/")
 
+    def test_enrich_decisions_normalizes_title_only_payloads(self):
+        decisions = enrich_decisions([{"title": "2 failed posts"}])
+        assert decisions[0]["item"] == "2 failed posts"
+
     def test_get_top_decision_prefers_urgent(self, brief):
         top = get_top_decision(brief)
         assert top["urgency"] == "now"

@@ -43,7 +43,7 @@
       <div class="lg:w-72 shrink-0 rounded-xl border border-amber-200/80 dark:border-amber-800/50 bg-white/80 dark:bg-gray-900/60 p-4">
         <p class="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-1">Only you can decide</p>
         <p class="text-sm font-medium text-gray-900 dark:text-white leading-snug">
-          {{ standup_context.top_decision.item|default:standup_context.top_decision.title }}
+          {{ standup_context.top_decision.item }}
         </p>
         {% if standup_context.top_decision.recommended_action %}
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">{{ standup_context.top_decision.recommended_action }}</p>

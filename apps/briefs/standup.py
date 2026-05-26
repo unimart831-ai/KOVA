@@ -44,6 +44,7 @@ def enrich_decisions(decisions):
     enriched = []
     for decision in decisions or []:
         item = dict(decision) if isinstance(decision, dict) else {"item": str(decision)}
+        item["item"] = (item.get("item") or item.get("title") or "Decision needed").strip()
         url = guess_decision_url(item)
         if url:
             item["action_url"] = url
