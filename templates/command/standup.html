@@ -16,12 +16,17 @@
   <div class="relative overflow-hidden rounded-3xl border border-amber-200 dark:border-amber-800/50 bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-amber-950/30 dark:via-gray-900 dark:to-orange-950/20">
     <div class="px-6 py-8 sm:px-8 lg:px-10">
       <div class="max-w-3xl">
-        <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700 dark:text-amber-400">Morning Standup</p>
-        <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-2">Start the day with the one move that matters most</h2>
+        <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700 dark:text-amber-400">Morning Standup · {{ segment_surface.mode_label }}</p>
+        <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ segment_surface.today_title }}</h2>
         <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-3 leading-relaxed">
-          This dedicated Standup view turns your Daily Brief into a cleaner operator console:
-          score, overnight work, pending approvals, and the decision Kova cannot make without you.
+          {{ segment_surface.today_description }}
+          Standup turns your Daily Brief into a cleaner operator console with score, overnight work, approvals, and the decision Kova cannot make without you.
         </p>
+        <div class="flex flex-wrap gap-2 mt-4">
+          {% for focus in segment_surface.today_focus %}
+          <span class="inline-flex items-center rounded-full border border-amber-200 dark:border-amber-800/80 bg-white/75 dark:bg-gray-900/70 px-3 py-1 text-xs font-medium text-amber-700 dark:text-amber-300">{{ focus }}</span>
+          {% endfor %}
+        </div>
       </div>
     </div>
   </div>
@@ -64,18 +69,12 @@
         <div class="card-body p-5">
           <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Quick paths</h3>
           <div class="mt-4 grid gap-3">
-            <a href="{% url 'content:queue' %}" class="rounded-xl border border-gray-200 dark:border-gray-800 px-4 py-3 hover:border-kova-300 dark:hover:border-kova-700 transition-colors">
-              <p class="text-sm font-medium text-gray-900 dark:text-white">Approve in Queue</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Handle pending posts fast</p>
+            {% for action in segment_surface.today_actions %}
+            <a href="{% url action.url_name %}" class="rounded-xl border border-gray-200 dark:border-gray-800 px-4 py-3 hover:border-kova-300 dark:hover:border-kova-700 transition-colors">
+              <p class="text-sm font-medium text-gray-900 dark:text-white">{{ action.label }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ segment_surface.mode_value_path }}</p>
             </a>
-            <a href="{% url 'content:studio' %}" class="rounded-xl border border-gray-200 dark:border-gray-800 px-4 py-3 hover:border-kova-300 dark:hover:border-kova-700 transition-colors">
-              <p class="text-sm font-medium text-gray-900 dark:text-white">Open Studio</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Edit and regenerate content</p>
-            </a>
-            <a href="{% url 'whatsapp:status_studio' %}" class="rounded-xl border border-gray-200 dark:border-gray-800 px-4 py-3 hover:border-kova-300 dark:hover:border-kova-700 transition-colors">
-              <p class="text-sm font-medium text-gray-900 dark:text-white">WhatsApp Status</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Push urgency or daily updates</p>
-            </a>
+            {% endfor %}
           </div>
         </div>
       </div>

@@ -2,7 +2,7 @@
 
 {% block page_title %}Snap to Sell{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Snap photos → AI creates your campaign</p>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Snap photos → AI creates your offer launch</p>
 {% endblock %}
 
 {% block content %}
@@ -15,8 +15,8 @@
     <div class="flex items-start gap-3">
       <span class="text-xl" aria-hidden="true">⚡</span>
       <div>
-        <p class="text-sm font-semibold text-purple-900 dark:text-purple-100">Commerce Autopilot is on</p>
-        <p class="text-xs text-purple-700 dark:text-purple-300 mt-0.5">Snap a photo, enter the product name and price — agents write copy, expand your photo set, and publish.</p>
+        <p class="text-sm font-semibold text-purple-900 dark:text-purple-100">Offer Autopilot is on</p>
+        <p class="text-xs text-purple-700 dark:text-purple-300 mt-0.5">Snap a photo, enter the offer name and price — agents write copy, expand your photo set, and publish.</p>
       </div>
     </div>
   </div>
@@ -24,7 +24,7 @@
 
   {# Hero / explainer #}
   <div class="card px-6 py-5 text-center border-2 border-dashed border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/20">
-        <h2 class="text-lg font-bold text-gray-900 dark:text-white" x-text="offeringConfig[offeringType].hero">Photos → Content → Sales</h2>
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white" x-text="offeringConfig[offeringType].hero">Photos → Content → Launch</h2>
     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1" x-text="offeringConfig[offeringType].subtitle"></p>
     <a href="{% url 'products:snap_batch' %}" class="inline-block mt-3 text-xs text-orange-600 dark:text-orange-400 hover:underline font-medium">
       Have multiple offerings? Try Batch Snap →
@@ -33,7 +33,7 @@
 
   {# Offering type selector #}
   <div class="card p-4">
-    <label class="label text-sm font-semibold mb-2">What are you selling?</label>
+    <label class="label text-sm font-semibold mb-2">What are you launching?</label>
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
       <button type="button" @click="offeringType = 'product'"
               class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
@@ -144,7 +144,7 @@
       <input type="text" id="snap-name" name="name" required
              class="input" :placeholder="offeringConfig[offeringType].namePlaceholder"
              x-model="name">
-      <p class="text-xs text-gray-500 dark:text-gray-400">A clear name helps AI write better posts and your customers find the product.</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">A clear name helps AI write better posts and makes the offer easier for customers to understand fast.</p>
     </div>
 
     {# Price — always required #}
@@ -250,7 +250,7 @@
             :disabled="photos.length === 0 || !price || !name.trim()"
             class="w-full btn-primary text-base py-3.5 rounded-xl font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
       <span x-text="photos.length <= 1
-        ? 'Snap to Sell — Launch Campaign'
+        ? 'Snap to Sell — Launch Offer'
         : 'Snap to Sell — Launch with ' + photos.length + ' Photos'"></span>
     </button>
 

@@ -14,8 +14,8 @@
   <div class="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl flex items-start gap-3">
     
     <div class="flex-1">
-      <p class="text-sm font-medium text-amber-800 dark:text-amber-300">Connect a platform to activate your AI team</p>
-      <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">Content, engagement, leads, and revenue tracking all start with one connected account.</p>
+      <p class="text-sm font-medium text-amber-800 dark:text-amber-300">{{ segment_surface.nudge_title }}</p>
+      <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">{{ segment_surface.nudge_body }}</p>
       <a href="{% url 'platforms:list' %}" class="inline-flex items-center gap-1 mt-2 text-sm font-medium text-kova-600 dark:text-kova-400 hover:text-kova-800 dark:hover:text-kova-300">
         Connect now
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
@@ -114,6 +114,30 @@
                       class="{% if brief.kova_score >= 70 %}text-green-400{% elif brief.kova_score >= 40 %}text-amber-400{% else %}text-kova-400{% endif %} transition-all duration-1000"/>
             </svg>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-kova-200 dark:border-kova-800/60 bg-gradient-to-r from-white to-kova-50/80 dark:from-gray-900 dark:to-kova-950/20">
+      <div class="px-6 py-5">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div class="max-w-2xl">
+            <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-kova-600 dark:text-kova-400">{{ segment_surface.mode_label }}</p>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mt-2">{{ segment_surface.today_title }}</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300 mt-2 leading-relaxed">{{ segment_surface.today_description }}</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            {% for action in segment_surface.today_actions %}
+            <a href="{% url action.url_name %}" class="{% if forloop.first %}btn-primary{% else %}btn-secondary{% endif %} text-sm px-4 py-2">
+              {{ action.label }}
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2 mt-4">
+          {% for focus in segment_surface.today_focus %}
+          <span class="inline-flex items-center rounded-full border border-kova-200 dark:border-kova-800/80 bg-kova-50 dark:bg-kova-950/40 px-3 py-1 text-xs font-medium text-kova-700 dark:text-kova-300">{{ focus }}</span>
+          {% endfor %}
         </div>
       </div>
     </div>

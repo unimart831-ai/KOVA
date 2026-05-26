@@ -27,6 +27,9 @@ def _plan_ctx(request):
 
 @login_required
 def product_list(request):
+    from apps.accounts.segments import build_surface_experience
+    from apps.platforms.models import SocialAccount
+
     products = Product.objects.filter(user=request.user, is_active=True)
 
     # Filters
@@ -60,6 +63,10 @@ def product_list(request):
 
     categories = ProductCategory.objects.filter(user=request.user, is_active=True)
     unread_alerts = StockAlert.objects.filter(user=request.user, is_read=False).count()
+    connected_platforms = list(
+        SocialAccount.objects.filter(user=request.user, is_active=True)
+        .values_list("platform", flat=True)
+    )
 
     return render(request, "products/product_list.html", {
         "products": page_obj,
@@ -73,6 +80,10 @@ def product_list(request):
         "plan_ctx": _plan_ctx(request),
         "batch_product_ids": request.GET.get("batch", ""),
         "batch_session_id": request.GET.get("session", ""),
+        "segment_surface": build_surface_experience(
+            profile=getattr(request.user, "profile", None),
+            connected_platforms=connected_platforms,
+        ),
     })
 
 
@@ -106,8 +117,8 @@ def product_add(request):
 
     return render(request, "products/product_form.html", {
         "form": form,
-        "title": "Add to Catalog",
-        "submit_label": "Add to Catalog",
+        "title": "Add Offer",
+        "submit_label": "Save Offer",
         "plan_ctx": _plan_ctx(request),
     })
 
@@ -251,7 +262,7 @@ def product_edit(request, product_id):
     return render(request, "products/product_form.html", {
         "form": form,
         "product": product,
-        "title": f"Edit {product.name}",
+        "title": f"Edit Offer · {product.name}",
         "submit_label": "Save Changes",
         "plan_ctx": _plan_ctx(request),
     })

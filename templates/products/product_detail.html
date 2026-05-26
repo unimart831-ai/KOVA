@@ -130,7 +130,7 @@
     </div>
 
     <div class="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-gray-100 dark:border-gray-800">
-      <a href="{% url 'products:edit' product_id=product.pk %}" class="btn-primary text-sm px-4 py-1.5">Edit</a>
+      <a href="{% url 'products:edit' product_id=product.pk %}" class="btn-primary text-sm px-4 py-1.5">Edit Offer</a>
 
       {% if product.image and product.stock_status != 'out_of_stock' %}
       <form method="post" action="{% url 'products:fix_promote' product_id=product.pk %}" class="inline">
@@ -193,7 +193,7 @@
       {% endif %}
 
       <form method="post" action="{% url 'products:delete' product_id=product.pk %}"
-            onsubmit="return confirm('Remove this product from your catalog?')">
+            onsubmit="return confirm('Remove this offer from your workspace?')">
         {% csrf_token %}
         <button type="submit" class="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">Remove</button>
       </form>
@@ -203,8 +203,18 @@
   {# Commerce Link — public sell page #}
   {% if commerce_url %}
   <div class="card p-5 border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20">
-    <h3 class="text-sm font-semibold text-emerald-900 dark:text-emerald-100 mb-1">Commerce Link</h3>
-    <p class="text-xs text-emerald-700 dark:text-emerald-300 mb-3">Share this page — customers can view, chat, and pay via M-Pesa. Google and WhatsApp show your photo &amp; price when shared.{% if product.uses_external_buy_link %} Social posts link to your marketplace listing; this Kova page supports M-Pesa &amp; WhatsApp.{% endif %}</p>
+    <h3 class="text-sm font-semibold text-emerald-900 dark:text-emerald-100 mb-1">Public Offer Page</h3>
+    <p class="text-xs text-emerald-700 dark:text-emerald-300 mb-3">
+      Share this page so customers can view the offer, chat with you, and follow the right conversion path.
+      {% if product.offering_type == 'product' %}
+      M-Pesa stays available for physical products.
+      {% elif product.offering_type == 'service' %}
+      Service visitors follow your booking or inquiry CTA.
+      {% else %}
+      Digital visitors follow your access or delivery CTA.
+      {% endif %}
+      {% if product.uses_external_buy_link %} Social posts still point to your marketplace listing while this Kova page supports discovery and chat.{% endif %}
+    </p>
     <div class="flex flex-wrap items-center gap-2 mb-3">
       <input type="text" readonly value="{{ commerce_url }}" id="commerce-url"
              class="input text-xs flex-1 min-w-0 font-mono bg-white dark:bg-gray-900">
@@ -215,13 +225,13 @@
     </div>
     {% if shop_url %}
     <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-emerald-200/60 dark:border-emerald-800/60">
-      <span class="text-xs font-medium text-emerald-800 dark:text-emerald-200 w-full mb-1">Shop homepage (all products)</span>
+      <span class="text-xs font-medium text-emerald-800 dark:text-emerald-200 w-full mb-1">Offers page (all offers)</span>
       <input type="text" readonly value="{{ shop_url }}" id="shop-url"
              class="input text-xs flex-1 min-w-0 font-mono bg-white dark:bg-gray-900">
       <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('shop-url').value); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1500)"
               class="btn-secondary text-sm px-3 py-1.5 shrink-0">Copy</button>
       <a href="{{ shop_url }}" target="_blank" rel="noopener"
-         class="btn-secondary text-sm px-3 py-1.5 shrink-0">Open shop</a>
+         class="btn-secondary text-sm px-3 py-1.5 shrink-0">Open offers</a>
     </div>
     {% endif %}
   </div>
@@ -231,7 +241,7 @@
   {% if seo_checklist %}
   <div class="card p-5 border border-sky-200 dark:border-sky-800 bg-sky-50/40 dark:bg-sky-950/20">
     <div class="flex items-center justify-between gap-2 mb-3">
-      <h3 class="text-sm font-semibold text-sky-900 dark:text-sky-100">Shop SEO</h3>
+      <h3 class="text-sm font-semibold text-sky-900 dark:text-sky-100">Offer SEO</h3>
       <span class="text-xs font-semibold px-2 py-0.5 rounded-full {% if seo_checklist.ready %}bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300{% else %}bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300{% endif %}">
         {{ seo_checklist.done_count }}/{{ seo_checklist.total }}
       </span>
@@ -258,7 +268,7 @@
       {% if seo_checklist.needs_profile_settings %}
       <a href="{% url 'accounts:settings' %}" class="underline hover:text-sky-800">Update profile settings</a> for city &amp; WhatsApp.
       {% else %}
-      Edit this product to improve your listing.
+      Edit this offer to improve your listing.
       {% endif %}
     </p>
     {% endif %}

@@ -250,3 +250,120 @@ def get_mode_fallback_topics(mode: str) -> list[str]:
         "expert": ["opinion", "lesson", "framework", "client insight", "behind the scenes"],
     }
     return topics.get(mode, topics["expert"])
+
+
+def build_surface_experience(*, profile=None, connected_platforms=None) -> dict:
+    mode = infer_business_mode(profile, connected_platforms)
+    surfaces = {
+        "merchant": {
+            "today_title": "Keep products moving today",
+            "today_description": "Review stock, approve offer posts, and turn demand into purchases while the selling window is still hot.",
+            "today_focus": ["Stock pressure", "Offer launches", "Revenue moves"],
+            "today_actions": [
+                {"label": "Review Queue", "url_name": "content:queue"},
+                {"label": "Open Revenue", "url_name": "analytics:revenue"},
+                {"label": "Snap to Sell", "url_name": "products:snap"},
+            ],
+            "workspace_title": "Run launches, approvals, and selling signals from one workspace",
+            "workspace_description": "Use Standup for selling priorities, Moments for timely campaigns, and Listen to launch offers fast across your channels.",
+            "workspace_focus": ["Offers", "Approvals", "Revenue"],
+            "workspace_actions": [
+                {"label": "Open Listen", "url_name": "command:listen"},
+                {"label": "Open Standup", "url_name": "command:standup"},
+            ],
+            "catalog_kicker": "Fastest way to sell",
+            "catalog_title": "Turn products into sellable campaigns fast",
+            "catalog_description": "Snap, batch, and launch products with pricing, stock awareness, and promotion-ready copy in one flow.",
+            "catalog_primary": {"label": "Snap to Sell", "url_name": "products:snap"},
+            "catalog_secondary": {"label": "Batch Snap", "url_name": "products:snap_batch"},
+            "catalog_empty_title": "No offers in your catalog yet",
+            "catalog_empty_description": "Start with Snap to Sell and let Kova turn your products into listings, posts, and buying paths.",
+            "nudge_title": "Connect a channel to turn attention into orders",
+            "nudge_body": "Your AI selling loop gets stronger once Kova can see how your audience reacts, clicks, and converts.",
+        },
+        "service": {
+            "today_title": "Turn attention into bookings",
+            "today_description": "Prioritize replies, proof, and booking-ready follow-up so interested people move into consultations, appointments, and quotes.",
+            "today_focus": ["Bookings", "Client proof", "Follow-up"],
+            "today_actions": [
+                {"label": "Open Bookings", "url_name": "bookings:list"},
+                {"label": "Reply in Inbox", "url_name": "engage:inbox"},
+                {"label": "Launch a service brief", "url_name": "command:listen"},
+            ],
+            "workspace_title": "Run your service pipeline from one workspace",
+            "workspace_description": "Standup keeps client work and approvals clear, Moments finds relevant angles, and Listen turns one brief into booking-ready campaigns.",
+            "workspace_focus": ["Bookings", "Credibility", "Client flow"],
+            "workspace_actions": [
+                {"label": "Create Booking Page", "url_name": "bookings:link_create"},
+                {"label": "Open Listen", "url_name": "command:listen"},
+            ],
+            "catalog_kicker": "Bookable offers",
+            "catalog_title": "Turn services into bookable offers",
+            "catalog_description": "Package services with pricing, proof, and booking links so Kova can drive consultations instead of generic product CTAs.",
+            "catalog_primary": {"label": "Add a service", "url_name": "products:add"},
+            "catalog_secondary": {"label": "Create Booking Page", "url_name": "bookings:link_create"},
+            "catalog_empty_title": "No service offers yet",
+            "catalog_empty_description": "Add a service and connect it to booking so Kova can drive consultations, appointments, and quotes.",
+            "nudge_title": "Connect a channel to turn interest into bookings",
+            "nudge_body": "LinkedIn, Instagram, WhatsApp, and other channels give Kova the signal it needs to drive inquiries and appointments.",
+        },
+        "digital": {
+            "today_title": "Turn content into access and signups",
+            "today_description": "Focus on launches, lead capture, and conversion paths that move people into your digital offers, memberships, or learning products.",
+            "today_focus": ["Launches", "Access paths", "Signups"],
+            "today_actions": [
+                {"label": "Launch from Workspace", "url_name": "command:listen"},
+                {"label": "Review Queue", "url_name": "content:queue"},
+                {"label": "Open Revenue", "url_name": "analytics:revenue"},
+            ],
+            "workspace_title": "Run launch loops and conversion sprints from one workspace",
+            "workspace_description": "Standup keeps launches on track, Moments finds timely hooks, and Listen turns one idea into multi-touch campaigns for digital offers.",
+            "workspace_focus": ["Launches", "Access", "Conversion"],
+            "workspace_actions": [
+                {"label": "Open Listen", "url_name": "command:listen"},
+                {"label": "Open Standup", "url_name": "command:standup"},
+            ],
+            "catalog_kicker": "Digital launches",
+            "catalog_title": "Launch digital offers with clearer access paths",
+            "catalog_description": "Create digital offers with access links, delivery notes, and campaign-ready language that highlights instant value.",
+            "catalog_primary": {"label": "Add a digital offer", "url_name": "products:add"},
+            "catalog_secondary": {"label": "Launch from Workspace", "url_name": "command:listen"},
+            "catalog_empty_title": "No digital offers yet",
+            "catalog_empty_description": "Add a template, course, toolkit, or subscription so Kova can promote it with instant-access language.",
+            "nudge_title": "Connect a channel to turn attention into signups",
+            "nudge_body": "Your best growth loop comes from seeing which channels create clicks, replies, and conversions for digital offers.",
+        },
+        "expert": {
+            "today_title": "Build authority and pipeline today",
+            "today_description": "Focus on thought leadership, visibility, and the next conversations that turn audience attention into inbound opportunity.",
+            "today_focus": ["Authority", "Visibility", "Pipeline"],
+            "today_actions": [
+                {"label": "Open Studio", "url_name": "content:studio"},
+                {"label": "Launch a visibility sprint", "url_name": "command:listen"},
+                {"label": "Open Leads", "url_name": "leads:list"},
+            ],
+            "workspace_title": "Operate your growth engine from one workspace",
+            "workspace_description": "Standup keeps signals clear, Moments finds timely angles, and Listen turns one point of view into a multi-channel visibility sprint.",
+            "workspace_focus": ["Authority", "Momentum", "Opportunities"],
+            "workspace_actions": [
+                {"label": "Open Listen", "url_name": "command:listen"},
+                {"label": "Open Studio", "url_name": "content:studio"},
+            ],
+            "catalog_kicker": "Optional offers",
+            "catalog_title": "Offers are optional — credibility is not",
+            "catalog_description": "Use Kova to grow authority first, then add services or digital offers when you are ready to convert that attention.",
+            "catalog_primary": {"label": "Open Studio", "url_name": "content:studio"},
+            "catalog_secondary": {"label": "Open Workspace", "url_name": "command:home"},
+            "catalog_empty_title": "No offers yet — your growth engine still works",
+            "catalog_empty_description": "Use Studio and Workspace to grow authority now, then add services or digital offers when the time is right.",
+            "nudge_title": "Connect your core channel to activate growth mode",
+            "nudge_body": "Start with LinkedIn or your strongest platform so Kova can build visibility, authority, and inbound opportunity around real signals.",
+        },
+    }
+    config = surfaces.get(mode, surfaces["expert"]).copy()
+    config.update({
+        "mode": mode,
+        "mode_label": get_mode_label(mode),
+        "mode_value_path": get_mode_value_path(mode),
+    })
+    return config

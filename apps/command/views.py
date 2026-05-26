@@ -6,6 +6,7 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.accounts.segments import build_surface_experience
 from apps.briefs.models import DailyBrief
 from apps.briefs.standup import enrich_decisions
 from apps.briefs.standup import build_standup_context
@@ -25,9 +26,14 @@ def _command_context(request):
     from apps.calendar_intel.selectors import top_upcoming_for_brief
     from apps.campaigns.models import Campaign
     from apps.content.models import VoiceBrief
+    from apps.platforms.models import SocialAccount
 
     brief = _current_or_latest_brief(request.user)
     standup_context = build_standup_context(request.user, brief) if brief else None
+    connected_platforms = list(
+        SocialAccount.objects.filter(user=request.user, is_active=True)
+        .values_list("platform", flat=True)
+    )
 
     ready_moment_packs = list(
         HolidayDraft.objects.filter(
@@ -71,6 +77,10 @@ def _command_context(request):
         "legacy_brief_url": reverse("brief:home"),
         "legacy_listen_url": reverse("content:voice_campaign"),
         "legacy_calendar_url": reverse("calendar_intel:preferences"),
+        "segment_surface": build_surface_experience(
+            profile=getattr(request.user, "profile", None),
+            connected_platforms=connected_platforms,
+        ),
     }
 
 

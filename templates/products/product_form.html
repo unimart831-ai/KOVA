@@ -8,6 +8,13 @@
     <form method="post" enctype="multipart/form-data" class="space-y-5">
       {% csrf_token %}
 
+      <div class="rounded-xl border border-kova-200 dark:border-kova-800/60 bg-kova-50/60 dark:bg-kova-950/20 px-4 py-3">
+        <p class="text-sm font-semibold text-gray-900 dark:text-white">Build an offer Kova can actually convert</p>
+        <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">
+          Set the correct fulfillment path so Kova can choose the right CTA for products, services, and digital offers.
+        </p>
+      </div>
+
       <div>
         <label for="id_offering_type" class="label">What are you adding? *</label>
         {{ form.offering_type }}
@@ -22,7 +29,7 @@
         <label for="id_name" class="label">
           <span x-show="offeringType === 'product'">Product Name *</span>
           <span x-show="offeringType === 'service'" x-cloak>Service Name *</span>
-          <span x-show="offeringType === 'digital'" x-cloak>Product Name *</span>
+          <span x-show="offeringType === 'digital'" x-cloak>Digital Offer Name *</span>
         </label>
         {{ form.name }}
         {% if form.name.errors %}<p class="text-xs text-red-500 mt-1">{{ form.name.errors.0 }}</p>{% endif %}
@@ -62,7 +69,11 @@
       </div>
 
       <div>
-        <label for="id_image" class="label">Product Image</label>
+        <label for="id_image" class="label">
+          <span x-show="offeringType === 'product'">Product Image</span>
+          <span x-show="offeringType === 'service'" x-cloak>Proof / Service Image</span>
+          <span x-show="offeringType === 'digital'" x-cloak>Cover / Offer Image</span>
+        </label>
         {{ form.image }}
         {% if product.image %}
         <p class="text-xs text-gray-500 mt-1">Current: {{ product.image.name }}</p>
@@ -163,7 +174,7 @@
       {% endif %}
 
       <div class="flex items-center justify-between pt-2">
-        <a href="{% url 'products:list' %}" class="btn-secondary text-sm px-4 py-2">Cancel</a>
+        <a href="{% url 'products:list' %}" class="btn-secondary text-sm px-4 py-2">Back to Offers</a>
         <button type="submit" class="btn-primary text-sm px-6 py-2">{{ submit_label }}</button>
       </div>
     </form>

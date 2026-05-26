@@ -372,6 +372,9 @@ def _normalize_trending_topics(brief):
 @login_required
 def brief_home(request):
     """Show today's daily brief, or the most recent one while today's is pending."""
+    from apps.accounts.segments import build_surface_experience
+    from apps.platforms.models import SocialAccount
+
     today = timezone.now().date()
     brief = DailyBrief.objects.filter(user=request.user, date=today).first()
     brief_is_stale = False
@@ -422,6 +425,10 @@ def brief_home(request):
 
     from apps.briefs.dashboard import get_cached_home_extras
     home_extras = get_cached_home_extras(request.user, brief)
+    connected_platforms = list(
+        SocialAccount.objects.filter(user=request.user, is_active=True)
+        .values_list("platform", flat=True)
+    )
 
     return render(request, "briefs/home.html", {
         "brief": brief,
@@ -444,6 +451,10 @@ def brief_home(request):
         "moment_pack_id": moment_pack_id,
         "operations_update": operations_update,
         "page_title": "Home",
+        "segment_surface": build_surface_experience(
+            profile=getattr(request.user, "profile", None),
+            connected_platforms=connected_platforms,
+        ),
         **home_extras,
     })
 

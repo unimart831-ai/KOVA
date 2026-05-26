@@ -18,13 +18,24 @@
     <div class="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-kova-100/70 to-transparent dark:from-kova-900/20"></div>
     <div class="relative px-6 py-8 sm:px-8 lg:px-10 lg:py-10">
       <div class="max-w-3xl">
-        <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-kova-600 dark:text-kova-400">Hero Mode</p>
-        <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-2">Operate Kova from one premium command surface</h2>
+        <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-kova-600 dark:text-kova-400">Hero Mode · {{ segment_surface.mode_label }}</p>
+        <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ segment_surface.workspace_title }}</h2>
         <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-3 leading-relaxed">
-          Command is the shadow-tab version of Kova's next operating layer: Morning Standup for decisions,
-          Moment Mode for cultural packs, and Listen &amp; Launch for fast campaign creation.
+          {{ segment_surface.workspace_description }}
           Everything legacy stays live while you test the new experience.
         </p>
+        <div class="flex flex-wrap gap-2 mt-4">
+          {% for focus in segment_surface.workspace_focus %}
+          <span class="inline-flex items-center rounded-full border border-kova-200/80 dark:border-kova-800/80 bg-white/75 dark:bg-gray-900/70 px-3 py-1 text-xs font-medium text-kova-700 dark:text-kova-300">{{ focus }}</span>
+          {% endfor %}
+        </div>
+        <div class="flex flex-wrap gap-2 mt-4">
+          {% for action in segment_surface.workspace_actions %}
+          <a href="{% url action.url_name %}" class="{% if forloop.first %}btn-primary{% else %}btn-secondary{% endif %} text-sm px-4 py-2">
+            {{ action.label }}
+          </a>
+          {% endfor %}
+        </div>
       </div>
 
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6 max-w-3xl">
@@ -112,9 +123,10 @@
       <div class="card">
         <div class="card-body p-5">
           <div class="flex items-center justify-between gap-3">
-            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Command status</h3>
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ segment_surface.mode_label }}</h3>
             <span class="text-[10px] font-semibold uppercase tracking-wider text-emerald-600">Shadow live</span>
           </div>
+          <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">{{ segment_surface.mode_value_path }}</p>
           <ul class="mt-3 space-y-3 text-sm">
             <li class="flex items-start gap-2"><span class="mt-1 block w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span class="text-gray-600 dark:text-gray-300">Legacy Home, Calendar, and Listen &amp; Launch remain unchanged.</span></li>
             <li class="flex items-start gap-2"><span class="mt-1 block w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span class="text-gray-600 dark:text-gray-300">Command now has dedicated pages for Standup, Moments, and Listen.</span></li>

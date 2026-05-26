@@ -2,7 +2,7 @@
 
 {% block page_title %}Batch Snap{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Market Day Mode — walk your table, open your stall</p>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Market Day Mode — walk your offers, launch the full drop</p>
 {% endblock %}
 
 {% block content %}
@@ -17,11 +17,11 @@
       <div>
         <h2 class="text-lg font-bold text-gray-900 dark:text-white">Market Day Mode</h2>
         <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          Photograph your whole table — AI names each item, lists your shop, writes every post,
-          and builds a showcase reel when you're done.
+          Photograph the full set of offers you want to push. AI names each one, builds the offer pages,
+          writes the posts, and assembles a showcase reel when you're done.
         </p>
         <a href="{% url 'products:snap' %}" class="inline-block mt-2 text-xs text-purple-600 dark:text-purple-400 hover:underline font-medium">
-          One hero product? Use Snap to Sell →
+          One hero offer? Use Snap to Sell →
         </a>
       </div>
     </div>
@@ -30,7 +30,7 @@
   {# Stall setup #}
   <div class="card p-4 space-y-4">
     <div>
-      <label class="label text-sm font-semibold">Stall name <span class="font-normal text-gray-400">(optional)</span></label>
+      <label class="label text-sm font-semibold">Collection name <span class="font-normal text-gray-400">(optional)</span></label>
       <input type="text" name="stall_title" form="batch-form" class="input text-sm"
              placeholder="e.g. Amara's Sunday table, New shipment drop"
              x-model="stallTitle">
@@ -96,7 +96,7 @@
       <input type="checkbox" name="launch_bundle" form="batch-form" value="1" checked
              class="mt-1 rounded border-gray-300 text-orange-600 focus:ring-orange-500">
       <span class="text-sm text-gray-700 dark:text-gray-300">
-        <strong>Open my stall</strong> — update shop, showcase reel, collection post
+        <strong>Publish this drop</strong> — update offers page, showcase reel, collection post
         {% if whatsapp_configured %} + WhatsApp ping{% endif %}
       </span>
     </label>
@@ -104,14 +104,14 @@
 
   {# Offering type #}
   <div class="card p-4">
-    <label class="label text-sm font-semibold mb-2">What are you selling?</label>
+    <label class="label text-sm font-semibold mb-2">What kind of offers are in this batch?</label>
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
       <button type="button" @click="offeringType = 'product'"
               class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
               :class="offeringType === 'product'
                 ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
                 : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
-        Products
+        Physical
       </button>
       <button type="button" @click="offeringType = 'service'"
               class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
@@ -152,9 +152,9 @@
     </div>
 
     {# Product cards #}
-    <div class="space-y-4">
+      <div class="space-y-4">
       <div class="flex items-center justify-between">
-        <label class="label text-base font-semibold mb-0">Your table</label>
+        <label class="label text-base font-semibold mb-0">Your offer batch</label>
         <span class="text-xs text-gray-500 dark:text-gray-400" x-text="items.length + '/10 photos'"></span>
       </div>
 
@@ -246,13 +246,13 @@
     <button type="submit" :disabled="readyCount() === 0"
             class="w-full btn-primary text-base py-4 rounded-xl font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 bg-orange-600 hover:bg-orange-700">
       <span x-text="readyCount() <= 1
-        ? 'Open stall with 1 item'
-        : 'Open stall with ' + readyCount() + ' items'"></span>
+        ? 'Launch 1 offer'
+        : 'Launch ' + readyCount() + ' offers'"></span>
     </button>
 
     <p class="text-xs text-center text-gray-500 dark:text-gray-400 leading-relaxed">
-      Each photo → catalog listing + platform posts. When done, your shop updates with a showcase reel
-      and stall announcement you can share on WhatsApp.
+      Each photo becomes an offer record plus platform posts. When done, your public offers page updates with a showcase reel
+      and a share-ready announcement for WhatsApp.
     </p>
   </form>
 </div>
