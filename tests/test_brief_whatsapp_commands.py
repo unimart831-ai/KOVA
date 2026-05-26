@@ -64,6 +64,13 @@ class TestDispatchCommand:
         assert "80" in text
         assert meta["kova_score"] == 80
 
+    def test_standup_command(self, pro_user, today_brief):
+        text, cmd, ok, _ = _dispatch_command(pro_user, "standup")
+        assert cmd == "standup"
+        assert ok is True
+        assert "Morning Standup" in text
+        assert "APPROVE ALL" in text
+
     @patch("apps.briefs.whatsapp_commands._send_owner_reply", return_value=True)
     def test_approve_no_pending(self, _reply, pro_user, today_brief):
         text, cmd, ok, _ = _dispatch_command(pro_user, "approve")

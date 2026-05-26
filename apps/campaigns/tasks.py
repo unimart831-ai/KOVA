@@ -23,6 +23,7 @@ def build_campaign_from_prompt(
     *,
     voice_brief=None,
     include_email=False,
+    include_status=False,
     auto_generate=True,
 ):
     """
@@ -127,6 +128,10 @@ def build_campaign_from_prompt(
     if include_email or plan.get("include_email"):
         email_campaign_id = _create_linked_email_campaign(user, campaign, plan, prompt)
 
+    status_ids = []
+    if include_status or plan.get("include_whatsapp_status"):
+        status_ids = _create_status_updates_from_plan(user, campaign, plan, duration_days)
+
     if auto_generate and seed_ids:
         from apps.content.tasks import generate_from_seed
 
@@ -143,6 +148,8 @@ def build_campaign_from_prompt(
         "name": campaign.name,
         "seeds_created": seeds_created,
         "email_campaign_id": email_campaign_id,
+        "status_ids": status_ids,
+        "status_count": len(status_ids),
     }
 
 
@@ -184,8 +191,80 @@ def _create_linked_email_campaign(user, campaign, plan, prompt):
         return None
 
 
+def _create_status_updates_from_plan(user, campaign, plan, duration_days):
+    """Create WhatsApp Status drafts from campaign plan status_updates."""
+    from apps.whatsapp.models import StatusContent
+
+    updates = plan.get("status_updates") or []
+    if not updates:
+        key_message = plan.get("key_message") or plan.get("description") or campaign.name
+        updates = [
+            {"text": key_message[:200], "category": "announcement", "day": 1},
+            {
+                "text": (plan.get("description") or key_message)[:200],
+                "category": "offer" if "offer" in (plan.get("description") or "").lower() else "tip",
+                "day": min(3, duration_days),
+            },
+        ]
+
+    category_map = {
+        "offer": StatusContent.ContentCategory.OFFER,
+        "announcement": StatusContent.ContentCategory.ANNOUNCEMENT,
+        "tip": StatusContent.ContentCategory.TIP,
+        "testimonial": StatusContent.ContentCategory.TESTIMONIAL,
+        "bts": StatusContent.ContentCategory.BTS,
+        "new_product": StatusContent.ContentCategory.NEW_PRODUCT,
+    }
+
+    status_ids = []
+    start = timezone.now().replace(hour=7, minute=0, second=0, microsecond=0)
+
+    for item in updates[:5]:
+        if not isinstance(item, dict):
+            continue
+        text = (item.get("text") or "").strip()
+        if not text:
+            continue
+        raw_cat = (item.get("category") or "announcement").lower()
+        category = category_map.get(raw_cat, StatusContent.ContentCategory.ANNOUNCEMENT)
+        day_offset = max(0, int(item.get("day", 1)) - 1)
+        scheduled = start + timedelta(days=min(day_offset, duration_days))
+
+        status_obj = StatusContent.objects.create(
+            user=user,
+            text=text[:700],
+            caption=(item.get("caption") or "")[:500],
+            category=category,
+            state=StatusContent.StatusState.READY,
+            scheduled_for=scheduled,
+            ai_generated=True,
+            ai_reasoning=f"Listen & Launch campaign: {campaign.name}",
+        )
+        status_obj.generate_share_url()
+        status_obj.save(update_fields=["share_url"])
+        status_ids.append(str(status_obj.pk))
+
+    if status_ids:
+        from apps.campaigns.models import CampaignNote
+
+        CampaignNote.objects.create(
+            campaign=campaign,
+            user=user,
+            content=f"Created {len(status_ids)} WhatsApp Status draft(s) for Listen & Launch.",
+            note_type="status_change",
+        )
+
+    return status_ids
+
+
 @shared_task(name="campaigns.ai_build_campaign")
-def ai_build_campaign(user_id, prompt, duration_days=7, include_email=False):
+def ai_build_campaign(
+    user_id,
+    prompt,
+    duration_days=7,
+    include_email=False,
+    include_status=False,
+):
     """Celery entry: build a full campaign from a text prompt."""
     from django.contrib.auth import get_user_model
 
@@ -196,7 +275,7 @@ def ai_build_campaign(user_id, prompt, duration_days=7, include_email=False):
         return {"error": "User not found"}
 
     return build_campaign_from_prompt(
-        user, prompt, duration_days, include_email=include_email,
+        user, prompt, duration_days, include_email=include_email, include_status=include_status,
     )
 
 
@@ -222,8 +301,16 @@ def _generate_campaign_plan(user, prompt, platforms, business_name, brand_voice,
             f'  "objective": "awareness|engagement|traffic|leads|sales|launch",\n'
             f'  "target_audience": "Who this campaign targets",\n'
             f'  "include_email": false,\n'
+            f'  "include_whatsapp_status": false,\n'
             f'  "email_subject": "Optional email subject if include_email is true",\n'
             f'  "key_message": "Core message in one sentence",\n'
+            f'  "status_updates": [\n'
+            f'    {{\n'
+            f'      "text": "Short WhatsApp Status text (max 200 chars, punchy)",\n'
+            f'      "category": "announcement|offer|tip|new_product",\n'
+            f'      "day": 1\n'
+            f'    }}\n'
+            f'  ],\n'
             f'  "seeds": [\n'
             f'    {{\n'
             f'      "idea": "Detailed content idea with angle and key message",\n'
@@ -235,7 +322,9 @@ def _generate_campaign_plan(user, prompt, platforms, business_name, brand_voice,
             f"Generate 4-7 content seeds spread across {duration_days} days.\n"
             f"Each seed should have a unique angle — don't repeat the same message.\n"
             f"Mix content types: educational, social proof, behind-the-scenes, CTA-focused.\n"
-            f"Set include_email to true if the prompt mentions email, newsletter, or subscribers."
+            f"Set include_email to true if the prompt mentions email, newsletter, or subscribers.\n"
+            f"Set include_whatsapp_status to true if the prompt mentions WhatsApp Status, WA status, or status updates.\n"
+            f"Generate 2-4 status_updates when include_whatsapp_status is true — short, punchy, Kenyan-friendly tone."
         )
 
         model = get_model_for_task("create.strategize", user=user)

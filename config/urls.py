@@ -85,6 +85,7 @@ urlpatterns = [
     path("accounts/", include("allauth.urls")),
     # App URLs
     path("accounts/", include("apps.accounts.urls")),
+    path("command/", include("apps.command.urls")),
     path("brief/", include("apps.briefs.urls")),
     path("content/", include("apps.content.urls")),
     path("platforms/", include("apps.platforms.urls")),

@@ -9,8 +9,9 @@ Phase 1 Week 2 surface area:
 """
 from datetime import timedelta
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -321,3 +322,82 @@ def custom_event_delete(request, event_id):
     event = get_object_or_404(CustomEvent, id=event_id, user=request.user)
     event.delete()
     return redirect("calendar_intel:preferences")
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Moment Mode — pack status + approve/dismiss
+# ──────────────────────────────────────────────────────────────────────────
+
+@login_required
+def moment_pack_status(request, draft_id):
+    """JSON status for Moment Pack modal polling."""
+    from apps.calendar_intel.models import HolidayDraft
+    from apps.calendar_intel.moment_pack_pipeline import build_moment_pack_status
+    from django.urls import reverse
+
+    draft = get_object_or_404(HolidayDraft, pk=draft_id, user=request.user)
+    data = build_moment_pack_status(draft, request.user)
+    data["studio_url"] = reverse("content:studio") + "?source=holiday"
+    data["approve_url"] = reverse("calendar_intel:moment_pack_approve", args=[draft_id])
+    data["dismiss_url"] = reverse("calendar_intel:moment_pack_dismiss", args=[draft_id])
+    return JsonResponse(data)
+
+
+@login_required
+@require_POST
+def moment_pack_approve(request, draft_id):
+    """Approve all pending posts in a moment pack."""
+    from apps.calendar_intel.models import HolidayDraft
+    from apps.content.approval import approve_post_for_user
+    from apps.content.models import Post
+
+    draft = get_object_or_404(HolidayDraft, pk=draft_id, user=request.user)
+    if draft.status not in (
+        HolidayDraft.Status.DRAFTS_READY,
+        HolidayDraft.Status.APPROVED,
+    ):
+        messages.error(request, "This moment pack isn't ready for approval yet.")
+        return redirect("brief:home")
+
+    approved = 0
+    for post in draft.posts_generated.filter(user=request.user):
+        if post.status in (Post.Status.DRAFT, Post.Status.PENDING_APPROVAL):
+            result = approve_post_for_user(request.user, post)
+            if result.get("success"):
+                approved += 1
+
+    draft.status = HolidayDraft.Status.APPROVED
+    draft.save(update_fields=["status", "updated_at"])
+
+    if request.headers.get("HX-Request"):
+        return HttpResponse(status=204)
+
+    messages.success(
+        request,
+        f"Moment pack approved — {approved} post{'s' if approved != 1 else ''} scheduled.",
+    )
+    next_url = request.POST.get("next", "").strip()
+    if next_url.startswith("/"):
+        return redirect(f"{next_url}?moment_pack={draft_id}")
+    url = redirect("brief:home").url
+    return redirect(f"{url}?moment_pack={draft_id}")
+
+
+@login_required
+@require_POST
+def moment_pack_dismiss(request, draft_id):
+    """Dismiss a moment pack without approving."""
+    from apps.calendar_intel.models import HolidayDraft
+
+    draft = get_object_or_404(HolidayDraft, pk=draft_id, user=request.user)
+    draft.status = HolidayDraft.Status.DISMISSED
+    draft.save(update_fields=["status", "updated_at"])
+
+    if request.headers.get("HX-Request"):
+        return HttpResponse(status=204)
+
+    messages.info(request, "Moment pack dismissed.")
+    next_url = request.POST.get("next", "").strip()
+    if next_url.startswith("/"):
+        return redirect(next_url)
+    return redirect("brief:home")

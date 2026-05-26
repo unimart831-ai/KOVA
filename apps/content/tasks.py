@@ -1906,6 +1906,7 @@ def process_voice_brief(voice_brief_id: str):
             "- tone: detected tone (excited, urgent, casual, professional, etc.)\n"
             "- key_message: the core marketing message in one sentence\n"
             "- include_email: true if user mentioned email, subscribers, newsletter\n"
+            "- include_whatsapp_status: true if user mentioned WhatsApp Status, WA status, status update, or posting to status\n"
             "- campaign_name: a suggested campaign name (short, catchy)\n"
             "Return ONLY valid JSON."
         )
@@ -1943,6 +1944,12 @@ def process_voice_brief(voice_brief_id: str):
         urgency = extraction.get("urgency", "this_week")
         duration_days = {"today": 3, "this_week": 7, "this_month": 14}.get(urgency, 7)
 
+        transcript_lower = vb.transcript.lower()
+        include_status = bool(extraction.get("include_whatsapp_status")) or any(
+            phrase in transcript_lower
+            for phrase in ("whatsapp status", "wa status", "status update", "post to status")
+        )
+
         from apps.campaigns.tasks import build_campaign_from_prompt
 
         result = build_campaign_from_prompt(
@@ -1951,6 +1958,7 @@ def process_voice_brief(voice_brief_id: str):
             duration_days=duration_days,
             voice_brief=vb,
             include_email=bool(extraction.get("include_email")),
+            include_status=include_status,
             auto_generate=True,
         )
 

@@ -1,0 +1,132 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Command{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Premium operator surface for Standup, Moments, and Listen &amp; Launch</p>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{{ legacy_brief_url }}" class="hidden sm:inline-flex btn-secondary text-sm px-3 py-1.5">Home</a>
+<a href="{{ legacy_listen_url }}" class="hidden sm:inline-flex btn-secondary text-sm px-3 py-1.5">Legacy Listen & Launch</a>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+  {% include "command/_subnav.html" %}
+
+  <div class="relative overflow-hidden rounded-3xl border border-kova-200 dark:border-kova-800/60 bg-gradient-to-br from-kova-50 via-white to-indigo-50/80 dark:from-kova-950/40 dark:via-gray-900 dark:to-indigo-950/30">
+    <div class="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-kova-100/70 to-transparent dark:from-kova-900/20"></div>
+    <div class="relative px-6 py-8 sm:px-8 lg:px-10 lg:py-10">
+      <div class="max-w-3xl">
+        <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-kova-600 dark:text-kova-400">Hero Mode</p>
+        <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-2">Operate Kova from one premium command surface</h2>
+        <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-3 leading-relaxed">
+          Command is the shadow-tab version of Kova's next operating layer: Morning Standup for decisions,
+          Moment Mode for cultural packs, and Listen &amp; Launch for fast campaign creation.
+          Everything legacy stays live while you test the new experience.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6 max-w-3xl">
+        <div class="rounded-2xl border border-white/80 dark:border-gray-800 bg-white/80 dark:bg-gray-900/70 p-4">
+          <p class="text-[10px] uppercase tracking-widest text-gray-400">Score</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ overview_metrics.score }}</p>
+        </div>
+        <div class="rounded-2xl border border-white/80 dark:border-gray-800 bg-white/80 dark:bg-gray-900/70 p-4">
+          <p class="text-[10px] uppercase tracking-widest text-gray-400">Posts waiting</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ overview_metrics.posts_pending }}</p>
+        </div>
+        <div class="rounded-2xl border border-white/80 dark:border-gray-800 bg-white/80 dark:bg-gray-900/70 p-4">
+          <p class="text-[10px] uppercase tracking-widest text-gray-400">Moment packs</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ overview_metrics.moment_packs_ready }}</p>
+        </div>
+        <div class="rounded-2xl border border-white/80 dark:border-gray-800 bg-white/80 dark:bg-gray-900/70 p-4">
+          <p class="text-[10px] uppercase tracking-widest text-gray-400">Recent launches</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ overview_metrics.launches_recent }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid lg:grid-cols-3 gap-4">
+    <a href="{% url 'command:standup' %}" class="group card hover:shadow-lg transition-all border-amber-200 dark:border-amber-800/50">
+      <div class="card-body p-6">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mt-4">Morning Standup</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Daily operator digest with the one decision only you can make.</p>
+        <div class="flex items-center justify-between mt-4 text-sm">
+          <span class="text-gray-600 dark:text-gray-300">{{ standup_context.posts_pending|default:0 }} post{{ standup_context.posts_pending|default:0|pluralize }} pending</span>
+          <span class="font-semibold text-amber-700 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform">Open -></span>
+        </div>
+      </div>
+    </a>
+
+    <a href="{% url 'command:moments' %}" class="group card hover:shadow-lg transition-all border-kova-200 dark:border-kova-800/50">
+      <div class="card-body p-6">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-kova-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-kova-500/20">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mt-4">Moment Mode</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Review cultural packs, upcoming moments, and brand-relevant calendar opportunities.</p>
+        <div class="flex items-center justify-between mt-4 text-sm">
+          <span class="text-gray-600 dark:text-gray-300">{{ holiday_drafts_ready }} pack{{ holiday_drafts_ready|pluralize }} ready</span>
+          <span class="font-semibold text-kova-700 dark:text-kova-400 group-hover:translate-x-0.5 transition-transform">Open -></span>
+        </div>
+      </div>
+    </a>
+
+    <a href="{% url 'command:listen' %}" class="group card hover:shadow-lg transition-all border-purple-200 dark:border-purple-800/50">
+      <div class="card-body p-6">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-purple-600 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mt-4">Listen &amp; Launch</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Speak once and launch cross-channel campaigns across Queue, Status, and email.</p>
+        <div class="flex items-center justify-between mt-4 text-sm">
+          <span class="text-gray-600 dark:text-gray-300">{{ voice_briefs|length }} recent launch{{ voice_briefs|length|pluralize:"es" }}</span>
+          <span class="font-semibold text-purple-700 dark:text-purple-400 group-hover:translate-x-0.5 transition-transform">Open -></span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="grid lg:grid-cols-[1.2fr_0.8fr] gap-4">
+    <div class="card">
+      <div class="card-body p-6">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Preview</p>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mt-1">Today's command view</h3>
+          </div>
+          <a href="{% url 'command:standup' %}" class="text-sm font-medium text-kova-600 dark:text-kova-400 hover:underline">Open Standup -></a>
+        </div>
+        <div class="mt-4">
+          {% include "briefs/_morning_standup.html" %}
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-4">
+      <div class="card">
+        <div class="card-body p-5">
+          <div class="flex items-center justify-between gap-3">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Command status</h3>
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-emerald-600">Shadow live</span>
+          </div>
+          <ul class="mt-3 space-y-3 text-sm">
+            <li class="flex items-start gap-2"><span class="mt-1 block w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span class="text-gray-600 dark:text-gray-300">Legacy Home, Calendar, and Listen &amp; Launch remain unchanged.</span></li>
+            <li class="flex items-start gap-2"><span class="mt-1 block w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span class="text-gray-600 dark:text-gray-300">Command now has dedicated pages for Standup, Moments, and Listen.</span></li>
+            <li class="flex items-start gap-2"><span class="mt-1 block w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span class="text-gray-600 dark:text-gray-300">Moment approval stays inside the current surface instead of always bouncing to Home.</span></li>
+          </ul>
+        </div>
+      </div>
+
+      {% include "calendar_intel/partials/_upcoming_widget.html" with moments=upcoming_moments %}
+    </div>
+  </div>
+
+  {% include "calendar_intel/_moment_pack_modal.html" %}
+</div>
+{% endblock %}

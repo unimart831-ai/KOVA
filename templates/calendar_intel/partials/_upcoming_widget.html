@@ -16,15 +16,14 @@
     </a>
   </div>
 
-  {# Holiday drafts ready callout — only shows when there are drafts awaiting approval #}
-  {% if holiday_drafts_ready %}
-  <a href="{% url 'content:studio' %}?source=holiday"
+  {% if holiday_drafts_ready and ready_moment_packs %}
+  <a href="{% url 'brief:home' %}?moment_pack={{ ready_moment_packs.0.pk }}"
      class="block mb-3 px-3 py-2.5 rounded-lg bg-kova-50 dark:bg-kova-950/40 border border-kova-200 dark:border-kova-800 hover:bg-kova-100 dark:hover:bg-kova-950/60 transition-colors group">
     <div class="flex items-center gap-2">
       <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-kova-600 text-white text-xs font-bold">{{ holiday_drafts_ready }}</span>
       <div class="min-w-0 flex-1">
-        <p class="text-xs font-medium text-kova-900 dark:text-kova-100">Holiday draft{{ holiday_drafts_ready|pluralize }} ready</p>
-        <p class="text-[10px] text-kova-700 dark:text-kova-300/80 mt-0.5">Review and approve in the Studio →</p>
+        <p class="text-xs font-medium text-kova-900 dark:text-kova-100">Moment pack{{ holiday_drafts_ready|pluralize }} ready</p>
+        <p class="text-[10px] text-kova-700 dark:text-kova-300/80 mt-0.5">Open Moment Mode to review →</p>
       </div>
     </div>
   </a>

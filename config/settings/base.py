@@ -70,6 +70,7 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "apps.accounts",
+    "apps.command",
     "apps.platforms",
     "apps.content",
     "apps.agents",

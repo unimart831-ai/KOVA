@@ -45,8 +45,9 @@ urlpatterns = [
     path("<uuid:post_id>/media/<uuid:attachment_id>/delete/", views.delete_media, name="delete_media"),
     path("<uuid:post_id>/card/", views.post_card, name="post_card"),
     path("<uuid:post_id>/", views.post_detail, name="post_detail"),
-    # Voice to Campaign
+    # Listen & Launch (voice campaign)
     path("voice-campaign/", views.voice_campaign, name="voice_campaign"),
+    path("voice-campaign/transcribe/", views.voice_campaign_transcribe, name="voice_campaign_transcribe"),
     # Autopilot
     path("autopilot/", views.autopilot_dashboard, name="autopilot"),
     path("autopilot/<uuid:plan_id>/status/", views.autopilot_plan_status, name="autopilot_status"),

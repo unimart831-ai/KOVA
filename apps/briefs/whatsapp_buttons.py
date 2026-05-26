@@ -14,6 +14,8 @@ BUTTON_ID_TO_COMMAND = {
     "brief_help": "help",
     "brief_brief": "brief",
     "brief_posts": "posts",
+    "brief_standup": "standup",
+    "brief_decide": "standup",
     "brief_idea_1": "idea 1",
     "brief_idea_2": "idea 2",
 }
@@ -75,16 +77,38 @@ def build_daily_brief_template_components(
     return components
 
 
-def action_buttons_for_user(user, *, posts_pending: int = 0) -> list[dict]:
+def action_buttons_for_user(
+    user,
+    *,
+    posts_pending: int = 0,
+    brief=None,
+) -> list[dict]:
     """Up to 3 session buttons shown after each command reply (24h window)."""
+    from apps.briefs.standup import get_top_decision
+
+    top = get_top_decision(brief) if brief else None
+    urgent_decision = top and top.get("urgency") == "now"
+
+    if urgent_decision and posts_pending > 0:
+        return [
+            {"id": "brief_decide", "title": "Decide"},
+            {"id": "brief_approve", "title": "Approve"},
+            {"id": "brief_standup", "title": "Standup"},
+        ]
+    if urgent_decision:
+        return [
+            {"id": "brief_decide", "title": "Decide"},
+            {"id": "brief_standup", "title": "Standup"},
+            {"id": "brief_score", "title": "Score"},
+        ]
     if posts_pending > 0:
         return [
             {"id": "brief_approve", "title": "Approve"},
             {"id": "brief_posts", "title": "Posts"},
-            {"id": "brief_score", "title": "Score"},
+            {"id": "brief_standup", "title": "Standup"},
         ]
     return [
+        {"id": "brief_standup", "title": "Standup"},
         {"id": "brief_brief", "title": "Brief"},
         {"id": "brief_score", "title": "Score"},
-        {"id": "brief_help", "title": "Help"},
     ]

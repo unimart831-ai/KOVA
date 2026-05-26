@@ -1,0 +1,33 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Command - Listen{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Premium voice-first launch workspace with legacy Create flow still preserved</p>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{{ legacy_listen_url }}" class="hidden sm:inline-flex btn-secondary text-sm px-3 py-1.5">Legacy Listen &amp; Launch</a>
+<a href="{% url 'whatsapp:status_studio' %}" class="hidden sm:inline-flex btn-secondary text-sm px-3 py-1.5">Status Studio</a>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+  {% include "command/_subnav.html" %}
+
+  <div class="relative overflow-hidden rounded-3xl border border-purple-200 dark:border-purple-800/50 bg-gradient-to-br from-purple-50 via-white to-fuchsia-50 dark:from-purple-950/30 dark:via-gray-900 dark:to-fuchsia-950/20">
+    <div class="px-6 py-8 sm:px-8 lg:px-10">
+      <div class="max-w-3xl">
+        <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-purple-600 dark:text-purple-400">Listen &amp; Launch</p>
+        <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-2">Speak once. Launch across Queue, Status, and email.</h2>
+        <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-3 leading-relaxed">
+          This dedicated Listen view keeps the old Create route intact, but gives the new Command surface a more premium, voice-first place to compose and monitor launches.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <section id="composer">
+    {% include "command/_listen_workspace.html" %}
+  </section>
+</div>
+{% endblock %}

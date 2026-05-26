@@ -28,6 +28,11 @@ urlpatterns = [
     # HTMX widget for Brief
     path("htmx/upcoming/", views.htmx_upcoming, name="htmx_upcoming"),
 
+    # Moment Mode
+    path("pack/<int:draft_id>/status/", views.moment_pack_status, name="moment_pack_status"),
+    path("pack/<int:draft_id>/approve/", views.moment_pack_approve, name="moment_pack_approve"),
+    path("pack/<int:draft_id>/dismiss/", views.moment_pack_dismiss, name="moment_pack_dismiss"),
+
     # Custom events
     path("custom/add/", views.custom_event_add, name="custom_event_add"),
     path(

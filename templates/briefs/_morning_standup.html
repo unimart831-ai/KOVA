@@ -1,0 +1,73 @@
+{% comment %}
+  Morning Standup hero — structured digest on Brief home.
+  Requires: standup_context (dict from apps.briefs.standup.build_standup_context)
+{% endcomment %}
+{% if standup_context %}
+<div class="card border-amber-200 dark:border-amber-800/60 bg-gradient-to-br from-amber-50/80 via-white to-orange-50/50 dark:from-amber-950/25 dark:via-gray-900 dark:to-orange-950/20 overflow-hidden">
+  <div class="px-6 py-5">
+    <div class="flex flex-col lg:flex-row lg:items-start gap-5">
+      <div class="flex items-start gap-4 min-w-0 flex-1">
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400">Morning Standup</p>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mt-0.5">{{ standup_context.headline }}</h2>
+          <div class="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-600 dark:text-gray-400">
+            <span class="inline-flex items-center gap-1">
+              <span class="font-semibold text-gray-900 dark:text-white tabular-nums">{{ standup_context.kova_score }}</span>/100
+              {% if standup_context.kova_score_delta %}
+                <span class="{% if standup_context.kova_score_delta > 0 %}text-green-600{% else %}text-red-600{% endif %} font-medium">
+                  ({% if standup_context.kova_score_delta > 0 %}+{% endif %}{{ standup_context.kova_score_delta }})
+                </span>
+              {% endif %}
+            </span>
+            <span>·</span>
+            <span>{{ standup_context.posts_pending }} post{{ standup_context.posts_pending|pluralize }} to approve</span>
+          </div>
+          {% if standup_context.your_move %}
+          <p class="text-sm text-gray-700 dark:text-gray-300 mt-3 leading-relaxed">
+            <span class="font-medium text-amber-800 dark:text-amber-300">Your move:</span>
+            {{ standup_context.your_move }}
+          </p>
+          {% endif %}
+          {% if standup_context.overnight_summary %}
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            <span class="font-medium">Overnight:</span> {{ standup_context.overnight_summary }}
+          </p>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if standup_context.top_decision %}
+      <div class="lg:w-72 shrink-0 rounded-xl border border-amber-200/80 dark:border-amber-800/50 bg-white/80 dark:bg-gray-900/60 p-4">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-1">Only you can decide</p>
+        <p class="text-sm font-medium text-gray-900 dark:text-white leading-snug">
+          {{ standup_context.top_decision.item|default:standup_context.top_decision.title }}
+        </p>
+        {% if standup_context.top_decision.recommended_action %}
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">{{ standup_context.top_decision.recommended_action }}</p>
+        {% endif %}
+        {% if standup_context.decision_url %}
+        <a href="{{ standup_context.decision_url }}"
+           class="inline-flex items-center gap-1 mt-3 text-sm font-semibold text-amber-700 dark:text-amber-400 hover:underline">
+          Take action →
+        </a>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-amber-100 dark:border-amber-900/40">
+      {% if standup_context.posts_pending > 0 %}
+      <a href="{% url 'content:queue' %}"
+         class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 transition-colors">
+        Approve {{ standup_context.posts_pending }} post{{ standup_context.posts_pending|pluralize }}
+      </a>
+      {% endif %}
+      <a href="{% url 'content:studio' %}" class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-kova-600 dark:hover:text-kova-400">Studio</a>
+      <span class="text-[10px] text-gray-400 dark:text-gray-500 hidden sm:inline">{{ standup_context.whatsapp_hint }}</span>
+    </div>
+  </div>
+</div>
+{% endif %}

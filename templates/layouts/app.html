@@ -50,6 +50,24 @@
         Home
       </a>
 
+      <a href="{% url 'command:home' %}"
+         {% if '/command/' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/command/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/command/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M5 8h14M5 12h5m4 0h5M5 16h14M7 21h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        Command
+      </a>
+
+      {% if '/command/' in request.path %}
+      <div class="ml-8 space-y-0.5 mb-1">
+        <a href="{% url 'command:home' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'home' and request.resolver_match.namespace == 'command' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Overview</a>
+        <a href="{% url 'command:standup' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'standup' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Standup</a>
+        <a href="{% url 'command:moments' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'moments' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Moments</a>
+        <a href="{% url 'command:listen' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'listen' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Listen</a>
+      </div>
+      {% endif %}
+
       <p class="nav-section">Create</p>
 
       {% nav_active request.path '/content/studio' '/content/voice-campaign' '/content/autopilot' '/memes/' '/media-queue/' '/content/edit/' as create_active %}

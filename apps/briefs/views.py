@@ -171,47 +171,7 @@ def _build_quick_actions(user, brief):
 
 
 from apps.briefs.delivery import extract_your_move
-
-
-def _guess_decision_url(decision):
-    """Map a decision item to the most relevant in-app destination."""
-    if not isinstance(decision, dict):
-        return None
-    text = " ".join([
-        decision.get("item", ""),
-        decision.get("recommended_action", ""),
-        decision.get("context", ""),
-    ]).lower()
-    if any(w in text for w in ("whatsapp", "wa chat")):
-        return reverse("whatsapp:inbox")
-    if any(w in text for w in ("comment", "reply", "inbox", "message", "dm", "mention")):
-        return reverse("engage:inbox")
-    if any(w in text for w in ("lead", "pricing", "prospect", "inquiry")):
-        return reverse("leads:list")
-    if any(w in text for w in ("booking", "appointment", "schedule")):
-        return reverse("bookings:list")
-    if any(w in text for w in ("fail", "queue", "publish error")):
-        return reverse("content:queue")
-    if any(w in text for w in ("approv", "draft", "post", "content", "studio")):
-        return reverse("content:studio")
-    if any(w in text for w in ("platform", "connect", "account", "profile health")):
-        return reverse("platforms:list")
-    if any(w in text for w in ("revenue", "sale", "money", "pixel")):
-        return reverse("analytics:revenue")
-    if any(w in text for w in ("competitor", "intel")):
-        return reverse("analytics:competitors")
-    return None
-
-
-def _enrich_decisions(decisions):
-    enriched = []
-    for decision in decisions or []:
-        item = dict(decision) if isinstance(decision, dict) else {"item": str(decision)}
-        url = _guess_decision_url(item)
-        if url:
-            item["action_url"] = url
-        enriched.append(item)
-    return enriched
+from apps.briefs.standup import build_standup_context, enrich_decisions
 
 
 def _build_customer_pulse(user):
@@ -434,20 +394,31 @@ def brief_home(request):
 
     upcoming_moments = []
     holiday_drafts_ready = 0
+    ready_moment_packs = []
+    moment_pack_id = request.GET.get("moment_pack", "").strip()
     try:
         from apps.calendar_intel.selectors import top_upcoming_for_brief
         from apps.calendar_intel.models import HolidayDraft
         upcoming_moments = top_upcoming_for_brief(request.user, count=3)
-        holiday_drafts_ready = HolidayDraft.objects.filter(
-            user=request.user,
-            status=HolidayDraft.Status.DRAFTS_READY,
-        ).count()
+        ready_moment_packs = list(
+            HolidayDraft.objects.filter(
+                user=request.user,
+                status=HolidayDraft.Status.DRAFTS_READY,
+            ).select_related(
+                "holiday_occurrence__holiday",
+                "custom_event",
+            ).order_by("target_date")[:5]
+        )
+        holiday_drafts_ready = len(ready_moment_packs)
+        if not moment_pack_id and ready_moment_packs:
+            moment_pack_id = str(ready_moment_packs[0].pk)
     except Exception:
         pass
 
     performance = brief.performance_summary if brief else {}
-    decisions_needed = _enrich_decisions(performance.get("decisions_needed", []))
+    decisions_needed = enrich_decisions(performance.get("decisions_needed", []))
     operations_update = performance.get("operations_update", "")
+    standup_context = build_standup_context(request.user, brief) if brief else None
 
     from apps.briefs.dashboard import get_cached_home_extras
     home_extras = get_cached_home_extras(request.user, brief)
@@ -460,6 +431,7 @@ def brief_home(request):
         "greeting_name": greeting_name(request.user),
         "your_move": extract_your_move(brief.summary if brief else ""),
         "decisions_needed": decisions_needed,
+        "standup_context": standup_context,
         "score_breakdown": _get_score_breakdown(brief),
         "recent_briefs": recent_briefs,
         "superfans": superfans,
@@ -468,6 +440,8 @@ def brief_home(request):
         "trending_topics": _normalize_trending_topics(brief),
         "upcoming_moments": upcoming_moments,
         "holiday_drafts_ready": holiday_drafts_ready,
+        "ready_moment_packs": ready_moment_packs,
+        "moment_pack_id": moment_pack_id,
         "operations_update": operations_update,
         "page_title": "Home",
         **home_extras,

@@ -118,6 +118,9 @@
       </div>
     </div>
 
+    {# ━━━ MORNING STANDUP HERO ━━━ #}
+    {% include "briefs/_morning_standup.html" %}
+
     {# ━━━ QUICK ACTIONS BAR ━━━ #}
     {% if quick_actions %}
     <div class="flex flex-wrap items-center gap-3 px-1">
@@ -595,7 +598,7 @@
 
         {# ── Upcoming holidays / cultural moments (calendar_intel) ── #}
         {% if upcoming_moments or holiday_drafts_ready %}
-          {% include "calendar_intel/partials/_upcoming_widget.html" with moments=upcoming_moments holiday_drafts_ready=holiday_drafts_ready %}
+          {% include "calendar_intel/partials/_upcoming_widget.html" with moments=upcoming_moments holiday_drafts_ready=holiday_drafts_ready ready_moment_packs=ready_moment_packs %}
         {% endif %}
 
         {% if superfans %}
@@ -759,4 +762,6 @@
     </div>
   {% endif %}
 </div>
+
+{% include "calendar_intel/_moment_pack_modal.html" %}
 {% endblock %}

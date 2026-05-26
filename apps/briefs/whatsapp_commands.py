@@ -13,6 +13,8 @@ Commands:
   approve 2     — approve post #2 in queue
   idea 1        — queue content idea #1 as a seed
   posts         — pending approval count
+  standup       — full morning standup digest
+  morning       — alias for standup
 """
 
 from __future__ import annotations
@@ -27,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 HELP_TEXT = (
     "Kova Daily Brief commands:\n"
+    "• STANDUP — morning standup digest\n"
     "• SCORE — your Kova score\n"
     "• BRIEF — today's summary\n"
     "• POSTS — pending approvals\n"
@@ -161,6 +164,15 @@ def _dispatch_command(user, raw_text: str) -> tuple[str, str, bool, dict]:
             True,
             metadata,
         )
+
+    if text in {"standup", "morning", "morning standup"}:
+        brief = _get_today_brief(user)
+        from apps.briefs.standup import format_standup_whatsapp_message, mark_standup_engaged
+
+        msg = format_standup_whatsapp_message(user, brief)
+        if brief:
+            mark_standup_engaged(brief)
+        return msg, "standup", True, metadata
 
     if text in {"posts", "pending", "queue"}:
         from apps.content.approval import get_pending_posts
@@ -324,7 +336,7 @@ def _send_owner_action_buttons(wa_id: str, user, *, brief=None) -> bool:
         return False
 
     pending = brief.posts_pending if brief else 0
-    buttons = action_buttons_for_user(user, posts_pending=pending)
+    buttons = action_buttons_for_user(user, posts_pending=pending, brief=brief)
     provider = WhatsAppProvider()
     result = provider.send_interactive_buttons(
         access_token=token,

@@ -1718,7 +1718,9 @@ def ab_test_cancel(request, test_id):
 
 @login_required
 def voice_campaign(request):
-    """Launch AI campaigns from voice memos or text prompts."""
+    """Listen & Launch — cross-channel campaigns from voice or text."""
+    from django.urls import reverse
+
     from apps.campaigns.models import Campaign
     from apps.content.models import VoiceBrief
     from apps.content.tasks import process_voice_brief
@@ -1740,22 +1742,29 @@ def voice_campaign(request):
                 duration_days = 7
 
             include_email = request.POST.get("include_email") == "on"
+            include_status = request.POST.get("include_whatsapp_status") == "on"
             fire_task(
                 ai_build_campaign,
                 str(request.user.id),
                 prompt,
                 duration_days,
                 include_email,
+                include_status,
             )
+            channels = ["social Queue"]
+            if include_email:
+                channels.append("email")
+            if include_status:
+                channels.append("WhatsApp Status")
             messages.success(
                 request,
-                "AI is building your campaign — posts will appear in Queue as they're generated.",
+                f"Listen & Launch is building your campaign — {' + '.join(channels)}.",
             )
             return redirect("content:voice_campaign")
 
         audio = request.FILES.get("audio")
         if not audio:
-            messages.error(request, "Please upload an audio file.")
+            messages.error(request, "Please upload or record an audio clip.")
             return redirect("content:voice_campaign")
 
         allowed_types = [
@@ -1777,8 +1786,7 @@ def voice_campaign(request):
         fire_task(process_voice_brief, str(vb.pk))
         messages.success(
             request,
-            "Voice memo uploaded! AI is transcribing and building your campaign — "
-            "check back in a minute.",
+            "Voice captured! Listen & Launch is transcribing and building across your channels.",
         )
         return redirect("content:voice_campaign")
 
@@ -1797,7 +1805,25 @@ def voice_campaign(request):
     return render(request, "content/voice_campaign.html", {
         "briefs": briefs,
         "campaigns": campaigns,
+        "transcribe_url": reverse("content:voice_campaign_transcribe"),
     })
+
+
+@login_required
+@require_POST
+def voice_campaign_transcribe(request):
+    """Transcribe live mic audio for Listen & Launch prompt field."""
+    from apps.content.voice import transcribe_audio
+
+    audio = request.FILES.get("audio")
+    if not audio:
+        return JsonResponse({"error": "No audio file provided."}, status=400)
+
+    content_type = audio.content_type or "audio/webm"
+    result = transcribe_audio(audio, content_type)
+    if result.get("error"):
+        return JsonResponse({"error": result["error"]}, status=400)
+    return JsonResponse({"text": result.get("text", ""), "duration": result.get("duration")})
 
 
 # ─── AUTOPILOT ──────────────────────────────────────────────────────────────
