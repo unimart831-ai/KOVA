@@ -48,7 +48,7 @@ direct client contracts — breaking the cycle of aid dependency.
 # PHASE A: ACCOUNT SETUP & ONBOARDING
 # ============================================================================
 # Estimated time: 5 minutes
-# What you're testing: Signup → 3-step onboarding wizard
+# What you're testing: Signup (phone required) → Kova Express onboarding
 # ============================================================================
 
 ## A1. Sign Up
@@ -59,105 +59,50 @@ Use these credentials:
 - Email: hello@digibridge.org (or your real email)
 - Password: Use a strong password (16+ chars)
 - Full Name: Amara Ochieng
+- Phone: Kenyan mobile (e.g. 0712345678) — **required**
 
 What to verify:
   ☐ Signup form submits without errors
+  ☐ Phone number field is required
   ☐ No email verification required (disabled in production)
   ☐ You are logged in immediately after signup
-  ☐ You're redirected to the onboarding wizard
+  ☐ You're redirected to onboarding (path choice / express wizard)
 
 
-## A2. Onboarding — Step 1: Brand Basics
+## A2. Onboarding — Path Choice
+
+What to verify:
+  ☐ Intent options visible: sell products, grow on social, or both
+  ☐ Optional website/social link field works
+  ☐ Choosing an intent advances to Step 1
+
+
+## A3. Onboarding — Step 1: Business Basics
 
 Fill in:
-- Company Name: DigiBridge Academy
-- Website URL: https://digibridge.org
+- Business / company name: DigiBridge Academy
+- Website URL (optional): https://digibridge.org
 - Industry: Education / Non-Profit (pick the closest available option)
-- Content Language: English (select from dropdown — 11 options available including Swahili, Sheng, Pidgin, French)
-- Key Offerings: Type in "Digital Skills Training for Refugees" and "Remote Work Placements"
+- Content Language: English (or Swahili if testing localization)
 
 What to verify:
+  ☐ Phone already on file from signup (not asked again)
   ☐ All fields accept input correctly
-  ☐ Content language dropdown shows all 11 options
-  ☐ Key offerings field accepts multiple entries
-  ☐ "Next" button advances to Step 2
-  ☐ Progress indicator shows Step 1 complete
+  ☐ Magic Fill works if you pasted a link on path choice
+  ☐ "Next" advances to Step 2 (brand preview)
+  ☐ Progress indicator shows Step 1 of 3
 
 
-## A3. Onboarding — Step 2: Brand Voice & Audience
-
-Fill in:
-
-Brand Voice:
-```
-Inspirational but grounded. We don't use pity language — our tone 
-is empowering, hopeful, and direct. We speak WITH refugees, not 
-ABOUT them. Think "big dreams, real results" energy. We mix impact 
-storytelling with hard data. Our voice is warm but professional — 
-a mentor who believes in you, not a charity asking for sympathy.
-```
-
-Target Audience:
-```
-International donors (age 30-60, US/EU/UK), social impact investors, 
-NGO partners, corporate CSR teams, tech companies seeking diverse 
-remote talent, volunteer tech mentors, and the refugees themselves 
-who follow for motivation and announcements.
-```
-
-Tone Attributes (select from the visual grid):
-  ✓ Inspirational
-  ✓ Confident
-  ✓ Empathetic
-
-Content Pillars (topics — select or type as many as the form allows):
-- Refugee success stories
-- Digital skills education
-- Impact metrics & transparency
-- Behind-the-scenes at Kakuma
-- Remote work & freelancing tips
-- Donor/partner spotlights
-(Also try clicking the industry-suggested pillars — should auto-suggest relevant topics
-for Education / Non-Profit)
-
-Brand Restrictions / Guardrails (expand the collapsible section):
-```
-Never use pity language or portray refugees as helpless. Avoid words like
-"victims" or "charity cases". Never share personal details of students without
-consent. Do not promise employment outcomes.
-```
+## A4. Onboarding — Step 2: Confirm Brand
 
 What to verify:
-  ☐ Long text fields accept the full brand voice paragraph
-  ☐ Tone attribute grid allows multiple selections
-  ☐ Content pillars save correctly
-  ☐ Industry-based pillar suggestions appear and are clickable
-  ☐ Brand restrictions collapsible section expands and saves text
-  ☐ "Next" button advances to Step 3
-
-
-## A4. Onboarding — Step 3: Goals & Preferences
-
-Fill in:
-- Goals: Select ALL that apply:
-  ✓ Grow followers
-  ✓ Drive traffic
-  ✓ Build community
-  ✓ Brand awareness
-  ✓ Thought leadership
-
-- Posting frequency: 7 posts/week (1 per day across platforms)
-- Auto-approve posts: OFF (we want to review everything first)
-- Auto-engage: ON (toggle it — lets AI auto-reply to positive comments)
-
-What to verify:
-  ☐ Multiple goals can be selected
-  ☐ Posting frequency slider/input works
-  ☐ Auto-approve toggle saves correctly
-  ☐ Auto-engage toggle is visible and saves correctly
-  ☐ "Complete" button finishes onboarding
-  ☐ You are redirected to the Daily Brief (home page)
-  ☐ Onboarding is marked complete (you shouldn't see onboarding again)
+  ☐ Preview card shows inferred voice, audience, tone, pillars
+  ☐ "Looks good — start my agency" completes onboarding
+  ☐ Agency meeting / intelligence chain starts (1–3 min)
+  ☐ Sell/commerce users redirect to Snap to Sell (`/products/snap/`)
+  ☐ Grow users redirect to Content Studio or Brief
+  ☐ Onboarding is marked complete (no repeat redirects)
+  ☐ Platform connect is **not** required to finish — optional from `/platforms/` later
 
 
 # ============================================================================
@@ -1134,7 +1079,7 @@ Portfolio reviews available at digibridge.org/hire
 
 ## Core Flows (Phase A-C)
   ☐ Signup → login (no email verification)
-  ☐ 3-step onboarding completed
+  ☐ Express onboarding completed (path → Step 1 → Step 2 confirm)
   ☐ All sidebar pages load without errors (empty states)
   ☐ Platform OAuth connection (at least 2 platforms)
   ☐ Platform disconnect + reconnect

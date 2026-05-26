@@ -180,7 +180,7 @@ def auth_client()   # Logged-in test client (returns the user too)
 
 | # | Test | Steps | Expected Result |
 |---|------|-------|-----------------|
-| 1 | Sign up with valid email | Go to `/accounts/signup/` → fill email + password → submit | Account created, redirected to `/accounts/onboarding/` |
+| 1 | Sign up with valid email | Go to `/accounts/signup/` → fill email + password + phone → submit | Account created, redirected to `/accounts/onboarding/start/` |
 | 2 | Sign up with existing email | Try to register with an email that already exists | Error: "A user is already registered with this e-mail address" |
 | 3 | Sign up with weak password | Use password like "123" | Validation error — password too short/common |
 | 4 | UserProfile auto-creation | After signup, check `user.profile` exists | UserProfile created with default values |
@@ -195,17 +195,20 @@ def auth_client()   # Logged-in test client (returns the user too)
 | 4 | Logout | Click logout | Redirected to `/` (LOGOUT_REDIRECT_URL) |
 | 5 | Access protected page while logged out | Go to `/content/studio/` without logging in | Redirected to `/accounts/login/?next=/content/studio/` |
 
-### 3.3 Onboarding Wizard (4 Steps)
+### 3.3 Express Onboarding (Kova Express)
 
 | # | Test | Steps | Expected Result |
 |---|------|-------|-----------------|
-| 1 | Onboarding redirect | New user logs in, tries to access any page | `OnboardingMiddleware` redirects to `/accounts/onboarding/` |
-| 2 | Step 1 — Brand Basics | Fill company name, industry, target audience → next | Saved to UserProfile, advance to step 2 |
-| 3 | Step 2 — Brand Voice | Set tone, voice description, content pillars → next | Saved, advance to step 3 |
-| 4 | Step 3 — Connect Platforms | Connect at least one platform (or skip) → next | Advance to step 4 |
-| 5 | Step 4 — First Content | Create first seed or click "explore platform" | Onboarding marked complete |
-| 6 | Onboarding complete redirect | After completing step 4 | No more redirects, normal navigation works |
-| 7 | Check progress endpoint | `GET /accounts/onboarding/progress/` | Returns JSON with completed steps |
+| 1 | Phone required | Sign up without phone, or OAuth login without phone on file | Redirect to `/accounts/onboarding/phone/` before wizard |
+| 2 | Platform connect blocked | User without phone tries `/platforms/connect/instagram/` | Redirect to `/accounts/onboarding/phone/` |
+| 3 | Path choice | After phone, open `/accounts/onboarding/start/` | Intent screen: sell / grow / both + optional link |
+| 4 | Step 1 — Basics | Fill business name, industry → next | Saved to UserProfile; magic fill if link provided |
+| 5 | Step 2 — Confirm brand | Review preview card → "Looks good — start my agency" | Onboarding marked complete; agency chain starts |
+| 6 | Commerce redirect | User chose sell or ecommerce industry | After completion, lands on `/products/snap/?completed=1` |
+| 7 | Grow redirect | User chose grow intent | After completion, lands on Content Studio |
+| 8 | OAuth mid-flow | Connect platform during Step 1 | Callback returns to `/accounts/onboarding/?step=2` |
+| 9 | Platform connect optional | Finish onboarding without connecting | No blocker; connect anytime from `/platforms/` |
+| 10 | Check progress endpoint | `GET /accounts/onboarding/progress/` | Returns JSON with completed steps |
 
 ### 3.4 User Settings
 

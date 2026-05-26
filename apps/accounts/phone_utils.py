@@ -40,6 +40,14 @@ def phone_to_whatsapp_digits(raw: str) -> str:
     return phone if phone.isdigit() else ""
 
 
+def user_has_phone(user) -> bool:
+    return bool((getattr(user, "phone_number", "") or "").strip())
+
+
+def user_needs_phone(user) -> bool:
+    return not user_has_phone(user)
+
+
 def apply_phone_to_user(user, phone: str):
     """Set timezone/country hints from phone when appropriate."""
     profile = getattr(user, "profile", None)

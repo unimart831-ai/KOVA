@@ -263,8 +263,9 @@ def _send_completion_whatsapp_ping(user) -> bool:
         return False
 
     first_name = (user.full_name or user.email or "there").split(" ")[0]
-    site_url = getattr(settings, "SITE_URL", "https://kovaagent.com").rstrip("/")
-    next_step_url = f"{site_url}/brief/"
+    from apps.accounts.onboarding_redirects import post_onboarding_site_path
+
+    next_step_url = post_onboarding_site_path(user)
     components = [{
         "type": "body",
         "parameters": [

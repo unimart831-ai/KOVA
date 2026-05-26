@@ -32,17 +32,28 @@ from apps.admin_dashboard.decorators import staff_required
 from apps.agents.onboarding_tasks import STUCK_AFTER_SECONDS
 
 
-# Express onboarding funnel (Kova Express):
-#   signed_up → phone_set → intent → step_1 → step_2 confirm → finish (step_4_completed)
-# step_3_completed still fires on confirm for analytics parity with the old wizard.
+# Express onboarding funnel — phone → intent → 2 wizard steps → finish.
 FUNNEL_STAGES = [
     ("signed_up", "Signed up", None),
-    ("phone_set", "Phone on file", "__phone__"),
+    ("phone_collected", "Phone on file", "__phone__"),
+    ("path_choice", "Intent / path chosen", "__path_choice__"),
     ("step_1_completed", "Step 1 — About your business", "step_1_completed"),
-    ("step_2_completed", "Step 2 — Brand preview", "step_2_completed"),
+    ("step_2_completed", "Step 2 — Brand confirmed", "step_2_completed"),
     ("step_4_completed", "Finished setup", "step_4_completed"),
     ("intelligence_completed", "Agency chain finished", "intelligence_completed"),
 ]
+
+_PATH_CHOICE_MARKERS = (
+    "path_choice_magic", "path_choice_url", "path_choice_manual", "path_choice_sell",
+    "intent_sell", "intent_grow", "intent_both",
+)
+
+
+def _has_path_choice(profile) -> bool:
+    if not profile:
+        return False
+    stamps = profile.onboarding_step_timestamps or {}
+    return any(stamps.get(k) for k in _PATH_CHOICE_MARKERS)
 
 
 def _user_profile(user):
@@ -101,6 +112,8 @@ def onboarding_funnel(request):
             count = len(users)
         elif step_stamp == "__phone__":
             count = sum(1 for u in users if (u.phone_number or "").strip())
+        elif step_stamp == "__path_choice__":
+            count = sum(1 for u in users if _has_path_choice(_user_profile(u)))
         else:
             count = sum(1 for u in users if _has_step(_user_profile(u), step_stamp))
         stage_counts.append({"key": key, "label": label, "count": count})
@@ -163,7 +176,7 @@ def onboarding_funnel(request):
         stamps = profile.onboarding_step_timestamps or {}
         last_step = None
         last_parsed = None
-        for step_key in ("step_1_completed", "step_2_completed", "step_3_completed"):
+        for step_key in ("step_2_completed", "step_1_completed"):
             parsed_ts = _aware_step_ts(stamps.get(step_key))
             if parsed_ts and (last_parsed is None or parsed_ts > last_parsed):
                 last_parsed = parsed_ts
@@ -292,6 +305,23 @@ def onboarding_funnel(request):
     ]
     country_mix = country_distribution.most_common(5)
 
+    from apps.accounts.setup_mission import get_onboarding_intent, is_commerce_industry
+    from apps.products.models import Product
+
+    sell_cohort_total = 0
+    sell_with_product = 0
+    sell_shop_live = 0
+    for u in users:
+        p = _user_profile(u)
+        if not p:
+            continue
+        if get_onboarding_intent(p) in ("sell", "both") or is_commerce_industry(p.industry):
+            sell_cohort_total += 1
+            if Product.objects.filter(user=u, is_active=True).exists():
+                sell_with_product += 1
+            if p.page_slug and Product.objects.filter(user=u, is_active=True).exists():
+                sell_shop_live += 1
+
     return render(request, "admin_dashboard/users/onboarding_funnel.html", {
         "page_title": "Onboarding Funnel",
         "total_signups": len(users),
@@ -306,6 +336,9 @@ def onboarding_funnel(request):
         "cohort_days": 60,
         "automation": automation_summary,
         "intent_counts": intent_counts,
+        "sell_cohort_total": sell_cohort_total,
+        "sell_with_product": sell_with_product,
+        "sell_shop_live": sell_shop_live,
         "industry_mix": industry_mix,
         "country_mix": country_mix,
     })

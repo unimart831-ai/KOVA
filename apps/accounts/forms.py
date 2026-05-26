@@ -460,10 +460,14 @@ class OnboardingExpressStep1Form(forms.ModelForm):
         if user:
             self.fields["full_name"].initial = user.full_name
             if user.phone_number:
+                self.fields["phone_number"].required = False
+                self.fields["phone_number"].widget = forms.HiddenInput()
                 self.fields["phone_number"].initial = user.phone_number
 
     def clean_phone_number(self):
         phone = normalize_phone(self.cleaned_data.get("phone_number", ""))
+        if not phone and self.user and (self.user.phone_number or "").strip():
+            return self.user.phone_number
         if not phone:
             raise forms.ValidationError("Phone number is required.")
         if not is_valid_phone(phone):
@@ -733,6 +737,7 @@ class OnboardingStep2Form(forms.ModelForm):
 
 
 class OnboardingStep2ReviewForm(forms.ModelForm):
+    """Legacy full brand review form — used in Settings, not express onboarding."""
     """Single 'Review your brand' page — combines what used to be Step 2 + Step 3.
 
     Pre-filled when Magic Fill / URL inference / industry pack populated the

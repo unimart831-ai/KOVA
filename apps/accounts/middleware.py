@@ -3,6 +3,44 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import redirect
 
+from apps.accounts.phone_utils import user_needs_phone
+
+
+class RequirePhoneMiddleware:
+    """Redirect authenticated users without phone to the capture screen."""
+
+    EXEMPT_PREFIXES = (
+        "/accounts/onboarding/phone/",
+        "/accounts/logout/",
+        "/accounts/login/",
+        "/accounts/signup/",
+        "/accounts/confirm-email/",
+        "/accounts/password/",
+        "/accounts/google/",
+        "/accounts/facebook/",
+        "/admin/",
+        "/health/",
+        "/static/",
+        "/media/",
+        "/learn/",
+        "/blog/",
+    )
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        user = request.user
+        if (
+            getattr(user, "is_authenticated", False)
+            and user.is_authenticated
+            and not user.is_staff
+            and user_needs_phone(user)
+            and not any(request.path.startswith(p) for p in self.EXEMPT_PREFIXES)
+        ):
+            return redirect("accounts:collect_phone")
+        return self.get_response(request)
+
 
 class OnboardingMiddleware:
     """Redirect authenticated users who haven't completed onboarding."""
@@ -15,8 +53,6 @@ class OnboardingMiddleware:
         "/accounts/confirm-email/",
         "/accounts/password/reset/",
         "/accounts/google/",
-        "/platforms/connect/",
-        "/platforms/callback/",
         "/billing/pricing/",
         "/help/",
         "/teams/invite/",

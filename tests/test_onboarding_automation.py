@@ -241,10 +241,10 @@ class TestUrlInferencePersistence:
         assert "brand_voice" not in updated
 
 
-# ── Merged Step 2 "Review your brand" form ──────────────────────────────────
+# ── Legacy Step 2 review form (Settings only — not express onboarding UI) ──
 
 @pytest.mark.django_db
-class TestMergedReviewForm:
+class TestLegacyReviewForm:
     """The merged form replaces old Step 2 (voice/visuals) + Step 3 (goals/
     autonomy/CTA). It must save fields from both halves and persist the helper
     fields (tone_selection, content_pillars_text, etc.) back onto the model."""
@@ -511,6 +511,36 @@ class TestWhatsappOnboardingPing:
         params = captured["components"][0]["parameters"]
         assert params[0]["text"] == "Jane"
         assert params[1]["text"] == "https://app.kovaagent.com/brief/"
+
+    def test_whatsapp_url_for_commerce_user(self, monkeypatch, settings):
+        settings.KOVA_ONBOARDING_TEMPLATE_NAME = "kova_onboarding_ready"
+        settings.WHATSAPP_PHONE_NUMBER_ID = "123"
+        settings.WHATSAPP_ACCESS_TOKEN = "token"
+        settings.SITE_URL = "https://app.kovaagent.com"
+
+        u = User.objects.create_user(
+            username="wacom", email="wacom@b.com", password="P1!",
+            full_name="Jane Doe", phone_number="0712345678",
+        )
+        u.profile.industry = "ecommerce"
+        u.profile.save()
+
+        captured = {}
+
+        class FakeProvider:
+            def send_template_message(self, **kwargs):
+                captured.update(kwargs)
+                return {"success": True}
+
+        monkeypatch.setattr(
+            "apps.platforms.providers.whatsapp.WhatsAppProvider",
+            FakeProvider,
+        )
+
+        from apps.agents.onboarding_tasks import _send_completion_whatsapp_ping
+
+        assert _send_completion_whatsapp_ping(u) is True
+        assert captured["components"][0]["parameters"][1]["text"] == "https://app.kovaagent.com/products/snap/"
 
 
 @pytest.mark.django_db

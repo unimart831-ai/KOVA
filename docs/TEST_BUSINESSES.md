@@ -743,7 +743,7 @@ defaults, smart Kenya signup defaults, the WhatsApp completion ping.
 - [ ] **Path Choice — Magic Fill** — Pick "Auto-fill from social" → connect Instagram → verify bio, profile pic, website pre-filled
 - [ ] **Industry Pack — Salon defaults** — Verify warm/approachable/playful tones applied, WhatsApp CTA defaulted, 5 posts/week cadence set
 - [ ] **Smart Kenya Signup Defaults** — Verify timezone=Africa/Nairobi, country=KE, M-Pesa phone auto-set from signup
-- [ ] **3-Step Wizard** — Confirm new wizard structure (Path Choice → Step 1 → Step 2 Review → Step 3 Connect)
+- [ ] **Express onboarding** — Path choice (intent + link) → phone (OAuth) → Step 1 basics → Step 2 confirm → agency meeting. Platform connect is **deferred** (not a wizard blocker).
 - [ ] **Step 2 Review Page** — Verify all sections (Voice, Content, Visuals, Goals, Autonomy, CTA) pre-filled
 - [ ] **WhatsApp Completion Ping** — Verify the WhatsApp template message lands on signup phone (if template configured)
 - [ ] **Admin Funnel — Path Choice Panel** — Salon should show under "Magic Fill" in admin dashboard
@@ -1016,7 +1016,7 @@ any course / cohort / curriculum-based educator.
    products. Pass `--complete-onboarding` to skip the wizard entirely for
    businesses you don't need to manually walk through.
 2. **Manual onboarding (for QA coverage of the new wizard):** sign up each
-   business through the public UI to exercise the 3-step wizard end-to-end.
+   business through the public UI to exercise express onboarding end-to-end.
    The new flow is:
    * **Path-choice screen** — pick Magic Fill (auto-fill from a social account),
      URL inference (paste a website), or manual setup.
@@ -1026,7 +1026,9 @@ any course / cohort / curriculum-based educator.
    * **Step 2 — Review your brand:** merged voice + visuals + goals + autonomy
      + CTA. Industry pack values are already filled in; the user skims and
      edits anything off.
-   * **Step 3 — Connect a platform.**
+   * **Step 2 — Confirm brand** (preview card, not a long form).
+   * **Agency meeting** — completion page polls intelligence chain.
+   * **Platform connect** — optional anytime from Platforms (not a wizard step).
    Phase 1 of the test plan only takes one or two businesses through the
    manual route; the rest go through `seed_test_businesses`.
 3. Connect platforms per the tables above (OAuth — still required even when
@@ -1133,11 +1135,10 @@ All 12 businesses use Kenyan phone numbers, so all should auto-set:
 ### Wizard Structure
 
 - [ ] Confirm wizard is **3 steps**, not 4 (progress bar shows "Step X of 3")
-- [ ] Step 2 is a single "Review your brand" page (no separate goals page)
-- [ ] Step 2 has all section dividers: Voice & audience, Content & guardrails,
-      Visuals, Goals & cadence, Agent autonomy, Default CTA
+- [ ] Step 2 is a single "Confirm your brand" preview page (not a long legacy form)
 - [ ] African timezones surfaced at top of the timezone dropdown in Step 1
-- [ ] Mid-flow OAuth callback returns user to `?step=3` (not `?step=4`)
+- [ ] Mid-flow OAuth callback returns user to `?step=2` (magic fill handoff)
+- [ ] Signup requires phone number; OAuth users land on `/accounts/onboarding/phone/` first
 
 ### WhatsApp Completion Ping
 
@@ -1152,7 +1153,7 @@ All 12 businesses use Kenyan phone numbers, so all should auto-set:
 After running the full test cohort, the admin funnel at
 `/admin/users/onboarding-funnel/` should show:
 
-- [ ] **Funnel** — drop-off shape from Signup → Step 1 → Step 2 (voice/full) → Step 3 → Agency chain
+- [ ] **Funnel** — drop-off: Signup → Phone → Intent → Step 1 → Step 2 confirm → Agency chain
 - [ ] **Top summary line** — median time-to-complete in minutes
 - [ ] **Path choice** — Magic / URL / Manual / Unknown breakdown
 - [ ] **Automation hits** — Magic Fill providers, URL inference count, industry pack hits

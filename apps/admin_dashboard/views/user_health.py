@@ -54,6 +54,14 @@ def _compute_churn_risk(user, now):
         risk += 20
         signals.append("No platforms connected")
 
+    # Factor 3b: Commerce intent but no products
+    product_count = getattr(user, "_product_count", 0)
+    from apps.accounts.setup_mission import get_onboarding_intent, is_commerce_industry
+    if is_commerce_industry(profile.industry) or get_onboarding_intent(profile) in ("sell", "both"):
+        if product_count == 0:
+            risk += 15
+            signals.append("No products listed")
+
     # Factor 4: Trial ending soon, no upgrade signals
     if profile.subscription_status == "trialing" and profile.trial_ends_at:
         days_left = (profile.trial_ends_at - now).days
@@ -104,6 +112,9 @@ def user_health(request):
         _platform_count=Count(
             "social_accounts", filter=Q(social_accounts__is_active=True),
         ),
+        _product_count=Count(
+            "products", filter=Q(products__is_active=True),
+        ),
     )
 
     # Compute risk scores
@@ -117,6 +128,7 @@ def user_health(request):
             "risk_level": "critical" if risk_score >= 70 else "warning" if risk_score >= 40 else "healthy",
             "published_count": user._published_count,
             "platform_count": user._platform_count,
+            "product_count": user._product_count,
             "days_since_signup": (now - user.date_joined).days,
             "days_since_login": (now - user.last_login).days if user.last_login else None,
             "trial_days_left": (

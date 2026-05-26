@@ -159,15 +159,11 @@ def onboarding_choose_path(request):
 
 @login_required
 def onboarding_magic_connect(request):
-    """Magic-Fill platform grid — connect a social account so we can auto-fill.
+    """Magic-Fill platform grid — connect a social account so we can auto-fill."""
+    phone_redirect = _redirect_if_phone_required(request.user)
+    if phone_redirect:
+        return phone_redirect
 
-    Only shows platforms where `profile_audit` returns meaningful data:
-    Instagram, Facebook, LinkedIn. Other platforms (X, TikTok, etc.) don't
-    expose enough profile metadata to be worth pulling.
-
-    The session flag is set so the OAuth callback knows to redirect into the
-    Magic-Fill handoff (handled at the start of onboarding_view).
-    """
     request.session["onboarding_magic_fill"] = True
     # Record the path-choice selection for admin funnel analytics. Only fires
     # the first time the user lands here so it reflects the user's initial
@@ -280,6 +276,7 @@ def onboarding_view(request):
             "total_steps": total_steps,
             "page_title": "About your business",
             "prefill_url": express_link or (profile.website_url or ""),
+            "phone_on_file": bool((request.user.phone_number or "").strip()),
             **_onboarding_setup_context(step=step),
         })
 
@@ -728,9 +725,11 @@ def onboarding_complete(request):
         "setup_mission": setup_mission,
     }
 
-    # If everything is done, redirect to Content Studio where their posts are waiting
+    # If everything is done, redirect to the best first-value screen
     if progress["all_done"] and request.GET.get("completed"):
-        return redirect("content:studio")
+        from apps.accounts.onboarding_redirects import post_onboarding_redirect_url_name
+
+        return redirect(post_onboarding_redirect_url_name(request.user))
 
     return render(request, "accounts/onboarding_complete.html", {
         **progress_context,

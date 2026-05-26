@@ -62,6 +62,26 @@
     </div>
   </div>
 
+  {# ── Sell-intent commerce cohort ── #}
+  {% if sell_cohort_total %}
+  <div class="card">
+    <div class="card-body space-y-3">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Sell-intent cohort</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400">{{ sell_cohort_total }} users chose sell/both or commerce industry</p>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+          <p class="text-xs uppercase text-gray-500">First product</p>
+          <p class="text-xl font-bold">{{ sell_with_product }} <span class="text-sm font-normal text-gray-500">/ {{ sell_cohort_total }}</span></p>
+        </div>
+        <div class="p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+          <p class="text-xs uppercase text-gray-500">Shop live</p>
+          <p class="text-xl font-bold">{{ sell_shop_live }} <span class="text-sm font-normal text-gray-500">/ {{ sell_cohort_total }}</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   {# ── Intent mix ── #}
   <div class="card">
     <div class="card-body space-y-3">
