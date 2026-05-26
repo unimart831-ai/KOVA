@@ -24,6 +24,11 @@ from apps.products.commerce_seo import (
     build_shop_page_seo,
 )
 from apps.products.product_copy import format_product_description
+from apps.products.product_cta import (
+    primary_action_label_for,
+    public_action_heading_for,
+    resolve_direct_offer_action_url,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +83,7 @@ def public_shop_index(request, page_slug):
 
     user = profile.user
     brand = brand_name(profile, user)
-    wa_text = f"Hi! I'd like to browse your shop — {brand}."
+    wa_text = f"Hi! I'd like to browse your offers — {brand}."
     seo = build_shop_page_seo(request, profile, user, products)
     shop_reels = get_public_shop_reels(profile)
 
@@ -108,7 +113,7 @@ def public_commerce_link(request, page_slug, commerce_slug):
     wa_text = (
         f"Hi! I'm interested in {product.name}"
         f"{f' ({product.display_price})' if product.display_price else ''} "
-        f"from your shop link."
+        f"from your Kova offer page."
     )
     wa_url = _whatsapp_url(profile, wa_text)
 
@@ -117,11 +122,15 @@ def public_commerce_link(request, page_slug, commerce_slug):
     seller_limits = get_user_plan_limits(user)
     mpesa_commerce_enabled = bool(seller_limits.get("mpesa_commerce"))
     mpesa_available = bool(
+        product.offering_type == product.OfferingType.PRODUCT
+        and
         mpesa_commerce_enabled
         and product.price
         and product.currency == "KES"
         and product.stock_status != product.StockStatus.OUT_OF_STOCK
     )
+    primary_action_url = resolve_direct_offer_action_url(product, request)
+    primary_action_label = primary_action_label_for(product) if primary_action_url else ""
 
     shop_slug = resolve_page_slug(profile)
     seo = build_commerce_page_seo(
@@ -148,6 +157,10 @@ def public_commerce_link(request, page_slug, commerce_slug):
         "whatsapp": whatsapp,
         "wa_url": wa_url,
         "mpesa_available": mpesa_available,
+        "action_heading": public_action_heading_for(product),
+        "primary_action_url": primary_action_url,
+        "primary_action_label": primary_action_label,
+        "primary_action_external": primary_action_url.startswith(("http://", "https://")) if primary_action_url else False,
         "product_reel": product_reel,
         **seo,
     })
@@ -161,6 +174,12 @@ def public_commerce_pay(request, page_slug, commerce_slug):
     profile, product = resolve_public_product(page_slug, commerce_slug)
     if not product:
         raise Http404
+
+    if product.offering_type != product.OfferingType.PRODUCT:
+        return JsonResponse(
+            {"error": "Direct M-Pesa checkout is not enabled for this offer yet. Use the booking or access link instead."},
+            status=400,
+        )
 
     if not product.price or product.currency != "KES":
         return JsonResponse({"error": "M-Pesa pay is only available for KES-priced items."}, status=400)

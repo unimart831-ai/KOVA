@@ -579,6 +579,11 @@ def _strategist_plan_week(user, profile, platforms, week_start, posts_per_week=5
     Have the Strategist agent create a weekly content plan based on
     the user's brand, audience, recent performance, and connected platforms.
     """
+    from apps.accounts.segments import (
+        build_segment_prompt_context,
+        get_mode_fallback_topics,
+        infer_business_mode,
+    )
     from apps.agents.llm import generate, get_model_for_task, parse_llm_json
     from apps.analytics.models import PostMetric
     from apps.content.models import Post
@@ -605,6 +610,11 @@ def _strategist_plan_week(user, profile, platforms, week_start, posts_per_week=5
     brand_voice = profile.brand_voice or "professional"
     industry = profile.industry or "general"
     company = profile.company_name or "my business"
+    audience = profile.target_audience or "General audience"
+    goals = ", ".join(str(g) for g in (profile.goals or [])[:4]) or "Grow awareness and engagement"
+    offerings = ", ".join(str(item) for item in (profile.key_offerings or [])[:5]) or "No key offerings provided"
+    segment_context = build_segment_prompt_context(profile=profile, connected_platforms=platforms)
+    business_mode = infer_business_mode(profile, platforms)
     week_label = week_start.strftime("%B %d, %Y")
     days = [(week_start + timedelta(days=i)).strftime("%A %b %d") for i in range(7)]
 
@@ -614,6 +624,11 @@ BUSINESS: {company}
 INDUSTRY: {industry}
 BRAND VOICE: {brand_voice}
 PLATFORMS: {', '.join(platforms)}
+TARGET AUDIENCE: {audience}
+GOALS: {goals}
+KEY OFFERINGS / TOPICS: {offerings}
+
+{segment_context}
 
 RECENT POSTS:
 {recent_summary}
@@ -630,6 +645,10 @@ Rules:
 - Each topic should be a specific, actionable content idea (not generic)
 - Consider what performed well and do more of it
 - Only use platforms from the PLATFORMS list above
+- Match the content strategy to the business model and likely conversion path
+- Service businesses should lean toward trust, proof, FAQs, booking intent, and client outcomes
+- Digital businesses should lean toward education, transformation, instant-access value, and enrollment or access CTAs
+- Expert-led brands should lean toward authority, point of view, profile growth, list growth, and inbound opportunities instead of generic product-selling language
 
 Return ONLY valid JSON:
 {{
@@ -657,12 +676,17 @@ Return ONLY valid JSON:
         json_mode=True,
     )
 
-    parsed = parse_llm_json(response.content) if response.content else None
+    try:
+        parsed = parse_llm_json(response.content) if response.content else None
+    except Exception as exc:
+        logger.warning("Autopilot strategist returned invalid JSON for %s: %s", user.email, exc)
+        parsed = None
     if not parsed or "daily_topics" not in parsed:
+        fallback_labels = get_mode_fallback_topics(business_mode)
         fallback_topics = [
             {
                 "day": days[i % 7],
-                "topic": f"Share a {['tip', 'story', 'product highlight', 'customer win', 'behind the scenes'][i % 5]} about {company}",
+                "topic": f"Share a {fallback_labels[i % len(fallback_labels)]} about {company}",
                 "intent": ["problem_awareness", "solution", "proof", "offer", "authority"][i % 5],
                 "platforms": platforms[:2],
                 "notes": "",

@@ -83,9 +83,59 @@ PLAYBOOKS = {
     # ──────────────────────────────────────────────────────────────────────
     # Fashion & Beauty
     # ──────────────────────────────────────────────────────────────────────
+    "creator_expert": {
+        "name": "Creator & Expert Brand",
+        "industries": ["creator"],
+        "keywords": ["creator", "coach", "consultant", "speaker", "educator", "analyst", "newsletter"],
+        "content_dna_presets": {
+            "winning_formats": ["strong opinion", "personal lesson", "framework", "behind-the-scenes build", "case study"],
+            "winning_tones": ["authoritative", "human", "practical", "thoughtful"],
+            "winning_hooks": [
+                "What nobody tells you about building a personal brand in Africa",
+                "I used to believe X. I was wrong.",
+                "The framework I keep coming back to when helping clients solve this",
+                "If you're trying to grow on LinkedIn or X, start here",
+            ],
+            "best_content_types": {
+                "twitter": "Strong opinions, short lessons, build-in-public updates, conversation starters",
+                "linkedin": "Thought leadership, personal lessons, authority frameworks, client insights",
+                "instagram": "Behind-the-scenes, story-led lessons, proof of work, quick explainers",
+                "facebook": "Story posts, community takes, value-first explainers, event announcements",
+                "tiktok": "Direct-to-camera explainers, myth busting, mini case studies",
+            },
+        },
+        "seed_suggestions": [
+            "Share a strong lesson from client work that changed how you think about your field",
+            "Break down one framework or method you use repeatedly and why it works",
+            "Tell the story behind a professional mistake that taught you something valuable",
+            "Give your take on an industry belief most people repeat without questioning",
+            "Show how you prepare, research, or work behind the scenes so people see the craft",
+        ],
+        "content_calendar": {
+            "monday": {"theme": "Point of View", "example": "A strong opinion or market observation"},
+            "tuesday": {"theme": "Framework", "example": "A practical model people can apply"},
+            "wednesday": {"theme": "Proof", "example": "Client result, case study, or credibility builder"},
+            "thursday": {"theme": "Behind the Work", "example": "How you think, prepare, or create"},
+            "friday": {"theme": "Lesson Learned", "example": "A personal or professional lesson with a takeaway"},
+            "saturday": {"theme": "Conversation", "example": "Ask a specific question that surfaces audience insight"},
+            "sunday": {"theme": "Reset", "example": "A reflective post or plan for the coming week"},
+        },
+        "posting_strategy": {
+            "best_times": "7 AM, 12 PM, and 6 PM in the audience's workday rhythm",
+            "frequency": "4-6 posts per week with consistency over volume",
+            "platform_priority": ["linkedin", "twitter", "instagram", "facebook"],
+            "key_insight": "Creators and experts win by being memorable and useful. Strong point of view plus proof beats generic motivation.",
+        },
+        "seasonal_events": [
+            {"month": 1, "event": "Year-ahead positioning, predictions, and planning frameworks"},
+            {"month": 6, "event": "Mid-year lessons, audits, and reset content"},
+            {"month": 12, "event": "Year in review, what changed, and what matters next"},
+        ],
+    },
+
     "fashion_beauty": {
         "name": "Fashion & Beauty",
-        "industries": ["ecommerce", "creator", "other"],
+        "industries": ["ecommerce"],
         "keywords": ["fashion", "clothing", "beauty", "salon", "makeup", "style", "boutique", "hair"],
         "content_dna_presets": {
             "winning_formats": ["outfit-of-the-day", "transformation", "styling-tips", "trend-alert", "customer-wearing"],

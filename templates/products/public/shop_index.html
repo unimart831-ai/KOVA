@@ -190,10 +190,10 @@
 
   {% include "products/public/_shop_reels_strip.html" %}
 
-  <section class="products-section" aria-label="Products">
+  <section class="products-section" aria-label="Offers">
     <div class="products-head">
-      <h2 class="products-title">Shop all</h2>
-      <span class="products-count">{{ products|length }} item{{ products|length|pluralize }}</span>
+      <h2 class="products-title">Explore offers</h2>
+      <span class="products-count">{{ products|length }} offer{{ products|length|pluralize }}</span>
     </div>
     <div class="grid">
       {% for product in products %}
@@ -229,7 +229,7 @@
   </div>
   {% endif %}
 
-  <p class="footer">Powered by Kova Commerce</p>
+  <p class="footer">Powered by Kova</p>
 </div>
 {% include "products/public/_shop_reels_autoplay.js.html" %}
 </body>

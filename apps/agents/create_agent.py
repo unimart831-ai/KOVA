@@ -645,6 +645,8 @@ def _adapt_preferences_for_prompt(profile) -> str:
 
 def build_generation_prompt(seed: ContentSeed, platforms: list[dict]) -> str:
     """Build the user prompt with strategic platform targeting."""
+    from apps.accounts.segments import build_segment_prompt_context, get_offer_prompt_guidance
+
     platform_section = ""
     for p in platforms:
         guide = PLATFORM_GUIDES.get(p["platform"], {})
@@ -671,10 +673,19 @@ Transform this raw idea into high-performing, platform-native content.
 {f"### ADDITIONAL CONTEXT FROM USER" + chr(10) + seed.notes if seed.notes else ""}
 """
 
+    segment_context = build_segment_prompt_context(
+        profile=getattr(seed.user, "profile", None),
+        connected_platforms=[p.get("platform") for p in platforms],
+    )
+    if segment_context:
+        prompt += segment_context + "\n\n"
+
     # Inject product-specific context when seed is linked to a product
     if seed.product_id:
         p = seed.product
-        product_lines = [f"### PRODUCT BEING PROMOTED"]
+        offer_guidance = get_offer_prompt_guidance(p.offering_type)
+        product_lines = [offer_guidance["heading"]]
+        product_lines.append(f"- **Offer type**: {p.get_offering_type_display()}")
         product_lines.append(f"- **Name**: {p.name}")
         if p.display_price:
             product_lines.append(f"- **Price**: {p.display_price}")
@@ -683,11 +694,11 @@ Transform this raw idea into high-performing, platform-native content.
         if p.product_url:
             from apps.products.product_cta import resolve_product_cta_url
 
-            product_lines.append(f"- **Purchase URL**: {resolve_product_cta_url(p)}")
-            product_lines.append("→ Use this URL for 'Shop Now' / 'Buy Now' / 'Get Yours' CTAs.")
+            product_lines.append(f"- **{offer_guidance['url_label']}**: {resolve_product_cta_url(p)}")
+            product_lines.append(f"→ {offer_guidance['cta_hint']}")
         if p.tags:
             product_lines.append(f"- **Tags**: {', '.join(p.tags)}")
-        if p.stock_status == "low_stock":
+        if p.tracks_stock and p.stock_status == "low_stock":
             product_lines.append(f"- **⚠️ LOW STOCK** — Create urgency! Only {p.quantity or 'few'} left.")
         prompt += "\n".join(product_lines) + "\n\n"
     elif seed.user_id:

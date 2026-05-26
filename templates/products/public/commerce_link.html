@@ -32,7 +32,7 @@
 <div class="commerce-page">
 
   <header class="shop-header">
-    <p class="eyebrow">Shop with</p>
+    <p class="eyebrow">Offer from</p>
     <a class="brand-link" href="{{ shop_index_url }}">{{ brand_name }}</a>
   </header>
 
@@ -58,8 +58,8 @@
 
   {% with gallery=product.shop_gallery_urls %}
   {% if gallery %}
-  <section class="surface-card gallery-card" aria-label="Product photos">
-    <p class="gallery-section-label">Product photos</p>
+  <section class="surface-card gallery-card" aria-label="Offer photos">
+    <p class="gallery-section-label">Offer photos</p>
     <div class="gallery-stage">
       <img id="hero-img" class="hero-main" src="{{ gallery.0 }}" alt="{{ product.name }}">
     </div>
@@ -83,16 +83,20 @@
   {% endif %}
   {% endwith %}
 
-  <section class="surface-card pad" aria-label="Product details">
+  <section class="surface-card pad" aria-label="Offer details">
     <h1 class="product-title">{{ product.name }}</h1>
     <div class="price-row">
       {% if product.display_price %}
       <div class="price">{{ product.display_price }}</div>
       {% endif %}
-      {% if product.stock_status == 'out_of_stock' %}
+      {% if product.offering_type == 'product' and product.stock_status == 'out_of_stock' %}
       <span class="stock-badge out">Out of stock</span>
-      {% elif product.stock_status == 'low_stock' %}
+      {% elif product.offering_type == 'product' and product.stock_status == 'low_stock' %}
       <span class="stock-badge">Limited stock</span>
+      {% elif product.offering_type == 'service' %}
+      <span class="stock-badge">Bookable</span>
+      {% elif product.offering_type == 'digital' %}
+      <span class="stock-badge">Instant access</span>
       {% endif %}
     </div>
     {% if product_description_paragraphs %}
@@ -102,11 +106,19 @@
       {% endfor %}
     </div>
     {% endif %}
+    {% if product.fulfillment_notes %}
+    <div class="desc-blocks">
+      <p><strong>{% if product.offering_type == 'digital' %}Access notes:{% else %}How it works:{% endif %}</strong> {{ product.fulfillment_notes }}</p>
+    </div>
+    {% endif %}
   </section>
 
-  {% if product.stock_status != 'out_of_stock' %}
-  <section class="surface-card pad" aria-label="Buy options">
-    <p class="actions-title">Get this product</p>
+  {% if product.offering_type != 'product' or product.stock_status != 'out_of_stock' %}
+  <section class="surface-card pad" aria-label="Offer actions">
+    <p class="actions-title">{{ action_heading }}</p>
+    {% if primary_action_url %}
+    <a href="{{ primary_action_url }}" class="btn btn-outline"{% if primary_action_external %} target="_blank" rel="noopener"{% endif %}>{{ primary_action_label }}</a>
+    {% endif %}
     {% if wa_url %}
     <a href="{{ wa_url }}" class="btn btn-wa" target="_blank" rel="noopener">Chat on WhatsApp</a>
     {% endif %}
@@ -122,11 +134,11 @@
     <p style="margin-top:10px;font-size:14px;color:var(--commerce-muted);line-height:1.5;">Contact the seller to complete payment.</p>
     {% endif %}
 
-    <a href="{{ shop_index_url }}" class="btn btn-outline">View all products</a>
+    <a href="{{ shop_index_url }}" class="btn btn-outline">View all offers</a>
   </section>
   {% endif %}
 
-  <p class="page-footer">Powered by Kova Commerce</p>
+  <p class="page-footer">Powered by Kova</p>
 </div>
 
 {% if mpesa_available %}

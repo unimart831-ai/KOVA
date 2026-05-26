@@ -83,14 +83,37 @@
         {% endif %}
         {% if product.product_url %}
         <p class="text-xs text-gray-500 dark:text-gray-400">
-          <span class="font-medium">{% if product.uses_external_buy_link %}Marketplace buy link{% else %}Purchase link{% endif %}:</span>
+          <span class="font-medium">
+            {% if product.offering_type == 'service' %}Service page link
+            {% elif product.offering_type == 'digital' %}Offer page link
+            {% elif product.uses_external_buy_link %}Marketplace buy link
+            {% else %}Purchase link{% endif %}:
+          </span>
           <a href="{{ product.product_url }}" target="_blank" rel="noopener" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline">{{ product.product_url|truncatechars:60 }}</a>
+        </p>
+        {% endif %}
+        {% if product.booking_link %}
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          <span class="font-medium">Booking link:</span>
+          <a href="{% url 'bookings:public_book' slug=product.booking_link.slug %}" target="_blank" rel="noopener" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline">{{ product.booking_link.label }}</a>
+        </p>
+        {% endif %}
+        {% if product.fulfillment_url %}
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          <span class="font-medium">{% if product.offering_type == 'digital' %}Access link{% else %}Fulfillment link{% endif %}:</span>
+          <a href="{{ product.fulfillment_url }}" target="_blank" rel="noopener" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline">{{ product.fulfillment_url|truncatechars:60 }}</a>
+        </p>
+        {% endif %}
+        {% if product.fulfillment_notes %}
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          <span class="font-medium">{% if product.offering_type == 'digital' %}Access notes{% else %}Fulfillment notes{% endif %}:</span>
+          {{ product.fulfillment_notes }}
         </p>
         {% endif %}
         {% if product.external_id %}
         <p class="text-xs text-gray-500 dark:text-gray-400">SKU / External ID: <span class="font-mono">{{ product.external_id }}</span></p>
         {% endif %}
-        {% if product.quantity is not None %}
+        {% if product.tracks_stock and product.quantity is not None %}
         <p class="text-sm text-gray-600 dark:text-gray-300">
           <span class="font-medium">{{ product.quantity }}</span> unit{{ product.quantity|pluralize }} in stock
           {% if product.stock_status == 'low_stock' %}<span class="text-amber-600 dark:text-amber-400 ml-1">(below threshold of {{ product.low_stock_threshold }})</span>{% endif %}
@@ -151,6 +174,7 @@
       {% endif %}
 
       {# Quick stock update #}
+      {% if product.tracks_stock %}
       <form method="post" action="{% url 'products:update_stock' product_id=product.pk %}" class="flex items-center gap-2 ml-auto"
             hx-post="{% url 'products:update_stock' product_id=product.pk %}" hx-target="#stock-badge" hx-swap="innerHTML">
         {% csrf_token %}
@@ -166,6 +190,7 @@
         {% endif %}
         <button type="submit" class="btn-secondary text-sm px-3 py-1.5">Update Stock</button>
       </form>
+      {% endif %}
 
       <form method="post" action="{% url 'products:delete' product_id=product.pk %}"
             onsubmit="return confirm('Remove this product from your catalog?')">

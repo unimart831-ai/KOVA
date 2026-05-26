@@ -71,9 +71,44 @@
 
       {# E-commerce integration fields #}
       <div>
-        <label for="id_product_url" class="label">Purchase / Product Page URL</label>
+        <label for="id_product_url" class="label">
+          <span x-show="offeringType === 'product'">Purchase / Product Page URL</span>
+          <span x-show="offeringType === 'service'" x-cloak>Service page URL</span>
+          <span x-show="offeringType === 'digital'" x-cloak>Offer / sales page URL</span>
+        </label>
         {{ form.product_url }}
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Where customers can buy this. Used for "Shop Now" CTAs in AI-generated content.</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <span x-show="offeringType === 'product'">Where customers can buy this. Used for "Shop Now" CTAs in AI-generated content.</span>
+          <span x-show="offeringType === 'service'" x-cloak>Optional public page for this service. If blank, Kova can fall back to your booking link.</span>
+          <span x-show="offeringType === 'digital'" x-cloak>Optional sales or landing page for this digital offer.</span>
+        </p>
+      </div>
+
+      <div x-show="offeringType === 'service'" x-cloak>
+        <label for="id_booking_link" class="label">Booking Link</label>
+        {{ form.booking_link }}
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Pick the booking page Kova should use when this service needs a "Book now" CTA.</p>
+      </div>
+
+      <div x-show="offeringType !== 'product'" x-cloak>
+        <label for="id_fulfillment_url" class="label">
+          <span x-show="offeringType === 'service'">Primary booking / inquiry URL</span>
+          <span x-show="offeringType === 'digital'" x-cloak>Primary access / delivery URL</span>
+        </label>
+        {{ form.fulfillment_url }}
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <span x-show="offeringType === 'service'">Use this if bookings happen on another site or form.</span>
+          <span x-show="offeringType === 'digital'" x-cloak>Use this for the access, download, or enrollment destination customers should reach.</span>
+        </p>
+      </div>
+
+      <div x-show="offeringType !== 'product'" x-cloak>
+        <label for="id_fulfillment_notes" class="label">
+          <span x-show="offeringType === 'service'">Booking / delivery notes</span>
+          <span x-show="offeringType === 'digital'" x-cloak>Access notes</span>
+        </label>
+        {{ form.fulfillment_notes }}
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Optional instructions customers should see on the public Kova offer page.</p>
       </div>
 
       <div>

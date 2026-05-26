@@ -38,7 +38,8 @@ def owner(db):
         plan="growth", company_name="Test Salon",
     )
     u.onboarding_completed = True
-    u.save(update_fields=["onboarding_completed"])
+    u.phone_number = "0712345678"
+    u.save(update_fields=["onboarding_completed", "phone_number"])
     return u
 
 

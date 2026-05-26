@@ -282,18 +282,35 @@ def ai_build_campaign(
 def _generate_campaign_plan(user, prompt, platforms, business_name, brand_voice, duration_days):
     """Use LLM to generate a structured campaign plan."""
     try:
+        from apps.accounts.segments import build_segment_prompt_context
         from apps.agents.llm import generate, get_model_for_task
 
+        profile = getattr(user, "profile", None)
         platform_list = ", ".join(platforms)
+        audience = (getattr(profile, "target_audience", "") or "").strip()
+        offerings = getattr(profile, "key_offerings", []) or []
+        goals = getattr(profile, "goals", []) or []
+        segment_context = build_segment_prompt_context(
+            profile=profile,
+            connected_platforms=platforms,
+        )
         system = (
             f"You are a marketing campaign strategist for {business_name or 'a business'}.\n"
             f"Brand voice: {brand_voice or 'professional and engaging'}.\n"
             f"Connected platforms: {platform_list}.\n"
-            f"Campaign duration: {duration_days} days."
+            f"Campaign duration: {duration_days} days.\n"
+            f"Target audience: {audience or 'General audience'}.\n"
+            f"Key offerings: {', '.join(str(item) for item in offerings[:5]) or 'None provided'}.\n"
+            f"Goals: {', '.join(str(item) for item in goals[:4]) or 'Grow awareness and engagement'}.\n"
+            f"{segment_context}"
         )
 
         user_prompt = (
             f"Create a campaign plan for this goal:\n\n{prompt}\n\n"
+            f"Use the business model context above when choosing the campaign angle, CTA, and seed ideas.\n"
+            f"Match the conversion path to the business: product sellers should drive purchase intent, "
+            f"service businesses should drive booking or inquiry intent, digital sellers should drive access or enrollment intent, "
+            f"and expert-led brands should favor authority, audience growth, list growth, or inbound opportunity generation unless the prompt clearly asks for direct sales.\n\n"
             f"Return ONLY valid JSON with this structure:\n"
             f'{{\n'
             f'  "name": "Short campaign name (max 60 chars)",\n'

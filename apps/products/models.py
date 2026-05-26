@@ -93,6 +93,22 @@ class Product(models.Model):
         blank=True,
         help_text="Direct purchase/product page URL — used for 'Shop Now' CTAs in generated content.",
     )
+    booking_link = models.ForeignKey(
+        "bookings.BookingLink",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="products",
+        help_text="If this is a service, use this booking page as the primary fulfillment path.",
+    )
+    fulfillment_url = models.URLField(
+        blank=True,
+        help_text="Optional external booking, access, or delivery URL for service and digital offers.",
+    )
+    fulfillment_notes = models.TextField(
+        blank=True,
+        help_text="Optional instructions for how customers book, access, or receive this offer.",
+    )
     commerce_slug = models.SlugField(
         max_length=60,
         blank=True,
@@ -283,6 +299,18 @@ class Product(models.Model):
     def uses_external_buy_link(self) -> bool:
         from apps.products.product_cta import uses_marketplace_cta
         return uses_marketplace_cta(self)
+
+    @property
+    def has_service_fulfillment(self) -> bool:
+        return self.offering_type == self.OfferingType.SERVICE and bool(
+            self.booking_link_id or (self.fulfillment_url or "").strip()
+        )
+
+    @property
+    def has_digital_fulfillment(self) -> bool:
+        return self.offering_type == self.OfferingType.DIGITAL and bool(
+            (self.fulfillment_url or "").strip() or (self.product_url or "").strip()
+        )
 
     def check_low_stock(self):
         """Auto-update status if quantity drops below threshold. Skips services/digital."""

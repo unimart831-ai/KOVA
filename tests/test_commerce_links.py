@@ -3,11 +3,13 @@
 import pytest
 from django.urls import reverse
 
+from apps.bookings.models import BookingLink
 from apps.products.commerce_links import (
     commerce_link_path,
     ensure_commerce_slug,
     resolve_public_product,
 )
+from apps.products.product_cta import resolve_product_cta_url
 from apps.products.models import Product
 
 
@@ -118,3 +120,61 @@ class TestCommerceLinks:
         response = client.post(url)
         assert response.status_code == 400
         assert response.json()["error"] == "Phone number is required."
+
+    def test_service_offer_uses_booking_link_cta(self, client, user):
+        user.profile.page_slug = "demo-shop"
+        user.profile.company_name = "Demo Studio"
+        user.profile.save()
+        booking_link = BookingLink.objects.create(
+            user=user,
+            slug="demo-consulting",
+            label="Book a consulting call",
+            services=[{"name": "Strategy Session", "duration_minutes": 60, "price_kes": 5000}],
+        )
+        product = Product.objects.create(
+            user=user,
+            name="Strategy Session",
+            offering_type=Product.OfferingType.SERVICE,
+            commerce_slug="strategy-session",
+            booking_link=booking_link,
+            stock_status=Product.StockStatus.UNLIMITED,
+        )
+
+        cta_url = resolve_product_cta_url(product)
+        assert "/book/demo-consulting/" in cta_url
+        assert "service=Strategy+Session" in cta_url
+
+        url = reverse(
+            "public_commerce",
+            kwargs={"page_slug": "demo-shop", "commerce_slug": product.commerce_slug},
+        )
+        response = client.get(url)
+        assert response.status_code == 200
+        assert b"Book this service" in response.content
+        assert b"Book now" in response.content
+        assert b"Pay with M-Pesa" not in response.content
+
+    def test_digital_offer_shows_access_flow(self, client, user):
+        user.profile.page_slug = "demo-shop"
+        user.profile.company_name = "Demo Studio"
+        user.profile.save()
+        product = Product.objects.create(
+            user=user,
+            name="Creator Toolkit",
+            offering_type=Product.OfferingType.DIGITAL,
+            commerce_slug="creator-toolkit",
+            fulfillment_url="https://example.com/toolkit",
+            fulfillment_notes="Access is delivered instantly after signup.",
+            stock_status=Product.StockStatus.UNLIMITED,
+        )
+
+        url = reverse(
+            "public_commerce",
+            kwargs={"page_slug": "demo-shop", "commerce_slug": product.commerce_slug},
+        )
+        response = client.get(url)
+        assert response.status_code == 200
+        assert b"Get this digital offer" in response.content
+        assert b"Get instant access" in response.content
+        assert b"Access is delivered instantly after signup." in response.content
+        assert b"Pay with M-Pesa" not in response.content

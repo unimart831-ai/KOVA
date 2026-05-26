@@ -77,6 +77,7 @@ const state = { service: null, date: null, slot: null };
 const slotsUrl = "{% url 'bookings:slots' link.pk %}";
 const confirmUrl = "{% url 'bookings:public_confirm' link.slug %}";
 const maxDays = {{ max_advance_days|default:30 }};
+const presetService = new URLSearchParams(location.search).get('service');
 
 const fmtDay = d => d.toLocaleDateString(undefined, { weekday: 'short' });
 const fmtMonth = d => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -137,6 +138,16 @@ document.querySelectorAll('#services .card').forEach(el => {
     update();
   };
 });
+
+if (presetService) {
+  const normalized = presetService.trim().toLowerCase();
+  const presetCard = Array.from(document.querySelectorAll('#services .card')).find(
+    el => (el.dataset.name || '').trim().toLowerCase() === normalized
+  );
+  if (presetCard) {
+    presetCard.click();
+  }
+}
 
 function update() {
   const btn = document.getElementById('confirm');

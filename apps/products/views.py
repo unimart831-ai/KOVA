@@ -94,6 +94,9 @@ def product_add(request):
         if form.is_valid():
             product = form.save(commit=False)
             product.user = request.user
+            if not product.tracks_stock:
+                product.stock_status = Product.StockStatus.UNLIMITED
+                product.quantity = None
             product.check_low_stock()
             product.save()
             messages.success(request, f"'{product.name}' added to your catalog.")
@@ -227,6 +230,9 @@ def product_edit(request, product_id):
         form = ProductForm(request.POST, request.FILES, instance=product, user=request.user, plan_ctx=_plan_ctx(request))
         if form.is_valid():
             product = form.save(commit=False)
+            if not product.tracks_stock:
+                product.stock_status = Product.StockStatus.UNLIMITED
+                product.quantity = None
             product.check_low_stock()
             product.save()
 

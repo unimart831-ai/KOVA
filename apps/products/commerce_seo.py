@@ -77,7 +77,12 @@ def build_seo_description(
 
     city = (profile.city or "").strip()
     price = product.display_price
-    bits = [f"Buy {product.name}"]
+    if product.offering_type == product.OfferingType.SERVICE:
+        bits = [f"Book {product.name}"]
+    elif product.offering_type == product.OfferingType.DIGITAL:
+        bits = [f"Get access to {product.name}"]
+    else:
+        bits = [f"Buy {product.name}"]
     if price:
         bits.append(f"for {price}")
     bits.append(f"from {brand}")
@@ -125,9 +130,10 @@ def build_product_schema(
         for url in product.all_image_urls[:8]
         if url
     ]
+    schema_type = "Service" if product.offering_type == product.OfferingType.SERVICE else "Product"
     schema: dict[str, Any] = {
         "@context": "https://schema.org",
-        "@type": "Product",
+        "@type": schema_type,
         "name": product.name,
         "description": (product.description or build_seo_description(product, profile, user, brand=brand))[:500],
         "url": canonical_url,
@@ -142,9 +148,10 @@ def build_product_schema(
             "url": canonical_url,
             "priceCurrency": product.currency or "KES",
             "price": str(product.price),
-            "availability": _schema_availability(product),
             "seller": {"@type": "Organization", "name": brand},
         }
+        if product.offering_type != product.OfferingType.SERVICE:
+            schema["offers"]["availability"] = _schema_availability(product)
 
     city = (profile.city or "").strip()
     if city:
@@ -245,18 +252,18 @@ def build_shop_page_seo(request, profile, user, products) -> dict[str, Any]:
     count = len(products)
     headline = (profile.page_headline or "").strip()
 
-    seo_title = f"{brand} Shop"
+    seo_title = f"{brand} Offers"
     if city:
-        seo_title = f"{brand} · Shop in {city}"
+        seo_title = f"{brand} · Offers in {city}"
     seo_title = seo_title[:70]
 
     if headline:
         seo_description = headline[:160]
     else:
-        seo_description = f"Shop {count} product{'s' if count != 1 else ''} from {brand}"
+        seo_description = f"Browse {count} offer{'s' if count != 1 else ''} from {brand}"
         if city:
             seo_description += f" in {city}"
-        seo_description += ". Pay with M-Pesa or WhatsApp."
+        seo_description += ". Connect on WhatsApp, booking, or checkout."
 
     og_image = ""
     for product in products:
