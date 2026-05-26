@@ -15,6 +15,7 @@ urlpatterns = [
     path("settings/ai-learning/reset/", views.ai_learning_reset, name="ai_learning_reset"),
     path("onboarding/", views.onboarding_view, name="onboarding"),
     path("onboarding/start/", views.onboarding_choose_path, name="onboarding_choose_path"),
+    path("onboarding/phone/", views.collect_phone, name="collect_phone"),
     path("onboarding/magic/", views.onboarding_magic_connect, name="onboarding_magic_connect"),
     path("onboarding/complete/", views.onboarding_complete, name="onboarding_complete"),
     path("onboarding/progress/", views.onboarding_progress_api, name="onboarding_progress"),

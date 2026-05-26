@@ -10,7 +10,7 @@
   <div class="flex flex-wrap gap-3 items-end">
     <div class="flex-1 min-w-[200px]">
       <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Search</label>
-      <input type="text" name="q" value="{{ search }}" placeholder="Email, name, or company…"
+      <input type="text" name="q" value="{{ search }}" placeholder="Email, name, phone, or company…"
              class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500 focus:border-transparent">
     </div>
     <div>
@@ -38,6 +38,14 @@
         {% for value, label in industry_choices %}
         <option value="{{ value }}" {% if current_industry == value %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Phone</label>
+      <select name="phone" class="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <option value="">All</option>
+        <option value="yes" {% if current_phone == "yes" %}selected{% endif %}>Has phone</option>
+        <option value="no" {% if current_phone == "no" %}selected{% endif %}>Missing phone</option>
       </select>
     </div>
     <div>
@@ -119,7 +127,13 @@
               </div>
             </a>
           </td>
-          <td class="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">{{ user.phone_number|default:"—" }}</td>
+          <td class="px-4 py-3 text-xs">
+            {% if user.phone_number %}
+              <span class="text-gray-600 dark:text-gray-400">{{ user.phone_number }}</span>
+            {% else %}
+              <span class="px-1.5 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 rounded">NO PHONE</span>
+            {% endif %}
+          </td>
           <td class="px-4 py-3">
             <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {{ user.profile.plan|status_color }}">
               {{ user.profile.get_plan_display }}

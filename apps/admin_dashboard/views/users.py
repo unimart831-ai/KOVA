@@ -46,6 +46,12 @@ def user_list(request):
     elif onboarded == "no":
         qs = qs.filter(onboarding_completed=False)
 
+    phone_filter = request.GET.get("phone", "")
+    if phone_filter == "yes":
+        qs = qs.exclude(phone_number="")
+    elif phone_filter == "no":
+        qs = qs.filter(Q(phone_number="") | Q(phone_number__isnull=True))
+
     staff_filter = request.GET.get("is_staff", "")
     if staff_filter == "yes":
         qs = qs.filter(is_staff=True)
@@ -80,6 +86,7 @@ def user_list(request):
         "current_status": status,
         "current_industry": industry,
         "current_onboarded": onboarded,
+        "current_phone": phone_filter,
         "current_staff": staff_filter,
         "current_sort": sort,
         "total_count": paginator.count,

@@ -150,54 +150,35 @@ def _customer_pulse_from_stats(stats):
 
 
 def _setup_checklist_from_stats(user, stats):
-    days_since_signup = (timezone.now() - user.date_joined).days
-    if days_since_signup > 14:
+    from apps.accounts.setup_mission import build_setup_mission
+
+    mission = build_setup_mission(user, stats)
+    if not mission:
         return None
-
-    profile = user.profile
-    has_brand_voice = bool(profile.brand_voice and profile.brand_voice.strip())
-
     items = [
-        {
-            "key": "connect_platform",
-            "label": "Connect a social account",
-            "done": stats["has_platform"],
-            "url_name": "platforms:list",
-            "icon": "🔗",
-        },
-        {
-            "key": "brand_voice",
-            "label": "Set your brand voice",
-            "done": has_brand_voice,
-            "url_name": "accounts:settings",
-            "icon": "🎯",
-        },
-        {
-            "key": "first_post",
-            "label": "Publish or schedule your first post",
-            "done": stats["has_published"] or stats["has_scheduled"],
-            "url_name": "content:studio",
-            "icon": "✍️",
-        },
-        {
-            "key": "read_brief",
-            "label": "Review your Daily Brief",
-            "done": stats["has_brief_read"],
-            "url_name": "brief:home",
-            "icon": "📊",
-        },
+        {**item, "icon": _SETUP_MISSION_ICONS.get(item["key"], "✓")}
+        for item in mission["items"]
     ]
-    completed = sum(1 for i in items if i["done"])
-    total = len(items)
-    if completed == total:
-        return None
+    next_step = mission.get("next_step")
+    if next_step:
+        next_step = {**next_step, "icon": _SETUP_MISSION_ICONS.get(next_step["key"], "✓")}
     return {
         "items": items,
-        "completed": completed,
-        "total": total,
-        "percent": int((completed / total) * 100),
-        "next_step": next((i for i in items if not i["done"]), None),
+        "completed": mission["completed"],
+        "total": mission["total"],
+        "percent": mission["percent"],
+        "next_step": next_step,
     }
+
+
+_SETUP_MISSION_ICONS = {
+    "brand": "🎯",
+    "content": "✍️",
+    "snap": "📸",
+    "shop": "🛍️",
+    "platform": "🔗",
+    "publish": "🚀",
+}
 
 
 def _value_summary_from_stats(stats):

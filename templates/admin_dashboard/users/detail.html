@@ -29,7 +29,7 @@
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ target_user.full_name|default:"No name" }}</h2>
         <p class="text-sm text-gray-500 dark:text-gray-400">{{ target_user.email }}</p>
         <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-          {% if target_user.phone_number %}{{ target_user.phone_number }} · {% endif %}
+          {% if target_user.phone_number %}{{ target_user.phone_number }} · {% else %}<span class="text-amber-600 dark:text-amber-400">No phone — cannot WhatsApp</span> · {% endif %}
           Joined {{ target_user.date_joined|date:"M j, Y" }} · TZ: {{ target_user.timezone }} · Brief at {{ target_user.daily_brief_time|time:"H:i" }}
         </p>
       </div>
@@ -105,7 +105,13 @@
       </div>
       <div class="flex justify-between">
         <dt class="text-xs text-gray-500 dark:text-gray-400">Phone</dt>
-        <dd class="text-sm text-gray-900 dark:text-white">{{ target_user.phone_number|default:"—" }}</dd>
+        <dd class="text-sm text-gray-900 dark:text-white">
+          {% if target_user.phone_number %}
+            {{ target_user.phone_number }}
+          {% else %}
+            <span class="text-amber-600 dark:text-amber-400">Missing</span>
+          {% endif %}
+        </dd>
       </div>
       <div class="flex justify-between">
         <dt class="text-xs text-gray-500 dark:text-gray-400">Company</dt>

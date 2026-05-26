@@ -7,11 +7,11 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-SETUP_TOTAL_STEPS = 5
+SETUP_TOTAL_STEPS = 4
 
 
 def setup_step_for_wizard(step: int) -> int:
-    """Map wizard step (1–3) to global setup progress (2–4)."""
+    """Map wizard step (1–2) to global setup progress (2–3)."""
     return step + 1
 
 

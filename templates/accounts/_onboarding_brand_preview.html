@@ -1,0 +1,87 @@
+{# Express Step 2 — preview card + confirm, not a long form #}
+
+<div class="mb-6">
+  <h2 class="text-xl font-bold text-gray-900 dark:text-white">Does this look right?</h2>
+  <p class="text-gray-600 dark:text-gray-400 mt-1">
+    We pre-filled your brand from your industry{% if brand_preview.website_url %} and website{% endif %}.
+    Confirm to start your AI agency — tweak details anytime in Settings.
+  </p>
+</div>
+
+<div class="rounded-xl border border-kova-200 dark:border-kova-800 bg-kova-50/50 dark:bg-kova-950/20 p-5 space-y-4 mb-6">
+  <div>
+    <p class="text-xs font-semibold uppercase tracking-wide text-kova-600 dark:text-kova-400">Business</p>
+    <p class="text-lg font-bold text-gray-900 dark:text-white mt-0.5">{{ brand_preview.company_name }}</p>
+    {% if brand_preview.industry_label %}
+      <p class="text-sm text-gray-600 dark:text-gray-400">{{ brand_preview.industry_label }}</p>
+    {% endif %}
+    {% if brand_preview.website_url %}
+      <p class="text-xs text-gray-500 dark:text-gray-500 mt-1 truncate">{{ brand_preview.website_url }}</p>
+    {% endif %}
+  </div>
+
+  {% if brand_preview.brand_voice_preview %}
+  <div>
+    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Brand voice</p>
+    <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">{{ brand_preview.brand_voice_preview }}</p>
+  </div>
+  {% endif %}
+
+  {% if brand_preview.target_audience_preview %}
+  <div>
+    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Audience</p>
+    <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">{{ brand_preview.target_audience_preview }}</p>
+  </div>
+  {% endif %}
+
+  {% if brand_preview.tones %}
+  <div>
+    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Tone</p>
+    <div class="flex flex-wrap gap-2">
+      {% for tone in brand_preview.tones %}
+        <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">{{ tone|title }}</span>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if brand_preview.pillars %}
+  <div>
+    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Content pillars</p>
+    <ul class="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+      {% for pillar in brand_preview.pillars %}
+        <li class="flex items-start gap-2">
+          <span class="text-kova-500 mt-0.5">•</span>
+          <span>{{ pillar }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <div class="flex flex-wrap gap-4 pt-2 border-t border-kova-100 dark:border-kova-900/40 text-sm text-gray-600 dark:text-gray-400">
+    <span><span class="font-medium text-gray-900 dark:text-white">{{ brand_preview.posting_frequency }}</span> posts/week</span>
+    <span>CTA: <span class="font-medium text-gray-900 dark:text-white">{{ brand_preview.cta_display }}</span></span>
+  </div>
+</div>
+
+{% if brand_preview.is_commerce %}
+<div class="mb-6 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+  <p class="text-sm font-medium text-emerald-800 dark:text-emerald-300">Commerce setup</p>
+  <p class="text-xs text-emerald-700 dark:text-emerald-400 mt-1">After your agency starts, add your first product with Snap and share your shop link.</p>
+</div>
+{% endif %}
+
+<form method="post" class="space-y-4">
+  {% csrf_token %}
+  <div class="flex flex-col sm:flex-row gap-3 pt-2">
+    <a href="?step=1" class="btn-secondary text-center">Back</a>
+    <a href="{% url 'accounts:settings' %}" class="btn-secondary text-center flex-1">Edit in Settings</a>
+    <button type="submit" class="btn-primary flex-1 py-3">
+      Looks good — start my agency
+      <svg class="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+      </svg>
+    </button>
+  </div>
+</form>

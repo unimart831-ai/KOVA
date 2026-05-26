@@ -263,9 +263,14 @@ def _send_completion_whatsapp_ping(user) -> bool:
         return False
 
     first_name = (user.full_name or user.email or "there").split(" ")[0]
+    site_url = getattr(settings, "SITE_URL", "https://kovaagent.com").rstrip("/")
+    next_step_url = f"{site_url}/brief/"
     components = [{
         "type": "body",
-        "parameters": [{"type": "text", "text": first_name}],
+        "parameters": [
+            {"type": "text", "text": first_name},
+            {"type": "text", "text": next_step_url},
+        ],
     }]
 
     from apps.platforms.providers.whatsapp import WhatsAppProvider

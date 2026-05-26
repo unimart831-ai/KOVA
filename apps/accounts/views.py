@@ -9,8 +9,8 @@ from apps.accounts.forms import (
     UserSettingsForm,
     BrandProfileForm,
     CTASettingsForm,
-    OnboardingStep1Form,
-    OnboardingStep2ReviewForm,
+    OnboardingExpressStep1Form,
+    PhoneCaptureForm,
 )
 from apps.billing.models import get_user_plan_limits
 from apps.accounts.onboarding_flow import (
@@ -26,18 +26,17 @@ def _onboarding_setup_context(*, step=None, path_choice=False, complete=False):
         return {
             "setup_step": 1,
             "setup_total": SETUP_TOTAL_STEPS,
-            "setup_label": "Choose setup path",
+            "setup_label": "What brings you here",
         }
     if complete:
         return {
-            "setup_step": 5,
+            "setup_step": SETUP_TOTAL_STEPS,
             "setup_total": SETUP_TOTAL_STEPS,
-            "setup_label": "AI agency meeting",
+            "setup_label": "Your agency is starting",
         }
     labels = {
-        1: "About you & brand",
-        2: "Review your brand",
-        3: "Connect a platform (optional)",
+        1: "About your business",
+        2: "Confirm your brand",
     }
     return {
         "setup_step": setup_step_for_wizard(step),
@@ -91,23 +90,69 @@ def cta_settings_view(request):
     })
 
 
+def _user_has_phone(user) -> bool:
+    return bool((getattr(user, "phone_number", "") or "").strip())
+
+
+def _redirect_if_phone_required(user):
+    if not _user_has_phone(user):
+        return redirect("accounts:collect_phone")
+    return None
+
+
+@login_required
+def collect_phone(request):
+    """Required for OAuth signups — email signup collects phone on the form."""
+    if _user_has_phone(request.user):
+        return redirect("accounts:onboarding_choose_path")
+
+    if request.method == "POST":
+        form = PhoneCaptureForm(request.POST)
+        if form.is_valid():
+            from apps.accounts.phone_utils import apply_phone_to_user
+
+            apply_phone_to_user(request.user, form.cleaned_data["phone_number"])
+            request.user.profile.record_onboarding_step("phone_collected")
+            messages.success(request, "Thanks — we'll use this number for updates and support.")
+            return redirect("accounts:onboarding_choose_path")
+    else:
+        form = PhoneCaptureForm()
+
+    return render(request, "accounts/collect_phone.html", {
+        "form": form,
+        "page_title": "Your phone number",
+    })
+
+
 @login_required
 def onboarding_choose_path(request):
-    """Path-choice screen — shown to fresh users before Step 1.
+    """Express entry — intent + one link, not a long form."""
+    phone_redirect = _redirect_if_phone_required(request.user)
+    if phone_redirect:
+        return phone_redirect
 
-    Three options:
-      1. Auto-fill from a social account (Magic Fill via profile_audit)
-      2. Paste a website URL (Phase D: AI infers brand from page content)
-      3. Set up manually (jump straight to Step 1)
-    """
-    # If the user has already completed Step 1, skip the path-choice — they're
-    # past the point where pre-fill helps.
     profile = request.user.profile
-    if (profile.company_name or "").strip() or (profile.industry or "").strip():
-        return redirect("/accounts/onboarding/?step=1")
+    if (profile.company_name or "").strip() and profile.industry:
+        return redirect("/accounts/onboarding/?step=2")
+
+    if request.method == "POST":
+        from apps.accounts.onboarding_express import VALID_INTENTS, record_intent
+
+        intent = (request.POST.get("intent") or "").strip()
+        link = (request.POST.get("link") or "").strip()
+        if intent in VALID_INTENTS:
+            record_intent(profile, intent)
+        if link:
+            request.session["onboarding_express_link"] = link
+            return redirect("/accounts/onboarding/?step=1&via=url")
+        if intent == "sell":
+            return redirect("/accounts/onboarding/?step=1&via=sell")
+        if intent in ("grow", "both"):
+            return redirect("accounts:onboarding_magic_connect")
+        return redirect("/accounts/onboarding/?step=1&via=manual")
 
     return render(request, "accounts/onboarding_choose_path.html", {
-        "page_title": "How would you like to set up?",
+        "page_title": "Welcome to Kova",
         **_onboarding_setup_context(path_choice=True),
     })
 
@@ -121,7 +166,7 @@ def onboarding_magic_connect(request):
     expose enough profile metadata to be worth pulling.
 
     The session flag is set so the OAuth callback knows to redirect into the
-    Magic-Fill handoff (handled in onboarding_view step=3 below).
+    Magic-Fill handoff (handled at the start of onboarding_view).
     """
     request.session["onboarding_magic_fill"] = True
     # Record the path-choice selection for admin funnel analytics. Only fires
@@ -141,37 +186,23 @@ def onboarding_magic_connect(request):
 
 @login_required
 def onboarding_view(request):
-    """Multi-step onboarding wizard."""
+    """Express onboarding — Step 1 basics, Step 2 preview + confirm."""
+    from apps.accounts.brand_preview import build_brand_preview
+    from apps.accounts.onboarding_express import ensure_brand_defaults
+    from apps.platforms.models import SocialAccount
+
     profile = request.user.profile
 
-    # Fresh user with no step param → show the path-choice screen first.
-    # Once a user has completed step 1 (industry/company set), we let them
-    # land directly on whichever step they navigate to.
+    phone_redirect = _redirect_if_phone_required(request.user)
+    if phone_redirect:
+        return phone_redirect
+
     if "step" not in request.GET:
         if not (profile.company_name or profile.industry):
             return redirect("accounts:onboarding_choose_path")
 
-    step = int(request.GET.get("step", 1))
-    total_steps = 3
-
-    # Record the path-choice decision when the user arrives at Step 1 via one
-    # of the path-choice links (`?via=url` or `?via=manual`). The Magic-Fill
-    # path is already recorded in `onboarding_magic_connect`. Only fires once.
-    via = request.GET.get("via")
-    if via in ("url", "manual"):
-        marker = f"path_choice_{via}"
-        if not (profile.onboarding_step_timestamps or {}).get(marker):
-            profile.record_onboarding_step(marker)
-
-    # ── Magic-Fill handoff ────────────────────────────────────────────
-    # If the user came from the path-choice screen via the Magic-Fill path,
-    # the OAuth callback dropped them at step=3 with `onboarding_magic_fill`
-    # set in session. Pull metadata from the newly-connected account, populate
-    # the profile, and bounce them back to Step 1 (now pre-filled).
-    if step == 3 and request.session.get("onboarding_magic_fill"):
-        from apps.platforms.models import SocialAccount
-        # Pick the most recently connected/active account — typically the
-        # one the user just authorised.
+    # Magic-Fill handoff — OAuth callback lands on step=2 with session flag set.
+    if request.session.get("onboarding_magic_fill"):
         latest = (
             SocialAccount.objects.filter(user=request.user, is_active=True)
             .order_by("-updated_at")
@@ -179,11 +210,12 @@ def onboarding_view(request):
         )
         if latest:
             from apps.accounts.magic_fill import apply_magic_fill
+
             try:
                 applied = apply_magic_fill(request.user, latest)
             except Exception as exc:
-                # Don't fail the user — Magic Fill is opportunistic.
                 import logging
+
                 logging.getLogger(__name__).exception(
                     "Magic Fill failed for %s: %s", request.user.email, exc
                 )
@@ -193,24 +225,74 @@ def onboarding_view(request):
                 messages.success(
                     request,
                     f"We've pre-filled {len(applied)} fields from your "
-                    f"{latest.get_platform_display()} profile. Review and edit anything below.",
+                    f"{latest.get_platform_display()} profile. Confirm on the next screen.",
                 )
             else:
                 messages.info(
                     request,
-                    "We couldn't pull much from your profile — set up manually below.",
+                    "We couldn't pull much from your profile — confirm your details below.",
                 )
-            return redirect("/accounts/onboarding/?step=1")
-        # No account connected yet — clear flag and fall through to step 4.
+            if not (profile.company_name or "").strip():
+                return redirect("/accounts/onboarding/?step=1")
+            return redirect("/accounts/onboarding/?step=2")
         request.session.pop("onboarding_magic_fill", None)
 
-    # Step 3 is a template-only step (connect platforms) — was Step 4 in
-    # the old four-step wizard. We still fire `step_4_completed` so the
-    # admin analytics funnel (which keys off that marker) works for both
-    # old users (pre-merge) and new users (post-merge).
-    if step == 3:
+    step = int(request.GET.get("step", 1))
+    total_steps = 2
+
+    if step > total_steps:
+        return redirect(f"/accounts/onboarding/?step={total_steps}")
+
+    via = request.GET.get("via")
+    if via in ("url", "manual", "sell"):
+        marker = "path_choice_sell" if via == "sell" else f"path_choice_{via}"
+        if not (profile.onboarding_step_timestamps or {}).get(marker):
+            profile.record_onboarding_step(marker)
+
+    if step == 1:
+        express_link = request.session.pop("onboarding_express_link", None)
+        if express_link and request.method == "GET" and not (profile.website_url or "").strip():
+            profile.website_url = express_link
+            profile.save(update_fields=["website_url"])
+
+        form_class = OnboardingExpressStep1Form
+        extra_kwargs = {"user": request.user}
+
         if request.method == "POST":
-            from apps.platforms.models import SocialAccount
+            form = form_class(request.POST, instance=profile, **extra_kwargs)
+            if form.is_valid():
+                form.save()
+                profile.record_onboarding_step("step_1_completed")
+                ensure_brand_defaults(profile, request.user)
+                applied = getattr(form, "applied_pack_fields", None)
+                if applied:
+                    messages.info(
+                        request,
+                        f"We've pre-filled {len(applied)} brand defaults for your industry.",
+                    )
+                return redirect("/accounts/onboarding/?step=2")
+        else:
+            form = form_class(instance=profile, **extra_kwargs)
+
+        return render(request, "accounts/onboarding.html", {
+            "form": form,
+            "step": step,
+            "total_steps": total_steps,
+            "page_title": "About your business",
+            "prefill_url": express_link or (profile.website_url or ""),
+            **_onboarding_setup_context(step=step),
+        })
+
+    if step == 2:
+        if not (profile.company_name or "").strip() or not profile.industry:
+            return redirect("/accounts/onboarding/?step=1")
+
+        ensure_brand_defaults(profile, request.user)
+        brand_preview = build_brand_preview(profile, request.user)
+
+        if request.method == "POST":
+            profile.record_onboarding_step("step_2_completed")
+            profile.record_onboarding_step("step_3_completed")
 
             has_platform = SocialAccount.objects.filter(
                 user=request.user, is_active=True
@@ -219,71 +301,21 @@ def onboarding_view(request):
                 request.user,
                 skipped_platform_connect=not has_platform,
             )
-            if has_platform:
-                messages.success(
-                    request,
-                    "Welcome to Kova Agent! Your AI agency is analyzing your industry now.",
-                )
-            else:
-                messages.success(
-                    request,
-                    "You're all set! Connect a platform anytime to publish — "
-                    "your AI agency is drafting content now.",
-                )
+            messages.success(
+                request,
+                "Welcome to Kova! Your AI agency is analyzing your industry now.",
+            )
             return redirect("accounts:onboarding_complete")
 
-        from apps.platforms.models import SocialAccount
-        connected = SocialAccount.objects.filter(user=request.user, is_active=True)
         return render(request, "accounts/onboarding.html", {
-            "step": 3,
+            "step": step,
             "total_steps": total_steps,
-            "connected_accounts": connected,
-            "page_title": "Connect a Platform",
-            **_onboarding_setup_context(step=3),
+            "brand_preview": brand_preview,
+            "page_title": "Confirm your brand",
+            **_onboarding_setup_context(step=step),
         })
 
-    if step == 1:
-        form_class = OnboardingStep1Form
-    elif step == 2:
-        form_class = OnboardingStep2ReviewForm
-    else:
-        return redirect("accounts:onboarding")
-
-    # Forms that also update User fields receive `user` kwarg
-    extra_kwargs = {"user": request.user}
-
-    if request.method == "POST":
-        form = form_class(request.POST, instance=profile, **extra_kwargs)
-        if form.is_valid():
-            form.save()
-            profile.record_onboarding_step(f"step_{step}_completed")
-            # Step 2 is the merged review page (old Step 2 + Step 3). Also
-            # record step_3_completed so the admin analytics funnel stays
-            # comparable across the old/new wizard.
-            if step == 2:
-                profile.record_onboarding_step("step_3_completed")
-
-            # If Step 1's industry pack filled defaults, tell the user so they
-            # know what's pre-populated when they hit the review page.
-            applied = getattr(form, "applied_pack_fields", None)
-            if step == 1 and applied:
-                messages.info(
-                    request,
-                    f"We've pre-filled {len(applied)} brand defaults based on your "
-                    f"industry. Review and adjust them on the next page.",
-                )
-
-            return redirect(f"/accounts/onboarding/?step={step + 1}")
-    else:
-        form = form_class(instance=profile, **extra_kwargs)
-
-    return render(request, "accounts/onboarding.html", {
-        "form": form,
-        "step": step,
-        "total_steps": total_steps,
-        "page_title": "Setup Your Brand",
-        **_onboarding_setup_context(step=step),
-    })
+    return redirect("/accounts/onboarding/?step=1")
 
 
 @login_required
@@ -666,18 +698,42 @@ def onboarding_complete(request):
     """
     from apps.agents.onboarding_tasks import get_onboarding_progress
     from apps.briefs.models import DailyBrief
+    from apps.accounts.setup_mission import (
+        build_setup_mission,
+        get_onboarding_intent,
+        is_commerce_industry,
+    )
+    from apps.content.models import Post
+    from apps.platforms.models import SocialAccount
 
     progress = get_onboarding_progress(request.user)
     today = timezone.now().date()
     brief = DailyBrief.objects.filter(user=request.user, date=today).first()
+    profile = request.user.profile
+    posts_ready = Post.objects.filter(
+        user=request.user,
+        status__in=[Post.Status.PENDING_APPROVAL, Post.Status.DRAFT],
+    ).count()
+    has_platforms = SocialAccount.objects.filter(
+        user=request.user, is_active=True
+    ).exists()
+    setup_mission = build_setup_mission(request.user)
+    progress_context = {
+        "progress": progress,
+        "brief": brief,
+        "posts_ready": posts_ready,
+        "has_platforms": has_platforms,
+        "is_commerce": is_commerce_industry(profile.industry),
+        "onboarding_intent": get_onboarding_intent(profile),
+        "setup_mission": setup_mission,
+    }
 
     # If everything is done, redirect to Content Studio where their posts are waiting
     if progress["all_done"] and request.GET.get("completed"):
         return redirect("content:studio")
 
     return render(request, "accounts/onboarding_complete.html", {
-        "progress": progress,
-        "brief": brief,
+        **progress_context,
         "page_title": "Your AI Agency is Starting",
         **_onboarding_setup_context(complete=True),
     })
@@ -731,12 +787,18 @@ def onboarding_progress_api(request):
     has_platforms = SocialAccount.objects.filter(
         user=request.user, is_active=True
     ).exists()
+    from apps.accounts.setup_mission import build_setup_mission, is_commerce_industry, get_onboarding_intent
+
+    profile = request.user.profile
 
     return render(request, "accounts/_onboarding_progress.html", {
         "progress": progress,
         "brief": brief,
         "posts_ready": posts_ready,
         "has_platforms": has_platforms,
+        "is_commerce": is_commerce_industry(profile.industry),
+        "onboarding_intent": get_onboarding_intent(profile),
+        "setup_mission": build_setup_mission(request.user),
     })
 
 

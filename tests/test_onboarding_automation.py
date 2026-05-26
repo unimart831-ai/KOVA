@@ -2,7 +2,7 @@
 
 - industry_packs.apply_pack — fills empty profile fields based on industry
 - magic_fill._infer_industry — maps platform category strings to Industry choices
-- KovaSignupForm.signup — no-op hook (phone collected in onboarding Step 1)
+- KovaSignupForm.signup — saves phone at signup (required field)
 
 These are the load-bearing pieces of the Tier-1/Tier-2 onboarding rework. If
 any of them regress, new users get a worse first-run experience.
@@ -13,8 +13,11 @@ import pytest
 from apps.accounts.models import User, UserProfile
 from apps.accounts.industry_packs import apply_pack, get_pack, PACKS
 from apps.accounts.magic_fill import _infer_industry
-from apps.accounts.forms import OnboardingStep1Form
+from apps.accounts.forms import OnboardingExpressStep1Form, OnboardingStep1Form, KovaSignupForm, PhoneCaptureForm
 from apps.accounts.onboarding_flow import apply_url_inference_to_profile, finish_onboarding
+from apps.accounts.brand_preview import build_brand_preview
+from apps.accounts.onboarding_express import ensure_brand_defaults, record_intent
+from apps.accounts.setup_mission import build_setup_mission, is_commerce_industry
 
 
 # ── industry_packs ──────────────────────────────────────────────────────────
@@ -141,16 +144,13 @@ class TestOnboardingStep1Phone:
         u, p = self._user_with_profile()
         data = {
             "full_name": "Test User",
-            "timezone": "UTC",
             "phone_number": "0712345678",
             "company_name": "Acme",
             "website_url": "",
             "industry": "agency",
             "industry_other": "",
-            "content_language": "en",
-            "key_offerings_text": "",
         }
-        form = OnboardingStep1Form(data=data, instance=p, user=u)
+        form = OnboardingExpressStep1Form(data=data, instance=p, user=u)
         assert form.is_valid(), form.errors
         form.save()
 
@@ -164,16 +164,13 @@ class TestOnboardingStep1Phone:
         u, p = self._user_with_profile()
         data = {
             "full_name": "Test User",
-            "timezone": "UTC",
             "phone_number": "+1 555 123 4567",
             "company_name": "Acme",
             "website_url": "",
             "industry": "agency",
             "industry_other": "",
-            "content_language": "en",
-            "key_offerings_text": "",
         }
-        form = OnboardingStep1Form(data=data, instance=p, user=u)
+        form = OnboardingExpressStep1Form(data=data, instance=p, user=u)
         assert form.is_valid(), form.errors
         form.save()
         u.refresh_from_db()
@@ -183,16 +180,13 @@ class TestOnboardingStep1Phone:
         u, p = self._user_with_profile()
         data = {
             "full_name": "Test User",
-            "timezone": "UTC",
             "phone_number": "abc",
             "company_name": "Acme",
             "website_url": "",
             "industry": "agency",
             "industry_other": "",
-            "content_language": "en",
-            "key_offerings_text": "",
         }
-        form = OnboardingStep1Form(data=data, instance=p, user=u)
+        form = OnboardingExpressStep1Form(data=data, instance=p, user=u)
         assert not form.is_valid()
         assert "phone_number" in form.errors
 
@@ -424,3 +418,192 @@ class TestInstrumentation:
         u.profile.refresh_from_db()
         stamps = u.profile.onboarding_step_timestamps or {}
         assert "magic_fill_applied:instagram" in stamps
+
+
+@pytest.mark.django_db
+class TestExpressOnboardingHelpers:
+    def test_record_intent(self):
+        u = User.objects.create_user(username="intent", email="i@b.com", password="P1!")
+        p = u.profile
+        record_intent(p, "sell")
+        assert (p.onboarding_step_timestamps or {}).get("intent_sell")
+
+    def test_ensure_brand_defaults_fills_voice(self):
+        u = User.objects.create_user(username="defs", email="d@b.com", password="P1!")
+        p = u.profile
+        p.company_name = "Kawaida Shop"
+        p.industry = "ecommerce"
+        p.save(update_fields=["company_name", "industry"])
+
+        ensure_brand_defaults(p, u)
+
+        p.refresh_from_db()
+        assert (p.brand_voice or "").strip()
+        assert p.goals
+        assert p.default_cta_type == "whatsapp"
+
+    def test_build_brand_preview(self):
+        u = User.objects.create_user(
+            username="prev", email="p@b.com", password="P1!", full_name="Pat",
+        )
+        p = u.profile
+        p.company_name = "Pat's Boutique"
+        p.industry = "fashion_beauty"
+        p.brand_voice = "Warm and stylish."
+        p.tone_attributes = ["approachable", "confident"]
+        p.content_pillars = ["New arrivals", "Style tips"]
+        p.save()
+
+        preview = build_brand_preview(p, u)
+        assert preview["company_name"] == "Pat's Boutique"
+        assert preview["is_commerce"] is True
+        assert preview["tones"]
+
+    def test_setup_mission_includes_commerce_items(self):
+        u = User.objects.create_user(username="miss", email="m@b.com", password="P1!")
+        p = u.profile
+        p.industry = "ecommerce"
+        p.company_name = "Shop"
+        p.save(update_fields=["industry", "company_name"])
+        u.onboarding_completed = True
+        u.save(update_fields=["onboarding_completed"])
+
+        mission = build_setup_mission(u, stats={
+            "has_platform": False,
+            "has_published": False,
+            "has_scheduled": False,
+            "created_week": 0,
+            "product_tasks_week": 0,
+        })
+        keys = {item["key"] for item in mission["items"]}
+        assert "snap" in keys
+        assert "shop" in keys
+
+
+@pytest.mark.django_db
+class TestWhatsappOnboardingPing:
+    def test_template_includes_name_and_url(self, monkeypatch, settings):
+        settings.KOVA_ONBOARDING_TEMPLATE_NAME = "kova_onboarding_ready"
+        settings.WHATSAPP_PHONE_NUMBER_ID = "123"
+        settings.WHATSAPP_ACCESS_TOKEN = "token"
+        settings.SITE_URL = "https://app.kovaagent.com"
+
+        u = User.objects.create_user(
+            username="wa", email="wa@b.com", password="P1!",
+            full_name="Jane Doe", phone_number="0712345678",
+        )
+
+        captured = {}
+
+        class FakeProvider:
+            def send_template_message(self, **kwargs):
+                captured.update(kwargs)
+                return {"success": True}
+
+        monkeypatch.setattr(
+            "apps.platforms.providers.whatsapp.WhatsAppProvider",
+            FakeProvider,
+        )
+
+        from apps.agents.onboarding_tasks import _send_completion_whatsapp_ping
+
+        assert _send_completion_whatsapp_ping(u) is True
+        params = captured["components"][0]["parameters"]
+        assert params[0]["text"] == "Jane"
+        assert params[1]["text"] == "https://app.kovaagent.com/brief/"
+
+
+@pytest.mark.django_db
+class TestExpressOnboardingViews:
+    def _login_client(self, client, user):
+        client.force_login(user)
+        return client
+
+    def test_choose_path_records_intent_and_routes_sell(self, client):
+        u = User.objects.create_user(username="route", email="r@b.com", password="P1!")
+        self._login_client(client, u)
+        resp = client.post(
+            "/accounts/onboarding/start/",
+            {"intent": "sell"},
+            follow=False,
+        )
+        assert resp.status_code == 302
+        assert "step=1" in resp.url
+        assert "via=sell" in resp.url
+        assert (u.profile.onboarding_step_timestamps or {}).get("intent_sell")
+
+    def test_express_wizard_confirm_finishes_onboarding(self, client, monkeypatch):
+        u = User.objects.create_user(username="wiz", email="w@b.com", password="P1!")
+        u.phone_number = "0712345678"
+        u.onboarding_completed = False
+        u.save()
+        p = u.profile
+        p.company_name = "Test Shop"
+        p.industry = "ecommerce"
+        p.save()
+
+        monkeypatch.setattr(
+            "apps.emails.tasks.send_welcome_email.delay",
+            lambda pk: None,
+        )
+        monkeypatch.setattr(
+            "apps.emails.automation.bootstrap_email_automation",
+            lambda user: None,
+        )
+        monkeypatch.setattr("apps.utils.fire_task", lambda task, pk: None)
+
+        self._login_client(client, u)
+        resp = client.post("/accounts/onboarding/?step=2", follow=False)
+        assert resp.status_code == 302
+        assert "onboarding/complete" in resp.url
+
+        u.refresh_from_db()
+        assert u.onboarding_completed is True
+        assert (u.profile.onboarding_step_timestamps or {}).get("step_2_completed")
+
+    def test_step2_requires_step1_basics(self, client):
+        u = User.objects.create_user(username="gate", email="g@b.com", password="P1!")
+        u.phone_number = "0712345678"
+        u.save()
+        self._login_client(client, u)
+        resp = client.get("/accounts/onboarding/?step=2", follow=False)
+        assert resp.status_code == 302
+        assert "step=1" in resp.url
+
+
+@pytest.mark.django_db
+class TestSignupPhoneRequired:
+    def test_kova_signup_form_requires_phone(self):
+        form = KovaSignupForm(data={
+            "email": "new@b.com",
+            "password1": "Str0ngPass!",
+            "password2": "Str0ngPass!",
+            "phone_number": "",
+        })
+        assert not form.is_valid()
+        assert "phone_number" in form.errors
+
+    def test_kova_signup_form_saves_phone(self):
+        u = User.objects.create_user(username="sig", email="sig@b.com", password="P1!")
+        form = KovaSignupForm(data={
+            "email": "sig@b.com",
+            "password1": "Str0ngPass!",
+            "password2": "Str0ngPass!",
+            "phone_number": "0712345678",
+        })
+        assert form.is_valid(), form.errors
+        form.signup(None, u)
+        u.refresh_from_db()
+        assert u.phone_number == "0712345678"
+
+    def test_collect_phone_view(self, client):
+        u = User.objects.create_user(username="oauth", email="oauth@b.com", password="P1!")
+        client.force_login(u)
+        resp = client.post(
+            "/accounts/onboarding/phone/",
+            {"phone_number": "0711223344"},
+            follow=False,
+        )
+        assert resp.status_code == 302
+        u.refresh_from_db()
+        assert u.phone_number == "0711223344"

@@ -5,10 +5,57 @@ from apps.accounts.phone_utils import apply_phone_to_user, is_valid_phone, norma
 
 
 class KovaSignupForm(forms.Form):
-    """Optional signup hook for allauth — phone is collected in onboarding Step 1."""
+    """Signup form — phone required so we can reach users via WhatsApp/SMS."""
+
+    phone_number = forms.CharField(
+        max_length=20,
+        label="Phone number",
+        widget=forms.TextInput(attrs={
+            "class": "input",
+            "placeholder": "07XX XXX XXX",
+            "autocomplete": "tel",
+        }),
+        help_text="For onboarding updates, support, and WhatsApp briefs.",
+    )
+
+    def clean_phone_number(self):
+        phone = normalize_phone(self.cleaned_data.get("phone_number", ""))
+        if not phone:
+            raise forms.ValidationError("Phone number is required.")
+        if not is_valid_phone(phone):
+            raise forms.ValidationError(
+                "Enter a valid phone number (Kenyan 07xx/01xx/02xx or international +country code)."
+            )
+        return phone
 
     def signup(self, request, user):
+        apply_phone_to_user(user, self.cleaned_data["phone_number"])
         return user
+
+
+class PhoneCaptureForm(forms.Form):
+    """Collect phone for OAuth signups that skipped the email signup form."""
+
+    phone_number = forms.CharField(
+        max_length=20,
+        label="Phone number",
+        widget=forms.TextInput(attrs={
+            "class": "input",
+            "placeholder": "07XX XXX XXX",
+            "autocomplete": "tel",
+        }),
+        help_text="We use this for setup updates, support, and optional WhatsApp briefs.",
+    )
+
+    def clean_phone_number(self):
+        phone = normalize_phone(self.cleaned_data.get("phone_number", ""))
+        if not phone:
+            raise forms.ValidationError("Phone number is required.")
+        if not is_valid_phone(phone):
+            raise forms.ValidationError(
+                "Enter a valid phone number (Kenyan 07xx/01xx/02xx or international +country code)."
+            )
+        return phone
 
 
 class UserSettingsForm(forms.ModelForm):
@@ -362,6 +409,85 @@ class CTASettingsForm(forms.ModelForm):
         }
 
 
+class OnboardingExpressStep1Form(forms.ModelForm):
+    """Minimal Step 1 — name, business, industry, optional phone/website."""
+
+    full_name = forms.CharField(
+        max_length=255,
+        widget=forms.TextInput(attrs={"class": "input", "placeholder": "Your name"}),
+    )
+    phone_number = forms.CharField(
+        max_length=20,
+        required=True,
+        widget=forms.TextInput(attrs={
+            "class": "input",
+            "placeholder": "07XX XXX XXX",
+            "autocomplete": "tel",
+        }),
+        label="Phone",
+        help_text="For WhatsApp updates, support, and M-Pesa.",
+    )
+
+    class Meta:
+        model = UserProfile
+        fields = ["company_name", "website_url", "industry", "industry_other"]
+        widgets = {
+            "company_name": forms.TextInput(attrs={
+                "class": "input",
+                "placeholder": "Business or brand name",
+            }),
+            "website_url": forms.URLInput(attrs={
+                "class": "input",
+                "placeholder": "https://yoursite.com (optional)",
+            }),
+            "industry": forms.Select(attrs={
+                "class": "input",
+                "x-model": "industry",
+                "@change": "industry = $event.target.value",
+            }),
+            "industry_other": forms.TextInput(attrs={
+                "class": "input",
+                "placeholder": "Describe your industry",
+                "x-show": "industry === 'other'",
+            }),
+        }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+        self.fields["company_name"].required = True
+        self.fields["industry"].required = True
+        if user:
+            self.fields["full_name"].initial = user.full_name
+            if user.phone_number:
+                self.fields["phone_number"].initial = user.phone_number
+
+    def clean_phone_number(self):
+        phone = normalize_phone(self.cleaned_data.get("phone_number", ""))
+        if not phone:
+            raise forms.ValidationError("Phone number is required.")
+        if not is_valid_phone(phone):
+            raise forms.ValidationError(
+                "Enter a valid phone number (Kenyan 07xx/01xx/02xx or international +country code)."
+            )
+        return phone
+
+    def save(self, commit=True):
+        profile = super().save(commit=False)
+        if commit:
+            profile.save()
+            from apps.accounts.industry_packs import apply_pack
+            self.applied_pack_fields = apply_pack(profile, profile.industry)
+        if self.user:
+            self.user.full_name = self.cleaned_data["full_name"]
+            if not self.user.timezone:
+                self.user.timezone = "Africa/Nairobi"
+            if commit:
+                self.user.save(update_fields=["full_name", "timezone"])
+                apply_phone_to_user(self.user, self.cleaned_data.get("phone_number", ""))
+        return profile
+
+
 class OnboardingStep1Form(forms.ModelForm):
     """About you & brand basics."""
 
@@ -442,7 +568,9 @@ class OnboardingStep1Form(forms.ModelForm):
 
     def clean_phone_number(self):
         phone = normalize_phone(self.cleaned_data.get("phone_number", ""))
-        if phone and not is_valid_phone(phone):
+        if not phone:
+            raise forms.ValidationError("Phone number is required.")
+        if not is_valid_phone(phone):
             raise forms.ValidationError(
                 "Enter a valid phone number (Kenyan 07xx/01xx/02xx or international +country code)."
             )

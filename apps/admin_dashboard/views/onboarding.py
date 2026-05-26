@@ -10,7 +10,8 @@ Also surfaces Tier-1/Tier-2 automation adoption — how many users took the
 Magic Fill / URL inference / industry pack paths, plus the industry and
 country mix of the recent cohort. The instrumentation markers it reads:
 
-    path_choice_magic               user picked "auto-fill from social"
+    path_choice_sell               user picked "sell products" on intent screen
+    path_choice_magic               user picked auto-fill from social
     path_choice_url                 user picked "paste my website"
     path_choice_manual              user picked "set up manually"
     magic_fill_applied:<platform>   profile_audit filled fields, by source
@@ -31,22 +32,15 @@ from apps.admin_dashboard.decorators import staff_required
 from apps.agents.onboarding_tasks import STUCK_AFTER_SECONDS
 
 
-# Funnel stages, ordered. Each key maps to a predicate over UserProfile.
-#
-# Wizard structure is now 3 UI steps (was 4): Step 1 basics → Step 2 review
-# (merged voice + goals) → Step 3 connect platform. The merged Step 2 page
-# fires BOTH `step_2_completed` and `step_3_completed` so historical user
-# data still maps cleanly onto the funnel. For new users you'll see those
-# two stages tied — that's expected, the form saves them together. For users
-# who signed up before the merge, `step_2_completed` and `step_3_completed`
-# represent two distinct form submits and may show real drop-off between
-# them.
+# Express onboarding funnel (Kova Express):
+#   signed_up → phone_set → intent → step_1 → step_2 confirm → finish (step_4_completed)
+# step_3_completed still fires on confirm for analytics parity with the old wizard.
 FUNNEL_STAGES = [
     ("signed_up", "Signed up", None),
-    ("step_1_completed", "Step 1 — Basics", "step_1_completed"),
-    ("step_2_completed", "Step 2 — Review (voice saved)", "step_2_completed"),
-    ("step_3_completed", "Step 2 — Review (full saved)", "step_3_completed"),
-    ("step_4_completed", "Step 3 — Connect platform", "step_4_completed"),
+    ("phone_set", "Phone on file", "__phone__"),
+    ("step_1_completed", "Step 1 — About your business", "step_1_completed"),
+    ("step_2_completed", "Step 2 — Brand preview", "step_2_completed"),
+    ("step_4_completed", "Finished setup", "step_4_completed"),
     ("intelligence_completed", "Agency chain finished", "intelligence_completed"),
 ]
 
@@ -105,9 +99,17 @@ def onboarding_funnel(request):
     for key, label, step_stamp in FUNNEL_STAGES:
         if step_stamp is None:
             count = len(users)
+        elif step_stamp == "__phone__":
+            count = sum(1 for u in users if (u.phone_number or "").strip())
         else:
             count = sum(1 for u in users if _has_step(_user_profile(u), step_stamp))
         stage_counts.append({"key": key, "label": label, "count": count})
+
+    phone_missing_users = [
+        u for u in users
+        if not (u.phone_number or "").strip() and not u.onboarding_completed
+    ][:50]
+    phone_missing_count = sum(1 for u in users if not (u.phone_number or "").strip())
 
     # Drop-off between successive stages (relative to previous stage)
     for i, stage in enumerate(stage_counts):
@@ -190,7 +192,8 @@ def onboarding_funnel(request):
     #
     # Each profile carries instrumentation markers in onboarding_step_timestamps
     # so we can count how the new onboarding paths are actually being used.
-    path_counts = {"magic": 0, "url": 0, "manual": 0, "unknown": 0}
+    path_counts = {"magic": 0, "url": 0, "manual": 0, "sell": 0, "unknown": 0}
+    intent_counts = {"sell": 0, "grow": 0, "both": 0}
     magic_provider_counts: Counter = Counter()
     url_success_count = 0
     industry_pack_count = 0
@@ -210,6 +213,7 @@ def onboarding_funnel(request):
         # Path-choice: classify into one bucket; if user touched multiple
         # paths, the first one they recorded wins (earliest timestamp).
         path_keys = [
+            ("sell", stamps.get("path_choice_sell") or stamps.get("intent_sell")),
             ("magic", stamps.get("path_choice_magic")),
             ("url", stamps.get("path_choice_url")),
             ("manual", stamps.get("path_choice_manual")),
@@ -222,6 +226,13 @@ def onboarding_funnel(request):
                 earliest = parsed_ts
                 chosen = name
         path_counts[chosen] += 1
+
+        for intent_key in ("sell", "grow", "both"):
+            if stamps.get(f"intent_{intent_key}") or (
+                intent_key == "sell" and stamps.get("path_choice_sell")
+            ):
+                intent_counts[intent_key] += 1
+                break
 
         # Magic-fill provider breakdown — keys look like
         # "magic_fill_applied:facebook".
@@ -243,9 +254,7 @@ def onboarding_funnel(request):
         if country:
             country_distribution[country] += 1
 
-        # Time-to-complete: signup -> step_4_completed (platform connect).
-        # Excludes never-finished users so the median doesn't get pulled down
-        # by abandoners.
+        # Time-to-complete: signup -> step_4_completed (onboarding finished).
         parsed_s4 = _aware_step_ts(stamps.get("step_4_completed"))
         if parsed_s4:
             joined = _aware_dt(u.date_joined)
@@ -260,8 +269,7 @@ def onboarding_funnel(request):
         "url_success": url_success_count,
         "industry_pack_hits": industry_pack_count,
         # Percent of completed users for each automation path. "completed"
-        # here = step_4_completed fired, so the user actually reached the
-        # platform-connect step.
+        # here = step_4_completed fired (onboarding finished).
         "completed_count": sum(
             1 for u in users if _has_step(_user_profile(u), "step_4_completed")
         ),
@@ -290,8 +298,14 @@ def onboarding_funnel(request):
         "stage_counts": stage_counts,
         "stuck_users": stuck_users[:50],
         "wizard_abandoners": wizard_abandoners[:50],
+        "phone_missing_users": phone_missing_users,
+        "phone_missing_count": phone_missing_count,
+        "phone_coverage_pct": round(
+            100 * (len(users) - phone_missing_count) / len(users)
+        ) if users else 100,
         "cohort_days": 60,
         "automation": automation_summary,
+        "intent_counts": intent_counts,
         "industry_mix": industry_mix,
         "country_mix": country_mix,
     })

@@ -80,6 +80,7 @@ class TestAuthFlow:
         page.goto(f"{base_url}/accounts/signup/")
         assert page.locator("form").is_visible()
         assert page.locator("input[name='email']").is_visible()
+        assert page.locator("input[name='phone_number']").is_visible()
 
     def test_login_page_loads(self, page, base_url):
         page.goto(f"{base_url}/accounts/login/")
@@ -88,11 +89,14 @@ class TestAuthFlow:
     def test_signup_with_valid_data(self, page, base_url):
         page.goto(f"{base_url}/accounts/signup/")
         page.fill("input[name='email']", "testuser@example.com")
+        page.fill("input[name='phone_number']", "0712345678")
         page.fill("input[name='password1']", "TestPass123!@#")
         page.fill("input[name='password2']", "TestPass123!@#")
         page.click("button[type='submit']")
         page.wait_for_load_state("networkidle")
-        assert User.objects.filter(email="testuser@example.com").exists()
+        user = User.objects.filter(email="testuser@example.com").first()
+        assert user is not None
+        assert user.phone_number == "0712345678"
 
     def test_login_redirect_unauthenticated(self, page, base_url):
         page.goto(f"{base_url}/brief/")
@@ -108,6 +112,7 @@ class TestOnboardingFlow:
         user = User.objects.create_user(
             username="onboard", email="onboard@example.com", password="TestPass123!@#",
         )
+        user.phone_number = "0712345678"
         user.onboarding_completed = False
         user.save()
 
@@ -119,14 +124,8 @@ class TestOnboardingFlow:
 
         page.goto(f"{base_url}/accounts/onboarding/?step=1&via=manual")
         page.fill("input[name='full_name']", "Onboard Test")
-        page.select_option("select[name='timezone']", "Africa/Nairobi")
         page.fill("input[name='company_name']", "Test Brand Co")
         page.select_option("select[name='industry']", "agency")
-        page.click("button[type='submit']")
-        page.wait_for_load_state("networkidle")
-
-        page.fill("textarea[name='brand_voice']", "Friendly and expert.")
-        page.fill("textarea[name='target_audience']", "Small business owners in Nairobi.")
         page.click("button[type='submit']")
         page.wait_for_load_state("networkidle")
 

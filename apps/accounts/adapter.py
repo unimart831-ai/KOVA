@@ -93,10 +93,15 @@ class KovaSocialAccountAdapter(DefaultSocialAccountAdapter):
     """Send new Google signups into the onboarding funnel."""
 
     def get_signup_redirect_url(self, request, sociallogin):
-        return "/accounts/onboarding/"
+        user = sociallogin.user
+        if user and not (getattr(user, "phone_number", "") or "").strip():
+            return "/accounts/onboarding/phone/"
+        return "/accounts/onboarding/start/"
 
     def get_login_redirect_url(self, request):
         user = request.user
         if user.is_authenticated and not user.onboarding_completed:
-            return "/accounts/onboarding/"
+            if not (getattr(user, "phone_number", "") or "").strip():
+                return "/accounts/onboarding/phone/"
+            return "/accounts/onboarding/start/"
         return super().get_login_redirect_url(request)
