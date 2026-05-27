@@ -549,8 +549,14 @@ class TestExpressOnboardingViews:
         client.force_login(user)
         return client
 
+    def _user_with_phone(self, username="route", email="route@b.com"):
+        u = User.objects.create_user(username=username, email=email, password="P1!")
+        u.phone_number = "0712345678"
+        u.save(update_fields=["phone_number"])
+        return u
+
     def test_choose_path_records_intent_and_routes_sell(self, client):
-        u = User.objects.create_user(username="route", email="r@b.com", password="P1!")
+        u = self._user_with_phone(username="route", email="r@b.com")
         self._login_client(client, u)
         resp = client.post(
             "/accounts/onboarding/start/",
@@ -560,7 +566,39 @@ class TestExpressOnboardingViews:
         assert resp.status_code == 302
         assert "step=1" in resp.url
         assert "via=sell" in resp.url
+        u.refresh_from_db()
         assert (u.profile.onboarding_step_timestamps or {}).get("intent_sell")
+
+    def test_choose_path_routes_social_links_to_magic_connect(self, client):
+        u = self._user_with_phone(username="socialroute", email="social@b.com")
+        self._login_client(client, u)
+        resp = client.post(
+            "/accounts/onboarding/start/",
+            {"intent": "grow", "link": "https://instagram.com/kovaagent"},
+            follow=False,
+        )
+        assert resp.status_code == 302
+        assert resp.url == "/accounts/onboarding/magic/"
+
+    def test_infer_from_url_endpoint_is_accessible_during_onboarding(self, client):
+        u = self._user_with_phone(username="inferapi", email="infer@b.com")
+        self._login_client(client, u)
+        resp = client.post("/accounts/api/infer-from-url/", {"url": ""}, follow=False)
+        assert resp.status_code == 400
+        assert resp.json()["error"] == "Paste a URL first."
+
+    def test_infer_from_url_returns_social_profile_hint(self, client):
+        u = self._user_with_phone(username="socialhint", email="hint@b.com")
+        self._login_client(client, u)
+        resp = client.post(
+            "/accounts/api/infer-from-url/",
+            {"url": "https://linkedin.com/in/kovaagent"},
+            follow=False,
+        )
+        assert resp.status_code == 400
+        payload = resp.json()
+        assert payload["error_type"] == "social_profile"
+        assert payload["redirect_url"] == "/accounts/onboarding/magic/"
 
     def test_express_wizard_confirm_finishes_onboarding(self, client, monkeypatch):
         u = User.objects.create_user(username="wiz", email="w@b.com", password="P1!")

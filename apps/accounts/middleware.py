@@ -47,6 +47,7 @@ class OnboardingMiddleware:
 
     ALLOWED_PREFIXES = (
         "/accounts/onboarding/",
+        "/accounts/api/",
         "/accounts/logout/",
         "/accounts/login/",
         "/accounts/signup/",

@@ -100,6 +100,25 @@ def _redirect_if_phone_required(user):
     return None
 
 
+def _looks_like_social_profile_url(value: str) -> bool:
+    value = (value or "").strip().lower()
+    if not value:
+        return False
+    social_hosts = (
+        "instagram.com",
+        "facebook.com",
+        "fb.com",
+        "linkedin.com",
+        "x.com",
+        "twitter.com",
+        "tiktok.com",
+        "youtube.com",
+        "youtu.be",
+        "threads.net",
+    )
+    return any(host in value for host in social_hosts)
+
+
 @login_required
 def collect_phone(request):
     """Required for OAuth signups — email signup collects phone on the form."""
@@ -143,6 +162,12 @@ def onboarding_choose_path(request):
         if intent in VALID_INTENTS:
             record_intent(profile, intent)
         if link:
+            if _looks_like_social_profile_url(link):
+                messages.info(
+                    request,
+                    "That looks like a social profile. Connect it directly for the smoothest auto-fill.",
+                )
+                return redirect("accounts:onboarding_magic_connect")
             request.session["onboarding_express_link"] = link
             return redirect("/accounts/onboarding/?step=1&via=url")
         if intent == "sell":
@@ -247,6 +272,12 @@ def onboarding_view(request):
 
     if step == 1:
         express_link = request.session.pop("onboarding_express_link", None)
+        if express_link and request.method == "GET" and _looks_like_social_profile_url(express_link):
+            messages.info(
+                request,
+                "That link looks social-first. Connect the platform directly and we'll pull cleaner brand details.",
+            )
+            return redirect("accounts:onboarding_magic_connect")
         if express_link and request.method == "GET" and not (profile.website_url or "").strip():
             profile.website_url = express_link
             profile.save(update_fields=["website_url"])
@@ -504,6 +535,16 @@ def infer_brand_from_url(request):
         parsed = urllib.parse.urlparse(url)
     if parsed.scheme not in ("http", "https") or not parsed.netloc:
         return JsonResponse({"error": "That URL doesn't look right."}, status=400)
+
+    if _looks_like_social_profile_url(url):
+        return JsonResponse(
+            {
+                "error": "That link looks like a social profile. Connect the platform directly for the best auto-fill.",
+                "error_type": "social_profile",
+                "redirect_url": "/accounts/onboarding/magic/",
+            },
+            status=400,
+        )
 
     # Pre-flight: ensure an LLM provider is configured.
     config = _get_llm_config()
