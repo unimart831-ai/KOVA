@@ -593,6 +593,27 @@ def _expand_studio_polish(
     credit_pool -= len(preflight.repairs_run)
     source = preflight.master_url
 
+    uncertainty = preflight.quality.uncertainty_score
+    if (
+        uncertainty is None
+        and getattr(django_settings, "PHOTOROOM_UNCERTAINTY_PROBE_ENABLED", True)
+        and credit_pool > 0
+    ):
+        ok_probe, _ = check_visual_credit_limit(product.user)
+        if ok_probe:
+            from apps.products.photoroom_api import merge_uncertainty, probe_cutout_uncertainty
+
+            score, probe_result = probe_cutout_uncertainty(source)
+            if probe_result.sandbox_limited:
+                return _studio_polish_error(
+                    "platform_blocked",
+                    limit_message=probe_result.error or "Photoroom sandbox limit reached.",
+                )
+            if probe_result.ok:
+                credit_pool -= 1
+                uncertainty = merge_uncertainty(uncertainty, score)
+                preflight.quality.uncertainty_score = uncertainty
+
     channel_slots = channel_export_budget(plan_tier)
     min_scenes = int(getattr(django_settings, "PHOTOROOM_MIN_SCENE_VARIANTS", 3))
     if credit_pool > min_scenes and channel_slots > 0:
@@ -607,6 +628,7 @@ def _expand_studio_polish(
         analysis,
         plan_tier=plan_tier,
         max_count=scene_budget,
+        uncertainty_score=uncertainty,
     )
 
     new_urls: list[str] = []
@@ -631,7 +653,9 @@ def _expand_studio_polish(
             )
         except Exception as exc:
             logger.warning("Plus variant %s failed: %s", spec.id, exc)
-            return spec, None
+            from apps.products.photoroom_api import PhotoroomEditResult
+
+            return spec, PhotoroomEditResult(content=None, error=str(exc))
 
     # Pre-check credits and build work items
     work_items = []
@@ -661,11 +685,24 @@ def _expand_studio_polish(
             if idx in results_map:
                 results_ordered.append(results_map[idx])
 
+    from apps.products.photoroom_api import merge_uncertainty
+
     # Process results in order
-    for spec, image_bytes in results_ordered:
+    for spec, edit_result in results_ordered:
+        if edit_result and edit_result.uncertainty_score is not None:
+            preflight.quality.uncertainty_score = merge_uncertainty(
+                preflight.quality.uncertainty_score,
+                edit_result.uncertainty_score,
+            )
+        image_bytes = edit_result.content if edit_result and edit_result.ok else None
         if spec.id in AI_SCENE_VARIANT_IDS and image_bytes:
             pass  # layout_index already incremented above
         if not image_bytes:
+            if edit_result and edit_result.sandbox_limited:
+                return _studio_polish_error(
+                    "platform_blocked",
+                    limit_message=edit_result.error or "Photoroom sandbox limit reached.",
+                )
             failed_ids.append(spec.id)
             continue
 
@@ -687,6 +724,7 @@ def _expand_studio_polish(
                 "variant": spec.id,
                 "label": spec.label,
                 "url": hero_url,
+                "uncertainty_score": edit_result.uncertainty_score if edit_result else None,
                 "phase": "scene",
                 "slide_role": slide_role_for_variant(
                     spec.id,
@@ -762,6 +800,7 @@ def _expand_studio_polish(
             "lighting": preflight.quality.lighting,
             "sharpness": preflight.quality.sharpness,
             "crop": preflight.quality.crop,
+            "uncertainty_score": preflight.quality.uncertainty_score,
         },
         "brand_template": brand_template.as_log_dict() if brand_template else {},
         "mode": VISUAL_MODE_PRO_SCENE,

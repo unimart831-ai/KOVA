@@ -77,6 +77,14 @@ def test_snap_commerce_forces_photofix():
     assert plan and plan[0] == "photofix"
 
 
+def test_build_repair_plan_smart_crop_before_uncrop():
+    report = PhotoQualityReport(crop="tight", lighting="good", sharpness="sharp")
+    plan = build_repair_plan(report, plan_tier="growth")
+    assert "smart_crop" in plan
+    if "uncrop" in plan:
+        assert plan.index("smart_crop") < plan.index("uncrop")
+
+
 def test_channel_variants_not_in_scene_pack():
     from apps.products.photoroom_plus import PLUS_VARIANT_CATALOG, select_plus_variants
 

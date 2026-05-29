@@ -155,11 +155,15 @@ class PlusVariantSpec:
 
 
 def _export_defaults() -> dict[str, str]:
-    return {
+    out = {
         "referenceBox": "originalImage",
         "outputSize": str(getattr(settings, "PHOTOROOM_OUTPUT_SIZE", "1080x1080")),
         "export.format": "jpeg",
     }
+    scaling = str(getattr(settings, "PHOTOROOM_SCALING", "fit")).strip().lower()
+    if scaling in ("fit", "fill"):
+        out["scaling"] = scaling
+    return out
 
 
 def _shadow_studio() -> dict[str, str]:
@@ -401,13 +405,30 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         label="PhotoFix",
         params={
             "removeBackground": "false",
-            "beautify.mode": "ai.auto",
+            "beautify.mode": "{beautify_mode}",
+            "beautify.seed": str(getattr(settings, "BEAUTIFY_SEED_DEFAULT", 117879368)),
             "lighting.mode": "ai.auto",
             **_export_defaults(),
         },
         categories=(),
         min_plan="starter",
         priority=90,
+        pack_eligible=False,
+    ),
+    "smart_crop": PlusVariantSpec(
+        id="smart_crop",
+        label="Smart crop",
+        params={
+            "removeBackground": "false",
+            "outputSize": str(getattr(settings, "PHOTOROOM_OUTPUT_SIZE", "1080x1080")),
+            "padding": str(getattr(settings, "PHOTOROOM_SMART_CROP_PADDING", "10%")),
+            "segmentation.prompt": "product",
+            "export.format": "jpeg",
+            "referenceBox": "originalImage",
+        },
+        categories=(),
+        min_plan="starter",
+        priority=88,
         pack_eligible=False,
     ),
     "relight": PlusVariantSpec(
@@ -430,13 +451,14 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         label="AI beautify",
         params={
             "removeBackground": "true",
-            "beautify.mode": "ai.auto",
+            "beautify.mode": "{beautify_mode}",
+            "beautify.seed": str(getattr(settings, "BEAUTIFY_SEED_DEFAULT", 117879368)),
             "background.color": "FFFFFF",
             "padding": "0.10",
             "shadow.mode": "ai.soft",
             **_export_defaults(),
         },
-        categories=("beauty", "jewelry", "general"),
+        categories=("beauty", "jewelry", "general", "food"),
         min_plan="growth",
         priority=72,
     ),
@@ -444,11 +466,16 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="background_blur",
         label="Depth blur",
         params={
-            "removeBackground": "true",
-            "background.blur.mode": "ai.auto",
-            "padding": str(getattr(settings, "PHOTOROOM_PADDING", 0.12)),
-            "shadow.mode": "ai.soft",
-            **_export_defaults(),
+            "removeBackground": "false",
+            "background.blur.mode": str(
+                getattr(settings, "PHOTOROOM_DEFAULT_BLUR_MODE", "bokeh")
+            ),
+            "background.blur.radius": str(
+                getattr(settings, "PHOTOROOM_DEFAULT_BLUR_RADIUS", 0.01)
+            ),
+            "referenceBox": "originalImage",
+            "outputSize": str(getattr(settings, "PHOTOROOM_OUTPUT_SIZE", "1080x1080")),
+            "export.format": "jpeg",
         },
         categories=("general", "electronics", "home"),
         min_plan="growth",
@@ -511,9 +538,12 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="virtual_model",
         label="Virtual model",
         params={
+            "removeBackground": "false",
+            "referenceBox": "originalImage",
             "virtualModel.mode": "ai.auto",
-            "virtualModel.prompt": "{apparel_prompt}",
-            "virtualModel.quality": "high",
+            "virtualModel.model.preset.name": "avery",
+            "virtualModel.scene.preset.name": "street",
+            "virtualModel.pose": "standing",
             "virtualModel.size": "SQUARE_HD",
             **_export_defaults(),
         },
@@ -576,6 +606,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
             "referenceBox": "originalImage",
             "editWithAI.mode": "ai.auto",
             "editWithAI.prompt": "{touchup_prompt}",
+            "editWithAI.seed": str(getattr(settings, "EDIT_WITH_AI_SEED_DEFAULT", 2016886668)),
             **_export_defaults(),
         },
         categories=(),
@@ -1123,6 +1154,11 @@ def resolve_variant_params(
             resolved[key] = str(getattr(settings, "PHOTOROOM_BANNER_SIZE", "1920x1080"))
         elif value == "{touchup_prompt}":
             resolved[key] = build_touchup_prompt(product, analysis)
+        elif value == "{beautify_mode}":
+            from apps.products.photoroom_api import beautify_mode_for_category
+
+            category = detect_product_category(product, analysis)
+            resolved[key] = beautify_mode_for_category(category)
         else:
             resolved[key] = value
     return apply_brand_template(resolved, brand_template, spec)
@@ -1224,12 +1260,19 @@ def order_variants_by_slide_role(
     offering: str,
     category: str,
     max_count: int,
+    uncertainty_score: float | None = None,
 ) -> list[PlusVariantSpec]:
     """Pick variants to fill hero → desire (2–3 AI) → proof → standout."""
+    from apps.products.photoroom_api import (
+        HIGH_UNCERTAINTY_VARIANT_IDS,
+        uncertainty_is_high,
+    )
+
     by_id = {s.id: s for s in candidates}
     picked: list[PlusVariantSpec] = []
     picked_ids: set[str] = set()
     ai_target = _target_ai_scene_count(max_count)
+    skip_risky = uncertainty_is_high(uncertainty_score)
 
     for role_name, preferred_ids in _slide_roles_for(offering, category):
         if role_name == "desire":
@@ -1245,6 +1288,8 @@ def order_variants_by_slide_role(
             continue
 
         for vid in preferred_ids:
+            if skip_risky and vid in HIGH_UNCERTAINTY_VARIANT_IDS:
+                continue
             spec = by_id.get(vid)
             if spec and vid not in picked_ids:
                 picked.append(spec)
@@ -1256,6 +1301,8 @@ def order_variants_by_slide_role(
     if len(picked) < max_count:
         for spec in sorted(candidates, key=lambda s: -s.priority):
             if spec.id in picked_ids:
+                continue
+            if skip_risky and spec.id in HIGH_UNCERTAINTY_VARIANT_IDS:
                 continue
             picked.append(spec)
             picked_ids.add(spec.id)
@@ -1271,11 +1318,18 @@ def select_plus_variants(
     *,
     plan_tier: str = "starter",
     max_count: int = 5,
+    uncertainty_score: float | None = None,
 ) -> list[PlusVariantSpec]:
     """Pick applicable Plus variants for this product, highest priority first."""
+    from apps.products.photoroom_api import (
+        HIGH_UNCERTAINTY_VARIANT_IDS,
+        uncertainty_is_high,
+    )
+
     offering = getattr(product, "offering_type", "product") or "product"
     category = detect_product_category(product, analysis)
     plan_rank = _plan_rank(plan_tier)
+    skip_risky = uncertainty_is_high(uncertainty_score)
 
     candidates: list[PlusVariantSpec] = []
     for spec in PLUS_VARIANT_CATALOG.values():
@@ -1306,16 +1360,20 @@ def select_plus_variants(
             if req and req not in candidates:
                 candidates.append(req)
 
-    # Category boosters
-    if category == "apparel":
+    # Category boosters (skip cutout-sensitive AI when uncertainty is high)
+    if category == "apparel" and not skip_risky:
         for vid in ("ghost_mannequin", "virtual_model"):
             spec = PLUS_VARIANT_CATALOG.get(vid)
             if spec and spec not in candidates:
                 candidates.append(spec)
-    elif category in ("food", "beauty"):
+    elif category in ("food", "beauty") and not skip_risky:
         spec = PLUS_VARIANT_CATALOG.get("flat_lay")
         if spec and spec not in candidates:
             candidates.append(spec)
+    if skip_risky:
+        relight = PLUS_VARIANT_CATALOG.get("relight")
+        if relight and relight not in candidates:
+            candidates.append(relight)
 
     if (
         offering == "product"
@@ -1334,12 +1392,16 @@ def select_plus_variants(
         seen.add(spec.id)
         ordered.append(spec)
 
+    if skip_risky:
+        ordered = [s for s in ordered if s.id not in HIGH_UNCERTAINTY_VARIANT_IDS]
+
     if getattr(settings, "PHOTOROOM_SLIDE_ROLES_ENABLED", True):
         return order_variants_by_slide_role(
             ordered,
             offering=offering,
             category=category,
             max_count=max_count,
+            uncertainty_score=uncertainty_score,
         )
     return ordered[: max(1, max_count)]
 
@@ -1379,12 +1441,36 @@ def photoroom_edit(
     extra_headers: dict | None = None,
     file_bytes: bytes | None = None,
     file_name: str = "image.jpg",
-) -> bytes | None:
-    """Call Photoroom Plus v2/edit with arbitrary params. Returns JPEG/PNG bytes."""
+) -> "PhotoroomEditResult":
+    """Call Photoroom Plus v2/edit; returns bytes and x-uncertainty-score when present."""
+    from apps.products.photoroom_api import (
+        PhotoroomEditResult,
+        check_sandbox_quota,
+        parse_uncertainty_score,
+        record_sandbox_call,
+    )
+
     api_key, headers = _api_key_headers(extra_headers)
     if not api_key:
         logger.info("Photoroom edit skipped: PHOTOROOM_API_KEY not set")
-        return None
+        return PhotoroomEditResult(content=None, error="not_configured")
+
+    allowed, limit_msg = check_sandbox_quota()
+    if not allowed:
+        logger.warning("Photoroom sandbox limit: %s", limit_msg)
+        return PhotoroomEditResult(content=None, sandbox_limited=True, error=limit_msg)
+
+    def _finish(resp: requests.Response) -> PhotoroomEditResult:
+        record_sandbox_call()
+        uncertainty = parse_uncertainty_score(resp.headers)
+        content = resp.content or None
+        if uncertainty is not None:
+            logger.debug(
+                "Photoroom uncertainty=%.3f keys=%s",
+                uncertainty,
+                list(params.keys())[:5],
+            )
+        return PhotoroomEditResult(content=content, uncertainty_score=uncertainty)
 
     if file_bytes:
         try:
@@ -1396,10 +1482,10 @@ def photoroom_edit(
                 timeout=180,
             )
             resp.raise_for_status()
-            return resp.content or None
+            return _finish(resp)
         except Exception as exc:
             logger.error("Photoroom POST v2/edit (bytes) failed [%s]: %s", list(params.keys())[:4], exc)
-            return None
+            return PhotoroomEditResult(content=None, error=str(exc))
 
     public_url = _resolve_public_image_url(image_url)
     if public_url:
@@ -1412,13 +1498,17 @@ def photoroom_edit(
             )
             resp.raise_for_status()
             if resp.content:
-                return resp.content
+                return _finish(resp)
         except Exception as exc:
-            logger.warning("Photoroom GET v2/edit failed (%s), trying POST: %s", params.get("background.prompt", "studio")[:40], exc)
+            logger.warning(
+                "Photoroom GET v2/edit failed (%s), trying POST: %s",
+                params.get("background.prompt", "studio")[:40],
+                exc,
+            )
 
     loaded = _load_image_bytes(image_url)
     if not loaded:
-        return None
+        return PhotoroomEditResult(content=None, error="load_failed")
     file_bytes, filename = loaded
 
     try:
@@ -1430,10 +1520,10 @@ def photoroom_edit(
             timeout=180,
         )
         resp.raise_for_status()
-        return resp.content or None
+        return _finish(resp)
     except Exception as exc:
         logger.error("Photoroom POST v2/edit failed [%s]: %s", list(params.keys())[:4], exc)
-        return None
+        return PhotoroomEditResult(content=None, error=str(exc))
 
 
 def run_plus_variant(
@@ -1445,7 +1535,9 @@ def run_plus_variant(
     brand_template=None,
     *,
     layout_index: int = 0,
-) -> bytes | None:
+) -> "PhotoroomEditResult":
+    from apps.products.photoroom_api import PhotoroomEditResult
+
     params = resolve_variant_params(
         spec, product, analysis, brand_colors, brand_template=brand_template
     )

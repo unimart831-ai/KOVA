@@ -166,7 +166,8 @@ def studio_polish_via_photoroom(
         export_format=export_format,
     )
     params["referenceBox"] = "originalImage"
-    return photoroom_edit(image_url, params)
+    result = photoroom_edit(image_url, params)
+    return result.content if result.ok else None
 
 
 def save_studio_polish_image(product_id, image_bytes: bytes, suffix: str = "hero") -> str:

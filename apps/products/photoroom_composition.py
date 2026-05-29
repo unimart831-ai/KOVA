@@ -58,7 +58,8 @@ def _cutout_product_bytes(image_url: str, *, output_size: str) -> bytes | None:
         "export.format": "jpeg",
         "referenceBox": "originalImage",
     }
-    return photoroom_edit(image_url, params)
+    result = photoroom_edit(image_url, params)
+    return result.content if result.ok else None
 
 
 def _compose_grid_local(cutouts: list[bytes], *, width: int, height: int, bg_rgb: tuple[int, int, int]) -> bytes | None:
@@ -109,13 +110,14 @@ def _polish_composite(composite_bytes: bytes, *, prompt: str, output_size: str) 
     from apps.products.photoroom_plus import AI_BG_MODEL_HEADER
 
     headers = {"pr-ai-background-model-version": AI_BG_MODEL_HEADER}
-    return photoroom_edit(
+    result = photoroom_edit(
         "",
         params,
         extra_headers=headers,
         file_bytes=composite_bytes,
         file_name=filename,
     )
+    return result.content if result.ok else None
 
 
 def compose_product_hero(

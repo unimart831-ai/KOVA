@@ -14,7 +14,7 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-REPAIR_ORDER = ("photofix", "text_removal", "relight", "upscale", "uncrop")
+REPAIR_ORDER = ("photofix", "smart_crop", "text_removal", "relight", "upscale", "uncrop")
 GROWTH_PLUS_TIERS = frozenset({"growth", "pro", "agency"})
 
 
@@ -30,6 +30,7 @@ class PhotoQualityReport:
     blur_score: float = 200.0
     whatsapp_compressed: bool = False
     aspect_ratio: float = 1.0
+    uncertainty_score: float | None = None
     repair_plan: list[str] = field(default_factory=list)
 
 
@@ -155,13 +156,18 @@ def build_repair_plan(
     plan_ok_for_uncrop = plan in GROWTH_PLUS_TIERS
     force_photofix = should_run_photofix_for_commerce(commerce_source=commerce_source)
 
+    from apps.products.photoroom_api import uncertainty_is_high
+
+    high_uncertainty = uncertainty_is_high(report.uncertainty_score)
+
     triggers: dict[str, bool] = {
         "photofix": force_photofix
         or report.lighting in ("dark", "uneven")
         or report.sharpness in ("blurry", "soft")
         or report.whatsapp_compressed,
+        "smart_crop": report.crop in ("tight", "very_tight"),
         "text_removal": report.has_distracting_text,
-        "relight": report.lighting in ("dark", "uneven"),
+        "relight": report.lighting in ("dark", "uneven") or high_uncertainty,
         "upscale": report.sharpness in ("blurry", "soft") or report.whatsapp_compressed,
         "uncrop": plan_ok_for_uncrop and report.crop in ("tight", "very_tight"),
     }
@@ -223,17 +229,23 @@ def run_preflight_repairs(
             repairs_failed.append(variant_id)
             continue
 
-        image_bytes = run_plus_variant(
+        from apps.products.photoroom_api import merge_uncertainty
+
+        edit_result = run_plus_variant(
             master_url, spec, product, analysis, brand_colors, brand_template=brand_template
         )
-        if not image_bytes:
+        if not edit_result.ok:
             repairs_failed.append(variant_id)
             continue
+
+        report.uncertainty_score = merge_uncertainty(
+            report.uncertainty_score, edit_result.uncertainty_score,
+        )
 
         try:
             hero_url = save_studio_polish_image(
                 product.pk,
-                image_bytes,
+                edit_result.content,
                 suffix=f"preflight_{variant_id}",
             )
         except Exception as exc:
@@ -251,6 +263,7 @@ def run_preflight_repairs(
                 "url": hero_url,
                 "phase": "preflight",
                 "api": "v2/edit",
+                "uncertainty_score": edit_result.uncertainty_score,
             },
         )
         master_url = hero_url
@@ -321,14 +334,16 @@ def run_channel_exports(
         if not spec:
             continue
 
-        image_bytes = run_plus_variant(
+        edit_result = run_plus_variant(
             hero_url, spec, product, analysis, brand_colors, brand_template=brand_template
         )
-        if not image_bytes:
+        if not edit_result.ok:
             continue
 
         try:
-            saved_url = save_studio_polish_image(product.pk, image_bytes, suffix=variant_id)
+            saved_url = save_studio_polish_image(
+                product.pk, edit_result.content, suffix=variant_id,
+            )
         except Exception as exc:
             logger.error("Channel export save failed [%s]: %s", variant_id, exc)
             continue

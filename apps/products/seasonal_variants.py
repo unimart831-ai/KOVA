@@ -101,6 +101,7 @@ def generate_seasonal_variant(
         "removeBackground": "false",
         "editWithAI.mode": "ai.auto",
         "editWithAI.prompt": prompt,
+        "editWithAI.seed": str(getattr(settings, "EDIT_WITH_AI_SEED_DEFAULT", 2016886668)),
         "outputSize": output_size,
         "shadow.mode": "ai.soft",
         "export.format": "png",
@@ -108,12 +109,12 @@ def generate_seasonal_variant(
     }
 
     try:
-        image_bytes = photoroom_edit(image_url, params)
-        if not image_bytes or len(image_bytes) < 5000:
+        result = photoroom_edit(image_url, params)
+        if not result.ok or not result.content or len(result.content) < 5000:
             return None
 
         filename = f"{SEASONAL_FOLDER}/{holiday_key}_{uuid.uuid4().hex[:8]}.png"
-        saved_path = default_storage.save(filename, ContentFile(image_bytes))
+        saved_path = default_storage.save(filename, ContentFile(result.content))
         logger.info("Seasonal variant saved: %s (%s)", saved_path, holiday_key)
         return saved_path
 

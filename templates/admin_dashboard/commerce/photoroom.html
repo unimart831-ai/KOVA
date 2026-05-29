@@ -36,6 +36,12 @@
     <p class="text-[10px] font-semibold text-gray-400 uppercase">API key</p>
     <p class="text-sm font-mono mt-1 text-gray-900 dark:text-white">{{ api_key_display }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">{% if sandbox %}Sandbox mode{% else %}Live mode{% endif %}</p>
+    {% if sandbox_usage %}
+    <p class="text-[10px] text-amber-600 dark:text-amber-400 mt-1">
+      Today {{ sandbox_usage.daily }}/{{ sandbox_usage.daily_limit }} ·
+      Month {{ sandbox_usage.monthly }}/{{ sandbox_usage.monthly_limit }}
+    </p>
+    {% endif %}
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-[10px] font-semibold text-gray-400 uppercase">Pool (month)</p>

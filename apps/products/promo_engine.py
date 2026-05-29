@@ -111,12 +111,12 @@ def generate_promo_image(
     headers = {"pr-ai-background-model-version": AI_BG_MODEL_HEADER}
 
     try:
-        image_bytes = photoroom_edit(image_url, params, extra_headers=headers)
-        if not image_bytes or len(image_bytes) < 5000:
+        result = photoroom_edit(image_url, params, extra_headers=headers)
+        if not result.ok or not result.content or len(result.content) < 5000:
             return None
 
         filename = f"{PROMO_FOLDER}/{trigger}_{uuid.uuid4().hex[:8]}.png"
-        saved_path = default_storage.save(filename, ContentFile(image_bytes))
+        saved_path = default_storage.save(filename, ContentFile(result.content))
 
         try:
             from apps.agents.models import AgentAction

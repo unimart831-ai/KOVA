@@ -51,8 +51,11 @@ API_PARAM_GROUPS = [
             ("background.guidance.imageUrl", "url", "Image prompt for AI bg"),
             ("background.guidance.imageFile", "file", "Image prompt upload"),
             ("background.guidance.scale", "float", "0–1 weight vs text prompt"),
-            ("background.blur.mode", "enum", "ai.auto depth blur"),
-            ("background.blur.radius", "float", "Blur strength"),
+            ("background.blur.mode", "enum", "bokeh | gaussian (requires removeBackground=false)"),
+            ("background.blur.radius", "float", "0–0.05 blur strength"),
+            ("segmentation.prompt", "text", "Smart crop focus e.g. product"),
+            ("scaling", "enum", "fit | fill — subject in target area"),
+            ("x-uncertainty-score", "header", "Cutout confidence 0–1 (-1 unavailable)"),
         ],
     },
     {
@@ -97,9 +100,10 @@ API_PARAM_GROUPS = [
         "group": "virtualModel.*",
         "params": [
             ("virtualModel.mode", "enum", "ai.auto"),
-            ("virtualModel.prompt", "text", "Model/scene guidance"),
-            ("virtualModel.quality", "enum", "high | standard"),
-            ("virtualModel.size", "enum", "Output dimensions preset"),
+            ("virtualModel.model.preset.name", "enum", "avery, jackson, ava, …"),
+            ("virtualModel.scene.preset.name", "enum", "street, studio, bedroom, …"),
+            ("virtualModel.pose", "enum", "standing, seated, random, …"),
+            ("virtualModel.size", "enum", "SQUARE_HD, PORTRAIT_HD_*, …"),
         ],
     },
     {
@@ -161,6 +165,16 @@ ENV_SETTINGS = [
         "key": "PHOTOROOM_SANDBOX",
         "kind": "bool",
         "description": "Prepends sandbox_ to key when true (watermarked free calls).",
+    },
+    {
+        "key": "PHOTOROOM_SANDBOX_DAILY_LIMIT",
+        "kind": "int",
+        "description": "Max sandbox v2/edit calls per day (default 100).",
+    },
+    {
+        "key": "PHOTOROOM_UNCERTAINTY_HIGH_THRESHOLD",
+        "kind": "float",
+        "description": "Skip ghost mannequin / flat lay when cutout score ≥ this.",
     },
     {
         "key": "VISUAL_ENHANCE_ENABLED",
@@ -307,6 +321,12 @@ def photoroom_config(request):
 
     pool_pct = round(pool["used"] / pool["usable"] * 100, 1) if pool["usable"] else 0
 
+    sandbox_usage = None
+    if sandbox:
+        from apps.products.photoroom_api import get_sandbox_usage
+
+        sandbox_usage = get_sandbox_usage()
+
     return render(
         request,
         "admin_dashboard/commerce/photoroom.html",
@@ -324,6 +344,7 @@ def photoroom_config(request):
             ],
             "enabled": enabled,
             "sandbox": sandbox,
+            "sandbox_usage": sandbox_usage,
             "api_key_display": _mask_api_key(api_key),
             "api_key_set": bool(api_key.strip()),
             "pool": pool,

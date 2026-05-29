@@ -67,6 +67,12 @@ def generate_product_video(
     Returns storage path to the saved MP4 file, or None on failure.
     """
     from apps.products.photoroom import _api_key_headers
+    from apps.products.photoroom_api import check_sandbox_quota, record_sandbox_call
+
+    allowed, limit_msg = check_sandbox_quota()
+    if not allowed:
+        logger.warning("Photoroom video skipped: %s", limit_msg)
+        return None
 
     api_key, headers = _api_key_headers()
     if not api_key:
@@ -106,6 +112,8 @@ def generate_product_video(
         if not video_bytes or len(video_bytes) < 1000:
             logger.warning("Photoroom returned empty or tiny video response")
             return None
+
+        record_sandbox_call()
 
         filename = f"{VIDEO_FOLDER}/{uuid.uuid4().hex}.mp4"
         saved_path = default_storage.save(filename, ContentFile(video_bytes))

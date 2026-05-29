@@ -31,12 +31,15 @@ def should_run_photofix_for_commerce(*, commerce_source: str | None = None) -> b
     return bool(getattr(settings, "PHOTOROOM_PHOTOFIX_ALWAYS", False))
 
 
-def photofix_params() -> dict[str, str]:
+def photofix_params(category: str = "general") -> dict[str, str]:
     """Flat v2/edit params for PhotoFix (no background removal)."""
+    from apps.products.photoroom_api import beautify_mode_for_category
+
     output_size = getattr(settings, "PHOTOROOM_OUTPUT_SIZE", "1080x1080")
     return {
         "removeBackground": "false",
-        "beautify.mode": "ai.auto",
+        "beautify.mode": beautify_mode_for_category(category),
+        "beautify.seed": str(getattr(settings, "BEAUTIFY_SEED_DEFAULT", 117879368)),
         "lighting.mode": "ai.auto",
         "outputSize": output_size,
         "export.format": "jpeg",
