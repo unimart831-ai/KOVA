@@ -221,7 +221,7 @@ def lead_remove_tag(request, lead_id):
 
 @login_required
 def lead_analytics(request):
-    """Lead funnel analytics."""
+    """Lead funnel analytics with commerce + booking conversion data."""
     leads = Lead.objects.filter(user=request.user)
 
     by_status = {}
@@ -238,17 +238,43 @@ def lead_analytics(request):
     for p in Lead.Priority.choices:
         by_priority[p[1]] = leads.filter(priority=p[0]).count()
 
+    by_temperature = {}
+    for t in Lead.Temperature.choices:
+        by_temperature[t[1]] = leads.filter(temperature=t[0]).count()
+
     total = leads.count()
     converted = leads.filter(status=Lead.Status.CONVERTED).count()
     conversion_rate = round((converted / total * 100), 1) if total else 0
+
+    # Commerce conversion metrics
+    commerce_leads = leads.filter(source_type=Lead.Source.COMMERCE_PURCHASE).count()
+    booking_leads = leads.filter(source_type=Lead.Source.BOOKING).count()
+    social_leads = leads.filter(source_type__in=[Lead.Source.SOCIAL_DM, Lead.Source.SOCIAL_COMMENT]).count()
+    form_leads = leads.filter(source_type=Lead.Source.FORM_SUBMISSION).count()
+
+    # Revenue attribution from commerce leads
+    from apps.leads.models import LeadActivity
+    commerce_activities = LeadActivity.objects.filter(
+        lead__user=request.user,
+        activity_type=LeadActivity.ActivityType.COMMERCE_PURCHASE,
+    )
+    total_commerce_revenue = sum(
+        float(a.metadata.get("amount", 0)) for a in commerce_activities.only("metadata")[:500]
+    )
 
     return render(request, "leads/lead_analytics.html", {
         "by_status": by_status,
         "by_source": by_source,
         "by_priority": by_priority,
+        "by_temperature": by_temperature,
         "total": total,
         "converted": converted,
         "conversion_rate": conversion_rate,
+        "commerce_leads": commerce_leads,
+        "booking_leads": booking_leads,
+        "social_leads": social_leads,
+        "form_leads": form_leads,
+        "total_commerce_revenue": total_commerce_revenue,
         "page_title": "Lead Analytics",
     })
 

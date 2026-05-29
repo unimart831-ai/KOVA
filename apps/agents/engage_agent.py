@@ -560,6 +560,13 @@ def generate_replies(user, batch_size=10):
             ])
             total_generated += 1
 
+            # Create lead from purchase-intent interactions
+            try:
+                from apps.leads.bridges import create_lead_from_engage_intent
+                create_lead_from_engage_intent(interaction)
+            except Exception:
+                logger.debug("Lead bridge skipped for interaction %s", interaction.pk)
+
         action.status = AgentAction.ActionStatus.COMPLETED
         action.output_data = {"replies_generated": total_generated}
         action.completed_at = timezone.now()

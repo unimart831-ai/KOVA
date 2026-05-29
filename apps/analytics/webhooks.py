@@ -262,6 +262,13 @@ def mpesa_commerce_callback(request):
                 "product_id": str(commerce_payment.product_id) if commerce_payment.product_id else "",
             },
         )
+
+        try:
+            from apps.leads.bridges import create_lead_from_commerce_payment
+            create_lead_from_commerce_payment(commerce_payment)
+        except Exception:
+            logger.exception("Failed to create lead from commerce payment %s", commerce_payment.pk)
+
         logger.info(
             "M-Pesa commerce payment tracked: %s KES %s product=%s",
             receipt, amount, commerce_payment.product_id,

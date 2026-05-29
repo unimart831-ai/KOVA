@@ -97,6 +97,19 @@ def _business_name(booking: Booking) -> str:
     return (profile.company_name if profile else "") or booking.booking_link.label
 
 
+@receiver(post_save, sender=Booking)
+def create_lead_from_booking_signal(sender, instance: Booking, created: bool, **kwargs):
+    """Auto-create a lead when a booking is confirmed or completed."""
+    if instance.status not in (Booking.Status.CONFIRMED, Booking.Status.COMPLETED):
+        return
+
+    try:
+        from apps.leads.bridges import create_lead_from_booking
+        create_lead_from_booking(instance)
+    except Exception:
+        logger.exception("Failed to create lead from booking %s", instance.pk)
+
+
 def _try_whatsapp_send(to: str, template: str, variables: dict) -> bool:
     """Try to send via the WhatsApp app. Returns True if sent or stubbed.
 

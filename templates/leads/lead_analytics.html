@@ -4,10 +4,10 @@
 
 {% block content %}
 {% include "leads/_leads_tabs.html" %}
-<div class="max-w-4xl mx-auto space-y-6">
+<div class="max-w-5xl mx-auto space-y-6">
 
   {# Top metrics #}
-  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
     <div class="card px-5 py-4 text-center">
       <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ total }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">Total Leads</p>
@@ -19,6 +19,42 @@
     <div class="card px-5 py-4 text-center">
       <p class="text-3xl font-bold text-kova-600 dark:text-kova-400">{{ conversion_rate }}%</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">Conversion Rate</p>
+    </div>
+    <div class="card px-5 py-4 text-center">
+      <p class="text-3xl font-bold text-green-600 dark:text-green-400">KES {{ total_commerce_revenue|floatformat:0 }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Commerce Revenue</p>
+    </div>
+  </div>
+
+  {# Flywheel source breakdown #}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="card px-4 py-3">
+      <div class="flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+        <span class="text-xs text-gray-500 dark:text-gray-400">Forms</span>
+      </div>
+      <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">{{ form_leads }}</p>
+    </div>
+    <div class="card px-4 py-3">
+      <div class="flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+        <span class="text-xs text-gray-500 dark:text-gray-400">Social</span>
+      </div>
+      <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">{{ social_leads }}</p>
+    </div>
+    <div class="card px-4 py-3">
+      <div class="flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full bg-green-500"></div>
+        <span class="text-xs text-gray-500 dark:text-gray-400">Commerce</span>
+      </div>
+      <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">{{ commerce_leads }}</p>
+    </div>
+    <div class="card px-4 py-3">
+      <div class="flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full bg-teal-500"></div>
+        <span class="text-xs text-gray-500 dark:text-gray-400">Bookings</span>
+      </div>
+      <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">{{ booking_leads }}</p>
     </div>
   </div>
 
@@ -62,15 +98,19 @@
       </div>
     </div>
 
-    {# By priority #}
+    {# By temperature #}
     <div class="card">
       <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
-        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">By Priority</h3>
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">By Temperature</h3>
       </div>
       <div class="px-5 py-4 space-y-2">
-        {% for label, count in by_priority.items %}
+        {% for label, count in by_temperature.items %}
         <div class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ label }}</span>
+          <span class="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full
+              {% if forloop.counter == 1 %}bg-red-500{% elif forloop.counter == 2 %}bg-amber-500{% else %}bg-blue-400{% endif %}"></span>
+            {{ label }}
+          </span>
           <span class="text-sm font-medium text-gray-900 dark:text-white">{{ count }}</span>
         </div>
         {% endfor %}

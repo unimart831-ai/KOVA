@@ -265,6 +265,12 @@ def enroll_lead_in_sequences(lead):
         elif seq.trigger == NurtureSequence.Trigger.FROM_PLATFORM:
             if lead.source_platform != seq.trigger_platform:
                 continue
+        elif seq.trigger == NurtureSequence.Trigger.FROM_COMMERCE:
+            if lead.source_type != "commerce_purchase":
+                continue
+        elif seq.trigger == NurtureSequence.Trigger.FROM_BOOKING:
+            if lead.source_type != "booking":
+                continue
         elif seq.trigger == NurtureSequence.Trigger.MANUAL:
             continue  # manual sequences are not auto-enrolled
         else:

@@ -17,6 +17,10 @@ class Lead(models.Model):
         MANUAL = "manual", "Manual Entry"
         IMPORT = "import", "CSV / Import"
         API = "api", "API"
+        COMMERCE_PURCHASE = "commerce_purchase", "Commerce Purchase"
+        BOOKING = "booking", "Booking"
+        QR_SCAN = "qr_scan", "QR Scan"
+        WALK_IN = "walk_in", "Walk-in"
 
     class Status(models.TextChoices):
         NEW = "new", "New"
@@ -101,6 +105,10 @@ class Lead(models.Model):
 
         if self.source_type == self.Source.FORM_SUBMISSION:
             score += 3
+        if self.source_type == self.Source.COMMERCE_PURCHASE:
+            score += 5
+        if self.source_type == self.Source.BOOKING:
+            score += 4
         if self.phone:
             score += 2
         if self.source_platform in ("linkedin", "email"):
@@ -133,6 +141,8 @@ class Lead(models.Model):
         is_intent_channel = self.source_type in (
             self.Source.SOCIAL_DM,
             self.Source.FORM_SUBMISSION,
+            self.Source.COMMERCE_PURCHASE,
+            self.Source.BOOKING,
         ) or self.source_platform in ("whatsapp",)
 
         if is_intent_channel and self.phone:
@@ -164,6 +174,11 @@ class LeadActivity(models.Model):
         PHONE_CALLED = "phone_called", "Phone Called"
         WHATSAPP_SENT = "whatsapp_sent", "WhatsApp Sent"
         TAG_ADDED = "tag_added", "Tag Added"
+        COMMERCE_PURCHASE = "commerce_purchase", "Commerce Purchase"
+        BOOKING_MADE = "booking_made", "Booking Made"
+        BOOKING_COMPLETED = "booking_completed", "Booking Completed"
+        QR_SCANNED = "qr_scanned", "QR Scanned"
+        WALK_IN = "walk_in", "Walk-in Visit"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name="activities")
@@ -195,6 +210,8 @@ class NurtureSequence(models.Model):
         FROM_SOCIAL = "from_social", "From social (DMs & comments)"
         HIGH_PRIORITY = "high_priority", "High-priority leads only"
         FROM_PLATFORM = "from_platform", "From specific platform"
+        FROM_COMMERCE = "from_commerce", "From commerce purchases"
+        FROM_BOOKING = "from_booking", "From bookings"
         MANUAL = "manual", "Manual enrollment only"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
