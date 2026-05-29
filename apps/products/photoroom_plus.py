@@ -174,6 +174,33 @@ def _shadow_studio() -> dict[str, str]:
     }
 
 
+def _channel_export_params(*, mode: str, size_placeholder: str) -> dict[str, str]:
+    """
+    Story/banner exports from an already-polished square hero.
+
+    Do not stack removeBackground + shadow on expand/uncrop — Photoroom returns 400.
+    """
+    return {
+        f"{mode}.mode": "ai.auto",
+        "outputSize": size_placeholder,
+        "export.format": "jpeg",
+        "referenceBox": "originalImage",
+        "scaling": "fit",
+    }
+
+
+# Keys that conflict with expand/uncrop on pre-composited studio heroes.
+_CHANNEL_EXPORT_STRIP_ON_RETRY = frozenset({
+    "removeBackground",
+    "padding",
+    "shadow.mode",
+    "shadow.directionOverride",
+    "shadow.intensityOverride",
+    "shadow.softnessOverride",
+    "background.color",
+})
+
+
 def _ai_bg_headers() -> dict[str, str]:
     return {"pr-ai-background-model-version": AI_BG_MODEL_HEADER}
 
@@ -677,13 +704,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
     "channel_story": PlusVariantSpec(
         id="channel_story",
         label="Story / Reel (9:16)",
-        params={
-            **_shadow_studio(),
-            "expand.mode": "ai.auto",
-            "outputSize": "{story_output_size}",
-            "export.format": "jpeg",
-            "referenceBox": "originalImage",
-        },
+        params=_channel_export_params(mode="expand", size_placeholder="{story_output_size}"),
         categories=(),
         offering_types=("product", "service", "digital"),
         min_plan="growth",
@@ -693,13 +714,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
     "channel_story_uncrop": PlusVariantSpec(
         id="channel_story_uncrop",
         label="Story / Reel uncrop (9:16)",
-        params={
-            **_shadow_studio(),
-            "uncrop.mode": "ai.auto",
-            "outputSize": "{story_output_size}",
-            "export.format": "jpeg",
-            "referenceBox": "originalImage",
-        },
+        params=_channel_export_params(mode="uncrop", size_placeholder="{story_output_size}"),
         categories=(),
         offering_types=("product", "service", "digital"),
         min_plan="growth",
@@ -709,13 +724,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
     "channel_banner": PlusVariantSpec(
         id="channel_banner",
         label="Banner (16:9)",
-        params={
-            **_shadow_studio(),
-            "expand.mode": "ai.auto",
-            "outputSize": "{banner_output_size}",
-            "export.format": "jpeg",
-            "referenceBox": "originalImage",
-        },
+        params=_channel_export_params(mode="expand", size_placeholder="{banner_output_size}"),
         categories=(),
         offering_types=("product", "service", "digital"),
         min_plan="growth",
@@ -1434,6 +1443,23 @@ def _load_image_bytes(image_url: str) -> tuple[bytes, str] | None:
     return load(image_url)
 
 
+def _strip_conflicting_edit_params(params: dict[str, str]) -> dict[str, str]:
+    """Remove cutout/shadow keys that break expand/uncrop on studio heroes."""
+    if not any(k in params for k in ("expand.mode", "uncrop.mode")):
+        return params
+    return {k: v for k, v in params.items() if k not in _CHANNEL_EXPORT_STRIP_ON_RETRY}
+
+
+def _photoroom_error_detail(exc: Exception) -> str:
+    resp = getattr(exc, "response", None)
+    if resp is not None:
+        try:
+            return (resp.text or "")[:400]
+        except Exception:
+            pass
+    return str(exc)
+
+
 def photoroom_edit(
     image_url: str,
     params: dict[str, str],
@@ -1472,20 +1498,59 @@ def photoroom_edit(
             )
         return PhotoroomEditResult(content=content, uncertainty_score=uncertainty)
 
-    if file_bytes:
+    def _post_bytes(data_params: dict[str, str], payload: bytes, filename: str) -> PhotoroomEditResult:
         try:
             resp = requests.post(
                 PHOTOROOM_EDIT_URL,
                 headers=headers,
-                files={"imageFile": (file_name, file_bytes, "image/jpeg")},
-                data=params,
+                files={"imageFile": (filename, payload, "image/jpeg")},
+                data=data_params,
                 timeout=180,
             )
             resp.raise_for_status()
             return _finish(resp)
-        except Exception as exc:
-            logger.error("Photoroom POST v2/edit (bytes) failed [%s]: %s", list(params.keys())[:4], exc)
+        except requests.HTTPError as exc:
+            if exc.response is not None and exc.response.status_code == 400:
+                fallback = _strip_conflicting_edit_params(data_params)
+                if fallback != data_params:
+                    logger.warning(
+                        "Photoroom POST 400 — retrying without cutout stack keys=%s detail=%s",
+                        list(fallback.keys())[:6],
+                        _photoroom_error_detail(exc),
+                    )
+                    try:
+                        resp = requests.post(
+                            PHOTOROOM_EDIT_URL,
+                            headers=headers,
+                            files={"imageFile": (filename, payload, "image/jpeg")},
+                            data=fallback,
+                            timeout=180,
+                        )
+                        resp.raise_for_status()
+                        return _finish(resp)
+                    except Exception as retry_exc:
+                        logger.error(
+                            "Photoroom POST retry failed [%s]: %s",
+                            list(fallback.keys())[:6],
+                            _photoroom_error_detail(retry_exc),
+                        )
+                        return PhotoroomEditResult(content=None, error=str(retry_exc))
+            logger.error(
+                "Photoroom POST v2/edit (bytes) failed [%s]: %s",
+                list(data_params.keys())[:6],
+                _photoroom_error_detail(exc),
+            )
             return PhotoroomEditResult(content=None, error=str(exc))
+        except Exception as exc:
+            logger.error(
+                "Photoroom POST v2/edit (bytes) failed [%s]: %s",
+                list(data_params.keys())[:6],
+                exc,
+            )
+            return PhotoroomEditResult(content=None, error=str(exc))
+
+    if file_bytes:
+        return _post_bytes(params, file_bytes, file_name)
 
     public_url = _resolve_public_image_url(image_url)
     if public_url:
@@ -1511,19 +1576,7 @@ def photoroom_edit(
         return PhotoroomEditResult(content=None, error="load_failed")
     file_bytes, filename = loaded
 
-    try:
-        resp = requests.post(
-            PHOTOROOM_EDIT_URL,
-            headers=headers,
-            files={"imageFile": (filename, file_bytes, "image/jpeg")},
-            data=params,
-            timeout=180,
-        )
-        resp.raise_for_status()
-        return _finish(resp)
-    except Exception as exc:
-        logger.error("Photoroom POST v2/edit failed [%s]: %s", list(params.keys())[:4], exc)
-        return PhotoroomEditResult(content=None, error=str(exc))
+    return _post_bytes(params, file_bytes, filename)
 
 
 def run_plus_variant(

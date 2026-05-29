@@ -3,7 +3,7 @@ Photoroom Video API — generates product videos from static images.
 Used for auto-generating Reels/TikTok content from Snap2sell photos.
 
 API: POST https://image-api.photoroom.com/v1/animate
-- Input: product image (background-removed preferred)
+- Input: product image (multipart imageFile or public HTTPS URL)
 - Output: MP4 video (3-7 seconds)
 
 Docs: https://docs.photoroom.com/video-api-enterprise-plan/overview
@@ -55,6 +55,20 @@ def _resolve_image_url(image_url: str) -> str | None:
     return _resolve_public_image_url(image_url)
 
 
+def _load_image_for_video(image_url: str) -> tuple[bytes, str] | None:
+    from apps.products.photoroom import _load_image_bytes
+
+    if image_url.startswith(("http://", "https://")):
+        try:
+            resp = requests.get(image_url, timeout=60)
+            resp.raise_for_status()
+            if resp.content and len(resp.content) > 500:
+                return resp.content, "image.jpg"
+        except Exception as exc:
+            logger.warning("Photoroom video image download failed: %s", exc)
+    return _load_image_bytes(image_url)
+
+
 def generate_product_video(
     image_url: str,
     prompt: str = "Slowly rotate the product with soft lighting",
@@ -79,25 +93,35 @@ def generate_product_video(
         logger.warning("Photoroom API key not configured for video generation")
         return None
 
-    public_url = _resolve_image_url(image_url)
-    if not public_url or not public_url.startswith("https://"):
-        logger.warning("Photoroom Video needs a public HTTPS image URL, got: %s", image_url[:80])
-        return None
+    headers = {**headers, "Accept": "video/mp4"}
 
-    headers = {**headers, "Accept": "video/mp4", "Content-Type": "application/json"}
-
-    payload = {
-        "imageUrl": public_url,
+    form_data = {
         "prompt": prompt,
-        "durationSeconds": min(max(duration_seconds, 3), 7),
+        "durationSeconds": str(min(max(duration_seconds, 3), 7)),
         "aspectRatio": aspect_ratio,
     }
+
+    loaded = _load_image_for_video(image_url)
+    files = None
+    if loaded:
+        file_bytes, file_name = loaded
+        files = {"imageFile": (file_name, file_bytes, "image/jpeg")}
+    else:
+        public_url = _resolve_image_url(image_url)
+        if not public_url or not public_url.startswith("https://"):
+            logger.warning(
+                "Photoroom Video needs image bytes or a public HTTPS URL, got: %s",
+                (image_url or "")[:80],
+            )
+            return None
+        form_data["imageUrl"] = public_url
 
     try:
         resp = requests.post(
             PHOTOROOM_VIDEO_URL,
             headers=headers,
-            json=payload,
+            data=form_data,
+            files=files,
             timeout=120,
         )
         if resp.status_code != 200:

@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from apps.agents.llm import parse_llm_json
+from apps.agents.llm import coerce_llm_dict, parse_llm_json
 
 
 # ── 1. Clean JSON ────────────────────────────────────────────────────
@@ -253,3 +253,17 @@ class TestEdgeCases:
         assert result["brand_voice"].startswith("Bold")
         assert len(result["content_pillars"]) == 4
         assert "confident" in result["tone_attributes"]
+
+
+class TestCoerceLlmDict:
+    def test_passes_through_dict(self):
+        assert coerce_llm_dict({"text": "hi"}) == {"text": "hi"}
+
+    def test_unwraps_list_of_dict(self):
+        assert coerce_llm_dict([{"text": "status"}]) == {"text": "status"}
+
+    def test_empty_list_becomes_empty_dict(self):
+        assert coerce_llm_dict([]) == {}
+
+    def test_scalar_becomes_empty_dict(self):
+        assert coerce_llm_dict("nope") == {}

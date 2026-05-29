@@ -337,7 +337,30 @@ def run_channel_exports(
         edit_result = run_plus_variant(
             hero_url, spec, product, analysis, brand_colors, brand_template=brand_template
         )
+        if not edit_result.ok and variant_id == "channel_story":
+            uncrop_spec = PLUS_VARIANT_CATALOG.get("channel_story_uncrop")
+            if uncrop_spec:
+                logger.info(
+                    "Channel story expand failed for %s — trying uncrop fallback",
+                    product.pk,
+                )
+                edit_result = run_plus_variant(
+                    hero_url,
+                    uncrop_spec,
+                    product,
+                    analysis,
+                    brand_colors,
+                    brand_template=brand_template,
+                )
+                if edit_result.ok:
+                    variant_id = "channel_story_uncrop"
         if not edit_result.ok:
+            logger.warning(
+                "Channel export skipped [%s] product=%s error=%s",
+                variant_id,
+                product.pk,
+                (edit_result.error or "unknown")[:200],
+            )
             continue
 
         try:

@@ -21,7 +21,7 @@ import logging
 from celery import shared_task
 from django.utils import timezone
 
-from apps.agents.llm import generate, get_model_for_task, parse_llm_json
+from apps.agents.llm import coerce_llm_dict, generate, get_model_for_task, parse_llm_json
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +111,7 @@ def handle_incoming_message(self, message_id: str):
         return
 
     # Parse the AI response
-    parsed = parse_llm_json(response.content)
+    parsed = coerce_llm_dict(parse_llm_json(response.content))
     if not parsed:
         logger.warning("Failed to parse LLM JSON for WhatsApp message %s", message_id)
         return
@@ -423,7 +423,7 @@ RESPOND IN JSON:
         json_mode=True,
     )
 
-    parsed = parse_llm_json(response.content) if response.content else None
+    parsed = coerce_llm_dict(parse_llm_json(response.content)) if response.content else None
     if not parsed:
         logger.warning("Failed to parse status content for user %s", user_id)
         return
@@ -511,7 +511,7 @@ RESPOND IN JSON:
         json_mode=True,
     )
 
-    parsed = parse_llm_json(response.content) if response.content else None
+    parsed = coerce_llm_dict(parse_llm_json(response.content)) if response.content else None
     if not parsed:
         return
 
@@ -955,7 +955,7 @@ Previous week comparison:
             json_mode=True,
         )
 
-        parsed = parse_llm_json(response.content) if response.content else None
+        parsed = coerce_llm_dict(parse_llm_json(response.content)) if response.content else None
         if not parsed:
             continue
 
@@ -1027,7 +1027,7 @@ RESPOND IN JSON:
         json_mode=True,
     )
 
-    parsed = parse_llm_json(response.content) if response.content else None
+    parsed = coerce_llm_dict(parse_llm_json(response.content)) if response.content else None
     if not parsed:
         return
 

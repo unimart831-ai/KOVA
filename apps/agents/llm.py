@@ -234,6 +234,24 @@ def parse_llm_json(text: str) -> dict:
     )
 
 
+def coerce_llm_dict(data) -> dict:
+    """
+    Normalize parse_llm_json output to a dict.
+
+    Some models return a one-element list or bare array instead of an object.
+    """
+    if isinstance(data, dict):
+        return data
+    if isinstance(data, list):
+        for item in data:
+            if isinstance(item, dict):
+                return item
+        logger.warning("LLM JSON list had no dict items — using empty dict")
+        return {}
+    logger.warning("LLM JSON expected dict, got %s — using empty dict", type(data).__name__)
+    return {}
+
+
 def _repair_truncated_json(text: str) -> str:
     """Attempt to close truncated JSON by matching open brackets/braces."""
     in_string = False

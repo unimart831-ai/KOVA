@@ -258,3 +258,26 @@ def test_commerce_scene_variants_in_catalog():
     for vid in COMMERCE_SCENE_VARIANT_IDS:
         assert vid in PLUS_VARIANT_CATALOG
         assert PLUS_VARIANT_CATALOG[vid].pack_eligible is True
+
+
+def test_channel_exports_omit_cutout_stack():
+    """expand/uncrop on polished heroes must not send removeBackground + shadow."""
+    for vid in ("channel_story", "channel_story_uncrop", "channel_banner"):
+        params = PLUS_VARIANT_CATALOG[vid].params
+        assert "removeBackground" not in params
+        assert "shadow.mode" not in params
+        assert "padding" not in params
+        assert params.get("scaling") == "fit"
+
+
+def test_strip_conflicting_edit_params():
+    from apps.products.photoroom_plus import _strip_conflicting_edit_params
+
+    raw = {
+        "expand.mode": "ai.auto",
+        "removeBackground": "true",
+        "shadow.mode": "ai.soft",
+        "outputSize": "1080x1920",
+    }
+    stripped = _strip_conflicting_edit_params(raw)
+    assert stripped == {"expand.mode": "ai.auto", "outputSize": "1080x1920"}
