@@ -1,6 +1,6 @@
 {% extends "layouts/app.html" %}
 
-{% block page_title %}Batch sell{% endblock %}
+{% block page_title %}Batch to sell{% endblock %}
 {% block page_subtitle %}
 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Snap several items — one launch updates your shop, posts, and showcase reel</p>
 {% endblock %}
@@ -96,17 +96,24 @@
               <template x-if="item.preview">
                 <div class="relative w-24 h-24 rounded-lg overflow-hidden ring-2 ring-orange-200 dark:ring-orange-800">
                   <img :src="item.preview" alt="" class="w-full h-full object-cover">
-                  <button type="button" @click="retakePhoto(index)"
-                          class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] py-0.5 text-center">
-                    Retake
-                  </button>
+                  <div class="absolute bottom-0 inset-x-0 flex bg-black/70 text-[9px] text-white">
+                    <button type="button" @click="captureForItem(index)" class="flex-1 py-0.5 hover:bg-black/80">Snap</button>
+                    <button type="button" @click="uploadForItem(index)" class="flex-1 py-0.5 hover:bg-black/80 border-l border-white/20">Upload</button>
+                  </div>
                 </div>
               </template>
               <template x-if="!item.preview">
-                <div class="w-24 h-24 border-2 border-dashed border-orange-300 dark:border-orange-700 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-orange-500 hover:bg-orange-50/50 dark:hover:bg-orange-950/20 transition-all"
-                     @click="captureForItem(index)">
-                  <svg class="w-7 h-7 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                  <p class="text-[9px] text-orange-500 mt-1 font-medium">Snap</p>
+                <div class="w-28 flex flex-col gap-1.5">
+                  <button type="button" @click="captureForItem(index)"
+                          class="flex-1 min-h-[2.75rem] rounded-lg border-2 border-orange-400 bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold flex flex-col items-center justify-center gap-0.5">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Snap
+                  </button>
+                  <button type="button" @click="uploadForItem(index)"
+                          class="flex-1 min-h-[2.75rem] rounded-lg border-2 border-orange-300 dark:border-orange-600 bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 text-xs font-semibold flex flex-col items-center justify-center gap-0.5 hover:bg-orange-100 dark:hover:bg-orange-900/50">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    Upload
+                  </button>
                 </div>
               </template>
             </div>
@@ -142,18 +149,25 @@
       </template>
 
       <template x-if="items.length < 10">
-        <button type="button" @click="addAndSnap()"
-                class="w-full btn-primary text-sm py-3 bg-orange-600 hover:bg-orange-700">
-          + Add photo
-        </button>
-        <button type="button" @click="addFromGalleryBatch()" class="w-full text-xs text-gray-500 hover:text-orange-600 mt-1">
-          Or pick multiple from gallery
-        </button>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" @click="addAndSnap()"
+                  class="btn-primary text-sm py-3 bg-orange-600 hover:bg-orange-700 rounded-xl flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            Snap photo
+          </button>
+          <button type="button" @click="addFromGalleryBatch()"
+                  class="btn-secondary text-sm py-3 rounded-xl flex items-center justify-center gap-2 border-2 border-orange-200 dark:border-orange-800">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            Upload photos
+          </button>
+        </div>
       </template>
     </div>
 
     <input type="file" accept="image/*" capture="environment"
            x-ref="cameraInput" @change="handleCapture($event)" class="hidden">
+    <input type="file" accept="image/*"
+           x-ref="uploadSingleInput" @change="handleSingleUpload($event)" class="hidden">
     <input type="file" accept="image/*" multiple
            x-ref="galleryBatch" @change="handleGalleryBatch($event)" class="hidden">
     <input type="file" name="photos" multiple x-ref="submitInput" class="hidden">
@@ -166,7 +180,6 @@
 
     <p class="text-xs text-center text-gray-500 dark:text-gray-400">
       AI names items you leave blank. Your shop, posts, and showcase reel update when processing finishes.
-      <a href="{% url 'products:snap' %}" class="block mt-1 text-kova-600 dark:text-kova-400 hover:underline">Just one item? Sell →</a>
     </p>
   </form>
 </div>
@@ -228,36 +241,63 @@ function batchSnapMarketDay(transcribeUrl) {
       this.$refs.cameraInput.click();
     },
 
-    retakePhoto(index) {
+    uploadForItem(index) {
       this.captureTargetIndex = index;
-      this.$refs.cameraInput.click();
+      this.$refs.uploadSingleInput.click();
     },
 
-    handleCapture(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      if (!file.type.startsWith('image/')) { alert('Please select an image.'); return; }
-      if (file.size > 10 * 1024 * 1024) { alert('Image too large (max 10 MB).'); return; }
-
-      const idx = this.captureTargetIndex;
-      if (idx === null || idx >= this.items.length) return;
-
+    assignFileToItem(idx, file, afterAssign) {
+      if (idx === null || idx < 0 || idx >= this.items.length) return;
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image.');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        alert('Image too large (max 10 MB).');
+        return;
+      }
       const reader = new FileReader();
       const self = this;
       reader.onload = function(e) {
         self.items[idx].file = file;
         self.items[idx].preview = e.target.result;
         if (!self.items[idx].currency) self.items[idx].currency = self.defaultCurrency;
+        if (afterAssign) afterAssign(idx);
+      };
+      reader.readAsDataURL(file);
+    },
 
+    handleCapture(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const idx = this.captureTargetIndex;
+      const self = this;
+      this.assignFileToItem(idx, file, function(assignedIdx) {
         if (self.walkMode && self.items.length < 10) {
           const last = self.items[self.items.length - 1];
-          if (last.file && idx === self.items.length - 1) {
+          if (last.file && assignedIdx === self.items.length - 1) {
             self.addItem();
             self.$nextTick(() => self.captureForItem(self.items.length - 1));
           }
         }
-      };
-      reader.readAsDataURL(file);
+      });
+      event.target.value = '';
+    },
+
+    handleSingleUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const idx = this.captureTargetIndex;
+      const self = this;
+      this.assignFileToItem(idx, file, function(assignedIdx) {
+        if (self.walkMode && self.items.length < 10) {
+          const last = self.items[self.items.length - 1];
+          if (last.file && assignedIdx === self.items.length - 1) {
+            self.addItem();
+            self.$nextTick(() => self.uploadForItem(self.items.length - 1));
+          }
+        }
+      });
       event.target.value = '';
     },
 
