@@ -12,9 +12,6 @@
           {% if product.is_featured %}
           <span class="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 font-medium">Featured</span>
           {% endif %}
-          {% if product.source == 'snap' %}
-          <span class="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 font-medium">Snap</span>
-          {% endif %}
           {% if product.sync_source_label %}
           <span class="text-xs px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 font-medium">{{ product.sync_source_label }}</span>
           {% endif %}

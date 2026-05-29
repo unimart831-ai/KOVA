@@ -5,7 +5,6 @@
 <div class="flex items-center gap-2 mt-0.5">
   <span id="stock-badge">{% include "products/partials/stock_badge.html" %}</span>
   {% if product.is_featured %}<span class="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 font-medium">Featured</span>{% endif %}
-  {% if product.source == 'snap' %}<span class="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 font-medium">Snap</span>{% endif %}
   {% if product.sync_source_label %}<span class="text-xs px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 font-medium">{{ product.sync_source_label }}</span>{% endif %}
   {% if product.last_synced_at %}<span class="text-xs text-gray-400 dark:text-gray-500">Synced {{ product.last_synced_at|timesince }} ago</span>{% endif %}
 </div>
@@ -129,111 +128,86 @@
       </div>
     </div>
 
-    <div class="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-gray-100 dark:border-gray-800">
-      <a href="{% url 'products:edit' product_id=product.pk %}" class="btn-primary text-sm px-4 py-1.5">Edit Offer</a>
-
-      {% if product.image and product.stock_status != 'out_of_stock' %}
-      <form method="post" action="{% url 'products:fix_promote' product_id=product.pk %}" class="inline">
-        {% csrf_token %}
-        <button type="submit" class="btn-primary text-sm px-4 py-1.5 bg-purple-600 hover:bg-purple-700 border-purple-600">
-          Fix &amp; Promote
-        </button>
-      </form>
-      {% endif %}
-
-      {% if product.image %}
-      <form method="post" action="{% url 'products:expand_photos' product_id=product.pk %}" class="inline">
-        {% csrf_token %}
-        <button type="submit" class="btn-secondary text-sm px-4 py-1.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 hover:bg-indigo-100">
-          Expand Photo Set
-        </button>
-      </form>
-      <form method="post" action="{% url 'products:quick_post' product_id=product.pk %}" class="inline">
-        {% csrf_token %}
-        <button type="submit" class="btn-secondary text-sm px-4 py-1.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 hover:bg-emerald-100">
-          Quick Post Photo
-        </button>
-      </form>
-      {% endif %}
-
+    <div class="flex flex-wrap items-center gap-2 mt-5 pt-4 border-t border-gray-100 dark:border-gray-800">
       {% if product.stock_status != 'out_of_stock' %}
       <form method="post" action="{% url 'products:promote' product_id=product.pk %}" class="inline">
         {% csrf_token %}
-        <button type="submit" class="btn-secondary text-sm px-4 py-1.5 bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 hover:bg-purple-100">
-          Promote with AI
-        </button>
+        <button type="submit" class="btn-primary text-sm px-4 py-1.5">Promote on social</button>
       </form>
       {% endif %}
+      <a href="{% url 'products:edit' product_id=product.pk %}" class="btn-secondary text-sm px-4 py-1.5">Edit</a>
 
-      {% if product.image %}
-      {# Phase 2: Visual Monopoly tools #}
-      <div class="flex flex-wrap gap-2 w-full mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-        <span class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold w-full mb-1">AI Visual Tools</span>
-        <form method="post" action="{% url 'products:generate_video' product_id=product.pk %}" class="inline">
-          {% csrf_token %}
-          <button type="submit" class="btn-secondary text-xs px-3 py-1.5 inline-flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            AI Video
-          </button>
-        </form>
-        <form method="post" action="{% url 'products:generate_promo' product_id=product.pk %}" class="inline">
-          {% csrf_token %}
-          <button type="submit" class="btn-secondary text-xs px-3 py-1.5 inline-flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-            Promo Image
-          </button>
-        </form>
-        {% if product.category and 'fashion' in product.category.name|lower or 'apparel' in product.category.name|lower or 'clothing' in product.category.name|lower %}
-        <form method="post" action="{% url 'products:virtual_model' product_id=product.pk %}" class="inline">
-          {% csrf_token %}
-          <button type="submit" class="btn-secondary text-xs px-3 py-1.5 inline-flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-            Virtual Model
-          </button>
-        </form>
-        {% endif %}
-        <form method="post" action="{% url 'products:seasonal_variant' product_id=product.pk %}" class="inline">
-          {% csrf_token %}
-          <button type="submit" class="btn-secondary text-xs px-3 py-1.5 inline-flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-            Seasonal
-          </button>
-        </form>
-      </div>
-      {% endif %}
-
-      {% if plan_ctx.quantity_tracking and product.tracks_stock and product.quantity is not None %}
-      <form method="post" action="{% url 'products:record_sale' product_id=product.pk %}" class="flex items-center gap-2">
-        {% csrf_token %}
-        <input type="number" name="quantity" value="1" min="1" max="{{ product.quantity }}" class="input text-sm w-16">
-        <button type="submit" class="btn-secondary text-sm px-3 py-1.5">Record Sale</button>
-      </form>
-      {% endif %}
-
-      {# Quick stock update #}
-      {% if product.tracks_stock %}
-      <form method="post" action="{% url 'products:update_stock' product_id=product.pk %}" class="flex items-center gap-2 ml-auto"
-            hx-post="{% url 'products:update_stock' product_id=product.pk %}" hx-target="#stock-badge" hx-swap="innerHTML">
-        {% csrf_token %}
-        <select name="stock_status" class="input text-sm w-auto">
-          <option value="in_stock" {% if product.stock_status == 'in_stock' %}selected{% endif %}>In Stock</option>
-          <option value="low_stock" {% if product.stock_status == 'low_stock' %}selected{% endif %}>Low Stock</option>
-          <option value="out_of_stock" {% if product.stock_status == 'out_of_stock' %}selected{% endif %}>Out of Stock</option>
-          <option value="made_to_order" {% if product.stock_status == 'made_to_order' %}selected{% endif %}>Made to Order</option>
-          <option value="unlimited" {% if product.stock_status == 'unlimited' %}selected{% endif %}>Unlimited</option>
-        </select>
-        {% if plan_ctx.quantity_tracking %}
-        <input type="number" name="quantity" value="{{ product.quantity|default:'' }}" placeholder="Qty" class="input text-sm w-20">
-        {% endif %}
-        <button type="submit" class="btn-secondary text-sm px-3 py-1.5">Update Stock</button>
-      </form>
-      {% endif %}
-
-      <form method="post" action="{% url 'products:delete' product_id=product.pk %}"
-            onsubmit="return confirm('Remove this offer from your workspace?')">
-        {% csrf_token %}
-        <button type="submit" class="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">Remove</button>
-      </form>
+      <details class="relative">
+        <summary class="btn-secondary text-sm px-3 py-1.5 cursor-pointer list-none">More actions</summary>
+        <div class="absolute left-0 top-full z-20 mt-1 min-w-[12rem] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg py-1 text-sm">
+          {% if product.image %}
+          <form method="post" action="{% url 'products:expand_photos' product_id=product.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">Refresh studio photos</button>
+          </form>
+          <form method="post" action="{% url 'products:quick_post' product_id=product.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">Quick post (photo only)</button>
+          </form>
+          {% if product.stock_status != 'out_of_stock' %}
+          <form method="post" action="{% url 'products:fix_promote' product_id=product.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">Fix photos &amp; promote</button>
+          </form>
+          {% endif %}
+          <div class="border-t border-gray-100 dark:border-gray-800 my-1"></div>
+          <form method="post" action="{% url 'products:generate_video' product_id=product.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">AI product video</button>
+          </form>
+          <form method="post" action="{% url 'products:generate_promo' product_id=product.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">Promo image</button>
+          </form>
+          {% if product.category and 'fashion' in product.category.name|lower or 'apparel' in product.category.name|lower or 'clothing' in product.category.name|lower %}
+          <form method="post" action="{% url 'products:virtual_model' product_id=product.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">Virtual model shot</button>
+          </form>
+          {% endif %}
+          <form method="post" action="{% url 'products:seasonal_variant' product_id=product.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">Seasonal variant</button>
+          </form>
+          {% endif %}
+          {% if plan_ctx.quantity_tracking and product.tracks_stock and product.quantity is not None %}
+          <div class="border-t border-gray-100 dark:border-gray-800 my-1"></div>
+          <form method="post" action="{% url 'products:record_sale' product_id=product.pk %}" class="px-3 py-2 flex items-center gap-2">
+            {% csrf_token %}
+            <input type="number" name="quantity" value="1" min="1" max="{{ product.quantity }}" class="input text-sm w-14">
+            <button type="submit" class="text-sm">Record sale</button>
+          </form>
+          {% endif %}
+          {% if product.tracks_stock %}
+          <form method="post" action="{% url 'products:update_stock' product_id=product.pk %}" class="px-3 py-2 space-y-2"
+                hx-post="{% url 'products:update_stock' product_id=product.pk %}" hx-target="#stock-badge" hx-swap="innerHTML">
+            {% csrf_token %}
+            <select name="stock_status" class="input text-sm w-full">
+              <option value="in_stock" {% if product.stock_status == 'in_stock' %}selected{% endif %}>In stock</option>
+              <option value="low_stock" {% if product.stock_status == 'low_stock' %}selected{% endif %}>Low stock</option>
+              <option value="out_of_stock" {% if product.stock_status == 'out_of_stock' %}selected{% endif %}>Out of stock</option>
+              <option value="made_to_order" {% if product.stock_status == 'made_to_order' %}selected{% endif %}>Made to order</option>
+              <option value="unlimited" {% if product.stock_status == 'unlimited' %}selected{% endif %}>Unlimited</option>
+            </select>
+            {% if plan_ctx.quantity_tracking %}
+            <input type="number" name="quantity" value="{{ product.quantity|default:'' }}" placeholder="Qty" class="input text-sm w-full">
+            {% endif %}
+            <button type="submit" class="btn-secondary text-sm w-full py-1.5">Update stock</button>
+          </form>
+          {% endif %}
+          <div class="border-t border-gray-100 dark:border-gray-800 my-1"></div>
+          <form method="post" action="{% url 'products:delete' product_id=product.pk %}"
+                onsubmit="return confirm('Remove this offer?')">
+            {% csrf_token %}
+            <button type="submit" class="w-full text-left px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30">Remove offer</button>
+          </form>
+        </div>
+      </details>
     </div>
   </div>
 

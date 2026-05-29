@@ -801,6 +801,30 @@ def compose_reel_video(post_id: str):
     # Build hook texts from product/post metadata
     hook_texts = _build_reel_hook_texts(post, meta, len(image_sources))
 
+    # Photoroom Image-to-Video for single-hero commerce reels (sandbox-safe fallback to FFmpeg)
+    use_photoroom = (
+        len(image_sources) <= 3
+        or meta.get("composition_hero_url")
+        or meta.get("prefer_photoroom_video")
+    )
+    if use_photoroom:
+        try:
+            from apps.products.photoroom_video import try_photoroom_reel_for_post
+
+            video_url = try_photoroom_reel_for_post(post, image_sources)
+            if video_url:
+                _notify_post_status(post)
+                logger.info(
+                    "compose_reel_video: post %s via Photoroom animate (%s)",
+                    post_id, video_url[:80],
+                )
+                return {"post_id": post_id, "video_url": video_url, "status": "done", "backend": "photoroom"}
+        except Exception as exc:
+            logger.warning(
+                "compose_reel_video: Photoroom animate failed for %s, using FFmpeg: %s",
+                post_id, exc,
+            )
+
     try:
         if template == "carousel_to_video":
             mp4_bytes = compose_carousel_to_reel(

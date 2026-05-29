@@ -1,13 +1,9 @@
 {% extends "layouts/app.html" %}
 
-{% block page_title %}Offers{% endblock %}
+{% block page_title %}My offers{% endblock %}
 {% block page_subtitle %}
 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
-  {% if segment_surface.mode == "merchant" %}
-    {{ stats.total }} offering{{ stats.total|pluralize }} · {{ stats.in_stock }} in stock
-  {% else %}
-    {{ stats.total }} active offer{{ stats.total|pluralize }} · built for {{ segment_surface.mode_label|lower }}
-  {% endif %}
+  {{ stats.total }} live · {{ stats.in_stock }} in stock{% if stats.low_stock or stats.out_of_stock %} · {% if stats.out_of_stock %}{{ stats.out_of_stock }} out{% endif %}{% if stats.low_stock %}{% if stats.out_of_stock %}, {% endif %}{{ stats.low_stock }} low{% endif %}{% endif %}
 </p>
 {% endblock %}
 
@@ -17,49 +13,10 @@
   {% include "products/_products_subnav.html" %}
   {% include "products/_batch_snap_pipeline_modal.html" %}
 
-  {# Snap-first CTA — brand colors, not a full-width gradient #}
-  <div class="card overflow-hidden border border-kova-200 dark:border-kova-800/60 bg-kova-50/60 dark:bg-kova-950/25">
-    <div class="p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
-      <div class="max-w-xl">
-        <p class="text-xs font-semibold uppercase tracking-wider text-kova-600 dark:text-kova-400 mb-1">{{ segment_surface.catalog_kicker }}</p>
-        <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{{ segment_surface.catalog_title }}</h2>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">{{ segment_surface.catalog_description }}</p>
-      </div>
-      <div class="flex flex-wrap gap-2 shrink-0">
-        <a href="{% url segment_surface.catalog_primary.url_name %}" class="btn-primary text-sm px-5 py-2.5">{{ segment_surface.catalog_primary.label }}</a>
-        <a href="{% url segment_surface.catalog_secondary.url_name %}" class="btn-secondary text-sm px-4 py-2.5">{{ segment_surface.catalog_secondary.label }}</a>
-      </div>
-    </div>
-  </div>
-
-  {# Stats bar #}
-  <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-    <div class="card px-4 py-3">
-      <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.total }}</p>
-      <p class="text-xs text-gray-500 dark:text-gray-400">Total</p>
-    </div>
-    <div class="card px-4 py-3">
-      <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ stats.in_stock }}</p>
-      <p class="text-xs text-gray-500 dark:text-gray-400">In Stock</p>
-    </div>
-    <div class="card px-4 py-3">
-      <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ stats.low_stock }}</p>
-      <p class="text-xs text-gray-500 dark:text-gray-400">Low Stock</p>
-    </div>
-    <div class="card px-4 py-3">
-      <p class="text-2xl font-bold text-red-600 dark:text-red-400">{{ stats.out_of_stock }}</p>
-      <p class="text-xs text-gray-500 dark:text-gray-400">Out of Stock</p>
-    </div>
-    <div class="card px-4 py-3">
-      <p class="text-2xl font-bold text-kova-600 dark:text-kova-400">{{ stats.featured }}</p>
-      <p class="text-xs text-gray-500 dark:text-gray-400">Featured</p>
-    </div>
-  </div>
-
   {% if unread_alerts %}
-  <a href="{% url 'products:alerts' %}" class="card border-l-4 border-amber-500 px-5 py-4 block hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors">
+  <a href="{% url 'products:alerts' %}" class="card border-l-4 border-amber-500 px-4 py-3 block hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors">
     <p class="text-sm font-medium text-amber-800 dark:text-amber-200">
-      {{ unread_alerts }} stock alert{{ unread_alerts|pluralize }} need your attention →
+      {{ unread_alerts }} stock alert{{ unread_alerts|pluralize }} — tap to review
     </p>
   </a>
   {% endif %}
@@ -86,11 +43,8 @@
       {% endif %}
     </form>
     <div class="flex items-center gap-2 flex-wrap">
-      <a href="{% url 'products:restock' %}" class="btn-secondary text-sm px-3 py-1.5">Receipt to Restock</a>
-      {% if plan_ctx.csv_import %}
-      <a href="{% url 'products:import' %}" class="btn-secondary text-sm px-3 py-1.5">Import</a>
-      {% endif %}
-      <a href="{% url 'products:add' %}" class="btn-primary text-sm px-4 py-1.5">+ Add Offer</a>
+      <a href="{% url 'products:snap' %}" class="btn-primary text-sm px-4 py-1.5">Sell something new</a>
+      <a href="{% url 'products:snap_batch' %}" class="btn-secondary text-sm px-3 py-1.5 hidden sm:inline-flex">Batch sell</a>
     </div>
   </div>
 
@@ -117,12 +71,9 @@
   {% else %}
   <div class="card px-6 py-16 text-center">
     <div class="flex justify-center mb-3"><svg class="w-10 h-10 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">{{ segment_surface.catalog_empty_title }}</h3>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4 max-w-md mx-auto">{{ segment_surface.catalog_empty_description }}</p>
-    <div class="flex items-center justify-center gap-3 flex-wrap">
-      <a href="{% url segment_surface.catalog_primary.url_name %}" class="btn-primary text-sm px-5 py-2">{{ segment_surface.catalog_primary.label }}</a>
-      <a href="{% url segment_surface.catalog_secondary.url_name %}" class="btn-secondary text-sm px-4 py-2">{{ segment_surface.catalog_secondary.label }}</a>
-    </div>
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">No offers yet</h3>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4 max-w-md mx-auto">Snap a photo and price — we handle the rest.</p>
+    <a href="{% url 'products:snap' %}" class="btn-primary text-sm px-5 py-2">Sell your first item</a>
   </div>
   {% endif %}
 

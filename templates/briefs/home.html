@@ -41,7 +41,7 @@
           {% endif %}
         </p>
       </div>
-      <a href="{% url 'brief:detail' brief.date|date:'Y-m-d' %}" class="text-sm font-medium text-blue-700 dark:text-blue-300 hover:underline shrink-0">View archive →</a>
+      <a href="{% url 'brief:archive' %}" class="text-sm font-medium text-blue-700 dark:text-blue-300 hover:underline shrink-0">Past briefs →</a>
     </div>
     {% endif %}
 
@@ -60,6 +60,7 @@
             <h2 class="text-lg font-semibold text-white">Morning, {{ greeting_name }}</h2>
             <p class="text-sm text-gray-400 mt-0.5">
               {% if brief_is_stale %}{{ brief.date|date:"l, F j" }}{% else %}{{ brief.date|date:"l, F j" }} · Today's brief{% endif %}
+              · <a href="{% url 'brief:archive' %}" class="hover:text-white underline-offset-2 hover:underline">Past briefs</a>
             </p>
           </div>
         </div>

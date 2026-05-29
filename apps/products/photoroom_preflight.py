@@ -14,7 +14,7 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-REPAIR_ORDER = ("text_removal", "relight", "upscale", "uncrop")
+REPAIR_ORDER = ("photofix", "text_removal", "relight", "upscale", "uncrop")
 GROWTH_PLUS_TIERS = frozenset({"growth", "pro", "agency"})
 
 
@@ -137,18 +137,29 @@ def assess_photo_quality(image_source: str, analysis: dict | None = None) -> Pho
         whatsapp_compressed=local["whatsapp_compressed"],
         aspect_ratio=ar,
     )
-    report.repair_plan = build_repair_plan(report, plan_tier="growth")
+    report.repair_plan = build_repair_plan(report, plan_tier="growth", commerce_source=None)
     return report
 
 
-def build_repair_plan(report: PhotoQualityReport, *, plan_tier: str = "starter") -> list[str]:
+def build_repair_plan(
+    report: PhotoQualityReport,
+    *,
+    plan_tier: str = "starter",
+    commerce_source: str | None = None,
+) -> list[str]:
     """Ordered repair variant ids based on quality triggers."""
+    from apps.products.photoroom_photofix import should_run_photofix_for_commerce
     from apps.products.photoroom_plus import PLUS_VARIANT_CATALOG, _plan_rank
 
     plan = (plan_tier or "starter").lower()
     plan_ok_for_uncrop = plan in GROWTH_PLUS_TIERS
+    force_photofix = should_run_photofix_for_commerce(commerce_source=commerce_source)
 
     triggers: dict[str, bool] = {
+        "photofix": force_photofix
+        or report.lighting in ("dark", "uneven")
+        or report.sharpness in ("blurry", "soft")
+        or report.whatsapp_compressed,
         "text_removal": report.has_distracting_text,
         "relight": report.lighting in ("dark", "uneven"),
         "upscale": report.sharpness in ("blurry", "soft") or report.whatsapp_compressed,
@@ -175,6 +186,7 @@ def run_preflight_repairs(
     budget: int,
     plan_tier: str = "starter",
     brand_template=None,
+    commerce_source: str | None = None,
 ) -> PreflightResult:
     """
     Run up to `budget` repair Plus calls; return master URL for scene pack.
@@ -193,7 +205,9 @@ def run_preflight_repairs(
         )
 
     report = assess_photo_quality(source_url, analysis)
-    plan = build_repair_plan(report, plan_tier=plan_tier)[: max(0, budget)]
+    plan = build_repair_plan(
+        report, plan_tier=plan_tier, commerce_source=commerce_source,
+    )[: max(0, budget)]
 
     master_url = source_url
     repairs_run: list[str] = []

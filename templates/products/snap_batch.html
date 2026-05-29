@@ -1,8 +1,8 @@
 {% extends "layouts/app.html" %}
 
-{% block page_title %}Batch Snap{% endblock %}
+{% block page_title %}Batch sell{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Market Day Mode — walk your offers, launch the full drop</p>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Snap several items — one launch updates your shop, posts, and showcase reel</p>
 {% endblock %}
 
 {% block content %}
@@ -10,42 +10,17 @@
 
   {% include "products/_products_subnav.html" %}
 
-  {# Hero — Market Day #}
-  <div class="card px-6 py-5 border-2 border-dashed border-orange-200 dark:border-orange-800 bg-gradient-to-br from-orange-50/80 to-amber-50/50 dark:from-orange-950/30 dark:to-amber-950/20">
-    <div class="flex items-start gap-3">
-      <span class="text-2xl" aria-hidden="true">🏪</span>
-      <div>
-        <h2 class="text-lg font-bold text-gray-900 dark:text-white">Market Day Mode</h2>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          Photograph the full set of offers you want to push. AI names each one, builds the offer pages,
-          writes the posts, and assembles a showcase reel when you're done.
-        </p>
-        <a href="{% url 'products:snap' %}" class="inline-block mt-2 text-xs text-purple-600 dark:text-purple-400 hover:underline font-medium">
-          One hero offer? Use Snap to Sell →
-        </a>
-      </div>
-    </div>
-  </div>
-
-  {# Stall setup #}
-  <div class="card p-4 space-y-4">
-    <div>
-      <label class="label text-sm font-semibold">Collection name <span class="font-normal text-gray-400">(optional)</span></label>
-      <input type="text" name="stall_title" form="batch-form" class="input text-sm"
-             placeholder="e.g. Amara's Sunday table, New shipment drop"
-             x-model="stallTitle">
-    </div>
-
-    <div class="grid grid-cols-2 gap-3">
-      <div>
-        <label class="label text-sm font-semibold">Default price</label>
+  {# Quick defaults — one row #}
+  <div class="card p-4">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="sm:col-span-2">
+        <label class="label text-xs font-semibold">Default price <span class="font-normal text-gray-400">(if row empty)</span></label>
         <input type="number" name="default_price" form="batch-form" step="0.01" min="0"
-               class="input text-sm" placeholder="800" x-model="defaultPrice">
-        <p class="text-[10px] text-gray-400 mt-1">Applied when a row has no price</p>
+               class="input text-sm mt-0.5" placeholder="800" x-model="defaultPrice">
       </div>
       <div>
-        <label class="label text-sm font-semibold">Currency</label>
-        <select name="default_currency" form="batch-form" class="input text-sm" x-model="defaultCurrency">
+        <label class="label text-xs font-semibold">Currency</label>
+        <select name="default_currency" form="batch-form" class="input text-sm mt-0.5" x-model="defaultCurrency">
           <option value="KES">KES</option>
           <option value="USD">USD</option>
           <option value="UGX">UGX</option>
@@ -54,109 +29,64 @@
           <option value="GHS">GHS</option>
         </select>
       </div>
-    </div>
-
-    {# Voice brief #}
-    <div class="rounded-xl border border-orange-200 dark:border-orange-800/60 bg-orange-50/40 dark:bg-orange-950/20 p-4">
-      <div class="flex items-center justify-between gap-2 mb-2">
-        <label class="text-sm font-semibold text-gray-900 dark:text-white">Voice price brief</label>
-        <span class="text-[10px] text-gray-400">Optional · Swahili OK</span>
+      <div class="flex items-end">
+        <label class="flex items-center gap-2 cursor-pointer text-xs text-gray-600 dark:text-gray-400 pb-2">
+          <input type="checkbox" name="launch_bundle" form="batch-form" value="1" checked
+                 class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
+          Publish drop when done
+        </label>
       </div>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-        Say prices once: <em>"Everything 800 bob, XL dresses 1200, Kawaida market today."</em>
-      </p>
+    </div>
+    <input type="hidden" name="stall_notes" form="batch-form" :value="stallNotes">
+  </div>
 
-      <div class="flex flex-wrap gap-2 mb-3">
+  <details class="text-sm">
+    <summary class="text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 list-none">
+      Batch options (name, voice prices, offering type…)
+    </summary>
+    <div class="mt-3 card p-4 space-y-3">
+      <input type="text" name="stall_title" form="batch-form" class="input text-sm"
+             placeholder="Collection name (optional)" x-model="stallTitle">
+      <div class="flex flex-wrap gap-2">
+        <button type="button" @click="offeringType = 'product'" class="px-2.5 py-1 rounded text-xs font-medium border"
+                :class="offeringType === 'product' ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30' : 'border-gray-200 dark:border-gray-700'">Physical</button>
+        <button type="button" @click="offeringType = 'service'" class="px-2.5 py-1 rounded text-xs font-medium border"
+                :class="offeringType === 'service' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 dark:border-gray-700'">Service</button>
+        <button type="button" @click="offeringType = 'digital'" class="px-2.5 py-1 rounded text-xs font-medium border"
+                :class="offeringType === 'digital' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 dark:border-gray-700'">Digital</button>
+      </div>
+      <div class="flex flex-wrap gap-2 items-center">
         <template x-if="voiceState === 'idle'">
-          <button type="button" @click="startVoice()" class="btn-secondary text-sm px-4 py-2 flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-red-500"></span> Record brief
-          </button>
+          <button type="button" @click="startVoice()" class="btn-secondary text-xs px-3 py-1.5">Record price notes</button>
         </template>
         <template x-if="voiceState === 'recording'">
-          <button type="button" @click="stopVoice()" class="btn-primary text-sm px-4 py-2 bg-red-600 hover:bg-red-700 animate-pulse">
-            Stop · <span x-text="voiceTimer"></span>
-          </button>
+          <button type="button" @click="stopVoice()" class="text-xs px-3 py-1.5 rounded bg-red-600 text-white animate-pulse">Stop <span x-text="voiceTimer"></span></button>
         </template>
-        <template x-if="voiceState === 'transcribing'">
-          <span class="text-sm text-gray-500 animate-pulse">Transcribing…</span>
-        </template>
+        <template x-if="voiceState === 'transcribing'"><span class="text-xs text-gray-500">Transcribing…</span></template>
         <template x-if="voiceState === 'error'">
           <span class="text-xs text-red-500" x-text="voiceError"></span>
-          <button type="button" @click="voiceState='idle'; voiceError=''" class="text-xs text-kova-600 underline">Retry</button>
         </template>
       </div>
-
       <textarea name="voice_transcript" form="batch-form" rows="2" class="input text-sm"
-                placeholder="Or type your price notes here…"
+                placeholder="Price notes (optional) — e.g. everything 800, XL 1200"
                 x-model="voiceTranscript"></textarea>
-      <input type="hidden" name="stall_notes" form="batch-form" :value="stallNotes">
     </div>
-
-    <label class="flex items-start gap-3 cursor-pointer">
-      <input type="checkbox" name="launch_bundle" form="batch-form" value="1" checked
-             class="mt-1 rounded border-gray-300 text-orange-600 focus:ring-orange-500">
-      <span class="text-sm text-gray-700 dark:text-gray-300">
-        <strong>Publish this drop</strong> — update offers page, showcase reel, collection post
-        {% if whatsapp_configured %} + WhatsApp ping{% endif %}
-      </span>
-    </label>
-  </div>
-
-  {# Offering type #}
-  <div class="card p-4">
-    <label class="label text-sm font-semibold mb-2">What kind of offers are in this batch?</label>
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-      <button type="button" @click="offeringType = 'product'"
-              class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
-              :class="offeringType === 'product'
-                ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
-                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
-        Physical
-      </button>
-      <button type="button" @click="offeringType = 'service'"
-              class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
-              :class="offeringType === 'service'
-                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
-        Services
-      </button>
-      <button type="button" @click="offeringType = 'digital'"
-              class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
-              :class="offeringType === 'digital'
-                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
-        Digital
-      </button>
-    </div>
-    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2" x-text="typeHints[offeringType]"></p>
-  </div>
+  </details>
 
   <form id="batch-form" method="post" action="{% url 'products:snap_batch_launch' %}" enctype="multipart/form-data"
         class="space-y-5" @submit="prepareSubmit($event)">
     {% csrf_token %}
     <input type="hidden" name="offering_type" :value="offeringType">
 
-    {# Walk mode toggle #}
-    <div class="flex items-center justify-between gap-3 px-1">
-      <div>
-        <p class="text-sm font-semibold text-gray-900 dark:text-white">Walk &amp; snap</p>
-        <p class="text-xs text-gray-500">Auto-open camera after each photo</p>
-      </div>
-      <button type="button" @click="walkMode = !walkMode"
-              class="relative w-11 h-6 rounded-full transition-colors"
-              :class="walkMode ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-600'"
-              role="switch" :aria-checked="walkMode">
-        <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
-              :class="walkMode ? 'translate-x-5' : ''"></span>
-      </button>
+    <div class="flex items-center justify-between gap-3">
+      <p class="text-sm font-semibold text-gray-900 dark:text-white">Photos</p>
+      <label class="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
+        <input type="checkbox" class="rounded" :checked="walkMode" @change="walkMode = $event.target.checked">
+        Auto-next photo
+      </label>
     </div>
 
-    {# Product cards #}
-      <div class="space-y-4">
-      <div class="flex items-center justify-between">
-        <label class="label text-base font-semibold mb-0">Your offer batch</label>
-        <span class="text-xs text-gray-500 dark:text-gray-400" x-text="items.length + '/10 photos'"></span>
-      </div>
+    <div class="space-y-3">
 
       <template x-for="(item, index) in items" :key="item.id">
         <div class="card p-4 space-y-3 border-l-4 transition-all"
@@ -212,15 +142,13 @@
       </template>
 
       <template x-if="items.length < 10">
-        <div class="flex gap-3">
-          <button type="button" @click="addAndSnap()"
-                  class="btn-primary text-sm px-4 py-3 flex-1 bg-orange-600 hover:bg-orange-700 shadow-lg shadow-orange-500/20">
-            + Snap next item
-          </button>
-          <button type="button" @click="addFromGalleryBatch()" class="btn-secondary text-sm px-4 py-3 flex-1">
-            From gallery
-          </button>
-        </div>
+        <button type="button" @click="addAndSnap()"
+                class="w-full btn-primary text-sm py-3 bg-orange-600 hover:bg-orange-700">
+          + Add photo
+        </button>
+        <button type="button" @click="addFromGalleryBatch()" class="w-full text-xs text-gray-500 hover:text-orange-600 mt-1">
+          Or pick multiple from gallery
+        </button>
       </template>
     </div>
 
@@ -231,28 +159,14 @@
     <input type="file" name="photos" multiple x-ref="submitInput" class="hidden">
     <input type="hidden" name="item_count" :value="items.length">
 
-    <div class="card p-4 bg-gray-50 dark:bg-gray-800/50 space-y-2">
-      <div class="flex items-center justify-between text-sm">
-        <span class="text-gray-700 dark:text-gray-300">
-          <strong x-text="readyCount()"></strong> photo<span x-show="readyCount() !== 1">s</span> ready
-        </span>
-        <span class="text-xs text-gray-500">AI names blank rows from photos</span>
-      </div>
-      <p x-show="voiceTranscript" class="text-xs text-orange-600 dark:text-orange-400 line-clamp-2">
-        Voice brief: <span x-text="voiceTranscript"></span>
-      </p>
-    </div>
-
     <button type="submit" :disabled="readyCount() === 0"
-            class="w-full btn-primary text-base py-4 rounded-xl font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 bg-orange-600 hover:bg-orange-700">
-      <span x-text="readyCount() <= 1
-        ? 'Launch 1 offer'
-        : 'Launch ' + readyCount() + ' offers'"></span>
+            class="w-full btn-primary text-base py-3.5 rounded-xl font-semibold disabled:opacity-40 bg-orange-600 hover:bg-orange-700">
+      <span x-text="'Launch ' + readyCount() + ' offer' + (readyCount() === 1 ? '' : 's')"></span>
     </button>
 
-    <p class="text-xs text-center text-gray-500 dark:text-gray-400 leading-relaxed">
-      Each photo becomes an offer record plus platform posts. When done, your public offers page updates with a showcase reel
-      and a share-ready announcement for WhatsApp.
+    <p class="text-xs text-center text-gray-500 dark:text-gray-400">
+      AI names items you leave blank. Your shop, posts, and showcase reel update when processing finishes.
+      <a href="{% url 'products:snap' %}" class="block mt-1 text-kova-600 dark:text-kova-400 hover:underline">Just one item? Sell →</a>
     </p>
   </form>
 </div>

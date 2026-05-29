@@ -63,7 +63,9 @@ HOLIDAY_PROMPTS: dict[str, str] = {
 
 def seasonal_variants_enabled() -> bool:
     """Check if seasonal variant generation is available."""
-    return bool(getattr(settings, "PHOTOROOM_API_KEY", ""))
+    from apps.products.photoroom import photoroom_enabled
+
+    return photoroom_enabled()
 
 
 def generate_seasonal_variant(
@@ -87,42 +89,26 @@ def generate_seasonal_variant(
     if not seasonal_variants_enabled():
         return None
 
-    api_key = settings.PHOTOROOM_API_KEY
     prompt = custom_prompt or HOLIDAY_PROMPTS.get(
         holiday_key, HOLIDAY_PROMPTS.get("celebration", "")
     )
     if not prompt:
         return None
 
-    headers = {
-        "x-api-key": api_key,
-        "Accept": "image/png",
-    }
+    from apps.products.photoroom_plus import photoroom_edit
 
-    width, height = output_size.split("x")
-    payload = {
-        "imageUrl": image_url,
-        "outputSize": f"{width}x{height}",
-        "editPrompt": prompt,
-        "shadow": {"mode": "ai.soft"},
+    params = {
+        "removeBackground": "false",
+        "editWithAI.mode": "ai.auto",
+        "editWithAI.prompt": prompt,
+        "outputSize": output_size,
+        "shadow.mode": "ai.soft",
+        "export.format": "png",
+        "referenceBox": "originalImage",
     }
 
     try:
-        resp = requests.post(
-            PHOTOROOM_EDIT_URL,
-            headers=headers,
-            json=payload,
-            timeout=60,
-        )
-        if resp.status_code != 200:
-            logger.error(
-                "Seasonal variant Photoroom error %s: %s",
-                resp.status_code,
-                resp.text[:200],
-            )
-            return None
-
-        image_bytes = resp.content
+        image_bytes = photoroom_edit(image_url, params)
         if not image_bytes or len(image_bytes) < 5000:
             return None
 

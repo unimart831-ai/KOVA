@@ -17,7 +17,8 @@ def test_build_repair_plan_dark_and_blurry():
         crop="comfortable",
     )
     plan = build_repair_plan(report, plan_tier="growth")
-    assert plan[0] == "relight"
+    assert plan[0] == "photofix"
+    assert "relight" in plan
     assert "upscale" in plan
 
 
@@ -29,7 +30,8 @@ def test_build_repair_plan_text_first():
         crop="very_tight",
     )
     plan = build_repair_plan(report, plan_tier="growth")
-    assert plan[0] == "text_removal"
+    assert plan[0] == "photofix"
+    assert "text_removal" in plan
     assert "uncrop" in plan
 
 
@@ -67,6 +69,12 @@ def test_select_channel_variant_portrait_uses_uncrop():
 def test_select_channel_variant_square_uses_expand():
     ids = select_channel_variant_ids(1.0)
     assert ids[0] == "channel_story"
+
+
+def test_snap_commerce_forces_photofix():
+    report = PhotoQualityReport(lighting="good", sharpness="sharp")
+    plan = build_repair_plan(report, plan_tier="starter", commerce_source="snap")
+    assert plan and plan[0] == "photofix"
 
 
 def test_channel_variants_not_in_scene_pack():

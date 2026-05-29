@@ -1194,12 +1194,17 @@ def generate_product_video(request, product_id):
         return redirect("products:detail", product_id=product.pk)
 
     try:
-        from apps.products.photoroom_video import generate_product_video as gen_video
-        result = gen_video(product)
+        from apps.products.photoroom_video import generate_product_reel_video
+
+        result = generate_product_reel_video(product)
         if result:
             messages.success(request, f"Video generated for '{product.name}'.")
         else:
-            messages.warning(request, "Video generation is not yet enabled. Enable PHOTOROOM_VIDEO_ENABLED in settings.")
+            messages.warning(
+                request,
+                "Video generation failed — check PHOTOROOM_API_KEY and PHOTOROOM_SANDBOX "
+                "(or set PHOTOROOM_VIDEO_ENABLED=True).",
+            )
     except Exception as e:
         logger.error("Video generation failed for product %s: %s", product.pk, e)
         messages.error(request, "Video generation failed. Try again later.")
@@ -1241,8 +1246,10 @@ def generate_virtual_model(request, product_id):
         return redirect("products:detail", product_id=product.pk)
 
     try:
-        from apps.products.photoroom_virtual_models import generate_virtual_model_shot
-        result = generate_virtual_model_shot(product)
+        from apps.products.photoroom_virtual_models import generate_fashion_pack
+
+        paths = generate_fashion_pack(product)
+        result = paths[0] if paths else None
         if result:
             messages.success(request, f"Virtual model shot generated for '{product.name}'.")
         else:
@@ -1264,8 +1271,10 @@ def generate_seasonal_variant(request, product_id):
         return redirect("products:detail", product_id=product.pk)
 
     try:
-        from apps.products.seasonal_variants import generate_seasonal_variant as gen_seasonal
-        result = gen_seasonal(product)
+        from apps.products.seasonal_variants import generate_seasonal_product_pack as gen_seasonal
+        holiday = request.POST.get("holiday", "celebration")
+        paths = gen_seasonal(product, holiday_key=holiday)
+        result = paths[0] if paths else None
         if result:
             messages.success(request, f"Seasonal variant created for '{product.name}'.")
         else:

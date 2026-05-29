@@ -768,6 +768,7 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
             "source_images": source_images,
             "music_mood": "upbeat",
             "video_compose_status": "pending",
+            "prefer_photoroom_video": len(source_images) <= 2,
         }
         if source_post:
             visual_metadata["source_carousel_post_id"] = str(source_post.pk)
@@ -1188,7 +1189,9 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
     # ── Step 2b: Studio polish (Photoroom Plus + promo frame) ────────
     from apps.products.photo_variations import expand_product_photos
 
-    variation_result = expand_product_photos(product, analysis=analysis)
+    variation_result = expand_product_photos(
+        product, analysis=analysis, commerce_source="snap",
+    )
     product.refresh_from_db()
     num_images = len(product.all_image_urls)
 
@@ -1512,7 +1515,9 @@ def snap_batch_process(session_id: str):
 
         from apps.products.photo_variations import expand_product_photos
 
-        variation_result = expand_product_photos(product, analysis=analysis)
+        variation_result = expand_product_photos(
+            product, analysis=analysis, commerce_source="batch_snap",
+        )
         product.refresh_from_db()
         if variation_result.get("variations_created", 0) > 0:
             AgentAction.objects.create(
@@ -1714,11 +1719,27 @@ def finalize_batch_snap_session(session_id: str):
         if best_url:
             image_sources.append(best_url)
 
+    composition_hero_url = None
+    from apps.products.photoroom_composition import compose_product_hero, composition_enabled
+
+    if composition_enabled() and len(products) >= 2:
+        composition_hero_url = compose_product_hero(
+            products,
+            prompt=campaign.get("composition_prompt", ""),
+            user=user,
+        )
+        if composition_hero_url:
+            image_sources = [composition_hero_url] + [
+                u for u in image_sources if u != composition_hero_url
+            ]
+
     bundle_post_ids = []
     initial_status = initial_commerce_post_status(user)
     reel_caption = campaign.get("reel_caption") or f"Shop today: {shop_url}"
 
-    if len(image_sources) >= 2 and reel_accounts.exists():
+    reel_sources = image_sources
+    prefer_video = bool(composition_hero_url) or len(reel_sources) <= 2
+    if len(reel_sources) >= 1 and reel_accounts.exists():
         for account in reel_accounts:
             post = Post.objects.create(
                 user=user,
@@ -1731,14 +1752,16 @@ def finalize_batch_snap_session(session_id: str):
                 aspect_ratio=Post.AspectRatio.STORY,
                 visual_strategy="carousel",
                 media_status=Post.MediaStatus.GENERATED,
-                media_urls=image_sources,
+                media_urls=reel_sources,
                 visual_metadata={
                     "reel_template": "slideshow",
-                    "source_images": image_sources,
+                    "source_images": reel_sources,
                     "music_mood": "upbeat",
                     "video_compose_status": "pending",
                     "batch_snap_session_id": str(session.pk),
                     "reel_hook_text": campaign.get("reel_hook_text", ""),
+                    "composition_hero_url": composition_hero_url or "",
+                    "prefer_photoroom_video": prefer_video,
                 },
                 generated_by_agent="create",
             )

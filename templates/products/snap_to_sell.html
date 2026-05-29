@@ -1,262 +1,159 @@
 {% extends "layouts/app.html" %}
 
-{% block page_title %}Snap to Sell{% endblock %}
+{% block page_title %}Sell{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Snap photos → AI creates your offer launch</p>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
+  Photo + price → AI posts, polished images, and your shop link
+</p>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-lg mx-auto space-y-6" x-data="snapToSell({{ commerce_autopilot|yesno:'true,false' }}, {{ visual_credits.remaining|default:15 }}, {{ visual_credits.at_limit|yesno:'true,false' }}, {{ studio_polish_notice|yesno:'true,false' }})">
+<div class="max-w-lg mx-auto space-y-5" x-data="snapToSell({{ commerce_autopilot|yesno:'true,false' }}, {{ visual_credits.remaining|default:15 }}, {{ visual_credits.at_limit|yesno:'true,false' }}, {{ studio_polish_notice|yesno:'true,false' }})">
 
   {% include "products/_products_subnav.html" %}
 
-  {% if commerce_autopilot %}
-  <div class="card px-5 py-4 border border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/30">
-    <div class="flex items-start gap-3">
-      <span class="text-xl" aria-hidden="true">⚡</span>
-      <div>
-        <p class="text-sm font-semibold text-purple-900 dark:text-purple-100">Offer Autopilot is on</p>
-        <p class="text-xs text-purple-700 dark:text-purple-300 mt-0.5">Snap a photo, enter the offer name and price — agents write copy, expand your photo set, and publish.</p>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
-  {# Hero / explainer #}
-  <div class="card px-6 py-5 text-center border-2 border-dashed border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/20">
-        <h2 class="text-lg font-bold text-gray-900 dark:text-white" x-text="offeringConfig[offeringType].hero">Photos → Content → Launch</h2>
-    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1" x-text="offeringConfig[offeringType].subtitle"></p>
-    <a href="{% url 'products:snap_batch' %}" class="inline-block mt-3 text-xs text-orange-600 dark:text-orange-400 hover:underline font-medium">
-      Have multiple offerings? Try Batch Snap →
-    </a>
-  </div>
-
-  {# Offering type selector #}
-  <div class="card p-4">
-    <label class="label text-sm font-semibold mb-2">What are you launching?</label>
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-      <button type="button" @click="offeringType = 'product'"
-              class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
-              :class="offeringType === 'product'
-                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
-        Product
-      </button>
-      <button type="button" @click="offeringType = 'service'"
-              class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
-              :class="offeringType === 'service'
-                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
-        Service
-      </button>
-      <button type="button" @click="offeringType = 'digital'"
-              class="px-3 py-2.5 rounded-lg text-center text-sm font-medium border-2 transition-all"
-              :class="offeringType === 'digital'
-                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'">
-        Digital
-      </button>
-    </div>
-    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2" x-text="offeringConfig[offeringType].hint"></p>
-  </div>
-
-  <form method="post" action="{% url 'products:snap_launch' %}" enctype="multipart/form-data" class="space-y-5"
+  <form method="post" action="{% url 'products:snap_launch' %}" enctype="multipart/form-data" class="space-y-4"
         @submit="prepareSubmit($event)">
     {% csrf_token %}
-
     <input type="hidden" name="offering_type" :value="offeringType">
+    {% if commerce_autopilot %}
+    <input type="hidden" name="visual_mode" :value="proSceneDisabled ? 'as_is' : 'pro_scene'">
+    {% endif %}
 
-    {# Photo capture / upload area #}
-    <div class="card p-5 space-y-4">
+    {# 1. Photos — primary action #}
+    <div class="card p-5 space-y-3">
       <div class="flex items-center justify-between">
-        <label class="label text-base font-semibold mb-0" x-text="'1. ' + offeringConfig[offeringType].photoLabel">1. Product Photos</label>
-        <span class="text-xs text-gray-500 dark:text-gray-400"
-              x-text="photos.length + '/6 photos'"></span>
+        <label class="text-base font-semibold text-gray-900 dark:text-white mb-0">Photos</label>
+        <span class="text-xs text-gray-500" x-text="photos.length + '/6'"></span>
       </div>
 
-      {# Photo grid #}
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {# Existing photos #}
+      <div class="grid grid-cols-3 gap-2">
         <template x-for="(photo, index) in photos" :key="index">
-          <div class="relative aspect-square rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-            <img :src="photo.preview" alt="Product photo"
-                 class="w-full h-full object-cover">
+          <div class="relative aspect-square rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <img :src="photo.preview" alt="" class="w-full h-full object-cover">
             <button type="button" @click="removePhoto(index)"
-                    class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 shadow-lg">
-              ×
-            </button>
-            <div x-show="index === 0"
-                 class="absolute bottom-1 left-1 bg-purple-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium">
-              Main
-            </div>
+                    class="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 text-xs">×</button>
           </div>
         </template>
-
-        {# Add photo button #}
         <template x-if="photos.length < 6">
-          <div class="aspect-square border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 dark:hover:border-purple-500 transition-colors"
-               @click="$refs.cameraInput.click()">
-            <div class="text-2xl mb-1">+</div>
-            <p class="text-[10px] text-gray-500 dark:text-gray-400 text-center px-1"
-               x-text="photos.length === 0 ? 'Add photo' : 'Add more'"></p>
-          </div>
+          <button type="button" @click="$refs.cameraInput.click()"
+                  class="aspect-square border-2 border-dashed border-kova-300 dark:border-kova-700 rounded-lg flex flex-col items-center justify-center text-kova-600 dark:text-kova-400 hover:bg-kova-50/50 dark:hover:bg-kova-950/30 transition-colors">
+            <span class="text-2xl leading-none">+</span>
+            <span class="text-[10px] font-medium mt-1" x-text="photos.length ? 'More' : 'Add'"></span>
+          </button>
         </template>
       </div>
 
-      {# Empty state #}
-      <template x-if="photos.length === 0">
-        <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center">
-          <svg class="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          <p class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="offeringConfig[offeringType].emptyTitle">Tap below to add product photos</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-text="offeringConfig[offeringType].emptyHint">Multiple angles = better AI content. Up to 6 photos.</p>
-        </div>
-      </template>
-
-      {# Hidden file inputs #}
       <input type="file" accept="image/*" capture="environment"
              x-ref="cameraInput" @change="addFromInput($event)" class="hidden">
       <input type="file" accept="image/*" multiple
              x-ref="galleryInput" @change="addFromInput($event)" class="hidden">
-
-      {# The real file input that gets submitted — populated on submit #}
       <input type="file" name="photos" multiple x-ref="submitInput" class="hidden">
 
-      {# Action buttons #}
-      <div class="flex items-center gap-3">
-        <button type="button" @click="$refs.cameraInput.click()"
-                class="btn-secondary text-sm px-4 py-2 flex-1"
-                :disabled="photos.length >= 6">
-          Camera
-        </button>
-        <button type="button" @click="$refs.galleryInput.click()"
-                class="btn-secondary text-sm px-4 py-2 flex-1"
-                :disabled="photos.length >= 6">
-          Gallery
-        </button>
+      <button type="button" @click="$refs.galleryInput.click()" class="text-xs text-gray-500 hover:text-kova-600 dark:hover:text-kova-400"
+              x-show="photos.length > 0">
+        Choose from gallery instead
+      </button>
+    </div>
+
+    {# 2. Name & price — minimum to launch #}
+    <div class="card p-5 space-y-4">
+      <div>
+        <label for="snap-name" class="label text-sm font-semibold">Name</label>
+        <input type="text" id="snap-name" name="name" required class="input mt-1"
+               placeholder="e.g. Leather crossbody bag" x-model="name">
       </div>
-    </div>
-
-    {# Product name — always required #}
-    <div class="card p-5 space-y-4">
-      <label for="snap-name" class="label text-base font-semibold mb-0">
-        <span x-text="'2. ' + offeringConfig[offeringType].nameLabel"></span> *
-      </label>
-      <input type="text" id="snap-name" name="name" required
-             class="input" :placeholder="offeringConfig[offeringType].namePlaceholder"
-             x-model="name">
-      <p class="text-xs text-gray-500 dark:text-gray-400">A clear name helps AI write better posts and makes the offer easier for customers to understand fast.</p>
-    </div>
-
-    {# Price — always required #}
-    <div class="card p-5 space-y-4">
-      <label class="label text-base font-semibold mb-0">
-        <span x-text="'3. Price'"></span> *
-      </label>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div class="sm:col-span-2">
-          <label for="snap-price" class="label sr-only" x-text="offeringConfig[offeringType].priceLabel">Price</label>
+      <div class="grid grid-cols-3 gap-3">
+        <div class="col-span-2">
+          <label for="snap-price" class="label text-sm font-semibold">Price</label>
           <input type="number" id="snap-price" name="price" step="0.01" min="0.01" required
-                 class="input" :placeholder="offeringConfig[offeringType].pricePlaceholder"
-                 x-model="price">
+                 class="input mt-1" placeholder="2500" x-model="price">
         </div>
         <div>
-          <label for="snap-currency" class="label">Currency</label>
-          <select id="snap-currency" name="currency" class="input">
+          <label for="snap-currency" class="label text-sm font-semibold">Currency</label>
+          <select id="snap-currency" name="currency" class="input mt-1 text-sm">
             <option value="KES">KES</option>
             <option value="USD">USD</option>
             <option value="UGX">UGX</option>
             <option value="TZS">TZS</option>
-            <option value="RWF">RWF</option>
             <option value="NGN">NGN</option>
             <option value="GHS">GHS</option>
-            <option value="ZAR">ZAR</option>
             <option value="EUR">EUR</option>
             <option value="GBP">GBP</option>
           </select>
         </div>
       </div>
-      <p class="text-xs text-gray-500 dark:text-gray-400">You set the price — AI won't guess it, so customers always see the correct amount.</p>
     </div>
 
-    {# Optional description #}
-    <div class="card p-5 space-y-4" x-show="showDetails" x-cloak>
-      <div class="flex items-center justify-between">
-        <label class="label text-base font-semibold mb-0">4. Optional details</label>
-        <button type="button" @click="showDetails = false"
-                class="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">Hide</button>
-      </div>
+    {# Advanced — collapsed by default #}
+    <details class="group">
+      <summary class="text-sm text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 list-none flex items-center gap-1">
+        <span class="group-open:rotate-90 transition-transform inline-block">›</span>
+        Options (service, digital, photo polish…)
+      </summary>
+      <div class="mt-3 space-y-4">
+        <div class="card p-4">
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">What are you selling?</p>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" @click="offeringType = 'product'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
+                    :class="offeringType === 'product' ? 'border-kova-500 bg-kova-50 dark:bg-kova-950/40 text-kova-700 dark:text-kova-300' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'">Physical</button>
+            <button type="button" @click="offeringType = 'service'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
+                    :class="offeringType === 'service' ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'">Service</button>
+            <button type="button" @click="offeringType = 'digital'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
+                    :class="offeringType === 'digital' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'">Digital</button>
+          </div>
+        </div>
 
-      {# Service-specific: what does the photo show? #}
-      <div x-show="offeringType !== 'product'" x-cloak>
-        <label for="snap-context" class="label">What does this photo show? <span class="text-gray-400">(helps AI understand your work)</span></label>
-        <input type="text" id="snap-context" name="photo_context"
-               class="input" :placeholder="offeringConfig[offeringType].contextPlaceholder">
-      </div>
+        <div class="card p-4 space-y-3" x-show="offeringType !== 'product'" x-cloak>
+          <input type="text" name="photo_context" class="input text-sm"
+                 :placeholder="offeringType === 'service' ? 'What does this photo show? (optional)' : 'Screenshot context (optional)'">
+        </div>
 
-      <div>
-        <label for="snap-desc" class="label">Description <span class="text-gray-400">(optional — AI will generate if blank)</span></label>
-        <textarea id="snap-desc" name="description" rows="2"
-                  class="input" :placeholder="offeringConfig[offeringType].descPlaceholder"></textarea>
-      </div>
-    </div>
+        <div class="card p-4">
+          <label for="snap-desc" class="label text-sm">Description <span class="text-gray-400 font-normal">(optional)</span></label>
+          <textarea id="snap-desc" name="description" rows="2" class="input text-sm mt-1"
+                    placeholder="Leave blank — AI writes from your photos"></textarea>
+        </div>
 
-    <button type="button" x-show="!showDetails" @click="showDetails = true"
-            class="w-full text-sm text-purple-600 dark:text-purple-400 hover:underline py-1">
-      + Add description (optional)
-    </button>
-
-    {# Visual treatment — user controls enhancement #}
-    <div class="card p-5 space-y-3">
-      <div class="flex items-center justify-between gap-2">
-        <label class="label text-base font-semibold mb-0">Photo treatment</label>
-        {% if visual_credits %}
-        <span class="text-[10px] text-gray-500 dark:text-gray-400 tabular-nums">
-          Studio polish: {{ visual_credits.remaining }}/{{ visual_credits.max }} left
-        </span>
+        {% if not commerce_autopilot %}
+        <div class="card p-4 space-y-2">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white">Photo polish</p>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex cursor-pointer rounded-lg border-2 p-2.5 text-sm"
+                   :class="visualMode === 'as_is' ? 'border-kova-500' : 'border-gray-200 dark:border-gray-700'">
+              <input type="radio" name="visual_mode" value="as_is" class="sr-only" x-model="visualMode">
+              <span>Use as-is</span>
+            </label>
+            <label class="flex cursor-pointer rounded-lg border-2 p-2.5 text-sm"
+                   :class="[visualMode === 'pro_scene' ? 'border-kova-500' : 'border-gray-200 dark:border-gray-700', proSceneDisabled ? 'opacity-50' : '']">
+              <input type="radio" name="visual_mode" value="pro_scene" class="sr-only" x-model="visualMode" :disabled="proSceneDisabled">
+              <span>Studio polish</span>
+            </label>
+          </div>
+          {% if studio_polish_notice %}
+          <p class="text-[11px] text-amber-700 dark:text-amber-300">{{ studio_polish_notice }}</p>
+          {% endif %}
+        </div>
         {% endif %}
       </div>
-      <p class="text-xs text-gray-500 dark:text-gray-400">Use as-is for perfect photos. <strong>Studio polish pack</strong> runs Photoroom Plus — white studio, AI lifestyle scenes, flat lay, relight, and more (up to {{ plan_ctx.plus_max_variants_per_product|default:3 }} scenes · 1 credit each).</p>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <label class="relative flex cursor-pointer rounded-lg border-2 p-3 transition-colors"
-               :class="visualMode === 'as_is' ? 'border-kova-500 bg-kova-50/80 dark:bg-kova-950/30' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'">
-          <input type="radio" name="visual_mode" value="as_is" class="sr-only" x-model="visualMode">
-          <span>
-            <span class="block text-sm font-semibold text-gray-900 dark:text-white">Use as-is</span>
-            <span class="block text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">No editing · Free</span>
-          </span>
-        </label>
-        <label class="relative flex cursor-pointer rounded-lg border-2 p-3 transition-colors"
-               :class="[
-                 visualMode === 'pro_scene' ? 'border-kova-500 bg-kova-50/80 dark:bg-kova-950/30' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300',
-                 proSceneDisabled ? 'opacity-50 cursor-not-allowed' : ''
-               ]">
-          <input type="radio" name="visual_mode" value="pro_scene" class="sr-only" x-model="visualMode" :disabled="proSceneDisabled">
-          <span>
-            <span class="block text-sm font-semibold text-gray-900 dark:text-white">Studio polish pack</span>
-            <span class="block text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">AI scenes + studio · up to {{ plan_ctx.plus_max_variants_per_product|default:3 }} credits</span>
-          </span>
-        </label>
-      </div>
-      {% if studio_polish_notice %}
-      <p x-show="visualMode === 'pro_scene'" x-cloak
-         class="text-[11px] leading-snug text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 rounded-lg px-2.5 py-2">
-        {{ studio_polish_notice }}
-      </p>
-      {% endif %}
-    </div>
+    </details>
 
-    {# Launch button #}
     <button type="submit"
             :disabled="photos.length === 0 || !price || !name.trim()"
-            class="w-full btn-primary text-base py-3.5 rounded-xl font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-      <span x-text="photos.length <= 1
-        ? 'Snap to Sell — Launch Offer'
-        : 'Snap to Sell — Launch with ' + photos.length + ' Photos'"></span>
+            class="w-full btn-primary text-base py-3.5 rounded-xl font-semibold disabled:opacity-40 disabled:cursor-not-allowed">
+      Launch offer
     </button>
 
     <p class="text-xs text-center text-gray-500 dark:text-gray-400">
-      <span x-show="autopilot" x-cloak>Agents analyze your photo, expand scene versions, create carousel + reel posts, and publish when ready.</span>
-      <span x-show="!autopilot" x-text="offeringConfig[offeringType].launchHint"></span>
+      {% if commerce_autopilot %}
+      We polish photos, write posts, and queue carousel + reel for your connected channels.
+      {% else %}
+      Saves your offer and opens posts for review before publishing.
+      {% endif %}
+      <a href="{% url 'products:snap_batch' %}" class="block mt-2 text-orange-600 dark:text-orange-400 hover:underline font-medium">Selling many items? Use batch sell →</a>
     </p>
   </form>
 
@@ -266,76 +163,20 @@
 function snapToSell(autopilot, creditsRemaining, creditsAtLimit, studioPolishUnavailable) {
   const proSceneDisabled = !!creditsAtLimit || (creditsRemaining !== undefined && creditsRemaining <= 0);
   return {
-    photos: [],   // [{file: File, preview: 'data:...'}]
+    photos: [],
     name: '',
     price: '',
     offeringType: 'product',
     autopilot: !!autopilot,
-    showDetails: false,
     visualMode: proSceneDisabled ? 'as_is' : 'pro_scene',
-    studioPolishUnavailable: !!studioPolishUnavailable,
     proSceneDisabled,
-
-    offeringConfig: {
-      product: {
-        emoji: '',
-        hero: 'Photos → Content → Sales',
-        subtitle: 'Take photos of your product, add a name & price — AI creates specialized marketing content in seconds.',
-        hint: 'Physical items: clothes, food, electronics, crafts, etc.',
-        photoLabel: 'Product Photos',
-        emptyTitle: 'Tap below to add product photos',
-        emptyHint: 'Multiple angles = better AI content. Up to 6 photos.',
-        nameLabel: 'Product Name',
-        namePlaceholder: 'e.g. Handmade Leather Bag',
-        priceLabel: 'Price',
-        pricePlaceholder: 'e.g. 2500',
-        contextPlaceholder: '',
-        descPlaceholder: 'Brief description — or leave blank and let AI write it from the photos',
-        launchHint: 'AI will analyze your photos, write a product description, and generate carousel + motion reel posts for each platform.',
-      },
-      service: {
-        emoji: '',
-        hero: 'Show Your Work → Build Authority',
-        subtitle: 'Snap your portfolio work, client results, or projects — AI creates credibility-building content that attracts new clients.',
-        hint: 'Web design, consulting, photography, events, training, beauty, etc.',
-        photoLabel: 'Work Evidence',
-        emptyTitle: 'Add photos of your work',
-        emptyHint: 'Portfolio pieces, client results, before/afters, you in action. Up to 6.',
-        nameLabel: 'Service Name',
-        namePlaceholder: 'e.g. Website Design, Brand Strategy, Event Planning',
-        priceLabel: 'Starting Price',
-        pricePlaceholder: 'e.g. from 50000',
-        contextPlaceholder: 'e.g. "Website I designed for a bakery" or "Before & after brand refresh"',
-        descPlaceholder: 'What you do — or leave blank and AI will craft it from your work evidence',
-        launchHint: 'AI will analyze your work, craft authority-building content, and generate posts that showcase your expertise.',
-      },
-      digital: {
-        emoji: '',
-        hero: 'Screenshots → Downloads & Sales',
-        subtitle: 'Snap screenshots of your digital product — AI creates compelling content to drive downloads and sales.',
-        hint: 'Templates, courses, ebooks, apps, presets, printables, etc.',
-        photoLabel: 'Product Screenshots',
-        emptyTitle: 'Add screenshots of your digital product',
-        emptyHint: 'UI screenshots, preview pages, results, feature highlights. Up to 6.',
-        nameLabel: 'Product Name',
-        namePlaceholder: 'e.g. Social Media Template Pack, Python Course',
-        priceLabel: 'Price',
-        pricePlaceholder: 'e.g. 1500',
-        contextPlaceholder: 'e.g. "Dashboard view of the app" or "Sample lesson from the course"',
-        descPlaceholder: 'What it is and what the buyer gets — or let AI figure it out from screenshots',
-        launchHint: 'AI will analyze your screenshots, write compelling copy, and generate posts that drive downloads.',
-      },
-    },
 
     addFromInput(event) {
       const files = Array.from(event.target.files);
       for (const file of files) {
         if (this.photos.length >= 6) break;
         if (!file.type.startsWith('image/')) continue;
-        if (file.size > 10 * 1024 * 1024) {
-          alert(file.name + ' is too large (max 10 MB). Skipped.');
-          continue;
-        }
+        if (file.size > 10 * 1024 * 1024) continue;
         const reader = new FileReader();
         const self = this;
         reader.onload = function(e) {
@@ -343,7 +184,6 @@ function snapToSell(autopilot, creditsRemaining, creditsAtLimit, studioPolishUna
         };
         reader.readAsDataURL(file);
       }
-      // Reset input so same file can be re-selected
       event.target.value = '';
     },
 
@@ -352,7 +192,6 @@ function snapToSell(autopilot, creditsRemaining, creditsAtLimit, studioPolishUna
     },
 
     prepareSubmit(event) {
-      // Pack all photo files into the hidden multi-file input
       if (this.photos.length === 0) {
         event.preventDefault();
         return;

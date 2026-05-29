@@ -396,6 +396,20 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         priority=86,
     ),
     # ── Enhancement ──────────────────────────────────────────────────────
+    "photofix": PlusVariantSpec(
+        id="photofix",
+        label="PhotoFix",
+        params={
+            "removeBackground": "false",
+            "beautify.mode": "ai.auto",
+            "lighting.mode": "ai.auto",
+            **_export_defaults(),
+        },
+        categories=(),
+        min_plan="starter",
+        priority=90,
+        pack_eligible=False,
+    ),
     "relight": PlusVariantSpec(
         id="relight",
         label="AI relight",
@@ -1363,12 +1377,29 @@ def photoroom_edit(
     params: dict[str, str],
     *,
     extra_headers: dict | None = None,
+    file_bytes: bytes | None = None,
+    file_name: str = "image.jpg",
 ) -> bytes | None:
     """Call Photoroom Plus v2/edit with arbitrary params. Returns JPEG/PNG bytes."""
     api_key, headers = _api_key_headers(extra_headers)
     if not api_key:
         logger.info("Photoroom edit skipped: PHOTOROOM_API_KEY not set")
         return None
+
+    if file_bytes:
+        try:
+            resp = requests.post(
+                PHOTOROOM_EDIT_URL,
+                headers=headers,
+                files={"imageFile": (file_name, file_bytes, "image/jpeg")},
+                data=params,
+                timeout=180,
+            )
+            resp.raise_for_status()
+            return resp.content or None
+        except Exception as exc:
+            logger.error("Photoroom POST v2/edit (bytes) failed [%s]: %s", list(params.keys())[:4], exc)
+            return None
 
     public_url = _resolve_public_image_url(image_url)
     if public_url:

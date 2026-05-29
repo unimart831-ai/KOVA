@@ -485,7 +485,13 @@ def _strip_generated_variations(additional_images: list, product_id) -> list:
     ]
 
 
-def expand_product_photos(product, analysis: dict | None = None, mode: str | None = None) -> dict:
+def expand_product_photos(
+    product,
+    analysis: dict | None = None,
+    mode: str | None = None,
+    *,
+    commerce_source: str | None = None,
+) -> dict:
     """
     Generate scene variations from the product's primary photo.
     Appends URLs to product.additional_images (replaces prior auto-variations).
@@ -497,7 +503,7 @@ def expand_product_photos(product, analysis: dict | None = None, mode: str | Non
     if mode == VISUAL_MODE_AS_IS:
         return {"skipped": True, "reason": "as_is", "variations_created": 0}
 
-    return _expand_studio_polish(product, analysis)
+    return _expand_studio_polish(product, analysis, commerce_source=commerce_source)
 
 
 def _studio_polish_error(reason: str, *, limit_message: str = "") -> dict:
@@ -510,7 +516,12 @@ def _studio_polish_error(reason: str, *, limit_message: str = "") -> dict:
     }
 
 
-def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
+def _expand_studio_polish(
+    product,
+    analysis: dict | None = None,
+    *,
+    commerce_source: str | None = None,
+) -> dict:
     """Photoroom Plus pack — all applicable v2/edit variants (1 credit each)."""
     from apps.billing.models import get_effective_plan_tier
     from apps.billing.visual_credits import check_visual_credit_limit, get_visual_credit_usage, record_studio_polish
@@ -577,6 +588,7 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
         budget=repair_budget,
         plan_tier=plan_tier,
         brand_template=brand_template,
+        commerce_source=commerce_source,
     )
     credit_pool -= len(preflight.repairs_run)
     source = preflight.master_url

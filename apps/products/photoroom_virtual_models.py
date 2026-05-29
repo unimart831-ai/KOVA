@@ -88,52 +88,25 @@ def generate_virtual_model_shot(
     Returns:
         Storage path to the saved image, or None on failure.
     """
-    api_key = getattr(settings, "PHOTOROOM_API_KEY", "")
-    if not api_key:
-        return None
+    from apps.products.photoroom_plus import photoroom_edit
 
     preset = MODEL_PRESETS.get(model_preset, MODEL_PRESETS["female_confident"])
     scene_desc = SCENE_PRESETS.get(scene, scene)
 
-    headers = {
-        "x-api-key": api_key,
-        "Accept": "image/png",
-    }
-
-    width, height = output_size.split("x")
-
-    payload = {
-        "imageUrl": garment_image_url,
-        "outputSize": f"{width}x{height}",
-        "virtualModel": {
-            "gender": preset["gender"],
-            "pose": preset["pose"],
-        },
-        "background": {
-            "prompt": scene_desc,
-        },
-        "shadow": {
-            "mode": "ai.soft",
-        },
-        "padding": 0.05,
+    params = {
+        "removeBackground": "false",
+        "referenceBox": "originalImage",
+        "virtualModel.mode": "ai.auto",
+        "virtualModel.prompt": f"{preset['description']}, {scene_desc}",
+        "virtualModel.size": "SQUARE_HD",
+        "outputSize": output_size,
+        "padding": "0.05",
+        "shadow.mode": "ai.soft",
+        "export.format": "png",
     }
 
     try:
-        resp = requests.post(
-            PHOTOROOM_EDIT_URL,
-            headers=headers,
-            json=payload,
-            timeout=60,
-        )
-        if resp.status_code != 200:
-            logger.error(
-                "Photoroom Virtual Model error %s: %s",
-                resp.status_code,
-                resp.text[:200],
-            )
-            return None
-
-        image_bytes = resp.content
+        image_bytes = photoroom_edit(garment_image_url, params)
         if not image_bytes or len(image_bytes) < 5000:
             return None
 

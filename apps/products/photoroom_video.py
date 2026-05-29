@@ -5,15 +5,13 @@ Used for auto-generating Reels/TikTok content from Snap2sell photos.
 API: POST https://image-api.photoroom.com/v1/animate
 - Input: product image (background-removed preferred)
 - Output: MP4 video (3-7 seconds)
-- Cost: 1 video credit per call
 
-Docs: https://docs.photoroom.com/video-api/
+Docs: https://docs.photoroom.com/video-api-enterprise-plan/overview
 """
 from __future__ import annotations
 
 import logging
 import uuid
-from io import BytesIO
 
 import requests
 from django.conf import settings
@@ -27,10 +25,34 @@ VIDEO_FOLDER = "product_videos"
 
 
 def video_generation_enabled() -> bool:
-    """Check if video generation is available."""
-    if not getattr(settings, "PHOTOROOM_VIDEO_ENABLED", False):
+    """Video API available when keyed; sandbox mode allows watermarked test calls."""
+    if not getattr(settings, "PHOTOROOM_API_KEY", ""):
         return False
-    return bool(getattr(settings, "PHOTOROOM_API_KEY", ""))
+    if getattr(settings, "PHOTOROOM_VIDEO_ENABLED", False):
+        return True
+    if getattr(settings, "PHOTOROOM_REEL_USE_VIDEO_API", True):
+        return bool(getattr(settings, "PHOTOROOM_SANDBOX", False))
+    return False
+
+
+def reel_should_use_photoroom_video(post) -> bool:
+    """Commerce reels prefer Photoroom animate when enabled (single hero frame)."""
+    if not video_generation_enabled():
+        return False
+    if not getattr(settings, "PHOTOROOM_REEL_USE_VIDEO_API", True):
+        return False
+    meta = post.visual_metadata or {}
+    if meta.get("reel_compose_backend") == "ffmpeg":
+        return False
+    return True
+
+
+def _resolve_image_url(image_url: str) -> str | None:
+    from apps.products.photoroom import _resolve_public_image_url
+
+    if image_url.startswith(("http://", "https://")):
+        return image_url
+    return _resolve_public_image_url(image_url)
 
 
 def generate_product_video(
@@ -42,27 +64,24 @@ def generate_product_video(
     """
     Generate a product video from a static image via Photoroom Video API.
 
-    Args:
-        image_url: URL of the product image (ideally background-removed)
-        prompt: Motion/style instruction for the video
-        duration_seconds: Video length (3-7 seconds)
-        aspect_ratio: "9:16" for reels, "1:1" for feed, "16:9" for landscape
-
-    Returns:
-        Storage path to the saved MP4 file, or None on failure.
+    Returns storage path to the saved MP4 file, or None on failure.
     """
-    api_key = getattr(settings, "PHOTOROOM_API_KEY", "")
+    from apps.products.photoroom import _api_key_headers
+
+    api_key, headers = _api_key_headers()
     if not api_key:
         logger.warning("Photoroom API key not configured for video generation")
         return None
 
-    headers = {
-        "x-api-key": api_key,
-        "Accept": "video/mp4",
-    }
+    public_url = _resolve_image_url(image_url)
+    if not public_url or not public_url.startswith("https://"):
+        logger.warning("Photoroom Video needs a public HTTPS image URL, got: %s", image_url[:80])
+        return None
+
+    headers = {**headers, "Accept": "video/mp4", "Content-Type": "application/json"}
 
     payload = {
-        "imageUrl": image_url,
+        "imageUrl": public_url,
         "prompt": prompt,
         "durationSeconds": min(max(duration_seconds, 3), 7),
         "aspectRatio": aspect_ratio,
@@ -101,11 +120,8 @@ def generate_product_video(
         return None
 
 
-def generate_product_reel_video(product, image_url: str = None) -> str | None:
-    """
-    Generate a reel-ready video for a product.
-    Selects the best image and crafts an appropriate prompt.
-    """
+def generate_product_reel_video(product, image_url: str | None = None) -> str | None:
+    """Generate a reel-ready video for a product."""
     if not video_generation_enabled():
         return None
 
@@ -142,9 +158,95 @@ def generate_product_reel_video(product, image_url: str = None) -> str | None:
     return path
 
 
+def pick_reel_video_image_url(post, image_sources: list[str]) -> str | None:
+    """Best single frame for /v1/animate (story polish or composition hero)."""
+    meta = post.visual_metadata or {}
+    hero = meta.get("composition_hero_url")
+    if hero:
+        return hero
+
+    for url in image_sources:
+        if url and "channel_story" in url:
+            return url
+
+    for url in image_sources:
+        if url and ("studio_polish" in url or "studio_white" in url):
+            return url
+
+    return image_sources[0] if image_sources else None
+
+
+def attach_photoroom_video_to_post(post, video_storage_path: str, *, thumbnail_url: str | None = None) -> str | None:
+    """Attach MP4 to post and return public video URL."""
+    from apps.content.models import MediaAttachment, Post
+    from apps.content.tasks import _public_url_for_file
+
+    public_url = _public_url_for_file(video_storage_path)
+    if not public_url:
+        return None
+
+    post.attachments.filter(file_type="video").delete()
+    MediaAttachment.objects.create(
+        post=post,
+        file=video_storage_path,
+        file_type="video",
+        order=0,
+        alt_text="Photoroom product video",
+    )
+
+    meta = dict(post.visual_metadata or {})
+    meta.update({
+        "video_compose_status": "done",
+        "reel_compose_backend": "photoroom_animate",
+        "reel_video_url": public_url,
+        "reel_thumbnail_url": thumbnail_url,
+    })
+    post.visual_metadata = meta
+    post.media_urls = [public_url]
+    post.aspect_ratio = Post.AspectRatio.STORY
+    post.media_status = Post.MediaStatus.GENERATED
+    post.save(update_fields=[
+        "visual_metadata", "media_urls", "aspect_ratio", "media_status", "updated_at",
+    ])
+    return public_url
+
+
+def try_photoroom_reel_for_post(post, image_sources: list[str]) -> str | None:
+    """
+    Attempt Photoroom /v1/animate for commerce reels. Returns public video URL or None.
+    """
+    if not reel_should_use_photoroom_video(post):
+        return None
+
+    image_url = pick_reel_video_image_url(post, image_sources)
+    if not image_url:
+        return None
+
+    product = post.product
+    if product:
+        path = generate_product_reel_video(product, image_url=image_url)
+    else:
+        prompt = "Professional product showcase with gentle motion and studio lighting"
+        path = generate_product_video(image_url=image_url, prompt=prompt)
+
+    if not path:
+        return None
+
+    thumb = None
+    for url in post.media_urls or image_sources:
+        if url and not url.endswith(".mp4"):
+            thumb = url
+            break
+
+    return attach_photoroom_video_to_post(post, path, thumbnail_url=thumb)
+
+
 def _get_best_product_image_url(product) -> str | None:
     """Get the best available product image URL for video generation."""
     additional = product.additional_images or []
+    for img_url in additional:
+        if "channel_story" in img_url:
+            return img_url
     for img_url in additional:
         if "studio_polish" in img_url or "product_variations" in img_url:
             return img_url

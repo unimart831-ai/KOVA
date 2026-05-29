@@ -1,25 +1,45 @@
-<div class="subnav-tabs">
-  <a href="{% url 'products:list' %}"
-     class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors {% if request.resolver_match.url_name == 'list' %}border-kova-600 text-kova-600 dark:border-kova-400 dark:text-kova-400{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600{% endif %}">
-    Offers
-  </a>
-  <a href="{% url 'products:snap' %}"
-     class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors {% if 'snap' in request.resolver_match.url_name %}border-kova-600 text-kova-600 dark:border-kova-400 dark:text-kova-400{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600{% endif %}">
-    Snap to Sell
-  </a>
-  <a href="{% url 'products:restock' %}"
-     class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors {% if 'restock' in request.resolver_match.url_name %}border-orange-600 text-orange-600 dark:border-orange-400 dark:text-orange-400{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600{% endif %}">
-    Receipt to Restock
-  </a>
-  <a href="{% url 'products:categories' %}"
-     class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors {% if 'categor' in request.resolver_match.url_name %}border-kova-600 text-kova-600 dark:border-kova-400 dark:text-kova-400{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600{% endif %}">
-    Categories
-  </a>
-  <a href="{% url 'products:alerts' %}"
-     class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 {% if 'alert' in request.resolver_match.url_name %}border-amber-600 text-amber-600 dark:border-amber-400 dark:text-amber-400{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600{% endif %}">
-    Alerts
+{# Commerce navigation — two outcomes (sell / catalog), utilities tucked away #}
+<nav class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between border-b border-gray-200 dark:border-gray-700" aria-label="Commerce">
+  <div class="flex gap-0.5 -mb-px">
+    <a href="{% url 'products:snap' %}"
+       class="px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors {% if request.resolver_match.url_name == 'snap' or request.resolver_match.url_name == 'snap_launch' %}border-kova-600 text-kova-600 dark:border-kova-400 dark:text-kova-400{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200{% endif %}">
+      Sell
+    </a>
+    <a href="{% url 'products:list' %}"
+       class="px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors {% if request.resolver_match.url_name == 'list' %}border-kova-600 text-kova-600 dark:border-kova-400 dark:text-kova-400{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200{% endif %}">
+      My offers
+    </a>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 dark:text-gray-400 pb-2.5 sm:pb-3">
+    <a href="{% url 'products:snap_batch' %}"
+       class="hover:text-orange-600 dark:hover:text-orange-400 font-medium {% if request.resolver_match.url_name == 'snap_batch' or request.resolver_match.url_name == 'snap_batch_launch' %}text-orange-600 dark:text-orange-400{% endif %}">
+      Many items at once
+    </a>
     {% if unread_alerts %}
-    <span class="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full text-[10px] font-bold bg-amber-500 text-white">{{ unread_alerts }}</span>
+    <span class="text-gray-300 dark:text-gray-600" aria-hidden="true">·</span>
+    <a href="{% url 'products:alerts' %}"
+       class="inline-flex items-center gap-1 font-medium text-amber-700 dark:text-amber-300 hover:underline {% if 'alert' in request.resolver_match.url_name %}underline{% endif %}">
+      Stock alerts
+      <span class="inline-flex min-w-[1.1rem] h-4 px-1 rounded-full text-[9px] font-bold bg-amber-500 text-white justify-center">{{ unread_alerts }}</span>
+    </a>
     {% endif %}
-  </a>
-</div>
+    <span class="text-gray-300 dark:text-gray-600" aria-hidden="true">·</span>
+    <details class="relative group">
+      <summary class="cursor-pointer list-none font-medium hover:text-gray-700 dark:hover:text-gray-200 [&::-webkit-details-marker]:hidden">
+        More
+      </summary>
+      <div class="absolute right-0 top-full z-20 mt-1 min-w-[10rem] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg py-1 text-sm">
+        <a href="{% url 'products:restock' %}" class="block px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">Receipt restock</a>
+        <a href="{% url 'products:categories' %}" class="block px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">Categories</a>
+        {% if plan_ctx.csv_import %}
+        <a href="{% url 'products:import' %}" class="block px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">Import CSV</a>
+        {% endif %}
+        <a href="{% url 'products:add' %}" class="block px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">Add manually</a>
+        {% if not unread_alerts %}
+        <a href="{% url 'products:alerts' %}" class="block px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">Stock alerts</a>
+        {% endif %}
+      </div>
+    </details>
+  </div>
+</nav>

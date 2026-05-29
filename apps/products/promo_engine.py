@@ -71,7 +71,9 @@ TRIGGER_TEMPLATES = {
 
 
 def promo_engine_enabled() -> bool:
-    return bool(getattr(settings, "PHOTOROOM_API_KEY", ""))
+    from apps.products.photoroom import photoroom_enabled
+
+    return photoroom_enabled()
 
 
 def generate_promo_image(
@@ -88,44 +90,28 @@ def generate_promo_image(
     if not promo_engine_enabled():
         return None
 
-    api_key = settings.PHOTOROOM_API_KEY
+    from apps.products.photoroom_plus import AI_BG_MODEL_HEADER, photoroom_edit
+
     template = TRIGGER_TEMPLATES.get(trigger, TRIGGER_TEMPLATES[PromoTrigger.NEW_PRODUCT])
 
     image_url = _get_product_image_url(product)
     if not image_url:
         return None
 
-    brand_color = _get_brand_primary_color(product.user)
-
-    width, height = size.split("x")
-
-    headers = {
-        "x-api-key": api_key,
-        "Accept": "image/png",
+    params = {
+        "removeBackground": "true",
+        "background.prompt": template["bg_prompt"],
+        "background.expandPrompt": "ai.auto",
+        "outputSize": size,
+        "padding": "0.15",
+        "shadow.mode": "ai.soft",
+        "export.format": "png",
+        "referenceBox": "originalImage",
     }
-
-    payload = {
-        "imageUrl": image_url,
-        "outputSize": f"{width}x{height}",
-        "background": {
-            "prompt": template["bg_prompt"],
-        },
-        "shadow": {"mode": "ai.soft"},
-        "padding": 0.15,
-    }
+    headers = {"pr-ai-background-model-version": AI_BG_MODEL_HEADER}
 
     try:
-        resp = requests.post(
-            PHOTOROOM_EDIT_URL,
-            headers=headers,
-            json=payload,
-            timeout=60,
-        )
-        if resp.status_code != 200:
-            logger.error("Promo Engine Photoroom error %s: %s", resp.status_code, resp.text[:200])
-            return None
-
-        image_bytes = resp.content
+        image_bytes = photoroom_edit(image_url, params, extra_headers=headers)
         if not image_bytes or len(image_bytes) < 5000:
             return None
 
