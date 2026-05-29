@@ -107,6 +107,66 @@ FB_SCOPES = ",".join([
 # Timeout for all HTTP calls (seconds)
 HTTP_TIMEOUT = 30.0
 
+# Instagram Container API — poll until media is processed before publish
+IG_CONTAINER_POLL_INTERVAL = 3
+IG_CONTAINER_MAX_POLLS = 40  # ~2 min for images; reels use longer loops inline
+
+
+def _wait_for_ig_container(
+    client: httpx.Client,
+    token: str,
+    container_id: str,
+    *,
+    max_polls: int = IG_CONTAINER_MAX_POLLS,
+    poll_interval: float = IG_CONTAINER_POLL_INTERVAL,
+) -> tuple[bool, str]:
+    """
+    Poll Instagram media container until status_code is FINISHED.
+
+    Returns (ready, error_message). error_message is empty when ready=True.
+    """
+    status_code = "IN_PROGRESS"
+    for attempt in range(max_polls):
+        status_resp = client.get(f"{FB_API_BASE}/{container_id}", params={
+            "fields": "status_code,status",
+            "access_token": token,
+        })
+        status_resp.raise_for_status()
+        status_data = status_resp.json()
+        status_code = status_data.get("status_code", "IN_PROGRESS")
+
+        if status_code == "FINISHED":
+            return True, ""
+        if status_code == "ERROR":
+            detail = status_data.get("status", "Media processing failed.")
+            logger.error(
+                "Instagram container %s ERROR after %d polls: %s",
+                container_id, attempt + 1, detail,
+            )
+            return False, f"Instagram could not process media: {detail}"
+        if status_code == "EXPIRED":
+            return False, "Media container expired before publishing. Please try again."
+        time.sleep(poll_interval)
+
+    logger.warning(
+        "Instagram container %s still '%s' after %d polls — proceeding to publish",
+        container_id, status_code, max_polls,
+    )
+    return True, ""
+
+
+def _validate_ig_https_urls(urls: list[str]) -> Optional[str]:
+    """Return an error string if any URL is missing or not HTTPS (IG requirement)."""
+    if not urls:
+        return "Instagram requires at least one image URL."
+    for url in urls:
+        if not url or not str(url).startswith("https://"):
+            return (
+                "Instagram requires publicly accessible HTTPS image URLs. "
+                "Re-save the post media or check storage/CDN settings."
+            )
+    return None
+
 
 # ═════════════════════════════════════════════════════════════════════════════
 # FACEBOOK PROVIDER
@@ -1208,6 +1268,10 @@ class InstagramProvider(BaseProvider):
     def _publish_single_image(self, client: httpx.Client, token: str,
                               ig_id: str, caption: str, image_url: str) -> PublishResult:
         """Single image post."""
+        url_err = _validate_ig_https_urls([image_url])
+        if url_err:
+            return PublishResult(success=False, error=url_err)
+
         container = client.post(f"{FB_API_BASE}/{ig_id}/media", data={
             "image_url": image_url,
             "caption": caption,
@@ -1215,6 +1279,10 @@ class InstagramProvider(BaseProvider):
         })
         container.raise_for_status()
         container_id = container.json()["id"]
+
+        ready, err = _wait_for_ig_container(client, token, container_id)
+        if not ready:
+            return PublishResult(success=False, error=err)
 
         pub = client.post(f"{FB_API_BASE}/{ig_id}/media_publish", data={
             "creation_id": container_id,
@@ -1227,9 +1295,20 @@ class InstagramProvider(BaseProvider):
 
     def _publish_carousel(self, client: httpx.Client, token: str,
                           ig_id: str, caption: str, image_urls: list[str]) -> PublishResult:
-        """Carousel post (2-10 images)."""
+        """Carousel post (2-10 images) with parallel container polling."""
+        slides = image_urls[:10]
+        if len(slides) < 2:
+            return PublishResult(
+                success=False,
+                error="Instagram carousels need at least 2 images.",
+            )
+        url_err = _validate_ig_https_urls(slides)
+        if url_err:
+            return PublishResult(success=False, error=url_err)
+
+        # Phase 1: Create ALL child containers without waiting
         child_ids = []
-        for url in image_urls[:10]:
+        for url in slides:
             child = client.post(f"{FB_API_BASE}/{ig_id}/media", data={
                 "image_url": url,
                 "is_carousel_item": "true",
@@ -1238,6 +1317,47 @@ class InstagramProvider(BaseProvider):
             child.raise_for_status()
             child_ids.append(child.json()["id"])
 
+        # Phase 2: Poll ALL children in rounds (they process in parallel on Meta's side)
+        pending = set(range(len(child_ids)))
+        for poll_round in range(IG_CONTAINER_MAX_POLLS):
+            if not pending:
+                break
+            time.sleep(IG_CONTAINER_POLL_INTERVAL)
+            still_pending = set()
+            for idx in pending:
+                cid = child_ids[idx]
+                status_resp = client.get(f"{FB_API_BASE}/{cid}", params={
+                    "fields": "status_code,status",
+                    "access_token": token,
+                })
+                status_resp.raise_for_status()
+                status_data = status_resp.json()
+                sc = status_data.get("status_code", "IN_PROGRESS")
+                if sc == "FINISHED":
+                    continue
+                elif sc == "ERROR":
+                    detail = status_data.get("status", "Image processing failed.")
+                    logger.error("IG carousel child %s ERROR: %s", cid, detail)
+                    return PublishResult(
+                        success=False,
+                        error=f"Instagram could not process slide {idx+1}: {detail}",
+                    )
+                elif sc == "EXPIRED":
+                    return PublishResult(
+                        success=False,
+                        error=f"Carousel slide {idx+1} expired. Please retry.",
+                    )
+                else:
+                    still_pending.add(idx)
+            pending = still_pending
+
+        if pending:
+            logger.warning(
+                "IG carousel: %d/%d children still not FINISHED after %d polls — proceeding",
+                len(pending), len(child_ids), IG_CONTAINER_MAX_POLLS,
+            )
+
+        # Phase 3: Create parent carousel container
         carousel_data = {
             "media_type": "CAROUSEL",
             "caption": caption,
@@ -1250,6 +1370,12 @@ class InstagramProvider(BaseProvider):
         carousel.raise_for_status()
         carousel_id = carousel.json()["id"]
 
+        # Phase 4: Poll parent container
+        ready, err = _wait_for_ig_container(client, token, carousel_id, max_polls=20)
+        if not ready:
+            return PublishResult(success=False, error=err)
+
+        # Phase 5: Publish
         pub = client.post(f"{FB_API_BASE}/{ig_id}/media_publish", data={
             "creation_id": carousel_id,
             "access_token": token,
@@ -1264,6 +1390,14 @@ class InstagramProvider(BaseProvider):
         """Publish a Reel."""
         if not video_url:
             return PublishResult(success=False, error="video_url is required for Reels")
+        if not str(video_url).startswith("https://"):
+            return PublishResult(
+                success=False,
+                error=(
+                    "Instagram Reels require a public HTTPS video URL. "
+                    "Re-compose the reel or check media storage settings."
+                ),
+            )
 
         container = client.post(f"{FB_API_BASE}/{ig_id}/media", data={
             "media_type": "REELS",

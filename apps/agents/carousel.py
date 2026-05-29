@@ -312,7 +312,9 @@ def generate_carousel(
                 order=idx,
             )
             attachment.file.save(filepath, ContentFile(buffer.read()), save=True)
-            media_urls.append(attachment.file.url)
+            from apps.content.tasks import _public_url_for_file
+            public_url = _public_url_for_file(attachment.file.name)
+            media_urls.append(public_url or attachment.file.url)
 
         # Update post
         if not post.media_urls:
@@ -355,6 +357,20 @@ def _load_product_image(image_source: str):
             resp = requests.get(image_source, timeout=12)
             resp.raise_for_status()
             img = Image.open(_BytesIO(resp.content))
+        elif image_source.startswith("/"):
+            from apps.content.tasks import _public_url_for_file
+
+            rel = image_source.lstrip("/")
+            if rel.startswith("media/"):
+                rel = rel[6:]
+            public = _public_url_for_file(rel)
+            if public:
+                import requests
+                resp = requests.get(public, timeout=12)
+                resp.raise_for_status()
+                img = Image.open(_BytesIO(resp.content))
+            else:
+                raise FileNotFoundError(f"No public URL for {image_source[:80]}")
         else:
             from django.core.files.storage import default_storage
             try:
@@ -413,14 +429,19 @@ def _render_product_hero_hook_slide(
         return _render_title_slide(width, height, headline, subtext, colors)
 
     img = ImageOps.fit(raw, (width, height), method=Image.Resampling.LANCZOS).convert("RGBA")
-    overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-    o_draw = ImageDraw.Draw(overlay)
-    for y in range(int(height * 0.55)):
-        alpha = int(180 * (1 - y / (height * 0.55)))
-        o_draw.rectangle([(0, y), (width, y + 1)], fill=(0, 0, 0, alpha))
-    img = Image.alpha_composite(img, overlay).convert("RGB")
+    strip_h = int(height * 0.30)
+    gradient = Image.new("RGBA", (width, strip_h), (0, 0, 0, 0))
+    g_draw = ImageDraw.Draw(gradient)
+    for y in range(strip_h):
+        g_draw.rectangle(
+            [(0, y), (width, y + 1)],
+            fill=(0, 0, 0, int(150 * (y / strip_h))),
+        )
+    img.paste(gradient, (0, height - strip_h), gradient)
+    img = img.convert("RGB")
     draw = ImageDraw.Draw(img)
     padding_x = int(width * 0.07)
+    text_y_base = height - strip_h + int(height * 0.04)
 
     if badge:
         badge_size = int(min(width, height) * 0.028)
@@ -428,7 +449,7 @@ def _render_product_hero_hook_slide(
         badge_text = badge.upper()
         bb = draw.textbbox((0, 0), badge_text, font=font_badge)
         bw, bh = bb[2] - bb[0], bb[3] - bb[1]
-        bx, by = padding_x, int(height * 0.06)
+        bx, by = padding_x, text_y_base - int(height * 0.10)
         draw.rounded_rectangle(
             [(bx - 8, by - 4), (bx + bw + 8, by + bh + 4)],
             radius=8,
@@ -436,11 +457,11 @@ def _render_product_hero_hook_slide(
         )
         draw.text((bx, by), badge_text, font=font_badge, fill=(255, 255, 255))
 
-    title_size = int(min(width, height) * 0.062)
+    title_size = int(min(width, height) * 0.058)
     font_title = _get_font(title_size, bold=True)
     wrapped_title = _wrap_text(draw, headline, font_title, width - padding_x * 2)
     draw.multiline_text(
-        (padding_x, int(height * 0.12)),
+        (padding_x, text_y_base),
         wrapped_title,
         font=font_title,
         fill=(255, 255, 255),
@@ -448,18 +469,18 @@ def _render_product_hero_hook_slide(
     )
 
     if subtext:
-        sub_size = int(min(width, height) * 0.034)
+        sub_size = int(min(width, height) * 0.032)
         font_sub = _get_font(sub_size)
         wrapped_sub = _wrap_text(draw, subtext, font_sub, width - padding_x * 2)
         title_bbox = draw.multiline_textbbox(
-            (padding_x, int(height * 0.12)), wrapped_title, font=font_title,
+            (padding_x, text_y_base), wrapped_title, font=font_title,
             spacing=int(title_size * 0.2),
         )
         draw.multiline_text(
-            (padding_x, title_bbox[3] + int(height * 0.02)),
+            (padding_x, title_bbox[3] + int(height * 0.015)),
             wrapped_sub,
             font=font_sub,
-            fill=_hex_to_rgb(colors["text_muted"]),
+            fill=(220, 220, 230),
             spacing=int(sub_size * 0.25),
         )
 
@@ -488,26 +509,28 @@ def _render_product_story_slide(
         return _render_content_slide(width, height, slide_num, total_slides, body, headline, colors)
 
     img = ImageOps.fit(raw, (width, height), method=Image.Resampling.LANCZOS).convert("RGBA")
-    card_h = int(height * 0.42)
-    card = Image.new("RGBA", (width, card_h), (26, 26, 46, 210))
-    img.paste(card, (0, 0), card)
+    card_h = int(height * 0.28)
+    card = Image.new("RGBA", (width, card_h), (26, 26, 46, 195))
+    img.paste(card, (0, height - card_h), card)
     img = img.convert("RGB")
     draw = ImageDraw.Draw(img)
     padding_x = int(width * 0.08)
+    card_top = height - card_h + int(height * 0.04)
 
     font_label = _get_font(int(min(width, height) * 0.028), bold=True)
     draw.text(
-        (padding_x, int(height * 0.05)),
+        (padding_x, card_top),
         headline.upper(),
         font=font_label,
         fill=_hex_to_rgb(colors["accent"]),
     )
 
-    body_size = int(min(width, height) * 0.038)
+    body_size = int(min(width, height) * 0.036)
     font_body = _get_font(body_size)
     wrapped = _wrap_text(draw, body, font_body, width - padding_x * 2)
+    label_bbox = draw.textbbox((padding_x, card_top), headline.upper(), font=font_label)
     draw.multiline_text(
-        (padding_x, int(height * 0.10)),
+        (padding_x, label_bbox[3] + int(height * 0.02)),
         wrapped,
         font=font_body,
         fill=(255, 255, 255),
@@ -548,23 +571,23 @@ def _render_product_benefit_slide(
         img.paste(panel, (0, 0), panel)
         text_x, text_max_w, text_y = padding_x, panel_w - padding_x * 2, int(height * 0.28)
     elif layout == "benefit_badge":
-        badge_h = int(height * 0.38)
+        badge_h = int(height * 0.24)
         gradient = Image.new("RGBA", (width, badge_h), (0, 0, 0, 0))
         g_draw = ImageDraw.Draw(gradient)
         for y in range(badge_h):
-            g_draw.rectangle([(0, y), (width, y + 1)], fill=(0, 0, 0, int(210 * (y / badge_h))))
+            g_draw.rectangle([(0, y), (width, y + 1)], fill=(0, 0, 0, int(140 * (y / badge_h))))
         img.paste(gradient, (0, height - badge_h), gradient)
         text_x, text_max_w = padding_x, width - padding_x * 2
-        text_y = height - badge_h + int(height * 0.06)
+        text_y = height - badge_h + int(height * 0.05)
     else:
-        overlay_h = int(height * 0.40)
+        overlay_h = int(height * 0.22)
         gradient = Image.new("RGBA", (width, overlay_h), (0, 0, 0, 0))
         g_draw = ImageDraw.Draw(gradient)
         for y in range(overlay_h):
-            g_draw.rectangle([(0, y), (width, y + 1)], fill=(0, 0, 0, int(220 * (y / overlay_h))))
+            g_draw.rectangle([(0, y), (width, y + 1)], fill=(0, 0, 0, int(150 * (y / overlay_h))))
         img.paste(gradient, (0, height - overlay_h), gradient)
         text_x, text_max_w = padding_x, width - padding_x * 2
-        text_y = height - overlay_h + int(height * 0.05)
+        text_y = height - overlay_h + int(height * 0.04)
 
     img = img.convert("RGB")
     draw = ImageDraw.Draw(img)
@@ -615,7 +638,7 @@ def _render_product_price_slide(
         return _render_closing_slide(width, height, price, subtext, colors)
 
     img = ImageOps.fit(raw, (width, height), method=Image.Resampling.LANCZOS).convert("RGBA")
-    dim = Image.new("RGBA", (width, height), (0, 0, 0, 90))
+    dim = Image.new("RGBA", (width, height), (0, 0, 0, 45))
     img = Image.alpha_composite(img, dim).convert("RGB")
     draw = ImageDraw.Draw(img)
     padding_x = int(width * 0.08)
@@ -695,13 +718,13 @@ def _render_photo_slide(
     img = ImageOps.fit(raw, (width, height), method=Image.Resampling.LANCZOS)
     img = img.convert("RGBA")
 
-    # Dark gradient overlay — bottom 45% of canvas height
-    overlay_h = int(height * 0.45)
+    # Bottom text strip — keep most of the product visible
+    overlay_h = int(height * 0.22)
     overlay_start = height - overlay_h
     gradient = Image.new("RGBA", (width, overlay_h), (0, 0, 0, 0))
     g_draw = ImageDraw.Draw(gradient)
     for y in range(overlay_h):
-        alpha = int(200 * (y / overlay_h))
+        alpha = int(130 * (y / overlay_h))
         g_draw.rectangle([(0, y), (width, y + 1)], fill=(0, 0, 0, alpha))
     img.paste(gradient, (0, overlay_start), gradient)
 
@@ -757,6 +780,189 @@ def _render_photo_slide(
     return img
 
 
+def _render_clean_split_slide(
+    width: int,
+    height: int,
+    image_source: str,
+    headline: str,
+    body: str,
+    colors: dict,
+    *,
+    slide_num: int,
+    total_slides: int,
+) -> Image.Image:
+    """Product-first: image top 72%, branded text bar bottom 28%. No overlay on product."""
+    raw = _load_product_image(image_source)
+    if raw is None:
+        return _render_content_slide(width, height, slide_num, total_slides, headline, body, colors)
+
+    img_zone_h = int(height * 0.72)
+    bar_h = height - img_zone_h
+
+    product_img = ImageOps.fit(raw, (width, img_zone_h), method=Image.Resampling.LANCZOS)
+
+    canvas = Image.new("RGB", (width, height), _hex_to_rgb(colors["primary"]))
+    canvas.paste(product_img, (0, 0))
+
+    draw = ImageDraw.Draw(canvas)
+    padding_x = int(width * 0.07)
+
+    title_size = int(min(width, height) * 0.046)
+    font_title = _get_font(title_size, bold=True)
+    title_y = img_zone_h + int(bar_h * 0.18)
+    wrapped_title = _wrap_text(draw, headline, font_title, width - padding_x * 2)
+    draw.multiline_text(
+        (padding_x, title_y), wrapped_title, font=font_title,
+        fill=(255, 255, 255), spacing=int(title_size * 0.2),
+    )
+
+    if body:
+        body_size = int(min(width, height) * 0.030)
+        font_body = _get_font(body_size)
+        title_bbox = draw.multiline_textbbox(
+            (padding_x, title_y), wrapped_title, font=font_title, spacing=int(title_size * 0.2),
+        )
+        body_y = title_bbox[3] + int(bar_h * 0.08)
+        wrapped_body = _wrap_text(draw, body, font_body, width - padding_x * 2)
+        draw.multiline_text(
+            (padding_x, body_y), wrapped_body, font=font_body,
+            fill=_hex_to_rgb(colors["text_muted"]), spacing=int(body_size * 0.25),
+        )
+
+    counter_size = int(min(width, height) * 0.024)
+    font_counter = _get_font(counter_size, bold=True)
+    draw.text(
+        (padding_x, height - int(bar_h * 0.25)),
+        f"{slide_num}/{total_slides}",
+        font=font_counter,
+        fill=_hex_to_rgb(colors["accent"]),
+    )
+
+    return canvas
+
+
+def _render_side_panel_slide(
+    width: int,
+    height: int,
+    image_source: str,
+    headline: str,
+    body: str,
+    colors: dict,
+    *,
+    slide_num: int,
+    total_slides: int,
+) -> Image.Image:
+    """Product-first: image left 58%, text panel right 42%. Zero overlay on product."""
+    raw = _load_product_image(image_source)
+    if raw is None:
+        return _render_content_slide(width, height, slide_num, total_slides, headline, body, colors)
+
+    img_zone_w = int(width * 0.58)
+    panel_w = width - img_zone_w
+
+    product_img = ImageOps.fit(raw, (img_zone_w, height), method=Image.Resampling.LANCZOS)
+
+    canvas = Image.new("RGB", (width, height), _hex_to_rgb(colors["primary"]))
+    canvas.paste(product_img, (0, 0))
+
+    draw = ImageDraw.Draw(canvas)
+    panel_x = img_zone_w
+    padding = int(panel_w * 0.12)
+    text_max_w = panel_w - padding * 2
+
+    accent_h = int(height * 0.005)
+    draw.rectangle(
+        [(panel_x, 0), (width, accent_h)],
+        fill=_hex_to_rgb(colors["accent"]),
+    )
+
+    title_size = int(min(width, height) * 0.042)
+    font_title = _get_font(title_size, bold=True)
+    title_y = int(height * 0.22)
+    wrapped_title = _wrap_text(draw, headline, font_title, text_max_w)
+    draw.multiline_text(
+        (panel_x + padding, title_y), wrapped_title, font=font_title,
+        fill=(255, 255, 255), spacing=int(title_size * 0.25),
+    )
+
+    if body:
+        body_size = int(min(width, height) * 0.028)
+        font_body = _get_font(body_size)
+        title_bbox = draw.multiline_textbbox(
+            (panel_x + padding, title_y), wrapped_title, font=font_title,
+            spacing=int(title_size * 0.25),
+        )
+        body_y = title_bbox[3] + int(height * 0.03)
+        wrapped_body = _wrap_text(draw, body, font_body, text_max_w)
+        draw.multiline_text(
+            (panel_x + padding, body_y), wrapped_body, font=font_body,
+            fill=_hex_to_rgb(colors["text_muted"]), spacing=int(body_size * 0.3),
+        )
+
+    counter_size = int(min(width, height) * 0.024)
+    font_counter = _get_font(counter_size, bold=True)
+    draw.text(
+        (panel_x + padding, height - int(height * 0.08)),
+        f"{slide_num}/{total_slides}",
+        font=font_counter,
+        fill=_hex_to_rgb(colors["accent"]),
+    )
+
+    return canvas
+
+
+def _render_minimal_caption_slide(
+    width: int,
+    height: int,
+    image_source: str,
+    caption: str,
+    colors: dict,
+    *,
+    slide_num: int | None = None,
+    total_slides: int | None = None,
+) -> Image.Image:
+    """Product-first: full photo with only a minimal 10% caption strip at bottom."""
+    raw = _load_product_image(image_source)
+    if raw is None:
+        return _render_content_slide(
+            width, height, slide_num or 1, total_slides or 1, caption, "", colors,
+        )
+
+    img = ImageOps.fit(raw, (width, height), method=Image.Resampling.LANCZOS).convert("RGBA")
+
+    strip_h = int(height * 0.10)
+    strip = Image.new("RGBA", (width, strip_h), (0, 0, 0, 120))
+    img.paste(strip, (0, height - strip_h), strip)
+
+    img = img.convert("RGB")
+    draw = ImageDraw.Draw(img)
+    padding_x = int(width * 0.06)
+
+    cap_size = int(min(width, height) * 0.032)
+    font_cap = _get_font(cap_size, bold=True)
+    max_w = width - padding_x * 2 - (int(width * 0.12) if slide_num else 0)
+    display_text = caption
+    while draw.textbbox((0, 0), display_text, font=font_cap)[2] > max_w and len(display_text) > 10:
+        display_text = display_text[:-4] + "\u2026"
+    cap_y = height - strip_h + (strip_h - cap_size) // 2
+    draw.text(
+        (padding_x, cap_y), display_text, font=font_cap, fill=(255, 255, 255),
+    )
+
+    if slide_num is not None and total_slides is not None:
+        counter_text = f"{slide_num}/{total_slides}"
+        counter_size = int(min(width, height) * 0.024)
+        font_counter = _get_font(counter_size, bold=True)
+        cb = draw.textbbox((0, 0), counter_text, font=font_counter)
+        cw = cb[2] - cb[0]
+        draw.text(
+            (width - padding_x - cw, cap_y),
+            counter_text, font=font_counter, fill=_hex_to_rgb(colors["accent"]),
+        )
+
+    return img
+
+
 def generate_product_carousel(
     post,
     product,
@@ -770,9 +976,11 @@ def generate_product_carousel(
 
     Uses vision analysis for accurate copy and varied slide layouts.
     """
+    from apps.content.tasks import _normalize_reel_image_source
     from apps.products.product_copy import build_product_carousel_plan
 
-    all_images = product.carousel_image_urls or product.all_image_urls
+    raw_images = product.carousel_image_urls or product.all_image_urls
+    all_images = [_normalize_reel_image_source(u) for u in raw_images if u]
     if not all_images:
         logger.warning("generate_product_carousel: product %s has no images", product.pk)
         return []
@@ -823,6 +1031,32 @@ def generate_product_carousel(
                     slide_num=slide_num,
                     total_slides=total_slides,
                 )
+            elif layout == "clean_split":
+                slide = _render_clean_split_slide(
+                    width, height, img_src,
+                    spec.get("headline", product.name),
+                    spec.get("body", ""),
+                    colors,
+                    slide_num=slide_num,
+                    total_slides=total_slides,
+                )
+            elif layout == "side_panel":
+                slide = _render_side_panel_slide(
+                    width, height, img_src,
+                    spec.get("headline", product.name),
+                    spec.get("body", ""),
+                    colors,
+                    slide_num=slide_num,
+                    total_slides=total_slides,
+                )
+            elif layout == "minimal_caption":
+                slide = _render_minimal_caption_slide(
+                    width, height, img_src,
+                    spec.get("headline", product.name),
+                    colors,
+                    slide_num=slide_num,
+                    total_slides=total_slides,
+                )
             elif layout.startswith("benefit"):
                 slide = _render_product_benefit_slide(
                     width, height, img_src,
@@ -864,11 +1098,14 @@ def generate_product_carousel(
                 order=order,
             )
             attachment.file.save(filepath, ContentFile(buffer.read()), save=True)
-            media_urls.append(attachment.file.url)
+            from apps.content.tasks import _public_url_for_file
+
+            public_url = _public_url_for_file(attachment.file.name)
+            media_urls.append(public_url or attachment.file.url)
 
         if not post.media_urls:
             post.media_urls = []
-        post.media_urls.extend(media_urls)
+        post.media_urls = list(media_urls)
         post.media_status = "generated"
         post.save(update_fields=["media_urls", "media_status", "updated_at"])
 

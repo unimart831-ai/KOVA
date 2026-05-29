@@ -87,11 +87,11 @@ def fit_image_to_story_frame(image_bytes: bytes, *, slide_index: int = 0) -> Ima
         return cover
 
     bg = ImageOps.fit(img, (target_w, target_h), method=Image.LANCZOS)
-    bg = bg.filter(ImageFilter.GaussianBlur(radius=24))
+    bg = bg.filter(ImageFilter.GaussianBlur(radius=10))
 
     fg = img.copy()
-    max_fg_w = int(target_w * 0.92)
-    max_fg_h = int(target_h * 0.72)
+    max_fg_w = int(target_w * 0.94)
+    max_fg_h = int(target_h * 0.82)
     fg.thumbnail((max_fg_w, max_fg_h), Image.LANCZOS)
 
     # Anchor foreground at varied positions (center-weighted).
@@ -117,6 +117,89 @@ def fit_image_to_story_frame(image_bytes: bytes, *, slide_index: int = 0) -> Ima
 
 def _write_story_frame(image_bytes: bytes, dest: Path, *, slide_index: int = 0) -> None:
     frame = fit_image_to_story_frame(image_bytes, slide_index=slide_index)
+    frame.save(dest, format="JPEG", quality=92, optimize=True)
+
+
+def render_hook_text_on_frame(
+    frame: Image.Image,
+    text: str,
+    *,
+    position: str = "top",
+    font_scale: float = 1.0,
+) -> Image.Image:
+    """
+    Burn a text hook onto a reel frame (product name, price, CTA).
+
+    position: 'top' (first frame hook), 'center' (reveal), 'bottom' (CTA)
+    """
+    from PIL import ImageDraw, ImageFont
+    import textwrap
+
+    if not text or not text.strip():
+        return frame
+
+    img = frame.copy().convert("RGBA")
+    w, h = img.size
+    draw = ImageDraw.Draw(img)
+
+    base_size = int(min(w, h) * 0.055 * font_scale)
+    try:
+        from apps.agents.graphics import _get_font
+        font = _get_font(base_size, bold=True)
+    except Exception:
+        font = ImageFont.load_default()
+
+    padding_x = int(w * 0.08)
+    max_text_w = w - padding_x * 2
+    chars_per_line = max(int(max_text_w / (base_size * 0.55)), 8)
+    wrapped = textwrap.fill(text, width=chars_per_line)
+
+    bbox = draw.multiline_textbbox((0, 0), wrapped, font=font, spacing=int(base_size * 0.2))
+    text_w = bbox[2] - bbox[0]
+    text_h = bbox[3] - bbox[1]
+
+    # Position
+    if position == "top":
+        x = (w - text_w) // 2
+        y = int(h * 0.08)
+        # Semi-transparent pill behind text
+        pill_pad = int(base_size * 0.4)
+        pill = Image.new("RGBA", (text_w + pill_pad * 2, text_h + pill_pad * 2), (0, 0, 0, 140))
+        img.paste(pill, (x - pill_pad, y - pill_pad), pill)
+    elif position == "center":
+        x = (w - text_w) // 2
+        y = (h - text_h) // 2
+        pill_pad = int(base_size * 0.5)
+        pill = Image.new("RGBA", (text_w + pill_pad * 2, text_h + pill_pad * 2), (0, 0, 0, 100))
+        img.paste(pill, (x - pill_pad, y - pill_pad), pill)
+    else:  # bottom
+        x = (w - text_w) // 2
+        y = h - text_h - int(h * 0.10)
+        pill_pad = int(base_size * 0.4)
+        pill = Image.new("RGBA", (text_w + pill_pad * 2, text_h + pill_pad * 2), (0, 0, 0, 140))
+        img.paste(pill, (x - pill_pad, y - pill_pad), pill)
+
+    draw = ImageDraw.Draw(img)
+    draw.multiline_text(
+        (x, y), wrapped, font=font, fill=(255, 255, 255),
+        spacing=int(base_size * 0.2), align="center",
+    )
+
+    return img.convert("RGB")
+
+
+def _write_hook_frame(
+    image_bytes: bytes,
+    dest: Path,
+    *,
+    slide_index: int = 0,
+    hook_text: str = "",
+    position: str = "top",
+) -> None:
+    """Write a reel frame with optional text hook burned in."""
+    frame = fit_image_to_story_frame(image_bytes, slide_index=slide_index)
+    if hook_text:
+        frame = render_hook_text_on_frame(frame, hook_text, position=position)
     frame.save(dest, format="JPEG", quality=92, optimize=True)
 
 
@@ -179,13 +262,46 @@ def _pick_transition(index: int) -> str:
     return REEL_TRANSITIONS[index % len(REEL_TRANSITIONS)]
 
 
-def _slide_durations_for(count: int, *, is_promo_last: bool = False) -> list[float]:
+def _slide_durations_for(
+    count: int,
+    *,
+    is_promo_last: bool = False,
+    template: str = "slideshow",
+) -> list[float]:
     """Rhythmic pacing — hook longer, AI scenes snappy, CTA held."""
     if count <= 0:
         return []
     if count == 1:
         return [3.8]
-    durations: list[float] = []
+
+    # Flash commerce: rapid cuts for Explore/Reels algorithm
+    if template == "flash_commerce":
+        durations: list[float] = []
+        for i in range(count):
+            if i == 0:
+                durations.append(2.2)  # Quick hook
+            elif i == count - 1:
+                durations.append(2.8)  # CTA held slightly longer
+            else:
+                durations.append(1.8)  # Rapid middle cuts
+        return durations
+
+    # Story arc: longer storytelling beats
+    if template == "story_arc":
+        durations = []
+        for i in range(count):
+            if i == 0:
+                durations.append(3.5)  # Problem setup
+            elif i == 1:
+                durations.append(3.8)  # Product reveal (held)
+            elif i == count - 1:
+                durations.append(3.0)  # CTA
+            else:
+                durations.append(2.8)  # Benefits
+        return durations
+
+    # Default slideshow pacing
+    durations = []
     for i in range(count):
         if i == 0:
             durations.append(4.0)
@@ -237,6 +353,7 @@ def compose_motion_reel(
     transition_sec: float = DEFAULT_TRANSITION_SEC,
     audio_path: Optional[Path] = None,
     template: str = "slideshow",
+    hook_texts: list[str] | None = None,
 ) -> bytes:
     """
     Compose a motion Reel MP4 from ordered image sources (URLs or paths).
@@ -259,14 +376,26 @@ def compose_motion_reel(
 
     try:
         frame_paths: list[Path] = []
+        texts = hook_texts or []
         for idx, source in enumerate(sources):
             frame_path = workdir / f"frame_{idx:02d}.jpg"
-            _write_story_frame(_download_bytes(source), frame_path, slide_index=idx)
+            text = texts[idx] if idx < len(texts) else ""
+            # First frame gets top hook, last frame gets bottom CTA, middle = no text
+            if text:
+                pos = "top" if idx == 0 else ("bottom" if idx == len(sources) - 1 else "center")
+                _write_hook_frame(
+                    _download_bytes(source), frame_path,
+                    slide_index=idx, hook_text=text, position=pos,
+                )
+            else:
+                _write_story_frame(_download_bytes(source), frame_path, slide_index=idx)
             frame_paths.append(frame_path)
 
         source_list = list(sources)
         is_promo_last = bool(source_list) and "promo_frame" in (source_list[-1] or "")
-        slide_durations = _slide_durations_for(len(frame_paths), is_promo_last=is_promo_last)
+        slide_durations = _slide_durations_for(
+            len(frame_paths), is_promo_last=is_promo_last, template=template,
+        )
 
         clip_paths: list[Path] = []
         for idx, frame_path in enumerate(frame_paths):
@@ -357,12 +486,14 @@ def compose_carousel_to_reel(
     slide_urls: Iterable[str],
     *,
     audio_path: Optional[Path] = None,
+    hook_texts: list[str] | None = None,
 ) -> bytes:
-    """Carousel → Reel: crossfade between existing slide images."""
+    """Carousel → Reel: Ken Burns + varied xfade (not a flat slideshow)."""
     return compose_motion_reel(
         slide_urls,
-        slide_duration_sec=3.0,
-        transition_sec=0.6,
+        slide_duration_sec=2.8,
+        transition_sec=0.65,
         audio_path=audio_path,
         template="carousel_to_video",
+        hook_texts=hook_texts,
     )

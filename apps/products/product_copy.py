@@ -404,7 +404,14 @@ def build_product_carousel_plan(
             "image_index": min(1, num_images - 1),
         })
 
-    benefit_layouts = ("benefit_bottom", "benefit_side", "benefit_badge")
+    if num_images > 2:
+        plan.append({
+            "layout": "minimal_caption",
+            "headline": name,
+            "image_index": min(2, num_images - 1),
+        })
+
+    benefit_layouts = ("clean_split", "side_panel", "clean_split")
     for i, feat in enumerate(features[:3]):
         headline = feature_slide_headline(feat, i, seed=str(getattr(product, "pk", "")))
         if not headline:

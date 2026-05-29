@@ -624,6 +624,8 @@ def create_product_carousel_posts(product_id: str, seed_id: str, key_features: l
             content_text=caption,
             content_type="original",
             status=initial_status,
+            post_format=Post.PostFormat.CAROUSEL,
+            aspect_ratio=Post.AspectRatio.SQUARE,
             visual_strategy="carousel",
             media_status="pending",
             generated_by_agent="create",
@@ -1508,6 +1510,25 @@ def snap_batch_process(session_id: str):
 
         ensure_commerce_seo_copy(product, user.profile, analysis)
 
+        from apps.products.photo_variations import expand_product_photos
+
+        variation_result = expand_product_photos(product, analysis=analysis)
+        product.refresh_from_db()
+        if variation_result.get("variations_created", 0) > 0:
+            AgentAction.objects.create(
+                user=user,
+                agent_type="create",
+                action_type="commerce.photo_variations",
+                description=(
+                    f"Batch Snap studio polish: {product.name} "
+                    f"({variation_result['variations_created']} scene versions)"
+                ),
+                status=AgentAction.ActionStatus.COMPLETED,
+                input_data={"product_id": pid, "session_id": str(session.pk), "source": "batch_snap"},
+                output_data=variation_result,
+                completed_at=timezone.now(),
+            )
+
         if analysis.get("suggested_tags"):
             existing_tags = set(product.tags or [])
             new_tags = list(existing_tags | set(analysis["suggested_tags"][:5]))
@@ -1555,6 +1576,28 @@ def snap_batch_process(session_id: str):
 
         fire_task(generate_from_seed, str(seed.id))
 
+        # Auto-create carousel + reel if product has enough images
+        num_item_images = len(product.all_image_urls)
+        _CAROUSEL_PLATFORMS = {"instagram", "facebook", "linkedin"}
+        _REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
+        item_features = analysis.get("key_features", [])
+
+        if num_item_images >= 2 and any(p in _CAROUSEL_PLATFORMS for p in platforms):
+            fire_task(
+                create_product_carousel_posts,
+                str(product.pk),
+                str(seed.pk),
+                item_features,
+                analysis,
+            )
+        elif num_item_images >= 1 and any(p in _REEL_PLATFORMS for p in platforms):
+            fire_task(
+                create_product_reel_posts,
+                str(product.pk),
+                str(seed.pk) if seed else "",
+                item_features,
+            )
+
         session.items_processed = (session.items_processed or 0) + 1
         session.save(update_fields=["items_processed"])
 
@@ -1570,6 +1613,14 @@ def snap_batch_process(session_id: str):
         "Batch Snap items complete: session=%s processed=%d/%d",
         session_id, len(results), len(products),
     )
+
+    # Track failures on session for UI visibility
+    failed_items = [r for r in results if "error" in r]
+    if failed_items:
+        session.error_message = f"{len(failed_items)}/{len(products)} items had issues: " + "; ".join(
+            f"{r.get('product_id', '?')}: {r.get('error', 'unknown')}" for r in failed_items[:5]
+        )
+        session.save(update_fields=["error_message"])
 
     if session.launch_bundle:
         fire_task(finalize_batch_snap_session, str(session.pk))
@@ -1650,10 +1701,18 @@ def finalize_batch_snap_session(session_id: str):
 
     image_sources = []
     for product in products[:10]:
-        if product.image:
-            normalized = _normalize_reel_image_source(product.image.url)
-            if normalized:
-                image_sources.append(normalized)
+        # Prefer Photoroom-polished images over raw stall photos
+        polished = [
+            u for u in (product.additional_images or [])
+            if u and "promo_frame" not in u and "channel_" not in u
+        ]
+        best_url = None
+        if polished:
+            best_url = _normalize_reel_image_source(polished[0])
+        if not best_url and product.image:
+            best_url = _normalize_reel_image_source(product.image.url)
+        if best_url:
+            image_sources.append(best_url)
 
     bundle_post_ids = []
     initial_status = initial_commerce_post_status(user)
@@ -1663,10 +1722,16 @@ def finalize_batch_snap_session(session_id: str):
         for account in reel_accounts:
             post = Post.objects.create(
                 user=user,
+                social_account=account,
                 platform=account.platform,
                 content_text=reel_caption[:2200],
+                content_type="original",
                 status=initial_status,
+                post_format=Post.PostFormat.REEL,
+                aspect_ratio=Post.AspectRatio.STORY,
                 visual_strategy="carousel",
+                media_status=Post.MediaStatus.GENERATED,
+                media_urls=image_sources,
                 visual_metadata={
                     "reel_template": "slideshow",
                     "source_images": image_sources,
@@ -1675,6 +1740,7 @@ def finalize_batch_snap_session(session_id: str):
                     "batch_snap_session_id": str(session.pk),
                     "reel_hook_text": campaign.get("reel_hook_text", ""),
                 },
+                generated_by_agent="create",
             )
             bundle_post_ids.append(str(post.pk))
             fire_task(compose_reel_video, str(post.pk))

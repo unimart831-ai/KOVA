@@ -603,24 +603,56 @@ def _expand_studio_polish(product, analysis: dict | None = None) -> dict:
     first_hero_bytes: bytes | None = None
     ai_layout_index = 0
 
+    import concurrent.futures
+
+    def _process_single_variant(args):
+        spec, layout_idx = args
+        try:
+            return spec, run_plus_variant(
+                source,
+                spec,
+                product,
+                analysis,
+                brand_colors,
+                brand_template=brand_template,
+                layout_index=layout_idx,
+            )
+        except Exception as exc:
+            logger.warning("Plus variant %s failed: %s", spec.id, exc)
+            return spec, None
+
+    # Pre-check credits and build work items
+    work_items = []
     for spec in variants:
         ok, cap_msg = check_visual_credit_limit(product.user)
         if not ok:
             logger.info("Stopping Plus pack — credit cap for user %s", product.user_id)
             break
-
         layout_idx = ai_layout_index if spec.id in AI_SCENE_VARIANT_IDS else 0
-        image_bytes = run_plus_variant(
-            source,
-            spec,
-            product,
-            analysis,
-            brand_colors,
-            brand_template=brand_template,
-            layout_index=layout_idx,
-        )
-        if spec.id in AI_SCENE_VARIANT_IDS and image_bytes:
+        if spec.id in AI_SCENE_VARIANT_IDS:
             ai_layout_index += 1
+        work_items.append((spec, layout_idx))
+
+    # Process variants in parallel (max 4 concurrent Photoroom API calls)
+    results_ordered = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {
+            executor.submit(_process_single_variant, item): idx
+            for idx, item in enumerate(work_items)
+        }
+        results_map = {}
+        for future in concurrent.futures.as_completed(futures):
+            idx = futures[future]
+            results_map[idx] = future.result()
+        # Maintain original order
+        for idx in range(len(work_items)):
+            if idx in results_map:
+                results_ordered.append(results_map[idx])
+
+    # Process results in order
+    for spec, image_bytes in results_ordered:
+        if spec.id in AI_SCENE_VARIANT_IDS and image_bytes:
+            pass  # layout_index already incremented above
         if not image_bytes:
             failed_ids.append(spec.id)
             continue

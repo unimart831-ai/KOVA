@@ -172,10 +172,43 @@ def _post_has_reel_video(post) -> bool:
     return post.attachments.filter(file_type="video").exists()
 
 
-    for url in post.media_urls or []:
-        if _is_video_url(url):
-            return True
-    return post.attachments.filter(file_type="video").exists()
+def _resolve_absolute_media_urls(post, *, is_carousel_post: bool = False) -> list[str]:
+    """
+    Build ordered HTTPS URLs for platform APIs (Instagram Container, etc.).
+
+    Relative ``attachment.file.url`` values are replaced with storage/CDN URLs.
+    """
+    urls: list[str] = []
+    seen: set[str] = set()
+
+    def _add(url: str | None) -> None:
+        if not url:
+            return
+        if url.startswith(("http://", "https://")):
+            if url not in seen:
+                seen.add(url)
+                urls.append(url)
+            return
+        public = _public_url_for_file(url.lstrip("/"))
+        if public and public not in seen:
+            seen.add(public)
+            urls.append(public)
+
+    if is_carousel_post:
+        for attachment in post.attachments.filter(file_type="image").order_by("order"):
+            if attachment.file:
+                _add(_public_url_for_file(attachment.file.name))
+        if urls:
+            return urls
+
+    for raw in post.media_urls or []:
+        _add(raw)
+
+    for attachment in post.attachments.order_by("order"):
+        if attachment.file and attachment.file_type != "video":
+            _add(_public_url_for_file(attachment.file.name))
+
+    return urls
 
 
 def _normalize_reel_image_source(source: str) -> str:
@@ -209,6 +242,21 @@ def _collect_reel_image_sources(post) -> list[str]:
     source_images = meta.get("source_images") or []
     if source_images:
         return [_normalize_reel_image_source(u) for u in source_images if u and not _is_video_url(u)]
+
+    # Prefer Photoroom 9:16 story variants if available (no blur-letterbox needed)
+    if post.product:
+        story_urls = [
+            u for u in (post.product.additional_images or [])
+            if u and "channel_story" in u
+        ]
+        if story_urls:
+            normalized = [_normalize_reel_image_source(u) for u in story_urls if u]
+            if len(normalized) >= 1:
+                # Use story-optimized frames + original sources for variety
+                combined = normalized[:3] + [
+                    _normalize_reel_image_source(u) for u in source_images if u
+                ]
+                return [u for u in combined if u][:8]
 
     slide_urls = [
         _normalize_reel_image_source(s.get("image_url"))
@@ -655,6 +703,28 @@ def generate_post_images(post_id: str):
     return {"post_id": post_id, "status": post.media_status}
 
 
+def _build_reel_hook_texts(post, meta: dict, slide_count: int) -> list[str]:
+    """Build per-frame text hooks for reel composition."""
+    texts: list[str] = [""] * slide_count
+    if slide_count == 0:
+        return texts
+
+    # First frame: product name or hook text
+    hook = meta.get("reel_hook_text", "")
+    if not hook and post.product:
+        hook = post.product.name or ""
+    if hook:
+        texts[0] = hook[:60]
+
+    # Last frame: price CTA
+    if slide_count >= 3 and post.product:
+        price = post.product.display_price or ""
+        if price:
+            texts[-1] = f"{price} • Shop Now"
+
+    return texts
+
+
 @shared_task(name="content.compose_reel_video", soft_time_limit=300, time_limit=360)
 def compose_reel_video(post_id: str):
     """
@@ -728,9 +798,14 @@ def compose_reel_video(post_id: str):
             thumbnail_url = url
             break
 
+    # Build hook texts from product/post metadata
+    hook_texts = _build_reel_hook_texts(post, meta, len(image_sources))
+
     try:
         if template == "carousel_to_video":
-            mp4_bytes = compose_carousel_to_reel(image_sources, audio_path=audio_path)
+            mp4_bytes = compose_carousel_to_reel(
+                image_sources, audio_path=audio_path, hook_texts=hook_texts,
+            )
         else:
             mp4_bytes = compose_motion_reel(
                 image_sources,
@@ -738,6 +813,7 @@ def compose_reel_video(post_id: str):
                 transition_sec=0.5,
                 audio_path=audio_path,
                 template=template,
+                hook_texts=hook_texts,
             )
     except VideoComposeError as exc:
         meta["video_compose_status"] = "failed"
@@ -805,8 +881,8 @@ def compose_reel_video(post_id: str):
     name="content.publish_post",
     bind=True,
     max_retries=8,     # up to 8 retries — enough for a 4-hour outage window
-    soft_time_limit=120,
-    time_limit=150,
+    soft_time_limit=360,
+    time_limit=420,
 )
 def publish_post(self, post_id: str):
     """
@@ -1091,10 +1167,23 @@ def publish_post(self, post_id: str):
             if url and not is_carousel_post:
                 media_urls_list.insert(0, url)
 
-        absolute_media_urls = (
-            [u for u in media_urls_list if u.startswith(("http://", "https://"))]
-            or None
-        )
+        absolute_media_urls = _resolve_absolute_media_urls(
+            post, is_carousel_post=is_carousel_post,
+        ) or None
+
+        if post.needs_media and not absolute_media_urls and not media_files:
+            _fail_post(
+                post,
+                "No public media URLs — check storage/CDN (HTTPS required for Instagram).",
+            )
+            Notification.create_for_user(
+                post.user, "publish_failed",
+                "Publishing failed: images are not publicly reachable. "
+                "Open the post in Studio, regenerate media, or retry.",
+                related_post=post,
+            )
+            return {"error": "no_public_media"}
+
         reel_video_url = _reel_video_url(absolute_media_urls) if is_reel_post else None
         if reel_video_url:
             publish_kwargs["video_url"] = reel_video_url
@@ -1197,6 +1286,7 @@ def publish_post(self, post_id: str):
                         f"⏳ {error_info.user_message} {error_info.fix}",
                         related_post=post,
                     )
+                post.save(update_fields=["updated_at"])
                 raise self.retry(exc=exc, countdown=countdown)
             else:
                 _fail_post(post, f"Outage: platform unavailable after {retry_num} retries: {exc_str}")
@@ -1225,6 +1315,7 @@ def publish_post(self, post_id: str):
                         f"⏳ {error_info.user_message} {error_info.fix}",
                         related_post=post,
                     )
+                post.save(update_fields=["updated_at"])
                 raise self.retry(exc=exc, countdown=countdown)
             else:
                 _fail_post(post, f"Rate limit exceeded after {retry_num} retries")
@@ -1238,6 +1329,7 @@ def publish_post(self, post_id: str):
         # ── Other transient errors — original exponential backoff ─────────
         logger.exception("Publishing post %s raised an exception", post_id)
         try:
+            post.save(update_fields=["updated_at"])
             self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
         except self.MaxRetriesExceededError:
             _fail_post(post, f"Max retries exceeded: {exc_str}")
@@ -1433,6 +1525,43 @@ def _fail_post(post, error_message: str):
     post.ai_reasoning = f"Publish error: {error_message}"
     post.save(update_fields=["status", "ai_reasoning", "updated_at"])
     logger.error("Post %s failed: %s", post.pk, error_message)
+
+
+@shared_task(name="content.recover_stuck_publishing_posts")
+def recover_stuck_publishing_posts():
+    """
+    Fail posts left in PUBLISHING after worker timeout or IG container hangs.
+
+    Runs every 10 minutes via Celery Beat so the queue UI does not spin forever.
+    """
+    from datetime import timedelta
+
+    from apps.content.models import Post
+    from apps.notifications.models import Notification
+
+    cutoff = timezone.now() - timedelta(minutes=12)
+    stuck = Post.objects.filter(
+        status=Post.Status.PUBLISHING,
+        updated_at__lt=cutoff,
+    ).select_related("user", "social_account")[:50]
+
+    recovered = 0
+    for post in stuck:
+        platform = post.social_account.get_platform_display() if post.social_account else "platform"
+        _fail_post(
+            post,
+            "Publishing timed out — the platform did not confirm in time. Retry from Studio.",
+        )
+        Notification.create_for_user(
+            post.user, "publish_failed",
+            f"Publishing to {platform} timed out. Open the post and tap Retry.",
+            related_post=post,
+        )
+        recovered += 1
+
+    if recovered:
+        logger.warning("recover_stuck_publishing_posts: cleared %d stuck post(s)", recovered)
+    return {"recovered": recovered}
 
 
 @shared_task(
