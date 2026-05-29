@@ -644,6 +644,9 @@ PHOTOROOM_MIN_SCENE_VARIANTS = env.int("PHOTOROOM_MIN_SCENE_VARIANTS", default=3
 PHOTOROOM_MIN_AI_SCENES = env.int("PHOTOROOM_MIN_AI_SCENES", default=2)
 PHOTOROOM_MAX_AI_SCENES = env.int("PHOTOROOM_MAX_AI_SCENES", default=3)
 PHOTOROOM_VARIANT_LAYOUTS_ENABLED = env.bool("PHOTOROOM_VARIANT_LAYOUTS_ENABLED", default=True)
+# Phase 2 — Video generation & Virtual models
+PHOTOROOM_VIDEO_ENABLED = env.bool("PHOTOROOM_VIDEO_ENABLED", default=False)
+PHOTOROOM_VIRTUAL_MODEL_ENABLED = env.bool("PHOTOROOM_VIRTUAL_MODEL_ENABLED", default=False)
 # Legacy — unused; kept so existing .env files do not break
 FAL_KEY = env("FAL_KEY", default="")
 
