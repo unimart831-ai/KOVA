@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 REPAIR_ORDER = ("photofix", "smart_crop", "text_removal", "relight", "upscale", "uncrop")
 GROWTH_PLUS_TIERS = frozenset({"growth", "pro", "agency"})
+SNAP_COMMERCE_SOURCES = frozenset({"snap", "batch_snap", "snap_to_sell"})
 
 
 @dataclass
@@ -165,7 +166,8 @@ def build_repair_plan(
         or report.lighting in ("dark", "uneven")
         or report.sharpness in ("blurry", "soft")
         or report.whatsapp_compressed,
-        "smart_crop": report.crop in ("tight", "very_tight"),
+        "smart_crop": report.crop in ("tight", "very_tight")
+        or (commerce_source or "") in SNAP_COMMERCE_SOURCES,
         "text_removal": report.has_distracting_text,
         "relight": report.lighting in ("dark", "uneven") or high_uncertainty,
         "upscale": report.sharpness in ("blurry", "soft") or report.whatsapp_compressed,

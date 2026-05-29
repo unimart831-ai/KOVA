@@ -77,6 +77,13 @@ def test_snap_commerce_forces_photofix():
     assert plan and plan[0] == "photofix"
 
 
+def test_snap_commerce_forces_smart_crop_on_comfortable_crop():
+    report = PhotoQualityReport(lighting="good", sharpness="sharp", crop="comfortable")
+    plan = build_repair_plan(report, plan_tier="starter", commerce_source="snap")
+    assert "smart_crop" in plan
+    assert plan.index("smart_crop") > plan.index("photofix")
+
+
 def test_build_repair_plan_smart_crop_before_uncrop():
     report = PhotoQualityReport(crop="tight", lighting="good", sharpness="sharp")
     plan = build_repair_plan(report, plan_tier="growth")

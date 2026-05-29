@@ -36,14 +36,14 @@ INDUSTRY_SHADOW: dict[str, str] = {
 }
 
 INDUSTRY_PADDING: dict[str, float] = {
-    "saas": 0.10,
-    "ecommerce": 0.12,
-    "fashion_beauty": 0.13,
-    "salon_beauty": 0.13,
-    "wholesale_retail": 0.11,
-    "finance": 0.14,
-    "legal": 0.14,
-    "real_estate": 0.13,
+    "saas": 0.06,
+    "ecommerce": 0.07,
+    "fashion_beauty": 0.08,
+    "salon_beauty": 0.08,
+    "wholesale_retail": 0.07,
+    "finance": 0.08,
+    "legal": 0.08,
+    "real_estate": 0.07,
 }
 
 VISUAL_STYLE_SUFFIX: dict[str, str] = {

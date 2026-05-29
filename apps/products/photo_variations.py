@@ -571,7 +571,7 @@ def _expand_studio_polish(
     )
     from apps.products.photoroom import photoroom_enabled, save_studio_polish_image
     from apps.products.photoroom_plus import (
-        AI_SCENE_VARIANT_IDS,
+        LAYOUT_VARIANT_IDS,
         detect_product_category,
         get_max_variants_for_plan,
         run_plus_variant,
@@ -742,8 +742,8 @@ def _expand_studio_polish(
         if not ok:
             logger.info("Stopping Plus pack — credit cap for user %s", product.user_id)
             break
-        layout_idx = ai_layout_index if spec.id in AI_SCENE_VARIANT_IDS else 0
-        if spec.id in AI_SCENE_VARIANT_IDS:
+        layout_idx = ai_layout_index if spec.id in LAYOUT_VARIANT_IDS else 0
+        if spec.id in LAYOUT_VARIANT_IDS:
             ai_layout_index += 1
         work_items.append((spec, layout_idx))
 
@@ -773,7 +773,7 @@ def _expand_studio_polish(
                 edit_result.uncertainty_score,
             )
         image_bytes = edit_result.content if edit_result and edit_result.ok else None
-        if spec.id in AI_SCENE_VARIANT_IDS and image_bytes:
+        if spec.id in LAYOUT_VARIANT_IDS and image_bytes:
             pass  # layout_index already incremented above
         if not image_bytes:
             if edit_result and edit_result.sandbox_limited:

@@ -203,12 +203,21 @@ def test_apply_variant_layout_shifts_ai_scenes():
     assert "padding" not in a or a.get("paddingLeft")
 
 
-def test_studio_white_layout_unchanged():
+def test_studio_white_layout_rotates():
     from apps.products.photoroom_plus import apply_variant_layout
 
-    base = {"padding": "0.12"}
+    base = {"padding": "0.12", "scaling": "fill"}
     out = apply_variant_layout(base, "studio_white", 2)
-    assert out == base
+    assert out.get("verticalAlignment") == "top"
+    assert "paddingLeft" in out
+    assert "padding" not in out
+
+
+def test_ai_scene_variants_include_expand_prompt():
+    from apps.products.photoroom_plus import PLUS_VARIANT_CATALOG
+
+    for vid in ("ai_lifestyle_alt", "ai_scene_table", "ai_creative_marble"):
+        assert PLUS_VARIANT_CATALOG[vid].params.get("background.expandPrompt") == "ai.auto"
 
 
 def test_commerce_table_prompt_for_sneaker():

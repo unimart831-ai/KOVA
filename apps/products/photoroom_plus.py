@@ -58,46 +58,77 @@ AI_SCENE_VARIANT_IDS = frozenset({
     "ai_contextual",
 }) | COMMERCE_SCENE_VARIANT_IDS | SOFT_CREATIVE_VARIANT_IDS
 
-# Per-scene product framing — avoids “same product, different background” look.
+# Per-scene product framing — tight padding + fill scaling so the product dominates the square.
 VARIANT_LAYOUT_STYLES: tuple[dict[str, str], ...] = (
-    {
-        "horizontalAlignment": "left",
-        "verticalAlignment": "bottom",
-        "paddingLeft": "0.06",
-        "paddingRight": "0.24",
-        "paddingTop": "0.20",
-        "paddingBottom": "0.06",
-    },
     {
         "horizontalAlignment": "center",
         "verticalAlignment": "center",
-        "padding": "0.16",
+        "padding": "0.05",
+        "scaling": "fill",
+    },
+    {
+        "horizontalAlignment": "left",
+        "verticalAlignment": "bottom",
+        "paddingLeft": "0.04",
+        "paddingRight": "0.14",
+        "paddingTop": "0.10",
+        "paddingBottom": "0.04",
+        "scaling": "fill",
     },
     {
         "horizontalAlignment": "right",
         "verticalAlignment": "top",
-        "paddingLeft": "0.22",
-        "paddingRight": "0.06",
-        "paddingTop": "0.08",
-        "paddingBottom": "0.18",
+        "paddingLeft": "0.14",
+        "paddingRight": "0.04",
+        "paddingTop": "0.06",
+        "paddingBottom": "0.12",
+        "scaling": "fill",
     },
     {
         "horizontalAlignment": "center",
         "verticalAlignment": "bottom",
-        "paddingLeft": "0.10",
-        "paddingRight": "0.10",
-        "paddingTop": "0.22",
-        "paddingBottom": "0.05",
+        "paddingLeft": "0.06",
+        "paddingRight": "0.06",
+        "paddingTop": "0.12",
+        "paddingBottom": "0.03",
+        "scaling": "fill",
     },
     {
         "horizontalAlignment": "left",
         "verticalAlignment": "center",
-        "paddingLeft": "0.05",
-        "paddingRight": "0.28",
-        "paddingTop": "0.12",
-        "paddingBottom": "0.12",
+        "paddingLeft": "0.03",
+        "paddingRight": "0.16",
+        "paddingTop": "0.08",
+        "paddingBottom": "0.08",
+        "scaling": "fill",
+    },
+    {
+        "horizontalAlignment": "right",
+        "verticalAlignment": "bottom",
+        "paddingLeft": "0.12",
+        "paddingRight": "0.03",
+        "paddingTop": "0.14",
+        "paddingBottom": "0.04",
+        "scaling": "fill",
+    },
+    {
+        "horizontalAlignment": "center",
+        "verticalAlignment": "top",
+        "paddingLeft": "0.08",
+        "paddingRight": "0.08",
+        "paddingTop": "0.04",
+        "paddingBottom": "0.14",
+        "scaling": "fill",
     },
 )
+
+# Variants that receive per-slide layout offsets (not only AI lifestyle IDs).
+LAYOUT_VARIANT_IDS = frozenset({
+    "studio_white",
+    "studio_brand",
+    "studio_dark",
+    "outline",
+}) | AI_SCENE_VARIANT_IDS | COMMERCE_SCENE_VARIANT_IDS | SOFT_CREATIVE_VARIANT_IDS
 
 PLAN_TIER_ORDER = ("starter", "growth", "pro", "agency")
 
@@ -160,7 +191,7 @@ def _export_defaults() -> dict[str, str]:
         "outputSize": str(getattr(settings, "PHOTOROOM_OUTPUT_SIZE", "1080x1080")),
         "export.format": "jpeg",
     }
-    scaling = str(getattr(settings, "PHOTOROOM_SCALING", "fit")).strip().lower()
+    scaling = str(getattr(settings, "PHOTOROOM_SCALING", "fill")).strip().lower()
     if scaling in ("fit", "fill"):
         out["scaling"] = scaling
     return out
@@ -169,8 +200,16 @@ def _export_defaults() -> dict[str, str]:
 def _shadow_studio() -> dict[str, str]:
     return {
         "removeBackground": "true",
-        "padding": str(getattr(settings, "PHOTOROOM_PADDING", 0.12)),
+        "padding": str(getattr(settings, "PHOTOROOM_PADDING", 0.06)),
         "shadow.mode": str(getattr(settings, "PHOTOROOM_DEFAULT_SHADOW", "ai.soft")),
+    }
+
+
+def _ai_scene_studio() -> dict[str, str]:
+    """Cutout + AI background with prompt expansion for fuller scenes."""
+    return {
+        **_shadow_studio(),
+        "background.expandPrompt": "ai.auto",
     }
 
 
@@ -185,7 +224,8 @@ def _channel_export_params(*, mode: str, size_placeholder: str) -> dict[str, str
         "outputSize": size_placeholder,
         "export.format": "jpeg",
         "referenceBox": "originalImage",
-        "scaling": "fit",
+        "scaling": "fill",
+        "removeBackground": "false",
     }
 
 
@@ -245,7 +285,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="ai_lifestyle",
         label="AI lifestyle scene",
         params={
-            **_shadow_studio(),
+            **_ai_scene_studio(),
             "background.prompt": "{lifestyle_prompt}",
             "background.seed": str(AI_BG_SEEDS[0]),
             **_export_defaults(),
@@ -258,7 +298,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="ai_lifestyle_alt",
         label="AI lifestyle (alt)",
         params={
-            **_shadow_studio(),
+            **_ai_scene_studio(),
             "background.prompt": "{lifestyle_prompt_alt}",
             "background.seed": str(AI_BG_SEEDS[1]),
             **_export_defaults(),
@@ -271,7 +311,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="ai_contextual",
         label="AI contextual scene",
         params={
-            **_shadow_studio(),
+            **_ai_scene_studio(),
             "background.prompt": "{contextual_prompt}",
             "background.seed": str(AI_BG_SEEDS[2]),
             **_export_defaults(),
@@ -286,7 +326,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="ai_scene_table",
         label="Table / counter",
         params={
-            **_shadow_studio(),
+            **_ai_scene_studio(),
             "background.prompt": "{commerce_table_prompt}",
             "background.seed": str(AI_BG_SEEDS[0]),
             **_export_defaults(),
@@ -300,7 +340,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="ai_scene_shelf",
         label="Shelf display",
         params={
-            **_shadow_studio(),
+            **_ai_scene_studio(),
             "background.prompt": "{commerce_shelf_prompt}",
             "background.seed": str(AI_BG_SEEDS[1]),
             **_export_defaults(),
@@ -314,7 +354,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="ai_scene_wall",
         label="Wall / ledge",
         params={
-            **_shadow_studio(),
+            **_ai_scene_studio(),
             "background.prompt": "{commerce_wall_prompt}",
             "background.seed": str(AI_BG_SEEDS[2]),
             **_export_defaults(),
@@ -328,7 +368,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="ai_scene_retail",
         label="Retail display",
         params={
-            **_shadow_studio(),
+            **_ai_scene_studio(),
             "background.prompt": "{commerce_retail_prompt}",
             "background.seed": str(AI_BG_SEEDS[3]),
             **_export_defaults(),
@@ -343,7 +383,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="ai_creative_splash",
         label="Water splash hero",
         params={
-            **_shadow_studio(),
+            **_ai_scene_studio(),
             "background.prompt": "{creative_splash_prompt}",
             "background.seed": str(AI_BG_SEEDS[4]),
             **_export_defaults(),
@@ -358,7 +398,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="ai_creative_marble",
         label="Luxury marble surface",
         params={
-            **_shadow_studio(),
+            **_ai_scene_studio(),
             "background.prompt": "{creative_marble_prompt}",
             "background.seed": str(AI_BG_SEEDS[0]),
             **_export_defaults(),
@@ -372,7 +412,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="ai_creative_botanical",
         label="Soft botanical",
         params={
-            **_shadow_studio(),
+            **_ai_scene_studio(),
             "background.prompt": "{creative_botanical_prompt}",
             "background.seed": str(AI_BG_SEEDS[1]),
             **_export_defaults(),
@@ -386,7 +426,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="ai_creative_neon",
         label="Neon tech glow",
         params={
-            **_shadow_studio(),
+            **_ai_scene_studio(),
             "background.prompt": "{creative_neon_prompt}",
             "background.seed": str(AI_BG_SEEDS[2]),
             **_export_defaults(),
@@ -401,7 +441,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="ai_creative_powder",
         label="Powder explosion",
         params={
-            **_shadow_studio(),
+            **_ai_scene_studio(),
             "background.prompt": "{creative_powder_prompt}",
             "background.seed": str(AI_BG_SEEDS[3]),
             **_export_defaults(),
@@ -416,7 +456,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="ai_creative_podium",
         label="Gradient podium",
         params={
-            **_shadow_studio(),
+            **_ai_scene_studio(),
             "background.prompt": "{creative_podium_prompt}",
             "background.seed": str(AI_BG_SEEDS[5]),
             **_export_defaults(),
@@ -645,7 +685,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="service_hero",
         label="Service hero",
         params={
-            **_shadow_studio(),
+            **_ai_scene_studio(),
             "background.prompt": "{service_prompt}",
             "background.seed": str(AI_BG_SEEDS[3]),
             **_export_defaults(),
@@ -659,7 +699,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="service_context",
         label="Service context",
         params={
-            **_shadow_studio(),
+            **_ai_scene_studio(),
             "background.prompt": "{service_context_prompt}",
             "background.seed": str(AI_BG_SEEDS[0]),
             **_export_defaults(),
@@ -675,7 +715,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="digital_desk_hero",
         label="Clean desk hero",
         params={
-            **_shadow_studio(),
+            **_ai_scene_studio(),
             "background.prompt": "{digital_desk_prompt}",
             "background.seed": str(AI_BG_SEEDS[1]),
             **_export_defaults(),
@@ -689,7 +729,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="digital_device_mockup",
         label="Device mockup",
         params={
-            **_shadow_studio(),
+            **_ai_scene_studio(),
             "background.prompt": "{digital_device_prompt}",
             "background.seed": str(AI_BG_SEEDS[2]),
             **_export_defaults(),
@@ -1237,7 +1277,7 @@ def apply_variant_layout(
     """Shift product position/size per AI scene so slides feel distinct."""
     if not getattr(settings, "PHOTOROOM_VARIANT_LAYOUTS_ENABLED", True):
         return params
-    if variant_id not in AI_SCENE_VARIANT_IDS:
+    if variant_id not in LAYOUT_VARIANT_IDS:
         return params
 
     style = VARIANT_LAYOUT_STYLES[layout_index % len(VARIANT_LAYOUT_STYLES)]
