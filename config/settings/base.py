@@ -150,6 +150,10 @@ TEMPLATES = [
 DATABASES = {
     "default": env.db("DATABASE_URL", default="postgres://kova:kova@localhost:5432/kova_agent"),
 }
+# Reuse DB connections for 10 minutes (prevents connection exhaustion on Railway)
+DATABASES["default"]["CONN_MAX_AGE"] = env.int("DB_CONN_MAX_AGE", default=600)
+# Connection health checks to avoid stale connections from pool
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 
 # ─── CACHE / REDIS ───────────────────────────────────────────────────────────
 REDIS_URL = env("REDIS_URL", default="")
