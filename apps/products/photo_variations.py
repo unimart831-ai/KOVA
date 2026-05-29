@@ -491,6 +491,7 @@ def expand_product_photos(
     mode: str | None = None,
     *,
     commerce_source: str | None = None,
+    polish_session=None,
 ) -> dict:
     """
     Generate scene variations from the product's primary photo.
@@ -503,7 +504,12 @@ def expand_product_photos(
     if mode == VISUAL_MODE_AS_IS:
         return {"skipped": True, "reason": "as_is", "variations_created": 0}
 
-    return _expand_studio_polish(product, analysis, commerce_source=commerce_source)
+    return _expand_studio_polish(
+        product,
+        analysis,
+        commerce_source=commerce_source,
+        polish_session=polish_session,
+    )
 
 
 def _studio_polish_error(reason: str, *, limit_message: str = "") -> dict:
@@ -516,15 +522,53 @@ def _studio_polish_error(reason: str, *, limit_message: str = "") -> dict:
     }
 
 
+def _fallback_minimal_studio(
+    product,
+    source: str,
+    brand_colors: dict | None,
+) -> dict | None:
+    """One Photoroom studio call, then local presets if the API is down."""
+    from apps.products.photoroom import (
+        pick_background_color_hex,
+        save_studio_polish_image,
+        studio_polish_via_photoroom,
+    )
+
+    bg = pick_background_color_hex(product, brand_colors)
+    hero_bytes = studio_polish_via_photoroom(source, background_color=bg)
+    if hero_bytes:
+        try:
+            url = save_studio_polish_image(product.pk, hero_bytes, suffix="studio_white")
+            return {"urls": [url], "variant_ids": ["studio_white"], "provider": "photoroom_minimal"}
+        except Exception as exc:
+            logger.error("Minimal studio save failed: %s", exc)
+
+    quick = _expand_quick_polish(product, analysis=None)
+    if quick.get("variations_created", 0) > 0:
+        return {
+            "urls": quick.get("urls") or [],
+            "variant_ids": ["local_quick_polish"],
+            "provider": "local_quick_polish",
+        }
+    return None
+
+
 def _expand_studio_polish(
     product,
     analysis: dict | None = None,
     *,
     commerce_source: str | None = None,
+    polish_session=None,
 ) -> dict:
     """Photoroom Plus pack — all applicable v2/edit variants (1 credit each)."""
     from apps.billing.models import get_effective_plan_tier
-    from apps.billing.visual_credits import check_visual_credit_limit, get_visual_credit_usage, record_studio_polish
+    from apps.billing.visual_credits import (
+        begin_studio_polish_session,
+        check_visual_credit_limit,
+        finish_studio_polish_session,
+        get_visual_credit_usage,
+        record_studio_polish,
+    )
     from apps.products.photoroom import photoroom_enabled, save_studio_polish_image
     from apps.products.photoroom_plus import (
         AI_SCENE_VARIANT_IDS,
@@ -535,21 +579,57 @@ def _expand_studio_polish(
         slide_role_for_variant,
     )
 
+    if polish_session is None:
+        polish_session = begin_studio_polish_session(
+            product.user,
+            product_id=str(product.pk),
+            source=commerce_source or "manual",
+        )
+
+    def _finish(result: dict) -> dict:
+        ok = (
+            result.get("variations_created", 0) > 0
+            or result.get("skipped")
+            or result.get("reason") == "as_is"
+        )
+        finish_studio_polish_session(
+            polish_session,
+            success=ok,
+            output_data=result,
+            error_message=result.get("limit_message") or result.get("error") or "",
+        )
+        return result
+
     if not getattr(settings, "PHOTO_VARIATIONS_ENABLED", True):
-        return {"skipped": True, "reason": "disabled"}
+        return _finish({"skipped": True, "reason": "disabled"})
 
     if not product.image:
-        return _studio_polish_error("no_image")
+        return _finish(_studio_polish_error("no_image"))
 
     allowed, msg = check_visual_credit_limit(product.user)
     if not allowed:
         logger.info("Studio polish cap reached for %s", product.user_id)
         reason = "platform_blocked" if "platform" in msg.lower() else "at_limit"
-        return _studio_polish_error(reason, limit_message=msg)
+        return _finish(_studio_polish_error(reason, limit_message=msg))
+
+    source = product.image.url if hasattr(product.image, "url") else str(product.image)
 
     if not photoroom_enabled():
         logger.warning("Studio polish unavailable — PHOTOROOM_API_KEY missing")
-        return _studio_polish_error("photoroom_not_configured")
+        profile = getattr(product.user, "profile", None)
+        brand_colors = _get_brand_palette(profile)
+        fallback = _fallback_minimal_studio(product, source, brand_colors)
+        if fallback and fallback.get("urls"):
+            product.additional_images = (product.additional_images or []) + fallback["urls"]
+            product.save(update_fields=["additional_images", "updated_at"])
+            return _finish({
+                "variations_created": len(fallback["urls"]),
+                "mode": VISUAL_MODE_PRO_SCENE,
+                "provider": fallback["provider"],
+                "urls": fallback["urls"],
+                "fallback": True,
+            })
+        return _finish(_studio_polish_error("photoroom_not_configured"))
 
     from django.conf import settings as django_settings
 
@@ -571,9 +651,7 @@ def _expand_studio_polish(
     else:
         credit_pool = min(plan_max, max(0, usage.get("remaining", 0)))
     if credit_pool <= 0:
-        return _studio_polish_error("at_limit", limit_message=msg)
-
-    source = product.image.url if hasattr(product.image, "url") else str(product.image)
+        return _finish(_studio_polish_error("at_limit", limit_message=msg))
 
     preflight_max = int(getattr(django_settings, "PHOTOROOM_PREFLIGHT_MAX_REPAIRS", 2))
     repair_budget = 0
@@ -605,10 +683,10 @@ def _expand_studio_polish(
 
             score, probe_result = probe_cutout_uncertainty(source)
             if probe_result.sandbox_limited:
-                return _studio_polish_error(
+                return _finish(_studio_polish_error(
                     "platform_blocked",
                     limit_message=probe_result.error or "Photoroom sandbox limit reached.",
-                )
+                ))
             if probe_result.ok:
                 credit_pool -= 1
                 uncertainty = merge_uncertainty(uncertainty, score)
@@ -669,9 +747,9 @@ def _expand_studio_polish(
             ai_layout_index += 1
         work_items.append((spec, layout_idx))
 
-    # Process variants in parallel (max 4 concurrent Photoroom API calls)
+    max_workers = int(getattr(django_settings, "PHOTOROOM_EXPAND_MAX_WORKERS", 2))
     results_ordered = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {
             executor.submit(_process_single_variant, item): idx
             for idx, item in enumerate(work_items)
@@ -699,10 +777,10 @@ def _expand_studio_polish(
             pass  # layout_index already incremented above
         if not image_bytes:
             if edit_result and edit_result.sandbox_limited:
-                return _studio_polish_error(
+                return _finish(_studio_polish_error(
                     "platform_blocked",
                     limit_message=edit_result.error or "Photoroom sandbox limit reached.",
-                )
+                ))
             failed_ids.append(spec.id)
             continue
 
@@ -739,8 +817,22 @@ def _expand_studio_polish(
         variant_ids.append(spec.id)
 
     if not new_urls:
-        reason = "photoroom_failed" if failed_ids else "photoroom_failed"
-        return _studio_polish_error(reason)
+        fallback = _fallback_minimal_studio(product, source, brand_colors)
+        if fallback and fallback.get("urls"):
+            kept = _strip_generated_variations(product.additional_images, product.pk)
+            product.additional_images = kept + fallback["urls"]
+            product.save(update_fields=["additional_images", "updated_at"])
+            return _finish({
+                "variations_created": len(fallback["urls"]),
+                "plus_variants": 0,
+                "variant_ids": fallback.get("variant_ids", []),
+                "failed_variants": failed_ids,
+                "mode": VISUAL_MODE_PRO_SCENE,
+                "provider": fallback.get("provider", "fallback"),
+                "urls": fallback["urls"],
+                "fallback": True,
+            })
+        return _finish(_studio_polish_error("photoroom_failed"))
 
     channel_ids: list[str] = []
     if channel_budget > 0 and new_urls:
@@ -788,7 +880,7 @@ def _expand_studio_polish(
         preflight.repairs_run,
         channel_ids,
     )
-    return {
+    return _finish({
         "variations_created": len(new_urls),
         "plus_variants": len(variant_ids),
         "variant_ids": variant_ids,
@@ -806,7 +898,7 @@ def _expand_studio_polish(
         "mode": VISUAL_MODE_PRO_SCENE,
         "provider": "photoroom_plus",
         "urls": new_urls,
-    }
+    })
 
 
 def _expand_quick_polish(product, analysis: dict | None = None) -> dict:

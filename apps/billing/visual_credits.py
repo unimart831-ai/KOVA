@@ -113,6 +113,58 @@ def check_visual_credit_limit(user) -> tuple[bool, str]:
     )
 
 
+def begin_studio_polish_session(user, *, product_id: str, source: str = "snap") -> "AgentAction":
+    """Mark expand in progress so Snap status does not show a false 'running' stall."""
+    from apps.agents.models import AgentAction
+
+    return AgentAction.objects.create(
+        user=user,
+        agent_type="create",
+        action_type=STUDIO_POLISH_ACTION,
+        description="Studio polish in progress",
+        status=AgentAction.ActionStatus.STARTED,
+        input_data={"product_id": str(product_id), "source": source, "session": True},
+        output_data={},
+    )
+
+
+def finish_studio_polish_session(
+    session,
+    *,
+    success: bool,
+    output_data: dict | None = None,
+    error_message: str = "",
+) -> None:
+    """Complete or fail the expand session started by begin_studio_polish_session."""
+    from apps.agents.models import AgentAction
+
+    session.status = (
+        AgentAction.ActionStatus.COMPLETED
+        if success
+        else AgentAction.ActionStatus.FAILED
+    )
+    session.output_data = output_data or {}
+    session.error_message = error_message[:2000] if error_message else ""
+    session.completed_at = timezone.now()
+    if success:
+        session.description = (
+            f"Studio polish complete "
+            f"({(output_data or {}).get('variations_created', 0)} assets)"
+        )
+    else:
+        reason = (output_data or {}).get("reason") or (output_data or {}).get("error") or "failed"
+        session.description = f"Studio polish failed ({reason})"
+    session.save(
+        update_fields=[
+            "status",
+            "output_data",
+            "error_message",
+            "completed_at",
+            "description",
+        ]
+    )
+
+
 def record_studio_polish(user, *, product_id, provider: str = "photoroom_plus", output_data: dict | None = None) -> None:
     from apps.agents.models import AgentAction
 

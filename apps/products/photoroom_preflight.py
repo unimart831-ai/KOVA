@@ -285,6 +285,26 @@ def run_preflight_repairs(
     )
 
 
+def _local_channel_export(hero_url: str, product, variant_id: str) -> str | None:
+    """Letterbox hero to story/banner when Photoroom expand fails."""
+    from apps.products.photoroom import save_studio_polish_image
+    from apps.products.photoroom_local import letterbox_from_url
+
+    if variant_id == "channel_banner":
+        size = str(getattr(settings, "PHOTOROOM_BANNER_SIZE", "1920x1080"))
+    else:
+        size = str(getattr(settings, "PHOTOROOM_STORY_SIZE", "1080x1920"))
+
+    out_bytes = letterbox_from_url(hero_url, size)
+    if not out_bytes:
+        return None
+    try:
+        return save_studio_polish_image(product.pk, out_bytes, suffix=f"{variant_id}_local")
+    except Exception as exc:
+        logger.error("Local channel save failed [%s]: %s", variant_id, exc)
+        return None
+
+
 def channel_export_budget(plan_tier: str) -> int:
     """Story + banner slots (Growth+ only)."""
     if not getattr(settings, "PHOTOROOM_CHANNEL_EXPORTS_ENABLED", True):
@@ -355,12 +375,33 @@ def run_channel_exports(
                 if edit_result.ok:
                     variant_id = "channel_story_uncrop"
         if not edit_result.ok:
-            logger.warning(
-                "Channel export skipped [%s] product=%s error=%s",
+            local_url = _local_channel_export(
+                hero_url,
+                product,
                 variant_id,
-                product.pk,
-                (edit_result.error or "unknown")[:200],
             )
+            if local_url:
+                urls.append(local_url)
+                ran.append(f"{variant_id}_local")
+                record_studio_polish(
+                    product.user,
+                    product_id=product.pk,
+                    provider="local_letterbox",
+                    output_data={
+                        "variant": variant_id,
+                        "label": spec.label,
+                        "url": local_url,
+                        "phase": "channel",
+                        "api": "local",
+                    },
+                )
+            else:
+                logger.warning(
+                    "Channel export skipped [%s] product=%s error=%s",
+                    variant_id,
+                    product.pk,
+                    (edit_result.error or "unknown")[:200],
+                )
             continue
 
         try:

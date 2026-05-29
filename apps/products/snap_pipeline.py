@@ -10,6 +10,7 @@ CAROUSEL_PLATFORMS = frozenset({"instagram", "facebook", "linkedin"})
 REEL_PLATFORMS = frozenset({"instagram", "facebook", "tiktok", "linkedin"})
 SNAP_TIMEOUT = timedelta(minutes=10)
 SEED_TIMEOUT = timedelta(minutes=5)
+EXPAND_STALE = timedelta(minutes=6)
 
 
 def _offering_copy(product) -> dict:
@@ -172,15 +173,22 @@ def build_snap_pipeline_status(product, user):
 
     # 3 — Photo set expansion (Photoroom Plus + promo frame)
     variation_action = _action("commerce.photo_variations")
-    studio_polish_action = (
-        AgentAction.objects.filter(
-            user=user,
-            action_type__in=("commerce.studio_polish", "commerce.pro_scene"),
-            input_data__product_id=product_id,
-        )
-        .order_by("-created_at")
-        .first()
-    )
+    polish_actions = AgentAction.objects.filter(
+        user=user,
+        action_type__in=("commerce.studio_polish", "commerce.pro_scene"),
+        input_data__product_id=product_id,
+    ).order_by("-created_at")
+    studio_polish_action = polish_actions.filter(
+        status=AgentAction.ActionStatus.COMPLETED,
+    ).first()
+    polish_session_running = polish_actions.filter(
+        status=AgentAction.ActionStatus.STARTED,
+        input_data__session=True,
+    ).first()
+    polish_session_failed = polish_actions.filter(
+        status=AgentAction.ActionStatus.FAILED,
+        input_data__session=True,
+    ).first()
     studio_count = sum(
         1 for u in (product.additional_images or [])
         if f"studio_polish/{product_id}/" in u
@@ -202,9 +210,30 @@ def build_snap_pipeline_status(product, user):
             reason = out.get("reason") or out.get("error") or "photoroom_failed"
             studio_polish_notice = studio_polish_failure_message(reason) or ""
 
+    expand_stale = False
+    if vision_action and vision_action.completed_at:
+        expand_stale = (
+            enhanced_count == 0
+            and not polish_session_running
+            and vision_action.completed_at < now - EXPAND_STALE
+        )
+
     if analyze_status == "failed":
         expand_status = "skipped"
         expand_detail = "Skipped — analysis did not finish"
+    elif polish_session_failed and enhanced_count == 0:
+        expand_status = "failed"
+        out = polish_session_failed.output_data or {}
+        reason = out.get("reason") or out.get("error") or "photoroom_failed"
+        from apps.products.photoroom import studio_polish_failure_message
+
+        expand_detail = (
+            studio_polish_failure_message(reason)
+            or polish_session_failed.error_message
+            or "Studio polish failed — tap Expand Photo Set to retry"
+        )
+        if not error_message:
+            error_message = expand_detail
     elif studio_polish_action or variation_action or enhanced_count >= 1:
         n = enhanced_count or (
             (variation_action.output_data or {}).get("variations_created", 1)
@@ -228,9 +257,14 @@ def build_snap_pipeline_status(product, user):
     elif analyze_status == "running":
         expand_status = "pending"
         expand_detail = copy["carousel_waiting"]
-    elif snap_stale and seed:
+    elif polish_session_running:
+        expand_status = "running"
+        expand_detail = copy["expand_running"]
+    elif expand_stale or (snap_stale and seed and enhanced_count == 0):
         expand_status = "failed"
         expand_detail = "Studio polish timed out — tap Expand Photo Set"
+        if not error_message:
+            error_message = expand_detail
     elif analyze_status == "completed":
         expand_status = "running"
         expand_detail = copy["expand_running"]

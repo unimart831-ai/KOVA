@@ -962,18 +962,39 @@ def reidentify_product_from_photo(product_id: str):
 
 
 @shared_task(name="products.expand_product_photo_set", soft_time_limit=180, time_limit=240)
-def expand_product_photo_set(product_id: str):
+def expand_product_photo_set(
+    product_id: str,
+    analysis: dict | None = None,
+    *,
+    commerce_source: str | None = None,
+    snap_followup: bool = False,
+    seed_id: str | None = None,
+    key_features: list | None = None,
+):
     """Generate studio polish from the product's primary photo (Photoroom Plus)."""
     from apps.agents.models import AgentAction
+    from apps.billing.visual_credits import begin_studio_polish_session
     from apps.products.models import Product
     from apps.products.photo_variations import expand_product_photos
+    from apps.utils import fire_task
 
     try:
         product = Product.objects.select_related("user").get(pk=product_id)
     except Product.DoesNotExist:
         return {"error": "not_found"}
 
-    result = expand_product_photos(product)
+    session = begin_studio_polish_session(
+        product.user,
+        product_id=str(product.pk),
+        source=commerce_source or "manual",
+    )
+    result = expand_product_photos(
+        product,
+        analysis=analysis,
+        commerce_source=commerce_source,
+        polish_session=session,
+    )
+
     if result.get("variations_created", 0) > 0 and result.get("mode") not in ("pro_scene", "studio_polish"):
         AgentAction.objects.create(
             user=product.user,
@@ -985,7 +1006,47 @@ def expand_product_photo_set(product_id: str):
             output_data=result,
             completed_at=timezone.now(),
         )
+
+    if snap_followup and seed_id:
+        _fire_snap_carousel_reel_after_expand(
+            product,
+            seed_id=seed_id,
+            key_features=key_features or [],
+            analysis=analysis,
+            fire_task=fire_task,
+        )
+
     return result
+
+
+def _fire_snap_carousel_reel_after_expand(product, *, seed_id, key_features, analysis, fire_task):
+    """Carousel/reel need polished images — run after expand finishes."""
+    from apps.platforms.models import SocialAccount
+
+    platforms = list(
+        SocialAccount.objects.filter(user=product.user, is_active=True).values_list(
+            "platform", flat=True
+        )
+    )
+    num_images = len(product.all_image_urls)
+    _CAROUSEL_PLATFORMS = {"instagram", "facebook", "linkedin"}
+    _REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
+
+    if num_images >= 2 and any(p in _CAROUSEL_PLATFORMS for p in platforms):
+        fire_task(
+            create_product_carousel_posts,
+            str(product.pk),
+            seed_id,
+            key_features,
+            analysis,
+        )
+    elif num_images >= 1 and any(p in _REEL_PLATFORMS for p in platforms):
+        fire_task(
+            create_product_reel_posts,
+            str(product.pk),
+            seed_id,
+            key_features,
+        )
 
 
 @shared_task(name="products.fix_and_promote")
@@ -1186,32 +1247,9 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
         product.tags = new_tags[:8]
         product.save(update_fields=["tags", "updated_at"])
 
-    # ── Step 2b: Studio polish (Photoroom Plus + promo frame) ────────
-    from apps.products.photo_variations import expand_product_photos
-
-    variation_result = expand_product_photos(
-        product, analysis=analysis, commerce_source="snap",
-    )
-    product.refresh_from_db()
-    num_images = len(product.all_image_urls)
-
-    if variation_result.get("variations_created", 0) > 0:
-        if variation_result.get("mode") not in ("pro_scene", "studio_polish"):
-            AgentAction.objects.create(
-                user=user,
-                agent_type="create",
-                action_type="commerce.photo_variations",
-                description=(
-                    f"Expanded photo set: {product.name} "
-                    f"({variation_result['variations_created']} scene versions)"
-                ),
-                status=AgentAction.ActionStatus.COMPLETED,
-                input_data={"product_id": str(product.pk), "source": "snap_to_sell"},
-                output_data=variation_result,
-                completed_at=timezone.now(),
-            )
-    elif variation_result.get("reason") == "as_is":
-        logger.info("Snap to Sell: as-is photos for product %s", product.pk)
+    # ── Step 2b: Studio polish (async — do not block seed / writing) ──
+    num_images = len(all_images)
+    features = analysis.get("key_features", [])
 
     # ── Step 3: Create a content seed and launch the campaign ────────
     platforms = list(
@@ -1270,24 +1308,25 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
     if commerce_autopilot_active(user) and not skip_quick_post:
         fire_task(quick_post_product_photo, str(product.pk))
 
-    # Auto-generate carousel (2+ photos) or reel-only (single photo)
-    _CAROUSEL_PLATFORMS = {"instagram", "facebook", "linkedin"}
-    _REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
-    features = analysis.get("key_features", [])
-    if num_images >= 2 and any(p in _CAROUSEL_PLATFORMS for p in platforms):
+    from apps.products.photo_variations import is_studio_polish_mode
+
+    if is_studio_polish_mode(getattr(product, "visual_mode", None)):
         fire_task(
-            create_product_carousel_posts,
+            expand_product_photo_set,
             str(product.pk),
-            str(seed.pk),
-            features,
             analysis,
+            commerce_source="snap",
+            snap_followup=True,
+            seed_id=str(seed.pk),
+            key_features=features,
         )
-    elif num_images >= 1 and any(p in _REEL_PLATFORMS for p in platforms):
-        fire_task(
-            create_product_reel_posts,
-            str(product.pk),
-            str(seed.pk),
-            features,
+    else:
+        _fire_snap_carousel_reel_after_expand(
+            product,
+            seed_id=str(seed.pk),
+            key_features=features,
+            analysis=analysis,
+            fire_task=fire_task,
         )
 
     logger.info(
