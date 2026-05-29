@@ -1179,3 +1179,99 @@ def restock_add_unmatched(request, scan_id):
 
     messages.success(request, f"'{name}' added to catalog with {quantity} units.")
     return redirect("products:restock")
+
+
+# ── Phase 2: Visual Monopoly Tool Views ──────────────────────────────────────
+
+
+@login_required
+@require_POST
+def generate_product_video(request, product_id):
+    """Generate an AI product video via Photoroom."""
+    product = get_object_or_404(Product, pk=product_id, user=request.user)
+    if not product.image:
+        messages.error(request, "Add a product photo first.")
+        return redirect("products:detail", product_id=product.pk)
+
+    try:
+        from apps.products.photoroom_video import generate_product_video as gen_video
+        result = gen_video(product)
+        if result:
+            messages.success(request, f"Video generated for '{product.name}'.")
+        else:
+            messages.warning(request, "Video generation is not yet enabled. Enable PHOTOROOM_VIDEO_ENABLED in settings.")
+    except Exception as e:
+        logger.error("Video generation failed for product %s: %s", product.pk, e)
+        messages.error(request, "Video generation failed. Try again later.")
+
+    return redirect("products:detail", product_id=product.pk)
+
+
+@login_required
+@require_POST
+def generate_promo_image(request, product_id):
+    """Generate a promotional image for the product."""
+    product = get_object_or_404(Product, pk=product_id, user=request.user)
+    if not product.image:
+        messages.error(request, "Add a product photo first.")
+        return redirect("products:detail", product_id=product.pk)
+
+    try:
+        from apps.products.promo_engine import generate_promo_image as gen_promo
+        trigger = request.POST.get("trigger", "new_product")
+        result = gen_promo(product, trigger=trigger)
+        if result:
+            messages.success(request, f"Promo image created for '{product.name}'.")
+        else:
+            messages.info(request, "Promo generation queued.")
+    except Exception as e:
+        logger.error("Promo generation failed for product %s: %s", product.pk, e)
+        messages.error(request, "Promo generation failed. Try again later.")
+
+    return redirect("products:detail", product_id=product.pk)
+
+
+@login_required
+@require_POST
+def generate_virtual_model(request, product_id):
+    """Generate virtual model shots for fashion/apparel products."""
+    product = get_object_or_404(Product, pk=product_id, user=request.user)
+    if not product.image:
+        messages.error(request, "Add a product photo first.")
+        return redirect("products:detail", product_id=product.pk)
+
+    try:
+        from apps.products.photoroom_virtual_models import generate_virtual_model_shot
+        result = generate_virtual_model_shot(product)
+        if result:
+            messages.success(request, f"Virtual model shot generated for '{product.name}'.")
+        else:
+            messages.warning(request, "Virtual model feature is not yet enabled. Enable PHOTOROOM_VIRTUAL_MODEL_ENABLED in settings.")
+    except Exception as e:
+        logger.error("Virtual model generation failed for product %s: %s", product.pk, e)
+        messages.error(request, "Virtual model generation failed. Try again later.")
+
+    return redirect("products:detail", product_id=product.pk)
+
+
+@login_required
+@require_POST
+def generate_seasonal_variant(request, product_id):
+    """Generate a seasonal variant of the product image."""
+    product = get_object_or_404(Product, pk=product_id, user=request.user)
+    if not product.image:
+        messages.error(request, "Add a product photo first.")
+        return redirect("products:detail", product_id=product.pk)
+
+    try:
+        from apps.products.seasonal_variants import generate_seasonal_variant as gen_seasonal
+        result = gen_seasonal(product)
+        if result:
+            messages.success(request, f"Seasonal variant created for '{product.name}'.")
+        else:
+            messages.info(request, "No seasonal events coming up — try again closer to a holiday.")
+    except Exception as e:
+        logger.error("Seasonal variant failed for product %s: %s", product.pk, e)
+        messages.error(request, "Seasonal variant generation failed. Try again later.")
+
+    return redirect("products:detail", product_id=product.pk)

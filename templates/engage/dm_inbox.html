@@ -1,0 +1,148 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Messages{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Unified inbox — Facebook, Instagram & WhatsApp</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+  {# Inbox Navigation #}
+  <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-3">
+    <a href="{% url 'engage:inbox' %}" class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+      Comments & Mentions
+    </a>
+    <a href="{% url 'engage:dm_inbox' %}" class="px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 border-kova-600 text-kova-700 dark:text-kova-400">
+      Messages
+    </a>
+    <a href="{% url 'engage:auto_sent_list' %}" class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+      Auto-sent
+    </a>
+  </div>
+
+  {# Stats Bar #}
+  <div class="grid grid-cols-3 gap-3">
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.total_threads }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Conversations</p>
+    </div>
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ stats.unread }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Unread</p>
+    </div>
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-kova-600 dark:text-kova-400">{{ stats.platforms|length }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Platforms</p>
+    </div>
+  </div>
+
+  {# Platform Filter #}
+  <div class="flex items-center gap-2">
+    <a href="{% url 'engage:dm_inbox' %}"
+       class="px-3 py-1.5 rounded-full text-xs font-medium transition
+              {% if not platform_filter %}bg-kova-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}">
+      All
+    </a>
+    <a href="{% url 'engage:dm_inbox' %}?platform=facebook"
+       class="px-3 py-1.5 rounded-full text-xs font-medium transition
+              {% if platform_filter == 'facebook' %}bg-[#1877F2] text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}">
+      Facebook
+    </a>
+    <a href="{% url 'engage:dm_inbox' %}?platform=instagram"
+       class="px-3 py-1.5 rounded-full text-xs font-medium transition
+              {% if platform_filter == 'instagram' %}bg-[#E4405F] text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}">
+      Instagram
+    </a>
+    <a href="{% url 'engage:dm_inbox' %}?platform=whatsapp"
+       class="px-3 py-1.5 rounded-full text-xs font-medium transition
+              {% if platform_filter == 'whatsapp' %}bg-[#25D366] text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}">
+      WhatsApp
+    </a>
+  </div>
+
+  {# Thread List + Message View #}
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+    {# Thread sidebar #}
+    <div class="lg:col-span-1 card divide-y divide-gray-100 dark:divide-gray-800 max-h-[600px] overflow-y-auto">
+      {% if threads %}
+        {% for thread in threads %}
+        <a href="{% url 'engage:dm_inbox' %}?sender={{ thread.sender_username }}&platform={{ thread.platform }}{% if platform_filter %}&platform={{ platform_filter }}{% endif %}"
+           class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition
+                  {% if selected_sender == thread.sender_username %}bg-kova-50 dark:bg-kova-900/20{% endif %}">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold
+                        {% if thread.platform == 'whatsapp' %}bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300
+                        {% elif thread.platform == 'instagram' %}bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300
+                        {% else %}bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300{% endif %}">
+              {{ thread.platform_icon|upper }}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between">
+                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ thread.sender_name|default:thread.sender_username }}</p>
+                {% if thread.unread_count > 0 %}
+                <span class="w-5 h-5 rounded-full bg-kova-600 text-white text-[10px] font-bold flex items-center justify-center">{{ thread.unread_count }}</span>
+                {% endif %}
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{{ thread.last_message }}</p>
+            </div>
+          </div>
+        </a>
+        {% endfor %}
+      {% else %}
+        <div class="px-4 py-8 text-center">
+          <p class="text-sm text-gray-500 dark:text-gray-400">No messages yet</p>
+        </div>
+      {% endif %}
+    </div>
+
+    {# Message area #}
+    <div class="lg:col-span-2 card">
+      {% if messages %}
+        <div class="border-b border-gray-100 dark:border-gray-800 px-4 py-3">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ selected_sender }}</h3>
+        </div>
+        <div class="divide-y divide-gray-50 dark:divide-gray-800/50 max-h-[500px] overflow-y-auto">
+          {% for msg in messages %}
+          <div class="px-4 py-3">
+            <div class="flex items-start gap-2">
+              <div class="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
+                <span class="text-[10px] font-bold text-gray-600 dark:text-gray-400">{{ msg.author_name|make_list|first|upper }}</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-medium text-gray-900 dark:text-white">{{ msg.author_name }}</span>
+                  <span class="text-[10px] text-gray-400">{{ msg.created_at|timesince }} ago</span>
+                </div>
+                <p class="text-sm text-gray-700 dark:text-gray-300 mt-0.5">{{ msg.content }}</p>
+              </div>
+            </div>
+            {% if msg.ai_suggested_reply and msg.status == 'new' %}
+            <div class="ml-9 mt-2 p-2 rounded bg-kova-50 dark:bg-kova-900/20 border border-kova-200 dark:border-kova-800">
+              <p class="text-xs text-kova-700 dark:text-kova-300 font-medium mb-1">AI Suggestion:</p>
+              <p class="text-sm text-gray-700 dark:text-gray-300">{{ msg.ai_suggested_reply }}</p>
+              <form method="post" action="{% url 'engage:send_reply' msg.pk %}" class="mt-2">
+                {% csrf_token %}
+                <input type="hidden" name="reply_text" value="{{ msg.ai_suggested_reply }}">
+                <button type="submit" class="btn-primary btn-xs">Send</button>
+              </form>
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="flex items-center justify-center py-20">
+          <div class="text-center">
+            <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-3">Select a conversation to view messages</p>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+
+</div>
+{% endblock %}

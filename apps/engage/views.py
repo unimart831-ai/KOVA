@@ -321,3 +321,48 @@ def auto_sent_correct(request, pk):
         "Thanks — Kova will use this to learn your style.",
         status=200, content_type="text/plain",
     )
+
+
+# ── Phase 5 — Unified DM Inbox ─────────────────────────────────────────────
+
+
+@login_required
+def dm_inbox_view(request):
+    """Unified DM inbox across platforms (FB, IG, WhatsApp)."""
+    from apps.engage.dm_inbox import get_dm_threads
+
+    platform_filter = request.GET.get("platform", "")
+    threads = get_dm_threads(
+        request.user,
+        platform=platform_filter or None,
+        limit=30,
+    )
+
+    dm_interactions = request.user.interactions.filter(
+        interaction_type=Interaction.InteractionType.DM,
+    ).select_related("social_account")
+
+    if platform_filter:
+        dm_interactions = dm_interactions.filter(platform=platform_filter)
+
+    sender = request.GET.get("sender", "")
+    messages = []
+    if sender:
+        messages = dm_interactions.filter(
+            author_username=sender,
+        ).order_by("created_at")[:50]
+
+    stats = {
+        "total_threads": len(threads),
+        "unread": sum(t["unread_count"] for t in threads),
+        "platforms": list(set(t["platform"] for t in threads)),
+    }
+
+    return render(request, "engage/dm_inbox.html", {
+        "threads": threads,
+        "messages": messages,
+        "stats": stats,
+        "platform_filter": platform_filter,
+        "selected_sender": sender,
+        "page_title": "Messages",
+    })

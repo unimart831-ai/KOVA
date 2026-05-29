@@ -40,4 +40,9 @@ urlpatterns = [
     path("restock/<uuid:scan_id>/status/", views.restock_pipeline_status, name="restock_status"),
     path("restock/<uuid:scan_id>/retry/", views.restock_retry, name="restock_retry"),
     path("restock/<uuid:scan_id>/add-item/", views.restock_add_unmatched, name="restock_add_item"),
+    # Phase 2: Visual Monopoly tools
+    path("<uuid:product_id>/video/", views.generate_product_video, name="generate_video"),
+    path("<uuid:product_id>/promo/", views.generate_promo_image, name="generate_promo"),
+    path("<uuid:product_id>/virtual-model/", views.generate_virtual_model, name="virtual_model"),
+    path("<uuid:product_id>/seasonal/", views.generate_seasonal_variant, name="seasonal_variant"),
 ]

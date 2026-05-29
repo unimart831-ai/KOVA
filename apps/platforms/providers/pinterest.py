@@ -1,7 +1,7 @@
 """
 Pinterest OAuth 2.0 Provider.
 
-Uses Pinterest API v5 for pin creation and analytics.
+Uses Pinterest API v5 for pin creation, analytics, and engagement signals.
 
 Capability matrix:
 ─────────────────────────────────────────────────────────────────────
@@ -14,6 +14,26 @@ List boards                          │ GET /v5/boards
 Create board                         │ POST /v5/boards
 Get user info                        │ GET /v5/user_account
 ─────────────────────────────────────────────────────────────────────
+
+Engagement support (Phase 5):
+─────────────────────────────────────────────────────────────────────
+CAPABILITY                           │ STATUS / NOTES
+─────────────────────────────────────────────────────────────────────
+get_comments(post_id)                │ No public comments API for 3rd-party
+                                     │ apps. Returns [] gracefully so the
+                                     │ engage loop doesn't error.
+get_mentions(since_id)               │ No mentions/notifications API.
+                                     │ Returns [] — Pinterest engagement is
+                                     │ metrics-only.
+get_pin_engagement(pin_id)           │ GET /v5/pins/{pin_id} — returns
+                                     │ save_count + engagement signals as
+                                     │ the Pinterest equivalent of comments.
+─────────────────────────────────────────────────────────────────────
+
+Key insight: Pinterest engagement is METRICS-DRIVEN, not CONVERSATION-DRIVEN.
+Saves, clicks, and repins are the engagement signals — there is no threaded
+comment system exposed to third-party apps.
+
 Docs: https://developers.pinterest.com/docs/api/v5/
 """
 
@@ -211,6 +231,154 @@ class PinterestProvider(BaseProvider):
         except httpx.HTTPStatusError as e:
             logger.error("Pinterest metrics failed: %s", e.response.text)
             return PostMetrics()
+
+    # ──────────────────────────────────────────────────────────────────
+    # Engagement methods (Phase 5)
+    #
+    # Pinterest API v5 does NOT expose a public comments API for
+    # third-party apps. These methods satisfy the unified engage loop
+    # interface while being transparent about platform limitations.
+    # ──────────────────────────────────────────────────────────────────
+
+    def get_comments(self, access_token: str, post_id: str, **kwargs) -> list[dict]:
+        """
+        Pinterest does not provide a comments API for third-party apps.
+
+        Returns an empty list so the engage loop iterates Pinterest accounts
+        without erroring. Engagement for Pinterest is captured via
+        get_pin_engagement() which surfaces saves, clicks, and impressions
+        as metrics-driven signals.
+        """
+        logger.info(
+            "Pinterest get_comments called for pin %s — no comments API available, "
+            "returning empty list (this is expected behavior)",
+            post_id,
+        )
+        return []
+
+    def get_mentions(self, access_token: str, since_id: Optional[str] = None) -> list[dict]:
+        """
+        Pinterest does not provide a mentions/notifications API for
+        third-party apps.
+
+        Returns an empty list. Pinterest engagement is metrics-only —
+        use get_pin_engagement() or get_post_metrics() to surface saves,
+        clicks, and repins as engagement signals.
+        """
+        logger.info(
+            "Pinterest get_mentions called — no mentions API available. "
+            "Pinterest engagement is metrics-driven; use get_pin_engagement() "
+            "for engagement signals."
+        )
+        return []
+
+    def get_pin_engagement(self, access_token: str, pin_id: str) -> dict:
+        """
+        Get detailed engagement metrics for a specific pin.
+
+        Uses GET /v5/pins/{pin_id} to retrieve save count and other
+        engagement signals. This serves as the Pinterest equivalent of
+        "comments" for the unified inbox — saves and clicks ARE the
+        engagement on Pinterest.
+
+        Returns:
+            dict with keys:
+                - pin_id: str
+                - save_count: int
+                - comment_count: int (from pin metadata, if available)
+                - link_clicks: int (from analytics, if fetched)
+                - impressions: int (from analytics, if fetched)
+                - engagement_type: "metrics" (distinguishes from conversation platforms)
+                - signals: list[dict] — normalized engagement signals
+        """
+        headers = {"Authorization": f"Bearer {access_token}"}
+        result = {
+            "pin_id": pin_id,
+            "save_count": 0,
+            "comment_count": 0,
+            "link_clicks": 0,
+            "impressions": 0,
+            "engagement_type": "metrics",
+            "signals": [],
+        }
+
+        try:
+            with httpx.Client() as client:
+                resp = client.get(
+                    f"{PINTEREST_API_BASE}/pins/{pin_id}",
+                    headers=headers,
+                )
+                resp.raise_for_status()
+                pin_data = resp.json()
+
+                save_count = pin_data.get("save_count", 0)
+                comment_count = pin_data.get("comment_count", 0)
+
+                result["save_count"] = save_count
+                result["comment_count"] = comment_count
+
+                if save_count > 0:
+                    result["signals"].append({
+                        "type": "saves",
+                        "count": save_count,
+                        "label": f"{save_count} save{'s' if save_count != 1 else ''}",
+                    })
+
+                if comment_count > 0:
+                    result["signals"].append({
+                        "type": "comments_count",
+                        "count": comment_count,
+                        "label": f"{comment_count} comment{'s' if comment_count != 1 else ''} (not retrievable via API)",
+                    })
+
+        except httpx.HTTPStatusError as e:
+            logger.error("Pinterest get_pin_engagement pin fetch failed: %s", e.response.text)
+            result["error"] = f"Failed to fetch pin details: {e}"
+            return result
+
+        # Optionally enrich with analytics data for clicks/impressions
+        try:
+            with httpx.Client() as client:
+                analytics_resp = client.get(
+                    f"{PINTEREST_API_BASE}/pins/{pin_id}/analytics",
+                    params={
+                        "start_date": (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%d"),
+                        "end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                        "metric_types": "IMPRESSION,PIN_CLICK,OUTBOUND_CLICK",
+                    },
+                    headers=headers,
+                )
+                analytics_resp.raise_for_status()
+                metrics = analytics_resp.json().get("all", {}).get("lifetime_metrics", {})
+
+                impressions = metrics.get("IMPRESSION", 0)
+                link_clicks = metrics.get("PIN_CLICK", 0) + metrics.get("OUTBOUND_CLICK", 0)
+
+                result["impressions"] = impressions
+                result["link_clicks"] = link_clicks
+
+                if link_clicks > 0:
+                    result["signals"].append({
+                        "type": "clicks",
+                        "count": link_clicks,
+                        "label": f"{link_clicks} click{'s' if link_clicks != 1 else ''}",
+                    })
+
+                if impressions > 0:
+                    result["signals"].append({
+                        "type": "impressions",
+                        "count": impressions,
+                        "label": f"{impressions:,} impression{'s' if impressions != 1 else ''}",
+                    })
+
+        except httpx.HTTPStatusError as e:
+            logger.warning(
+                "Pinterest get_pin_engagement analytics fetch failed for pin %s: %s "
+                "(pin details still returned)",
+                pin_id, e.response.text,
+            )
+
+        return result
 
 
 # Auto-register

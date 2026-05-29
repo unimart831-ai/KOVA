@@ -30,6 +30,19 @@
   </div>
   {% endif %}
 
+  {# Inbox Navigation #}
+  <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-3">
+    <a href="{% url 'engage:inbox' %}" class="px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 border-kova-600 text-kova-700 dark:text-kova-400">
+      Comments & Mentions
+    </a>
+    <a href="{% url 'engage:dm_inbox' %}" class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+      Messages
+    </a>
+    <a href="{% url 'engage:auto_sent_list' %}" class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+      Auto-sent
+    </a>
+  </div>
+
   {# Filter Bar + Trigger #}
   <div class="flex flex-wrap items-center gap-3">
     <form method="get" class="flex flex-wrap items-center gap-2 flex-1">

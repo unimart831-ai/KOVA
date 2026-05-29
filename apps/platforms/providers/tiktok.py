@@ -2,44 +2,59 @@
 TikTok Provider — Full Content Posting API + Display API integration.
 
 Uses TikTok's Content Posting API for video and photo publishing, Display API
-for listing user videos and fetching metrics, and Creator Info API for
-pre-publish validation.
+for listing user videos and fetching metrics, Creator Info API for
+pre-publish validation, and aggregated engagement analytics.
 
 Full capability matrix:
 ─────────────────────────────────────────────────────────────────────────────
-CAPABILITY                           │ API ENDPOINT
+CAPABILITY                           │ STATUS   │ API ENDPOINT / NOTES
 ─────────────────────────────────────────────────────────────────────────────
-Connect via OAuth 2.0                │ OAuth 2.0 flow (Login Kit)
-Token refresh                        │ /v2/oauth/token/
-User profile                         │ GET /v2/user/info/
-Query creator info                   │ POST /v2/post/publish/creator_info/query/
-Publish video (pull from URL)        │ POST /v2/post/publish/video/init/
-Publish video (file upload)          │ POST /v2/post/publish/video/init/ + PUT
-Publish photo post (up to 35)        │ POST /v2/post/publish/content/init/
-Check publish status                 │ POST /v2/post/publish/status/fetch/
-List user's videos                   │ POST /v2/video/list/
-Query specific videos                │ POST /v2/video/query/
-Get video metrics                    │ POST /v2/video/query/ (metrics fields)
-Validate token                       │ GET /v2/user/info/ check
+Connect via OAuth 2.0                │ ✅ LIVE  │ OAuth 2.0 flow (Login Kit)
+Token refresh                        │ ✅ LIVE  │ /v2/oauth/token/
+User profile                         │ ✅ LIVE  │ GET /v2/user/info/
+Query creator info                   │ ✅ LIVE  │ POST /v2/post/publish/creator_info/query/
+Publish video (pull from URL)        │ ✅ LIVE  │ POST /v2/post/publish/video/init/
+Publish video (file upload)          │ ✅ LIVE  │ POST /v2/post/publish/video/init/ + PUT
+Publish photo post (up to 35)        │ ✅ LIVE  │ POST /v2/post/publish/content/init/
+Check publish status                 │ ✅ LIVE  │ POST /v2/post/publish/status/fetch/
+List user's videos                   │ ✅ LIVE  │ POST /v2/video/list/
+Query specific videos                │ ✅ LIVE  │ POST /v2/video/query/
+Get video metrics                    │ ✅ LIVE  │ POST /v2/video/query/ (metrics fields)
+Validate token                       │ ✅ LIVE  │ GET /v2/user/info/ check
+Engagement summary (aggregate)       │ ✅ LIVE  │ Computed from /v2/video/list/ metrics
+Read comments (Research API)         │ ⚠ GATED │ POST /v2/research/video/comment/list/
+Read mentions                        │ ❌ NONE  │ No TikTok API exists
+Write comments / replies             │ ❌ NONE  │ No public third-party API
+Delete posts                         │ ❌ NONE  │ No public third-party API
 ─────────────────────────────────────────────────────────────────────────────
 
 Permissions / Scopes:
-  user.info.basic  — Read user profile
-  video.publish    — Direct post to TikTok
-  video.list       — List / query user's videos
+  user.info.basic     — Read user profile
+  video.publish       — Direct post to TikTok
+  video.list          — List / query user's videos
+  research.data.basic — (Optional) Research API comment access (gated)
+
+Engagement strategy:
+  TikTok engagement in Kova is METRICS-AWARE: we know comment/like/share/view
+  counts per video via the Display API even without reading individual comments.
+  The Research API (v2/research/video/comment/list/) provides full comment text
+  but requires special approval. We attempt it and degrade gracefully.
 
 Notes:
   - Unaudited API clients post to PRIVATE only (SELF_ONLY).
   - Video: PULL_FROM_URL or FILE_UPLOAD (chunked). MP4/MOV/WebM.
   - Photo: PULL_FROM_URL only. Up to 35 images.
   - TikTok doesn't have a public comments read/write API for third-party apps.
+    The v2 Research API is gated behind application approval.
   - TikTok doesn't have a public delete post API for third-party apps.
+  - TikTok doesn't have a mentions/notifications API for third-party apps.
 
 Docs:
   https://developers.tiktok.com/doc/content-posting-api-get-started/
   https://developers.tiktok.com/doc/content-posting-api-reference-direct-post
   https://developers.tiktok.com/doc/content-posting-api-reference-photo-post
   https://developers.tiktok.com/doc/display-api-get-started/
+  https://developers.tiktok.com/doc/research-api-specs-query-video-comments/
 """
 
 import logging
@@ -67,9 +82,13 @@ TIKTOK_SCOPES = "user.info.basic,video.publish,video.list"
 
 class TikTokProvider(BaseProvider):
     """Full TikTok integration via Content Posting API, Display API,
-    and Creator Info API."""
+    Creator Info API, and engagement analytics."""
 
     platform_name = "tiktok"
+
+    # Set to False after the first 403/401 from the Research API to avoid
+    # repeated futile calls for the rest of this process's lifetime.
+    _research_api_available = True
 
     def __init__(self):
         self.client_key = getattr(settings, "TIKTOK_CLIENT_KEY", "")
@@ -658,6 +677,231 @@ class TikTokProvider(BaseProvider):
         except httpx.HTTPStatusError as e:
             logger.error("TikTok metrics fetch failed: %s", e.response.text)
             return PostMetrics()
+
+    # ── Engagement: comments, mentions, summary ──────────────────────────
+
+    def get_comments(self, access_token: str, post_id: str,
+                     max_count: int = 30, cursor: int = 0) -> list:
+        """Attempt to fetch comments for a video.
+
+        Tries the Research API endpoint POST /v2/research/video/comment/list/
+        which requires special Research API approval from TikTok. If the app
+        doesn't have Research API access (403/401), falls back gracefully to
+        an empty list and disables further Research API attempts for the
+        lifetime of this process via ``_research_api_available``.
+
+        Returns list of dicts: [{"id", "author_name", "author_id", "text",
+        "created_at"}, ...] or [] when unavailable.
+        """
+        if not TikTokProvider._research_api_available:
+            logger.debug(
+                "TikTok Research API previously flagged unavailable; "
+                "skipping comment fetch for video %s", post_id,
+            )
+            return []
+
+        try:
+            with httpx.Client(timeout=30) as client:
+                resp = client.post(
+                    f"{TIKTOK_API_BASE}/research/video/comment/list/",
+                    headers=self._api_headers(access_token),
+                    json={
+                        "video_id": post_id,
+                        "max_count": min(max_count, 100),
+                        "cursor": cursor,
+                    },
+                )
+                resp.raise_for_status()
+                result = resp.json()
+
+            error_info = result.get("error", {})
+            if error_info.get("code") != "ok":
+                error_code = error_info.get("code", "")
+                if error_code in ("access_token_invalid", "scope_not_authorized"):
+                    TikTokProvider._research_api_available = False
+                    logger.info(
+                        "TikTok Research API not authorized (%s); "
+                        "disabling comment fetching. Apply for "
+                        "research.data.basic scope to enable.",
+                        error_code,
+                    )
+                    return []
+                logger.warning(
+                    "TikTok comment list error: %s", error_info,
+                )
+                return []
+
+            comments_raw = result.get("data", {}).get("comments", [])
+            comments = []
+            for c in comments_raw:
+                create_ts = c.get("create_time", 0)
+                comments.append({
+                    "id": str(c.get("id", "")),
+                    "author_name": c.get("user", {}).get("display_name", ""),
+                    "author_id": str(c.get("user", {}).get("id", "")),
+                    "text": c.get("text", ""),
+                    "created_at": (
+                        datetime.fromtimestamp(
+                            create_ts, tz=timezone.utc
+                        ).isoformat()
+                        if create_ts else ""
+                    ),
+                })
+
+            logger.debug(
+                "TikTok Research API returned %d comments for video %s",
+                len(comments), post_id,
+            )
+            return comments
+
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code in (401, 403):
+                TikTokProvider._research_api_available = False
+                logger.info(
+                    "TikTok Research API returned %d; disabling comment "
+                    "fetching for this process. Apply for "
+                    "research.data.basic scope to enable.",
+                    e.response.status_code,
+                )
+                return []
+            logger.error(
+                "TikTok get_comments failed: %s", e.response.text,
+            )
+            return []
+        except Exception as e:
+            logger.error("TikTok get_comments unexpected error: %s", e)
+            return []
+
+    def get_mentions(self, access_token: str,
+                     since_id: Optional[str] = None) -> list:
+        """Return mentions/notifications directed at the user.
+
+        TikTok does not provide a mentions or notifications API for
+        third-party applications. There is no endpoint to discover when
+        another user @-mentions you in a comment, caption, or duet.
+
+        This method exists to satisfy the engagement interface contract
+        and always returns an empty list.
+        """
+        logger.debug(
+            "TikTok get_mentions called — no API exists; returning empty. "
+            "since_id=%s", since_id,
+        )
+        return []
+
+    def get_engagement_summary(self, access_token: str,
+                               count: int = 10) -> dict:
+        """Aggregate engagement metrics across recent videos.
+
+        Uses the Display API (get_own_posts) to pull up to ``count`` recent
+        videos, then computes aggregate totals and identifies top-performing
+        content. This powers the analytics/insights dashboard even without
+        access to individual comment text.
+
+        Returns::
+
+            {
+                "video_count": int,
+                "total_likes": int,
+                "total_comments": int,
+                "total_shares": int,
+                "total_views": int,
+                "avg_likes": float,
+                "avg_comments": float,
+                "avg_shares": float,
+                "avg_views": float,
+                "top_by_views": {...} | None,
+                "top_by_likes": {...} | None,
+                "top_by_comments": {...} | None,
+                "research_api_available": bool,
+                "engagement_rate": float,   # (likes+comments+shares)/views
+            }
+        """
+        posts = self.get_own_posts(access_token, count=min(count, 20))
+
+        empty = {
+            "video_count": 0,
+            "total_likes": 0,
+            "total_comments": 0,
+            "total_shares": 0,
+            "total_views": 0,
+            "avg_likes": 0.0,
+            "avg_comments": 0.0,
+            "avg_shares": 0.0,
+            "avg_views": 0.0,
+            "top_by_views": None,
+            "top_by_likes": None,
+            "top_by_comments": None,
+            "research_api_available": TikTokProvider._research_api_available,
+            "engagement_rate": 0.0,
+        }
+
+        if not posts:
+            logger.debug("TikTok engagement summary: no posts found")
+            return empty
+
+        total_likes = 0
+        total_comments = 0
+        total_shares = 0
+        total_views = 0
+
+        best_views = None
+        best_likes = None
+        best_comments = None
+
+        for p in posts:
+            m = p.get("metrics", {})
+            likes = m.get("likes", 0)
+            comments = m.get("comments", 0)
+            shares = m.get("shares", 0)
+            views = m.get("views", 0)
+
+            total_likes += likes
+            total_comments += comments
+            total_shares += shares
+            total_views += views
+
+            summary_entry = {
+                "id": p.get("id"),
+                "text": p.get("text", ""),
+                "url": p.get("url", ""),
+                "created_at": p.get("created_at", ""),
+                "likes": likes,
+                "comments": comments,
+                "shares": shares,
+                "views": views,
+            }
+
+            if best_views is None or views > best_views["views"]:
+                best_views = summary_entry
+            if best_likes is None or likes > best_likes["likes"]:
+                best_likes = summary_entry
+            if best_comments is None or comments > best_comments["comments"]:
+                best_comments = summary_entry
+
+        n = len(posts)
+        total_interactions = total_likes + total_comments + total_shares
+        engagement_rate = (
+            round(total_interactions / total_views, 6)
+            if total_views > 0 else 0.0
+        )
+
+        return {
+            "video_count": n,
+            "total_likes": total_likes,
+            "total_comments": total_comments,
+            "total_shares": total_shares,
+            "total_views": total_views,
+            "avg_likes": round(total_likes / n, 2),
+            "avg_comments": round(total_comments / n, 2),
+            "avg_shares": round(total_shares / n, 2),
+            "avg_views": round(total_views / n, 2),
+            "top_by_views": best_views,
+            "top_by_likes": best_likes,
+            "top_by_comments": best_comments,
+            "research_api_available": TikTokProvider._research_api_available,
+            "engagement_rate": engagement_rate,
+        }
 
     # ── User / token management ──────────────────────────────────────────
 

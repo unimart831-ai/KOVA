@@ -1145,14 +1145,26 @@ def run_engage_cycle(user):
     """
     Run the full engagement cycle for a user:
       1. Fetch new interactions from all platforms
-      2. Analyze sentiment + priority
-      3. Generate reply suggestions
-      4. Auto-respond (if enabled)
+      2. Fetch DMs from DM-capable platforms (unified inbox)
+      3. Analyze sentiment + priority
+      4. Generate reply suggestions
+      5. Auto-respond (if enabled)
 
     Called by the periodic Celery task.
     Returns a summary dict.
     """
     fetched = fetch_interactions(user)
+
+    # Phase 5: Unified DM inbox — fetch DMs from FB/IG
+    dm_fetched = 0
+    try:
+        from apps.engage.dm_inbox import fetch_dms_for_user
+        dm_fetched = fetch_dms_for_user(user)
+    except Exception as e:
+        logger.debug("DM fetch skipped for %s: %s", user.email, e)
+
+    fetched += dm_fetched
+
     analyzed = analyze_interactions(user)
     replies = generate_replies(user)
     auto_respond_result = auto_respond(user)

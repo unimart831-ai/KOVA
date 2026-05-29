@@ -12,4 +12,6 @@ urlpatterns = [
     path("auto-sent/", views.auto_sent_list, name="auto_sent_list"),
     path("auto-sent/<uuid:pk>/undo/", views.auto_sent_undo, name="auto_sent_undo"),
     path("auto-sent/<uuid:pk>/correct/", views.auto_sent_correct, name="auto_sent_correct"),
+    # Phase 5 — Unified DM inbox
+    path("dms/", views.dm_inbox_view, name="dm_inbox"),
 ]

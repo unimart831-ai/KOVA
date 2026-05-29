@@ -337,6 +337,207 @@ class BlueskyProvider(BaseProvider):
             logger.error("Bluesky mentions failed: %s", e.response.text)
             return []
 
+    # ─────────────────────────────────────────────────────────────────────
+    # Engagement methods
+    # ─────────────────────────────────────────────────────────────────────
+
+    def _resolve_did(self, access_token: str) -> str:
+        """Resolve the DID for the authenticated user from the active session."""
+        with httpx.Client() as client:
+            resp = client.get(
+                f"{BSKY_API_BASE}/com.atproto.server.getSession",
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+            resp.raise_for_status()
+            return resp.json()["did"]
+
+    def _get_post_ref(self, access_token: str, uri: str) -> Optional[dict]:
+        """
+        Fetch a post's URI and CID to build a reply reference.
+        Returns {"uri": ..., "cid": ...} or None on failure.
+        """
+        try:
+            with httpx.Client() as client:
+                resp = client.get(
+                    f"{BSKY_API_BASE}/app.bsky.feed.getPostThread",
+                    params={"uri": uri, "depth": 0},
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
+                resp.raise_for_status()
+                post = resp.json().get("thread", {}).get("post", {})
+                return {"uri": post["uri"], "cid": post["cid"]}
+        except Exception as e:
+            logger.error("Bluesky _get_post_ref failed for %s: %s", uri, e)
+            return None
+
+    def _get_root_ref(self, access_token: str, uri: str) -> Optional[dict]:
+        """
+        Walk up the reply chain to find the root post reference.
+        If the post has no parent (is itself the root), returns its own ref.
+        """
+        try:
+            with httpx.Client() as client:
+                resp = client.get(
+                    f"{BSKY_API_BASE}/app.bsky.feed.getPostThread",
+                    params={"uri": uri, "depth": 0},
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
+                resp.raise_for_status()
+                thread = resp.json().get("thread", {})
+                post = thread.get("post", {})
+                record = post.get("record", {})
+
+                reply_info = record.get("reply")
+                if reply_info and reply_info.get("root"):
+                    return {
+                        "uri": reply_info["root"]["uri"],
+                        "cid": reply_info["root"]["cid"],
+                    }
+                # This post is itself the root
+                return {"uri": post["uri"], "cid": post["cid"]}
+        except Exception as e:
+            logger.error("Bluesky _get_root_ref failed for %s: %s", uri, e)
+            return None
+
+    def get_comments(self, access_token: str, post_id: str) -> list[dict]:
+        """
+        Fetch direct replies (comments) on a post.
+        post_id: AT URI (e.g. at://did:plc:xxx/app.bsky.feed.post/yyy)
+        """
+        try:
+            with httpx.Client() as client:
+                resp = client.get(
+                    f"{BSKY_API_BASE}/app.bsky.feed.getPostThread",
+                    params={"uri": post_id, "depth": 1},
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
+                resp.raise_for_status()
+                thread = resp.json().get("thread", {})
+                replies = thread.get("replies", [])
+
+                comments = []
+                for reply_thread in replies:
+                    post = reply_thread.get("post", {})
+                    author = post.get("author", {})
+                    record = post.get("record", {})
+                    comments.append({
+                        "id": post.get("uri", ""),
+                        "author_name": author.get("displayName") or author.get("handle", ""),
+                        "author_id": author.get("did", ""),
+                        "text": record.get("text", ""),
+                        "created_at": record.get("createdAt", ""),
+                    })
+                return comments
+        except httpx.HTTPStatusError as e:
+            logger.error("Bluesky get_comments failed: %s", e.response.text)
+            return []
+        except Exception as e:
+            logger.error("Bluesky get_comments error: %s", e)
+            return []
+
+    def reply_to_comment(self, access_token: str, comment_id: str, text: str) -> bool:
+        """
+        Reply to a specific comment/post on Bluesky.
+        comment_id: AT URI of the comment being replied to.
+        Returns True on success, False on failure.
+        """
+        try:
+            repo = self._resolve_did(access_token)
+
+            parent_ref = self._get_post_ref(access_token, comment_id)
+            if not parent_ref:
+                logger.error("reply_to_comment: could not resolve parent ref for %s", comment_id)
+                return False
+
+            root_ref = self._get_root_ref(access_token, comment_id)
+            if not root_ref:
+                logger.error("reply_to_comment: could not resolve root ref for %s", comment_id)
+                return False
+
+            now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+            record = {
+                "$type": "app.bsky.feed.post",
+                "text": text,
+                "createdAt": now,
+                "reply": {
+                    "root": root_ref,
+                    "parent": parent_ref,
+                },
+            }
+
+            facets = self._parse_facets(text)
+            if facets:
+                record["facets"] = facets
+
+            with httpx.Client() as client:
+                resp = client.post(
+                    f"{BSKY_API_BASE}/com.atproto.repo.createRecord",
+                    json={
+                        "repo": repo,
+                        "collection": "app.bsky.feed.post",
+                        "record": record,
+                    },
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
+                resp.raise_for_status()
+                return True
+        except httpx.HTTPStatusError as e:
+            logger.error("Bluesky reply_to_comment failed: %s", e.response.text)
+            return False
+        except Exception as e:
+            logger.error("Bluesky reply_to_comment error: %s", e)
+            return False
+
+    def post_comment(self, access_token: str, post_id: str, text: str) -> str:
+        """
+        Post a top-level reply to a post (the parent IS the root).
+        post_id: AT URI of the post being replied to.
+        Returns the AT URI of the created reply, or empty string on failure.
+        """
+        try:
+            repo = self._resolve_did(access_token)
+
+            post_ref = self._get_post_ref(access_token, post_id)
+            if not post_ref:
+                logger.error("post_comment: could not resolve post ref for %s", post_id)
+                return ""
+
+            now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+            record = {
+                "$type": "app.bsky.feed.post",
+                "text": text,
+                "createdAt": now,
+                "reply": {
+                    "root": post_ref,
+                    "parent": post_ref,
+                },
+            }
+
+            facets = self._parse_facets(text)
+            if facets:
+                record["facets"] = facets
+
+            with httpx.Client() as client:
+                resp = client.post(
+                    f"{BSKY_API_BASE}/com.atproto.repo.createRecord",
+                    json={
+                        "repo": repo,
+                        "collection": "app.bsky.feed.post",
+                        "record": record,
+                    },
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
+                resp.raise_for_status()
+                return resp.json().get("uri", "")
+        except httpx.HTTPStatusError as e:
+            logger.error("Bluesky post_comment failed: %s", e.response.text)
+            return ""
+        except Exception as e:
+            logger.error("Bluesky post_comment error: %s", e)
+            return ""
+
 
 # Auto-register
 register_provider(BlueskyProvider())

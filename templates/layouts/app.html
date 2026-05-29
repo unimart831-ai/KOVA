@@ -123,7 +123,8 @@
 
       {% if request.plan_limits.engagement_agent and '/engage/' in request.path %}
       <div class="ml-8 space-y-0.5 mb-1">
-        <a href="{% url 'engage:inbox' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'inbox' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Conversations</a>
+        <a href="{% url 'engage:inbox' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'inbox' and request.resolver_match.namespace == 'engage' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Comments & Mentions</a>
+        <a href="{% url 'engage:dm_inbox' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'dm_inbox' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Messages</a>
         <a href="{% url 'engage:auto_sent_list' %}" class="block text-xs py-1 px-2 rounded {% if 'auto_sent' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">AI auto-sent</a>
       </div>
       {% endif %}

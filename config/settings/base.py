@@ -647,6 +647,11 @@ PHOTOROOM_VARIANT_LAYOUTS_ENABLED = env.bool("PHOTOROOM_VARIANT_LAYOUTS_ENABLED"
 # Phase 2 — Video generation & Virtual models
 PHOTOROOM_VIDEO_ENABLED = env.bool("PHOTOROOM_VIDEO_ENABLED", default=False)
 PHOTOROOM_VIRTUAL_MODEL_ENABLED = env.bool("PHOTOROOM_VIRTUAL_MODEL_ENABLED", default=False)
+
+# Phase 5: Platform engagement expansion
+ENGAGE_DM_INBOX_ENABLED = env.bool("ENGAGE_DM_INBOX_ENABLED", default=True)
+TIKTOK_RESEARCH_API_ENABLED = env.bool("TIKTOK_RESEARCH_API_ENABLED", default=False)
+
 # Legacy — unused; kept so existing .env files do not break
 FAL_KEY = env("FAL_KEY", default="")
 
