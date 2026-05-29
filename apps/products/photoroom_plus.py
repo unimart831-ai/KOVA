@@ -21,6 +21,36 @@ PHOTOROOM_EDIT_URL = "https://image-api.photoroom.com/v2/edit"
 AI_BG_MODEL_HEADER = "background-studio-beta-2025-03-17"
 AI_BG_SEEDS = (117879368, 55994449, 48672244, 65080068, 88210391, 33120477)
 
+# Photoroom Edit With AI — official prompt templates (docs.photoroom.com)
+EDIT_WITH_AI_PRODUCT_STAGING_BASE = (
+    "Make it a professional lifestyle photoshoot with the provided object or subject as the "
+    "focus of the scene. Ensure the image highlights what is unique about the object, with the "
+    "goal of advertising it and showing how it impacts everyday life. The lighting should be "
+    "perfectly set to create a natural and elegant atmosphere. The image should feature excellent "
+    "composition and a refined mood, achieving the look of high-end lifestyle photography. "
+    "Integrate a human presence or a subtle interaction with the object to enhance authenticity "
+    "and visual appeal."
+)
+EDIT_WITH_AI_OTHER_ANGLE_BASE = (
+    "Create a new photograph of this exact same scene or setting with creative variations. "
+    "Change the camera angle and viewpoint (e.g., frontal to 3/4 view or side view, high to low "
+    "angle, wide to tight), adjust composition and framing, and optionally vary the lighting or "
+    "time of day (morning, golden hour, blue hour, overcast, or dramatic shadows). Try creative "
+    "approaches such as closer details, wider establishing shots, or alternative focal points. "
+    "Keep the exact same physical location and environment so it remains clearly recognizable, "
+    "with the same main subjects, key elements, style, and overall mood. If there's a person, "
+    "change their pose, position, or activity. If there's a product, show it from a different "
+    "angle or in different use. The result should feel like a fresh, creative variation taken in "
+    "the same location during the same shoot, offering a distinctly different perspective while "
+    "maintaining scene continuity."
+)
+
+EDIT_WITH_AI_VARIANT_IDS = frozenset({
+    "edit_ai_staging",
+    "edit_ai_angle",
+    "ai_touchup",
+})
+
 # Commerce-first AI scenes — category → grounded scene variant ids (Option A)
 CATEGORY_COMMERCE_SCENES: dict[str, tuple[str, ...]] = {
     "apparel": ("ai_scene_table", "ai_scene_shelf", "ai_scene_retail"),
@@ -136,6 +166,7 @@ PLAN_TIER_ORDER = ("starter", "growth", "pro", "agency")
 SLIDE_ROLE_PRODUCT = (
     ("hero", ("studio_white", "studio_brand")),
     ("desire", ("ai_lifestyle", "ai_lifestyle_alt", "ai_contextual")),
+    ("lifestyle_edit", ("edit_ai_staging", "edit_ai_angle")),
     ("proof", ()),  # filled per category below
     ("standout", ("studio_dark", "outline", "background_blur")),
 )
@@ -210,6 +241,17 @@ def _ai_scene_studio() -> dict[str, str]:
     return {
         **_shadow_studio(),
         "background.expandPrompt": "ai.auto",
+    }
+
+
+def _edit_with_ai_params(*, seed: int) -> dict[str, str]:
+    """Edit With AI on the full frame (post smart-crop master)."""
+    return {
+        "removeBackground": "false",
+        "referenceBox": "originalImage",
+        "editWithAI.mode": "ai.auto",
+        "editWithAI.seed": str(seed),
+        **_export_defaults(),
     }
 
 
@@ -665,20 +707,43 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         min_plan="agency",
         priority=45,
     ),
+    "edit_ai_staging": PlusVariantSpec(
+        id="edit_ai_staging",
+        label="AI lifestyle staging",
+        params={
+            **_edit_with_ai_params(
+                seed=int(getattr(settings, "EDIT_WITH_AI_SEED_DEFAULT", 2016886668)),
+            ),
+            "editWithAI.prompt": "{edit_ai_staging_prompt}",
+        },
+        categories=(),
+        min_plan="growth",
+        priority=91,
+    ),
+    "edit_ai_angle": PlusVariantSpec(
+        id="edit_ai_angle",
+        label="AI angle variation",
+        params={
+            **_edit_with_ai_params(seed=AI_BG_SEEDS[1]),
+            "editWithAI.prompt": "{edit_ai_angle_prompt}",
+        },
+        categories=(),
+        min_plan="growth",
+        priority=90,
+    ),
     "ai_touchup": PlusVariantSpec(
         id="ai_touchup",
         label="AI touch-up",
         params={
-            "removeBackground": "false",
-            "referenceBox": "originalImage",
-            "editWithAI.mode": "ai.auto",
+            **_edit_with_ai_params(
+                seed=int(getattr(settings, "EDIT_WITH_AI_SEED_DEFAULT", 2016886668)),
+            ),
             "editWithAI.prompt": "{touchup_prompt}",
-            "editWithAI.seed": str(getattr(settings, "EDIT_WITH_AI_SEED_DEFAULT", 2016886668)),
-            **_export_defaults(),
         },
         categories=(),
         min_plan="agency",
         priority=42,
+        pack_eligible=False,
     ),
     # ── Service (work evidence, no physical product) ───────────────────────
     "service_hero": PlusVariantSpec(
@@ -1109,6 +1174,37 @@ def build_touchup_prompt(product, analysis: dict | None) -> str:
     )
 
 
+def build_edit_ai_staging_prompt(product, analysis: dict | None) -> str:
+    """Photoroom Product Staging recipe + product-specific guardrails."""
+    name = _clean_name(product)
+    analysis = analysis or {}
+    hook = analysis.get("campaign_angle") or analysis.get("value_proposition") or ""
+    category = detect_product_category(product, analysis)
+    extra = (
+        f" The hero product is {name} — keep it fully visible, accurate in color and shape, "
+        f"and the clear focal point. Category: {category}."
+    )
+    if hook:
+        extra += f" Marketing angle: {hook}."
+    extra += " No text overlays or watermarks."
+    return EDIT_WITH_AI_PRODUCT_STAGING_BASE + extra
+
+
+def build_edit_ai_angle_prompt(product, analysis: dict | None) -> str:
+    """Photoroom Other Angle recipe + product-specific guardrails."""
+    name = _clean_name(product)
+    analysis = analysis or {}
+    hook = analysis.get("campaign_angle") or ""
+    extra = (
+        f" The main product is {name} — show it from a fresh angle while keeping it "
+        f"recognizable and fully visible."
+    )
+    if hook:
+        extra += f" Mood: {hook}."
+    extra += " No text overlays or watermarks."
+    return EDIT_WITH_AI_OTHER_ANGLE_BASE + extra
+
+
 def build_service_prompt(product, analysis: dict | None, *, context: bool = False) -> str:
     name = _clean_name(product)
     analysis = analysis or {}
@@ -1203,6 +1299,10 @@ def resolve_variant_params(
             resolved[key] = str(getattr(settings, "PHOTOROOM_BANNER_SIZE", "1920x1080"))
         elif value == "{touchup_prompt}":
             resolved[key] = build_touchup_prompt(product, analysis)
+        elif value == "{edit_ai_staging_prompt}":
+            resolved[key] = build_edit_ai_staging_prompt(product, analysis)
+        elif value == "{edit_ai_angle_prompt}":
+            resolved[key] = build_edit_ai_angle_prompt(product, analysis)
         elif value == "{beautify_mode}":
             from apps.products.photoroom_api import beautify_mode_for_category
 
@@ -1243,6 +1343,8 @@ def _slide_roles_for(offering: str, category: str) -> tuple[tuple[str, tuple[str
 
 def slide_role_for_variant(variant_id: str, offering: str, category: str) -> str:
     """Carousel role label for a variant id."""
+    if variant_id in EDIT_WITH_AI_VARIANT_IDS:
+        return "lifestyle_edit"
     if variant_id in COMMERCE_SCENE_VARIANT_IDS:
         return "commerce"
     if variant_id in SOFT_CREATIVE_VARIANT_IDS | DEPRECATED_CREATIVE_VARIANT_IDS:
@@ -1303,6 +1405,18 @@ def _target_ai_scene_count(max_count: int) -> int:
     return min(target, available, max_ai)
 
 
+def _target_edit_with_ai_count(max_count: int) -> int:
+    """How many Edit With AI slides (staging + angle) when budget allows."""
+    if not getattr(settings, "PHOTOROOM_EDIT_WITH_AI_ENABLED", True):
+        return 0
+    cap = int(getattr(settings, "PHOTOROOM_EDIT_WITH_AI_MAX_PER_PACK", 2))
+    if max_count < 3:
+        return 0
+    if max_count < 5:
+        return min(1, cap)
+    return min(cap, max(0, max_count - 3))
+
+
 def order_variants_by_slide_role(
     candidates: list[PlusVariantSpec],
     *,
@@ -1321,6 +1435,7 @@ def order_variants_by_slide_role(
     picked: list[PlusVariantSpec] = []
     picked_ids: set[str] = set()
     ai_target = _target_ai_scene_count(max_count)
+    edit_target = _target_edit_with_ai_count(max_count)
     skip_risky = uncertainty_is_high(uncertainty_score)
 
     for role_name, preferred_ids in _slide_roles_for(offering, category):
@@ -1334,6 +1449,18 @@ def order_variants_by_slide_role(
                     picked.append(spec)
                     picked_ids.add(vid)
                     picked_desire += 1
+            continue
+
+        if role_name == "lifestyle_edit":
+            picked_edit = 0
+            for vid in preferred_ids:
+                if len(picked) >= max_count or picked_edit >= edit_target:
+                    break
+                spec = by_id.get(vid)
+                if spec and vid not in picked_ids:
+                    picked.append(spec)
+                    picked_ids.add(vid)
+                    picked_edit += 1
             continue
 
         for vid in preferred_ids:
@@ -1431,6 +1558,15 @@ def select_plus_variants(
         for vid in CATEGORY_COMMERCE_SCENES.get(category, CATEGORY_COMMERCE_SCENES["general"]):
             spec = PLUS_VARIANT_CATALOG.get(vid)
             if spec and spec not in candidates:
+                candidates.append(spec)
+
+    if (
+        offering == "product"
+        and getattr(settings, "PHOTOROOM_EDIT_WITH_AI_ENABLED", True)
+    ):
+        for vid in ("edit_ai_staging", "edit_ai_angle"):
+            spec = PLUS_VARIANT_CATALOG.get(vid)
+            if spec and _plan_rank(spec.min_plan) <= plan_rank and spec not in candidates:
                 candidates.append(spec)
 
     seen: set[str] = set()

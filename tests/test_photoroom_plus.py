@@ -3,9 +3,12 @@
 from apps.products.photoroom_plus import (
     COMMERCE_SCENE_VARIANT_IDS,
     DEPRECATED_CREATIVE_VARIANT_IDS,
+    EDIT_WITH_AI_PRODUCT_STAGING_BASE,
     PLUS_VARIANT_CATALOG,
     build_commerce_scene_prompt,
     build_creative_prompt,
+    build_edit_ai_angle_prompt,
+    build_edit_ai_staging_prompt,
     build_lifestyle_prompt,
     detect_product_category,
     select_plus_variants,
@@ -91,6 +94,8 @@ def test_catalog_covers_plus_feature_groups():
     assert "beautify" in ids
     assert "upscale" in ids
     assert "ai_touchup" in ids
+    assert "edit_ai_staging" in ids
+    assert "edit_ai_angle" in ids
     assert "digital_desk_hero" in ids
     assert "digital_device_mockup" in ids
 
@@ -248,6 +253,39 @@ def test_commerce_slide_role_tag():
     assert slide_role_for_variant("ai_scene_table", "product", "apparel") == "commerce"
     assert slide_role_for_variant("ai_creative_marble", "product", "beauty") == "creative"
     assert slide_role_for_variant("studio_white", "product", "beauty") == "hero"
+    assert slide_role_for_variant("edit_ai_staging", "product", "beauty") == "lifestyle_edit"
+
+
+def test_edit_ai_staging_prompt_uses_official_recipe():
+    p = _Product(name="Amaya Speaker", tags=["electronics"])
+    prompt = build_edit_ai_staging_prompt(p, {"campaign_angle": "deep bass"})
+    assert EDIT_WITH_AI_PRODUCT_STAGING_BASE in prompt
+    assert "Amaya Speaker" in prompt
+    assert "fully visible" in prompt.lower()
+
+
+def test_edit_ai_angle_prompt_mentions_product():
+    p = _Product(name="Amaya Speaker", tags=["electronics"])
+    prompt = build_edit_ai_angle_prompt(p, {})
+    assert "Amaya Speaker" in prompt
+    assert "different angle" in prompt.lower()
+
+
+def test_growth_pack_includes_edit_with_ai_on_pro_budget():
+    p = _Product(name="Amaya Speaker", tags=["electronics", "bluetooth"])
+    specs = select_plus_variants(
+        p, {"campaign_angle": "portable"}, plan_tier="pro", max_count=7,
+    )
+    ids = [s.id for s in specs]
+    assert "edit_ai_staging" in ids or "edit_ai_angle" in ids
+
+
+def test_starter_plan_excludes_edit_with_ai():
+    p = _Product(name="Serum", tags=["beauty"])
+    specs = select_plus_variants(p, {}, plan_tier="starter", max_count=10)
+    ids = [s.id for s in specs]
+    assert "edit_ai_staging" not in ids
+    assert "edit_ai_angle" not in ids
 
 
 def test_starter_plan_excludes_commerce_scenes_and_creative_variants():
