@@ -192,6 +192,12 @@
   </div>
 </div>
 
+{% if seed_usage %}
+<div class="mt-6">
+  {% include "admin_dashboard/content/_seed_quota_panel.html" with next_url=request.get_full_path seed_quota_logs=seed_quota_logs %}
+</div>
+{% endif %}
+
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
     <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Offer Surface</h3>

@@ -244,6 +244,21 @@ class UserProfile(models.Model):
     )
     trial_ends_at = models.DateTimeField(null=True, blank=True)
     current_period_end = models.DateTimeField(null=True, blank=True)
+    # Content seed quota (Studio) — admin overrides for testing & promotions
+    seed_quota_reset_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Seeds before this time are not counted toward the monthly limit.",
+    )
+    seed_monthly_limit_override = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="When set, replaces plan max_seeds_per_month for this user.",
+    )
+    seed_monthly_bonus = models.PositiveIntegerField(
+        default=0,
+        help_text="Extra seeds added on top of plan limit (promotions).",
+    )
     # Agent autonomy preferences
     auto_approve_posts = models.BooleanField(
         default=False,

@@ -1,0 +1,37 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Reset or extend monthly Studio seed limits for testing and promotions</p>
+{% endblock %}
+
+{% block content %}
+<a href="{% url 'admin_dashboard:content_overview' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4">
+  ← Content pipeline
+</a>
+
+<form method="get" class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm mb-6 flex flex-wrap gap-3 items-end">
+  <div class="flex-1 min-w-[240px]">
+    <label class="block text-xs font-medium text-gray-500 mb-1">User email</label>
+    <input type="text" name="email" value="{{ email }}" placeholder="kovaagents@gmail.com"
+           class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+  </div>
+  <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg">Look up</button>
+  <a href="{% url 'admin_dashboard:seed_quota_log' %}" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Audit log →</a>
+</form>
+
+{% if email and not target_user %}
+<div class="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 p-4 text-sm text-amber-800 dark:text-amber-200">
+  No user found for “{{ email }}”.
+</div>
+{% endif %}
+
+{% if target_user and seed_usage %}
+  {% include "admin_dashboard/content/_seed_quota_panel.html" with next_url=request.get_full_path seed_quota_logs=recent_logs %}
+  <p class="mt-4 text-xs text-gray-500">
+    <a href="{% url 'admin_dashboard:user_detail' pk=target_user.pk %}?tab=profile" class="text-kova-600 hover:underline">Full user profile →</a>
+    ·
+    <a href="{% url 'content:studio' %}" class="text-kova-600 hover:underline" target="_blank" rel="noopener">Open Studio (as you)</a>
+  </p>
+{% endif %}
+{% endblock %}

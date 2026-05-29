@@ -200,7 +200,15 @@ def user_detail(request, pk):
     }
 
     if tab == "profile":
-        pass  # user + profile already in context
+        from apps.billing.enforcement import get_seed_usage
+        from apps.billing.models import ContentSeedQuotaLog
+
+        context["seed_usage"] = get_seed_usage(user)
+        context["seed_quota_logs"] = (
+            ContentSeedQuotaLog.objects.filter(user=user)
+            .select_related("admin")
+            .order_by("-created_at")[:10]
+        )
 
     elif tab == "content":
         seeds = ContentSeed.objects.filter(user=user).order_by("-created_at")[:20]

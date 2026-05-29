@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, bookings, calendar_intel, campaigns, content, costs, emails, engage, feature_usage, help, innovations, leads, llm, logs, media_queue, memes, notifications, onboarding, operations, overview, partners, partials, photoroom, pixel, platforms, products, profile_audit, qr, reel_music, revenue, reviews, system, system_maps, teams, user_health, users, whatsapp
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, bookings, calendar_intel, campaigns, content, costs, emails, engage, feature_usage, help, innovations, leads, llm, logs, media_queue, memes, notifications, onboarding, operations, overview, partners, partials, photoroom, pixel, platforms, products, profile_audit, qr, reel_music, revenue, reviews, seed_quota, system, system_maps, teams, user_health, users, whatsapp
 
 app_name = "admin_dashboard"
 
@@ -51,6 +51,9 @@ urlpatterns = [
     path("content/posts/", content.post_list, name="post_list"),
     path("content/posts/<uuid:pk>/", content.post_detail, name="post_detail_admin"),
     path("content/seeds/", content.seed_list, name="seed_list"),
+    path("content/seed-quotas/", seed_quota.seed_quota_hub, name="seed_quota_hub"),
+    path("content/seed-quotas/log/", seed_quota.seed_quota_log, name="seed_quota_log"),
+    path("users/<uuid:pk>/seed-quota/", seed_quota.seed_quota_action, name="seed_quota_action"),
     path("content/failed/", content.failed_content, name="failed_content"),
 
     # Agents

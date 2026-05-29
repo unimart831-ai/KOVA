@@ -104,34 +104,41 @@ def check_seed_limit(user):
 
 def get_seed_usage(user) -> dict:
     """Monthly seed quota for Studio UI and enforcement."""
-    from apps.content.models import ContentSeed
+    from apps.billing.seed_quota import count_seeds_in_period, get_effective_seed_max
 
     profile = getattr(user, "profile", None)
     limits = get_user_plan_limits(user) if profile else get_plan_limits("starter")
-    max_seeds = limits["max_seeds_per_month"]
-    unlimited = max_seeds >= 999999
+    plan_max = int(limits["max_seeds_per_month"])
+    effective_max = get_effective_seed_max(user, limits)
+    unlimited = effective_max >= 999999
 
     if unlimited:
         return {
             "used": 0,
-            "max": max_seeds,
-            "remaining": max_seeds,
+            "max": effective_max,
+            "remaining": effective_max,
             "at_limit": False,
             "unlimited": True,
             "plan_label": limits.get("label", "Starter"),
+            "plan_max": plan_max,
+            "bonus": int(getattr(profile, "seed_monthly_bonus", 0) or 0) if profile else 0,
+            "limit_override": getattr(profile, "seed_monthly_limit_override", None) if profile else None,
+            "reset_at": getattr(profile, "seed_quota_reset_at", None) if profile else None,
         }
 
-    now = timezone.now()
-    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    used = ContentSeed.objects.filter(user=user, created_at__gte=month_start).count()
+    used = count_seeds_in_period(user)
 
     return {
         "used": used,
-        "max": max_seeds,
-        "remaining": max(0, max_seeds - used),
-        "at_limit": used >= max_seeds,
+        "max": effective_max,
+        "remaining": max(0, effective_max - used),
+        "at_limit": used >= effective_max,
         "unlimited": False,
         "plan_label": limits.get("label", "Starter"),
+        "plan_max": plan_max,
+        "bonus": int(getattr(profile, "seed_monthly_bonus", 0) or 0) if profile else 0,
+        "limit_override": getattr(profile, "seed_monthly_limit_override", None) if profile else None,
+        "reset_at": getattr(profile, "seed_quota_reset_at", None) if profile else None,
     }
 
 

@@ -414,6 +414,48 @@ class SubscriptionOverride(models.Model):
         return f"{self.get_action_display()} → {self.user} by {self.admin}"
 
 
+class ContentSeedQuotaLog(models.Model):
+    """Audit trail for admin content seed quota adjustments."""
+
+    class Action(models.TextChoices):
+        RESET_USAGE = "reset_usage", "Reset usage counter"
+        SET_LIMIT_OVERRIDE = "set_limit_override", "Set monthly limit override"
+        CLEAR_LIMIT_OVERRIDE = "clear_limit_override", "Clear limit override"
+        SET_BONUS = "set_bonus", "Set bonus seeds"
+        CLEAR_ALL = "clear_all", "Clear all overrides"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="seed_quota_logs",
+    )
+    admin = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="seed_quota_admin_actions",
+    )
+    action = models.CharField(max_length=32, choices=Action.choices)
+    reason = models.TextField()
+    used_before = models.PositiveIntegerField(default=0)
+    max_before = models.PositiveIntegerField(default=0)
+    remaining_before = models.PositiveIntegerField(default=0)
+    plan_label = models.CharField(max_length=40, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["action", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.get_action_display()} → {self.user_id}"
+
+
 # ─── Dynamic Pricing ────────────────────────────────────────────────────────
 
 class PlanPrice(models.Model):
