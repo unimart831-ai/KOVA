@@ -36,11 +36,6 @@ class Migration(migrations.Migration):
             old_name='products_co_status_idx',
         ),
         migrations.RenameIndex(
-            model_name='commercepayment',
-            new_name='products_co_transac_be8abb_idx',
-            old_name='products_co_transac_idx',
-        ),
-        migrations.RenameIndex(
             model_name='product',
             new_name='products_pr_user_id_30ea19_idx',
             old_name='products_pr_user_co_idx',
