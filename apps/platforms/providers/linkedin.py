@@ -424,6 +424,7 @@ class LinkedInProvider(BaseProvider):
         if "refresh_token" in tokens:
             result["refresh_token"] = tokens["refresh_token"]
         if "expires_in" in tokens:
+            result["expires_in"] = tokens["expires_in"]
             result["expires_at"] = datetime.now(timezone.utc) + timedelta(
                 seconds=tokens["expires_in"]
             )

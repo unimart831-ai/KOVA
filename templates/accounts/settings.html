@@ -469,7 +469,42 @@
     <div class="px-6 py-4 border-b border-red-100 dark:border-red-900/40">
       <h2 class="text-lg font-semibold text-red-700 dark:text-red-400">Danger zone</h2>
     </div>
-    <div class="card-body">
+    <div class="card-body space-y-6">
+
+      {# ═══════ Emergency Pause ═══════ #}
+      <div class="p-4 rounded-xl border-2 {% if request.user.profile.emergency_pause %}border-red-500 bg-red-50 dark:bg-red-950/30{% else %}border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20{% endif %}">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-lg {% if request.user.profile.emergency_pause %}bg-red-100 dark:bg-red-900/50{% else %}bg-amber-100 dark:bg-amber-900/40{% endif %} flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 {% if request.user.profile.emergency_pause %}text-red-600 dark:text-red-400{% else %}text-amber-600 dark:text-amber-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+          </div>
+          <div class="flex-1">
+            <h3 class="text-sm font-semibold {% if request.user.profile.emergency_pause %}text-red-800 dark:text-red-200{% else %}text-gray-900 dark:text-white{% endif %}">Emergency pause</h3>
+            <p class="text-xs {% if request.user.profile.emergency_pause %}text-red-700 dark:text-red-300{% else %}text-gray-600 dark:text-gray-400{% endif %} mt-1">
+              {% if request.user.profile.emergency_pause %}
+                All autonomous agent actions are <strong>halted</strong> — publishing, auto-replies, strategist seeds, and media queue are frozen.
+              {% else %}
+                Instantly halt ALL autonomous agent actions (publishing, auto-replies, strategist seeds, media queue). Use this if something goes wrong.
+              {% endif %}
+            </p>
+          </div>
+        </div>
+        <form method="post" action="{% url 'accounts:emergency_pause' %}" class="mt-3">
+          {% csrf_token %}
+          {% if request.user.profile.emergency_pause %}
+          <button type="submit" class="w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-semibold bg-green-600 hover:bg-green-700 text-white shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+            Resume all agents
+          </button>
+          {% else %}
+          <button type="submit" class="w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-semibold bg-red-600 hover:bg-red-700 text-white shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+            Activate emergency pause
+          </button>
+          {% endif %}
+        </form>
+      </div>
+
+      {# ═══════ Delete Account ═══════ #}
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <p class="font-medium text-gray-900 dark:text-white">Delete account</p>

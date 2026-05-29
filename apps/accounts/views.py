@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.http import JsonResponse
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -365,7 +366,7 @@ def ai_brand_builder(request):
     """
     import json
     import logging
-    from apps.agents.llm import generate, _get_llm_config
+    from apps.agents.llm import generate, parse_llm_json, _get_llm_config
 
     logger = logging.getLogger(__name__)
 
@@ -450,7 +451,18 @@ def ai_brand_builder(request):
         if not response.content:
             return JsonResponse({"error": "AI returned an empty response. Try again."}, status=500)
 
-        result = json.loads(response.content)
+        try:
+            result = parse_llm_json(response.content)
+        except json.JSONDecodeError:
+            retry_resp = generate(
+                prompt=user_prompt + "\n\nReturn ONLY valid JSON, no markdown fences or explanation.",
+                system=system_prompt,
+                temperature=0.4,
+                max_tokens=1024,
+                json_mode=True,
+                user=request.user,
+            )
+            result = parse_llm_json(retry_resp.content) if retry_resp.content else json.loads("")
 
         # Validate tone_attributes are from allowed set
         allowed_tones = {
@@ -518,7 +530,7 @@ def infer_brand_from_url(request):
 
     import requests
 
-    from apps.agents.llm import generate, _get_llm_config
+    from apps.agents.llm import generate, parse_llm_json, _get_llm_config
     from apps.accounts.models import UserProfile
     from apps.billing.exceptions import PlanLimitExceeded
 
@@ -545,6 +557,13 @@ def infer_brand_from_url(request):
             },
             status=400,
         )
+
+    # ── SSRF protection — block private/reserved IPs ─────────────
+    from apps.utils.url_safety import validate_url_for_ssrf
+
+    ssrf_error = validate_url_for_ssrf(url)
+    if ssrf_error:
+        return JsonResponse({"error": ssrf_error}, status=400)
 
     # Pre-flight: ensure an LLM provider is configured.
     config = _get_llm_config()
@@ -659,7 +678,18 @@ def infer_brand_from_url(request):
         if not response.content:
             return JsonResponse({"error": "AI couldn't read that page."}, status=502)
 
-        result = json.loads(response.content)
+        try:
+            result = parse_llm_json(response.content)
+        except json.JSONDecodeError:
+            retry_resp = generate(
+                prompt=user_prompt + "\n\nReturn ONLY valid JSON, no markdown fences or explanation.",
+                system=system_prompt,
+                temperature=0.3,
+                max_tokens=1024,
+                json_mode=True,
+                user=request.user,
+            )
+            result = parse_llm_json(retry_resp.content) if retry_resp.content else json.loads("")
 
         # Validate industry against choices
         valid_industries = {v for v, _ in UserProfile.Industry.choices}
@@ -858,7 +888,7 @@ def toggle_emergency_pause(request):
     else:
         messages.success(request, "✅ Emergency pause deactivated — agents are running again.")
 
-    return redirect(request.META.get("HTTP_REFERER", "accounts:settings"))
+    return redirect(request.META.get("HTTP_REFERER") or reverse("accounts:settings"))
 
 
 # ── AI Learning — Adapt Agent v2 controls (W3 Commit 4) ────────────────────

@@ -31,6 +31,10 @@ exclude_lines = [
     "pass",
 ]
 
+[tool.bandit]
+exclude_dirs = ["tests", "venv", "node_modules", ".venv"]
+skips = ["B101", "B311"]
+
 [tool.ruff]
 target-version = "py312"
 line-length = 120

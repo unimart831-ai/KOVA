@@ -76,7 +76,7 @@
   {% csrf_token %}
   <div class="flex flex-col sm:flex-row gap-3 pt-2">
     <a href="?step=1" class="btn-secondary text-center">Back</a>
-    <a href="{% url 'accounts:settings' %}" class="btn-secondary text-center flex-1">Edit in Settings</a>
+    <a href="?step=1" class="btn-secondary text-center flex-1">Edit details</a>
     <button type="submit" class="btn-primary flex-1 py-3">
       Looks good — start my agency
       <svg class="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

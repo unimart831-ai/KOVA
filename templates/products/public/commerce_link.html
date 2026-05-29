@@ -124,12 +124,53 @@
     {% endif %}
 
     {% if mpesa_available %}
-    <form id="pay-form">
-      {% csrf_token %}
-      <input class="field" type="tel" name="phone" id="phone" placeholder="M-Pesa number (07… or 254…)" required autocomplete="tel">
-      <button type="submit" class="btn btn-mpesa" id="pay-btn">Pay with M-Pesa</button>
-    </form>
-    <div id="pay-msg" class="msg"></div>
+    <div x-data="mpesaPay()" x-cloak>
+      <!-- Pay form — visible only before STK push starts -->
+      <form @submit.prevent="initiate" x-show="state === 'idle' || state === 'error'">
+        {% csrf_token %}
+        <input class="field" type="tel" name="phone" x-model="phone" placeholder="M-Pesa number (07… or 254…)" required autocomplete="tel">
+        <button type="submit" class="btn btn-mpesa" :disabled="submitting">
+          <span x-show="!submitting">Pay with M-Pesa</span>
+          <span x-show="submitting">Starting payment…</span>
+        </button>
+        <p class="msg err" x-show="errorMsg" x-text="errorMsg"></p>
+      </form>
+
+      <!-- Polling state — waiting for M-Pesa callback -->
+      <div x-show="state === 'polling'" class="pay-polling">
+        <div class="pay-spinner"></div>
+        <p class="pay-polling-text">Waiting for M-Pesa confirmation…</p>
+        <p class="pay-polling-sub">Enter your PIN on the prompt sent to your phone.</p>
+        <p class="pay-polling-timer" x-text="timerText"></p>
+      </div>
+
+      <!-- Success state -->
+      <div x-show="state === 'success'" class="pay-result pay-success">
+        <div class="pay-result-icon">&#10003;</div>
+        <p class="pay-result-title">Payment successful!</p>
+        <div class="pay-receipt">
+          <p><strong>Receipt:</strong> <span x-text="receipt.receipt_number"></span></p>
+          <p><strong>Amount:</strong> <span x-text="receipt.currency + ' ' + receipt.amount"></span></p>
+          <template x-if="receipt.product_name">
+            <p><strong>Item:</strong> <span x-text="receipt.product_name"></span></p>
+          </template>
+        </div>
+      </div>
+
+      <!-- Failure state -->
+      <div x-show="state === 'failed'" class="pay-result pay-failed">
+        <p class="pay-result-title">Payment was not completed</p>
+        <p class="pay-result-desc" x-text="failReason"></p>
+        <button type="button" class="btn btn-mpesa" @click="retry">Try again</button>
+      </div>
+
+      <!-- Timeout state -->
+      <div x-show="state === 'timeout'" class="pay-result pay-timeout">
+        <p class="pay-result-title">Payment timed out</p>
+        <p class="pay-result-desc">We didn't receive a confirmation from M-Pesa. You were not charged.</p>
+        <button type="button" class="btn btn-mpesa" @click="retry">Try again</button>
+      </div>
+    </div>
     {% elif product.display_price and product.currency != 'KES' %}
     <p style="margin-top:10px;font-size:14px;color:var(--commerce-muted);line-height:1.5;">Contact the seller to complete payment.</p>
     {% endif %}
@@ -142,36 +183,127 @@
 </div>
 
 {% if mpesa_available %}
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<style>
+[x-cloak]{display:none!important}
+.pay-polling{text-align:center;padding:24px 0}
+.pay-spinner{width:36px;height:36px;margin:0 auto 12px;border:3.5px solid #e5e7eb;border-top-color:#16a34a;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pay-polling-text{font-size:15px;font-weight:600;color:var(--commerce-text,#111);margin:0 0 4px}
+.pay-polling-sub{font-size:13px;color:var(--commerce-muted,#666);margin:0 0 8px}
+.pay-polling-timer{font-size:12px;color:var(--commerce-muted,#999);margin:0;font-variant-numeric:tabular-nums}
+.pay-result{text-align:center;padding:20px 0}
+.pay-result-icon{font-size:36px;width:56px;height:56px;line-height:56px;margin:0 auto 10px;border-radius:50%;background:#dcfce7;color:#16a34a}
+.pay-result-title{font-size:16px;font-weight:700;margin:0 0 6px}
+.pay-result-desc{font-size:13px;color:var(--commerce-muted,#666);margin:0 0 14px}
+.pay-receipt{text-align:left;background:#f9fafb;border-radius:8px;padding:12px 16px;font-size:13px;margin:12px 0 0}
+.pay-receipt p{margin:4px 0}
+.pay-success .pay-result-title{color:#16a34a}
+.pay-failed .pay-result-title,.pay-timeout .pay-result-title{color:#dc2626}
+</style>
 <script>
-document.getElementById('pay-form').addEventListener('submit', async function(e) {
-  e.preventDefault();
-  const btn = document.getElementById('pay-btn');
-  const msg = document.getElementById('pay-msg');
-  btn.disabled = true;
-  msg.className = 'msg';
-  msg.textContent = '';
-  const fd = new FormData(this);
-  try {
-    const res = await fetch("{% url 'public_commerce_pay' page_slug=shop_slug commerce_slug=product.commerce_slug %}", {
-      method: 'POST',
-      body: fd,
-      headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    });
-    const data = await res.json();
-    if (res.ok && data.ok) {
-      msg.className = 'msg ok';
-      msg.textContent = data.message;
-    } else {
-      msg.className = 'msg err';
-      msg.textContent = data.error || 'Payment could not be started.';
-      btn.disabled = false;
-    }
-  } catch (err) {
-    msg.className = 'msg err';
-    msg.textContent = 'Network error — try again.';
-    btn.disabled = false;
-  }
-});
+function mpesaPay() {
+  return {
+    state: 'idle',
+    phone: '',
+    submitting: false,
+    errorMsg: '',
+    paymentId: null,
+    pollInterval: null,
+    startTime: null,
+    timerText: '',
+    timerInterval: null,
+    receipt: {},
+    failReason: '',
+    POLL_MS: 3000,
+    TIMEOUT_MS: 120000,
+
+    async initiate() {
+      this.submitting = true;
+      this.errorMsg = '';
+      const fd = new FormData();
+      fd.append('phone', this.phone);
+      const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+      if (csrfEl) fd.append('csrfmiddlewaretoken', csrfEl.value);
+      try {
+        const res = await fetch("{% url 'public_commerce_pay' page_slug=shop_slug commerce_slug=product.commerce_slug %}", {
+          method: 'POST', body: fd, headers: {'X-Requested-With': 'XMLHttpRequest'},
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          this.paymentId = data.payment_id;
+          this.state = 'polling';
+          this.startTime = Date.now();
+          this.startPolling();
+          this.startTimer();
+        } else {
+          this.errorMsg = data.error || 'Payment could not be started.';
+          this.state = 'error';
+        }
+      } catch {
+        this.errorMsg = 'Network error — try again.';
+        this.state = 'error';
+      }
+      this.submitting = false;
+    },
+
+    startPolling() {
+      this.stopPolling();
+      this.pollInterval = setInterval(() => this.poll(), this.POLL_MS);
+    },
+
+    stopPolling() {
+      if (this.pollInterval) { clearInterval(this.pollInterval); this.pollInterval = null; }
+      if (this.timerInterval) { clearInterval(this.timerInterval); this.timerInterval = null; }
+    },
+
+    startTimer() {
+      const tick = () => {
+        const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+        const mins = Math.floor(elapsed / 60);
+        const secs = elapsed % 60;
+        this.timerText = `${mins}:${secs.toString().padStart(2, '0')} elapsed`;
+      };
+      tick();
+      this.timerInterval = setInterval(tick, 1000);
+    },
+
+    async poll() {
+      if (Date.now() - this.startTime > this.TIMEOUT_MS) {
+        this.stopPolling();
+        this.state = 'timeout';
+        return;
+      }
+      if (!this.paymentId) return;
+      try {
+        const res = await fetch(`/shop/payment/${this.paymentId}/status/`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.status === 'completed') {
+          this.stopPolling();
+          this.receipt = data;
+          this.state = 'success';
+        } else if (data.status === 'failed') {
+          this.stopPolling();
+          this.failReason = data.result_desc || 'The payment was cancelled or failed.';
+          this.state = 'failed';
+        } else if (data.status === 'expired') {
+          this.stopPolling();
+          this.state = 'timeout';
+        }
+      } catch { /* network blip — keep polling */ }
+    },
+
+    retry() {
+      this.stopPolling();
+      this.state = 'idle';
+      this.paymentId = null;
+      this.errorMsg = '';
+      this.receipt = {};
+      this.failReason = '';
+    },
+  };
+}
 </script>
 {% endif %}
 

@@ -1,13 +1,16 @@
+from datetime import timedelta
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
-
-from apps.utils import fire_task
 from django.db.models import Avg, Count, Q, Sum
+from django.db.models.functions import TruncWeek
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+
+from apps.utils import fire_task
 
 from apps.analytics.models import (
     Competitor,
@@ -92,6 +95,45 @@ def insights(request):
     except Exception:
         bookings_this_month = 0
 
+    # Week-over-week engagement trends
+    now = timezone.now()
+    this_week_start = now - timedelta(days=now.weekday())
+    last_week_start = this_week_start - timedelta(days=7)
+
+    this_week_engagements = metrics.filter(
+        fetched_at__gte=this_week_start
+    ).aggregate(eng=Sum("likes") + Sum("comments") + Sum("shares"))["eng"] or 0
+
+    last_week_engagements = metrics.filter(
+        fetched_at__gte=last_week_start,
+        fetched_at__lt=this_week_start,
+    ).aggregate(eng=Sum("likes") + Sum("comments") + Sum("shares"))["eng"] or 0
+
+    wow_change = 0
+    if last_week_engagements > 0:
+        wow_change = round(((this_week_engagements - last_week_engagements) / last_week_engagements) * 100)
+
+    eight_weeks_ago = now - timedelta(weeks=8)
+    weekly_engagement = list(
+        metrics.filter(fetched_at__gte=eight_weeks_ago)
+        .annotate(week=TruncWeek("fetched_at"))
+        .values("week")
+        .annotate(total=Sum("likes") + Sum("comments") + Sum("shares"))
+        .order_by("week")
+    )
+    if weekly_engagement:
+        max_eng = max(w["total"] for w in weekly_engagement) or 1
+        for w in weekly_engagement:
+            w["pct"] = round((w["total"] / max_eng) * 100)
+
+    recommendations = []
+    if wow_change < -10:
+        recommendations.append({"text": "Engagement dropped this week. Try posting at peak times or varying your content format.", "type": "warning"})
+    if published_count < 3:
+        recommendations.append({"text": "You published fewer than 3 posts. Aim for 4-5 per week for consistent growth.", "type": "info"})
+    if totals.get("avg_engagement") and totals["avg_engagement"] > 5:
+        recommendations.append({"text": "Your engagement rate is excellent! Consider boosting your top posts for wider reach.", "type": "success"})
+
     ctx = {
         "page_title": "Insights & Analytics",
         "totals": totals,
@@ -104,6 +146,11 @@ def insights(request):
         "leads_this_month": leads_this_month,
         "bookings_this_month": bookings_this_month,
         "hot_leads": hot_leads,
+        "this_week_engagements": this_week_engagements,
+        "last_week_engagements": last_week_engagements,
+        "wow_change": wow_change,
+        "weekly_engagement": weekly_engagement,
+        "recommendations": recommendations,
     }
     cache.set(cache_key, ctx, 300)  # 5 min
 

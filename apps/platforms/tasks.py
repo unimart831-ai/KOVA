@@ -14,6 +14,22 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
+def _extract_token_expiry(tokens: dict):
+    """Normalize token expiry from provider refresh responses.
+
+    Providers return expiry in two conventions:
+      - ``expires_at``  — a tz-aware datetime (Twitter, LinkedIn, TikTok)
+      - ``expires_in``  — seconds from now (Facebook, Instagram)
+
+    Returns a tz-aware datetime, or None if neither key is present.
+    """
+    if tokens.get("expires_at"):
+        return tokens["expires_at"]
+    if tokens.get("expires_in"):
+        return timezone.now() + timedelta(seconds=int(tokens["expires_in"]))
+    return None
+
+
 @shared_task(name="platforms.refresh_expiring_tokens")
 def refresh_expiring_tokens():
     """
@@ -46,10 +62,7 @@ def refresh_expiring_tokens():
             account.access_token = new_tokens["access_token"]
             if new_tokens.get("refresh_token"):
                 account.refresh_token = new_tokens["refresh_token"]
-            if new_tokens.get("expires_in"):
-                account.token_expires_at = timezone.now() + timedelta(
-                    seconds=new_tokens["expires_in"]
-                )
+            account.token_expires_at = _extract_token_expiry(new_tokens)
             account.last_error = ""
             account.save(
                 update_fields=[
@@ -85,10 +98,7 @@ def refresh_expiring_tokens():
             # Facebook's extend flow uses the live token itself.
             new_tokens = provider.refresh_access_token(account.access_token)
             account.access_token = new_tokens["access_token"]
-            if new_tokens.get("expires_in"):
-                account.token_expires_at = timezone.now() + timedelta(
-                    seconds=new_tokens["expires_in"]
-                )
+            account.token_expires_at = _extract_token_expiry(new_tokens)
             # Re-fetch page tokens (they inherit from the new user token)
             _refresh_page_tokens(account, new_tokens["access_token"])
             account.last_error = ""

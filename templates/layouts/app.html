@@ -100,7 +100,16 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
         </svg>
         Queue
+        {% if nav_badge_queue %}<span class="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_queue }}</span>{% endif %}
       </a>
+
+      {% if queue_active %}
+      <div class="ml-8 space-y-0.5 mb-1">
+        <a href="{% url 'content:queue' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'queue' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">List</a>
+        <a href="{% url 'content:calendar_grid' %}" class="block text-xs py-1 px-2 rounded {% if 'calendar_grid' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Calendar</a>
+        <a href="{% url 'content:calendar' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'calendar' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Timeline</a>
+      </div>
+      {% endif %}
 
       <a href="{% if request.plan_limits.engagement_agent %}{% url 'engage:inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}"
          {% if '/engage/' in request.path %}aria-current="page"{% endif %}
@@ -109,7 +118,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
         </svg>
         Inbox
-        {% if not request.plan_limits.engagement_agent %}<span class="ml-auto text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">PRO</span>{% endif %}
+        {% if not request.plan_limits.engagement_agent %}<span class="ml-auto text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">PRO</span>{% elif nav_badge_inbox %}<span class="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_inbox }}</span>{% endif %}
       </a>
 
       {% if request.plan_limits.engagement_agent and '/engage/' in request.path %}
@@ -126,7 +135,7 @@
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
         </svg>
         WhatsApp
-        {% if not request.plan_limits.whatsapp_enabled %}<span class="ml-auto text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">PRO</span>{% endif %}
+        {% if not request.plan_limits.whatsapp_enabled %}<span class="ml-auto text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">PRO</span>{% elif nav_badge_whatsapp %}<span class="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_whatsapp }}</span>{% endif %}
       </a>
 
       {% if request.plan_limits.whatsapp_enabled and '/whatsapp/' in request.path %}
@@ -147,6 +156,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
         </svg>
         Leads
+        {% if nav_badge_leads %}<span class="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_leads }}</span>{% endif %}
       </a>
 
       {% if '/leads/' in request.path %}
@@ -396,6 +406,23 @@
 
     <!-- Page content -->
     <main id="main-content" class="flex-1 p-4 sm:p-6 min-w-0 overflow-x-hidden" tabindex="-1">
+      {% if request.user.is_authenticated and request.user.profile.emergency_pause %}
+      <div class="mb-4 px-4 py-3 rounded-lg bg-red-600 dark:bg-red-700 text-white text-sm font-medium flex items-center justify-between gap-3 shadow-sm">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+          </svg>
+          <span>Emergency pause is active — all autonomous actions are halted.</span>
+        </div>
+        <form method="post" action="{% url 'accounts:emergency_pause' %}" class="flex-shrink-0">
+          {% csrf_token %}
+          <button type="submit" class="px-3 py-1 rounded-md text-xs font-semibold bg-white/20 hover:bg-white/30 text-white border border-white/30 transition-colors">
+            Resume
+          </button>
+        </form>
+      </div>
+      {% endif %}
+
       {% include "components/_plan_limit_banner.html" %}
 
       {% if messages %}
@@ -404,7 +431,8 @@
                       {% if message.tags == 'success' %}bg-green-50 border border-green-200 text-green-800 dark:bg-green-950/40 dark:border-green-800 dark:text-green-200
                       {% elif message.tags == 'error' %}bg-red-50 border border-red-200 text-red-800 dark:bg-red-950/40 dark:border-red-800 dark:text-red-200
                       {% elif message.tags == 'warning' %}bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-950/40 dark:border-yellow-800 dark:text-yellow-200
-                      {% else %}bg-blue-50 border border-blue-200 text-blue-800 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-200{% endif %}">
+                      {% else %}bg-blue-50 border border-blue-200 text-blue-800 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-200{% endif %}"
+               x-data x-init="window.dispatchEvent(new CustomEvent('notify', {detail:{message:'{{ message|escapejs }}',type:'{% firstof message.tags 'info' %}'}}))">
             {{ message }}
           </div>
         {% endfor %}
@@ -429,7 +457,8 @@
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M5 8h14M5 12h5m4 0h5M5 16h14M7 21h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
         <span class="text-[10px] font-medium">Workspace</span>
       </a>
-      <a href="{% url 'content:queue' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/content/' in request.path or '/memes/' in request.path or '/media-queue/' in request.path or '/engage/' in request.path or '/whatsapp/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Channels">
+      <a href="{% url 'content:queue' %}" class="relative flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/content/' in request.path or '/memes/' in request.path or '/media-queue/' in request.path or '/engage/' in request.path or '/whatsapp/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Channels">
+        {% if nav_badge_queue or nav_badge_inbox or nav_badge_whatsapp %}<span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full"></span>{% endif %}
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
         <span class="text-[10px] font-medium">Channels</span>
       </a>
@@ -437,7 +466,8 @@
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         <span class="text-[10px] font-medium">Snap2sell</span>
       </a>
-      <a href="{% url 'leads:list' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/leads/' in request.path or '/emails/' in request.path or '/bookings/' in request.path or '/book/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Leads">
+      <a href="{% url 'leads:list' %}" class="relative flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/leads/' in request.path or '/emails/' in request.path or '/bookings/' in request.path or '/book/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Leads">
+        {% if nav_badge_leads %}<span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full"></span>{% endif %}
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         <span class="text-[10px] font-medium">Leads</span>
       </a>

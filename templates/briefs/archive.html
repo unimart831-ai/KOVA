@@ -1,0 +1,54 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Brief Archive{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Past daily briefs for reference</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+  <div class="flex items-center justify-between">
+    <a href="{% url 'brief:home' %}" class="btn-secondary btn-sm">&larr; Back to Today</a>
+  </div>
+
+  {% if briefs %}
+    <div class="space-y-3">
+      {% for brief in briefs %}
+      <div class="card">
+        <div class="card-body p-4 flex items-center justify-between gap-4">
+          <div class="min-w-0 flex-1">
+            <a href="{% url 'brief:detail' brief.brief_date|date:'Y-m-d' %}" class="block">
+              <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                {{ brief.brief_date|date:"l, M j, Y" }}
+              </p>
+              {% if brief.headline %}
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{{ brief.headline }}</p>
+              {% endif %}
+            </a>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            {% if brief.kova_score %}
+            <span class="text-xs font-bold tabular-nums {% if brief.kova_score >= 70 %}text-green-600 dark:text-green-400{% elif brief.kova_score >= 40 %}text-amber-600 dark:text-amber-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+              {{ brief.kova_score }}
+            </span>
+            {% endif %}
+            <form method="post" action="{% url 'brief:archive_toggle' %}" class="inline">
+              {% csrf_token %}
+              <input type="hidden" name="brief_id" value="{{ brief.id }}">
+              <button type="submit" class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" title="Restore">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                </svg>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    {% include "components/_empty_state.html" with icon="inbox" title="No archived briefs" subtitle="When you archive daily briefs, they'll appear here for reference." %}
+  {% endif %}
+</div>
+{% endblock %}

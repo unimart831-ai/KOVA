@@ -9,6 +9,7 @@ from django.views.generic.base import RedirectView
 
 from apps.links.views import public_page, public_form_submit, public_link_click
 from apps.products.commerce_views import (
+    commerce_payment_status,
     public_commerce_link,
     public_commerce_pay,
     public_shop_index,
@@ -117,6 +118,11 @@ urlpatterns = [
         "shop/<slug:page_slug>/<slug:commerce_slug>/pay/",
         public_commerce_pay,
         name="public_commerce_pay",
+    ),
+    path(
+        "shop/payment/<uuid:payment_id>/status/",
+        commerce_payment_status,
+        name="commerce_payment_status",
     ),
     path("campaigns/", include("apps.campaigns.urls")),
     path("whatsapp/", include("apps.whatsapp.urls")),

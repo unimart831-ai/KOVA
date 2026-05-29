@@ -483,18 +483,20 @@ def run_for_user(user) -> dict:
         }
 
     # ── Apply or dry-run ─────────────────────────────────────────────
-    autonomy_globally_enabled = bool(
-        getattr(settings, "ADAPT_AGENT_V2_ENABLED", False)
-    )
-    apply_mutations(user, decisions, dry_run=not autonomy_globally_enabled)
+    # Global env var acts as a kill switch — if False, everything is dry-run
+    # regardless of plan. When True (default), the user's plan gate controls.
+    global_enabled = bool(getattr(settings, "ADAPT_AGENT_V2_ENABLED", True))
+    plan_enabled = _user_adapt_v2_enabled(user)
+    autonomy_enabled = global_enabled and plan_enabled
+    apply_mutations(user, decisions, dry_run=not autonomy_enabled)
 
     logger.info(
-        "Adapt v2 cycle for %s: %d decisions (median=%.3f, n=%d, applied=%s)",
-        user.email, len(decisions), median, n_posts, autonomy_globally_enabled,
+        "Adapt v2 cycle for %s: %d decisions (median=%.3f, n=%d, applied=%s, plan_gate=%s)",
+        user.email, len(decisions), median, n_posts, autonomy_enabled, plan_enabled,
     )
     return {
         "skipped": False, "skip_reason": "",
-        "decisions": decisions, "applied": autonomy_globally_enabled,
+        "decisions": decisions, "applied": autonomy_enabled,
         "median_engagement": median, "n_posts": n_posts,
     }
 
@@ -508,6 +510,20 @@ def _skip(user, reason: str, **extra) -> dict:
         "median_engagement": None,
         "n_posts": extra.get("n_posts", 0),
     }
+
+
+def _user_adapt_v2_enabled(user) -> bool:
+    """Check whether the user's plan tier includes Adapt v2 mutations.
+
+    Returns True for Growth and above, False for Starter/free.
+    Uses the effective plan (trial users get Growth features).
+    """
+    from apps.billing.models import get_effective_plan_tier, get_plan_limits
+
+    profile = getattr(user, "profile", None)
+    tier = get_effective_plan_tier(profile)
+    limits = get_plan_limits(tier)
+    return bool(limits.get("adapt_v2_enabled", False))
 
 
 # ── Eligibility helpers ─────────────────────────────────────────────────────

@@ -138,7 +138,7 @@ class TestCommerceMpesaFlow:
             }
         }
         resp = client.post(
-            reverse("mpesa_commerce_callback"),
+            reverse("analytics:mpesa_commerce_callback"),
             data=json.dumps(payload),
             content_type="application/json",
         )

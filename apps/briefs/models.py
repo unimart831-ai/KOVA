@@ -16,6 +16,7 @@ class DailyBrief(models.Model):
     agent_activity = models.JSONField(default=list, blank=True, help_text="What agents did/plan to do.")
     posts_pending = models.PositiveIntegerField(default=0)
     is_read = models.BooleanField(default=False)
+    is_archived = models.BooleanField(default=False)
 
     # Kova Score — 0-100 social media health score
     kova_score = models.PositiveSmallIntegerField(default=0, help_text="Social health score 0-100")

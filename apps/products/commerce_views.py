@@ -6,6 +6,7 @@ import logging
 from decimal import Decimal
 from urllib.parse import quote
 
+from django.db import IntegrityError, transaction
 from django.http import Http404, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
@@ -192,15 +193,14 @@ def public_commerce_pay(request, page_slug, commerce_slug):
             status=403,
         )
 
-    if product.stock_status == product.StockStatus.OUT_OF_STOCK:
-        return JsonResponse({"error": "This item is out of stock."}, status=400)
-
     phone = (request.POST.get("phone") or "").strip()
     if not phone:
         return JsonResponse({"error": "Phone number is required."}, status=400)
 
+    from django.conf import settings as django_settings
+
     from apps.billing.mpesa import format_phone_number, initiate_stk_push
-    from apps.products.models import CommercePayment
+    from apps.products.models import CommercePayment, Product
 
     try:
         formatted_phone = format_phone_number(phone)
@@ -211,8 +211,48 @@ def public_commerce_pay(request, page_slug, commerce_slug):
     if amount < 1:
         return JsonResponse({"error": "Invalid product price."}, status=400)
 
+    # ── Idempotency: reject duplicate STK push within the same 5-min window ──
+    txn_ref = CommercePayment.build_transaction_ref(
+        product.user_id, product.pk, formatted_phone,
+    )
+    existing = CommercePayment.objects.filter(
+        transaction_ref=txn_ref,
+        status__in=[CommercePayment.Status.PENDING, CommercePayment.Status.COMPLETED],
+    ).first()
+    if existing:
+        if existing.status == CommercePayment.Status.COMPLETED:
+            return JsonResponse({
+                "error": "This payment has already been completed.",
+                "payment_id": str(existing.pk),
+            }, status=409)
+        existing.attempts_count = (existing.attempts_count or 1) + 1
+        existing.save(update_fields=["attempts_count"])
+        return JsonResponse({
+            "ok": True,
+            "message": "A payment is already in progress. Check your phone for the M-Pesa prompt.",
+            "checkout_id": existing.checkout_request_id,
+            "payment_id": str(existing.pk),
+        })
+
+    # ── Race-safe stock check: lock the product row + verify quantity ──
+    with transaction.atomic():
+        locked_product = (
+            Product.objects.select_for_update().get(pk=product.pk)
+        )
+        if locked_product.stock_status == Product.StockStatus.OUT_OF_STOCK:
+            return JsonResponse({"error": "This item is out of stock."}, status=400)
+        if locked_product.tracks_stock and locked_product.quantity is not None and locked_product.quantity < 1:
+            locked_product.stock_status = Product.StockStatus.OUT_OF_STOCK
+            locked_product.save(update_fields=["stock_status"])
+            return JsonResponse({"error": "This item is out of stock."}, status=400)
+
     ref_suffix = str(product.pk).replace("-", "")[:8]
     account_ref = f"KOVA{ref_suffix}"[:12]
+
+    commerce_callback_url = (
+        getattr(django_settings, "MPESA_COMMERCE_CALLBACK_URL", "")
+        or django_settings.MPESA_CALLBACK_URL
+    )
 
     try:
         result = initiate_stk_push(
@@ -220,25 +260,73 @@ def public_commerce_pay(request, page_slug, commerce_slug):
             amount=amount,
             account_reference=account_ref,
             transaction_desc=product.name[:13],
+            callback_url=commerce_callback_url,
         )
     except (ConnectionError, ValueError) as exc:
         logger.error("Commerce STK failed for product %s: %s", product.pk, exc)
         return JsonResponse({"error": "M-Pesa is temporarily unavailable. Try WhatsApp instead."}, status=503)
 
     checkout_id = result.get("CheckoutRequestID", "")
-    CommercePayment.objects.create(
-        user=product.user,
-        product=product,
-        checkout_request_id=checkout_id,
-        merchant_request_id=result.get("MerchantRequestID", ""),
-        phone_number=formatted_phone,
-        amount=product.price,
-        currency=product.currency,
-        source=CommercePayment.Source.COMMERCE_LINK,
-    )
+    try:
+        payment = CommercePayment.objects.create(
+            user=product.user,
+            product=product,
+            transaction_ref=txn_ref,
+            checkout_request_id=checkout_id,
+            merchant_request_id=result.get("MerchantRequestID", ""),
+            phone_number=formatted_phone,
+            amount=product.price,
+            currency=product.currency,
+            source=CommercePayment.Source.COMMERCE_LINK,
+        )
+    except IntegrityError:
+        dup = CommercePayment.objects.filter(transaction_ref=txn_ref).first()
+        return JsonResponse({
+            "ok": True,
+            "message": "Check your phone and enter your M-Pesa PIN to complete payment.",
+            "checkout_id": dup.checkout_request_id if dup else checkout_id,
+            "payment_id": str(dup.pk) if dup else "",
+        })
 
     return JsonResponse({
         "ok": True,
         "message": "Check your phone and enter your M-Pesa PIN to complete payment.",
         "checkout_id": checkout_id,
+        "payment_id": str(payment.pk),
     })
+
+
+@csrf_exempt
+@require_GET
+def commerce_payment_status(request, payment_id):
+    """JSON endpoint for polling payment status from the buyer's browser."""
+    from apps.products.models import CommercePayment
+
+    try:
+        import uuid as _uuid
+        _uuid.UUID(str(payment_id))
+    except (ValueError, AttributeError):
+        return JsonResponse({"error": "Invalid payment ID."}, status=400)
+
+    payment = (
+        CommercePayment.objects
+        .filter(pk=payment_id)
+        .select_related("product")
+        .first()
+    )
+    if not payment:
+        return JsonResponse({"error": "Payment not found."}, status=404)
+
+    data = {
+        "status": payment.status,
+        "amount": str(payment.amount),
+        "currency": payment.currency,
+    }
+    if payment.status == CommercePayment.Status.COMPLETED:
+        data["receipt_number"] = payment.receipt_number
+        data["completed_at"] = payment.completed_at.isoformat() if payment.completed_at else ""
+        if payment.product:
+            data["product_name"] = payment.product.name
+    elif payment.status == CommercePayment.Status.FAILED:
+        data["result_desc"] = payment.result_desc or "Payment was not completed."
+    return JsonResponse(data)

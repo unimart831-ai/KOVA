@@ -42,7 +42,7 @@ _DEFAULT_PACK: dict[str, Any] = {
     "goals": ["brand_awareness", "generate_leads"],
     "posting_frequency": 4,
     "default_cta_type": "whatsapp",
-    "visual_style": "clean",
+    "visual_style": "corporate",
 }
 
 

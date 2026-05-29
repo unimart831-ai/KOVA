@@ -45,6 +45,11 @@ package-lock.json
 # Docker
 .docker/
 
+# Coverage
+.coverage
+htmlcov/
+coverage.xml
+
 # OS
 Thumbs.db
 Desktop.ini

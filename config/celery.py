@@ -69,6 +69,7 @@ app.conf.task_routes = {
     "whatsapp.generate_weekly_digest": {"queue": "low"},
     "whatsapp.curate_channel_content": {"queue": "low"},
     # Products
+    "products.expire_stale_commerce_payments": {"queue": "low"},
     "products.auto_promote_products": {"queue": "default"},
     "content.recycle_top_content": {"queue": "low"},
     "content.plan_weekly_autopilot": {"queue": "default"},

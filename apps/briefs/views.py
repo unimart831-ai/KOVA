@@ -1,7 +1,8 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 from django.http import HttpResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -695,3 +696,32 @@ def brief_action(request):
             content_type="text/html",
         )
     return redirect("brief:home")
+
+
+@login_required
+def brief_archive_list(request):
+    """List of archived daily briefs."""
+    briefs = DailyBrief.objects.filter(
+        user=request.user, is_archived=True,
+    ).order_by("-brief_date")[:50]
+    return render(request, "briefs/archive.html", {
+        "page_title": "Brief Archive",
+        "briefs": briefs,
+    })
+
+
+@login_required
+@require_POST
+def archive_brief(request):
+    """Toggle archive status of a brief."""
+    brief_id = request.POST.get("brief_id")
+    brief = get_object_or_404(DailyBrief, id=brief_id, user=request.user)
+    brief.is_archived = not brief.is_archived
+    brief.save(update_fields=["is_archived"])
+    if brief.is_archived:
+        messages.success(request, "Brief archived.")
+    else:
+        messages.success(request, "Brief restored.")
+    if request.headers.get("HX-Request"):
+        return HttpResponse(status=204)
+    return redirect(request.META.get("HTTP_REFERER") or reverse("brief:home"))

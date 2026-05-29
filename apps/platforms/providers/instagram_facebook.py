@@ -242,9 +242,11 @@ class FacebookProvider(BaseProvider):
             resp.raise_for_status()
             data = resp.json()
 
+        expires_in = data.get("expires_in", 5184000)  # default 60 days
         return {
             "access_token": data["access_token"],
-            "expires_in": data.get("expires_in", 5184000),  # default 60 days
+            "expires_in": expires_in,
+            "expires_at": datetime.now(timezone.utc) + timedelta(seconds=expires_in),
         }
 
     # ── Publishing ───────────────────────────────────────────────────────────
@@ -1137,9 +1139,11 @@ class InstagramProvider(BaseProvider):
             resp.raise_for_status()
             data = resp.json()
 
+        expires_in = data.get("expires_in", 5184000)  # default 60 days
         return {
             "access_token": data["access_token"],
-            "expires_in": data.get("expires_in", 5184000),  # default 60 days
+            "expires_in": expires_in,
+            "expires_at": datetime.now(timezone.utc) + timedelta(seconds=expires_in),
         }
 
     # ── Publishing ───────────────────────────────────────────────────────────

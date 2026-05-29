@@ -34,6 +34,25 @@ def _vision_image_url(image_field):
     return f"data:{mime};base64,{encoded}"
 
 
+@shared_task(name="products.expire_stale_commerce_payments")
+def expire_stale_commerce_payments():
+    """
+    Periodic task: mark PENDING commerce payments older than 10 minutes as EXPIRED.
+    Prevents ghost pending records from blocking idempotency and cluttering dashboards.
+    """
+    from apps.products.models import CommercePayment
+
+    cutoff = timezone.now() - timedelta(minutes=10)
+    expired_count = CommercePayment.objects.filter(
+        status=CommercePayment.Status.PENDING,
+        created_at__lt=cutoff,
+    ).update(status=CommercePayment.Status.EXPIRED)
+
+    if expired_count:
+        logger.info("Expired %d stale commerce payments older than %s", expired_count, cutoff)
+    return {"expired": expired_count}
+
+
 @shared_task(name="check-stock-alerts")
 def check_stock_alerts():
     """

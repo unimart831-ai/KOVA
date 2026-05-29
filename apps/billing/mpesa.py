@@ -87,7 +87,7 @@ def _get_timestamp():
 
 # ─── STK Push (Lipa Na M-Pesa Online) ───────────────────────────────────────
 
-def initiate_stk_push(phone_number, amount, account_reference, transaction_desc="Kova Agent"):
+def initiate_stk_push(phone_number, amount, account_reference, transaction_desc="Kova Agent", callback_url=None):
     """
     Send an STK Push (payment prompt) to the customer's phone.
 
@@ -96,6 +96,7 @@ def initiate_stk_push(phone_number, amount, account_reference, transaction_desc=
         amount: Amount in KES (integer)
         account_reference: Short reference shown on M-Pesa (max 12 chars)
         transaction_desc: Description shown on M-Pesa statement
+        callback_url: Override the default callback URL (for commerce vs subscription routing)
 
     Returns:
         dict with MerchantRequestID, CheckoutRequestID, ResponseCode, etc.
@@ -119,7 +120,7 @@ def initiate_stk_push(phone_number, amount, account_reference, transaction_desc=
         "PartyA": phone_number,
         "PartyB": settings.MPESA_SHORTCODE,
         "PhoneNumber": phone_number,
-        "CallBackURL": settings.MPESA_CALLBACK_URL,
+        "CallBackURL": callback_url or settings.MPESA_CALLBACK_URL,
         "AccountReference": account_reference[:12],
         "TransactionDesc": transaction_desc[:13],
     }

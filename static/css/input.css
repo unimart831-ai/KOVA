@@ -385,6 +385,51 @@ textarea {
     @apply w-full sm:w-auto;
   }
 
+  /* ── Accessibility: focus-visible ring for keyboard nav ── */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kova-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900;
+  }
+  /* Apply consistent focus ring to all interactive elements */
+  a:focus-visible,
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  select:focus-visible {
+    @apply outline-none ring-2 ring-kova-500 ring-offset-2 dark:ring-offset-gray-900;
+  }
+
+  /* Screen reader utility for contextual text */
+  .sr-description {
+    @apply sr-only;
+  }
+
+  /* Reduced motion: disable animations for users who prefer it */
+  @media (prefers-reduced-motion: reduce) {
+    .reveal,
+    .shimmer,
+    .agent-connection,
+    .agent-connection-reverse,
+    .agent-node {
+      animation: none !important;
+      transition: none !important;
+    }
+    .reveal {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* High contrast mode helpers */
+  @media (forced-colors: active) {
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger {
+      border: 2px solid ButtonText;
+    }
+    .nav-link-active {
+      border: 2px solid Highlight;
+    }
+  }
+
   /* Dark-themed sidebar scrollbar */
   .sidebar-scroll {
     scrollbar-width: thin;

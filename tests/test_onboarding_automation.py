@@ -3,12 +3,14 @@
 - industry_packs.apply_pack — fills empty profile fields based on industry
 - magic_fill._infer_industry — maps platform category strings to Industry choices
 - KovaSignupForm.signup — saves phone at signup (required field)
+- SSRF protection — blocks private/reserved IP URLs in URL inference
 
 These are the load-bearing pieces of the Tier-1/Tier-2 onboarding rework. If
 any of them regress, new users get a worse first-run experience.
 """
 
 import pytest
+from unittest.mock import patch
 
 from apps.accounts.models import User, UserProfile
 from apps.accounts.industry_packs import apply_pack, get_pack, PACKS
@@ -18,6 +20,7 @@ from apps.accounts.onboarding_flow import apply_url_inference_to_profile, finish
 from apps.accounts.brand_preview import build_brand_preview
 from apps.accounts.onboarding_express import ensure_brand_defaults, record_intent
 from apps.accounts.setup_mission import build_setup_mission, is_commerce_industry
+from apps.utils.url_safety import validate_url_for_ssrf
 
 
 # ── industry_packs ──────────────────────────────────────────────────────────
@@ -440,7 +443,7 @@ class TestExpressOnboardingHelpers:
         p.refresh_from_db()
         assert (p.brand_voice or "").strip()
         assert p.goals
-        assert p.default_cta_type == "whatsapp"
+        assert p.default_cta_type == "link"
 
     def test_build_brand_preview(self):
         u = User.objects.create_user(
@@ -675,3 +678,117 @@ class TestSignupPhoneRequired:
         assert resp.status_code == 302
         u.refresh_from_db()
         assert u.phone_number == "0711223344"
+
+
+# ── SSRF Protection ─────────────────────────────────────────────────────────
+
+
+def _fake_getaddrinfo(ip_str):
+    """Return a patched getaddrinfo that always resolves to *ip_str*."""
+    def _getaddrinfo(host, port, **kwargs):
+        return [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", (ip_str, 0))]
+    return _getaddrinfo
+
+
+import socket
+
+
+class TestSSRFValidation:
+    """Unit tests for the validate_url_for_ssrf helper."""
+
+    @pytest.mark.parametrize("ip,label", [
+        ("127.0.0.1", "IPv4 loopback"),
+        ("127.0.0.254", "IPv4 loopback range"),
+        ("10.0.0.1", "RFC-1918 class A"),
+        ("10.255.255.1", "RFC-1918 class A high"),
+        ("172.16.0.1", "RFC-1918 class B"),
+        ("172.31.255.1", "RFC-1918 class B high"),
+        ("192.168.0.1", "RFC-1918 class C"),
+        ("192.168.1.100", "RFC-1918 class C mid"),
+        ("169.254.169.254", "AWS metadata / link-local"),
+        ("169.254.0.1", "link-local"),
+        ("0.0.0.0", "unspecified"),
+    ])
+    def test_blocks_private_ipv4(self, ip, label):
+        with patch("apps.utils.url_safety.socket.getaddrinfo", _fake_getaddrinfo(ip)):
+            err = validate_url_for_ssrf(f"https://evil.example.com/")
+            assert err is not None, f"Expected block for {label} ({ip})"
+
+    @pytest.mark.parametrize("ip,label", [
+        ("::1", "IPv6 loopback"),
+        ("fe80::1", "IPv6 link-local"),
+        ("fc00::1", "IPv6 unique local"),
+        ("fd12:3456::1", "IPv6 unique local fd"),
+    ])
+    def test_blocks_private_ipv6(self, ip, label):
+        def _getaddrinfo(host, port, **kwargs):
+            return [(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", (ip, 0, 0, 0))]
+        with patch("apps.utils.url_safety.socket.getaddrinfo", _getaddrinfo):
+            err = validate_url_for_ssrf(f"https://evil.example.com/")
+            assert err is not None, f"Expected block for {label} ({ip})"
+
+    @pytest.mark.parametrize("ip", [
+        "93.184.216.34",   # example.com-ish
+        "151.101.1.67",    # Fastly
+        "104.21.32.1",     # Cloudflare
+    ])
+    def test_allows_public_ips(self, ip):
+        with patch("apps.utils.url_safety.socket.getaddrinfo", _fake_getaddrinfo(ip)):
+            err = validate_url_for_ssrf(f"https://example.com/")
+            assert err is None, f"Public IP {ip} should be allowed"
+
+    def test_rejects_non_http_scheme(self):
+        err = validate_url_for_ssrf("ftp://example.com/file.txt")
+        assert err is not None
+        assert "http" in err.lower()
+
+    def test_rejects_file_scheme(self):
+        err = validate_url_for_ssrf("file:///etc/passwd")
+        assert err is not None
+
+    def test_unresolvable_hostname(self):
+        with patch("apps.utils.url_safety.socket.getaddrinfo", side_effect=socket.gaierror):
+            err = validate_url_for_ssrf("https://this-host-does-not-exist-xyz.example/")
+            assert err is not None
+            assert "resolve" in err.lower()
+
+    def test_blocks_if_any_resolved_ip_is_private(self):
+        """If DNS returns a mix of public + private IPs, block it."""
+        def _getaddrinfo(host, port, **kwargs):
+            return [
+                (socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", ("93.184.216.34", 0)),
+                (socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", ("127.0.0.1", 0)),
+            ]
+        with patch("apps.utils.url_safety.socket.getaddrinfo", _getaddrinfo):
+            err = validate_url_for_ssrf("https://sneaky.example.com/")
+            assert err is not None
+
+
+@pytest.mark.django_db
+class TestSSRFInferEndpoint:
+    """Integration tests verifying the infer-from-url endpoint rejects SSRF."""
+
+    def _user_with_phone(self, username="ssrf", email="ssrf@b.com"):
+        u = User.objects.create_user(username=username, email=email, password="P1!")
+        u.phone_number = "0712345678"
+        u.save(update_fields=["phone_number"])
+        return u
+
+    @pytest.mark.parametrize("ip,url_host", [
+        ("127.0.0.1", "localhost"),
+        ("169.254.169.254", "169.254.169.254"),
+        ("10.0.0.1", "internal.corp"),
+    ])
+    def test_endpoint_blocks_private_urls(self, client, ip, url_host):
+        u = self._user_with_phone(
+            username=f"ssrf-{ip.replace('.', '')}",
+            email=f"ssrf-{ip.replace('.', '')}@b.com",
+        )
+        client.force_login(u)
+        with patch("apps.utils.url_safety.socket.getaddrinfo", _fake_getaddrinfo(ip)):
+            resp = client.post(
+                "/accounts/api/infer-from-url/",
+                {"url": f"http://{url_host}/latest/meta-data/"},
+            )
+        assert resp.status_code == 400
+        assert "internal" in resp.json()["error"].lower() or "reserved" in resp.json()["error"].lower()

@@ -87,6 +87,9 @@ jobs:
       - name: Run migrations
         run: python manage.py migrate --run-syncdb
 
+      - name: Check for missing migrations
+        run: python manage.py makemigrations --check --dry-run
+
       - name: Run tests with coverage
         run: |
           pytest --cov=apps --cov-report=xml --cov-report=term-missing --cov-fail-under=70
@@ -111,11 +114,19 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
+      - name: Install security tools
+        run: pip install ruff pip-audit bandit
+
       - name: Check for secrets in code
         run: |
-          pip install ruff
           # Fail if any hardcoded password/secret patterns are found
           ! grep -rn "INSECURE-dev-key\|bfb279f9aa9bdbcf158e97dd71a467cd" --include="*.py" config/ apps/ || echo "No hardcoded secrets found"
+
+      - name: pip-audit (known vulnerabilities)
+        run: pip-audit -r requirements/production.txt --desc on --fix --dry-run || true
+
+      - name: Bandit (Python security linter)
+        run: bandit -r apps/ -c pyproject.toml --severity-level medium --confidence-level medium -f json -o bandit-report.json || true
 
       - name: Check Django deployment settings
         run: |
@@ -127,6 +138,13 @@ jobs:
           RESEND_API_KEY: re_fake_ci_check
           SENTRY_DSN: https://fake@sentry.io/0
           DATABASE_URL: postgres://kova:kova@localhost:5432/kova_test
+
+      - name: Upload security report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: kova_agent/bandit-report.json
 
   e2e:
     name: E2E (Playwright)

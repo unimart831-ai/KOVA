@@ -406,6 +406,16 @@ def mpesa_webhook(request):
     try:
         MpesaPayment.objects.get(checkout_request_id=checkout_id)
     except MpesaPayment.DoesNotExist:
+        # Not a subscription payment — check if it's a commerce payment and forward
+        from apps.products.models import CommercePayment
+        if CommercePayment.objects.filter(checkout_request_id=checkout_id).exists():
+            logger.info(
+                "M-Pesa callback for commerce CheckoutRequestID=%s — forwarding to commerce handler",
+                checkout_id,
+            )
+            from apps.analytics.webhooks import mpesa_commerce_callback
+            return mpesa_commerce_callback(request)
+
         logger.warning(
             "M-Pesa callback for unknown CheckoutRequestID: %s — possible fraud", checkout_id
         )

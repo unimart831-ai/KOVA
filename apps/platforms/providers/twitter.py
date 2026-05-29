@@ -73,6 +73,10 @@ class TwitterProvider(BaseProvider):
 
     def get_auth_url(self, state: str, redirect_uri: str) -> str:
         code_verifier, code_challenge = self._generate_pkce()
+        # Stash the verifier so the caller can persist it in the session.
+        # Must NOT go in the state param — that leaks the PKCE secret to the
+        # browser and also breaks CSRF validation (state won't round-trip).
+        self._pending_code_verifier = code_verifier
         params = {
             "response_type": "code",
             "client_id": self.client_id,
@@ -82,10 +86,6 @@ class TwitterProvider(BaseProvider):
             "code_challenge": code_challenge,
             "code_challenge_method": "S256",
         }
-        # Store code_verifier in state metadata (retrieved in callback)
-        # We append it to state: "state|code_verifier"
-        combined_state = f"{state}|{code_verifier}"
-        params["state"] = combined_state
         return f"{TWITTER_AUTH_URL}?{urlencode(params)}"
 
     def handle_callback(self, code: str, redirect_uri: str,
@@ -151,6 +151,7 @@ class TwitterProvider(BaseProvider):
         if "refresh_token" in tokens:
             result["refresh_token"] = tokens["refresh_token"]
         if "expires_in" in tokens:
+            result["expires_in"] = tokens["expires_in"]
             result["expires_at"] = datetime.now(timezone.utc) + timedelta(seconds=tokens["expires_in"])
         return result
 

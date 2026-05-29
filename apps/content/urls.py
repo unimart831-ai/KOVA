@@ -17,6 +17,7 @@ urlpatterns = [
     path("queue/", views.content_queue, name="queue"),
     path("queue/sections/", views.queue_sections, name="queue_sections"),
     path("calendar/", views.calendar_view, name="calendar"),
+    path("calendar/grid/", views.content_calendar_grid, name="calendar_grid"),
     # A/B Testing
     path("ab-tests/", views.ab_test_list, name="ab_test_list"),
     path("ab-tests/create/", views.ab_test_create, name="ab_test_create"),

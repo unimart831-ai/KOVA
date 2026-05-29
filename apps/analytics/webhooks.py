@@ -219,11 +219,34 @@ def mpesa_commerce_callback(request):
     if commerce_payment:
         if commerce_payment.status == CommercePayment.Status.COMPLETED:
             return HttpResponse("OK (duplicate)", status=200)
-        commerce_payment.status = CommercePayment.Status.COMPLETED
-        commerce_payment.receipt_number = receipt
-        commerce_payment.result_code = result_code
-        commerce_payment.completed_at = tz.now()
-        commerce_payment.save()
+
+        from django.db import transaction as db_transaction
+        from django.db.models import F
+
+        with db_transaction.atomic():
+            commerce_payment.status = CommercePayment.Status.COMPLETED
+            commerce_payment.receipt_number = receipt
+            commerce_payment.result_code = result_code
+            commerce_payment.completed_at = tz.now()
+            commerce_payment.save(update_fields=[
+                "status", "receipt_number", "result_code", "completed_at",
+            ])
+
+            # Atomically decrement stock on the product
+            product = commerce_payment.product
+            if product and product.tracks_stock and product.quantity is not None:
+                from apps.products.models import Product
+                updated = Product.objects.filter(
+                    pk=product.pk, quantity__gte=1,
+                ).update(quantity=F("quantity") - 1)
+                if updated:
+                    product.refresh_from_db()
+                    if product.quantity <= 0:
+                        product.stock_status = Product.StockStatus.OUT_OF_STOCK
+                        product.save(update_fields=["stock_status"])
+                    elif product.quantity <= product.low_stock_threshold:
+                        product.stock_status = Product.StockStatus.LOW_STOCK
+                        product.save(update_fields=["stock_status"])
 
         Conversion.objects.create(
             user=commerce_payment.user,

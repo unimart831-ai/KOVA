@@ -240,6 +240,15 @@ def connect_platform(request, platform):
         reverse("platforms:oauth_callback", kwargs={"platform": platform})
     )
     auth_url = provider.get_auth_url(state=state, redirect_uri=redirect_uri)
+
+    # Persist PKCE code_verifier in the session for providers that use it
+    # (e.g. Twitter/X). The verifier is stashed on the provider instance by
+    # get_auth_url() and must travel server-side, never in the URL.
+    code_verifier = getattr(provider, "_pending_code_verifier", None)
+    if code_verifier:
+        request.session[f"oauth_code_verifier_{platform}"] = code_verifier
+        provider._pending_code_verifier = None
+
     return redirect(auth_url)
 
 

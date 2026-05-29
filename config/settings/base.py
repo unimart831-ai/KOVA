@@ -140,6 +140,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "apps.products.context_processors.product_nav",
                 "apps.billing.context_processors.plan_limit_notice",
+                "apps.accounts.context_processors.nav_badges",
             ],
         },
     },
@@ -259,6 +260,10 @@ CELERY_BEAT_SCHEDULE = {
     "flush-pageview-buffer": {
         "task": "analytics.flush_pageview_buffer",
         "schedule": 30.0,  # every 30 seconds — drain analytics buffer
+    },
+    "expire-stale-commerce-payments": {
+        "task": "products.expire_stale_commerce_payments",
+        "schedule": 300.0,  # every 5 minutes — expire pending payments >10 min old
     },
     "check-stock-alerts": {
         "task": "check-stock-alerts",
@@ -664,6 +669,7 @@ MPESA_CONSUMER_SECRET = env("MPESA_CONSUMER_SECRET", default="")
 MPESA_SHORTCODE = env("MPESA_SHORTCODE", default="174379")       # Sandbox default
 MPESA_PASSKEY = env("MPESA_PASSKEY", default="")
 MPESA_CALLBACK_URL = env("MPESA_CALLBACK_URL", default="")       # e.g. https://yourdomain.com/billing/webhook/mpesa/
+MPESA_COMMERCE_CALLBACK_URL = env("MPESA_COMMERCE_CALLBACK_URL", default="")  # e.g. https://yourdomain.com/analytics/webhooks/mpesa/commerce/
 MPESA_WEBHOOK_SECRET = env("MPESA_WEBHOOK_SECRET", default="")   # Optional: append ?token=<secret> to callback URL
 MPESA_TRIAL_DAYS = env.int("MPESA_TRIAL_DAYS", default=7)
 
@@ -719,11 +725,10 @@ ENGAGE_GRADUATED_AUTONOMY_ENABLED = env.bool("ENGAGE_GRADUATED_AUTONOMY_ENABLED"
 # action_status="dry_run" — but UserProfile is untouched. Lets us audit
 # the threshold calibration on real data before flipping.
 #
-# Two-stage rollout:
-#   Week 1: code lands, flag False, mutations LOGGED ONLY
-#   Week 2: audit dry-run logs, tune thresholds, flip True for internal
-#           users (Kawaida / Nyama / Mara), then global
-ADAPT_AGENT_V2_ENABLED = env.bool("ADAPT_AGENT_V2_ENABLED", default=False)
+# Kill switch for Adapt v2 mutations. Defaults to True — the per-plan gate
+# in PLAN_LIMITS["adapt_v2_enabled"] controls which tiers actually mutate.
+# Set to False in env to force dry-run for ALL users (emergency brake).
+ADAPT_AGENT_V2_ENABLED = env.bool("ADAPT_AGENT_V2_ENABLED", default=True)
 
 # Onboarding completion ping — fires from agents.onboarding_tasks once the
 # "agency first meeting" task chain finishes. Requires an approved Meta

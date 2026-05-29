@@ -134,6 +134,7 @@ class ThreadsProvider(BaseProvider):
 
         result = {"access_token": data["access_token"]}
         if "expires_in" in data:
+            result["expires_in"] = data["expires_in"]
             result["expires_at"] = datetime.now(timezone.utc) + timedelta(seconds=data["expires_in"])
         return result
 

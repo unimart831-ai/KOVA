@@ -1,0 +1,101 @@
+{% load tz %}
+<!-- Desktop: Full month grid -->
+<div class="hidden sm:block">
+  <table class="w-full border-collapse">
+    <thead>
+      <tr>
+        {% for day_name in "Mon,Tue,Wed,Thu,Fri,Sat,Sun"|make_list %}
+        {% endfor %}
+        <th class="text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 text-center w-[14.28%]">Mon</th>
+        <th class="text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 text-center w-[14.28%]">Tue</th>
+        <th class="text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 text-center w-[14.28%]">Wed</th>
+        <th class="text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 text-center w-[14.28%]">Thu</th>
+        <th class="text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 text-center w-[14.28%]">Fri</th>
+        <th class="text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 text-center w-[14.28%]">Sat</th>
+        <th class="text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 text-center w-[14.28%]">Sun</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for week in weeks %}
+      <tr>
+        {% for day in week %}
+        <td class="border border-gray-100 dark:border-gray-800 p-1.5 align-top h-20 relative group
+                   {% if not day.in_month %}bg-gray-50/50 dark:bg-gray-950/30{% endif %}
+                   {% if day.is_today %}ring-2 ring-kova-500 ring-inset rounded-lg{% endif %}">
+          <span class="text-xs font-medium block mb-0.5
+                       {% if day.is_today %}text-kova-600 dark:text-kova-400 font-bold
+                       {% elif not day.in_month %}text-gray-300 dark:text-gray-700
+                       {% else %}text-gray-600 dark:text-gray-400{% endif %}">
+            {{ day.date.day }}
+          </span>
+          {% if day.posts %}
+          <div class="flex flex-wrap gap-0.5">
+            {% for post in day.posts|slice:":5" %}
+            <span class="w-2 h-2 rounded-full
+              {% if post.social_account.platform == 'instagram' %}bg-pink-500
+              {% elif post.social_account.platform == 'facebook' %}bg-blue-600
+              {% elif post.social_account.platform == 'twitter' %}bg-sky-500
+              {% elif post.social_account.platform == 'linkedin' %}bg-blue-800
+              {% elif post.social_account.platform == 'tiktok' %}bg-gray-900 dark:bg-white
+              {% elif post.social_account.platform == 'youtube' %}bg-red-600
+              {% elif post.social_account.platform == 'whatsapp' %}bg-green-500
+              {% elif post.social_account.platform == 'threads' %}bg-gray-800 dark:bg-gray-200
+              {% else %}bg-gray-400{% endif %}"
+              title="{{ post.social_account.get_platform_display }} — {{ post.content_text|truncatewords:6 }}"></span>
+            {% endfor %}
+            {% if day.posts|length > 5 %}
+            <span class="text-[9px] text-gray-400 dark:text-gray-500 font-medium">+{{ day.posts|length|add:"-5" }}</span>
+            {% endif %}
+          </div>
+          {% if day.posts|length > 0 %}
+          <span class="absolute top-1 right-1.5 text-[9px] font-bold tabular-nums text-gray-400 dark:text-gray-600">{{ day.posts|length }}</span>
+          {% endif %}
+          {% elif day.in_month %}
+          <a href="{% url 'content:studio' %}" class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded">
+            <span class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm">+</span>
+          </a>
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Mobile: Compact day list -->
+<div class="sm:hidden space-y-2">
+  {% for week in weeks %}{% for day in week %}
+    {% if day.in_month and day.posts %}
+    <div class="card p-3">
+      <div class="flex items-center justify-between mb-1.5">
+        <p class="text-xs font-semibold {% if day.is_today %}text-kova-600 dark:text-kova-400{% else %}text-gray-700 dark:text-gray-300{% endif %}">
+          {{ day.date|date:"D, M j" }}
+          {% if day.is_today %}<span class="ml-1 text-[10px] font-bold text-kova-500">TODAY</span>{% endif %}
+        </p>
+        <span class="text-[10px] text-gray-400 font-medium">{{ day.posts|length }} post{{ day.posts|length|pluralize }}</span>
+      </div>
+      <div class="space-y-1">
+        {% for post in day.posts|slice:":3" %}
+        <div class="flex items-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-full flex-shrink-0
+            {% if post.social_account.platform == 'instagram' %}bg-pink-500
+            {% elif post.social_account.platform == 'facebook' %}bg-blue-600
+            {% elif post.social_account.platform == 'twitter' %}bg-sky-500
+            {% elif post.social_account.platform == 'linkedin' %}bg-blue-800
+            {% else %}bg-gray-400{% endif %}"></span>
+          <p class="text-xs text-gray-600 dark:text-gray-400 truncate">{{ post.content_text|truncatewords:10 }}</p>
+        </div>
+        {% endfor %}
+        {% if day.posts|length > 3 %}
+        <p class="text-[10px] text-gray-400 pl-3.5">+{{ day.posts|length|add:"-3" }} more</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  {% endfor %}{% endfor %}
+
+  {% if not total_scheduled %}
+  {% include "components/_empty_state.html" with icon="calendar" title="No posts this month" subtitle="Create content and schedule it to see your calendar fill up." cta_text="Create content" cta_url="/content/studio/" %}
+  {% endif %}
+</div>

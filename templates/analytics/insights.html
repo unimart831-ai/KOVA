@@ -174,6 +174,66 @@
       </div>
     </div>
 
+    {# Week-over-Week Engagement #}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="card">
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">This Week's Engagement</h3>
+        </div>
+        <div class="card-body p-6">
+          <div class="flex items-baseline gap-3">
+            <p class="text-3xl font-bold text-gray-900 dark:text-white tabular-nums">{{ this_week_engagements }}</p>
+            {% if wow_change > 0 %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300">+{{ wow_change }}%</span>
+            {% elif wow_change < 0 %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">{{ wow_change }}%</span>
+            {% else %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">0%</span>
+            {% endif %}
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">vs last week ({{ last_week_engagements }} engagements)</p>
+        </div>
+      </div>
+
+      {% if weekly_engagement %}
+      <div class="card">
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Weekly Engagement Trend</h3>
+        </div>
+        <div class="card-body">
+          <div class="flex items-end justify-between gap-1" style="height: 100px;">
+            {% for week in weekly_engagement %}
+            <div class="flex-1 flex flex-col items-center gap-1">
+              <div class="w-full bg-kova-500 dark:bg-kova-400 rounded-t"
+                   style="height: {{ week.pct }}%;" title="{{ week.total }} engagements"></div>
+              <span class="text-[9px] text-gray-400">W{{ forloop.counter }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    {# Recommendations #}
+    {% if recommendations %}
+    <div class="space-y-3">
+      {% for rec in recommendations %}
+      <div class="flex items-start gap-3 p-4 rounded-xl border
+        {% if rec.type == 'warning' %}bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800{% elif rec.type == 'success' %}bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800{% else %}bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800{% endif %}">
+        {% if rec.type == "warning" %}
+          <svg class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+        {% elif rec.type == "success" %}
+          <svg class="w-5 h-5 text-green-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        {% else %}
+          <svg class="w-5 h-5 text-blue-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        {% endif %}
+        <p class="text-sm font-medium {% if rec.type == 'warning' %}text-amber-800 dark:text-amber-200{% elif rec.type == 'success' %}text-green-800 dark:text-green-200{% else %}text-blue-800 dark:text-blue-200{% endif %}">{{ rec.text }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
     {# Published count + Top performing posts #}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div class="stat-card">

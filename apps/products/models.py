@@ -533,10 +533,13 @@ class CommercePayment(models.Model):
         PENDING = "pending", "Pending"
         COMPLETED = "completed", "Completed"
         FAILED = "failed", "Failed"
+        EXPIRED = "expired", "Expired"
 
     class Source(models.TextChoices):
         COMMERCE_LINK = "commerce_link", "Commerce Link"
         WHATSAPP = "whatsapp", "WhatsApp"
+
+    IDEMPOTENCY_WINDOW_SECONDS = 300  # 5 minutes
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
@@ -544,6 +547,10 @@ class CommercePayment(models.Model):
     )
     product = models.ForeignKey(
         Product, on_delete=models.SET_NULL, null=True, blank=True, related_name="commerce_payments",
+    )
+    transaction_ref = models.CharField(
+        max_length=255, unique=True, db_index=True,
+        help_text="Idempotency key: user_id:product_id:phone:timestamp_bucket",
     )
     checkout_request_id = models.CharField(max_length=100, unique=True, db_index=True)
     merchant_request_id = models.CharField(max_length=100, blank=True)
@@ -555,6 +562,10 @@ class CommercePayment(models.Model):
     source = models.CharField(max_length=20, choices=Source.choices, default=Source.COMMERCE_LINK)
     result_code = models.IntegerField(null=True, blank=True)
     result_desc = models.TextField(blank=True)
+    attempts_count = models.PositiveSmallIntegerField(
+        default=1,
+        help_text="How many STK push attempts the buyer made for this transaction",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 
@@ -564,7 +575,19 @@ class CommercePayment(models.Model):
             models.Index(fields=["user", "-created_at"]),
             models.Index(fields=["product", "-created_at"]),
             models.Index(fields=["status", "-created_at"]),
+            models.Index(fields=["transaction_ref"]),
         ]
 
     def __str__(self):
         return f"Commerce {self.amount} {self.currency} — {self.get_status_display()}"
+
+    @staticmethod
+    def build_transaction_ref(user_id, product_id, phone: str) -> str:
+        """
+        Build a deterministic idempotency key scoped to a 5-minute bucket.
+        Same buyer + product + phone within the same bucket → same ref.
+        """
+        from django.utils import timezone as tz
+        import math
+        bucket = math.floor(tz.now().timestamp() / CommercePayment.IDEMPOTENCY_WINDOW_SECONDS)
+        return f"{user_id}:{product_id}:{phone}:{bucket}"
