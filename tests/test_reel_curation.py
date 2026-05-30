@@ -15,8 +15,29 @@ def test_curate_orders_story_then_ai():
     out = curate_reel_image_urls(urls)
     assert "channel_story" in out[0]
     assert "studio_white" in out[1]
-    assert not any("promo_frame" in u for u in out)
+    if any("promo_frame" in u for u in out):
+        assert "promo_frame" in out[-1]
     assert not any("preflight" in u for u in out)
+
+
+def test_curate_max_pool_for_director():
+    urls = [f"/media/ai_scene_{i}.jpg" for i in range(8)]
+    urls.append("/media/studio_white.jpg")
+    out = curate_reel_image_urls(urls, max_slides=5)
+    assert len(out) <= 10
+
+
+def test_curate_prioritizes_edit_ai():
+    urls = [
+        "/media/studio_white.jpg",
+        "/media/edit_ai_staging.jpg",
+        "/media/edit_ai_angle.jpg",
+        "/media/ai_lifestyle.jpg",
+    ]
+    out = curate_reel_image_urls(urls, max_slides=5)
+    assert out[0] == "/media/studio_white.jpg"
+    assert "/media/edit_ai_staging.jpg" in out
+    assert "/media/edit_ai_angle.jpg" in out
 
 
 def test_curate_caps_ai_scenes_at_three():

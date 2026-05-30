@@ -322,6 +322,7 @@ def _build_xfade_filter(
     transition_sec: float,
     *,
     slide_durations: list[float] | None = None,
+    transitions: list[str] | None = None,
 ) -> tuple[str, str]:
     """Build filter_complex for chained xfade transitions with varied motion styles."""
     if num_clips == 1:
@@ -337,13 +338,27 @@ def _build_xfade_filter(
     for i in range(1, num_clips):
         offset += durations[i - 1] - transition_sec
         out = f"v{i}"
-        transition = _pick_transition(i - 1)
+        if transitions and i - 1 < len(transitions):
+            transition = transitions[i - 1]
+        else:
+            transition = _pick_transition(i - 1)
         parts.append(
             f"[{prev}][{i}:v]xfade=transition={transition}:duration={transition_sec:.3f}:offset={offset:.3f}[{out}]"
         )
         prev = out
     parts.append(f"[{prev}]format=yuv420p[vout]")
     return ";".join(parts), "vout"
+
+
+def _audio_filter_for_reel(*, cta_boost: bool, duration_sec: float) -> str | None:
+    """Optional loudness lift on final beat (flash_drop CTA)."""
+    if not cta_boost or duration_sec < 4:
+        return None
+    fade_start = max(duration_sec - 1.2, 0.0)
+    return (
+        f"volume=1.0:enable='between(t,0,{fade_start:.2f})',"
+        f"volume=1.12:enable='between(t,{fade_start:.2f},{duration_sec:.2f})'"
+    )
 
 
 def compose_motion_reel(
@@ -354,6 +369,10 @@ def compose_motion_reel(
     audio_path: Optional[Path] = None,
     template: str = "slideshow",
     hook_texts: list[str] | None = None,
+    slide_roles: list[str] | None = None,
+    ken_burns_variants: list[int] | None = None,
+    transitions: list[str] | None = None,
+    cta_audio_boost: bool = False,
 ) -> bytes:
     """
     Compose a motion Reel MP4 from ordered image sources (URLs or paths).
@@ -380,9 +399,17 @@ def compose_motion_reel(
         for idx, source in enumerate(sources):
             frame_path = workdir / f"frame_{idx:02d}.jpg"
             text = texts[idx] if idx < len(texts) else ""
-            # First frame gets top hook, last frame gets bottom CTA, middle = no text
+            # Hook on first frame (top); price on last frame only (bottom)
             if text:
-                pos = "top" if idx == 0 else ("bottom" if idx == len(sources) - 1 else "center")
+                if idx == 0 and idx == len(sources) - 1:
+                    pos = "bottom" if texts and texts[-1] == text else "top"
+                elif idx == 0:
+                    pos = "top"
+                elif idx == len(sources) - 1:
+                    pos = "bottom"
+                else:
+                    text = ""
+                    pos = "top"
                 _write_hook_frame(
                     _download_bytes(source), frame_path,
                     slide_index=idx, hook_text=text, position=pos,
@@ -403,7 +430,10 @@ def compose_motion_reel(
             dur = slide_durations[idx] if idx < len(slide_durations) else slide_sec
             dur = max(MIN_SLIDE_SEC, min(dur, MAX_SLIDE_SEC))
             slide_frames = max(int(dur * DEFAULT_FPS), 1)
-            vf = _ken_burns_filter(slide_frames, variant=idx)
+            kb_variant = idx
+            if ken_burns_variants and idx < len(ken_burns_variants):
+                kb_variant = ken_burns_variants[idx]
+            vf = _ken_burns_filter(slide_frames, variant=kb_variant)
             cmd = [
                 "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
                 "-loop", "1", "-i", str(frame_path),
@@ -433,6 +463,12 @@ def compose_motion_reel(
             slide_sec,
             transition_sec,
             slide_durations=slide_durations[: len(clip_paths)],
+            transitions=transitions,
+        )
+
+        audio_idx = len(clip_paths)
+        audio_filter = _audio_filter_for_reel(
+            cta_boost=cta_audio_boost, duration_sec=total_duration,
         )
 
         cmd = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error"]
@@ -441,22 +477,44 @@ def compose_motion_reel(
         cmd.extend(["-i", str(audio_input)])
 
         if len(clip_paths) == 1:
-            cmd.extend([
-                "-map", "0:v", "-map", "1:a",
-                "-c:v", "libx264", "-pix_fmt", "yuv420p",
-                "-c:a", "aac", "-b:a", "128k",
-                "-shortest",
-                str(output_path),
-            ])
+            if audio_filter:
+                cmd.extend([
+                    "-map", "0:v",
+                    "-filter:a", audio_filter,
+                    "-map", f"{audio_idx}:a",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-shortest",
+                    str(output_path),
+                ])
+            else:
+                cmd.extend([
+                    "-map", "0:v", "-map", f"{audio_idx}:a",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-shortest",
+                    str(output_path),
+                ])
         else:
-            cmd.extend([
-                "-filter_complex", filter_graph,
-                "-map", f"[{vout}]", "-map", f"{len(clip_paths)}:a",
-                "-c:v", "libx264", "-pix_fmt", "yuv420p",
-                "-c:a", "aac", "-b:a", "128k",
-                "-shortest",
-                str(output_path),
-            ])
+            if audio_filter:
+                fc = f"{filter_graph};[{audio_idx}:a]{audio_filter}[aout]"
+                cmd.extend([
+                    "-filter_complex", fc,
+                    "-map", f"[{vout}]", "-map", "[aout]",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-shortest",
+                    str(output_path),
+                ])
+            else:
+                cmd.extend([
+                    "-filter_complex", filter_graph,
+                    "-map", f"[{vout}]", "-map", f"{audio_idx}:a",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-shortest",
+                    str(output_path),
+                ])
 
         subprocess.run(cmd, check=True, capture_output=True, timeout=300)
 
@@ -487,13 +545,38 @@ def compose_carousel_to_reel(
     *,
     audio_path: Optional[Path] = None,
     hook_texts: list[str] | None = None,
+    slide_roles: list[str] | None = None,
+    ken_burns_variants: list[int] | None = None,
+    transitions: list[str] | None = None,
+    cta_audio_boost: bool = False,
+    template: str = "carousel_to_video",
 ) -> bytes:
-    """Carousel → Reel: Ken Burns + varied xfade (not a flat slideshow)."""
+    """Carousel → Reel: Ken Burns + role-based xfade."""
     return compose_motion_reel(
         slide_urls,
         slide_duration_sec=2.8,
         transition_sec=0.65,
         audio_path=audio_path,
-        template="carousel_to_video",
+        template=template,
         hook_texts=hook_texts,
+        slide_roles=slide_roles,
+        ken_burns_variants=ken_burns_variants,
+        transitions=transitions,
+        cta_audio_boost=cta_audio_boost,
+    )
+
+
+def compose_from_plan(plan, *, audio_path: Optional[Path] = None) -> bytes:
+    """Render a ReelComposePlan from reel_director."""
+    transition_sec = plan.transition_sec if plan.transition_sec is not None else DEFAULT_TRANSITION_SEC
+    return compose_motion_reel(
+        plan.image_urls,
+        transition_sec=transition_sec,
+        audio_path=audio_path,
+        template=plan.template,
+        hook_texts=plan.hook_texts,
+        slide_roles=plan.slide_roles,
+        ken_burns_variants=plan.ken_burns_variants,
+        transitions=plan.transitions or None,
+        cta_audio_boost=plan.cta_audio_boost,
     )

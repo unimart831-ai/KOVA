@@ -756,8 +756,8 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
             reel_template = "carousel_to_video"
             visual_strategy = "carousel"
         else:
-            source_images = list(direct_images)
-            reel_template = "slideshow"
+            source_images = curate_reel_image_urls(list(direct_images))
+            reel_template = "story_arc"
             visual_strategy = "single_photo" if len(source_images) == 1 else "carousel"
 
         if len(source_images) < 1:
@@ -769,6 +769,7 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
             "music_mood": "upbeat",
             "video_compose_status": "pending",
             "prefer_photoroom_video": len(source_images) <= 2,
+            "reel_director": True,
         }
         if source_post:
             visual_metadata["source_carousel_post_id"] = str(source_post.pk)

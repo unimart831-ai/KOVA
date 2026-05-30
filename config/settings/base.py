@@ -651,6 +651,10 @@ PHOTOROOM_VARIANT_LAYOUTS_ENABLED = env.bool("PHOTOROOM_VARIANT_LAYOUTS_ENABLED"
 # Edit With AI — lifestyle staging + angle variations (docs.photoroom.com Edit With AI)
 PHOTOROOM_EDIT_WITH_AI_ENABLED = env.bool("PHOTOROOM_EDIT_WITH_AI_ENABLED", default=True)
 PHOTOROOM_EDIT_WITH_AI_MAX_PER_PACK = env.int("PHOTOROOM_EDIT_WITH_AI_MAX_PER_PACK", default=2)
+
+# Motion reel director — recipe rotation, 5 slides, role-based motion (apps/content/reel_director.py)
+REEL_MAX_SLIDES = env.int("REEL_MAX_SLIDES", default=5)
+REEL_DIRECTOR_ENABLED = env.bool("REEL_DIRECTOR_ENABLED", default=True)
 # Phase 2 — PhotoFix, Composition, Video (see docs.photoroom.com)
 PHOTOROOM_PHOTOFIX_ENABLED = env.bool("PHOTOROOM_PHOTOFIX_ENABLED", default=True)
 PHOTOROOM_PHOTOFIX_ALWAYS = env.bool("PHOTOROOM_PHOTOFIX_ALWAYS", default=False)

@@ -704,25 +704,56 @@ def generate_post_images(post_id: str):
 
 
 def _build_reel_hook_texts(post, meta: dict, slide_count: int) -> list[str]:
-    """Build per-frame text hooks for reel composition."""
-    texts: list[str] = [""] * slide_count
-    if slide_count == 0:
-        return texts
+    """Product name on first frame; price on last frame only (no mid-slide copy)."""
+    from apps.content.reel_director import build_hook_texts
 
-    # First frame: product name or hook text
-    hook = meta.get("reel_hook_text", "")
-    if not hook and post.product:
-        hook = post.product.name or ""
-    if hook:
-        texts[0] = hook[:60]
+    product_name = ""
+    price_label = ""
+    if post.product:
+        product_name = post.product.name or ""
+        price_label = post.product.display_price or ""
 
-    # Last frame: price CTA
-    if slide_count >= 3 and post.product:
-        price = post.product.display_price or ""
-        if price:
-            texts[-1] = f"{price} • Shop Now"
+    return build_hook_texts(
+        slide_count=slide_count,
+        slide_roles=[""] * slide_count,
+        product_name=product_name,
+        price_label=price_label,
+        hook_override=meta.get("reel_hook_text", ""),
+    )
 
-    return texts
+
+def _apply_reel_director(post, image_sources: list[str], meta: dict):
+    """
+    Build ReelComposePlan when director is enabled; mutates meta with recipe fields.
+    Returns (sources, plan) — plan may be None.
+    """
+    from django.conf import settings
+
+    if not getattr(settings, "REEL_DIRECTOR_ENABLED", True):
+        return image_sources, None
+
+    from apps.content.reel_director import build_reel_plan
+    from apps.products.photoroom_plus import detect_product_category
+
+    category = "general"
+    analysis = meta.get("analysis") or {}
+    if post.product:
+        category = detect_product_category(post.product, analysis)
+
+    plan = build_reel_plan(
+        image_sources,
+        seed=str(post.pk),
+        category=category,
+        product_name=(post.product.name if post.product else "") or "",
+        price_label=(post.product.display_price if post.product else "") or "",
+        hook_override=meta.get("reel_hook_text", ""),
+        recipe_id=meta.get("reel_recipe_id"),
+    )
+    if not plan:
+        return image_sources, None
+
+    meta.update(plan.to_metadata())
+    return plan.image_urls, plan
 
 
 @shared_task(name="content.compose_reel_video", soft_time_limit=300, time_limit=360)
@@ -798,8 +829,11 @@ def compose_reel_video(post_id: str):
             thumbnail_url = url
             break
 
-    # Build hook texts from product/post metadata
-    hook_texts = _build_reel_hook_texts(post, meta, len(image_sources))
+    hook_texts = (
+        reel_plan.hook_texts
+        if reel_plan
+        else _build_reel_hook_texts(post, meta, len(image_sources))
+    )
 
     # Photoroom Image-to-Video for single-hero commerce reels (sandbox-safe fallback to FFmpeg)
     use_photoroom = (
@@ -826,9 +860,16 @@ def compose_reel_video(post_id: str):
             )
 
     try:
-        if template == "carousel_to_video":
+        from apps.content.video_compose import compose_from_plan
+
+        if reel_plan:
+            mp4_bytes = compose_from_plan(reel_plan, audio_path=audio_path)
+        elif template == "carousel_to_video":
             mp4_bytes = compose_carousel_to_reel(
-                image_sources, audio_path=audio_path, hook_texts=hook_texts,
+                image_sources,
+                audio_path=audio_path,
+                hook_texts=hook_texts,
+                template=template,
             )
         else:
             mp4_bytes = compose_motion_reel(
@@ -882,6 +923,7 @@ def compose_reel_video(post_id: str):
     meta.update({
         "video_compose_status": "done",
         "reel_template": template,
+        "reel_recipe_id": meta.get("reel_recipe_id"),
         "reel_video_url": public_url,
         "reel_thumbnail_url": thumbnail_url,
         "music_track_id": track.get("id"),

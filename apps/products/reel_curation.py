@@ -1,13 +1,13 @@
 """
-Curate product image URLs for motion reels — story hook → AI scenes → CTA.
+Curate product image URLs for motion reels — story hook → hero → AI / Edit-AI → CTA.
 
-Ensures reels use 2–3 distinct AI backgrounds with varied pacing, not every export.
+Ensures reels use distinct scenes with varied pacing, not every export.
 """
 
 from __future__ import annotations
 
-REEL_EXCLUDE_MARKERS = ("preflight_", "channel_banner", "promo_frame")
-REEL_MAX_SLIDES = 7
+REEL_EXCLUDE_MARKERS = ("preflight_", "channel_banner")
+REEL_MAX_SLIDES = 5
 
 
 def _variant_tier(url: str) -> tuple[int, int, str]:
@@ -19,6 +19,10 @@ def _variant_tier(url: str) -> tuple[int, int, str]:
         return (0, 1, url)
     if any(m in u for m in ("studio_white", "service_hero", "digital_desk_hero")):
         return (1, 0, url)
+    if "edit_ai_staging" in u:
+        return (1, 5, url)
+    if "edit_ai_angle" in u:
+        return (1, 6, url)
     if "ai_scene_" in u:
         idx = u.find("ai_scene_")
         return (2, hash(u[idx : idx + 20]) % 100, url)
@@ -40,7 +44,7 @@ def _variant_tier(url: str) -> tuple[int, int, str]:
 
 def curate_reel_image_urls(urls: list[str], *, max_slides: int = REEL_MAX_SLIDES) -> list[str]:
     """
-    Order URLs for a cinematic reel: portrait hook → hero → 2–3 AI scenes → promo CTA.
+    Order URLs for a cinematic reel: portrait hook → hero → Edit-AI / AI scenes → promo CTA.
     """
     clean = [
         u for u in urls
@@ -51,8 +55,14 @@ def curate_reel_image_urls(urls: list[str], *, max_slides: int = REEL_MAX_SLIDES
 
     ordered = sorted(clean, key=_variant_tier)
 
-    # Keep at most 3 AI/creative/lifestyle scenes for rhythm (avoid slideshow fatigue).
-    ai_markers = ("ai_scene_", "ai_creative_", "ai_lifestyle", "ai_contextual")
+    ai_markers = (
+        "ai_scene_",
+        "ai_creative_",
+        "ai_lifestyle",
+        "ai_contextual",
+        "edit_ai_staging",
+        "edit_ai_angle",
+    )
     ai_kept = 0
     max_ai = 3
     result: list[str] = []
@@ -68,12 +78,11 @@ def curate_reel_image_urls(urls: list[str], *, max_slides: int = REEL_MAX_SLIDES
             ai_kept += 1
         result.append(url)
         seen.add(url)
-        if len(result) >= max_slides:
+        if len(result) >= max_slides * 2:
             break
 
-    # Ensure promo frame is last when present.
     promo = [u for u in result if "promo_frame" in u]
     if promo:
         result = [u for u in result if "promo_frame" not in u] + promo
 
-    return result[:max_slides]
+    return result[: max_slides * 2]
