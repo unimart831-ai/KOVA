@@ -5,7 +5,7 @@
   "start_url": "/brief/",
   "display": "standalone",
   "background_color": "#0f172a",
-  "theme_color": "#F97316",
+  "theme_color": "#0d8474",
   "orientation": "any",
   "icons": [
     {

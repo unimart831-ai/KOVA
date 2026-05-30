@@ -36,13 +36,13 @@ Sizes: sm (max-w-md), md (max-w-lg), lg (max-w-2xl), xl (max-w-4xl)
          x-transition:leave-end="opacity-0 scale-95"
          @click.outside="open = false"
          @keydown.escape.window="open = false"
-         class="relative w-full {% if size == 'sm' %}max-w-md{% elif size == 'lg' %}max-w-2xl{% elif size == 'xl' %}max-w-4xl{% else %}max-w-lg{% endif %} bg-white rounded-xl shadow-xl">
+         class="relative w-full {% if size == 'sm' %}max-w-md{% elif size == 'lg' %}max-w-2xl{% elif size == 'xl' %}max-w-4xl{% else %}max-w-lg{% endif %} bg-white dark:bg-gray-900 rounded-xl shadow-xl dark:shadow-gray-950/50 ring-1 ring-gray-900/5 dark:ring-gray-700/50">
 
       <!-- Header -->
       {% if title %}
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h3 id="modal-title" class="text-lg font-semibold text-gray-900">{{ title }}</h3>
-          <button @click="open = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+          <h3 id="modal-title" class="text-lg font-semibold text-gray-900 dark:text-white">{{ title }}</h3>
+          <button @click="open = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
             </svg>
@@ -57,7 +57,7 @@ Sizes: sm (max-w-md), md (max-w-lg), lg (max-w-2xl), xl (max-w-4xl)
 
       <!-- Footer -->
       {% if show_footer %}
-        <div class="flex items-center justify-end space-x-3 px-6 py-4 border-t border-gray-100">
+        <div class="flex items-center justify-end space-x-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800">
           <button @click="open = false" class="btn-secondary">Cancel</button>
           {{ footer_actions }}
         </div>
