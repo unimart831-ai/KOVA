@@ -34,6 +34,10 @@ GOOGLE_OAUTH_CLIENT_ID = env("GOOGLE_OAUTH_CLIENT_ID", default="")
 GOOGLE_OAUTH_CLIENT_SECRET = env("GOOGLE_OAUTH_CLIENT_SECRET", default="")
 GOOGLE_OAUTH_ENABLED = bool(GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET)
 
+# ─── FACEBOOK OAUTH (optional — enables social sign-up + auto-connect) ───────
+FACEBOOK_APP_ID = env("FACEBOOK_APP_ID", default="")
+FACEBOOK_APP_SECRET = env("FACEBOOK_APP_SECRET", default="")
+
 # ─── ENCRYPTION ──────────────────────────────────────────────────────────────
 # Dedicated key for Fernet token encryption (falls back to SECRET_KEY)
 FERNET_KEYS = [env("FIELD_ENCRYPTION_KEY", default=SECRET_KEY)]
@@ -749,8 +753,6 @@ TWITTER_CLIENT_ID = env("TWITTER_CLIENT_ID", default="")
 TWITTER_CLIENT_SECRET = env("TWITTER_CLIENT_SECRET", default="")
 LINKEDIN_CLIENT_ID = env("LINKEDIN_CLIENT_ID", default="")
 LINKEDIN_CLIENT_SECRET = env("LINKEDIN_CLIENT_SECRET", default="")
-FACEBOOK_APP_ID = env("FACEBOOK_APP_ID", default="")
-FACEBOOK_APP_SECRET = env("FACEBOOK_APP_SECRET", default="")
 FB_LOGIN_CONFIG_ID = env("FB_LOGIN_CONFIG_ID", default="")  # Facebook Login for Business config ID
 TIKTOK_CLIENT_KEY = env("TIKTOK_CLIENT_KEY", default="")
 TIKTOK_CLIENT_SECRET = env("TIKTOK_CLIENT_SECRET", default="")
