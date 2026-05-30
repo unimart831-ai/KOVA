@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="relative overflow-hidden">
+<div class="relative overflow-hidden marketing-section-default pb-16 sm:pb-20">
 
   <!-- ── Hero ─────────────────────────────────────────────────────────── -->
   <section class="brand-atmosphere relative">
@@ -32,7 +32,7 @@
 
   <!-- ── Category filter pills ────────────────────────────────────────── -->
   {% if category_pills|length > 1 %}
-  <section class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
+  <section class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mb-10 marketing-section-default pt-6">
     <div class="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {% for pill in category_pills %}
         <a href="{% if pill.id %}?category={{ pill.id }}{% else %}{% url 'blog:index' %}{% endif %}"
