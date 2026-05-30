@@ -256,6 +256,33 @@ def retry_reel(request, post_id):
 
 @login_required
 @require_POST
+def retry_publish(request, post_id):
+    """Retry publishing a failed post — resets to APPROVED and fires publish task."""
+    from django.utils import timezone
+    from apps.content.tasks import publish_post
+    from apps.utils import fire_task
+
+    post = get_object_or_404(Post.objects.select_related("user", "social_account"), id=post_id)
+    if not can_edit_post(request.user, post):
+        raise Http404
+    if post.status != Post.Status.FAILED:
+        return HttpResponse("Post is not in failed state", status=400)
+
+    post.status = Post.Status.APPROVED
+    post.scheduled_at = timezone.now()
+    post.ai_reasoning = ""
+    post.save(update_fields=["status", "scheduled_at", "ai_reasoning", "updated_at"])
+
+    fire_task(publish_post, str(post.id))
+
+    if request.headers.get("HX-Request"):
+        return render(request, "components/post_card.html", {"post": post})
+    messages.info(request, "Retrying publish…")
+    return redirect("content:queue")
+
+
+@login_required
+@require_POST
 def update_carousel_slides(request, post_id):
     """Save edited carousel slide content (heading, body, image_prompt)."""
     post = get_object_or_404(Post.objects.select_related("user"), id=post_id)
