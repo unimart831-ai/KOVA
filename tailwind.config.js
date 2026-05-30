@@ -22,11 +22,6 @@ module.exports = {
           900: "#065040",
           950: "#02281f",
         },
-        surface: {
-          DEFAULT: "#f9fafb",
-          card: "#ffffff",
-          raised: "#ffffff",
-        },
       },
       boxShadow: {
         kova: "0 1px 2px rgba(13, 132, 116, 0.06), 0 4px 24px rgba(13, 132, 116, 0.08)",
