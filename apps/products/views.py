@@ -87,6 +87,7 @@ def product_list(request):
         "batch_session_id": request.GET.get("session", ""),
         "promotable_count": promotable_count,
         "catalog_showcase_weekly": bool(profile and profile.catalog_showcase_weekly),
+        "showcase_seed_id": request.GET.get("showcase", ""),
         "segment_surface": build_surface_experience(
             profile=profile,
             connected_platforms=connected_platforms,
@@ -562,6 +563,7 @@ def category_delete(request, category_id):
 @require_POST
 def catalog_showcase(request):
     """Generate carousel + reel for all in-stock catalog items (name + price per slide)."""
+    from apps.content.models import ContentSeed
     from apps.platforms.models import SocialAccount
     from apps.products.catalog_showcase import (
         catalog_showcase_allowed,
@@ -584,7 +586,12 @@ def catalog_showcase(request):
         )
         return redirect("products:list")
 
-    if not SocialAccount.objects.filter(user=request.user, is_active=True).exists():
+    carousel_platforms = {"instagram", "facebook", "linkedin"}
+    connected = list(
+        SocialAccount.objects.filter(user=request.user, is_active=True)
+        .values_list("platform", flat=True)
+    )
+    if not set(connected) & carousel_platforms:
         messages.error(request, "Connect Instagram, Facebook, or LinkedIn first.")
         return redirect("products:list")
 
@@ -594,7 +601,15 @@ def catalog_showcase(request):
         .filter(stock_status=Product.StockStatus.OUT_OF_STOCK)
         .count()
     )
-    fire_task(create_catalog_showcase, str(request.user.pk), "manual")
+
+    seed = ContentSeed.objects.create(
+        user=request.user,
+        idea=f"Catalog showcase: {len(selected)} in-stock items",
+        notes="Catalog showcase (manual)",
+        target_platforms=[p for p in connected if p in carousel_platforms][:3],
+        status=ContentSeed.SeedStatus.PROCESSING,
+    )
+    fire_task(create_catalog_showcase, str(request.user.pk), "manual", str(seed.pk))
 
     msg = (
         f"Building catalog showcase for {len(selected)} item(s) "
@@ -603,7 +618,20 @@ def catalog_showcase(request):
     if skipped_oos:
         msg += f" Skipped {skipped_oos} out-of-stock product(s)."
     messages.success(request, msg)
-    return redirect("products:list")
+    return redirect(f"{reverse('products:list')}?showcase={seed.pk}")
+
+
+@login_required
+def catalog_showcase_status(request, seed_id):
+    """JSON status for the live catalog-showcase modal."""
+    from apps.content.models import ContentSeed
+    from apps.products.catalog_showcase import build_catalog_showcase_status
+
+    seed = get_object_or_404(ContentSeed, pk=seed_id, user=request.user)
+    data = build_catalog_showcase_status(seed, request.user)
+    data["studio_url"] = reverse("content:studio")
+    data["queue_url"] = reverse("content:queue")
+    return JsonResponse(data)
 
 
 @login_required

@@ -97,3 +97,85 @@ def mark_showcase_run(profile):
         return
     profile.catalog_showcase_last_at = timezone.now()
     profile.save(update_fields=["catalog_showcase_last_at", "updated_at"])
+
+
+def build_catalog_showcase_status(seed, user) -> dict:
+    """
+    Live status payload for the catalog-showcase modal.
+
+    Reports the seed phase plus a card per generated carousel/reel so the user
+    can preview the visuals before publishing. ``terminal`` flips True once the
+    seed finished and every reel video has been composed (or failed).
+    """
+    from apps.content.models import ContentSeed, Post
+
+    posts = list(
+        Post.objects.filter(seed=seed, user=user)
+        .order_by("post_format", "platform")
+    )
+
+    items = []
+    reels_pending = 0
+    for post in posts:
+        is_reel = post.post_format == Post.PostFormat.REEL
+        thumb = ""
+        if is_reel:
+            thumb = post.reel_thumbnail_url or (post.media_urls[0] if post.media_urls else "")
+            compose = post.reel_compose_status or "pending"
+            if compose not in ("done", "failed"):
+                reels_pending += 1
+                item_status = "composing"
+            elif compose == "failed":
+                item_status = "failed"
+            else:
+                item_status = "ready"
+            video_url = post.reel_video_url
+        else:
+            thumb = post.media_urls[0] if post.media_urls else ""
+            video_url = ""
+            if post.media_status == "failed":
+                item_status = "failed"
+            elif post.media_status in ("generated", "uploaded") and post.media_urls:
+                item_status = "ready"
+            else:
+                item_status = "rendering"
+
+        items.append({
+            "post_id": str(post.pk),
+            "platform": post.platform,
+            "format": "reel" if is_reel else "carousel",
+            "status": item_status,
+            "thumbnail_url": thumb,
+            "video_url": video_url,
+            "slide_count": len(post.media_urls or []),
+        })
+
+    seed_done = seed.status in (
+        ContentSeed.SeedStatus.COMPLETED,
+        ContentSeed.SeedStatus.FAILED,
+    )
+    seed_failed = seed.status == ContentSeed.SeedStatus.FAILED
+    terminal = bool(seed_done and reels_pending == 0)
+
+    if seed_failed and not items:
+        phase = "failed"
+    elif not seed_done:
+        phase = "generating"
+    elif reels_pending:
+        phase = "composing"
+    else:
+        phase = "completed"
+
+    carousel_count = sum(1 for i in items if i["format"] == "carousel" and i["status"] == "ready")
+    reel_count = sum(1 for i in items if i["format"] == "reel")
+
+    return {
+        "status": phase,
+        "terminal": terminal,
+        "seed_id": str(seed.pk),
+        "items": items,
+        "carousel_count": carousel_count,
+        "reel_count": reel_count,
+        "reels_pending": reels_pending,
+        "error_message": seed.error_message if seed_failed else "",
+    }

@@ -826,11 +826,12 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
 # ── Catalog showcase (all in-stock products → carousel + reel) ────────
 
 @shared_task(name="products.create_catalog_showcase")
-def create_catalog_showcase(user_id: str, source: str = "manual"):
+def create_catalog_showcase(user_id: str, source: str = "manual", seed_id: str = ""):
     """
     Build one carousel + reel promoting multiple catalog items (name + price per slide).
 
     Skips out-of-stock physical products. Weekly runs respect catalog_showcase_last_at.
+    When ``seed_id`` is supplied, reuse that ContentSeed (lets the UI track progress).
     """
     from django.contrib.auth import get_user_model
 
@@ -853,13 +854,25 @@ def create_catalog_showcase(user_id: str, source: str = "manual"):
     CAROUSEL_PLATFORMS = {"instagram", "facebook", "linkedin"}
     REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
 
+    def _fail_seed(existing_seed, reason):
+        if existing_seed is not None:
+            existing_seed.status = ContentSeed.SeedStatus.FAILED
+            existing_seed.error_message = f"Catalog showcase: {reason}"
+            existing_seed.save(update_fields=["status", "error_message", "updated_at"])
+
+    seed = None
+    if seed_id:
+        seed = ContentSeed.objects.filter(pk=seed_id).first()
+
     try:
         user = User.objects.select_related("profile").get(pk=user_id)
     except User.DoesNotExist:
         logger.error("create_catalog_showcase: user %s not found", user_id)
+        _fail_seed(seed, "user_not_found")
         return {"error": "user_not_found"}
 
     if not catalog_showcase_allowed(user):
+        _fail_seed(seed, "paused")
         return {"error": "paused"}
 
     profile = getattr(user, "profile", None)
@@ -872,12 +885,14 @@ def create_catalog_showcase(user_id: str, source: str = "manual"):
     products = select_products_for_showcase(user)
     if not products:
         logger.info("create_catalog_showcase: no promotable products for %s", user.email)
+        _fail_seed(seed, "no_products")
         return {"error": "no_products"}
 
     accounts = SocialAccount.objects.filter(user=user, is_active=True)
     carousel_accounts = accounts.filter(platform__in=CAROUSEL_PLATFORMS)
     if not carousel_accounts.exists():
         logger.info("create_catalog_showcase: no carousel platforms for %s", user.email)
+        _fail_seed(seed, "no_platforms")
         return {"error": "no_platforms"}
 
     caption = build_catalog_showcase_caption(user, products)
@@ -885,14 +900,18 @@ def create_catalog_showcase(user_id: str, source: str = "manual"):
     if len(products) > 6:
         product_names += f" +{len(products) - 6} more"
 
-    seed = ContentSeed.objects.create(
-        user=user,
-        idea=f"Catalog showcase: {len(products)} in-stock items",
-        notes=f"Catalog showcase ({source}): {product_names}",
-        target_platforms=list(
-            carousel_accounts.values_list("platform", flat=True).distinct()[:3]
-        ),
-    )
+    if seed is None:
+        seed = ContentSeed.objects.create(
+            user=user,
+            idea=f"Catalog showcase: {len(products)} in-stock items",
+            notes=f"Catalog showcase ({source}): {product_names}",
+            target_platforms=list(
+                carousel_accounts.values_list("platform", flat=True).distinct()[:3]
+            ),
+        )
+
+    seed.status = ContentSeed.SeedStatus.PROCESSING
+    seed.save(update_fields=["status", "updated_at"])
 
     brand = (getattr(profile, "company_name", None) or "").strip() or "Our catalog"
     initial_status = initial_commerce_post_status(user)
@@ -977,6 +996,12 @@ def create_catalog_showcase(user_id: str, source: str = "manual"):
 
     if posts_created or reel_posts_created:
         mark_showcase_run(profile)
+        seed.status = ContentSeed.SeedStatus.COMPLETED
+        seed.save(update_fields=["status", "updated_at"])
+    else:
+        seed.status = ContentSeed.SeedStatus.FAILED
+        seed.error_message = "Catalog showcase: no posts were generated."
+        seed.save(update_fields=["status", "error_message", "updated_at"])
 
     AgentAction.objects.create(
         user=user,
