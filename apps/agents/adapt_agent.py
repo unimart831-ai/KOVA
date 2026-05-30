@@ -281,21 +281,22 @@ def auto_schedule_post(post):
     if not platform:
         return None
 
-    # ── Respect posting_frequency: check weekly budget ──
+    # ── Respect posting_frequency: check weekly budget per platform ──
     profile = getattr(user, "profile", None)
-    posting_frequency = getattr(profile, "posting_frequency", 5) or 5
+    posting_frequency = getattr(profile, "posting_frequency", 7) or 7
 
     week_start = timezone.now() - timedelta(days=7)
-    posts_this_week = Post.objects.filter(
+    posts_this_week_platform = Post.objects.filter(
         user=user,
+        social_account=post.social_account,
         status__in=[Post.Status.APPROVED, Post.Status.SCHEDULED, Post.Status.PUBLISHED],
         scheduled_at__gte=week_start,
     ).count()
 
-    if posts_this_week >= posting_frequency:
+    if posts_this_week_platform >= posting_frequency:
         logger.info(
-            "Weekly posting limit reached for %s (%d/%d). Skipping auto-schedule for post %s.",
-            user.email, posts_this_week, posting_frequency, post.id,
+            "Weekly posting limit reached for %s on %s (%d/%d). Skipping auto-schedule for post %s.",
+            user.email, platform, posts_this_week_platform, posting_frequency, post.id,
         )
         return None
 
@@ -357,7 +358,8 @@ def auto_schedule_post(post):
 
             if not conflict:
                 post.scheduled_at = candidate
-                post.save(update_fields=["scheduled_at"])
+                post.status = Post.Status.SCHEDULED
+                post.save(update_fields=["scheduled_at", "status", "updated_at"])
                 logger.info(
                     "Auto-scheduled post %s for %s at %s (user TZ: %s)",
                     post.id, platform, candidate.isoformat(), user_tz_name,
@@ -372,7 +374,8 @@ def auto_schedule_post(post):
     )
     fallback = local_fallback.astimezone(zoneinfo.ZoneInfo("UTC"))
     post.scheduled_at = fallback
-    post.save(update_fields=["scheduled_at"])
+    post.status = Post.Status.SCHEDULED
+    post.save(update_fields=["scheduled_at", "status", "updated_at"])
     return fallback
 
 

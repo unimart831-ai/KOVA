@@ -423,8 +423,12 @@ class FacebookProvider(BaseProvider):
                     url=url,
                 )
         except httpx.HTTPStatusError as e:
-            logger.error("Facebook publish failed: %s", e.response.text)
-            return PublishResult(success=False, error=e.response.text[:500])
+            status_code = e.response.status_code
+            error_text = e.response.text[:500]
+            logger.error("Facebook publish failed (HTTP %d): %s", status_code, error_text)
+            if status_code in (429, 500, 502, 503, 504):
+                raise
+            return PublishResult(success=False, error=error_text)
 
     def publish_video(self, access_token: str, video_url: str,
                       description: str = "", **kwargs) -> PublishResult:
@@ -449,8 +453,12 @@ class FacebookProvider(BaseProvider):
                     url=f"https://www.facebook.com/{video_id}",
                 )
         except httpx.HTTPStatusError as e:
-            logger.error("Facebook video publish failed: %s", e.response.text)
-            return PublishResult(success=False, error=e.response.text[:500])
+            status_code = e.response.status_code
+            error_text = e.response.text[:500]
+            logger.error("Facebook video publish failed (HTTP %d): %s", status_code, error_text)
+            if status_code in (429, 500, 502, 503, 504):
+                raise
+            return PublishResult(success=False, error=error_text)
 
     def publish_reel(self, access_token: str, video_url: str,
                      description: str = "", **kwargs) -> PublishResult:
@@ -520,8 +528,12 @@ class FacebookProvider(BaseProvider):
                     metadata={"video_id": video_id, "media_type": "reel"},
                 )
         except httpx.HTTPStatusError as e:
-            logger.error("Facebook Reel publish failed: %s", e.response.text)
-            return PublishResult(success=False, error=e.response.text[:500])
+            status_code = e.response.status_code
+            error_text = e.response.text[:500]
+            logger.error("Facebook Reel publish failed (HTTP %d): %s", status_code, error_text)
+            if status_code in (429, 500, 502, 503, 504):
+                raise
+            return PublishResult(success=False, error=error_text)
 
     # ── Metrics & Insights ───────────────────────────────────────────────────
 
@@ -1242,8 +1254,12 @@ class InstagramProvider(BaseProvider):
                         error="Instagram requires media (image or video) for publishing.",
                     )
         except httpx.HTTPStatusError as e:
-            logger.error("Instagram publish failed: %s", e.response.text)
-            return PublishResult(success=False, error=e.response.text[:500])
+            status_code = e.response.status_code
+            error_text = e.response.text[:500]
+            logger.error("Instagram publish failed (HTTP %d): %s", status_code, error_text)
+            if status_code in (429, 500, 502, 503, 504):
+                raise
+            return PublishResult(success=False, error=error_text)
 
     def _fetch_ig_permalink(self, client: httpx.Client, token: str,
                             post_id: str) -> str:

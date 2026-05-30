@@ -394,26 +394,33 @@ def async_generate_image(post_id: str, image_prompt: str, visual_strategy_data: 
         logger.warning("Post %s not found for async image gen", post_id)
         return
 
-    if visual_strategy_data and visual_strategy_data.get("strategy"):
-        from apps.agents.visual_strategy import apply_visual_strategy
-        if not visual_strategy_data.get("image_prompt") and image_prompt:
-            visual_strategy_data["image_prompt"] = image_prompt
-        apply_visual_strategy(post, visual_strategy_data)
-    else:
-        from apps.agents.visual_strategy import infer_visual_strategy, apply_visual_strategy
-        strategy = infer_visual_strategy(
-            post.content_text,
-            post.social_account.platform if post.social_account else "twitter",
-        )
-        if strategy == "ai_photo":
-            generate_post_image(post, image_prompt)
+    try:
+        if visual_strategy_data and visual_strategy_data.get("strategy"):
+            from apps.agents.visual_strategy import apply_visual_strategy
+            if not visual_strategy_data.get("image_prompt") and image_prompt:
+                visual_strategy_data["image_prompt"] = image_prompt
+            apply_visual_strategy(post, visual_strategy_data)
         else:
-            apply_visual_strategy(post, {
-                "strategy": strategy,
-                "image_prompt": image_prompt,
-                "text": post.content_text[:300],
-                "headline": post.content_text.split("\n")[0][:120],
-            })
+            from apps.agents.visual_strategy import infer_visual_strategy, apply_visual_strategy
+            strategy = infer_visual_strategy(
+                post.content_text,
+                post.social_account.platform if post.social_account else "twitter",
+            )
+            if strategy == "ai_photo":
+                generate_post_image(post, image_prompt)
+            else:
+                apply_visual_strategy(post, {
+                    "strategy": strategy,
+                    "image_prompt": image_prompt,
+                    "text": post.content_text[:300],
+                    "headline": post.content_text.split("\n")[0][:120],
+                })
+    except Exception as exc:
+        logger.exception("async_generate_image failed for post %s: %s", post_id, exc)
+        post.refresh_from_db()
+        if post.media_status not in (Post.MediaStatus.GENERATED, Post.MediaStatus.UPLOADED):
+            post.media_status = Post.MediaStatus.FAILED
+            post.save(update_fields=["media_status", "updated_at"])
 
     return {"post_id": str(post_id), "status": post.media_status}
 
@@ -1056,7 +1063,16 @@ def publish_post(self, post_id: str):
                 )
                 post.status = Post.Status.SCHEDULED
                 post.save(update_fields=["status", "updated_at"])
-                raise self.retry(countdown=90, exc=Exception("Reel video composition in progress"))
+                try:
+                    raise self.retry(countdown=90, exc=Exception("Reel video composition in progress"))
+                except self.MaxRetriesExceededError:
+                    _fail_post(post, "Reel video composition timed out after multiple retries.")
+                    Notification.create_for_user(
+                        post.user, "publish_failed",
+                        "Your Reel video could not be composed in time. Open the post in Studio and retry.",
+                        related_post=post,
+                    )
+                    return {"error": "reel_compose_timeout"}
             _fail_post(post, "Reel video is not ready — composition failed or was not started.")
             Notification.create_for_user(
                 post.user, "publish_failed",
@@ -1082,15 +1098,24 @@ def publish_post(self, post_id: str):
         return {"error": "No provider"}
 
     # Check token freshness
-    if account.is_token_expired and account.refresh_token:
+    # Instagram/Facebook use the access_token itself for refresh (fb_exchange_token),
+    # so attempt refresh even when refresh_token is empty for those platforms.
+    _refresh_token = account.refresh_token or (
+        account.access_token if account.platform in ("instagram", "facebook") else ""
+    )
+    if account.is_token_expired and _refresh_token:
         try:
-            tokens = provider.refresh_access_token(account.refresh_token)
+            tokens = provider.refresh_access_token(_refresh_token)
             account.access_token = tokens["access_token"]
             if tokens.get("refresh_token"):
                 account.refresh_token = tokens["refresh_token"]
             if tokens.get("expires_at"):
                 account.token_expires_at = tokens["expires_at"]
             account.save(update_fields=["access_token", "refresh_token", "token_expires_at", "updated_at"])
+            logger.info(
+                "Token refreshed for %s account %s (expires: %s)",
+                account.platform, account.pk, account.token_expires_at,
+            )
         except Exception as e:
             _fail_post(post, f"Token refresh failed: {e}")
             account.mark_error(f"Token refresh failed: {e}")
@@ -1665,6 +1690,38 @@ def recover_stuck_publishing_posts():
     return {"recovered": recovered}
 
 
+@shared_task(name="content.recover_stuck_media_generation")
+def recover_stuck_media_generation():
+    """
+    Mark posts with media_status='pending' as failed if stuck for >10 minutes.
+
+    Covers cases where the async_generate_image Celery task crashed without
+    updating the post status (OOM, worker killed, unhandled exception).
+    Runs every 10 minutes via Celery Beat.
+    """
+    from datetime import timedelta
+
+    from apps.content.models import Post
+
+    cutoff = timezone.now() - timedelta(minutes=10)
+    stuck = Post.objects.filter(
+        media_status=Post.MediaStatus.PENDING,
+        updated_at__lt=cutoff,
+    ).exclude(
+        status__in=[Post.Status.PUBLISHED, Post.Status.FAILED],
+    )[:50]
+
+    recovered = 0
+    for post in stuck:
+        post.media_status = Post.MediaStatus.FAILED
+        post.save(update_fields=["media_status", "updated_at"])
+        recovered += 1
+
+    if recovered:
+        logger.warning("recover_stuck_media_generation: marked %d post(s) as media_failed", recovered)
+    return {"recovered": recovered}
+
+
 @shared_task(
     name="content.check_and_publish_due_posts",
     soft_time_limit=4 * 60,
@@ -1686,17 +1743,21 @@ def check_and_publish_due_posts():
     # These are posts the user approved (or Strategist created) but never
     # got a time assigned — e.g. auto_approve was just enabled, or the
     # user approved from the dashboard without picking a time.
+    # Order by created_at so oldest posts get scheduled first (fair queue).
     unscheduled = Post.objects.filter(
         status=Post.Status.APPROVED,
         scheduled_at__isnull=True,
-    ).select_related("social_account", "user", "user__profile")[:20]  # cap per cycle
+    ).select_related("social_account", "user", "user__profile").order_by("created_at")[:40]
 
     auto_scheduled = 0
+    skipped_limit = 0
     for post in unscheduled:
         try:
             result = auto_schedule_post(post)
             if result:
                 auto_scheduled += 1
+            else:
+                skipped_limit += 1
         except Exception as e:
             logger.warning("Auto-schedule failed for post %s: %s", post.pk, e)
 

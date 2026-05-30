@@ -299,8 +299,9 @@ def generate_post_image(post, image_prompt: str) -> str | None:
         )
         attachment.file.save(filepath, ContentFile(image_bytes), save=True)
 
-        # Also add to post.media_urls for the publishing pipeline
-        media_url = attachment.file.url
+        # Also add to post.media_urls for the publishing pipeline.
+        # Prefer a public HTTPS URL so platform APIs can fetch it directly.
+        media_url = _get_public_url(attachment.file.name) or attachment.file.url
         if not post.media_urls:
             post.media_urls = []
         post.media_urls.append(media_url)
@@ -317,10 +318,39 @@ def generate_post_image(post, image_prompt: str) -> str | None:
         logger.warning(
             "AI image save failed for post %s: %s", post.id, exc,
         )
+        post.media_status = "failed"
+        post.save(update_fields=["media_status", "updated_at"])
         return None
 
 
 # ─── INTERNAL HELPERS ─────────────────────────────────────────────────────────
+
+
+def _get_public_url(file_name: str) -> str | None:
+    """Generate a public URL for a storage file, avoiding circular imports."""
+    import os
+    from django.core.files.storage import default_storage
+    from django.conf import settings
+
+    try:
+        url = default_storage.url(file_name)
+        if url.startswith(("http://", "https://")):
+            return url
+        custom_domain = (
+            getattr(settings, "AWS_S3_CUSTOM_DOMAIN", "")
+            or os.environ.get("AWS_S3_CUSTOM_DOMAIN", "")
+        )
+        if custom_domain:
+            location = (
+                getattr(settings, "AWS_LOCATION", "")
+                or os.environ.get("AWS_LOCATION", "media")
+            )
+            prefix = f"{location}/" if location else ""
+            return f"https://{custom_domain}/{prefix}{file_name}"
+    except Exception:
+        pass
+    return None
+
 
 def _fetch_image_with_fallback(prompt: str, width: int, height: int, *, model_override: str = "") -> bytes | None:
     """Try each provider in order, return first successful result."""

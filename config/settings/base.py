@@ -209,6 +209,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "content.recover_stuck_publishing_posts",
         "schedule": 600.0,  # every 10 minutes — clear queue spinner after IG timeouts
     },
+    "recover-stuck-media-generation": {
+        "task": "content.recover_stuck_media_generation",
+        "schedule": 600.0,  # every 10 minutes — mark stuck media gen as failed
+    },
     "fetch-all-recent-metrics": {
         "task": "content.fetch_all_recent_metrics",
         "schedule": 6 * 3600.0,  # every 6 hours

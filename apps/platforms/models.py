@@ -79,7 +79,14 @@ class SocialAccount(models.Model):
 
     @property
     def needs_reauth(self):
-        return not self.is_active or (self.is_token_expired and not self.refresh_token)
+        if not self.is_active:
+            return True
+        if not self.is_token_expired:
+            return False
+        # Instagram/Facebook can refresh using access_token (fb_exchange_token)
+        if self.platform in ("instagram", "facebook") and self.access_token:
+            return False
+        return not self.refresh_token
 
     # HTTP status codes that indicate transient (retryable) failures.
     # These should NOT count as strikes — the external service is having issues.
