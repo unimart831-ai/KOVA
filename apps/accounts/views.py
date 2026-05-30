@@ -155,6 +155,15 @@ def onboarding_choose_path(request):
     if (profile.company_name or "").strip() and profile.industry:
         return redirect("/accounts/onboarding/?step=2")
 
+    # If user already has platforms auto-connected from social sign-up,
+    # skip path choice and go straight to magic-connect (shows connected state).
+    from apps.platforms.models import SocialAccount
+    auto_connected = SocialAccount.objects.filter(
+        user=request.user, is_active=True, metadata__auto_connected=True,
+    ).exists()
+    if auto_connected and request.method == "GET":
+        return redirect("accounts:onboarding_magic_connect")
+
     if request.method == "POST":
         from apps.accounts.onboarding_express import VALID_INTENTS, record_intent
 
@@ -191,17 +200,20 @@ def onboarding_magic_connect(request):
         return phone_redirect
 
     request.session["onboarding_magic_fill"] = True
-    # Record the path-choice selection for admin funnel analytics. Only fires
-    # the first time the user lands here so it reflects the user's initial
-    # decision, not a later mid-flow back-button.
     request.user.profile.record_onboarding_step("path_choice_magic")
 
     from apps.platforms.models import SocialAccount
     connected = SocialAccount.objects.filter(user=request.user, is_active=True)
 
+    # If platforms were auto-connected from social sign-up and user clicks
+    # "Continue", skip directly to step 1 so they can confirm brand details.
+    if request.GET.get("auto_advance") and connected.exists():
+        return redirect("/accounts/onboarding/?step=1&via=url")
+
     return render(request, "accounts/onboarding_magic_connect.html", {
         "page_title": "Connect to auto-fill your brand",
         "connected_accounts": connected,
+        "has_auto_connected": connected.filter(metadata__auto_connected=True).exists(),
         **_onboarding_setup_context(path_choice=True),
     })
 

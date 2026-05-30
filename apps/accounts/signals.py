@@ -24,3 +24,23 @@ def _unique_page_slug(base: str) -> str:
         candidate = f"{slug}-{n}"
         n += 1
     return candidate
+
+
+# ─── Social sign-up: auto-connect publishing accounts ────────────────────────
+from allauth.socialaccount.signals import social_account_added, social_account_updated
+
+
+@receiver(social_account_added)
+def auto_connect_on_social_signup(sender, request, sociallogin, **kwargs):
+    """When a new Facebook social account is added, auto-connect publishing platforms."""
+    if sociallogin.account.provider == "facebook":
+        from apps.accounts.adapter import _auto_connect_facebook_platforms
+        _auto_connect_facebook_platforms(sociallogin)
+
+
+@receiver(social_account_updated)
+def auto_connect_on_social_update(sender, request, sociallogin, **kwargs):
+    """When a Facebook social token is refreshed, sync to publishing platforms."""
+    if sociallogin.account.provider == "facebook":
+        from apps.accounts.adapter import _auto_connect_facebook_platforms
+        _auto_connect_facebook_platforms(sociallogin)

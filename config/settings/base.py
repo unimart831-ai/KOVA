@@ -57,6 +57,7 @@ THIRD_PARTY_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
+    "allauth.socialaccount.providers.facebook",
     "crispy_forms",
     "crispy_tailwind",
     "django_htmx",
@@ -428,17 +429,44 @@ SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 
+SOCIALACCOUNT_PROVIDERS = {}
+
 if GOOGLE_OAUTH_ENABLED:
-    SOCIALACCOUNT_PROVIDERS = {
-        "google": {
-            "APP": {
-                "client_id": GOOGLE_OAUTH_CLIENT_ID,
-                "secret": GOOGLE_OAUTH_CLIENT_SECRET,
-                "key": "",
-            },
-            "SCOPE": ["profile", "email"],
-            "AUTH_PARAMS": {"access_type": "online"},
+    SOCIALACCOUNT_PROVIDERS["google"] = {
+        "APP": {
+            "client_id": GOOGLE_OAUTH_CLIENT_ID,
+            "secret": GOOGLE_OAUTH_CLIENT_SECRET,
+            "key": "",
         },
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
+    }
+
+# Facebook Login — dual purpose: user identity + publishing auto-connect.
+# Uses the same FACEBOOK_APP_ID/SECRET as the platform provider.
+FACEBOOK_OAUTH_ENABLED = bool(FACEBOOK_APP_ID and FACEBOOK_APP_SECRET)
+if FACEBOOK_OAUTH_ENABLED:
+    SOCIALACCOUNT_PROVIDERS["facebook"] = {
+        "APP": {
+            "client_id": FACEBOOK_APP_ID,
+            "secret": FACEBOOK_APP_SECRET,
+            "key": "",
+        },
+        "METHOD": "oauth2",
+        "SCOPE": [
+            "email",
+            "public_profile",
+            "pages_manage_metadata",
+            "pages_manage_posts",
+            "pages_read_engagement",
+            "instagram_content_publish",
+            "instagram_manage_insights",
+            "instagram_manage_comments",
+        ],
+        "FIELDS": ["id", "email", "name", "first_name", "last_name", "picture"],
+        "AUTH_PARAMS": {"auth_type": "rerequest"},
+        "EXCHANGE_TOKEN": True,
+        "VERSION": "v25.0",
     }
 
 # Session: keep users logged in for 30 days

@@ -90,7 +90,7 @@ from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 
 
 class KovaSocialAccountAdapter(DefaultSocialAccountAdapter):
-    """Send new Google signups into the onboarding funnel."""
+    """Send social signups into the onboarding funnel and auto-connect platforms."""
 
     def get_signup_redirect_url(self, request, sociallogin):
         user = sociallogin.user
@@ -105,3 +105,166 @@ class KovaSocialAccountAdapter(DefaultSocialAccountAdapter):
                 return "/accounts/onboarding/phone/"
             return "/accounts/onboarding/start/"
         return super().get_login_redirect_url(request)
+
+    def pre_social_login(self, request, sociallogin):
+        """Auto-connect publishing accounts when user logs in via Facebook."""
+        super().pre_social_login(request, sociallogin)
+        # For returning users (already have a pk), run auto-connect immediately.
+        # For new sign-ups, we use the social_account_added signal instead.
+        if (
+            sociallogin.account.provider == "facebook"
+            and sociallogin.user
+            and sociallogin.user.pk
+        ):
+            _auto_connect_facebook_platforms(sociallogin)
+
+
+def _auto_connect_facebook_platforms(sociallogin):
+    """
+    Create platforms.SocialAccount entries for Facebook Page and Instagram
+    from the allauth Facebook social login token.
+
+    This gives users immediate publishing capability without a second OAuth flow.
+    """
+    import logging
+    import httpx
+    from datetime import datetime, timedelta, timezone
+
+    from apps.platforms.models import SocialAccount
+
+    logger = logging.getLogger(__name__)
+    user = sociallogin.user
+    if not user or not user.pk:
+        return
+
+    token_obj = sociallogin.token
+    if not token_obj or not token_obj.token:
+        return
+
+    access_token = token_obj.token
+    FB_API_BASE = "https://graph.facebook.com/v25.0"
+
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            # Extend to long-lived token
+            from django.conf import settings
+            ll_resp = client.get(f"{FB_API_BASE}/oauth/access_token", params={
+                "grant_type": "fb_exchange_token",
+                "client_id": settings.FACEBOOK_APP_ID,
+                "client_secret": settings.FACEBOOK_APP_SECRET,
+                "fb_exchange_token": access_token,
+            })
+            if ll_resp.status_code == 200:
+                ll_data = ll_resp.json()
+                access_token = ll_data.get("access_token", access_token)
+                expires_in = ll_data.get("expires_in", 5184000)
+            else:
+                expires_in = 5184000
+
+            token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
+
+            # Fetch user's Pages
+            pages_resp = client.get(f"{FB_API_BASE}/me/accounts", params={
+                "fields": "id,name,access_token,picture",
+                "access_token": access_token,
+            })
+            if pages_resp.status_code != 200:
+                logger.warning("Facebook auto-connect: /me/accounts failed: %s", pages_resp.text[:200])
+                return
+
+            pages = pages_resp.json().get("data", [])
+            if not pages:
+                logger.info("Facebook auto-connect: user %s has no Pages", user.email)
+                return
+
+            # Connect Facebook Page
+            fb_pages_meta = [
+                {"id": p["id"], "name": p["name"], "access_token": p["access_token"]}
+                for p in pages
+            ]
+            SocialAccount.objects.update_or_create(
+                user=user,
+                platform="facebook",
+                platform_user_id=sociallogin.account.uid,
+                defaults={
+                    "username": sociallogin.account.extra_data.get("name", ""),
+                    "display_name": sociallogin.account.extra_data.get("name", ""),
+                    "avatar_url": (
+                        sociallogin.account.extra_data.get("picture", {}).get("data", {}).get("url", "")
+                        if isinstance(sociallogin.account.extra_data.get("picture"), dict)
+                        else ""
+                    ),
+                    "access_token": access_token,
+                    "refresh_token": "",
+                    "token_expires_at": token_expires_at,
+                    "token_scope": "pages_manage_posts,pages_read_engagement",
+                    "is_active": True,
+                    "last_error": "",
+                    "account_type": "page",
+                    "metadata": {
+                        "pages": fb_pages_meta,
+                        "selected_page_id": pages[0]["id"],
+                        "auto_connected": True,
+                    },
+                },
+            )
+            logger.info("Facebook auto-connect: created FB Page account for %s", user.email)
+
+            # Find Instagram Business Account linked to a Page
+            for page in pages:
+                ig_resp = client.get(f"{FB_API_BASE}/{page['id']}", params={
+                    "fields": "instagram_business_account",
+                    "access_token": page["access_token"],
+                })
+                if ig_resp.status_code != 200:
+                    continue
+                ig_data = ig_resp.json().get("instagram_business_account")
+                if not ig_data:
+                    continue
+
+                ig_id = ig_data["id"]
+                page_token = page["access_token"]
+
+                # Fetch IG profile
+                ig_profile_resp = client.get(f"{FB_API_BASE}/{ig_id}", params={
+                    "fields": "id,username,name,profile_picture_url,followers_count,media_count",
+                    "access_token": page_token,
+                })
+                if ig_profile_resp.status_code != 200:
+                    continue
+                profile = ig_profile_resp.json()
+
+                SocialAccount.objects.update_or_create(
+                    user=user,
+                    platform="instagram",
+                    platform_user_id=ig_id,
+                    defaults={
+                        "username": profile.get("username", ""),
+                        "display_name": profile.get("name", profile.get("username", "")),
+                        "avatar_url": profile.get("profile_picture_url", ""),
+                        "access_token": page_token,
+                        "refresh_token": "",
+                        "token_expires_at": token_expires_at,
+                        "token_scope": "instagram_content_publish,instagram_manage_insights,instagram_manage_comments",
+                        "is_active": True,
+                        "last_error": "",
+                        "account_type": "business",
+                        "metadata": {
+                            "ig_business_id": ig_id,
+                            "page_id": page["id"],
+                            "page_access_token": page_token,
+                            "user_access_token": access_token,
+                            "followers_count": profile.get("followers_count", 0),
+                            "media_count": profile.get("media_count", 0),
+                            "auto_connected": True,
+                        },
+                    },
+                )
+                logger.info(
+                    "Facebook auto-connect: created IG account @%s for %s",
+                    profile.get("username"), user.email,
+                )
+                break  # Only connect the first IG account found
+
+    except Exception as exc:
+        logger.warning("Facebook auto-connect failed for %s: %s", user.email, exc)
