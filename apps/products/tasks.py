@@ -823,6 +823,230 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
     )
 
 
+# ── Catalog showcase (all in-stock products → carousel + reel) ────────
+
+@shared_task(name="products.create_catalog_showcase")
+def create_catalog_showcase(user_id: str, source: str = "manual"):
+    """
+    Build one carousel + reel promoting multiple catalog items (name + price per slide).
+
+    Skips out-of-stock physical products. Weekly runs respect catalog_showcase_last_at.
+    """
+    from django.contrib.auth import get_user_model
+
+    from apps.agents.carousel import generate_catalog_showcase_carousel
+    from apps.agents.models import AgentAction
+    from apps.content.models import ContentSeed, Post
+    from apps.content.tasks import compose_reel_video
+    from apps.platforms.models import SocialAccount
+    from apps.products.catalog_showcase import (
+        build_catalog_showcase_caption,
+        catalog_showcase_allowed,
+        mark_showcase_run,
+        select_products_for_showcase,
+    )
+    from apps.products.commerce_autopilot import initial_commerce_post_status
+    from apps.products.reel_curation import curate_reel_image_urls
+    from apps.utils import fire_task
+
+    User = get_user_model()
+    CAROUSEL_PLATFORMS = {"instagram", "facebook", "linkedin"}
+    REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
+
+    try:
+        user = User.objects.select_related("profile").get(pk=user_id)
+    except User.DoesNotExist:
+        logger.error("create_catalog_showcase: user %s not found", user_id)
+        return {"error": "user_not_found"}
+
+    if not catalog_showcase_allowed(user):
+        return {"error": "paused"}
+
+    profile = getattr(user, "profile", None)
+    if source == "weekly":
+        from apps.products.catalog_showcase import weekly_showcase_due
+
+        if not weekly_showcase_due(profile):
+            return {"skipped": "not_due"}
+
+    products = select_products_for_showcase(user)
+    if not products:
+        logger.info("create_catalog_showcase: no promotable products for %s", user.email)
+        return {"error": "no_products"}
+
+    accounts = SocialAccount.objects.filter(user=user, is_active=True)
+    carousel_accounts = accounts.filter(platform__in=CAROUSEL_PLATFORMS)
+    if not carousel_accounts.exists():
+        logger.info("create_catalog_showcase: no carousel platforms for %s", user.email)
+        return {"error": "no_platforms"}
+
+    caption = build_catalog_showcase_caption(user, products)
+    product_names = ", ".join(p.name for p in products[:6])
+    if len(products) > 6:
+        product_names += f" +{len(products) - 6} more"
+
+    seed = ContentSeed.objects.create(
+        user=user,
+        idea=f"Catalog showcase: {len(products)} in-stock items",
+        notes=f"Catalog showcase ({source}): {product_names}",
+        target_platforms=list(
+            carousel_accounts.values_list("platform", flat=True).distinct()[:3]
+        ),
+    )
+
+    brand = (getattr(profile, "company_name", None) or "").strip() or "Our catalog"
+    initial_status = initial_commerce_post_status(user)
+    carousel_posts = []
+    posts_created = 0
+
+    for account in carousel_accounts:
+        post = Post.objects.create(
+            user=user,
+            seed=seed,
+            social_account=account,
+            platform=account.platform,
+            content_text=caption,
+            content_type="original",
+            status=initial_status,
+            post_format=Post.PostFormat.CAROUSEL,
+            aspect_ratio=Post.AspectRatio.SQUARE,
+            visual_strategy="carousel",
+            media_status="pending",
+            generated_by_agent="create",
+            visual_metadata={"catalog_showcase": True, "source": source},
+        )
+        media_urls = generate_catalog_showcase_carousel(
+            post,
+            products,
+            title=brand,
+            subtitle="Swipe for prices →",
+            closing_cta="Shop now",
+        )
+        if media_urls:
+            posts_created += 1
+            carousel_posts.append(post)
+        else:
+            post.media_status = "failed"
+            post.save(update_fields=["media_status", "updated_at"])
+
+    reel_posts_created = 0
+    if carousel_posts:
+        source_post = carousel_posts[0]
+        source_images = list(source_post.media_urls or [])
+        source_images = curate_reel_image_urls(source_images)
+        reel_accounts = accounts.filter(platform__in=REEL_PLATFORMS)
+
+        for account in reel_accounts:
+            platform_carousel = next(
+                (p for p in carousel_posts if p.platform == account.platform),
+                source_post,
+            )
+            reel_images = list(platform_carousel.media_urls or source_images)
+            reel_images = curate_reel_image_urls(reel_images)
+            if len(reel_images) < 2:
+                continue
+
+            visual_metadata = {
+                "reel_template": "carousel_to_video",
+                "source_images": reel_images,
+                "music_mood": "upbeat",
+                "video_compose_status": "pending",
+                "reel_director": True,
+                "catalog_showcase": True,
+                "source_carousel_post_id": str(platform_carousel.pk),
+            }
+
+            post = Post.objects.create(
+                user=user,
+                seed=seed,
+                social_account=account,
+                platform=account.platform,
+                content_text=caption,
+                content_type="original",
+                status=initial_status,
+                post_format=Post.PostFormat.REEL,
+                aspect_ratio=Post.AspectRatio.STORY,
+                visual_strategy="carousel",
+                media_status=Post.MediaStatus.GENERATED,
+                media_urls=reel_images,
+                visual_metadata=visual_metadata,
+                generated_by_agent="create",
+            )
+            fire_task(compose_reel_video, str(post.pk))
+            reel_posts_created += 1
+
+    if posts_created or reel_posts_created:
+        mark_showcase_run(profile)
+
+    AgentAction.objects.create(
+        user=user,
+        agent_type="create",
+        action_type="catalog.showcase",
+        description=(
+            f"Catalog showcase ({source}): {len(products)} items — "
+            f"{posts_created} carousel(s), {reel_posts_created} reel(s)"
+        ),
+        status=(
+            AgentAction.ActionStatus.COMPLETED
+            if posts_created else AgentAction.ActionStatus.FAILED
+        ),
+        input_data={
+            "source": source,
+            "product_ids": [str(p.pk) for p in products],
+            "seed_id": str(seed.pk),
+        },
+        output_data={
+            "carousel_posts": posts_created,
+            "reel_posts": reel_posts_created,
+        },
+        completed_at=timezone.now(),
+    )
+
+    logger.info(
+        "create_catalog_showcase: user=%s source=%s carousels=%d reels=%d products=%d",
+        user.email, source, posts_created, reel_posts_created, len(products),
+    )
+    return {
+        "carousel_posts": posts_created,
+        "reel_posts": reel_posts_created,
+        "products": len(products),
+    }
+
+
+@shared_task(name="products.weekly_catalog_showcase")
+def weekly_catalog_showcase():
+    """Enqueue catalog showcase for users due for their weekly run."""
+    from django.contrib.auth import get_user_model
+
+    from apps.platforms.models import SocialAccount
+    from apps.products.catalog_showcase import (
+        catalog_showcase_allowed,
+        promotable_catalog_queryset,
+        weekly_showcase_due,
+    )
+    from apps.utils import fire_task
+
+    User = get_user_model()
+    users = User.objects.filter(products__is_active=True).distinct()
+    queued = 0
+
+    for user in users.select_related("profile"):
+        profile = getattr(user, "profile", None)
+        if not weekly_showcase_due(profile):
+            continue
+        if not catalog_showcase_allowed(user):
+            continue
+        if not promotable_catalog_queryset(user).exists():
+            continue
+        if not SocialAccount.objects.filter(user=user, is_active=True).exists():
+            continue
+        fire_task(create_catalog_showcase, str(user.pk), "weekly")
+        queued += 1
+
+    logger.info("weekly_catalog_showcase: queued %d users", queued)
+    return {"queued": queued}
+
+
 # ── Snap to Sell ─────────────────────────────────────────────────────
 
 @shared_task(name="products.quick_post_product_photo")

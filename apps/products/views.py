@@ -68,6 +68,11 @@ def product_list(request):
         .values_list("platform", flat=True)
     )
 
+    from apps.products.catalog_showcase import promotable_catalog_queryset
+
+    profile = getattr(request.user, "profile", None)
+    promotable_count = promotable_catalog_queryset(request.user).count()
+
     return render(request, "products/product_list.html", {
         "products": page_obj,
         "page_obj": page_obj,
@@ -80,8 +85,10 @@ def product_list(request):
         "plan_ctx": _plan_ctx(request),
         "batch_product_ids": request.GET.get("batch", ""),
         "batch_session_id": request.GET.get("session", ""),
+        "promotable_count": promotable_count,
+        "catalog_showcase_weekly": bool(profile and profile.catalog_showcase_weekly),
         "segment_surface": build_surface_experience(
-            profile=getattr(request.user, "profile", None),
+            profile=profile,
             connected_platforms=connected_platforms,
         ),
     })
@@ -549,6 +556,54 @@ def category_delete(request, category_id):
     Product.objects.filter(user=request.user, category=category).update(category=None)
     messages.success(request, f"Category '{name}' removed.")
     return redirect("products:categories")
+
+
+@login_required
+@require_POST
+def catalog_showcase(request):
+    """Generate carousel + reel for all in-stock catalog items (name + price per slide)."""
+    from apps.platforms.models import SocialAccount
+    from apps.products.catalog_showcase import (
+        catalog_showcase_allowed,
+        promotable_catalog_queryset,
+        select_products_for_showcase,
+    )
+    from apps.products.tasks import create_catalog_showcase
+    from apps.utils import fire_task
+
+    if not catalog_showcase_allowed(request.user):
+        messages.error(request, "Autopilot is paused — resume in Settings to run catalog showcase.")
+        return redirect("products:list")
+
+    promotable = promotable_catalog_queryset(request.user)
+    if not promotable.exists():
+        messages.error(
+            request,
+            "No in-stock products to showcase. Add products with name and price, "
+            "or mark out-of-stock items correctly.",
+        )
+        return redirect("products:list")
+
+    if not SocialAccount.objects.filter(user=request.user, is_active=True).exists():
+        messages.error(request, "Connect Instagram, Facebook, or LinkedIn first.")
+        return redirect("products:list")
+
+    selected = select_products_for_showcase(request.user)
+    skipped_oos = (
+        Product.objects.filter(user=request.user, is_active=True)
+        .filter(stock_status=Product.StockStatus.OUT_OF_STOCK)
+        .count()
+    )
+    fire_task(create_catalog_showcase, str(request.user.pk), "manual")
+
+    msg = (
+        f"Building catalog showcase for {len(selected)} item(s) "
+        f"(carousel + reel with name & price on each slide)."
+    )
+    if skipped_oos:
+        msg += f" Skipped {skipped_oos} out-of-stock product(s)."
+    messages.success(request, msg)
+    return redirect("products:list")
 
 
 @login_required

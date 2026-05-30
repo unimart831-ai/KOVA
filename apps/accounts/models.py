@@ -323,6 +323,19 @@ class UserProfile(models.Model):
             "Snap a photo only — AI names, prices, creates posts, and publishes your catalog."
         ),
     )
+    catalog_showcase_weekly = models.BooleanField(
+        default=True,
+        verbose_name="Weekly catalog showcase",
+        help_text=(
+            "If True, Kova builds a carousel + reel of your in-stock catalog "
+            "(name + price per item) at most once per week."
+        ),
+    )
+    catalog_showcase_last_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Last time a catalog showcase carousel/reel was generated.",
+    )
 
     # ── Adapt Agent v2 (Phase 1 W3-4, May 2026) ──
     # The autonomous learning loop. Reads per-user post performance every

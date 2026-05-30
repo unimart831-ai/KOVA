@@ -8,6 +8,7 @@ urlpatterns = [
     path("", views.product_list, name="list"),
     path("add/", views.product_add, name="add"),
     path("import/", views.product_import, name="import"),
+    path("catalog-showcase/", views.catalog_showcase, name="catalog_showcase"),
     path("alerts/", views.stock_alerts, name="alerts"),
     path("alerts/read-all/", views.stock_alerts_read_all, name="alerts_read_all"),
     path("alerts/<uuid:alert_id>/read/", views.stock_alert_read, name="alert_read"),

@@ -235,6 +235,7 @@ class BrandProfileForm(forms.ModelForm):
             "autopilot_enabled",
             "autopilot_posts_per_week",
             "commerce_autopilot",
+            "catalog_showcase_weekly",
             "auto_approve_posts",
             "engage_autonomy_level",
             "content_language",

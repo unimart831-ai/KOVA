@@ -1120,3 +1120,109 @@ def generate_product_carousel(
             "Product carousel generation failed for post %s: %s", post.id, exc
         )
         return []
+
+
+def generate_catalog_showcase_carousel(
+    post,
+    products,
+    *,
+    title: str = "Our catalog",
+    subtitle: str = "Swipe for prices →",
+    closing_cta: str = "Shop now",
+) -> list[str]:
+    """
+    Multi-product catalog carousel: title → one slide per product (name + price) → CTA.
+
+    Uses product photos when available; otherwise branded text slides.
+    """
+    from apps.content.tasks import _normalize_reel_image_source
+
+    if not products:
+        logger.warning("generate_catalog_showcase_carousel: no products for post %s", post.id)
+        return []
+
+    width, height = 1080, 1080
+    profile = getattr(post.user, "profile", None)
+    colors = _get_brand_palette(profile)
+    brand_name = getattr(profile, "company_name", "") if profile else ""
+
+    total_slides = len(products) + 2
+    media_urls = []
+
+    try:
+        slide_images = [
+            _render_title_slide(width, height, title, subtitle, colors),
+        ]
+
+        for idx, product in enumerate(products):
+            slide_num = idx + 2
+            name = product.name
+            price = product.display_price or "Ask for price"
+            raw_images = product.carousel_image_urls or product.all_image_urls
+            img_src = None
+            for url in raw_images:
+                normalized = _normalize_reel_image_source(url)
+                if normalized:
+                    img_src = normalized
+                    break
+
+            if img_src:
+                slide = _render_product_price_slide(
+                    width, height, img_src,
+                    price, "", name,
+                    colors,
+                    slide_num=slide_num,
+                    total_slides=total_slides,
+                )
+            else:
+                slide = _render_content_slide(
+                    width, height, slide_num, total_slides,
+                    f"{name}\n{price}", "", colors,
+                )
+            slide_images.append(slide)
+
+        slide_images.append(
+            _render_closing_slide(width, height, closing_cta, brand_name, colors)
+        )
+
+        for order, img in enumerate(slide_images):
+            img = apply_logo_watermark(img, profile)
+
+            buffer = BytesIO()
+            img.save(buffer, format="JPEG", quality=88, optimize=True)
+            buffer.seek(0)
+
+            filename = f"catalog_carousel_{uuid.uuid4().hex[:8]}_s{order + 1}.jpg"
+            filepath = f"carousels/{filename}"
+            attachment = MediaAttachment(
+                post=post,
+                file_type="image",
+                alt_text=f"Catalog slide {order + 1}/{len(slide_images)}",
+                order=order,
+            )
+            attachment.file.save(filepath, ContentFile(buffer.read()), save=True)
+            from apps.content.tasks import _public_url_for_file
+
+            public_url = _public_url_for_file(attachment.file.name)
+            media_urls.append(public_url or attachment.file.url)
+
+        post.media_urls = list(media_urls)
+        post.media_status = "generated"
+        post.visual_metadata = {
+            **(post.visual_metadata or {}),
+            "catalog_showcase": True,
+            "product_ids": [str(p.pk) for p in products],
+        }
+        post.save(update_fields=["media_urls", "media_status", "visual_metadata", "updated_at"])
+
+        logger.info(
+            "Generated %d-slide catalog carousel for post %s (%d products)",
+            len(slide_images), post.id, len(products),
+        )
+        return media_urls
+
+    except Exception as exc:
+        logger.exception(
+            "Catalog showcase carousel failed for post %s: %s", post.id, exc
+        )
+        return []

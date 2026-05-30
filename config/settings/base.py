@@ -290,6 +290,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "products.auto_promote_products",
         "schedule": 24 * 3600.0,  # daily — random catalog sample (~30% of users/day)
     },
+    "weekly-catalog-showcase": {
+        "task": "products.weekly_catalog_showcase",
+        "schedule": 24 * 3600.0,  # daily check — each user at most once per 7 days
+    },
     "autopilot-plan-weekly": {
         "task": "content.plan_weekly_autopilot",
         "schedule": 7 * 24 * 3600.0,  # weekly — plan next week's content (Sunday)
