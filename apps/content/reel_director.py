@@ -328,6 +328,10 @@ def build_reel_plan(
     )
     ordered = _order_urls_for_recipe(clean, recipe, max_slides=max_slides)
     if not ordered:
+        from apps.products.reel_curation import curate_reel_image_urls
+
+        ordered = curate_reel_image_urls(clean, max_slides=max_slides)
+    if not ordered:
         return None
 
     roles = [_url_role(u) for u in ordered]

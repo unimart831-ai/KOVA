@@ -768,7 +768,7 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
             "source_images": source_images,
             "music_mood": "upbeat",
             "video_compose_status": "pending",
-            "prefer_photoroom_video": len(source_images) <= 2,
+            "prefer_photoroom_video": len(source_images) == 1,
             "reel_director": True,
         }
         if source_post:

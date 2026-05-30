@@ -802,8 +802,32 @@ def compose_reel_video(post_id: str):
         logger.warning("compose_reel_video: no images for post %s", post_id)
         return {"error": "no_images"}
 
-    template = meta.get("reel_template") or "slideshow"
-    mood = meta.get("music_mood") or infer_mood_from_post(post.content_intent, post.content_text)
+    reel_plan = None
+    try:
+        image_sources, reel_plan = _apply_reel_director(post, image_sources, meta)
+        post.visual_metadata = meta
+        post.save(update_fields=["visual_metadata", "updated_at"])
+    except Exception as exc:
+        logger.exception(
+            "compose_reel_video: reel director failed for post %s", post_id,
+        )
+        meta["video_compose_status"] = "failed"
+        meta["video_compose_error"] = f"Reel director: {exc}"[:500]
+        post.visual_metadata = meta
+        post.media_status = Post.MediaStatus.FAILED
+        post.save(update_fields=["visual_metadata", "media_status", "updated_at"])
+        return {"error": str(exc)}
+
+    template = (
+        reel_plan.template
+        if reel_plan
+        else (meta.get("reel_template") or "slideshow")
+    )
+    mood = (
+        reel_plan.music_mood
+        if reel_plan
+        else (meta.get("music_mood") or infer_mood_from_post(post.content_intent, post.content_text))
+    )
     track = pick_music_track(mood=mood, seed=str(post.pk))
     slide_count = len(image_sources)
     est_duration = max(slide_count * 3.0 - 0.5 * max(slide_count - 1, 0), 5.0)
@@ -835,11 +859,14 @@ def compose_reel_video(post_id: str):
         else _build_reel_hook_texts(post, meta, len(image_sources))
     )
 
-    # Photoroom Image-to-Video for single-hero commerce reels (sandbox-safe fallback to FFmpeg)
+    # Photoroom animate: single-hero only; multi-slide director plans use FFmpeg.
     use_photoroom = (
-        len(image_sources) <= 3
-        or meta.get("composition_hero_url")
-        or meta.get("prefer_photoroom_video")
+        not reel_plan
+        and len(image_sources) <= 2
+        and (
+            meta.get("composition_hero_url")
+            or meta.get("prefer_photoroom_video")
+        )
     )
     if use_photoroom:
         try:
@@ -887,6 +914,14 @@ def compose_reel_video(post_id: str):
         post.media_status = Post.MediaStatus.FAILED
         post.save(update_fields=["visual_metadata", "media_status", "updated_at"])
         logger.exception("compose_reel_video failed for post %s", post_id)
+        return {"error": str(exc)}
+    except Exception as exc:
+        meta["video_compose_status"] = "failed"
+        meta["video_compose_error"] = str(exc)[:500]
+        post.visual_metadata = meta
+        post.media_status = Post.MediaStatus.FAILED
+        post.save(update_fields=["visual_metadata", "media_status", "updated_at"])
+        logger.exception("compose_reel_video unexpected error for post %s", post_id)
         return {"error": str(exc)}
     finally:
         if generated_audio and audio_path:

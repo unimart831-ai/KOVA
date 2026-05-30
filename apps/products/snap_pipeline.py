@@ -11,6 +11,15 @@ REEL_PLATFORMS = frozenset({"instagram", "facebook", "tiktok", "linkedin"})
 SNAP_TIMEOUT = timedelta(minutes=10)
 SEED_TIMEOUT = timedelta(minutes=5)
 EXPAND_STALE = timedelta(minutes=6)
+REEL_COMPOSE_STALE = timedelta(minutes=6)
+
+
+def _reel_compose_stuck(post, now):
+    """True when compose was marked pending but has not finished within the stale window."""
+    if post.reel_compose_status != "pending":
+        return False
+    ref = post.updated_at or post.created_at
+    return ref < now - REEL_COMPOSE_STALE
 
 
 def _offering_copy(product) -> dict:
@@ -388,7 +397,12 @@ def build_snap_pipeline_status(product, user):
             p for p in reel_posts
             if p.reel_compose_status == "failed" and not p.reel_has_video
         ]
-        if composing:
+        stuck = [p for p in composing if _reel_compose_stuck(p, now)]
+        if composing and stuck and len(stuck) == len(composing):
+            reel_status = "failed"
+            reel_detail = "Video composition timed out — use Retry on the post"
+            error_message = error_message or reel_detail
+        elif composing:
             reel_status = "running"
             reel_detail = (
                 f"FFmpeg is composing motion reel{'s' if len(composing) != 1 else ''} "
@@ -429,7 +443,12 @@ def build_snap_pipeline_status(product, user):
             p for p in reel_posts
             if p.reel_compose_status == "failed" and not p.reel_has_video
         ]
-        if composing:
+        stuck = [p for p in composing if _reel_compose_stuck(p, now)]
+        if composing and stuck and len(stuck) == len(composing):
+            reel_status = "failed"
+            reel_detail = "Video composition timed out — use Retry on the post"
+            error_message = error_message or reel_detail
+        elif composing:
             reel_status = "running"
             reel_detail = (
                 f"FFmpeg is composing motion reel{'s' if len(composing) != 1 else ''} "
