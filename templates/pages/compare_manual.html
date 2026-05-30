@@ -1,0 +1,41 @@
+{% extends "layouts/marketing.html" %}
+
+{% block title %}Kova vs Doing It Manually — Save Hours Every Week{% endblock %}
+
+{% block content %}
+{% include "components/brand/_legal_header.html" with page_title="Kova vs doing it yourself" page_subtitle="Spreadsheets, Canva, and late-night posting" %}
+
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-10">
+  <div class="glass-panel p-6 sm:p-10 space-y-6 text-gray-600 dark:text-gray-300 leading-relaxed">
+    <p class="text-lg text-gray-900 dark:text-white font-medium">
+      Most founders spend <strong>10–15 hours a week</strong> on social — writing, designing, replying, rescheduling. Kova compresses the repeatable work so you keep control without the grind.
+    </p>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+        <thead class="bg-gray-50 dark:bg-gray-800/80 text-gray-900 dark:text-white">
+          <tr>
+            <th class="px-4 py-3 font-semibold">Task</th>
+            <th class="px-4 py-3 font-semibold">Manual</th>
+            <th class="px-4 py-3 font-semibold">With Kova</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          <tr><td class="px-4 py-3">Find trends</td><td class="px-4 py-3 text-gray-500">Scroll + guess</td><td class="px-4 py-3">Research agent in your brief</td></tr>
+          <tr><td class="px-4 py-3">Write posts</td><td class="px-4 py-3 text-gray-500">Blank doc stress</td><td class="px-4 py-3">Drafts ready to approve</td></tr>
+          <tr><td class="px-4 py-3">Adapt per platform</td><td class="px-4 py-3 text-gray-500">Copy-paste edits</td><td class="px-4 py-3">Platform-native versions</td></tr>
+          <tr><td class="px-4 py-3">Reply to comments</td><td class="px-4 py-3 text-gray-500">Always behind</td><td class="px-4 py-3">Suggested replies flagged</td></tr>
+          <tr><td class="px-4 py-3">Learn what worked</td><td class="px-4 py-3 text-gray-500">Rarely</td><td class="px-4 py-3">Content DNA improves next posts</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="text-sm">You still approve everything — Kova is not "set and forget ads spend." It's <strong>set and approve</strong> with a team that gets sharper over time.</p>
+
+    <div class="pt-6 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-3">
+      <a href="{% url 'account_signup' %}" class="btn-primary justify-center">Start 7-day Kazi trial</a>
+      <a href="{% url 'landing' %}" class="btn-secondary justify-center">Back to home</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

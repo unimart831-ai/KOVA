@@ -31,6 +31,30 @@ def landing_page(request):
     })
 
 
+def landing_start(request):
+    """Capture hero business hint, then send to signup (Nas-style prompt flow)."""
+    if request.method == "POST":
+        hint = (request.POST.get("business_hint") or "").strip()[:280]
+        if hint:
+            request.session["onboarding_business_hint"] = hint
+    return redirect("account_signup")
+
+
+_COMPARE_TEMPLATES = {
+    "buffer": "pages/compare_buffer.html",
+    "manual": "pages/compare_manual.html",
+    "nas": "pages/compare_nas.html",
+}
+
+
+def compare_page(request, slug):
+    template = _COMPARE_TEMPLATES.get(slug)
+    if not template:
+        return redirect("landing")
+    from apps.billing.models import get_public_plan_limits
+    return render(request, template, {"all_plans": get_public_plan_limits()})
+
+
 def legal_page(template):
     """Return a view that renders a legal page template."""
     def view(request):
@@ -60,6 +84,8 @@ urlpatterns = [
     path("health/", health_check, name="health"),
     # Landing
     path("", landing_page, name="landing"),
+    path("start/", landing_start, name="landing_start"),
+    path("compare/<slug:slug>/", compare_page, name="compare"),
     # Legal pages
     path("privacy/", legal_page("privacy.html"), name="privacy"),
     path("terms/", legal_page("terms.html"), name="terms"),

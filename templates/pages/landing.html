@@ -20,22 +20,14 @@
       <span class="marketing-hero-tagline">You approve in 5 minutes.</span>
     </h1>
     <p class="mt-6 max-w-2xl mx-auto text-lg sm:text-xl text-gray-600 dark:text-gray-300 leading-relaxed reveal reveal-delay-2">
-      Research trends. Create platform-native content. Engage your audience. Track what works. Learn and improve — automatically. That's Kova.
+      Describe your business — Kova builds your brand profile, prepares posts, and keeps you consistent. You approve in 5 minutes.
     </p>
 
-    <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 reveal reveal-delay-3">
-      <a href="{% url 'account_signup' %}" class="group btn-primary text-lg px-8 py-3.5 shadow-lg shadow-kova-200 dark:shadow-none">
-        Start free — 7-day Kazi trial
-        <svg class="inline w-5 h-5 ml-1 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-        </svg>
-      </a>
-      <a href="#agent-network" class="btn-secondary text-lg px-8 py-3.5">See how it works</a>
-    </div>
-
-    <p class="mt-5 text-sm text-gray-400 dark:text-gray-500 reveal reveal-delay-4">No credit card required &middot; Starting from KSh {{ all_plans.starter.price_kes }}/mo</p>
+    {% include "components/brand/_hero_prompt.html" %}
   </div>
 </section>
+
+{% include "components/brand/_landing_simple_steps.html" %}
 
 <!-- Social proof -->
 <section class="marketing-stats-strip">
@@ -81,15 +73,19 @@
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">You get generic AI writing that sounds like everyone else. No learning. No strategy. No engagement. Same output forever.</p>
       </div>
       <div class="text-center reveal reveal-delay-3">
-        <div class="w-12 h-12 mx-auto bg-green-100 dark:bg-green-950/40 rounded-xl flex items-center justify-center mb-3">
-          <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        <div class="w-12 h-12 mx-auto bg-kova-100 dark:bg-kova-950/50 rounded-xl flex items-center justify-center mb-3 ring-1 ring-kova-200/80 dark:ring-kova-800/60">
+          <svg class="w-6 h-6 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
         </div>
-        <h3 class="font-semibold text-green-700 dark:text-green-400">With Kova</h3>
+        <h3 class="font-semibold text-kova-700 dark:text-kova-400">With Kova</h3>
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">You wake up to prepared content, trending insights, and drafted replies. Approve in 5 minutes. Every post is smarter than the last.</p>
       </div>
     </div>
   </div>
 </section>
+
+{% include "components/brand/_landing_magic_features.html" %}
+
+{% include "components/brand/_landing_stories.html" %}
 
 <!-- Connected Agent Network -->
 <section id="agent-network" class="py-20 marketing-section-muted overflow-hidden">

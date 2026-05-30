@@ -1,0 +1,35 @@
+{% extends "layouts/marketing.html" %}
+
+{% block title %}Kova vs Nas.com — Social Ops vs Launch &amp; Sell{% endblock %}
+
+{% block content %}
+{% include "components/brand/_legal_header.html" with page_title="Kova vs Nas.com" page_subtitle="Different jobs — often the same entrepreneur" %}
+
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-10">
+  <div class="glass-panel p-6 sm:p-10 space-y-6 text-gray-600 dark:text-gray-300 leading-relaxed">
+    <p class="text-lg text-gray-900 dark:text-white font-medium">
+      <a href="https://nas.com" class="text-kova-600 dark:text-kova-400 hover:underline" rel="noopener noreferrer">Nas.com</a> is built for <strong>day zero</strong>: photo → storefront → Meta ads in minutes.
+      Kova is built for <strong>day 30+</strong>: keep showing up, approve in five minutes, get smarter every week.
+    </p>
+
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Choose Nas if…</h2>
+    <p class="text-sm">You need a store, checkout, and paid customer acquisition from one photo — and you're starting from scratch.</p>
+
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Choose Kova if…</h2>
+    <ul class="space-y-2 text-sm list-disc pl-5">
+      <li>You already sell but social is inconsistent or overwhelming</li>
+      <li>You want multi-platform organic posts, reels, and engagement — not only a shop + ads</li>
+      <li>You prefer human approval before anything publishes</li>
+      <li>You need M-Pesa, WhatsApp briefs, and pricing built for African SMEs</li>
+    </ul>
+
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Use both?</h2>
+    <p class="text-sm">Some brands launch on Nas (or any store) and run ongoing social with Kova. They solve different moments in the journey.</p>
+
+    <div class="pt-6 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-3">
+      <a href="{% url 'account_signup' %}" class="btn-primary justify-center">Start 7-day Kazi trial</a>
+      <a href="{% url 'compare' 'buffer' %}" class="btn-secondary justify-center">Kova vs Buffer</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "layouts/marketing.html" %}
+
+{% block title %}Kova vs Buffer — Which Is Better for Growing Brands?{% endblock %}
+
+{% block content %}
+{% include "components/brand/_legal_header.html" with page_title="Kova vs Buffer" page_subtitle="Scheduling vs an AI team that learns" %}
+
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-10">
+  <div class="glass-panel p-6 sm:p-10 space-y-6 text-gray-600 dark:text-gray-300 leading-relaxed">
+    <p class="text-lg text-gray-900 dark:text-white font-medium">
+      Buffer helps you <strong>queue posts</strong>. Kova helps you <strong>run social media</strong> — research, create, engage, publish, and improve.
+    </p>
+
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white">The core difference</h2>
+    <ul class="space-y-3 text-sm">
+      <li class="flex gap-2"><span class="text-emerald-500">✓</span><span><strong>Buffer:</strong> You still write (or paste) every caption, find images, and check analytics elsewhere.</span></li>
+      <li class="flex gap-2"><span class="text-kova-600 dark:text-kova-400">✓</span><span><strong>Kova:</strong> Six agents prepare your Daily Brief — trends, drafts, replies — you approve in ~5 minutes.</span></li>
+    </ul>
+
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white">When Buffer makes sense</h2>
+    <p class="text-sm">You already have content ready and only need a reliable scheduler at a low monthly cost.</p>
+
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white">When Kova makes sense</h2>
+    <p class="text-sm">You're a small team that needs consistent output, platform-native posts, engagement help, and performance that compounds — especially across Instagram, Facebook, and WhatsApp in East Africa.</p>
+
+    <div class="pt-6 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-3">
+      <a href="{% url 'account_signup' %}" class="btn-primary justify-center">Start 7-day Kazi trial</a>
+      <a href="{% url 'landing' %}" class="btn-secondary justify-center">Back to home</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

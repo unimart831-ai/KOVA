@@ -186,8 +186,11 @@ def onboarding_choose_path(request):
             return redirect("accounts:onboarding_magic_connect")
         return redirect("/accounts/onboarding/?step=1&via=manual")
 
+    business_hint = (request.session.pop("onboarding_business_hint", "") or "").strip()[:280]
+
     return render(request, "accounts/onboarding_choose_path.html", {
         "page_title": "Welcome to Kova",
+        "business_hint": business_hint,
         **_onboarding_setup_context(path_choice=True),
     })
 
