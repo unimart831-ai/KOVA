@@ -206,7 +206,7 @@ def find_user_by_facebook_id(facebook_id: str):
 
 
 def _extract_facebook_phone(result) -> str:
-    """Normalize phone from OAuth metadata when Graph returns it (uncommon)."""
+    """Normalize phone from OAuth metadata (not from Graph /me)."""
     from apps.accounts.phone_utils import is_valid_phone, normalize_phone
 
     metadata = result.metadata or {}

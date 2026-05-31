@@ -287,9 +287,9 @@ class FacebookProvider(BaseProvider):
             access_token = long_data.get("access_token", short_token)
 
             # 3. Get user profile (email used for signup/login account linking).
-            # mobile_phone is requested but rarely returned — phone capture is the fallback.
+            # Phone is not available on /me — onboarding phone capture is the fallback.
             me = client.get(f"{FB_API_BASE}/me", params={
-                "fields": "id,name,email,picture,mobile_phone",
+                "fields": "id,name,email,picture",
                 "access_token": access_token,
             })
             me.raise_for_status()
@@ -339,7 +339,7 @@ class FacebookProvider(BaseProvider):
             token_scope=FB_SCOPES,
             metadata={
                 "email": user.get("email", ""),
-                "phone": user.get("mobile_phone") or user.get("phone") or "",
+                "phone": "",
                 "facebook_user_id": user.get("id", ""),
                 "pages": page_list,
                 # selected_page_id: which Page Kova publishes to.

@@ -9,6 +9,7 @@ from django.urls import reverse
 
 from apps.accounts.facebook_oauth import (
     FacebookOAuthError,
+    _extract_facebook_phone,
     facebook_synthetic_email,
     find_user_by_facebook_id,
     make_facebook_oauth_state,
@@ -39,6 +40,50 @@ def fb_result():
             "selected_page_id": "page1",
         },
     )
+
+
+class TestExtractFacebookPhone:
+    def test_empty_without_metadata_phone(self):
+        result = OAuthResult(
+            platform_user_id="1",
+            username="x",
+            display_name="X",
+            avatar_url="",
+            access_token="t",
+            refresh_token="",
+            token_expires_at=None,
+            token_scope="",
+            metadata={},
+        )
+        assert _extract_facebook_phone(result) == ""
+
+    def test_uses_metadata_phone_not_graph_mobile_phone(self):
+        result = OAuthResult(
+            platform_user_id="1",
+            username="x",
+            display_name="X",
+            avatar_url="",
+            access_token="t",
+            refresh_token="",
+            token_expires_at=None,
+            token_scope="",
+            metadata={"phone": "0712345678"},
+        )
+        assert _extract_facebook_phone(result) == "0712345678"
+
+    def test_legacy_mobile_phone_metadata_key_still_supported(self):
+        result = OAuthResult(
+            platform_user_id="1",
+            username="x",
+            display_name="X",
+            avatar_url="",
+            access_token="t",
+            refresh_token="",
+            token_expires_at=None,
+            token_scope="",
+            metadata={"mobile_phone": "0712345678"},
+        )
+        assert _extract_facebook_phone(result) == "0712345678"
 
 
 @pytest.mark.django_db
