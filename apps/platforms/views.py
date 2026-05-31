@@ -11,9 +11,13 @@ from django_ratelimit.decorators import ratelimit
 
 from apps.accounts.facebook_oauth import (
     FacebookOAuthError,
+    log_facebook_oauth_callback,
     login_user_from_facebook_oauth,
+    peek_facebook_oauth_mode,
     persist_facebook_platform_account,
+    redirect_facebook_oauth_failure,
     resolve_user_from_facebook_result,
+    validate_facebook_callback_state,
 )
 from apps.platforms.models import SocialAccount
 from apps.platforms.providers.registry import get_provider
@@ -270,7 +274,10 @@ def connect_platform(request, platform):
 @ratelimit(key="ip", rate="30/m", block=True)
 def oauth_callback(request, platform):
     """Handle OAuth callback from a platform."""
+    received_state = request.GET.get("state", "")
     facebook_auth_mode = request.session.get("oauth_facebook_mode")
+    if not facebook_auth_mode and platform == "facebook":
+        facebook_auth_mode = peek_facebook_oauth_mode(received_state)
     if not request.user.is_authenticated and not facebook_auth_mode:
         return redirect("account_login")
 
@@ -280,34 +287,49 @@ def oauth_callback(request, platform):
         return redirect("platforms:list" if request.user.is_authenticated else "account_login")
 
     # Verify state to prevent CSRF
-    expected_state = request.session.pop(f"oauth_state_{platform}", None)
-    received_state = request.GET.get("state", "")
-    if not expected_state or expected_state != received_state:
-        messages.error(request, "Invalid OAuth state. Please try again.")
-        if facebook_auth_mode == "signup":
-            return redirect("account_signup")
-        if facebook_auth_mode == "login":
-            return redirect("account_login")
-        return redirect("platforms:list")
-
-    facebook_auth_mode = request.session.pop("oauth_facebook_mode", None)
+    if platform == "facebook":
+        facebook_auth_mode, state_error = validate_facebook_callback_state(
+            request, received_state,
+        )
+        if state_error:
+            log_facebook_oauth_callback(
+                mode=facebook_auth_mode,
+                success=False,
+                error=state_error,
+            )
+            messages.error(request, state_error)
+            return redirect_facebook_oauth_failure(
+                request, facebook_auth_mode or peek_facebook_oauth_mode(received_state),
+            )
+    else:
+        expected_state = request.session.pop(f"oauth_state_{platform}", None)
+        if not expected_state or expected_state != received_state:
+            messages.error(request, "Invalid OAuth state. Please try again.")
+            return redirect("platforms:list")
 
     error = request.GET.get("error")
     if error:
-        messages.error(request, f"Authorization denied: {request.GET.get('error_description', error)}")
-        if facebook_auth_mode == "signup":
-            return redirect("account_signup")
-        if facebook_auth_mode == "login":
-            return redirect("account_login")
+        err_desc = request.GET.get("error_description", error)
+        log_facebook_oauth_callback(
+            mode=facebook_auth_mode,
+            success=False,
+            error=f"authorization_denied:{err_desc}",
+        )
+        messages.error(request, f"Authorization denied: {err_desc}")
+        if facebook_auth_mode:
+            return redirect_facebook_oauth_failure(request, facebook_auth_mode)
         return redirect("platforms:list")
 
     code = request.GET.get("code", "")
     if not code:
+        log_facebook_oauth_callback(
+            mode=facebook_auth_mode,
+            success=False,
+            error="missing_code",
+        )
         messages.error(request, "No authorization code received.")
-        if facebook_auth_mode == "signup":
-            return redirect("account_signup")
-        if facebook_auth_mode == "login":
-            return redirect("account_login")
+        if facebook_auth_mode:
+            return redirect_facebook_oauth_failure(request, facebook_auth_mode)
         return redirect("platforms:list")
 
     redirect_uri = request.build_absolute_uri(
@@ -322,15 +344,32 @@ def oauth_callback(request, platform):
         )
 
         if facebook_auth_mode and platform == "facebook":
+            email_present = bool((result.metadata.get("email") or "").strip())
             try:
                 user, _created = resolve_user_from_facebook_result(result, facebook_auth_mode)
             except FacebookOAuthError as exc:
+                log_facebook_oauth_callback(
+                    mode=facebook_auth_mode,
+                    success=False,
+                    email_present=email_present,
+                    error=str(exc),
+                )
                 messages.error(request, str(exc))
-                return redirect("account_signup" if facebook_auth_mode == "signup" else "account_login")
+                return redirect_facebook_oauth_failure(request, facebook_auth_mode)
 
             login_user_from_facebook_oauth(request, user)
             account, created = persist_facebook_platform_account(
                 user, result, auto_connected=True,
+            )
+            accounts_connected = SocialAccount.objects.filter(
+                user=user, platform__in=("facebook", "instagram"), is_active=True,
+            ).count()
+            log_facebook_oauth_callback(
+                mode=facebook_auth_mode,
+                success=True,
+                user_id=user.pk,
+                email_present=email_present,
+                accounts_connected=accounts_connected,
             )
             action = "connected" if created else "reconnected"
             messages.success(
@@ -437,7 +476,14 @@ def oauth_callback(request, platform):
 
     except Exception as exc:
         logger.error("OAuth callback failed for %s: %s", platform, exc, exc_info=True)
+        log_facebook_oauth_callback(
+            mode=facebook_auth_mode if platform == "facebook" else None,
+            success=False,
+            error=str(exc),
+        )
         messages.error(request, f"Failed to connect: {exc}")
+        if facebook_auth_mode and platform == "facebook":
+            return redirect_facebook_oauth_failure(request, facebook_auth_mode)
 
     # If user is still in onboarding, return to brand confirm (express step 2).
     if not request.user.onboarding_completed:

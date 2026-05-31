@@ -244,7 +244,7 @@ class FacebookProvider(BaseProvider):
 
     # ── OAuth ────────────────────────────────────────────────────────────────
 
-    def get_auth_url(self, state: str, redirect_uri: str) -> str:
+    def get_auth_url(self, state: str, redirect_uri: str, *, for_user_identity: bool = False, **kwargs) -> str:
         params = {
             "client_id": self.app_id,
             "redirect_uri": redirect_uri,
@@ -255,8 +255,12 @@ class FacebookProvider(BaseProvider):
         # Classic Facebook Login: use scope (comma-separated permissions)
         if FB_LOGIN_CONFIG_ID:
             params["config_id"] = FB_LOGIN_CONFIG_ID
+            if for_user_identity:
+                params["scope"] = "email,public_profile"
         else:
             params["scope"] = FB_SCOPES
+        if for_user_identity:
+            params["auth_type"] = "rerequest"
         return f"{FB_AUTH_URL}?{urlencode(params)}"
 
     def handle_callback(self, code: str, redirect_uri: str, **kwargs) -> OAuthResult:
@@ -289,6 +293,12 @@ class FacebookProvider(BaseProvider):
             })
             me.raise_for_status()
             user = me.json()
+            if not (user.get("email") or "").strip():
+                logger.warning(
+                    "Facebook /me returned no email (user_id=%s). "
+                    "Ensure email is in FB_LOGIN_CONFIG_ID or granted via scope.",
+                    user.get("id", ""),
+                )
 
             # 4. Get managed Pages (page tokens never expire while user token is valid)
             pages = []

@@ -19,6 +19,7 @@ import uuid
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
+from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 from django.shortcuts import redirect
 from django.urls import reverse
 
@@ -28,10 +29,108 @@ from apps.platforms.providers.registry import get_provider
 logger = logging.getLogger(__name__)
 
 FACEBOOK_OAUTH_MODES = frozenset({"signup", "login"})
+_FB_OAUTH_SIGNER = TimestampSigner(salt="kova.facebook.oauth.v1")
+_FB_OAUTH_STATE_MAX_AGE = 900  # 15 minutes
 
 
 class FacebookOAuthError(Exception):
     """User-facing Facebook OAuth failure."""
+
+
+def make_facebook_oauth_state(mode: str) -> tuple[str, str]:
+    """Return (session_nonce, signed_state) for Meta OAuth."""
+    nonce = secrets.token_urlsafe(32)
+    return nonce, sign_facebook_oauth_state(nonce, mode)
+
+
+def sign_facebook_oauth_state(nonce: str, mode: str) -> str:
+    """Build the state query param sent to Meta."""
+    return _FB_OAUTH_SIGNER.sign(f"{nonce}:{mode}")
+
+
+def peek_facebook_oauth_mode(state_param: str) -> str | None:
+    """Read signup/login mode from a signed state without consuming the session."""
+    if not state_param:
+        return None
+    try:
+        payload = _FB_OAUTH_SIGNER.unsign(state_param, max_age=_FB_OAUTH_STATE_MAX_AGE)
+    except (BadSignature, SignatureExpired):
+        return None
+    parts = payload.split(":", 1)
+    if len(parts) == 2 and parts[1] in FACEBOOK_OAUTH_MODES:
+        return parts[1]
+    return None
+
+
+def validate_facebook_callback_state(request, received_state: str) -> tuple[str | None, str | None]:
+    """
+    Validate Facebook OAuth state on callback.
+
+    Returns (facebook_auth_mode, error_message). error_message is user-facing.
+    Supports signed state (signup/login) and legacy plain state (platform connect).
+    """
+    if not received_state:
+        return None, "Invalid OAuth state. Please try again."
+
+    try:
+        payload = _FB_OAUTH_SIGNER.unsign(received_state, max_age=_FB_OAUTH_STATE_MAX_AGE)
+        nonce, mode = payload.split(":", 1)
+        if mode not in FACEBOOK_OAUTH_MODES:
+            return None, "Invalid OAuth state. Please try again."
+        expected_nonce = request.session.pop("oauth_state_facebook", None)
+        if expected_nonce and expected_nonce != nonce:
+            logger.warning(
+                "Facebook OAuth state nonce mismatch (session=%s, signed=%s)",
+                bool(expected_nonce),
+                True,
+            )
+            return None, "Invalid OAuth state. Please try again."
+        request.session.pop("oauth_facebook_mode", None)
+        return mode, None
+    except SignatureExpired:
+        return None, "Facebook sign-in timed out. Please try again."
+    except BadSignature:
+        pass
+
+    expected_state = request.session.pop("oauth_state_facebook", None)
+    if expected_state and expected_state == received_state:
+        return request.session.pop("oauth_facebook_mode", None), None
+    return None, "Invalid OAuth state. Please try again."
+
+
+def redirect_facebook_oauth_failure(request, mode: str | None):
+    """Redirect to signup or login with django messages preserved."""
+    if mode == "login":
+        return redirect("account_login")
+    if mode == "signup":
+        return redirect("account_signup")
+    return redirect("account_login")
+
+
+def log_facebook_oauth_callback(
+    *,
+    mode: str | None,
+    success: bool,
+    user_id: int | None = None,
+    email_present: bool | None = None,
+    accounts_connected: int | None = None,
+    error: str | None = None,
+):
+    """Structured callback logging — no tokens or secrets."""
+    extra = {
+        "mode": mode or "",
+        "success": success,
+        "user_id": user_id,
+        "email_present": email_present,
+        "accounts_connected": accounts_connected,
+    }
+    msg = "Facebook OAuth callback"
+    if error:
+        extra["error"] = error[:200]
+    if success:
+        logger.info("%s: %s", msg, extra)
+    else:
+        logger.error("%s: %s", msg, extra)
 
 
 def facebook_oauth_enabled() -> bool:
@@ -51,15 +150,20 @@ def start_facebook_platform_oauth(request, mode: str):
         messages.error(request, "Facebook connection is temporarily unavailable.")
         return redirect("account_signup" if mode == "signup" else "account_login")
 
-    state = secrets.token_urlsafe(32)
-    request.session["oauth_state_facebook"] = state
+    nonce, state = make_facebook_oauth_state(mode)
+    request.session["oauth_state_facebook"] = nonce
     request.session["oauth_platform"] = "facebook"
     request.session["oauth_facebook_mode"] = mode
+    request.session.modified = True
 
     redirect_uri = request.build_absolute_uri(
         reverse("platforms:oauth_callback", kwargs={"platform": "facebook"})
     )
-    auth_url = provider.get_auth_url(state=state, redirect_uri=redirect_uri)
+    auth_url = provider.get_auth_url(
+        state=state,
+        redirect_uri=redirect_uri,
+        for_user_identity=True,
+    )
     return redirect(auth_url)
 
 
@@ -219,5 +323,15 @@ def persist_facebook_platform_account(user, result, *, auto_connected: bool = Fa
         metadata.get("pages") or [],
         result.access_token,
         result.token_expires_at,
+    )
+    connected = SocialAccount.objects.filter(
+        user=user, platform__in=("facebook", "instagram"), is_active=True,
+    ).count()
+    logger.info(
+        "Facebook OAuth persist: user_id=%s email_present=%s accounts_connected=%s created=%s",
+        user.pk,
+        bool((result.metadata or {}).get("email")),
+        connected,
+        created,
     )
     return account, created

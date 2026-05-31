@@ -111,10 +111,10 @@ urlpatterns = [
     path("sw.js", service_worker, name="sw"),
     # Admin
     path("admin/", admin.site.urls),
-    # Auth (allauth)
-    path("accounts/", include("allauth.urls")),
-    # App URLs
+    # Kova accounts routes before allauth so /accounts/facebook/login/ uses platform OAuth
     path("accounts/", include("apps.accounts.urls")),
+    # Auth (allauth) — legacy social callbacks; after apps.accounts for path precedence
+    path("accounts/", include("allauth.urls")),
     path("command/", include("apps.command.urls")),
     path("brief/", include("apps.briefs.urls")),
     path("content/", include("apps.content.urls")),
