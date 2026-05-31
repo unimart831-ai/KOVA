@@ -313,7 +313,7 @@ def generate_carousel(
             )
             attachment.file.save(filepath, ContentFile(buffer.read()), save=True)
             from apps.content.tasks import _public_url_for_file
-            public_url = _public_url_for_file(attachment.file.name)
+            public_url = _public_url_for_file(attachment.file.name, for_platform_api=True)
             media_urls.append(public_url or attachment.file.url)
 
         # Update post
@@ -363,7 +363,7 @@ def _load_product_image(image_source: str):
             rel = image_source.lstrip("/")
             if rel.startswith("media/"):
                 rel = rel[6:]
-            public = _public_url_for_file(rel)
+            public = _public_url_for_file(rel, for_platform_api=True)
             if public:
                 import requests
                 resp = requests.get(public, timeout=12)
@@ -1100,7 +1100,7 @@ def generate_product_carousel(
             attachment.file.save(filepath, ContentFile(buffer.read()), save=True)
             from apps.content.tasks import _public_url_for_file
 
-            public_url = _public_url_for_file(attachment.file.name)
+            public_url = _public_url_for_file(attachment.file.name, for_platform_api=True)
             media_urls.append(public_url or attachment.file.url)
 
         if not post.media_urls:
@@ -1203,7 +1203,7 @@ def generate_catalog_showcase_carousel(
             attachment.file.save(filepath, ContentFile(buffer.read()), save=True)
             from apps.content.tasks import _public_url_for_file
 
-            public_url = _public_url_for_file(attachment.file.name)
+            public_url = _public_url_for_file(attachment.file.name, for_platform_api=True)
             media_urls.append(public_url or attachment.file.url)
 
         post.media_urls = list(media_urls)

@@ -279,6 +279,9 @@
 {% if post.status == 'failed' %}
   <div class="mb-3 px-2.5 py-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-lg">
     <p class="text-[11px] text-red-700 dark:text-red-300 font-medium">Publishing failed</p>
+    {% if post.publish_failure_message %}
+    <p class="text-[11px] text-red-600 dark:text-red-400 mt-1 line-clamp-3">{{ post.publish_failure_message|truncatechars:220 }}</p>
+    {% endif %}
     <a href="{% url 'content:post_detail' post.id %}" class="text-[11px] text-red-600 dark:text-red-400 hover:underline mt-0.5 inline-block">View details &rarr;</a>
   </div>
 {% endif %}

@@ -75,6 +75,63 @@ def _is_video_media_url(url: str) -> bool:
     path = url.lower().split("?")[0]
     return path.endswith((".mp4", ".mov", ".avi", ".webm", ".m4v"))
 
+
+def _graph_api_error_text(response: httpx.Response, *, limit: int = 500) -> str:
+    """Extract a readable error from a Graph API error response."""
+    try:
+        payload = response.json()
+        err = payload.get("error")
+        if isinstance(err, dict):
+            parts = [str(err.get("message", "")).strip()]
+            if err.get("error_user_msg"):
+                parts.append(str(err["error_user_msg"]).strip())
+            code = err.get("code")
+            subcode = err.get("error_subcode")
+            if code:
+                parts.append(f"(code {code}{f'/{subcode}' if subcode else ''})")
+            text = " — ".join(p for p in parts if p)
+            if text:
+                return text[:limit]
+    except Exception:
+        pass
+    return (response.text or "")[:limit]
+
+
+def _reel_url_from_media_list(media_urls: Optional[list[str]]) -> str:
+    """Pick the first video URL from a media list (never treat images as reels)."""
+    for url in media_urls or []:
+        if _is_video_media_url(url):
+            return url
+    return ""
+
+
+def refresh_facebook_page_tokens(user_access_token: str) -> list[dict]:
+    """Re-fetch Page access tokens after a user token refresh."""
+    if not user_access_token:
+        return []
+    try:
+        with httpx.Client(timeout=HTTP_TIMEOUT) as client:
+            pages_resp = client.get(f"{FB_API_BASE}/me/accounts", params={
+                "fields": "id,name,access_token,picture",
+                "access_token": user_access_token,
+            })
+            pages_resp.raise_for_status()
+            pages = pages_resp.json().get("data", [])
+    except Exception as exc:
+        logger.warning("Could not refresh Facebook page tokens: %s", exc)
+        return []
+
+    return [
+        {
+            "id": p["id"],
+            "name": p.get("name", ""),
+            "access_token": p.get("access_token", ""),
+            "picture_url": p.get("picture", {}).get("data", {}).get("url", ""),
+        }
+        for p in pages
+        if p.get("id") and p.get("access_token")
+    ]
+
 # ── Login Configuration ──────────────────────────────────────────────────────
 # Facebook Login for Business uses config_id (permission bundle created in
 # Meta App Dashboard → Facebook Login for Business → Configurations).
@@ -424,7 +481,7 @@ class FacebookProvider(BaseProvider):
                 )
         except httpx.HTTPStatusError as e:
             status_code = e.response.status_code
-            error_text = e.response.text[:500]
+            error_text = _graph_api_error_text(e.response)
             logger.error("Facebook publish failed (HTTP %d): %s", status_code, error_text)
             if status_code in (429, 500, 502, 503, 504):
                 raise
@@ -454,7 +511,7 @@ class FacebookProvider(BaseProvider):
                 )
         except httpx.HTTPStatusError as e:
             status_code = e.response.status_code
-            error_text = e.response.text[:500]
+            error_text = _graph_api_error_text(e.response)
             logger.error("Facebook video publish failed (HTTP %d): %s", status_code, error_text)
             if status_code in (429, 500, 502, 503, 504):
                 raise
@@ -529,7 +586,7 @@ class FacebookProvider(BaseProvider):
                 )
         except httpx.HTTPStatusError as e:
             status_code = e.response.status_code
-            error_text = e.response.text[:500]
+            error_text = _graph_api_error_text(e.response)
             logger.error("Facebook Reel publish failed (HTTP %d): %s", status_code, error_text)
             if status_code in (429, 500, 502, 503, 504):
                 raise
@@ -1233,6 +1290,7 @@ class InstagramProvider(BaseProvider):
         """
         ig_user_id = kwargs.get("ig_user_id", "")
         media_type = kwargs.get("media_type", "IMAGE").upper()
+        token = kwargs.get("page_access_token") or access_token
 
         if not ig_user_id:
             return PublishResult(success=False, error="ig_user_id is required")
@@ -1240,14 +1298,14 @@ class InstagramProvider(BaseProvider):
         try:
             with httpx.Client(timeout=120.0) as client:
                 if media_type == "CAROUSEL" and media_urls and len(media_urls) > 1:
-                    return self._publish_carousel(client, access_token, ig_user_id, content, media_urls)
+                    return self._publish_carousel(client, token, ig_user_id, content, media_urls)
                 elif media_type == "REELS":
-                    video_url = kwargs.get("video_url", media_urls[0] if media_urls else "")
-                    return self._publish_reels(client, access_token, ig_user_id, content, video_url)
+                    video_url = kwargs.get("video_url") or _reel_url_from_media_list(media_urls)
+                    return self._publish_reels(client, token, ig_user_id, content, video_url)
                 elif media_type == "STORIES":
-                    return self._publish_story(client, access_token, ig_user_id, media_urls)
+                    return self._publish_story(client, token, ig_user_id, media_urls)
                 elif media_urls:
-                    return self._publish_single_image(client, access_token, ig_user_id, content, media_urls[0])
+                    return self._publish_single_image(client, token, ig_user_id, content, media_urls[0])
                 else:
                     return PublishResult(
                         success=False,
@@ -1255,7 +1313,7 @@ class InstagramProvider(BaseProvider):
                     )
         except httpx.HTTPStatusError as e:
             status_code = e.response.status_code
-            error_text = e.response.text[:500]
+            error_text = _graph_api_error_text(e.response)
             logger.error("Instagram publish failed (HTTP %d): %s", status_code, error_text)
             if status_code in (429, 500, 502, 503, 504):
                 raise

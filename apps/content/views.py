@@ -1210,7 +1210,8 @@ def retry_publish(request, post_id):
     post.status = Post.Status.APPROVED
     post.scheduled_at = timezone.now()
     post.ai_reasoning = ""
-    post.save(update_fields=["status", "scheduled_at", "ai_reasoning", "updated_at"])
+    post.publish_error = ""
+    post.save(update_fields=["status", "scheduled_at", "ai_reasoning", "publish_error", "updated_at"])
 
     fire_task(publish_post, str(post.id))
 

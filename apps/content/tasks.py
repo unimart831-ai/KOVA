@@ -83,7 +83,52 @@ def strip_markdown(content: str) -> str:
 
 # ── Media URL helpers ────────────────────────────────────────────────────
 
-def _public_url_for_file(file_name: str):
+def _storage_custom_domain() -> str:
+    import os
+    from django.conf import settings
+
+    return (
+        getattr(settings, "AWS_S3_CUSTOM_DOMAIN", "")
+        or os.environ.get("AWS_S3_CUSTOM_DOMAIN", "")
+    )
+
+
+def _presigned_storage_url(file_name: str, *, expires: int = 86400) -> str | None:
+    """Generate a time-limited HTTPS URL for private R2/S3 objects (Meta video/image fetch)."""
+    from django.core.files.storage import default_storage
+
+    try:
+        from storages.backends.s3boto3 import S3Boto3Storage
+
+        if not isinstance(default_storage, S3Boto3Storage):
+            return None
+        key = default_storage._normalize_name(default_storage._clean_name(file_name))
+        url = default_storage.connection.meta.client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": default_storage.bucket_name, "Key": key},
+            ExpiresIn=expires,
+        )
+        if url.startswith("https://"):
+            return url
+    except Exception as exc:
+        logger.warning("Could not presign storage URL for %s: %s", file_name, exc)
+    return None
+
+
+def _is_unreachable_platform_url(url: str) -> bool:
+    if not url:
+        return True
+    lower = url.lower()
+    if url.startswith("/"):
+        return True
+    if "localhost" in lower or "127.0.0.1" in lower:
+        return True
+    if not url.startswith("https://"):
+        return True
+    return False
+
+
+def _public_url_for_file(file_name: str, *, for_platform_api: bool = False):
     """
     Generate a publicly accessible URL for a file in storage.
 
@@ -91,54 +136,78 @@ def _public_url_for_file(file_name: str):
     when configured, giving a clean URL that any platform API can download).
     Falls back to constructing the URL from R2 env vars directly (handles
     cases where the Celery worker's default_storage differs from web).
+
+    When ``for_platform_api`` is True, Meta/TikTok/etc. must be able to fetch
+    the object over HTTPS. Private R2 buckets without a public custom domain
+    get a presigned URL (24h) instead of a bare endpoint URL that returns 403.
     Returns None if no public URL can be constructed.
     """
     import os
     from django.core.files.storage import default_storage
     from django.conf import settings
 
+    custom_domain = _storage_custom_domain()
+    if custom_domain:
+        location = (
+            getattr(settings, "AWS_LOCATION", "")
+            or os.environ.get("AWS_LOCATION", "media")
+        )
+        prefix = f"{location}/" if location else ""
+        return f"https://{custom_domain}/{prefix}{file_name}"
+
+    if for_platform_api:
+        presigned = _presigned_storage_url(file_name)
+        if presigned:
+            return presigned
+
     try:
-        # Prefer the public URL (uses custom domain like pub-xxx.r2.dev)
         url = default_storage.url(file_name)
         if url.startswith(("http://", "https://")):
+            if for_platform_api and _is_unreachable_platform_url(url):
+                presigned = _presigned_storage_url(file_name)
+                return presigned or None
             return url
 
-        # S3/R2 fallback: generate a pre-signed URL (1 hour expiry)
         try:
             from storages.backends.s3boto3 import S3Boto3Storage
             if isinstance(default_storage, S3Boto3Storage):
-                key = default_storage._normalize_name(
-                    default_storage._clean_name(file_name)
-                )
-                return default_storage.connection.meta.client.generate_presigned_url(
-                    "get_object",
-                    Params={"Bucket": default_storage.bucket_name, "Key": key},
-                    ExpiresIn=3600,
-                )
+                presigned = _presigned_storage_url(file_name, expires=3600)
+                if presigned:
+                    return presigned
         except ImportError:
             pass
 
-        # R2 fallback: construct URL from env vars directly (works even
-        # when default_storage is FileSystemStorage but R2 is configured)
-        custom_domain = (
-            getattr(settings, "AWS_S3_CUSTOM_DOMAIN", "")
-            or os.environ.get("AWS_S3_CUSTOM_DOMAIN", "")
-        )
-        if custom_domain:
-            location = (
-                getattr(settings, "AWS_LOCATION", "")
-                or os.environ.get("AWS_LOCATION", "media")
-            )
-            prefix = f"{location}/" if location else ""
-            return f"https://{custom_domain}/{prefix}{file_name}"
-
-        # Last resort: SITE_URL + relative path
         site_url = getattr(settings, "SITE_URL", "").rstrip("/")
         if site_url and "localhost" not in site_url:
             return f"{site_url}{url}"
     except Exception as e:
         logger.warning("Could not generate public URL for %s: %s", file_name, e)
     return None
+
+
+def _platform_media_url(url: str | None, *, storage_key: str | None = None) -> str | None:
+    """
+    Normalize a media URL for platform APIs (Instagram Container, FB Reels upload).
+
+    External HTTPS URLs (Photoroom, product CDN) pass through unchanged.
+    Storage-backed paths/keys are resolved via ``_public_url_for_file``.
+    """
+    from django.conf import settings
+
+    if not url:
+        return None
+    if url.startswith(("http://", "https://")):
+        if _is_unreachable_platform_url(url):
+            return None
+        custom_domain = _storage_custom_domain()
+        if custom_domain and custom_domain in url:
+            return url
+        endpoint = getattr(settings, "AWS_S3_ENDPOINT_URL", "")
+        if endpoint and endpoint in url and storage_key:
+            return _public_url_for_file(storage_key, for_platform_api=True)
+        return url
+    key = storage_key or url.lstrip("/")
+    return _public_url_for_file(key, for_platform_api=True)
 
 
 # ── Motion Reel helpers ──────────────────────────────────────────────────
@@ -181,23 +250,19 @@ def _resolve_absolute_media_urls(post, *, is_carousel_post: bool = False) -> lis
     urls: list[str] = []
     seen: set[str] = set()
 
-    def _add(url: str | None) -> None:
-        if not url:
-            return
-        if url.startswith(("http://", "https://")):
-            if url not in seen:
-                seen.add(url)
-                urls.append(url)
-            return
-        public = _public_url_for_file(url.lstrip("/"))
-        if public and public not in seen:
-            seen.add(public)
-            urls.append(public)
+    def _add(url: str | None, *, storage_key: str | None = None) -> None:
+        resolved = _platform_media_url(url, storage_key=storage_key)
+        if resolved and resolved not in seen:
+            seen.add(resolved)
+            urls.append(resolved)
 
     if is_carousel_post:
         for attachment in post.attachments.filter(file_type="image").order_by("order"):
             if attachment.file:
-                _add(_public_url_for_file(attachment.file.name))
+                _add(
+                    _public_url_for_file(attachment.file.name, for_platform_api=True),
+                    storage_key=attachment.file.name,
+                )
         if urls:
             return urls
 
@@ -206,7 +271,10 @@ def _resolve_absolute_media_urls(post, *, is_carousel_post: bool = False) -> lis
 
     for attachment in post.attachments.order_by("order"):
         if attachment.file and attachment.file_type != "video":
-            _add(_public_url_for_file(attachment.file.name))
+            _add(
+                _public_url_for_file(attachment.file.name, for_platform_api=True),
+                storage_key=attachment.file.name,
+            )
 
     return urls
 
@@ -943,7 +1011,7 @@ def compose_reel_video(post_id: str):
 
     file_name = f"reel_videos/{uuid.uuid4().hex}.mp4"
     saved_name = default_storage.save(file_name, ContentFile(mp4_bytes))
-    public_url = _public_url_for_file(saved_name)
+    public_url = _public_url_for_file(saved_name, for_platform_api=True)
 
     if not public_url:
         meta["video_compose_status"] = "failed"
@@ -1134,7 +1202,26 @@ def publish_post(self, post_id: str):
                 account.refresh_token = tokens["refresh_token"]
             if tokens.get("expires_at"):
                 account.token_expires_at = tokens["expires_at"]
-            account.save(update_fields=["access_token", "refresh_token", "token_expires_at", "updated_at"])
+            meta = dict(account.metadata or {})
+            if account.platform == "instagram":
+                meta["page_access_token"] = tokens["access_token"]
+                account.metadata = meta
+            elif account.platform == "facebook":
+                from apps.platforms.providers.instagram_facebook import refresh_facebook_page_tokens
+
+                pages = refresh_facebook_page_tokens(tokens["access_token"])
+                if pages:
+                    meta["pages"] = pages
+                    selected_id = meta.get("selected_page_id")
+                    if selected_id and not any(p["id"] == selected_id for p in pages):
+                        meta["selected_page_id"] = pages[0]["id"]
+                    elif not selected_id and pages:
+                        meta["selected_page_id"] = pages[0]["id"]
+                    account.metadata = meta
+            account.save(update_fields=[
+                "access_token", "refresh_token", "token_expires_at",
+                "metadata", "updated_at",
+            ])
             logger.info(
                 "Token refreshed for %s account %s (expires: %s)",
                 account.platform, account.pk, account.token_expires_at,
@@ -1269,13 +1356,13 @@ def publish_post(self, post_id: str):
         from django.core.files.storage import default_storage
 
         # Determine post format for media routing.
-        # post_format is the authoritative source; fall back to visual_strategy for
-        # older posts created before post_format existed.
+        # post_format is the authoritative source; visual_strategy is legacy-only
+        # (do not treat reel posts with visual_strategy="carousel" as carousels).
         _post_format = getattr(post, "post_format", "") or ""
         _visual_strategy = getattr(post, "visual_strategy", "") or ""
-        is_carousel_post = _post_format == "carousel" or _visual_strategy == "carousel"
-        is_story_post = _post_format == "story"
-        is_reel_post = _post_format == "reel"
+        is_carousel_post = _post_format == Post.PostFormat.CAROUSEL
+        is_story_post = _post_format == Post.PostFormat.STORY
+        is_reel_post = _post_format == Post.PostFormat.REEL
 
         media_files = []   # [(filename, bytes, content_type), ...]
         media_urls_list = list(post.media_urls or [])  # AI-generated / carousel slides (already public)
@@ -1284,7 +1371,7 @@ def publish_post(self, post_id: str):
             if not attachment.file:
                 continue
             # Build the public URL (needed for URL-based APIs and fallback)
-            url = _public_url_for_file(attachment.file.name)
+            url = _public_url_for_file(attachment.file.name, for_platform_api=True)
 
             # Read file bytes from storage (works with S3, R2, local FS)
             try:
@@ -1334,6 +1421,20 @@ def publish_post(self, post_id: str):
             return {"error": "no_public_media"}
 
         reel_video_url = _reel_video_url(absolute_media_urls) if is_reel_post else None
+        if is_reel_post and not reel_video_url:
+            _fail_post(
+                post,
+                "No public MP4 URL for Reel — video must be HTTPS-accessible for Meta. "
+                "Re-compose the reel or check R2/CDN settings (AWS_S3_CUSTOM_DOMAIN).",
+            )
+            Notification.create_for_user(
+                post.user, "publish_failed",
+                "Reel publish failed: Meta could not access your video file. "
+                "Open the post in Studio and retry after media storage is configured.",
+                related_post=post,
+            )
+            return {"error": "reel_video_url_missing"}
+
         if reel_video_url:
             publish_kwargs["video_url"] = reel_video_url
 
@@ -1372,6 +1473,9 @@ def publish_post(self, post_id: str):
                     "user must reconnect.",
                     account.platform,
                 )
+
+        if account.platform in ("instagram", "facebook"):
+            token = publish_kwargs.get("page_access_token") or token
 
         result = provider.publish_post(
             access_token=token,
@@ -1495,9 +1599,10 @@ def publish_post(self, post_id: str):
         post.published_at = timezone.now()
         post.platform_post_id = result.platform_post_id
         post.platform_post_url = result.url
+        post.publish_error = ""
         post.save(update_fields=[
             "status", "published_at", "platform_post_id",
-            "platform_post_url", "updated_at",
+            "platform_post_url", "publish_error", "updated_at",
         ])
         account.mark_synced()
 
@@ -1670,10 +1775,12 @@ def publish_post(self, post_id: str):
 
 def _fail_post(post, error_message: str):
     """Mark a post as failed with an error message."""
+    msg = (error_message or "Unknown publish error")[:2000]
     post.status = post.Status.FAILED
-    post.ai_reasoning = f"Publish error: {error_message}"
-    post.save(update_fields=["status", "ai_reasoning", "updated_at"])
-    logger.error("Post %s failed: %s", post.pk, error_message)
+    post.publish_error = msg
+    post.ai_reasoning = f"Publish error: {msg}"
+    post.save(update_fields=["status", "publish_error", "ai_reasoning", "updated_at"])
+    logger.error("Post %s failed: %s", post.pk, msg)
 
 
 @shared_task(name="content.recover_stuck_publishing_posts")

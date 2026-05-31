@@ -267,6 +267,10 @@ class Post(SoftDeleteMixin, models.Model):
     utm_campaign = models.CharField(max_length=100, blank=True, help_text="From seed or user campaign.")
     utm_content = models.CharField(max_length=100, blank=True, help_text="Post ID for A/B tracking.")
     first_comment = models.TextField(blank=True, help_text="First comment to post immediately after publishing. Used for Facebook (links in body reduce organic reach 50-70%) and LinkedIn (link-in-comments drives more profile clicks). Auto-populated for Facebook when a product or website URL is available.")
+    publish_error = models.TextField(
+        blank=True,
+        help_text="Last publish failure message from the platform API (shown in Queue).",
+    )
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -285,6 +289,15 @@ class Post(SoftDeleteMixin, models.Model):
 
     def __str__(self):
         return f"{self.get_status_display()} — {self.content_text[:60]}"
+
+    @property
+    def publish_failure_message(self) -> str:
+        """User-facing publish failure text for Queue / detail views."""
+        if self.publish_error:
+            return self.publish_error
+        if self.ai_reasoning and self.ai_reasoning.startswith("Publish error:"):
+            return self.ai_reasoning[len("Publish error:"):].strip()
+        return ""
 
     @property
     def has_media(self):

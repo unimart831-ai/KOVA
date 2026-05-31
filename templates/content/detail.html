@@ -71,6 +71,15 @@
           <div class="prose dark:prose-invert prose-sm max-w-none whitespace-pre-wrap text-gray-800 dark:text-gray-200">{{ post.content_text }}</div>
         </div>
 
+        {% if post.status == 'failed' and post.publish_failure_message %}
+        <div class="px-5 pb-4">
+          <div class="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-lg">
+            <p class="text-xs font-semibold text-red-700 dark:text-red-300 uppercase tracking-wide mb-1">Publish error</p>
+            <p class="text-sm text-red-700 dark:text-red-300 whitespace-pre-wrap">{{ post.publish_failure_message }}</p>
+          </div>
+        </div>
+        {% endif %}
+
         <!-- First comment (Facebook / Instagram) -->
         {% if post.first_comment %}
           {% if post.social_account.platform == 'facebook' or post.social_account.platform == 'instagram' %}
