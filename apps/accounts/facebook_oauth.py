@@ -8,6 +8,11 @@ Meta redirect URIs to whitelist (trailing slash required):
   {SITE_URL}/platforms/callback/facebook/
   {SITE_URL}/platforms/callback/instagram/
   {SITE_URL}/accounts/facebook/login/callback/  — legacy allauth only
+
+Facebook Graph rarely returns a phone number on the User object (standard
+``email`` + ``public_profile`` permissions). When email is missing we create
+``fb_{facebook_id}@kova.page`` (same pattern as WhatsApp ``wa_{id}@kova.page``)
+and send the user to phone capture when Graph did not supply a number.
 """
 
 from __future__ import annotations
@@ -167,48 +172,146 @@ def start_facebook_platform_oauth(request, mode: str):
     return redirect(auth_url)
 
 
+def facebook_synthetic_email(facebook_id: str) -> str:
+    """Placeholder email when Facebook does not share an address (cf. wa_{id}@kova.page)."""
+    clean = "".join(ch for ch in str(facebook_id) if ch.isalnum()) or str(facebook_id)
+    return f"fb_{clean}@kova.page"
+
+
+def is_facebook_synthetic_email(email: str) -> bool:
+    email = (email or "").strip().lower()
+    return email.startswith("fb_") and email.endswith("@kova.page")
+
+
+def find_user_by_facebook_id(facebook_id: str):
+    """Match an existing user by Facebook user id (SocialAccount or synthetic email)."""
+    if not facebook_id:
+        return None
+
+    User = get_user_model()
+    account = (
+        SocialAccount.objects.filter(
+            platform="facebook",
+            platform_user_id=facebook_id,
+        )
+        .select_related("user")
+        .order_by("-is_active", "-updated_at")
+        .first()
+    )
+    if account:
+        return account.user
+    return User.objects.filter(
+        email__iexact=facebook_synthetic_email(facebook_id),
+    ).first()
+
+
+def _extract_facebook_phone(result) -> str:
+    """Normalize phone from OAuth metadata when Graph returns it (uncommon)."""
+    from apps.accounts.phone_utils import is_valid_phone, normalize_phone
+
+    metadata = result.metadata or {}
+    raw = (metadata.get("phone") or metadata.get("mobile_phone") or "").strip()
+    if not raw:
+        return ""
+    phone = normalize_phone(raw)
+    return phone if is_valid_phone(phone) else ""
+
+
+def _sync_verified_email_address(user, email: str):
+    """Create/update allauth EmailAddress for real (non-synthetic) emails."""
+    if not email or is_facebook_synthetic_email(email):
+        return
+    from allauth.account.models import EmailAddress
+
+    EmailAddress.objects.update_or_create(
+        user=user,
+        email=email,
+        defaults={"verified": True, "primary": True},
+    )
+
+
+def _apply_facebook_profile_updates(user, result, *, email: str, phone: str):
+    """Refresh name, email record, and phone from a Facebook OAuth result."""
+    from apps.accounts.phone_utils import apply_phone_to_user
+
+    updates = []
+    if result.display_name and not (user.full_name or "").strip():
+        user.full_name = result.display_name
+        updates.append("full_name")
+    if updates:
+        user.save(update_fields=updates)
+    if email:
+        _sync_verified_email_address(user, email)
+    if phone and not (getattr(user, "phone_number", "") or "").strip():
+        apply_phone_to_user(user, phone)
+
+
+def _store_facebook_id_on_profile(user, facebook_id: str):
+    """Persist facebook_user_id on UserProfile onboarding metadata for support/debug."""
+    profile = getattr(user, "profile", None)
+    if profile is None or not facebook_id:
+        return
+    steps = dict(profile.onboarding_step_timestamps or {})
+    if steps.get("facebook_user_id") == facebook_id:
+        return
+    steps["facebook_user_id"] = facebook_id
+    profile.onboarding_step_timestamps = steps
+    profile.save(update_fields=["onboarding_step_timestamps", "updated_at"])
+
+
 def resolve_user_from_facebook_result(result, mode: str):
     """
     Find or create a User from a Facebook platform OAuth result.
 
-    Signup: create user when email is new; link + log in when email exists.
-    Login: require an existing account.
+    Signup: create when new; link + log in when email or facebook_id matches.
+    Login: match by facebook_id (SocialAccount / synthetic email) or email.
+    No email: synthetic ``fb_{id}@kova.page``; phone from Graph when present,
+    otherwise caller redirects to phone capture after OAuth succeeds.
     """
     from allauth.account.models import EmailAddress
 
-    email = (result.metadata.get("email") or "").strip().lower()
-    if not email:
+    facebook_id = str(result.platform_user_id or "").strip()
+    if not facebook_id:
         raise FacebookOAuthError(
-            "Facebook did not share your email address. "
-            "Grant the email permission or create an account with email instead."
+            "Could not identify your Facebook account. Please try again."
         )
 
+    metadata = result.metadata or {}
+    email = (metadata.get("email") or "").strip().lower()
+    phone = _extract_facebook_phone(result)
+
     User = get_user_model()
-    user = User.objects.filter(email__iexact=email).first()
+    user = None
+    if email:
+        user = User.objects.filter(email__iexact=email).first()
+    if not user:
+        user = find_user_by_facebook_id(facebook_id)
+
     if user:
-        if result.display_name and not (user.full_name or "").strip():
-            user.full_name = result.display_name
-            user.save(update_fields=["full_name"])
-        EmailAddress.objects.update_or_create(
-            user=user,
-            email=email,
-            defaults={"verified": True, "primary": True},
-        )
+        _apply_facebook_profile_updates(user, result, email=email, phone=phone)
+        _store_facebook_id_on_profile(user, facebook_id)
         return user, False
 
     if mode == "login":
         raise FacebookOAuthError(
-            "No Kova account found for this Facebook email. "
+            "No Kova account found for this Facebook account. "
             "Please start a free trial first."
         )
 
+    create_email = email or facebook_synthetic_email(facebook_id)
     user = User.objects.create_user(
         username=uuid.uuid4().hex[:30],
-        email=email,
+        email=create_email,
         password=User.objects.make_random_password(length=32),
         full_name=result.display_name or "",
     )
-    EmailAddress.objects.create(user=user, email=email, verified=True, primary=True)
+    if email:
+        EmailAddress.objects.create(user=user, email=email, verified=True, primary=True)
+    if phone:
+        from apps.accounts.phone_utils import apply_phone_to_user
+
+        apply_phone_to_user(user, phone)
+    _store_facebook_id_on_profile(user, facebook_id)
     return user, True
 
 
@@ -297,6 +400,8 @@ def connect_instagram_from_facebook_pages(user, pages, user_access_token, token_
 def persist_facebook_platform_account(user, result, *, auto_connected: bool = False):
     """Store Facebook Page publishing credentials on platforms.SocialAccount."""
     metadata = dict(result.metadata or {})
+    if result.platform_user_id:
+        metadata["facebook_user_id"] = str(result.platform_user_id)
     if auto_connected:
         metadata["auto_connected"] = True
 

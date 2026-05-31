@@ -104,6 +104,12 @@ def _redirect_if_phone_required(user):
     return None
 
 
+def _is_facebook_phone_only_signup(user) -> bool:
+    from apps.accounts.facebook_oauth import is_facebook_synthetic_email
+
+    return is_facebook_synthetic_email(getattr(user, "email", ""))
+
+
 def _looks_like_social_profile_url(value: str) -> bool:
     value = (value or "").strip().lower()
     if not value:
@@ -144,6 +150,7 @@ def collect_phone(request):
     return render(request, "accounts/collect_phone.html", {
         "form": form,
         "page_title": "Your phone number",
+        "facebook_phone_signup": _is_facebook_phone_only_signup(request.user),
     })
 
 

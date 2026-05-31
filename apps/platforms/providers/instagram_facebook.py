@@ -286,9 +286,10 @@ class FacebookProvider(BaseProvider):
             long_data = long_resp.json()
             access_token = long_data.get("access_token", short_token)
 
-            # 3. Get user profile (email used for signup/login account linking)
+            # 3. Get user profile (email used for signup/login account linking).
+            # mobile_phone is requested but rarely returned — phone capture is the fallback.
             me = client.get(f"{FB_API_BASE}/me", params={
-                "fields": "id,name,email,picture",
+                "fields": "id,name,email,picture,mobile_phone",
                 "access_token": access_token,
             })
             me.raise_for_status()
@@ -296,7 +297,8 @@ class FacebookProvider(BaseProvider):
             if not (user.get("email") or "").strip():
                 logger.warning(
                     "Facebook /me returned no email (user_id=%s). "
-                    "Ensure email is in FB_LOGIN_CONFIG_ID or granted via scope.",
+                    "Ensure email is in FB_LOGIN_CONFIG_ID or granted via scope. "
+                    "User will get fb_{id}@kova.page and phone capture if needed.",
                     user.get("id", ""),
                 )
 
@@ -337,6 +339,8 @@ class FacebookProvider(BaseProvider):
             token_scope=FB_SCOPES,
             metadata={
                 "email": user.get("email", ""),
+                "phone": user.get("mobile_phone") or user.get("phone") or "",
+                "facebook_user_id": user.get("id", ""),
                 "pages": page_list,
                 # selected_page_id: which Page Kova publishes to.
                 # Defaults to the first page. Users can change it via Settings → Platforms.

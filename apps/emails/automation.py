@@ -27,7 +27,7 @@ def is_mailable_email(email: str) -> bool:
     local, domain = email.strip().lower().rsplit("@", 1)
     if domain in PLACEHOLDER_DOMAINS:
         return False
-    if local.startswith(("wa_", "noemail_", "noreply")):
+    if local.startswith(("wa_", "fb_", "noemail_", "noreply")):
         return False
     return True
 

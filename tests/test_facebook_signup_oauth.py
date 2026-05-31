@@ -9,6 +9,8 @@ from django.urls import reverse
 
 from apps.accounts.facebook_oauth import (
     FacebookOAuthError,
+    facebook_synthetic_email,
+    find_user_by_facebook_id,
     make_facebook_oauth_state,
     resolve_user_from_facebook_result,
     sign_facebook_oauth_state,
@@ -16,6 +18,7 @@ from apps.accounts.facebook_oauth import (
     validate_facebook_callback_state,
 )
 from apps.accounts.models import User
+from apps.platforms.models import SocialAccount
 from apps.platforms.providers.base import OAuthResult
 
 
@@ -70,7 +73,91 @@ class TestResolveUserFromFacebook:
         assert created is False
         assert user.pk == existing.pk
 
-    def test_missing_email_raises(self):
+    def test_signup_no_email_uses_synthetic_email(self):
+        result = OAuthResult(
+            platform_user_id="998877",
+            username="jane",
+            display_name="Jane Doe",
+            avatar_url="",
+            access_token="t",
+            refresh_token="",
+            token_expires_at=None,
+            token_scope="",
+            metadata={"pages": []},
+        )
+        user, created = resolve_user_from_facebook_result(result, mode="signup")
+        assert created is True
+        assert user.email == facebook_synthetic_email("998877")
+        assert user.profile.onboarding_step_timestamps.get("facebook_user_id") == "998877"
+
+    def test_signup_no_email_with_phone_sets_phone(self):
+        result = OAuthResult(
+            platform_user_id="554433",
+            username="jane",
+            display_name="Jane Doe",
+            avatar_url="",
+            access_token="t",
+            refresh_token="",
+            token_expires_at=None,
+            token_scope="",
+            metadata={"phone": "0712345678", "pages": []},
+        )
+        user, created = resolve_user_from_facebook_result(result, mode="signup")
+        assert created is True
+        assert user.email == facebook_synthetic_email("554433")
+        assert user.phone_number == "0712345678"
+
+    def test_signup_no_email_links_existing_facebook_id(self):
+        existing = User.objects.create_user(
+            username="fbuser",
+            email=facebook_synthetic_email("112233"),
+            password="Pass1234!",
+        )
+        result = OAuthResult(
+            platform_user_id="112233",
+            username="jane",
+            display_name="Jane Doe",
+            avatar_url="",
+            access_token="t",
+            refresh_token="",
+            token_expires_at=None,
+            token_scope="",
+            metadata={"pages": []},
+        )
+        user, created = resolve_user_from_facebook_result(result, mode="signup")
+        assert created is False
+        assert user.pk == existing.pk
+
+    def test_login_finds_user_by_facebook_social_account(self):
+        existing = User.objects.create_user(
+            username="fbuser",
+            email=facebook_synthetic_email("445566"),
+            password="Pass1234!",
+        )
+        SocialAccount.objects.create(
+            user=existing,
+            platform="facebook",
+            platform_user_id="445566",
+            username="jane",
+            display_name="Jane",
+            access_token="tok",
+        )
+        result = OAuthResult(
+            platform_user_id="445566",
+            username="jane",
+            display_name="Jane Doe",
+            avatar_url="",
+            access_token="t",
+            refresh_token="",
+            token_expires_at=None,
+            token_scope="",
+            metadata={"pages": []},
+        )
+        user, created = resolve_user_from_facebook_result(result, mode="login")
+        assert created is False
+        assert user.pk == existing.pk
+
+    def test_login_no_email_no_account_raises(self):
         result = OAuthResult(
             platform_user_id="1",
             username="x",
@@ -83,7 +170,15 @@ class TestResolveUserFromFacebook:
             metadata={},
         )
         with pytest.raises(FacebookOAuthError):
-            resolve_user_from_facebook_result(result, mode="signup")
+            resolve_user_from_facebook_result(result, mode="login")
+
+    def test_find_user_by_facebook_id_via_synthetic_email(self):
+        user = User.objects.create_user(
+            username="lookup",
+            email=facebook_synthetic_email("778899"),
+            password="Pass1234!",
+        )
+        assert find_user_by_facebook_id("778899").pk == user.pk
 
 
 @pytest.mark.django_db
@@ -158,7 +253,7 @@ class TestFacebookOAuthCallback:
         assert client.session.get("_auth_user_id")
 
     @patch("apps.platforms.views.get_provider")
-    def test_callback_missing_email_shows_message_and_signup(
+    def test_callback_no_email_redirects_phone_capture(
         self, mock_get_provider, settings,
     ):
         settings.FACEBOOK_APP_ID = "app123"
@@ -167,9 +262,9 @@ class TestFacebookOAuthCallback:
         signed_state = self._signed_state_from_session(client)
 
         no_email = OAuthResult(
-            platform_user_id="1",
-            username="x",
-            display_name="X",
+            platform_user_id="123456",
+            username="jane",
+            display_name="Jane Doe",
             avatar_url="",
             access_token="t",
             refresh_token="",
@@ -181,12 +276,12 @@ class TestFacebookOAuthCallback:
         mock_provider.handle_callback.return_value = no_email
 
         url = reverse("platforms:oauth_callback", kwargs={"platform": "facebook"})
-        resp = client.get(url, {"code": "authcode", "state": signed_state}, follow=True)
-        assert resp.status_code == 200
-        assert resp.request["PATH_INFO"].endswith("/accounts/signup/")
-        msgs = [str(m) for m in get_messages(resp.wsgi_request)]
-        assert any("email" in m.lower() for m in msgs)
-        assert not client.session.get("_auth_user_id")
+        resp = client.get(url, {"code": "authcode", "state": signed_state})
+        assert resp.status_code == 302
+        assert resp["Location"].endswith("/accounts/onboarding/phone/")
+        assert client.session.get("_auth_user_id")
+        user = User.objects.get(email=facebook_synthetic_email("123456"))
+        assert SocialAccount.objects.filter(user=user, platform="facebook").exists()
 
     @patch("apps.platforms.views.get_provider")
     def test_callback_invalid_state_redirects_signup_with_message(

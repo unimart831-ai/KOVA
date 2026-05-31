@@ -3,6 +3,21 @@ from django import template
 register = template.Library()
 
 
+@register.filter
+def dedupe_messages(messages):
+    """Show each distinct message text once (OAuth failures sometimes duplicate)."""
+    if not messages:
+        return []
+    seen = set()
+    unique = []
+    for msg in messages:
+        text = str(msg)
+        if text not in seen:
+            seen.add(text)
+            unique.append(msg)
+    return unique
+
+
 @register.simple_tag
 def nav_active(request_path, *patterns):
     """Return True if request_path matches any pattern. Prefix a pattern with
