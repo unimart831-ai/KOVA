@@ -2,9 +2,16 @@
 {% load dashboard_tags %}
 
 {% block page_title %}{{ page_title }}{% endblock %}
-{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Lead capture, scoring, and nurture across all users</p>{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">REACH — walk-in capture, nurture router, stale win-back</p>{% endblock %}
 
 {% block content %}
+<div class="flex flex-wrap gap-2 mb-6">
+  <a href="{% url 'admin_dashboard:lead_list' %}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg bg-kova-50 text-kova-700 border border-kova-200 dark:bg-kova-900/20 dark:text-kova-400 dark:border-kova-800">All leads</a>
+  <a href="{% url 'admin_dashboard:leads_nurture' %}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-900/20 dark:text-teal-400">Nurture sequences</a>
+  <a href="{% url 'admin_dashboard:lead_list' %}?stale=1" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400">Stale leads {% if stale_count %}<span class="ml-1.5 px-1.5 rounded-full bg-amber-200 dark:bg-amber-800 text-[10px]">{{ stale_count }}</span>{% endif %}</a>
+  <a href="{% url 'admin_dashboard:qr_overview' %}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400">Walk-in events</a>
+  <a href="/leads/pipeline/" target="_blank" rel="noopener" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-50 text-gray-600 border border-gray-200 dark:bg-gray-800 dark:text-gray-400">User pipeline ↗</a>
+</div>
 <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Total leads</p>
@@ -41,11 +48,73 @@
     <p class="text-lg font-bold text-teal-600 dark:text-teal-400">{{ emails_7d }}</p>
     <p class="text-[10px] text-gray-500">Nurture emails (7d)</p>
   </div>
+  <div class="bg-white dark:bg-gray-900 rounded-lg border border-[#25D366]/30 p-3 text-center">
+    <p class="text-lg font-bold text-[#128C7E] dark:text-[#25D366]">{{ whatsapp_7d }}</p>
+    <p class="text-[10px] text-gray-500">Nurture WhatsApp (7d)</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-lg border border-amber-200 dark:border-amber-900/50 p-3 text-center">
+    <p class="text-lg font-bold text-amber-600 dark:text-amber-400">{{ due_enrollments }}</p>
+    <p class="text-[10px] text-gray-500">Steps due now</p>
+  </div>
   <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center">
     <p class="text-lg font-bold text-gray-900 dark:text-white">{{ new_30d }}</p>
     <p class="text-[10px] text-gray-500">New (30d)</p>
   </div>
 </div>
+
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-lg border border-emerald-200 dark:border-emerald-900/50 p-3 text-center">
+    <p class="text-lg font-bold text-emerald-600">{{ walk_in_leads }}</p>
+    <p class="text-[10px] text-gray-500">Walk-in leads · {{ walk_in_leads_7d }} (7d)</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center">
+    <p class="text-lg font-bold text-gray-900 dark:text-white">{{ walk_ins_total }}</p>
+    <p class="text-[10px] text-gray-500">Walk-in events · {{ walk_ins_7d }} (7d)</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center">
+    <p class="text-lg font-bold text-gray-900 dark:text-white">{{ walk_ins_with_contact }}</p>
+    <p class="text-[10px] text-gray-500">Events with phone capture</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-lg border border-amber-200 dark:border-amber-900/50 p-3 text-center">
+    <p class="text-lg font-bold text-amber-600">{{ stale_count }}</p>
+    <p class="text-[10px] text-gray-500">Stale ({{ stale_cutoff_days }}d+ inactive)</p>
+  </div>
+</div>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5 mb-6">
+  <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Source bridges (leads by origin)</h2>
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
+    <a href="{% url 'admin_dashboard:lead_list' %}?source=walk_in" class="p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:border-emerald-400">
+      <p class="text-lg font-bold">{{ bridge_walk_in }}</p><p class="text-gray-500">Walk-in</p>
+    </a>
+    <a href="{% url 'admin_dashboard:lead_list' %}?source=booking" class="p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:border-kova-400">
+      <p class="text-lg font-bold">{{ bridge_booking }}</p><p class="text-gray-500">Booking</p>
+    </a>
+    <a href="{% url 'admin_dashboard:lead_list' %}?source=commerce_purchase" class="p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:border-kova-400">
+      <p class="text-lg font-bold">{{ bridge_commerce }}</p><p class="text-gray-500">Commerce</p>
+    </a>
+    <a href="{% url 'admin_dashboard:lead_list' %}?source=qr_scan" class="p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:border-kova-400">
+      <p class="text-lg font-bold">{{ bridge_qr }}</p><p class="text-gray-500">QR scan</p>
+    </a>
+  </div>
+</div>
+
+{% if top_sequences %}
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5 mb-6">
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Top nurture sequences</h2>
+    <a href="{% url 'admin_dashboard:leads_nurture' %}" class="text-xs text-kova-600 hover:underline">Manage →</a>
+  </div>
+  <div class="space-y-2">
+    {% for seq in top_sequences %}
+    <div class="flex items-center justify-between text-xs py-1.5 border-b border-gray-50 dark:border-gray-800 last:border-0">
+      <span class="text-gray-700 dark:text-gray-300">{{ seq.name }} <span class="text-gray-400">({{ seq.get_trigger_display }})</span></span>
+      <span class="font-semibold text-gray-900 dark:text-white">{{ seq.active }} active</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">

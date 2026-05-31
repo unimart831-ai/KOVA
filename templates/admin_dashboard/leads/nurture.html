@@ -1,0 +1,90 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Nurture router — email & WhatsApp steps across all users</p>{% endblock %}
+
+{% block content %}
+<a href="{% url 'admin_dashboard:leads_overview' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white mb-4">← REACH leads overview</a>
+
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 text-center shadow-sm">
+    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ totals.total }}</p>
+    <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Sequences</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 text-center shadow-sm">
+    <p class="text-xl font-bold text-green-600 dark:text-green-400">{{ totals.active }}</p>
+    <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Active</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-blue-200 dark:border-blue-900/50 p-4 text-center shadow-sm">
+    <p class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ enrollment_totals.active }}</p>
+    <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Enrollments</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-amber-200 dark:border-amber-900/50 p-4 text-center shadow-sm">
+    <p class="text-xl font-bold text-amber-600 dark:text-amber-400">{{ enrollment_totals.due }}</p>
+    <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Due now</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 text-center shadow-sm">
+    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ stale_count }}</p>
+    <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Stale leads</p>
+    <a href="{% url 'admin_dashboard:lead_list' %}?stale=1" class="text-[10px] text-kova-600 hover:underline">View →</a>
+  </div>
+</div>
+
+<form method="get" class="flex flex-wrap gap-2 mb-4">
+  <select name="active" class="input text-sm">
+    <option value="">All</option>
+    <option value="1" {% if current_active == '1' %}selected{% endif %}>Active only</option>
+    <option value="0" {% if current_active == '0' %}selected{% endif %}>Inactive only</option>
+  </select>
+  <select name="trigger" class="input text-sm">
+    <option value="">All triggers</option>
+    {% for value, label in trigger_choices %}
+    <option value="{{ value }}" {% if current_trigger == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn-primary text-xs px-3 py-1.5">Filter</button>
+</form>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Sequence</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Owner</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Trigger</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-center">Steps</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-center">Active</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-center">Due</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-center">Status</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for seq in page_obj %}
+      <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+        <td class="px-4 py-2.5 font-medium text-gray-900 dark:text-white">{{ seq.name }}</td>
+        <td class="px-4 py-2.5">
+          <a href="{% url 'admin_dashboard:user_detail' seq.user.pk %}" class="text-xs text-kova-600 hover:underline">{{ seq.user.email }}</a>
+        </td>
+        <td class="px-4 py-2.5 text-xs text-gray-500">{{ seq.get_trigger_display }}</td>
+        <td class="px-4 py-2.5 text-center text-xs">{{ seq.step_count }}</td>
+        <td class="px-4 py-2.5 text-center font-semibold">{{ seq.active_enrollments }}</td>
+        <td class="px-4 py-2.5 text-center {% if seq.due_now %}text-amber-600 font-semibold{% else %}text-gray-400{% endif %}">{{ seq.due_now }}</td>
+        <td class="px-4 py-2.5 text-center">
+          {% if seq.is_active %}
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Active</span>
+          {% else %}
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">Off</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">No nurture sequences</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if page_obj.has_other_pages %}
+<div class="mt-4 text-xs text-gray-500">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</div>
+{% endif %}
+{% endblock %}

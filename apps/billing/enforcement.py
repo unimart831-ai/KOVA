@@ -35,10 +35,16 @@ def get_daily_llm_token_cap(plan: str) -> int:
 
 
 def get_user_daily_llm_token_cap(user) -> int:
-    """Daily LLM cap for a user (respects active Kazi trial)."""
+    """Daily LLM cap for a user (respects active trial → Starter limits)."""
     profile = getattr(user, "profile", None)
     tier = get_effective_plan_tier(profile) if profile else "starter"
     return get_daily_llm_token_cap(tier)
+
+
+def get_user_monthly_llm_token_cap(user) -> int:
+    """Monthly LLM cap for a user (respects active trial → Starter limits)."""
+    limits = get_user_plan_limits(user)
+    return int(limits.get("monthly_llm_tokens", PLAN_LIMITS["starter"]["monthly_llm_tokens"]))
 
 
 def check_plan_feature(user, feature_key: str, feature_label: str | None = None) -> tuple[bool, str]:

@@ -715,6 +715,7 @@ def _generate_brief_with_llm(user, brief_data):
             json_mode=True,
             temperature=0.6,
             max_tokens=1500,
+            user=user,
         )
 
     # ── Standard mode — action-tense, AI-first-person (Phase 3 W12) ───────────
@@ -875,6 +876,7 @@ def _generate_brief_with_llm(user, brief_data):
         json_mode=True,
         temperature=0.5,
         max_tokens=2500,
+        user=user,
     )
     return response
 

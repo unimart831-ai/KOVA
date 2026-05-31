@@ -26,6 +26,7 @@ from apps.partners.models import (
     PartnerApplication,
     PayoutRequest,
     Referral,
+    WebhookDeliveryLog,
     generate_api_key,
     generate_referral_code,
     hash_api_key,
@@ -116,6 +117,24 @@ def partners_overview(request):
         .order_by("-signed_up_at")[:10]
     )
 
+    # ── Marketplace integrations ─────────────────────────────────────────
+    active_marketplaces = MarketplacePartner.objects.filter(is_active=True).count()
+    total_marketplaces = MarketplacePartner.objects.count()
+    webhook_failed_7d = WebhookDeliveryLog.objects.filter(
+        created_at__gte=seven_days_ago,
+        status=WebhookDeliveryLog.Status.FAILED,
+    ).count()
+    webhook_success_7d = WebhookDeliveryLog.objects.filter(
+        created_at__gte=seven_days_ago,
+        status=WebhookDeliveryLog.Status.SUCCESS,
+    ).count()
+    recent_webhook_failures = (
+        WebhookDeliveryLog.objects.filter(status=WebhookDeliveryLog.Status.FAILED)
+        .select_related("marketplace")
+        .order_by("-created_at")[:8]
+    )
+    unimart_mp = MarketplacePartner.objects.filter(slug__icontains="unimart").first()
+
     context = {
         "page_title": "Growth Partners",
         # Key metrics
@@ -142,8 +161,53 @@ def partners_overview(request):
         "top_partners": top_partners,
         "recent_applications": recent_applications,
         "recent_referrals": recent_referrals,
+        # Marketplace
+        "active_marketplaces": active_marketplaces,
+        "total_marketplaces": total_marketplaces,
+        "webhook_failed_7d": webhook_failed_7d,
+        "webhook_success_7d": webhook_success_7d,
+        "recent_webhook_failures": recent_webhook_failures,
+        "unimart_mp": unimart_mp,
     }
     return render(request, "admin_dashboard/partners/overview.html", context)
+
+
+@staff_required
+def partners_webhook_logs(request):
+    """Platform-wide marketplace webhook delivery log."""
+    logs = WebhookDeliveryLog.objects.select_related("marketplace").order_by("-created_at")
+
+    status_filter = request.GET.get("status")
+    if status_filter in dict(WebhookDeliveryLog.Status.choices):
+        logs = logs.filter(status=status_filter)
+
+    marketplace_id = request.GET.get("marketplace")
+    if marketplace_id:
+        logs = logs.filter(marketplace_id=marketplace_id)
+
+    event = request.GET.get("event", "").strip()
+    if event:
+        logs = logs.filter(event__icontains=event)
+
+    paginator = Paginator(logs, 50)
+    page = paginator.get_page(request.GET.get("page"))
+
+    marketplaces = MarketplacePartner.objects.order_by("name")
+
+    context = {
+        "page_title": "Marketplace Webhook Logs",
+        "logs": page,
+        "status_choices": WebhookDeliveryLog.Status.choices,
+        "current_status": status_filter,
+        "current_marketplace": marketplace_id,
+        "current_event": event,
+        "marketplaces": marketplaces,
+        "failed_7d": WebhookDeliveryLog.objects.filter(
+            created_at__gte=timezone.now() - timedelta(days=7),
+            status=WebhookDeliveryLog.Status.FAILED,
+        ).count(),
+    }
+    return render(request, "admin_dashboard/partners/webhook_logs.html", context)
 
 
 @staff_required

@@ -30,8 +30,9 @@ urlpatterns = [
     path("reel-music/<str:track_id>/delete/", reel_music.reel_music_delete, name="reel_music_delete"),
     path("reel-music/<str:track_id>/preview/", reel_music.reel_music_preview, name="reel_music_preview"),
 
-    # Leads & CRM
+    # Leads & CRM (REACH automation)
     path("leads/", leads.leads_overview, name="leads_overview"),
+    path("leads/nurture/", leads.leads_nurture, name="leads_nurture"),
     path("leads/list/", leads.lead_list, name="lead_list"),
 
     # Bookings
@@ -161,6 +162,7 @@ urlpatterns = [
     path("partners/marketplaces/<int:pk>/", partners.marketplace_detail, name="marketplace_detail"),
     path("partners/marketplaces/<int:pk>/import-sellers/", partners.marketplace_import_sellers, name="marketplace_import_sellers"),
     path("partners/marketplaces/<int:pk>/update/", partners.marketplace_update, name="marketplace_update"),
+    path("partners/webhooks/", partners.partners_webhook_logs, name="partners_webhook_logs"),
 
     # Help Center
     path("help/", help.help_overview, name="help_overview"),
@@ -231,6 +233,8 @@ urlpatterns = [
     path("whatsapp/conversations/", whatsapp.whatsapp_conversations, name="whatsapp_conversations"),
     path("whatsapp/templates/", whatsapp.whatsapp_templates, name="whatsapp_templates"),
     path("whatsapp/broadcasts/", whatsapp.whatsapp_broadcasts, name="whatsapp_broadcasts"),
+    path("whatsapp/sequences/", whatsapp.whatsapp_sequences, name="whatsapp_sequences"),
+    path("whatsapp/commerce-receipts/", whatsapp.whatsapp_commerce_receipts, name="whatsapp_commerce_receipts"),
     path("whatsapp/brief-delivery/", whatsapp.whatsapp_brief_delivery, name="whatsapp_brief_delivery"),
 
     # Innovations

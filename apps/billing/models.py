@@ -95,9 +95,9 @@ class MpesaPayment(models.Model):
 # ─── Plan Limits ─────────────────────────────────────────────────────────────
 # Defines what each plan tier can do. Used by middleware and views.
 #
-# Public pricing: 3 tiers (starter / growth / pro). Agency is grandfather-only.
-# New users get a 7-day trial with Kazi (growth) features — see TRIAL_FEATURE_PLAN
-# and get_effective_plan_tier().
+# Public pricing: 3 tiers (starter / growth / pro). Agency is sales-approved only.
+# New users get a 7-day trial with Starter+ limits — see TRIAL_FEATURE_PLAN.
+# Plan v2 spec: docs/PLAN_V2_SPEC.md
 #
 # Platform ladder (5 channels: FB, IG, TikTok, LinkedIn, WhatsApp):
 #   Starter 2 · Growth 4 (no WA) · Pro 5 (incl. WA)
@@ -105,9 +105,10 @@ PLAN_LIMITS = {
     "starter": {
         "label": "Jipange / Starter",
         "max_social_accounts": 2,
-        "max_posts_per_month": 15,
-        "max_seeds_per_month": 5,
+        "max_posts_per_month": 18,
+        "max_seeds_per_month": 8,
         "daily_llm_tokens": 50_000,
+        "monthly_llm_tokens": 1_000_000,
         "agents_enabled": ["create", "analyst"],
         "daily_brief": True,
         "email_brief": False,
@@ -116,7 +117,7 @@ PLAN_LIMITS = {
         "competitor_tracking": False,
         "ai_image_generation": False,
         "ai_images_per_month": 0,
-        "visual_enhancements_per_month": 30,
+        "visual_enhancements_per_month": 8,
         "plus_max_variants_per_product": 3,
         "visual_enhance_premium": False,
         "auto_approve": False,
@@ -139,6 +140,7 @@ PLAN_LIMITS = {
         "multi_touch_attribution": False,
         "revenue_dashboard": True,
         "whatsapp_enabled": False,
+        "whatsapp_marketing_conversations_per_month": 0,
         "memes_enabled": False,
         "adapt_v2_enabled": False,
         "max_campaigns": 2,
@@ -152,6 +154,7 @@ PLAN_LIMITS = {
         "max_posts_per_month": 60,
         "max_seeds_per_month": 30,
         "daily_llm_tokens": 200_000,
+        "monthly_llm_tokens": 4_000_000,
         "agents_enabled": ["create", "analyst", "research", "adapt"],
         "daily_brief": True,
         "email_brief": True,
@@ -160,7 +163,7 @@ PLAN_LIMITS = {
         "competitor_tracking": True,
         "ai_image_generation": True,
         "ai_images_per_month": 50,
-        "visual_enhancements_per_month": 100,
+        "visual_enhancements_per_month": 30,
         "plus_max_variants_per_product": 5,
         "visual_enhance_premium": False,
         "auto_approve": False,
@@ -183,11 +186,12 @@ PLAN_LIMITS = {
         "multi_touch_attribution": False,
         "revenue_dashboard": True,
         "whatsapp_enabled": False,
+        "whatsapp_marketing_conversations_per_month": 50,
         "memes_enabled": False,
         "adapt_v2_enabled": True,
         "max_campaigns": 5,
-        "price_kes": 999,
-        "price_usd": 7,
+        "price_kes": 1499,
+        "price_usd": 11,
         "trial_days": 7,
     },
     "pro": {
@@ -196,6 +200,7 @@ PLAN_LIMITS = {
         "max_posts_per_month": 150,
         "max_seeds_per_month": 60,
         "daily_llm_tokens": 500_000,
+        "monthly_llm_tokens": 10_000_000,
         "agents_enabled": ["create", "analyst", "research", "adapt", "engage", "strategist"],
         "daily_brief": True,
         "email_brief": True,
@@ -204,7 +209,7 @@ PLAN_LIMITS = {
         "competitor_tracking": True,
         "ai_image_generation": True,
         "ai_images_per_month": 100,
-        "visual_enhancements_per_month": 200,
+        "visual_enhancements_per_month": 100,
         "plus_max_variants_per_product": 7,
         "visual_enhance_premium": True,
         "auto_approve": True,
@@ -213,12 +218,12 @@ PLAN_LIMITS = {
         "kova_pages": 10,
         "kova_links_per_page": 100,
         "kova_forms": True,
-        "max_leads": 999999,
+        "max_leads": 5000,
         "leads_can_edit": True,
         "email_subscribers": 25000,
-        "email_lists": 999999,
-        "email_campaigns_per_month": 999999,
-        "email_sequences": 999999,
+        "email_lists": 15,
+        "email_campaigns_per_month": 30,
+        "email_sequences": 10,
         "max_products": 100,
         "product_quantity_tracking": True,
         "product_csv_import": True,
@@ -227,19 +232,21 @@ PLAN_LIMITS = {
         "multi_touch_attribution": True,
         "revenue_dashboard": True,
         "whatsapp_enabled": True,
+        "whatsapp_marketing_conversations_per_month": 300,
         "memes_enabled": True,
         "adapt_v2_enabled": True,
-        "max_campaigns": 999999,
-        "price_kes": 1999,
-        "price_usd": 14,
+        "max_campaigns": 15,
+        "price_kes": 2999,
+        "price_usd": 22,
         "trial_days": 7,
     },
     "agency": {
         "label": "Wakala / Agency",
         "max_social_accounts": 25,
-        "max_posts_per_month": 999999,
-        "max_seeds_per_month": 999999,
+        "max_posts_per_month": 300,
+        "max_seeds_per_month": 120,
         "daily_llm_tokens": 2_000_000,
+        "monthly_llm_tokens": 40_000_000,
         "agents_enabled": ["create", "analyst", "research", "adapt", "engage", "strategist"],
         "daily_brief": True,
         "email_brief": True,
@@ -247,23 +254,23 @@ PLAN_LIMITS = {
         "engagement_agent": True,
         "competitor_tracking": True,
         "ai_image_generation": True,
-        "ai_images_per_month": 500,
-        "visual_enhancements_per_month": 500,
+        "ai_images_per_month": 200,
+        "visual_enhancements_per_month": 150,
         "plus_max_variants_per_product": 10,
         "visual_enhance_premium": True,
         "auto_approve": True,
         "ab_testing": True,
         "max_team_members": 25,
         "kova_pages": 50,
-        "kova_links_per_page": 999999,
+        "kova_links_per_page": 200,
         "kova_forms": True,
-        "max_leads": 999999,
+        "max_leads": 10000,
         "leads_can_edit": True,
-        "email_subscribers": 999999,
-        "email_lists": 999999,
-        "email_campaigns_per_month": 999999,
-        "email_sequences": 999999,
-        "max_products": 999999,
+        "email_subscribers": 100000,
+        "email_lists": 50,
+        "email_campaigns_per_month": 50,
+        "email_sequences": 20,
+        "max_products": 500,
         "product_quantity_tracking": True,
         "product_csv_import": True,
         "shopify_integration": True,
@@ -271,21 +278,23 @@ PLAN_LIMITS = {
         "multi_touch_attribution": True,
         "revenue_dashboard": True,
         "whatsapp_enabled": True,
+        "whatsapp_marketing_conversations_per_month": 1000,
         "memes_enabled": True,
         "adapt_v2_enabled": True,
-        "max_campaigns": 999999,
-        "price_kes": 2999,
-        "price_usd": 21,
+        "max_campaigns": 25,
+        "price_kes": 7999,
+        "price_usd": 59,
         "trial_days": 7,
         "public": False,
+        "requires_agency_approval": True,
     },
 }
 
 # Customer-facing tiers (Agency is sales / grandfather only).
 PUBLIC_PLAN_TIERS = ("starter", "growth", "pro")
 
-# Active free trials unlock Kazi (growth) features regardless of selected plan.
-TRIAL_FEATURE_PLAN = "growth"
+# Active free trials use Starter-tier limits (not full Growth).
+TRIAL_FEATURE_PLAN = "starter"
 
 
 def _get_db_prices():
@@ -325,7 +334,7 @@ def is_active_trial(profile) -> bool:
 
 
 def get_effective_plan_tier(profile) -> str:
-    """Plan tier used for feature/limit enforcement (trial → Kazi features)."""
+    """Plan tier used for feature/limit enforcement (trial → Starter limits)."""
     if is_active_trial(profile):
         return TRIAL_FEATURE_PLAN
     if profile and profile.plan in PLAN_LIMITS:
@@ -334,14 +343,20 @@ def get_effective_plan_tier(profile) -> str:
 
 
 def get_user_plan_limits(user):
-    """Effective limits for a user — trialing users receive Kazi (growth) features."""
+    """Effective limits for a user — trialing users receive Starter-tier limits."""
     profile = getattr(user, "profile", None)
     tier = get_effective_plan_tier(profile)
     limits = get_plan_limits(tier)
     if is_active_trial(profile):
         limits = limits.copy()
-        limits["label"] = "Kazi trial"
+        limits["label"] = "Starter trial"
     return limits
+
+
+def can_subscribe_to_agency(user) -> bool:
+    """Agency checkout requires explicit sales approval on the profile."""
+    profile = getattr(user, "profile", None)
+    return bool(profile and getattr(profile, "is_agency_approved", False))
 
 
 def get_public_plan_limits():

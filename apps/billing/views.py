@@ -92,7 +92,7 @@ def pricing(request):
         "current_plan": request.user.profile.plan,
         "can_start_free_trial": can_start_free_trial(request.user),
         "is_kazi_trial": is_active_trial(request.user.profile),
-        "trial_days": get_plan_limits("growth")["trial_days"],
+        "trial_days": get_plan_limits("starter")["trial_days"],
         "stripe_checkout_available": bool(getattr(settings, "STRIPE_SECRET_KEY", "")),
     })
 
@@ -106,7 +106,7 @@ def checkout(request):
         messages.error(request, "Invalid plan selected.")
         return redirect("billing:pricing")
 
-    # Stripe checkout includes a free trial; features during trial match Kazi (growth).
+    # Stripe checkout includes a free trial; features during trial match Starter limits.
 
     try:
         session = create_checkout_session(request.user, plan_tier, request)
@@ -222,10 +222,10 @@ def mpesa_checkout(request):
     if is_trial and can_start_free_trial(request.user):
         try:
             activate_trial(request.user, plan_tier, formatted_phone)
-            trial_days = get_plan_limits("growth")["trial_days"]
+            trial_days = get_plan_limits("starter")["trial_days"]
             messages.success(
                 request,
-                f"Your {trial_days}-day free trial is active — full Kazi plan features unlocked.",
+                f"Your {trial_days}-day free trial is active — Starter plan features unlocked.",
             )
             return redirect("billing:mpesa_success")
         except Exception as e:

@@ -84,13 +84,19 @@
     <div class="bg-white dark:bg-gray-900 rounded-xl border border-teal-200 dark:border-teal-900/50 p-4 shadow-sm text-center">
       <p class="text-xl font-bold text-teal-600 dark:text-teal-400">{{ nurture_emails_7d }}</p>
       <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Nurture Emails</p>
-      <p class="text-[10px] text-gray-400 mt-0.5">sent (7d)</p>
+      <p class="text-[10px] text-gray-400 mt-0.5"><a href="{% url 'admin_dashboard:leads_overview' %}" class="text-kova-600 hover:underline">REACH →</a></p>
+    </div>
+
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-[#25D366]/30 p-4 shadow-sm text-center">
+      <p class="text-xl font-bold text-[#128C7E] dark:text-[#25D366]">{{ nurture_whatsapp_7d }}</p>
+      <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Nurture WA (7d)</p>
+      <p class="text-[10px] text-gray-400 mt-0.5">{% if wa_escalated %}{{ wa_escalated }} escalated{% else %}<a href="{% url 'admin_dashboard:whatsapp_overview' %}" class="text-kova-600 hover:underline">WhatsApp →</a>{% endif %}</p>
     </div>
 
     <div class="bg-white dark:bg-gray-900 rounded-xl border border-amber-200 dark:border-amber-900/50 p-4 shadow-sm text-center">
       <p class="text-xl font-bold text-amber-600 dark:text-amber-400">{{ scored_leads }}</p>
       <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Scored Leads</p>
-      <p class="text-[10px] text-gray-400 mt-0.5">{{ high_priority_leads }} high</p>
+      <p class="text-[10px] text-gray-400 mt-0.5">{{ high_priority_leads }} high · <a href="{% url 'admin_dashboard:lead_list' %}?stale=1" class="text-amber-600 hover:underline">{{ stale_leads_count }} stale</a></p>
     </div>
 
     <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center col-span-2">
@@ -260,6 +266,25 @@
           <dt class="text-xs text-gray-500 dark:text-gray-400">Referrals</dt>
           <dd class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{{ total_referrals }} <span class="text-xs text-gray-400 font-normal">{{ active_referrals }} active</span></dd>
         </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+
+        <div class="flex items-center justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">Nurture due</dt>
+          <dd class="text-sm font-semibold text-amber-600 dark:text-amber-400"><a href="{% url 'admin_dashboard:leads_nurture' %}" class="hover:underline">{{ nurture_due_now }}</a></dd>
+        </div>
+        {% if wa_templates_pending %}
+        <div class="flex items-center justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">WA templates pending</dt>
+          <dd class="text-sm font-semibold text-amber-600 dark:text-amber-400"><a href="{% url 'admin_dashboard:whatsapp_templates' %}?status=submitted" class="hover:underline">{{ wa_templates_pending }}</a></dd>
+        </div>
+        {% endif %}
+        {% if wa_escalated %}
+        <div class="flex items-center justify-between">
+          <dt class="text-xs text-gray-500 dark:text-gray-400">WA escalated</dt>
+          <dd class="text-sm font-semibold text-red-600 dark:text-red-400"><a href="{% url 'admin_dashboard:whatsapp_conversations' %}?status=escalated" class="hover:underline">{{ wa_escalated }}</a></dd>
+        </div>
+        {% endif %}
       </dl>
     </div>
 

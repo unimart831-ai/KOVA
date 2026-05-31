@@ -750,6 +750,17 @@ def broadcast_launch(request, pk):
         django_messages.error(request, "No eligible recipients found for this segment.")
         return redirect("whatsapp:broadcast_detail", pk=pk)
 
+    from apps.billing.whatsapp_marketing import check_whatsapp_marketing_limit
+
+    allowed, msg = check_whatsapp_marketing_limit(
+        request.user,
+        additional_conversations=len(phones),
+        template=broadcast.template,
+    )
+    if not allowed:
+        django_messages.error(request, msg)
+        return redirect("whatsapp:broadcast_detail", pk=pk)
+
     broadcast.recipient_phones = phones
     broadcast.total_recipients = len(phones)
     broadcast.status = WhatsAppBroadcast.BroadcastStatus.SCHEDULED

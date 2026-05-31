@@ -244,6 +244,10 @@ class UserProfile(models.Model):
     )
     trial_ends_at = models.DateTimeField(null=True, blank=True)
     current_period_end = models.DateTimeField(null=True, blank=True)
+    is_agency_approved = models.BooleanField(
+        default=False,
+        help_text="When True, user may subscribe to the Agency plan via sales onboarding.",
+    )
     # Content seed quota (Studio) — admin overrides for testing & promotions
     seed_quota_reset_at = models.DateTimeField(
         null=True,

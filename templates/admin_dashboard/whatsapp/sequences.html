@@ -1,0 +1,64 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ total_count }} sequence{{ total_count|pluralize }} · {{ due_total }} enrollment{{ due_total|pluralize }} due now</p>{% endblock %}
+
+{% block content %}
+<a href="{% url 'admin_dashboard:whatsapp_overview' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white mb-4">← WhatsApp overview</a>
+
+{% if enrollment_summary %}
+<div class="flex flex-wrap gap-2 mb-4">
+  {% for row in enrollment_summary %}
+  <span class="text-xs px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">{{ row.status }}: {{ row.count }}</span>
+  {% endfor %}
+</div>
+{% endif %}
+
+<form method="get" class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm mb-6 flex flex-wrap gap-3 items-end">
+  <div class="flex-1 min-w-[200px]">
+    <label class="block text-xs font-medium text-gray-500 mb-1">Search</label>
+    <input type="text" name="q" value="{{ search }}" placeholder="Sequence or user email" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+  </div>
+  <div>
+    <label class="block text-xs font-medium text-gray-500 mb-1">Status</label>
+    <select name="status" class="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <option value="">All</option>
+      {% for value, label in status_choices %}
+      <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-[#25D366] rounded-lg">Filter</button>
+</form>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Name</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Type</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Owner</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-center">Steps</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-center">Enrolled</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-center">Due</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for seq in page_obj %}
+      <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+        <td class="px-4 py-2.5 font-medium text-gray-900 dark:text-white">{{ seq.name }}</td>
+        <td class="px-4 py-2.5 text-xs text-gray-500">{{ seq.get_sequence_type_display }}</td>
+        <td class="px-4 py-2.5 text-xs text-kova-600">{{ seq.social_account.user.email }}</td>
+        <td class="px-4 py-2.5 text-xs capitalize">{{ seq.get_status_display }}</td>
+        <td class="px-4 py-2.5 text-center">{{ seq.step_count }}</td>
+        <td class="px-4 py-2.5 text-center">{{ seq.active_enrollments }}</td>
+        <td class="px-4 py-2.5 text-center {% if seq.due_enrollments %}text-amber-600 font-semibold{% endif %}">{{ seq.due_enrollments }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">No broadcast sequences</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -57,6 +57,45 @@
   </div>
 </div>
 
+<!-- ── Sequences & Commerce ──────────────────────────────────────────── -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-purple-600 dark:text-purple-400">{{ active_sequences }}</p>
+    <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Active sequences</p>
+    <a href="{% url 'admin_dashboard:whatsapp_sequences' %}" class="text-[10px] text-kova-600 hover:underline">View →</a>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ sequence_enrollments_active }}</p>
+    <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Sequence enrollments</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-amber-200 dark:border-amber-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-amber-600 dark:text-amber-400">{{ sequence_due }}</p>
+    <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Due to send</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-emerald-200 dark:border-emerald-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400">{{ commerce_receipts_7d }}</p>
+    <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Commerce receipts (7d)</p>
+    <a href="{% url 'admin_dashboard:whatsapp_commerce_receipts' %}" class="text-[10px] text-kova-600 hover:underline">Log →</a>
+  </div>
+</div>
+
+{% if escalated %}
+<div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-xl p-5 mb-6">
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="text-sm font-semibold text-amber-800 dark:text-amber-300">Escalated conversations ({{ escalated }})</h2>
+    <a href="{% url 'admin_dashboard:whatsapp_conversations' %}?status=escalated" class="text-xs text-amber-700 dark:text-amber-400 hover:underline">View all →</a>
+  </div>
+  <div class="space-y-2">
+    {% for conv in escalated_conversations %}
+    <div class="flex items-center justify-between text-xs">
+      <span class="text-gray-800 dark:text-gray-200">{{ conv.contact_name|default:conv.contact_phone }} · {{ conv.social_account.user.email }}</span>
+      <span class="text-gray-500">{{ conv.last_message_at|timesince }} ago</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <!-- ── Templates & Broadcasts Summary ────────────────────────────────── -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
@@ -72,12 +111,16 @@
         <p class="font-bold text-gray-900 dark:text-white">{{ total_templates }}</p>
       </div>
       <div>
-        <p class="text-gray-400 text-xs">Approved</p>
-        <p class="font-bold text-emerald-600 dark:text-emerald-400">{{ approved_templates }}</p>
+        <p class="text-gray-400 text-xs">Draft</p>
+        <p class="font-bold {% if draft_templates %}text-gray-700 dark:text-gray-300{% else %}text-gray-500{% endif %}">{{ draft_templates }}</p>
       </div>
       <div>
-        <p class="text-gray-400 text-xs">Pending Review</p>
+        <p class="text-gray-400 text-xs">Submitted</p>
         <p class="font-bold {% if pending_templates %}text-amber-500{% else %}text-gray-500{% endif %}">{{ pending_templates }}</p>
+      </div>
+      <div>
+        <p class="text-gray-400 text-xs">Approved</p>
+        <p class="font-bold text-emerald-600 dark:text-emerald-400">{{ approved_templates }}</p>
       </div>
       <div>
         <p class="text-gray-400 text-xs">Rejected</p>
@@ -169,7 +212,7 @@
 <!-- ── Quick Actions ─────────────────────────────────────────────────── -->
 <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
   <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
     <a href="{% url 'admin_dashboard:whatsapp_brief_delivery' %}" class="flex items-center gap-3 p-3 rounded-lg border border-kova-200 dark:border-kova-800 hover:border-kova-400 dark:hover:border-kova-500 hover:bg-kova-50 dark:hover:bg-kova-950/30 transition-all">
       <div class="w-8 h-8 bg-kova-100 dark:bg-kova-900/30 rounded-lg flex items-center justify-center">
         <svg class="w-4 h-4 text-kova-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
@@ -195,6 +238,24 @@
       <div>
         <p class="text-sm font-medium text-gray-900 dark:text-white">Message Templates</p>
         <p class="text-xs text-gray-400">{{ approved_templates }} approved templates</p>
+      </div>
+    </a>
+    <a href="{% url 'admin_dashboard:whatsapp_conversations' %}?status=escalated" class="flex items-center gap-3 p-3 rounded-lg border border-amber-200 dark:border-amber-800 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all">
+      <div class="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      </div>
+      <div>
+        <p class="text-sm font-medium text-gray-900 dark:text-white">Escalated</p>
+        <p class="text-xs text-gray-400">{{ escalated }} need human handoff</p>
+      </div>
+    </a>
+    <a href="{% url 'admin_dashboard:whatsapp_sequences' %}" class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all">
+      <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      </div>
+      <div>
+        <p class="text-sm font-medium text-gray-900 dark:text-white">Drip sequences</p>
+        <p class="text-xs text-gray-400">{{ active_sequences }} active · {{ sequence_due }} due</p>
       </div>
     </a>
     <a href="{% url 'admin_dashboard:whatsapp_broadcasts' %}" class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all">

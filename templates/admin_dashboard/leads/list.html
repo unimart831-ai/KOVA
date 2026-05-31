@@ -22,7 +22,17 @@
     <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>Medium</option>
     <option value="low" {% if current_priority == 'low' %}selected{% endif %}>Low</option>
   </select>
+  <select name="source" class="input text-sm">
+    <option value="">All sources</option>
+    {% for value, label in source_choices %}
+    <option value="{{ value }}" {% if current_source == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  {% if current_stale %}<input type="hidden" name="stale" value="1">{% endif %}
   <button type="submit" class="btn-primary text-xs px-3 py-1.5">Filter</button>
+  {% if current_stale %}
+  <a href="{% url 'admin_dashboard:lead_list' %}" class="text-xs text-gray-500 hover:underline self-center">Clear stale filter</a>
+  {% endif %}
 </form>
 
 <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">

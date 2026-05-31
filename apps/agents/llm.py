@@ -647,6 +647,14 @@ def _generate_anthropic(
 
 
 # ── Vision AI ────────────────────────────────────────────────────────
+def _record_vision_usage(user, resp: LLMResponse) -> None:
+    try:
+        from apps.agents.budget import record_usage
+        record_usage(user, resp.model or "gpt-4o-mini", resp.input_tokens, resp.output_tokens)
+    except Exception as exc:
+        logger.warning("Vision record_usage failed: %s", exc)
+
+
 def analyze_image(
     image_url: str,
     prompt: str = "What is in this image?",
@@ -654,6 +662,7 @@ def analyze_image(
     model: str = "",
     max_tokens: int = 1024,
     json_mode: bool = False,
+    user=None,
 ) -> LLMResponse:
     """
     Send an image to a vision-capable LLM and get a text/JSON response.
@@ -668,10 +677,15 @@ def analyze_image(
         model: Override model. Defaults to gpt-4o-mini (cheap, vision-capable).
         max_tokens: Max response tokens.
         json_mode: If True, request JSON output.
+        user: When provided, metered against daily + monthly LLM token budgets.
 
     Returns:
         LLMResponse with the analysis content.
     """
+    if user is not None:
+        from apps.agents.budget import check_budget
+        check_budget(user, max_tokens)
+
     config = _get_llm_config()
 
     if config and config.pk:
@@ -683,7 +697,10 @@ def analyze_image(
 
     # Vision requires OpenAI-compatible API (works with OpenAI and OpenRouter)
     if provider == "anthropic":
-        return _analyze_image_anthropic(image_url, prompt, system, model, max_tokens)
+        resp = _analyze_image_anthropic(image_url, prompt, system, model, max_tokens)
+        if user is not None:
+            _record_vision_usage(user, resp)
+        return resp
 
     # Use OpenAI or OpenRouter client
     if provider == "openrouter":
@@ -721,7 +738,7 @@ def analyze_image(
         choice = response.choices[0]
         usage = response.usage
 
-        return LLMResponse(
+        resp = LLMResponse(
             content=choice.message.content or "",
             model=response.model,
             input_tokens=usage.prompt_tokens if usage else 0,
@@ -731,6 +748,9 @@ def analyze_image(
             finish_reason=getattr(choice, "finish_reason", "") or "",
             raw=response.model_dump() if hasattr(response, "model_dump") else {},
         )
+        if user is not None:
+            _record_vision_usage(user, resp)
+        return resp
     except Exception as exc:
         duration = int((time.monotonic() - start) * 1000)
         logger.error("Vision AI failed (%s/%s) after %dms: %s", provider, model, duration, exc)

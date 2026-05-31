@@ -1192,6 +1192,7 @@ def reidentify_product_from_photo(product_id: str):
             system="You are a product label reader. Always respond with valid JSON only.",
             json_mode=True,
             max_tokens=600,
+            user=product.user,
         )
         analysis = parse_llm_json(vision_resp.content)
     except Exception as exc:
@@ -1446,6 +1447,7 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
             system=system_prompts.get(offering_type, system_prompts["product"]),
             json_mode=True,
             max_tokens=1000,
+            user=user,
         )
         analysis = parse_llm_json(vision_resp.content)
 
@@ -1726,6 +1728,7 @@ def snap_batch_process(session_id: str):
                 ),
                 json_mode=True,
                 max_tokens=900,
+                user=user,
             )
             analysis = parse_llm_json(vision_resp.content)
 
@@ -2197,6 +2200,7 @@ def process_restock_scan(scan_id: str):
             system="You are a receipt OCR expert. Always respond with valid JSON only.",
             json_mode=True,
             max_tokens=1200,
+            user=user,
         )
         extraction = parse_llm_json(vision_resp.content)
 

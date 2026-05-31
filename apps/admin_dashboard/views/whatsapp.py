@@ -13,6 +13,8 @@ from django.utils import timezone
 
 from apps.admin_dashboard.decorators import staff_required
 from apps.whatsapp.models import (
+    BroadcastSequence,
+    SequenceEnrollment,
     WhatsAppBroadcast,
     WhatsAppConversation,
     WhatsAppMessage,
@@ -73,6 +75,7 @@ def whatsapp_overview(request):
 
     # ── Template metrics ─────────────────────────────────────────────
     total_templates = WhatsAppTemplate.objects.count()
+    draft_templates = WhatsAppTemplate.objects.filter(status="draft").count()
     approved_templates = WhatsAppTemplate.objects.filter(status="approved").count()
     pending_templates = WhatsAppTemplate.objects.filter(status="submitted").count()
     rejected_templates = WhatsAppTemplate.objects.filter(status="rejected").count()
@@ -81,6 +84,23 @@ def whatsapp_overview(request):
     total_broadcasts = WhatsAppBroadcast.objects.count()
     active_broadcasts = WhatsAppBroadcast.objects.filter(
         status__in=["scheduled", "sending"],
+    ).count()
+    # ── Broadcast sequences (drip) ───────────────────────────────────
+    total_sequences = BroadcastSequence.objects.count()
+    active_sequences = BroadcastSequence.objects.filter(status="active").count()
+    sequence_enrollments_active = SequenceEnrollment.objects.filter(
+        status=SequenceEnrollment.EnrollmentStatus.ACTIVE,
+    ).count()
+    sequence_due = SequenceEnrollment.objects.filter(
+        status=SequenceEnrollment.EnrollmentStatus.ACTIVE,
+        next_send_at__lte=now,
+    ).count()
+
+    # ── Commerce payment receipts (outbound text) ──────────────────────
+    commerce_receipts_7d = WhatsAppMessage.objects.filter(
+        direction="outbound",
+        created_at__gte=last_7d,
+        content__icontains="Payment received",
     ).count()
     broadcast_stats = WhatsAppBroadcast.objects.filter(
         status="completed",
@@ -121,6 +141,12 @@ def whatsapp_overview(request):
         .select_related("social_account", "social_account__user")
         .order_by("-last_message_at")[:5]
     )
+    escalated_conversations = (
+        WhatsAppConversation.objects
+        .select_related("social_account", "social_account__user")
+        .filter(status="escalated")
+        .order_by("-last_message_at")[:8]
+    )
 
     context = {
         "page_title": "WhatsApp Management",
@@ -142,6 +168,7 @@ def whatsapp_overview(request):
         "read_rate": read_rate,
         # Templates
         "total_templates": total_templates,
+        "draft_templates": draft_templates,
         "approved_templates": approved_templates,
         "pending_templates": pending_templates,
         "rejected_templates": rejected_templates,
@@ -149,9 +176,16 @@ def whatsapp_overview(request):
         "total_broadcasts": total_broadcasts,
         "active_broadcasts": active_broadcasts,
         "broadcast_stats": broadcast_stats,
+        # Sequences
+        "total_sequences": total_sequences,
+        "active_sequences": active_sequences,
+        "sequence_enrollments_active": sequence_enrollments_active,
+        "sequence_due": sequence_due,
+        "commerce_receipts_7d": commerce_receipts_7d,
         # Chart & recent
         "message_chart_json": message_chart,
         "recent_conversations": recent_conversations,
+        "escalated_conversations": escalated_conversations,
     }
     return render(request, "admin_dashboard/whatsapp/overview.html", context)
 
@@ -277,6 +311,100 @@ def whatsapp_broadcasts(request):
         "status_choices": WhatsAppBroadcast.BroadcastStatus.choices,
     }
     return render(request, "admin_dashboard/whatsapp/broadcasts.html", context)
+
+
+@staff_required
+def whatsapp_sequences(request):
+    """Broadcast drip sequences and enrollment health."""
+    now = timezone.now()
+    qs = (
+        BroadcastSequence.objects
+        .select_related("social_account", "social_account__user")
+        .annotate(
+            step_count=Count("steps"),
+            active_enrollments=Count(
+                "enrollments",
+                filter=Q(enrollments__status=SequenceEnrollment.EnrollmentStatus.ACTIVE),
+            ),
+            due_enrollments=Count(
+                "enrollments",
+                filter=Q(
+                    enrollments__status=SequenceEnrollment.EnrollmentStatus.ACTIVE,
+                    enrollments__next_send_at__lte=now,
+                ),
+            ),
+        )
+        .order_by("-created_at")
+    )
+
+    search = request.GET.get("q", "").strip()
+    if search:
+        qs = qs.filter(
+            Q(name__icontains=search)
+            | Q(social_account__user__email__icontains=search),
+        )
+
+    status = request.GET.get("status", "")
+    if status:
+        qs = qs.filter(status=status)
+
+    paginator = Paginator(qs, 30)
+    page = paginator.get_page(request.GET.get("page", 1))
+
+    enrollment_summary = SequenceEnrollment.objects.values("status").annotate(
+        count=Count("id"),
+    ).order_by("status")
+
+    context = {
+        "page_title": "WhatsApp Sequences",
+        "page_obj": page,
+        "search": search,
+        "current_status": status,
+        "total_count": paginator.count,
+        "status_choices": BroadcastSequence.SequenceStatus.choices,
+        "enrollment_summary": enrollment_summary,
+        "due_total": SequenceEnrollment.objects.filter(
+            status=SequenceEnrollment.EnrollmentStatus.ACTIVE,
+            next_send_at__lte=now,
+        ).count(),
+    }
+    return render(request, "admin_dashboard/whatsapp/sequences.html", context)
+
+
+@staff_required
+def whatsapp_commerce_receipts(request):
+    """Recent commerce payment confirmation messages sent via WhatsApp."""
+    qs = (
+        WhatsAppMessage.objects.filter(
+            direction="outbound",
+            content__icontains="Payment received",
+        )
+        .select_related("conversation", "conversation__social_account", "conversation__social_account__user")
+        .order_by("-created_at")
+    )
+
+    search = request.GET.get("q", "").strip()
+    if search:
+        qs = qs.filter(
+            Q(content__icontains=search)
+            | Q(conversation__contact_phone__icontains=search)
+            | Q(conversation__social_account__user__email__icontains=search),
+        )
+
+    last_7d = timezone.now() - timedelta(days=7)
+    receipts_7d = qs.filter(created_at__gte=last_7d).count()
+
+    paginator = Paginator(qs, 40)
+    page = paginator.get_page(request.GET.get("page", 1))
+
+    context = {
+        "page_title": "Commerce WhatsApp Receipts",
+        "page_obj": page,
+        "search": search,
+        "total_count": paginator.count,
+        "receipts_7d": receipts_7d,
+    }
+    return render(request, "admin_dashboard/whatsapp/commerce_receipts.html", context)
 
 
 @staff_required

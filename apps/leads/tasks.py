@@ -171,7 +171,7 @@ def _ai_generate_nurture_email(lead, step, business_name):
         )
 
         model = get_model_for_task("create.write", user=lead.user)
-        resp = generate(model=model, prompt=prompt, temperature=0.7, max_tokens=400)
+        resp = generate(model=model, prompt=prompt, temperature=0.7, max_tokens=400, user=lead.user)
 
         if resp and resp.text:
             import json

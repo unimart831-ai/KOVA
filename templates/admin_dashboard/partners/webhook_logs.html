@@ -1,0 +1,56 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Outbound marketplace webhooks · {{ failed_7d }} failed (7d)</p>{% endblock %}
+
+{% block content %}
+<a href="{% url 'admin_dashboard:partners_overview' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white mb-4">← Partners overview</a>
+
+<form method="get" class="flex flex-wrap gap-2 mb-4">
+  <select name="status" class="input text-sm">
+    <option value="">All statuses</option>
+    {% for value, label in status_choices %}
+    <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="marketplace" class="input text-sm">
+    <option value="">All marketplaces</option>
+    {% for mp in marketplaces %}
+    <option value="{{ mp.pk }}" {% if current_marketplace == mp.pk|stringformat:"s" %}selected{% endif %}>{{ mp.name }}</option>
+    {% endfor %}
+  </select>
+  <input type="text" name="event" value="{{ current_event }}" placeholder="Event name" class="input text-sm max-w-xs">
+  <button type="submit" class="btn-primary text-xs px-3 py-1.5">Filter</button>
+</form>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Time</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Marketplace</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Event</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">HTTP</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Error</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for log in logs %}
+      <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+        <td class="px-4 py-2.5 text-xs text-gray-400">{{ log.created_at|timesince }} ago</td>
+        <td class="px-4 py-2.5">
+          <a href="{% url 'admin_dashboard:marketplace_detail' pk=log.marketplace.pk %}" class="text-xs text-emerald-600 hover:underline">{{ log.marketplace.name }}</a>
+        </td>
+        <td class="px-4 py-2.5 text-xs font-mono">{{ log.event }}</td>
+        <td class="px-4 py-2.5 text-xs capitalize {% if log.status == 'failed' %}text-red-600{% elif log.status == 'success' %}text-green-600{% endif %}">{{ log.status }}</td>
+        <td class="px-4 py-2.5 text-xs text-gray-500">{{ log.response_code|default:"—" }}</td>
+        <td class="px-4 py-2.5 text-xs text-gray-500 max-w-xs truncate">{{ log.error_message|default:"—" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">No webhook deliveries</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

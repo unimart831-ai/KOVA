@@ -301,10 +301,20 @@ def overview(request):
     ).distinct().count()
 
     # Nurture emails sent (7d)
-    from apps.leads.models import LeadActivity
+    from apps.leads.models import LeadActivity, LeadEnrollment
     nurture_emails_7d = LeadActivity.objects.filter(
         activity_type="email_sent",
         created_at__gte=seven_days_ago,
+    ).count()
+    nurture_whatsapp_7d = LeadActivity.objects.filter(
+        activity_type="whatsapp_sent",
+        created_at__gte=seven_days_ago,
+    ).count()
+    stale_leads_count = Lead.objects.exclude(
+        status__in=["converted", "lost"],
+    ).filter(last_activity_at__lt=seven_days_ago).count()
+    nurture_due_now = LeadEnrollment.objects.filter(
+        completed=False, paused=False, next_step_at__lte=now,
     ).count()
 
     # Lead scoring
@@ -314,6 +324,15 @@ def overview(request):
     high_priority_leads = Lead.objects.filter(priority="high").exclude(
         status__in=["converted", "lost"],
     ).count()
+
+    # WhatsApp ops snapshot
+    try:
+        from apps.whatsapp.models import WhatsAppConversation, WhatsAppTemplate
+        wa_escalated = WhatsAppConversation.objects.filter(status="escalated").count()
+        wa_templates_pending = WhatsAppTemplate.objects.filter(status="submitted").count()
+    except Exception:
+        wa_escalated = 0
+        wa_templates_pending = 0
 
     # Platform operations snapshot (24h)
     try:
@@ -407,6 +426,11 @@ def overview(request):
         "recycled_seeds": recycled_seeds,
         "ai_campaigns": ai_campaigns,
         "nurture_emails_7d": nurture_emails_7d,
+        "nurture_whatsapp_7d": nurture_whatsapp_7d,
+        "stale_leads_count": stale_leads_count,
+        "nurture_due_now": nurture_due_now,
+        "wa_escalated": wa_escalated,
+        "wa_templates_pending": wa_templates_pending,
         "scored_leads": scored_leads,
         "high_priority_leads": high_priority_leads,
         "ops_tasks_24h": ops_tasks_24h,

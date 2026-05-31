@@ -15,21 +15,21 @@ from apps.products.photoroom import pick_background_color_hex
 
 @pytest.mark.django_db
 class TestVisualCredits:
-    def test_starter_limit_is_fifteen(self, user):
+    def test_starter_limit_is_eight(self, user):
         usage = get_visual_credit_usage(user)
-        assert usage["max"] == 15
-        assert usage["remaining"] == 15
+        assert usage["max"] == 8
+        assert usage["remaining"] == 8
         assert not usage["at_limit"]
 
     def test_blocks_at_cap(self, user):
-        for i in range(15):
+        for i in range(8):
             record_studio_polish(user, product_id=f"p{i}", provider="photoroom")
 
         usage = get_visual_credit_usage(user)
         assert usage["at_limit"]
         allowed, msg = check_visual_credit_limit(user)
         assert not allowed
-        assert "15" in msg
+        assert "8" in msg
 
     def test_record_creates_agent_action(self, user):
         record_studio_polish(user, product_id="abc", provider="photoroom", output_data={"url": "x"})

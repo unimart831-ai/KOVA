@@ -237,6 +237,7 @@ def generate_caption_variants(item_id: str, n: int = 4):
             model=get_model_for_task("create.write", user=user),
             temperature=0.75,
             max_tokens=700,
+            user=user,
         )
         raw = (response.content or "").strip()
         variants = parse_llm_json(raw)
@@ -308,6 +309,7 @@ def _generate_ai_caption(user, platform, queue_name=""):
             model=get_model_for_task("create.write", user=user),
             temperature=0.7,
             max_tokens=300,
+            user=user,
         )
 
         caption = (response.content or "").strip().strip('"').strip("'")

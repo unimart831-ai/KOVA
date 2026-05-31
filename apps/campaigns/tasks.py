@@ -347,7 +347,7 @@ def _generate_campaign_plan(user, prompt, platforms, business_name, brand_voice,
         model = get_model_for_task("create.strategize", user=user)
         resp = generate(
             model=model, system=system, prompt=user_prompt,
-            temperature=0.7, max_tokens=1500,
+            temperature=0.7, max_tokens=1500, user=user,
         )
 
         if resp and resp.text:

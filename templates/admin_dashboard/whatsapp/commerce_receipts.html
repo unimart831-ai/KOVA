@@ -1,0 +1,42 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">M-Pesa payment confirmations sent via WhatsApp · {{ receipts_7d }} in last 7 days</p>{% endblock %}
+
+{% block content %}
+<a href="{% url 'admin_dashboard:whatsapp_overview' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white mb-4">← WhatsApp overview</a>
+
+<form method="get" class="flex flex-wrap gap-2 mb-4">
+  <input type="text" name="q" value="{{ search }}" placeholder="Search receipt, phone, user" class="input text-sm max-w-md">
+  <button type="submit" class="btn-primary text-xs px-3 py-1.5">Search</button>
+</form>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Sent</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Business</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Contact</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Message</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for msg in page_obj %}
+      <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+        <td class="px-4 py-2.5 text-xs text-gray-400 whitespace-nowrap">{{ msg.created_at|timesince }} ago</td>
+        <td class="px-4 py-2.5 text-xs">
+          <a href="{% url 'admin_dashboard:user_detail' msg.conversation.social_account.user.pk %}" class="text-kova-600 hover:underline">{{ msg.conversation.social_account.user.email }}</a>
+        </td>
+        <td class="px-4 py-2.5 text-xs text-gray-500">{{ msg.conversation.contact_phone|default:msg.conversation.contact_wa_id }}</td>
+        <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400 max-w-md truncate">{{ msg.content|truncatechars:80 }}</td>
+        <td class="px-4 py-2.5 text-xs">{{ msg.get_status_display }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">No commerce receipts logged yet</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

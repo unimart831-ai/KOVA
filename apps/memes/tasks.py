@@ -630,6 +630,7 @@ def _adapt_meme_for_user(meme, user, profile, prefs):
             json_mode=True,
             temperature=0.8,  # higher creativity for humor
             max_tokens=1500,
+            user=user,
         )
 
         if not response.content or not response.content.strip():

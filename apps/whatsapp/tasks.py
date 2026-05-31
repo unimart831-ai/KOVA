@@ -102,6 +102,7 @@ def handle_incoming_message(self, message_id: str):
         temperature=0.7,
         max_tokens=1024,
         json_mode=True,
+        user=user,
     )
 
     if not response.content:
@@ -424,9 +425,10 @@ RESPOND IN JSON:
     response = generate(
         prompt=f"Create a WhatsApp Status post about: {prompt}",
         system=system,
-        model=get_model_for_task("create"),
+        model=get_model_for_task("create", user=user),
         temperature=0.8,
         json_mode=True,
+        user=user,
     )
 
     parsed = coerce_llm_dict(parse_llm_json(response.content)) if response.content else None
@@ -512,9 +514,10 @@ RESPOND IN JSON:
     response = generate(
         prompt=f"Adapt this {platform} post for WhatsApp Status:\n\n{post.content_text[:1000]}",
         system=system,
-        model=get_model_for_task("adapt"),
+        model=get_model_for_task("adapt", user=user),
         temperature=0.7,
         json_mode=True,
+        user=user,
     )
 
     parsed = coerce_llm_dict(parse_llm_json(response.content)) if response.content else None
@@ -622,6 +625,21 @@ def execute_broadcast(self, broadcast_id: str):
         logger.error("Broadcast %s has no template", broadcast_id)
         return
 
+    owner = broadcast.social_account.user
+    from apps.billing.whatsapp_marketing import check_whatsapp_marketing_limit, is_marketing_template
+
+    if is_marketing_template(template):
+        allowed, msg = check_whatsapp_marketing_limit(
+            owner,
+            additional_conversations=len(broadcast.recipient_phones or []),
+            template=template,
+        )
+        if not allowed:
+            broadcast.status = WhatsAppBroadcast.BroadcastStatus.PAUSED
+            broadcast.save(update_fields=["status", "updated_at"])
+            logger.warning("Broadcast %s blocked: %s", broadcast_id, msg)
+            return
+
     sent = 0
     failed = 0
     components = variables_to_components(broadcast.template_variables)
@@ -705,6 +723,17 @@ def process_sequence_steps():
 
         conversation = enrollment.conversation
         social_account = conversation.social_account
+        owner = social_account.user
+        from apps.billing.whatsapp_marketing import check_whatsapp_marketing_limit
+
+        allowed, msg = check_whatsapp_marketing_limit(
+            owner,
+            additional_conversations=1,
+            template=step.template,
+        )
+        if not allowed:
+            logger.warning("Sequence step blocked for user %s: %s", owner.pk, msg)
+            continue
 
         try:
             components = variables_to_components(step.template_variables)
@@ -924,9 +953,10 @@ Previous week comparison:
         response = generate(
             prompt=metrics_prompt,
             system=system,
-            model=get_model_for_task("analyst"),
+            model=get_model_for_task("analyst", user=user),
             temperature=0.7,
             json_mode=True,
+            user=user,
         )
 
         parsed = coerce_llm_dict(parse_llm_json(response.content)) if response.content else None
@@ -996,9 +1026,10 @@ RESPOND IN JSON:
     response = generate(
         prompt=f"Adapt this {platform} post for a WhatsApp Channel:\n\n{post.content_text[:1500]}",
         system=system,
-        model=get_model_for_task("adapt"),
+        model=get_model_for_task("adapt", user=user),
         temperature=0.7,
         json_mode=True,
+        user=user,
     )
 
     parsed = coerce_llm_dict(parse_llm_json(response.content)) if response.content else None

@@ -4,7 +4,7 @@
 {% block page_subtitle %}
 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
   {% if can_start_free_trial %}
-    Start with a {{ trial_days }}-day free trial — full <strong>Kazi</strong> features, no payment required.
+    Start with a {{ trial_days }}-day free trial — <strong>Starter</strong> features, no payment required.
   {% else %}
     Pick the plan that matches your needs.
   {% endif %}
@@ -66,6 +66,15 @@
         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {% if plan.max_posts_per_month > 9999 %}Unlimited{% else %}{{ plan.max_posts_per_month }}{% endif %} AI posts/month</li>
         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {% if plan.max_seeds_per_month > 9999 %}Unlimited{% else %}{{ plan.max_seeds_per_month }}{% endif %} content seeds/month</li>
         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {{ plan.agents_enabled|length }} AI agents</li>
+        {% if plan.whatsapp_marketing_conversations_per_month %}
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {{ plan.whatsapp_marketing_conversations_per_month }} WhatsApp marketing convos/mo</li>
+        {% endif %}
+        {% if plan.monthly_llm_tokens %}
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span>
+            {% if plan.monthly_llm_tokens >= 1000000 %}{{ plan.monthly_llm_tokens|floatformat:0|slice:":-6" }}M{% else %}{{ plan.monthly_llm_tokens|floatformat:0|slice:":-3" }}K{% endif %}
+            AI tokens/month
+          </li>
+        {% endif %}
         {% if plan.daily_llm_tokens %}
           <li class="flex items-center"><span class="text-green-500 mr-2">✓</span>
             {% if plan.daily_llm_tokens >= 1000000 %}{{ plan.daily_llm_tokens|floatformat:0|slice:":-6" }}M{% else %}{{ plan.daily_llm_tokens|floatformat:0|slice:":-3" }}K{% endif %}
@@ -181,7 +190,7 @@
         <template x-if="isTrial">
           <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg p-3">
             <p class="text-sm text-amber-700 dark:text-amber-400">
-              <span class="font-semibold">{{ trial_days }}-day Kazi trial</span> — full Growth features, no payment now. We'll remind you before it ends.
+              <span class="font-semibold">{{ trial_days }}-day Starter trial</span> — Starter plan features, no payment now. We'll remind you before it ends.
             </p>
           </div>
         </template>
@@ -233,7 +242,7 @@
   {% endif %}
 
   <p class="text-center text-xs text-gray-400 dark:text-gray-500 mt-6">
-    New users get a 7-day Kazi trial (full Growth features). After trial, plans from KSh 499/mo. Cancel anytime. No credit card required.
+    New users get a 7-day Starter trial. After trial, plans from KSh 499/mo. Cancel anytime. No credit card required.
   </p>
 </div>
 {% endblock %}

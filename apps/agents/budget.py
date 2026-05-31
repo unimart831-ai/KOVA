@@ -38,6 +38,19 @@ def _cost_per_1k(model: str) -> tuple[float, float]:
     return get_cost_per_1k(model)
 
 
+def _plan_monthly_cap(user) -> int:
+    limits = get_user_plan_limits(user)
+    return int(limits.get("monthly_llm_tokens", 0))
+
+
+def _monthly_tokens_used(user) -> int:
+    from apps.agents.models import UserTokenBucket
+
+    month_start = timezone.now().replace(day=1).date()
+    buckets = UserTokenBucket.objects.filter(user=user, period_date__gte=month_start)
+    return sum(b.input_tokens + b.output_tokens for b in buckets)
+
+
 def _plan_daily_cap(user) -> int:
     return get_user_daily_llm_token_cap(user)
 
@@ -94,6 +107,25 @@ def check_budget(user, max_tokens: int) -> None:
         raise PlanLimitExceeded(
             msg, limit_type="daily_llm_tokens", suggested_plan=suggested
         )
+
+    monthly_cap = _plan_monthly_cap(user)
+    if monthly_cap > 0:
+        monthly_used = _monthly_tokens_used(user)
+        if monthly_used + max_tokens > monthly_cap:
+            plan = _user_plan(user)
+            suggested = _next_plan(plan)
+            limits = get_user_plan_limits(user)
+            msg = (
+                f"You've used {monthly_used:,} of your {monthly_cap:,} monthly AI tokens "
+                f"on the {limits.get('label', plan)} plan. "
+            )
+            if suggested:
+                msg += f"Upgrade to {suggested.title()} for a higher monthly allowance."
+            else:
+                msg += "Monthly allowance resets on the 1st (UTC)."
+            raise PlanLimitExceeded(
+                msg, limit_type="monthly_llm_tokens", suggested_plan=suggested
+            )
 
 
 def record_usage(user, model: str, input_tokens: int, output_tokens: int) -> None:

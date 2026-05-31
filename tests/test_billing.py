@@ -74,12 +74,12 @@ class TestPlanLimits:
 
     def test_growth_platform_ladder(self):
         assert PLAN_LIMITS["growth"]["max_social_accounts"] == 4
-        assert PLAN_LIMITS["growth"]["price_kes"] == 999
+        assert PLAN_LIMITS["growth"]["price_kes"] == 1499
 
     def test_pro_platform_ladder(self):
         assert PLAN_LIMITS["pro"]["max_social_accounts"] == 5
         assert PLAN_LIMITS["pro"]["whatsapp_enabled"] is True
-        assert PLAN_LIMITS["pro"]["price_kes"] == 1999
+        assert PLAN_LIMITS["pro"]["price_kes"] == 2999
 
     def test_user_profile_default_plan(self, user):
         profile = user.profile
@@ -120,27 +120,27 @@ class TestBillingAccess:
         assert allowed is False
         assert "trial" in msg.lower()
 
-    def test_active_trial_unlocks_kazi_features(self, user):
-        from apps.billing.enforcement import check_mpesa_commerce, check_seed_limit
+    def test_active_trial_unlocks_starter_features(self, user):
+        from apps.billing.enforcement import check_ab_testing, check_seed_limit
         from apps.billing.models import get_effective_plan_tier, get_user_plan_limits
         from apps.content.models import ContentSeed
 
         profile = user.profile
-        profile.plan = "starter"
+        profile.plan = "growth"
         profile.subscription_status = "trialing"
         profile.trial_ends_at = timezone.now() + timezone.timedelta(days=5)
         profile.save(update_fields=["plan", "subscription_status", "trial_ends_at"])
 
-        assert get_effective_plan_tier(profile) == "growth"
-        assert get_user_plan_limits(user)["mpesa_commerce"] is True
+        assert get_effective_plan_tier(profile) == "starter"
+        assert get_user_plan_limits(user)["mpesa_commerce"] is False
 
-        allowed, _ = check_mpesa_commerce(user)
-        assert allowed is True
+        allowed, _ = check_ab_testing(user)
+        assert allowed is False
 
-        for i in range(5):
+        for i in range(8):
             ContentSeed.objects.create(user=user, idea=f"seed {i}")
         allowed, _ = check_seed_limit(user)
-        assert allowed is True
+        assert allowed is False
 
 
 @pytest.mark.django_db
@@ -154,7 +154,7 @@ class TestEnforcement:
         profile.subscription_status = "active"
         profile.save(update_fields=["plan", "subscription_status"])
 
-        for i in range(5):
+        for i in range(8):
             ContentSeed.objects.create(user=user, idea=f"seed {i}")
 
         allowed, msg = check_seed_limit(user)

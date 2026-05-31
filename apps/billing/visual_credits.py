@@ -1,15 +1,20 @@
-"""Visual credit metering — Photoroom Plus studio polish (platform + per-user)."""
+"""Visual credit metering — Photoroom Plus studio polish (platform + per-user).
+
+Each completed Photoroom API call debits one credit via ``record_studio_polish``.
+In-progress session markers (``begin_studio_polish_session``) are excluded from usage counts.
+"""
 
 from __future__ import annotations
 
 from django.conf import settings
 from django.utils import timezone
 
-from apps.billing.models import get_user_plan_limits
+from apps.billing.models import get_effective_plan_tier, get_user_plan_limits
 
 # Current action type (legacy alias: commerce.pro_scene)
 STUDIO_POLISH_ACTION = "commerce.studio_polish"
 LEGACY_PRO_SCENE_ACTION = "commerce.pro_scene"
+GROWTH_POOL_THROTTLE_PCT = 0.80
 
 
 def _studio_polish_actions_filter():
@@ -21,6 +26,15 @@ def _studio_polish_actions_filter():
     )
 
 
+def _countable_polish_actions():
+    """Completed polish debits only — excludes in-progress session markers."""
+    from apps.agents.models import AgentAction
+
+    return _studio_polish_actions_filter().filter(
+        status=AgentAction.ActionStatus.COMPLETED,
+    ).exclude(input_data__session=True)
+
+
 def get_platform_photoroom_usage() -> dict:
     """Platform-wide Photoroom pool consumption this month."""
     now = timezone.now()
@@ -29,7 +43,8 @@ def get_platform_photoroom_usage() -> dict:
     reserve = int(getattr(settings, "PHOTOROOM_POOL_RESERVE", 500))
     usable = max(0, pool - reserve)
 
-    used = _studio_polish_actions_filter().filter(created_at__gte=month_start).count()
+    used = _countable_polish_actions().filter(created_at__gte=month_start).count()
+    pool_pct = (used / usable) if usable else 1.0
 
     return {
         "used": used,
@@ -38,6 +53,7 @@ def get_platform_photoroom_usage() -> dict:
         "usable": usable,
         "remaining": max(0, usable - used),
         "at_limit": used >= usable,
+        "pool_pct": pool_pct,
         "cost_usd_monthly": float(getattr(settings, "PHOTOROOM_MONTHLY_COST_USD", 500)),
         "cost_per_image": round(
             float(getattr(settings, "PHOTOROOM_MONTHLY_COST_USD", 500)) / max(pool, 1),
@@ -49,39 +65,33 @@ def get_platform_photoroom_usage() -> dict:
 def get_visual_credit_usage(user) -> dict:
     """Monthly studio polish quota for UI and enforcement."""
     limits = get_user_plan_limits(user)
-    max_credits = limits.get("visual_enhancements_per_month", 0)
-    unlimited = max_credits >= 999999
+    max_credits = int(limits.get("visual_enhancements_per_month", 0))
     platform = get_platform_photoroom_usage()
-
-    if unlimited:
-        return {
-            "used": 0,
-            "max": max_credits,
-            "remaining": max_credits,
-            "at_limit": False,
-            "unlimited": True,
-            "plan_label": limits.get("label", "Starter"),
-            "platform": platform,
-            "platform_blocked": platform["at_limit"],
-        }
 
     now = timezone.now()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    used = _studio_polish_actions_filter().filter(
+    used = _countable_polish_actions().filter(
         user=user,
         created_at__gte=month_start,
     ).count()
 
-    user_at_limit = used >= max_credits
+    user_at_limit = max_credits > 0 and used >= max_credits
     platform_blocked = platform["at_limit"]
+    tier = get_effective_plan_tier(getattr(user, "profile", None))
+    growth_throttled = (
+        tier == "growth"
+        and platform["usable"] > 0
+        and platform["pool_pct"] > GROWTH_POOL_THROTTLE_PCT
+    )
 
     return {
         "used": used,
         "max": max_credits,
-        "remaining": max(0, max_credits - used),
-        "at_limit": user_at_limit or platform_blocked,
+        "remaining": max(0, max_credits - used) if max_credits > 0 else 0,
+        "at_limit": user_at_limit or platform_blocked or growth_throttled,
         "user_at_limit": user_at_limit,
         "platform_blocked": platform_blocked,
+        "growth_throttled": growth_throttled,
         "unlimited": False,
         "plan_label": limits.get("label", "Starter"),
         "platform": platform,
@@ -90,13 +100,12 @@ def get_visual_credit_usage(user) -> dict:
 
 def check_visual_credit_limit(user) -> tuple[bool, str]:
     usage = get_visual_credit_usage(user)
-    if usage["unlimited"]:
-        if usage.get("platform_blocked"):
-            return False, (
-                "Studio polish is temporarily unavailable — platform monthly capacity reached. "
-                "Use as-is or try again next month."
-            )
-        return True, ""
+
+    if usage.get("growth_throttled"):
+        return False, (
+            "Studio polish is temporarily throttled — platform capacity is above 80%. "
+            "Try again later or use as-is."
+        )
 
     if usage.get("platform_blocked"):
         return False, (
@@ -166,6 +175,7 @@ def finish_studio_polish_session(
 
 
 def record_studio_polish(user, *, product_id, provider: str = "photoroom_plus", output_data: dict | None = None) -> None:
+    """Debit one studio polish credit per Photoroom API call."""
     from apps.agents.models import AgentAction
 
     AgentAction.objects.create(

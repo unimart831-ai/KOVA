@@ -193,7 +193,14 @@
         <svg class="mr-3 h-5 w-5 {% if '/dashboard/leads' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
         </svg>
-        Leads
+        REACH Leads
+      </a>
+      <a href="{% url 'admin_dashboard:leads_nurture' %}"
+         class="{% if request.resolver_match.url_name == 'leads_nurture' %}nav-link-active{% else %}nav-link{% endif %} ml-6">
+        <svg class="mr-3 h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Nurture
       </a>
 
       <a href="{% url 'admin_dashboard:bookings_overview' %}"
@@ -327,6 +334,13 @@
         </svg>
         WhatsApp
       </a>
+      <a href="{% url 'admin_dashboard:whatsapp_sequences' %}"
+         class="{% if request.resolver_match.url_name == 'whatsapp_sequences' %}nav-link-active{% else %}nav-link{% endif %} ml-6">
+        <svg class="mr-3 h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Sequences
+      </a>
 
       <p class="nav-section">Support</p>
       <a href="{% url 'admin_dashboard:blog_studio' %}"
@@ -390,6 +404,13 @@
         Partners
       </a>
 
+      <a href="{% url 'admin_dashboard:partners_webhook_logs' %}"
+         class="{% if request.resolver_match.url_name == 'partners_webhook_logs' %}nav-link-active{% else %}nav-link{% endif %} ml-6">
+        <svg class="mr-3 h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Webhook logs
+      </a>
       <a href="{% url 'admin_dashboard:marketplace_list' %}"
          class="{% if '/dashboard/partners/marketplaces' in request.path %}nav-link-active{% else %}nav-link{% endif %} ml-6">
         <svg class="mr-3 h-5 w-5 {% if '/dashboard/partners/marketplaces' in request.path %}text-purple-600 dark:text-purple-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
