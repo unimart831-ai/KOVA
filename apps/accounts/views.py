@@ -5,6 +5,9 @@ from django.http import JsonResponse
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from django_ratelimit.decorators import ratelimit
+
+from apps.accounts.facebook_oauth import start_facebook_platform_oauth
 
 from apps.accounts.forms import (
     UserSettingsForm,
@@ -1163,3 +1166,20 @@ def ai_learning_reset(request):
     else:
         messages.info(request, "Nothing to reset — no active Adapt mutations.")
     return redirect("accounts:ai_learning")
+
+
+@ratelimit(key="ip", rate="20/m", block=True)
+def facebook_signup_connect(request):
+    """
+    Start Facebook OAuth with full publishing scopes for new sign-ups.
+
+    Skips django-allauth's intermediate page; callback is /platforms/callback/facebook/.
+    """
+    return start_facebook_platform_oauth(request, mode="signup")
+
+
+@ratelimit(key="ip", rate="20/m", block=True)
+def facebook_login_connect(request):
+    """Start Facebook OAuth for returning users (platform scopes + auto-connect)."""
+    return start_facebook_platform_oauth(request, mode="login")
+

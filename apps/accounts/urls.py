@@ -23,4 +23,7 @@ urlpatterns = [
     path("api/profile-industry/", views.profile_industry_api, name="profile_industry_api"),
     path("api/ai-brand-builder/", views.ai_brand_builder, name="ai_brand_builder"),
     path("api/infer-from-url/", views.infer_brand_from_url, name="infer_brand_from_url"),
+    # Facebook signup/login — platform OAuth (full page + IG scopes), not allauth
+    path("facebook/signup/", views.facebook_signup_connect, name="facebook_signup_connect"),
+    path("facebook/login/", views.facebook_login_connect, name="facebook_login_connect"),
 ]

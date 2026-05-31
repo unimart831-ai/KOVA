@@ -9,6 +9,12 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 
+from apps.accounts.facebook_oauth import (
+    FacebookOAuthError,
+    login_user_from_facebook_oauth,
+    persist_facebook_platform_account,
+    resolve_user_from_facebook_result,
+)
 from apps.platforms.models import SocialAccount
 from apps.platforms.providers.registry import get_provider
 
@@ -261,30 +267,47 @@ def connect_platform(request, platform):
     return redirect(auth_url)
 
 
-@login_required
-@ratelimit(key="user", rate="10/m", block=True)
+@ratelimit(key="ip", rate="30/m", block=True)
 def oauth_callback(request, platform):
     """Handle OAuth callback from a platform."""
+    facebook_auth_mode = request.session.get("oauth_facebook_mode")
+    if not request.user.is_authenticated and not facebook_auth_mode:
+        return redirect("account_login")
+
     provider = get_provider(platform)
     if not provider:
         messages.error(request, "Invalid platform.")
-        return redirect("platforms:list")
+        return redirect("platforms:list" if request.user.is_authenticated else "account_login")
 
     # Verify state to prevent CSRF
     expected_state = request.session.pop(f"oauth_state_{platform}", None)
     received_state = request.GET.get("state", "")
     if not expected_state or expected_state != received_state:
         messages.error(request, "Invalid OAuth state. Please try again.")
+        if facebook_auth_mode == "signup":
+            return redirect("account_signup")
+        if facebook_auth_mode == "login":
+            return redirect("account_login")
         return redirect("platforms:list")
+
+    facebook_auth_mode = request.session.pop("oauth_facebook_mode", None)
 
     error = request.GET.get("error")
     if error:
         messages.error(request, f"Authorization denied: {request.GET.get('error_description', error)}")
+        if facebook_auth_mode == "signup":
+            return redirect("account_signup")
+        if facebook_auth_mode == "login":
+            return redirect("account_login")
         return redirect("platforms:list")
 
     code = request.GET.get("code", "")
     if not code:
         messages.error(request, "No authorization code received.")
+        if facebook_auth_mode == "signup":
+            return redirect("account_signup")
+        if facebook_auth_mode == "login":
+            return redirect("account_login")
         return redirect("platforms:list")
 
     redirect_uri = request.build_absolute_uri(
@@ -297,6 +320,47 @@ def oauth_callback(request, platform):
             redirect_uri=redirect_uri,
             code_verifier=request.session.pop(f"oauth_code_verifier_{platform}", ""),
         )
+
+        if facebook_auth_mode and platform == "facebook":
+            try:
+                user, _created = resolve_user_from_facebook_result(result, facebook_auth_mode)
+            except FacebookOAuthError as exc:
+                messages.error(request, str(exc))
+                return redirect("account_signup" if facebook_auth_mode == "signup" else "account_login")
+
+            login_user_from_facebook_oauth(request, user)
+            account, created = persist_facebook_platform_account(
+                user, result, auto_connected=True,
+            )
+            action = "connected" if created else "reconnected"
+            messages.success(
+                request,
+                f"Successfully {action} {account.get_platform_display()} — @{account.username}",
+            )
+
+            pages = result.metadata.get("pages", [])
+            if not pages:
+                messages.warning(
+                    request,
+                    "Facebook connected, but no Pages were found on your account. "
+                    "Kova publishes to Facebook Pages, not personal profiles. "
+                    "Make sure you are an admin of at least one Facebook Page, "
+                    "then reconnect and grant the 'Manage your Pages' permission."
+                )
+            elif len(pages) > 1:
+                page_names = ", ".join(p["name"] for p in pages[:3])
+                messages.info(
+                    request,
+                    f"Found {len(pages)} Facebook Pages ({page_names}). "
+                    f"Kova is publishing to '{pages[0]['name']}' by default. "
+                    "Contact support if you need to switch to a different Page."
+                )
+
+            if not user.onboarding_completed:
+                if not (getattr(user, "phone_number", "") or "").strip():
+                    return redirect("accounts:collect_phone")
+                return redirect("accounts:onboarding_choose_path")
+            return redirect("brief:home")
 
         # Create or update the SocialAccount
         # Determine account_type based on platform and metadata

@@ -282,9 +282,9 @@ class FacebookProvider(BaseProvider):
             long_data = long_resp.json()
             access_token = long_data.get("access_token", short_token)
 
-            # 3. Get user profile
+            # 3. Get user profile (email used for signup/login account linking)
             me = client.get(f"{FB_API_BASE}/me", params={
-                "fields": "id,name,picture",
+                "fields": "id,name,email,picture",
                 "access_token": access_token,
             })
             me.raise_for_status()
@@ -326,6 +326,7 @@ class FacebookProvider(BaseProvider):
             token_expires_at=expires_at,
             token_scope=FB_SCOPES,
             metadata={
+                "email": user.get("email", ""),
                 "pages": page_list,
                 # selected_page_id: which Page Kova publishes to.
                 # Defaults to the first page. Users can change it via Settings → Platforms.

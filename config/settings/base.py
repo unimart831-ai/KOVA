@@ -465,6 +465,11 @@ if GOOGLE_OAUTH_ENABLED:
 
 # Facebook Login — dual purpose: user identity + publishing auto-connect.
 # Uses the same FACEBOOK_APP_ID/SECRET as the platform provider.
+#
+# Meta App Dashboard → Facebook Login for Business → Settings → Valid OAuth Redirect URIs:
+#   {SITE_URL}/platforms/callback/facebook/   — signup, login, and platform connect (primary)
+#   {SITE_URL}/platforms/callback/instagram/  — Instagram connect
+#   {SITE_URL}/accounts/facebook/login/callback/ — legacy django-allauth (optional)
 FACEBOOK_OAUTH_ENABLED = bool(FACEBOOK_APP_ID and FACEBOOK_APP_SECRET)
 if FACEBOOK_OAUTH_ENABLED:
     SOCIALACCOUNT_PROVIDERS["facebook"] = {

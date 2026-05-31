@@ -215,21 +215,31 @@ Embedded Signup is only shown in the UI when **all three** are set: `FACEBOOK_AP
 
 ### Step 3.5 — OAuth redirect URIs
 
-Add **exact** URIs (trailing slash matters). Kova builds callbacks dynamically; register both production and local dev:
+Add **exact** URIs (trailing slash matters). Kova builds callbacks dynamically; register both production and local dev.
 
-| Platform | Redirect URI |
-|----------|-------------|
-| Facebook | `{SITE_URL}/platforms/facebook/callback/` |
-| Instagram | `{SITE_URL}/platforms/instagram/callback/` |
-| Facebook sign-up (allauth) | `{SITE_URL}/accounts/facebook/login/callback/` |
+| Flow | Redirect URI |
+|------|-------------|
+| Facebook signup / login / platform connect | `{SITE_URL}/platforms/callback/facebook/` |
+| Instagram platform connect | `{SITE_URL}/platforms/callback/instagram/` |
+| Legacy django-allauth Facebook (optional) | `{SITE_URL}/accounts/facebook/login/callback/` |
+
+**Production example** (`SITE_URL=https://kovaagents-production.up.railway.app`):
+
+```
+https://kovaagents-production.up.railway.app/platforms/callback/facebook/
+https://kovaagents-production.up.railway.app/platforms/callback/instagram/
+https://kovaagents-production.up.railway.app/accounts/facebook/login/callback/
+```
 
 **Local development:**
 
 ```
-http://localhost:8000/platforms/facebook/callback/
-http://localhost:8000/platforms/instagram/callback/
+http://localhost:8000/platforms/callback/facebook/
+http://localhost:8000/platforms/callback/instagram/
 http://localhost:8000/accounts/facebook/login/callback/
 ```
+
+> **Signup UX:** The signup page **Continue with Facebook** button uses platform OAuth (`/accounts/facebook/signup/` → `/platforms/callback/facebook/`), not the allauth intermediate page. Whitelist `/platforms/callback/facebook/` first — that fixes the Meta **URL Blocked** error on registration.
 
 Configure under **Facebook Login for Business → Settings** (or **Facebook Login → Settings** for legacy).
 
@@ -480,7 +490,7 @@ pages_manage_engagement, pages_messaging, read_insights
 ### Step 5.2 — OAuth redirect
 
 ```
-{SITE_URL}/platforms/facebook/callback/
+{SITE_URL}/platforms/callback/facebook/
 ```
 
 ### Step 5.3 — Page requirements
@@ -526,7 +536,7 @@ instagram_manage_comments, instagram_manage_messages
 ### Step 6.2 — OAuth redirect
 
 ```
-{SITE_URL}/platforms/instagram/callback/
+{SITE_URL}/platforms/callback/instagram/
 ```
 
 Uses same `FB_LOGIN_CONFIG_ID` / scopes as Facebook.
@@ -744,8 +754,8 @@ Twitter, YouTube, Threads show as **Coming soon** (providers exist; OAuth apps p
 
 | Platform | Connect URL | Callback / endpoint |
 |----------|------------|---------------------|
-| Facebook | `/platforms/connect/facebook/` | `/platforms/facebook/callback/` |
-| Instagram | `/platforms/connect/instagram/` | `/platforms/instagram/callback/` |
+| Facebook | `/platforms/connect/facebook/` | `/platforms/callback/facebook/` |
+| Instagram | `/platforms/connect/instagram/` | `/platforms/callback/instagram/` |
 | TikTok | `/platforms/connect/tiktok/` | `/platforms/tiktok/callback/` |
 | LinkedIn (personal) | `/platforms/connect/linkedin/` | `/platforms/linkedin/callback/` |
 | LinkedIn (Company Page) | `/platforms/linkedin/connect-page/` | → callback → `/platforms/linkedin/select-page/` |
@@ -960,8 +970,8 @@ Replace `{SITE_URL}` with your deployment URL.
 |------|------|--------|
 | `/platforms/` | Platform list | GET |
 | `/platforms/connect/<platform>/` | Start OAuth / WhatsApp connect | GET/POST |
-| `/platforms/facebook/callback/` | Facebook OAuth callback | GET |
-| `/platforms/instagram/callback/` | Instagram OAuth callback | GET |
+| `/platforms/callback/facebook/` | Facebook OAuth callback (signup, login, connect) | GET |
+| `/platforms/callback/instagram/` | Instagram OAuth callback | GET |
 | `/platforms/tiktok/callback/` | TikTok OAuth callback | GET |
 | `/platforms/linkedin/callback/` | LinkedIn OAuth callback | GET |
 | `/platforms/whatsapp/embedded-callback/` | WhatsApp Embedded Signup | POST |
@@ -981,11 +991,14 @@ Valid `<platform>` values for connect: `facebook`, `instagram`, `tiktok`, `linke
 | `/whatsapp/broadcasts/` | Broadcast campaigns |
 | `/dashboard/whatsapp/` | Admin WhatsApp overview |
 
-### Social sign-up (optional)
+### Social sign-up
 
 | Path | Purpose |
 |------|---------|
-| `/accounts/facebook/login/callback/` | allauth Facebook sign-up |
+| `/accounts/facebook/signup/` | Facebook signup — starts platform OAuth (full page + IG scopes) |
+| `/accounts/facebook/login/` | Facebook login — same OAuth flow for returning users |
+| `/platforms/callback/facebook/` | Facebook OAuth callback (signup, login, and platform connect) |
+| `/accounts/facebook/login/callback/` | Legacy allauth Facebook (optional) |
 | `/accounts/google/login/callback/` | allauth Google sign-up |
 
 ### Legal (required by Meta/TikTok/LinkedIn review)
