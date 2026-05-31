@@ -7,6 +7,7 @@ app_name = "billing"
 urlpatterns = [
     path("", views.billing_overview, name="overview"),
     path("pricing/", views.pricing, name="pricing"),
+    path("contact-sales/", views.contact_sales, name="contact_sales"),
     # Stripe (kept for future international billing)
     path("checkout/", views.checkout, name="checkout"),
     path("checkout/success/", views.checkout_success, name="checkout_success"),

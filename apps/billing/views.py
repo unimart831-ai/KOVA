@@ -14,6 +14,7 @@ from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 
 from apps.billing.access import can_start_free_trial
+from apps.billing.forms import AgencySalesInquiryForm
 from apps.billing.models import (
     PLAN_LIMITS,
     PUBLIC_PLAN_TIERS,
@@ -95,6 +96,41 @@ def pricing(request):
         "is_kazi_trial": is_active_trial(request.user.profile),
         "trial_days": get_plan_limits("starter")["trial_days"],
         "stripe_checkout_available": bool(getattr(settings, "STRIPE_SECRET_KEY", "")),
+    })
+
+
+@ratelimit(key="ip", rate="5/m", method="POST", block=True)
+def contact_sales(request):
+    """Agency / Wakala contact sales intake — logged-in or anonymous."""
+    initial = {}
+    user = request.user if request.user.is_authenticated else None
+    if user:
+        initial["email"] = user.email
+        initial["name"] = user.full_name or user.get_full_name() or ""
+
+    if request.method == "POST":
+        form = AgencySalesInquiryForm(request.POST)
+        if form.is_valid():
+            inquiry = form.save(commit=False)
+            inquiry.user = user
+            inquiry.save()
+            from apps.billing.sales_inquiry import notify_staff_new_inquiry
+
+            notify_staff_new_inquiry(inquiry)
+            return render(request, "billing/contact_sales.html", {
+                "page_title": "Contact Sales",
+                "form": AgencySalesInquiryForm(initial=initial),
+                "submitted": True,
+                "agency_plan": get_plan_limits("agency"),
+            })
+    else:
+        form = AgencySalesInquiryForm(initial=initial)
+
+    return render(request, "billing/contact_sales.html", {
+        "page_title": "Contact Sales — Agency / Wakala",
+        "form": form,
+        "submitted": False,
+        "agency_plan": get_plan_limits("agency"),
     })
 
 

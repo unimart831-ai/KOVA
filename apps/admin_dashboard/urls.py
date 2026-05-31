@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, bookings, calendar_intel, campaigns, content, costs, emails, engage, feature_usage, help, innovations, leads, llm, logs, media_queue, memes, notifications, onboarding, operations, overview, partners, partials, photoroom, pixel, platforms, products, profile_audit, qr, reel_music, revenue, reviews, seed_quota, system, system_maps, teams, user_health, users, whatsapp
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, bookings, calendar_intel, campaigns, content, costs, emails, engage, feature_usage, help, innovations, leads, llm, logs, media_queue, memes, notifications, onboarding, operations, overview, partners, partials, photoroom, pixel, platforms, products, profile_audit, qr, reel_music, revenue, reviews, sales_inquiries, seed_quota, system, system_maps, teams, user_health, users, whatsapp
 
 app_name = "admin_dashboard"
 
@@ -91,6 +91,8 @@ urlpatterns = [
     path("billing/discounts/create/", billing.discount_create, name="discount_create"),
     path("billing/discounts/<uuid:pk>/edit/", billing.discount_edit, name="discount_edit"),
     path("billing/discounts/<uuid:pk>/toggle/", billing.discount_toggle, name="discount_toggle"),
+    path("billing/sales-inquiries/", sales_inquiries.sales_inquiry_list, name="sales_inquiry_list"),
+    path("billing/sales-inquiries/<uuid:pk>/", sales_inquiries.sales_inquiry_detail, name="sales_inquiry_detail"),
 
     # Cost Economics
     path("costs/", costs.cost_overview, name="cost_overview"),

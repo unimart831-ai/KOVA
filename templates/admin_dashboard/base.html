@@ -387,6 +387,10 @@
          class="{% if '/dashboard/billing/pricing' in request.path %}nav-link-active{% else %}nav-link{% endif %} ml-6">
         Plan Pricing
       </a>
+      <a href="{% url 'admin_dashboard:sales_inquiry_list' %}"
+         class="{% if '/dashboard/billing/sales-inquiries' in request.path %}nav-link-active{% else %}nav-link{% endif %} ml-6">
+        Agency Sales
+      </a>
 
       <a href="{% url 'admin_dashboard:cost_overview' %}"
          class="{% if '/dashboard/costs' in request.path %}nav-link-active{% else %}nav-link{% endif %}">

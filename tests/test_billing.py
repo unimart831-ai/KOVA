@@ -3,10 +3,12 @@ Tests for billing models, access helpers, and plan enforcement.
 """
 
 import pytest
+from django.core import mail
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import User, UserProfile
-from apps.billing.models import BillingEvent, MpesaPayment, PLAN_LIMITS
+from apps.billing.models import AgencySalesInquiry, BillingEvent, MpesaPayment, PLAN_LIMITS
 
 
 @pytest.mark.django_db
@@ -180,3 +182,54 @@ class TestEnforcement:
         config.save()
 
         assert get_daily_llm_token_cap("starter") == 12345
+
+
+@pytest.mark.django_db
+class TestAgencySalesInquiry:
+    def test_contact_sales_submit_anonymous(self, client):
+        url = reverse("billing:contact_sales")
+        resp = client.post(url, {
+            "name": "Jane Agency",
+            "email": "jane@agency.co.ke",
+            "phone": "0712345678",
+            "company_name": "Jane Digital",
+            "message": "We manage 15 SMB clients.",
+            "client_count": 15,
+            "plan_interest": "agency",
+        })
+        assert resp.status_code == 200
+        assert AgencySalesInquiry.objects.filter(email="jane@agency.co.ke").exists()
+        assert b"Thank you" in resp.content
+
+    def test_contact_sales_prefill_logged_in(self, client, user):
+        user.full_name = "Alex Wakala"
+        user.save(update_fields=["full_name"])
+        client.force_login(user)
+        resp = client.get(reverse("billing:contact_sales"))
+        assert resp.status_code == 200
+        assert b"Alex Wakala" in resp.content
+        assert user.email.encode() in resp.content
+
+    def test_staff_list_requires_staff(self, client, user, staff_user):
+        inquiry = AgencySalesInquiry.objects.create(
+            name="Test",
+            email="test@agency.com",
+            message="Hello",
+        )
+        resp = client.get(reverse("admin_dashboard:sales_inquiry_list"))
+        assert resp.status_code == 302
+
+        client.force_login(staff_user)
+        resp = client.get(reverse("admin_dashboard:sales_inquiry_list"))
+        assert resp.status_code == 200
+        assert inquiry.email.encode() in resp.content
+
+    def test_notify_staff_on_submit(self, client, superuser, settings):
+        settings.DEFAULT_FROM_EMAIL = "Kova <noreply@test.local>"
+        client.post(reverse("billing:contact_sales"), {
+            "name": "Notify Test",
+            "email": "notify@test.local",
+            "message": "Please call back.",
+        })
+        assert len(mail.outbox) >= 1
+        assert "Agency sales" in mail.outbox[0].subject

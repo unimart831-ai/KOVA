@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from apps.billing.models import (
+    AgencySalesInquiry,
     BillingEvent,
     DiscountCode,
     DiscountRedemption,
@@ -8,6 +9,15 @@ from apps.billing.models import (
     PlanPrice,
     SubscriptionOverride,
 )
+
+
+@admin.register(AgencySalesInquiry)
+class AgencySalesInquiryAdmin(admin.ModelAdmin):
+    list_display = ["name", "email", "company_name", "status", "client_count", "created_at"]
+    list_filter = ["status", "plan_interest", "created_at"]
+    search_fields = ["name", "email", "company_name", "phone", "message"]
+    readonly_fields = ["id", "user", "created_at", "updated_at", "contacted_at", "closed_at"]
+    ordering = ["-created_at"]
 
 
 @admin.register(BillingEvent)

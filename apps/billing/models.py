@@ -658,3 +658,48 @@ class DiscountRedemption(models.Model):
 
     def __str__(self):
         return f"{self.user} used {self.discount_code.code} — saved {self.currency} {self.amount_saved}"
+
+
+class AgencySalesInquiry(models.Model):
+    """Agency / Wakala tier intake — submitted via Contact sales on pricing."""
+
+    class Status(models.TextChoices):
+        NEW = "new", "New"
+        CONTACTED = "contacted", "Contacted"
+        CLOSED = "closed", "Closed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="agency_sales_inquiries",
+    )
+    name = models.CharField(max_length=200)
+    email = models.EmailField(db_index=True)
+    phone = models.CharField(max_length=30, blank=True)
+    company_name = models.CharField(max_length=255, blank=True)
+    message = models.TextField()
+    client_count = models.PositiveIntegerField(null=True, blank=True)
+    plan_interest = models.CharField(max_length=30, blank=True)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.NEW,
+        db_index=True,
+    )
+    staff_notes = models.TextField(blank=True)
+    contacted_at = models.DateTimeField(null=True, blank=True)
+    closed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "agency sales inquiry"
+        verbose_name_plural = "agency sales inquiries"
+
+    def __str__(self):
+        label = self.company_name or self.name
+        return f"{label} <{self.email}> ({self.get_status_display()})"
