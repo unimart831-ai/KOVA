@@ -191,6 +191,16 @@ class WalkInEvent(models.Model):
     currency = models.CharField(max_length=5, default="KES")
     notes = models.TextField(blank=True)
 
+    # Optional contact capture for lead bridge (cashier UI)
+    customer_phone = models.CharField(
+        max_length=20, blank=True, db_index=True,
+        help_text="Optional phone — creates a Lead when set.",
+    )
+    customer_name = models.CharField(
+        max_length=200, blank=True,
+        help_text="Optional name captured at cashier.",
+    )
+
     # When + by whom
     recorded_at = models.DateTimeField(auto_now_add=True, db_index=True)
 

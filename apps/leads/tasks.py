@@ -59,8 +59,11 @@ def process_nurture_steps():
                 continue
 
             # Execute the step action
-            if step.action_type == NurtureStep.ActionType.SEND_EMAIL:
-                _send_nurture_email(lead, step)
+            if step.action_type in (
+                NurtureStep.ActionType.SEND_EMAIL,
+                NurtureStep.ActionType.SEND_WHATSAPP,
+            ):
+                _execute_nurture_message_step(lead, step)
             elif step.action_type == NurtureStep.ActionType.ADD_TAG:
                 if step.tag_value and step.tag_value not in lead.tags:
                     lead.tags.append(step.tag_value)
@@ -108,44 +111,32 @@ def process_nurture_steps():
     return {"processed": processed, "completed": completed}
 
 
-def _send_nurture_email(lead, step):
-    """Send a nurture follow-up email to a lead. AI-generates content if empty."""
-    from apps.emails.services import email_service
-    from apps.leads.models import LeadActivity
+def _execute_nurture_message_step(lead, step):
+    """Route nurture content via WhatsApp or email (channel-aware)."""
+    from apps.leads.models import NurtureStep
+    from apps.leads.nurture_router import NurtureChannel, route_nurture_step
 
-    if not lead.email:
-        return
-
-    # Get business name from user profile
     profile = getattr(lead.user, "profile", None)
     business_name = getattr(profile, "company_name", "") if profile else ""
 
     subject = step.email_subject
     body = step.email_body
 
-    # AI-generate email content if the user left subject/body empty
     if not subject or not body:
         ai_subject, ai_body = _ai_generate_nurture_email(lead, step, business_name)
         subject = subject or ai_subject
         body = body or ai_body
 
-    email_service._send(
-        email_type="lead_nurture",
-        to_email=lead.email,
-        context={
-            "lead_name": lead.name or lead.email.split("@")[0],
-            "business_name": business_name,
-            "email_body": body,
-        },
-        user=lead.user,
-        subject=subject or "Following up",
-    )
+    preferred = None
+    if step.action_type == NurtureStep.ActionType.SEND_WHATSAPP:
+        preferred = NurtureChannel.WHATSAPP
 
-    LeadActivity.objects.create(
-        lead=lead,
-        activity_type=LeadActivity.ActivityType.EMAIL_SENT,
-        description=f"Nurture email: {subject or 'Follow-up'}",
-    )
+    route_nurture_step(lead, body, subject=subject or "Following up", preferred_channel=preferred)
+
+
+def _send_nurture_email(lead, step):
+    """Legacy direct email send — kept for tests/callers."""
+    _execute_nurture_message_step(lead, step)
 
 
 def _ai_generate_nurture_email(lead, step, business_name):
@@ -202,10 +193,11 @@ def _ai_generate_nurture_email(lead, step, business_name):
 @shared_task(name="leads.score_all_leads")
 def score_all_leads():
     """
-    Daily task: re-compute priority for all active leads.
+    Daily task: composite score → priority/temperature for active leads.
     Enrolls newly-qualified HIGH_PRIORITY leads into matching sequences.
     """
     from apps.leads.models import Lead
+    from apps.leads.scoring import score_and_update_lead
 
     active_leads = Lead.objects.exclude(
         status__in=[Lead.Status.CONVERTED, Lead.Status.LOST]
@@ -216,18 +208,43 @@ def score_all_leads():
 
     for lead in active_leads.iterator():
         old_priority = lead.priority
-        lead.compute_priority()
+        score_and_update_lead(lead)
         if lead.priority != old_priority:
-            lead.save(update_fields=["priority"])
             rescored += 1
-
-            # If priority upgraded to HIGH, check for HIGH_PRIORITY sequences
             if lead.priority == Lead.Priority.HIGH and old_priority != Lead.Priority.HIGH:
                 enroll_lead_in_sequences(lead)
                 upgraded += 1
 
     logger.info("Lead scoring: %d rescored, %d upgraded to high", rescored, upgraded)
     return {"rescored": rescored, "upgraded_to_high": upgraded}
+
+
+@shared_task(name="leads.reengage_stale_leads")
+def reengage_stale_leads():
+    """
+    Daily: leads inactive 7+ days get priority bump + stale win-back enrollment.
+    """
+    from apps.leads.models import Lead
+
+    cutoff = timezone.now() - timedelta(days=7)
+    stale = Lead.objects.exclude(
+        status__in=[Lead.Status.CONVERTED, Lead.Status.LOST],
+    ).filter(last_activity_at__lt=cutoff)
+
+    bumped = 0
+    enrolled = 0
+
+    for lead in stale.iterator():
+        if lead.priority == Lead.Priority.LOW:
+            lead.priority = Lead.Priority.MEDIUM
+            lead.save(update_fields=["priority"])
+            bumped += 1
+
+        if enroll_stale_lead_in_winback(lead):
+            enrolled += 1
+
+    logger.info("Stale lead re-engagement: %d bumped, %d enrolled", bumped, enrolled)
+    return {"bumped": bumped, "enrolled": enrolled}
 
 
 def enroll_lead_in_sequences(lead):
@@ -271,8 +288,17 @@ def enroll_lead_in_sequences(lead):
         elif seq.trigger == NurtureSequence.Trigger.FROM_BOOKING:
             if lead.source_type != "booking":
                 continue
-        elif seq.trigger == NurtureSequence.Trigger.MANUAL:
-            continue  # manual sequences are not auto-enrolled
+        elif seq.trigger == NurtureSequence.Trigger.FROM_WALK_IN:
+            if lead.source_type != "walk_in":
+                continue
+        elif seq.trigger == NurtureSequence.Trigger.FROM_QR_SCAN:
+            if lead.source_type != "qr_scan":
+                continue
+        elif seq.trigger in (
+            NurtureSequence.Trigger.MANUAL,
+            NurtureSequence.Trigger.STALE_WINBACK,
+        ):
+            continue
         else:
             continue
 
@@ -293,3 +319,36 @@ def enroll_lead_in_sequences(lead):
         )
 
         logger.info("Lead %s enrolled in nurture '%s'", lead.email, seq.name)
+
+
+def enroll_stale_lead_in_winback(lead) -> bool:
+    """Enroll a stale lead into active STALE_WINBACK sequences (once per sequence)."""
+    from apps.leads.models import LeadEnrollment, NurtureSequence, NurtureStep
+
+    sequences = NurtureSequence.objects.filter(
+        user=lead.user,
+        is_active=True,
+        trigger=NurtureSequence.Trigger.STALE_WINBACK,
+    )
+    if not sequences.exists():
+        return False
+
+    now = timezone.now()
+    enrolled_any = False
+
+    for seq in sequences:
+        if LeadEnrollment.objects.filter(lead=lead, sequence=seq).exists():
+            continue
+        first_step = NurtureStep.objects.filter(sequence=seq, order=0).first()
+        if not first_step:
+            continue
+        LeadEnrollment.objects.create(
+            lead=lead,
+            sequence=seq,
+            current_step=0,
+            next_step_at=now + timedelta(hours=first_step.delay_hours),
+        )
+        enrolled_any = True
+        logger.info("Stale lead %s enrolled in win-back '%s'", lead.email, seq.name)
+
+    return enrolled_any

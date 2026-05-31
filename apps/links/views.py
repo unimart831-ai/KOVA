@@ -311,19 +311,9 @@ def form_delete(request, page_id, form_id):
 
 @login_required
 def submissions_list(request):
-    """View all form submissions across all pages."""
-    submissions = (
-        FormSubmission.objects
-        .filter(form__page__user=request.user)
-        .select_related("form", "form__page")
-        .order_by("-submitted_at")
-    )
-    unread_count = submissions.filter(is_read=False).count()
-    return render(request, "links/submissions_list.html", {
-        "page_title": "Form Submissions",
-        "submissions": submissions[:50],
-        "unread_count": unread_count,
-    })
+    """Redirect legacy submissions URL to the unified lead inbox."""
+    from django.shortcuts import redirect
+    return redirect("/leads/?source=form_submission")
 
 
 @login_required
@@ -338,7 +328,7 @@ def submission_mark_read(request, submission_id):
 
     if request.htmx:
         return render(request, "links/partials/submission_row.html", {"sub": submission})
-    return redirect("links:submissions")
+    return redirect("/leads/?source=form_submission")
 
 
 # ─── Public pages (no auth) ─────────────────────────────────────────────────

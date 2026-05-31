@@ -6,3 +6,6 @@ class QRAttributionConfig(AppConfig):
     name = "apps.qr_attribution"
     label = "qr_attribution"
     verbose_name = "QR / Walk-in Attribution"
+
+    def ready(self):
+        import apps.qr_attribution.signals  # noqa: F401

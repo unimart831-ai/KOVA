@@ -329,6 +329,15 @@ def mpesa_commerce_callback(request):
         except Exception:
             logger.exception("Failed to create lead from commerce payment %s", commerce_payment.pk)
 
+        if phone:
+            try:
+                from apps.whatsapp.services import send_commerce_payment_receipt
+                send_commerce_payment_receipt(
+                    commerce_payment, phone=phone, receipt=receipt, amount=amount,
+                )
+            except Exception:
+                logger.exception("WhatsApp commerce receipt failed for %s", checkout_id)
+
         logger.info(
             "M-Pesa commerce payment tracked: %s KES %s product=%s",
             receipt, amount, commerce_payment.product_id,

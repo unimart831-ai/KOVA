@@ -79,6 +79,7 @@ app.conf.task_routes = {
     # Lead nurture + scoring + monthly reports
     "leads.process_nurture_steps": {"queue": "default"},
     "leads.score_all_leads": {"queue": "low"},
+    "leads.reengage_stale_leads": {"queue": "low"},
     "emails.send_monthly_reports_all": {"queue": "low"},
     # Calendar Intelligence — holiday awareness
     "calendar_intel.run_holiday_watcher": {"queue": "low"},

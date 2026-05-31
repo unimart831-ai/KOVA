@@ -184,13 +184,15 @@ def create_lead_from_walkin(walkin_event):
 
     user = walkin_event.user
 
-    customer_phone = getattr(walkin_event, "customer_phone", "") or ""
-    customer_name = getattr(walkin_event, "customer_name", "") or ""
+    customer_phone = (walkin_event.customer_phone or "").strip()
+    customer_name = (walkin_event.customer_name or "").strip()
 
     if not customer_phone:
         return None
 
-    email = f"walkin_{customer_phone}@kova.page"
+    # Normalize phone for stable lead key
+    phone_key = "".join(c for c in customer_phone if c.isdigit())[-12:] or customer_phone
+    email = f"walkin_{phone_key}@kova.page"
 
     allowed, _msg = check_leads_limit(user, creating=True)
     if not allowed:
@@ -203,27 +205,36 @@ def create_lead_from_walkin(walkin_event):
             "name": customer_name,
             "phone": customer_phone,
             "source_type": Lead.Source.WALK_IN,
-            "source_platform": (
-                walkin_event.attribution_source
-                if hasattr(walkin_event, "attribution_source")
-                else "walk_in"
-            ),
+            "source_platform": walkin_event.attribution_source,
             "temperature": Lead.Temperature.WARM,
             "metadata": {
-                "attribution": getattr(walkin_event, "attribution_source", ""),
-                "revenue": str(getattr(walkin_event, "revenue", 0) or 0),
+                "attribution": walkin_event.attribution_source,
+                "revenue": str(walkin_event.revenue or 0),
+                "walkin_id": str(walkin_event.pk),
             },
         },
     )
 
+    if not created:
+        updates = []
+        if customer_name and not lead.name:
+            lead.name = customer_name
+            updates.append("name")
+        if customer_phone and not lead.phone:
+            lead.phone = customer_phone
+            updates.append("phone")
+        if updates:
+            updates.append("last_activity_at")
+            lead.save(update_fields=updates)
+
     LeadActivity.objects.create(
         lead=lead,
         activity_type=LeadActivity.ActivityType.WALK_IN,
-        description=f"Walk-in visit (attributed: {getattr(walkin_event, 'get_attribution_source_display', lambda: 'unknown')()})",
+        description=f"Walk-in visit (attributed: {walkin_event.get_attribution_source_display()})",
         metadata={
             "walkin_id": str(walkin_event.pk),
-            "attribution": getattr(walkin_event, "attribution_source", ""),
-            "revenue": str(getattr(walkin_event, "revenue", 0) or 0),
+            "attribution": walkin_event.attribution_source,
+            "revenue": str(walkin_event.revenue or 0),
         },
     )
 

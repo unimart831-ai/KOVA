@@ -352,6 +352,8 @@ def cashier_record(request, slug):
         source = WalkInEvent.AttributionSource.OTHER
 
     label = (request.POST.get("label") or "").strip()[:80]
+    customer_name = (request.POST.get("customer_name") or "").strip()[:200]
+    customer_phone = (request.POST.get("customer_phone") or "").strip()[:20]
     revenue_raw = (request.POST.get("revenue") or "").strip()
     try:
         revenue = float(revenue_raw) if revenue_raw else None
@@ -383,6 +385,8 @@ def cashier_record(request, slug):
         qr_code=qr_code,
         attribution_source=source,
         attribution_label=label,
+        customer_name=customer_name,
+        customer_phone=customer_phone,
         revenue=revenue,
     )
 

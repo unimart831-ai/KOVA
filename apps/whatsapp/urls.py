@@ -17,6 +17,8 @@ urlpatterns = [
     # ── Templates (Sprint 5A) ────────────────────────────────────────────
     path("templates/", views.template_list, name="template_list"),
     path("templates/create/", views.template_create, name="template_create"),
+    path("templates/sync/", views.template_sync, name="template_sync"),
+    path("templates/<uuid:pk>/submit/", views.template_submit, name="template_submit"),
 
     # ── Status Content Studio (Sprint 5C) ────────────────────────────────
     path("status/", views.status_studio, name="status_studio"),

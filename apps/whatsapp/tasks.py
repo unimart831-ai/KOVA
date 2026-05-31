@@ -26,10 +26,7 @@ from apps.agents.llm import coerce_llm_dict, generate, get_model_for_task, parse
 logger = logging.getLogger(__name__)
 
 
-# ─── Confidence thresholds ───────────────────────────────────────────────────
-HIGH_CONFIDENCE = 0.8   # Auto-send immediately
-MEDIUM_CONFIDENCE = 0.5  # Draft + flag for human review
-# Below MEDIUM_CONFIDENCE = escalate to human
+# Legacy thresholds — routing now uses engage_routing.route_reply + UserProfile.engage_autonomy_level
 
 
 @shared_task(name="whatsapp.handle_incoming_message", bind=True, max_retries=2)
@@ -40,8 +37,9 @@ def handle_incoming_message(self, message_id: str):
     Called async by the webhook after saving the inbound message.
     This is the core AI auto-reply pipeline.
     """
+    from apps.agents.engage_routing import RoutingAction, SafetyContext, route_reply, safety_check
     from apps.whatsapp.models import WhatsAppConversation, WhatsAppMessage
-    from apps.platforms.providers.registry import get_provider
+    from apps.whatsapp.services import send_text_message
 
     try:
         message = WhatsAppMessage.objects.select_related(
@@ -125,57 +123,65 @@ def handle_incoming_message(self, message_id: str):
         logger.info("AI chose not to reply to message %s (action=%s)", message_id, suggested_action)
         return
 
-    # Route based on confidence
-    if suggested_action == "escalate" or confidence < MEDIUM_CONFIDENCE:
-        # LOW confidence: escalate to human
+    autonomy = getattr(profile, "engage_autonomy_level", "suggest") or "suggest"
+    flags = safety_check(SafetyContext(
+        reply_text=reply_text,
+        contact_language=conversation.language or "",
+        is_first_message_in_conversation=len(recent_messages) <= 1,
+    ))
+    routing = route_reply(
+        autonomy_level=autonomy,
+        confidence=confidence,
+        safety_flags=flags,
+        suggested_action=suggested_action,
+    )
+
+    if routing == RoutingAction.SKIP:
+        logger.info("WhatsApp AI skipped reply for message %s", message_id)
+        return
+
+    if routing == RoutingAction.ESCALATE:
         _escalate_conversation(conversation, message, reply_text, confidence, reasoning)
         return
 
-    # Create the outbound message record
-    outbound = WhatsAppMessage.objects.create(
-        conversation=conversation,
-        direction=WhatsAppMessage.Direction.OUTBOUND,
-        message_type=WhatsAppMessage.MessageType.TEXT,
-        content=reply_text,
-        is_ai_generated=True,
-        confidence_score=confidence,
-        status=WhatsAppMessage.MessageStatus.PENDING,
-    )
-
-    if confidence >= HIGH_CONFIDENCE:
-        # HIGH confidence: auto-send immediately
-        provider = get_provider("whatsapp")
-        if not provider:
-            logger.error("WhatsApp provider not available")
-            return
-
-        result = provider.send_text_message(
-            access_token=social_account.access_token,
-            to=conversation.contact_wa_id,
-            body=reply_text,
-        )
-
-        if result.get("success"):
-            outbound.wamid = result.get("wamid", "")
-            outbound.status = WhatsAppMessage.MessageStatus.SENT
-            outbound.save(update_fields=["wamid", "status"])
-            # Update conversation
-            conversation.last_message_at = timezone.now()
-            conversation.save(update_fields=["last_message_at", "updated_at"])
-            logger.info(
-                "WhatsApp AI auto-reply sent (confidence=%.2f) to %s",
-                confidence, conversation.contact_wa_id,
+    if routing == RoutingAction.AUTO_SEND:
+        try:
+            send_text_message(
+                to=conversation.contact_wa_id,
+                body=reply_text,
+                social_account=social_account,
+                is_ai_generated=True,
+                confidence_score=confidence,
             )
-        else:
-            outbound.status = WhatsAppMessage.MessageStatus.FAILED
-            outbound.error_message = result.get("error", "Unknown error")
-            outbound.save(update_fields=["status", "error_message"])
-            logger.error("WhatsApp AI reply send failed: %s", result.get("error"))
+            logger.info(
+                "WhatsApp AI auto-reply sent (confidence=%.2f, autonomy=%s) to %s",
+                confidence, autonomy, conversation.contact_wa_id,
+            )
+        except Exception as e:
+            WhatsAppMessage.objects.create(
+                conversation=conversation,
+                direction=WhatsAppMessage.Direction.OUTBOUND,
+                message_type=WhatsAppMessage.MessageType.TEXT,
+                content=reply_text,
+                is_ai_generated=True,
+                confidence_score=confidence,
+                status=WhatsAppMessage.MessageStatus.FAILED,
+                error_message=str(e)[:500],
+            )
+            logger.error("WhatsApp AI reply send failed: %s", e)
     else:
-        # MEDIUM confidence: save as draft for human review
+        WhatsAppMessage.objects.create(
+            conversation=conversation,
+            direction=WhatsAppMessage.Direction.OUTBOUND,
+            message_type=WhatsAppMessage.MessageType.TEXT,
+            content=reply_text,
+            is_ai_generated=True,
+            confidence_score=confidence,
+            status=WhatsAppMessage.MessageStatus.PENDING,
+        )
         logger.info(
-            "WhatsApp AI draft saved (confidence=%.2f) for review — conversation %s",
-            confidence, conversation.id,
+            "WhatsApp AI draft saved (confidence=%.2f, autonomy=%s) — conversation %s",
+            confidence, autonomy, conversation.id,
         )
 
 
@@ -593,8 +599,8 @@ def execute_broadcast(self, broadcast_id: str):
 
     Supports per-contact timing optimization if enabled.
     """
-    from apps.whatsapp.models import WhatsAppBroadcast, WhatsAppMessage
-    from apps.platforms.providers.registry import get_provider
+    from apps.whatsapp.models import WhatsAppBroadcast
+    from apps.whatsapp.services import send_template_message, variables_to_components
 
     try:
         broadcast = WhatsAppBroadcast.objects.select_related(
@@ -611,13 +617,6 @@ def execute_broadcast(self, broadcast_id: str):
     broadcast.status = WhatsAppBroadcast.BroadcastStatus.SENDING
     broadcast.save(update_fields=["status", "updated_at"])
 
-    provider = get_provider("whatsapp")
-    if not provider:
-        broadcast.status = WhatsAppBroadcast.BroadcastStatus.PAUSED
-        broadcast.save(update_fields=["status", "updated_at"])
-        logger.error("WhatsApp provider not available for broadcast %s", broadcast_id)
-        return
-
     template = broadcast.template
     if not template:
         logger.error("Broadcast %s has no template", broadcast_id)
@@ -625,37 +624,25 @@ def execute_broadcast(self, broadcast_id: str):
 
     sent = 0
     failed = 0
+    components = variables_to_components(broadcast.template_variables)
 
     for phone in broadcast.recipient_phones:
-        if broadcast.status == "paused":
+        broadcast.refresh_from_db(fields=["status"])
+        if broadcast.status == WhatsAppBroadcast.BroadcastStatus.PAUSED:
             break
 
         try:
-            result = provider.send_template_message(
-                access_token=broadcast.social_account.access_token,
+            result = send_template_message(
                 to=phone,
                 template_name=template.name,
+                variables=components or broadcast.template_variables,
                 language=template.language,
-                variables=broadcast.template_variables,
+                social_account=broadcast.social_account,
+                template_obj=template,
+                broadcast_id=str(broadcast.pk),
             )
-
             if result.get("success"):
                 sent += 1
-                # Create message record
-                conversation = WhatsAppConversation.objects.filter(
-                    social_account=broadcast.social_account,
-                    contact_wa_id=phone,
-                ).first()
-                if conversation:
-                    WhatsAppMessage.objects.create(
-                        conversation=conversation,
-                        direction=WhatsAppMessage.Direction.OUTBOUND,
-                        message_type=WhatsAppMessage.MessageType.TEMPLATE,
-                        content=template.body_text,
-                        template=template,
-                        wamid=result.get("wamid", ""),
-                        status=WhatsAppMessage.MessageStatus.SENT,
-                    )
             else:
                 failed += 1
         except Exception as e:
@@ -694,11 +681,6 @@ def process_sequence_steps():
         sequence__status="active",
     ).select_related("sequence", "conversation", "conversation__social_account")
 
-    provider = get_provider("whatsapp")
-    if not provider:
-        logger.error("WhatsApp provider not available for sequence processing")
-        return
-
     processed = 0
     for enrollment in due_enrollments[:100]:  # Batch limit
         next_order = enrollment.current_step + 1
@@ -725,27 +707,19 @@ def process_sequence_steps():
         social_account = conversation.social_account
 
         try:
-            result = provider.send_template_message(
-                access_token=social_account.access_token,
+            components = variables_to_components(step.template_variables)
+            result = send_template_message(
                 to=conversation.contact_wa_id,
                 template_name=step.template.name,
+                variables=components or step.template_variables,
                 language=step.template.language,
-                variables=step.template_variables,
+                social_account=social_account,
+                template_obj=step.template,
             )
 
             if result.get("success"):
                 step.sent_count += 1
                 step.save(update_fields=["sent_count"])
-
-                WhatsAppMessage.objects.create(
-                    conversation=conversation,
-                    direction=WhatsAppMessage.Direction.OUTBOUND,
-                    message_type=WhatsAppMessage.MessageType.TEMPLATE,
-                    content=step.template.body_text,
-                    template=step.template,
-                    wamid=result.get("wamid", ""),
-                    status=WhatsAppMessage.MessageStatus.SENT,
-                )
 
                 enrollment.current_step = next_order
                 # Schedule next step
@@ -778,7 +752,7 @@ def aggregate_daily_analytics():
         WhatsAppAnalytics, WhatsAppConversation, WhatsAppMessage, StatusContent,
     )
     from apps.platforms.models import SocialAccount
-    from django.db.models import Avg, Count, Q
+    from django.db.models import Avg, Count, Q, Sum
     from datetime import timedelta
 
     yesterday = (timezone.now() - timedelta(days=1)).date()

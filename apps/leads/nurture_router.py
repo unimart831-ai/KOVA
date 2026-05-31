@@ -97,7 +97,13 @@ def detect_channel_preference(lead) -> ChannelPreference:
     return ChannelPreference(primary=primary, secondary=secondary, scores=scores)
 
 
-def route_nurture_step(lead, step_content: str, subject: str = "") -> dict:
+def route_nurture_step(
+    lead,
+    step_content: str,
+    subject: str = "",
+    *,
+    preferred_channel: str | None = None,
+) -> dict:
     """
     Route a nurture message to the best channel for this lead.
 
@@ -109,22 +115,31 @@ def route_nurture_step(lead, step_content: str, subject: str = "") -> dict:
         }
     """
     preference = detect_channel_preference(lead)
+    primary = preference.primary
+    secondary = preference.secondary
 
-    if preference.primary == NurtureChannel.WHATSAPP:
+    if preferred_channel == NurtureChannel.WHATSAPP and lead.phone:
+        primary = NurtureChannel.WHATSAPP
+        secondary = NurtureChannel.EMAIL if lead.email and "@kova.page" not in lead.email else primary
+    elif preferred_channel == NurtureChannel.EMAIL:
+        primary = NurtureChannel.EMAIL
+        secondary = NurtureChannel.WHATSAPP if lead.phone else primary
+
+    if primary == NurtureChannel.WHATSAPP:
         result = _send_via_whatsapp(lead, step_content)
-    elif preference.primary == NurtureChannel.EMAIL:
+    elif primary == NurtureChannel.EMAIL:
         result = _send_via_email(lead, step_content, subject)
     else:
         result = _queue_social_retarget(lead, step_content)
 
     # If primary fails, try secondary
-    if not result.get("sent") and preference.secondary != preference.primary:
-        if preference.secondary == NurtureChannel.WHATSAPP:
+    if not result.get("sent") and secondary != primary:
+        if secondary == NurtureChannel.WHATSAPP:
             result = _send_via_whatsapp(lead, step_content)
-        elif preference.secondary == NurtureChannel.EMAIL:
+        elif secondary == NurtureChannel.EMAIL:
             result = _send_via_email(lead, step_content, subject)
 
-    result["channel"] = preference.primary
+    result["channel"] = primary
     result["preference"] = preference.scores
     return result
 
@@ -137,7 +152,7 @@ def _send_via_whatsapp(lead, content: str) -> dict:
 
     try:
         from apps.whatsapp.services import send_text_message
-        send_text_message(to=phone, body=content)
+        send_text_message(to=phone, body=content, user=lead.user)
 
         from apps.leads.models import LeadActivity
         LeadActivity.objects.create(

@@ -88,7 +88,16 @@ def enroll_new_lead_in_sequences(sender, instance, created, **kwargs):
     if not created:
         return
 
+    from apps.leads.defaults import ensure_default_nurture_sequences
     from apps.leads.tasks import enroll_lead_in_sequences
+
+    try:
+        ensure_default_nurture_sequences(instance.user)
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception(
+            "Failed to ensure default nurture sequences for user %s", instance.user_id
+        )
 
     try:
         enroll_lead_in_sequences(instance)

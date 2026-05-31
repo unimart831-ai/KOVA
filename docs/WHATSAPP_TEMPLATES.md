@@ -6,9 +6,12 @@
 
 **Full setup walkthrough:** [`DAILY_BRIEF_WHATSAPP_SETUP.md`](./DAILY_BRIEF_WHATSAPP_SETUP.md)
 
+**In-app (Kova UI):** WhatsApp → **Templates** → create draft → **Submit to Meta** → **Sync from Meta** when approved. See [`WHATSAPP_STRATEGY_AND_AUDIT.md`](./WHATSAPP_STRATEGY_AND_AUDIT.md).
+
 ## How to submit a template
 
-1. Meta Business Suite → WhatsApp Manager → Message Templates → **Create Template**.
+1. **Preferred:** Kova → WhatsApp → Templates → Submit to Meta (requires `waba_id` on the connected account).
+2. **Manual:** Meta Business Suite → WhatsApp Manager → Message Templates → **Create Template**.
 2. Category, language, body text, variables — match the rows below exactly.
 3. Submit. Approval typically takes <1 hour for Utility, up to 24h for Marketing.
 4. Once approved, set the matching `KOVA_*_TEMPLATE_NAME` env var.

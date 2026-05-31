@@ -22,7 +22,7 @@ def send_review_request(req: ReviewRequest) -> bool:
     message = _build_message(business, customer, req)
 
     if req.channel == ReviewRequest.Channel.WHATSAPP:
-        ok = _try_whatsapp(req.customer_phone, message)
+        ok = _try_whatsapp(req.customer_phone, message, user=req.user)
     else:
         ok = _try_email(req.customer_email, business, message)
 
@@ -89,12 +89,12 @@ def _build_message(business: str, customer: str, req: ReviewRequest) -> str:
     )
 
 
-def _try_whatsapp(to: str, message: str) -> bool:
+def _try_whatsapp(to: str, message: str, user=None) -> bool:
     if not to:
         return False
     try:
         from apps.whatsapp.services import send_text_message
-        send_text_message(to=to, body=message)
+        send_text_message(to=to, body=message, user=user)
         return True
     except Exception as e:
         logger.info("WhatsApp send unavailable (%s) — would have sent to %s", e, to)

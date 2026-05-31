@@ -375,6 +375,57 @@ Respond in JSON:
     return template
 
 
+@login_required
+@require_POST
+def template_submit(request, pk):
+    """Submit a draft template to Meta for approval."""
+    wa_accounts = SocialAccount.objects.filter(
+        user=request.user, platform="whatsapp", is_active=True,
+    )
+    template = get_object_or_404(
+        WhatsAppTemplate,
+        pk=pk,
+        social_account__in=wa_accounts,
+    )
+    if template.status not in (
+        WhatsAppTemplate.TemplateStatus.DRAFT,
+        WhatsAppTemplate.TemplateStatus.REJECTED,
+    ):
+        django_messages.warning(request, "Only draft or rejected templates can be submitted.")
+        return redirect("whatsapp:template_list")
+
+    try:
+        from apps.whatsapp.services import submit_template_to_meta
+        submit_template_to_meta(template)
+        django_messages.success(request, f"Template “{template.name}” submitted to Meta for review.")
+    except Exception as e:
+        django_messages.error(request, f"Submission failed: {e}")
+
+    return redirect("whatsapp:template_list")
+
+
+@login_required
+@require_POST
+def template_sync(request):
+    """Sync template approval statuses from Meta."""
+    wa_accounts = SocialAccount.objects.filter(
+        user=request.user, platform="whatsapp", is_active=True,
+    )
+    account = wa_accounts.first()
+    if not account:
+        django_messages.error(request, "Connect a WhatsApp account first.")
+        return redirect("whatsapp:template_list")
+
+    try:
+        from apps.whatsapp.services import sync_templates_from_meta
+        count = sync_templates_from_meta(account)
+        django_messages.success(request, f"Synced {count} template(s) from Meta.")
+    except Exception as e:
+        django_messages.error(request, f"Sync failed: {e}")
+
+    return redirect("whatsapp:template_list")
+
+
 # ═════════════════════════════════════════════════════════════════════════════
 # SPRINT 5C — STATUS CONTENT STUDIO
 # ═════════════════════════════════════════════════════════════════════════════

@@ -1,10 +1,10 @@
 # Kova Agent — WhatsApp Intelligence Roadmap
 > "Own the Most Important Channel in Kenya"
 
-**Last updated:** March 31, 2026
+**Last updated:** May 31, 2026
 **Phase:** 5 (Post-Launch)
-**Status:** Planning — Zero code implemented yet
-**Depends on:** Phase 3 completion (Engage Agent, Orchestration)
+**Status:** Shipped — see [WHATSAPP_STRATEGY_AND_AUDIT.md](./WHATSAPP_STRATEGY_AND_AUDIT.md) for current implementation
+**Depends on:** Engage Agent v2 routing, platforms WhatsApp provider
 
 ---
 

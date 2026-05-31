@@ -241,6 +241,26 @@ def _process_inbound_message(social_account, msg_data, contacts):
         status=WhatsAppMessage.MessageStatus.DELIVERED,
     )
 
+    # Unified Engage inbox (WhatsApp DMs alongside IG/FB)
+    try:
+        from apps.engage.dm_inbox import bridge_whatsapp_message_to_inbox
+        bridge_whatsapp_message_to_inbox(
+            user=social_account.user,
+            sender_phone=wa_id,
+            sender_name=contact_name,
+            message_text=content,
+            message_id=wamid,
+        )
+    except Exception as e:
+        logger.warning("WhatsApp inbox bridge failed: %s", e)
+
+    if created:
+        try:
+            from apps.whatsapp.services import enroll_conversation_in_onboarding_sequences
+            enroll_conversation_in_onboarding_sequences(conversation)
+        except Exception as e:
+            logger.warning("Sequence enrollment failed: %s", e)
+
     # Mark as read (shows blue checkmarks to sender)
     provider = get_provider("whatsapp")
     if provider:
@@ -388,6 +408,12 @@ def _process_status_update(status_data):
                 message.error_message = errors[0].get("title", "")
 
         message.save(update_fields=["status", "status_updated_at", "error_code", "error_message"])
+
+        try:
+            from apps.whatsapp.services import update_broadcast_delivery_stats
+            update_broadcast_delivery_stats(message, new_status)
+        except Exception:
+            pass
 
     except WhatsAppMessage.DoesNotExist:
         # Status update for a message we don't have (e.g., sent before Kova was connected)

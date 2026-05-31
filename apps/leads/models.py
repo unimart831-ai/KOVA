@@ -212,6 +212,9 @@ class NurtureSequence(models.Model):
         FROM_PLATFORM = "from_platform", "From specific platform"
         FROM_COMMERCE = "from_commerce", "From commerce purchases"
         FROM_BOOKING = "from_booking", "From bookings"
+        FROM_WALK_IN = "from_walk_in", "From walk-ins"
+        FROM_QR_SCAN = "from_qr_scan", "From QR scans"
+        STALE_WINBACK = "stale_winback", "Stale leads (7+ days inactive)"
         MANUAL = "manual", "Manual enrollment only"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -244,6 +247,7 @@ class NurtureStep(models.Model):
 
     class ActionType(models.TextChoices):
         SEND_EMAIL = "send_email", "Send Email"
+        SEND_WHATSAPP = "send_whatsapp", "Send WhatsApp"
         ADD_TAG = "add_tag", "Add Tag"
         CHANGE_STATUS = "change_status", "Change Status"
 

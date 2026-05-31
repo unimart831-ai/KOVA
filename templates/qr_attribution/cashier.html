@@ -78,6 +78,14 @@
   </div>
 
   <div class="revenue-row">
+    <label for="customer_name">Name</label>
+    <input id="customer_name" type="text" placeholder="optional" maxlength="200" autocomplete="name">
+  </div>
+  <div class="revenue-row">
+    <label for="customer_phone">Phone</label>
+    <input id="customer_phone" type="tel" placeholder="optional · for follow-up" maxlength="20" autocomplete="tel">
+  </div>
+  <div class="revenue-row">
     <label for="revenue">Revenue (KES)</label>
     <input id="revenue" type="number" placeholder="optional · e.g. 3500" min="0" step="50">
   </div>
@@ -92,6 +100,8 @@
 
   <script>
     const buttons = document.querySelectorAll('.source-btn');
+    const nameInput = document.getElementById('customer_name');
+    const phoneInput = document.getElementById('customer_phone');
     const revenueInput = document.getElementById('revenue');
     const toast = document.getElementById('toast');
 
@@ -100,7 +110,11 @@
         const source = btn.dataset.source;
         const formData = new FormData();
         formData.append('source', source);
+        const name = nameInput.value.trim();
+        const phone = phoneInput.value.trim();
         const rev = revenueInput.value.trim();
+        if (name) formData.append('customer_name', name);
+        if (phone) formData.append('customer_phone', phone);
         if (rev) formData.append('revenue', rev);
 
         try {
@@ -111,6 +125,8 @@
           });
           if (!resp.ok) throw new Error(resp.statusText);
           toast.classList.add('show');
+          nameInput.value = '';
+          phoneInput.value = '';
           revenueInput.value = '';
           setTimeout(() => toast.classList.remove('show'), 1800);
         } catch (e) {

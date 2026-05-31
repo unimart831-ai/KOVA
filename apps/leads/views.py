@@ -53,6 +53,23 @@ def lead_list(request):
 
 
 @login_required
+def lead_pipeline(request):
+    """Kanban-style pipeline grouped by lead status."""
+    base_qs = Lead.objects.filter(user=request.user).order_by("-last_activity_at")
+    columns = []
+    for status_value, status_label in Lead.Status.choices:
+        columns.append({
+            "status": status_value,
+            "label": status_label,
+            "leads": list(base_qs.filter(status=status_value)[:30]),
+        })
+    return render(request, "leads/lead_pipeline.html", {
+        "columns": columns,
+        "page_title": "Lead Pipeline",
+    })
+
+
+@login_required
 def lead_create(request):
     """Manually add a lead."""
     from apps.billing.enforcement import check_leads_limit, enforce_or_redirect
@@ -87,16 +104,33 @@ def lead_create(request):
 @login_required
 def lead_detail(request, lead_id):
     """Lead detail with activity timeline."""
+    from apps.leads.models import LeadEnrollment, NurtureStep
+
     lead = get_object_or_404(Lead, pk=lead_id, user=request.user)
     activities = lead.activities.all()[:50]
     note_form = LeadNoteForm()
     tag_form = LeadTagForm()
+
+    active_enrollment = (
+        lead.enrollments.filter(completed=False, paused=False, sequence__is_active=True)
+        .select_related("sequence")
+        .order_by("-enrolled_at")
+        .first()
+    )
+    current_nurture_step = None
+    if active_enrollment:
+        current_nurture_step = NurtureStep.objects.filter(
+            sequence=active_enrollment.sequence,
+            order=active_enrollment.current_step,
+        ).first()
 
     return render(request, "leads/lead_detail.html", {
         "lead": lead,
         "activities": activities,
         "note_form": note_form,
         "tag_form": tag_form,
+        "active_enrollment": active_enrollment,
+        "current_nurture_step": current_nurture_step,
         "page_title": lead.name or lead.email,
     })
 

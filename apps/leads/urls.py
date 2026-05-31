@@ -6,6 +6,7 @@ app_name = "leads"
 
 urlpatterns = [
     path("", views.lead_list, name="list"),
+    path("pipeline/", views.lead_pipeline, name="pipeline"),
     path("create/", views.lead_create, name="create"),
     path("analytics/", views.lead_analytics, name="analytics"),
     path("<uuid:lead_id>/", views.lead_detail, name="detail"),

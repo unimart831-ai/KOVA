@@ -55,6 +55,7 @@ def _send_customer_confirmation(booking: Booking):
             "time": booking.scheduled_at.strftime("%H:%M"),
             "business_name": _business_name(booking),
         },
+        user=booking.booking_link.user,
     )
     if sent:
         Booking.objects.filter(pk=booking.pk).update(
@@ -110,7 +111,7 @@ def create_lead_from_booking_signal(sender, instance: Booking, created: bool, **
         logger.exception("Failed to create lead from booking %s", instance.pk)
 
 
-def _try_whatsapp_send(to: str, template: str, variables: dict) -> bool:
+def _try_whatsapp_send(to: str, template: str, variables: dict, user=None) -> bool:
     """Try to send via the WhatsApp app. Returns True if sent or stubbed.
 
     Soft import: if the WhatsApp app or template machinery isn't
@@ -125,7 +126,9 @@ def _try_whatsapp_send(to: str, template: str, variables: dict) -> bool:
         )
         return True
     try:
-        send_template_message(to=to, template_name=template, variables=variables)
+        send_template_message(
+            to=to, template_name=template, variables=variables, user=user,
+        )
         return True
     except Exception as e:
         logger.warning("WhatsApp send failed for %s: %s", template, e)

@@ -48,6 +48,14 @@
           <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>Medium</option>
           <option value="low" {% if current_priority == 'low' %}selected{% endif %}>Low</option>
         </select>
+        <select name="source" class="input text-sm w-auto" onchange="this.form.submit()">
+          <option value="">All sources</option>
+          <option value="form_submission" {% if current_source == 'form_submission' %}selected{% endif %}>Form submissions</option>
+          <option value="walk_in" {% if current_source == 'walk_in' %}selected{% endif %}>Walk-ins</option>
+          <option value="qr_scan" {% if current_source == 'qr_scan' %}selected{% endif %}>QR scans</option>
+          <option value="commerce_purchase" {% if current_source == 'commerce_purchase' %}selected{% endif %}>Commerce</option>
+          <option value="booking" {% if current_source == 'booking' %}selected{% endif %}>Bookings</option>
+        </select>
       </form>
     </div>
     <div class="flex items-center gap-2">

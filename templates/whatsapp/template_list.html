@@ -100,6 +100,14 @@
     </div>
   </div>
 
+  {# Sync from Meta #}
+  {% if wa_accounts %}
+  <form method="post" action="{% url 'whatsapp:template_sync' %}" class="flex justify-end">
+    {% csrf_token %}
+    <button type="submit" class="btn-secondary btn-sm">Sync from Meta</button>
+  </form>
+  {% endif %}
+
   {# Filter #}
   {% if templates %}
   <div class="flex items-center gap-3">
@@ -153,9 +161,15 @@
                 <p class="text-xs text-red-500 mt-1">Rejection: {{ tpl.rejection_reason|truncatechars:100 }}</p>
               {% endif %}
             </div>
-            <div class="text-right text-xs text-gray-400 dark:text-gray-500 shrink-0">
+            <div class="text-right text-xs text-gray-400 dark:text-gray-500 shrink-0 space-y-2">
               <p>{{ tpl.language|upper }}</p>
               <p>{{ tpl.created_at|date:"M j" }}</p>
+              {% if tpl.status == 'draft' or tpl.status == 'rejected' %}
+              <form method="post" action="{% url 'whatsapp:template_submit' tpl.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-primary btn-sm">Submit to Meta</button>
+              </form>
+              {% endif %}
             </div>
           </div>
         </div>

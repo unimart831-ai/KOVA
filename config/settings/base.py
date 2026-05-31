@@ -406,7 +406,11 @@ CELERY_BEAT_SCHEDULE = {
     # Lead priority scoring
     "score-all-leads": {
         "task": "leads.score_all_leads",
-        "schedule": 24 * 3600.0,  # daily — re-score priorities, auto-enroll high-priority leads
+        "schedule": 24 * 3600.0,  # daily — composite scoring, auto-enroll high-priority leads
+    },
+    "reengage-stale-leads": {
+        "task": "leads.reengage_stale_leads",
+        "schedule": 24 * 3600.0,  # daily — win-back enrollments for 7+ day inactive leads
     },
     # Educator agent — platform-level content authoring
     "educator-draft-weekly-article": {
