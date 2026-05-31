@@ -63,8 +63,8 @@
 
       <ul class="mt-6 space-y-2 text-sm text-gray-600 dark:text-gray-400 flex-1">
         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {% if plan.max_social_accounts == 1 %}1 social account{% elif tier == 'pro' %}All 5 platforms + WhatsApp{% elif tier == 'growth' %}4 social platforms{% else %}{{ plan.max_social_accounts }} social accounts{% endif %}</li>
-        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {% if plan.max_posts_per_month > 9999 %}Unlimited{% else %}{{ plan.max_posts_per_month }}{% endif %} AI posts/month</li>
-        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {% if plan.max_seeds_per_month > 9999 %}Unlimited{% else %}{{ plan.max_seeds_per_month }}{% endif %} content seeds/month</li>
+        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {{ plan.max_posts_per_month }} AI posts/month</li>
+        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {{ plan.max_seeds_per_month }} content seeds/month</li>
         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {{ plan.agents_enabled|length }} AI agents</li>
         {% if plan.whatsapp_marketing_conversations_per_month %}
           <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {{ plan.whatsapp_marketing_conversations_per_month }} WhatsApp marketing convos/mo</li>
@@ -224,6 +224,20 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  </div>
+
+  {# Agency — contact sales (not self-serve) #}
+  <div class="mt-8 max-w-3xl mx-auto">
+    <div class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Agency / Wakala</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">KSh {{ agency_plan.price_kes }} / ${{ agency_plan.price_usd }} per month — multi-client, 25 accounts, sales onboarding</p>
+        <p class="text-xs text-gray-400 mt-2">Requires agency approval. Not available via self-serve checkout.</p>
+      </div>
+      <a href="mailto:hello@kova.ai?subject=Agency%20plan%20inquiry" class="btn-secondary whitespace-nowrap justify-center">Contact sales</a>
     </div>
   </div>
 

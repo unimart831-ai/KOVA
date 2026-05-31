@@ -703,11 +703,13 @@ def plan_pricing(request):
             "has_override": db is not None and db.is_active,
             "db_obj": db,
             "daily_llm_tokens": live.get("daily_llm_tokens", 0),
+            "monthly_llm_tokens": live.get("monthly_llm_tokens", 0),
             "max_posts_per_month": live.get("max_posts_per_month", 0),
             "max_seeds_per_month": live.get("max_seeds_per_month", 0),
             "max_social_accounts": live.get("max_social_accounts", 0),
             "ai_images_per_month": live.get("ai_images_per_month", 0),
-            "trial_days": live.get("trial_days", 14),
+            "visual_enhancements_per_month": live.get("visual_enhancements_per_month", 0),
+            "trial_days": live.get("trial_days", 7),
         })
 
     context = {

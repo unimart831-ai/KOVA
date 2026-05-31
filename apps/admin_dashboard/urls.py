@@ -13,6 +13,7 @@ urlpatterns = [
     path("users/", users.user_list, name="user_list"),
     path("users/export/", users.user_export_csv, name="user_export"),
     path("users/<uuid:pk>/", users.user_detail, name="user_detail"),
+    path("users/<uuid:pk>/usage/", users.user_usage_detail, name="user_usage_detail"),
     path("users/<uuid:pk>/change-plan/", users.user_change_plan, name="user_change_plan"),
     path("users/<uuid:pk>/toggle-staff/", users.user_toggle_staff, name="user_toggle_staff"),
     path("users/<uuid:pk>/toggle-active/", users.user_toggle_active, name="user_toggle_active"),

@@ -15,7 +15,7 @@
       </svg>
       <div class="text-sm text-blue-800 dark:text-blue-300">
         <p class="font-medium">How pricing works</p>
-        <p class="mt-1 text-blue-700 dark:text-blue-400">Custom prices override defaults across pricing page, M-Pesa checkout, and Stripe. Limits below come from <code class="text-[10px]">PLAN_LIMITS</code> — edit in code or sync with Cost Economics / LLM admin.</p>
+        <p class="mt-1 text-blue-700 dark:text-blue-400">Custom prices override defaults across pricing page, M-Pesa checkout, and Stripe. Limits below come from <code class="text-[10px]">PLAN_LIMITS</code> (Plan v2). Trial users get <strong>Starter limits</strong> for 7 days. Agency is sales-only (<code class="text-[10px]">is_agency_approved</code>).</p>
       </div>
     </div>
   </div>
@@ -41,11 +41,14 @@
         <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Enforced limits (from PLAN_LIMITS)</p>
         <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
           <span>{{ plan.daily_llm_tokens|format_number }} LLM tokens/day</span>
+          <span>{{ plan.monthly_llm_tokens|format_number }} LLM tokens/mo</span>
           <span>{{ plan.max_posts_per_month }} posts/mo</span>
           <span>{{ plan.max_seeds_per_month }} seeds/mo</span>
+          <span>{{ plan.visual_enhancements_per_month }} studio polish/mo</span>
           <span>{{ plan.max_social_accounts }} social account{{ plan.max_social_accounts|pluralize }}</span>
           <span>{{ plan.ai_images_per_month }} AI images/mo</span>
-          <span>{{ plan.trial_days }}d trial</span>
+          <span>{{ plan.trial_days }}d trial (Starter limits)</span>
+          {% if plan.tier == "agency" %}<span class="text-amber-600">Sales-only — not public checkout</span>{% endif %}
         </div>
       </div>
 

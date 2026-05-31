@@ -79,7 +79,7 @@
 <!-- ── Tabs Navigation ───────────────────────────────────────────────── -->
 <div class="flex flex-wrap items-center gap-1 mb-6 border-b border-gray-200 dark:border-gray-800">
   {% with pk=target_user.pk %}
-  {% for tab_id, tab_label in "profile:Profile,content:Content,platforms:Platforms,agents:Agents,billing:Billing,engagement:Engagement,briefs:Briefs"|split_tabs %}
+  {% for tab_id, tab_label in "profile:Profile,usage:Usage,content:Content,platforms:Platforms,agents:Agents,billing:Billing,engagement:Engagement,briefs:Briefs"|split_tabs %}
   <a href="{% url 'admin_dashboard:user_detail' pk=pk %}?tab={{ tab_id }}"
      class="px-4 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors {% if tab == tab_id %}text-kova-700 dark:text-kova-400 bg-kova-50 dark:bg-kova-900/20 border-b-2 border-kova-600 dark:border-kova-400{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white{% endif %}">
     {{ tab_label }}
@@ -90,7 +90,10 @@
 
 <!-- ── Tab Content ───────────────────────────────────────────────────── -->
 
-{% if tab == "profile" %}
+{% if tab == "usage" %}
+{% include "admin_dashboard/users/_usage_panel.html" %}
+
+{% elif tab == "profile" %}
 <!-- Profile Tab -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">

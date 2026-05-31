@@ -57,7 +57,7 @@ NON_LLM_PRICING = {
         "cost_per_image": 0.04,
         "provider": "Together.ai",
         "plan": "pro / agency",
-        "note": "Pro (100/mo) & Agency (500/mo)",
+        "note": "Pro (100/mo) & Agency (200/mo)",
     },
     "image_huggingface": {
         "label": "HuggingFace FLUX.1-schnell",
@@ -103,11 +103,12 @@ PLAN_IMAGE_COST = {
 
 # Default per-plan token estimates (from cost analysis doc)
 # voice_memos = estimated monthly voice memo recordings per user
+# Plan v2 — aligned with PLAN_LIMITS monthly_llm_tokens (medium ~40% utilization)
 PLAN_TOKEN_ESTIMATES = {
-    "starter": {"input": 40_000, "output": 35_000, "images": 0, "voice_memos": 5},
-    "growth": {"input": 260_000, "output": 220_000, "images": 50, "voice_memos": 20},
-    "pro": {"input": 1_100_000, "output": 900_000, "images": 100, "voice_memos": 50},
-    "agency": {"input": 2_200_000, "output": 1_800_000, "images": 500, "voice_memos": 100},
+    "starter": {"input": 400_000, "output": 350_000, "images": 0, "voice_memos": 5},
+    "growth": {"input": 1_600_000, "output": 1_400_000, "images": 50, "voice_memos": 20},
+    "pro": {"input": 4_000_000, "output": 3_500_000, "images": 100, "voice_memos": 50},
+    "agency": {"input": 16_000_000, "output": 14_000_000, "images": 200, "voice_memos": 100},
 }
 
 # Infrastructure base costs (USD/month)

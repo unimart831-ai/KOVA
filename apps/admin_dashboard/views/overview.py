@@ -69,10 +69,10 @@ def overview(request):
     from apps.billing.models import PlanPrice
 
     plan_prices_kes = {
-        "starter": 99,
-        "growth": 500,
-        "pro": 1500,
-        "agency": 3500,
+        "starter": 499,
+        "growth": 1499,
+        "pro": 2999,
+        "agency": 7999,
     }
     for pp in PlanPrice.objects.filter(is_active=True):
         plan_prices_kes[pp.tier] = pp.price_kes

@@ -2,7 +2,7 @@
 Plan enforcement utilities — reusable limit checks for API, Celery tasks, and views.
 
 Use these instead of middleware when you need plan checks outside the HTTP request cycle.
-Trialing users receive Kazi (growth) limits via get_user_plan_limits().
+Trialing users receive Starter limits via get_user_plan_limits().
 """
 
 from __future__ import annotations

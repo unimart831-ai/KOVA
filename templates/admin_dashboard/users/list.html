@@ -125,6 +125,7 @@
                 <div class="min-w-0">
                   <p class="text-sm font-medium text-gray-900 dark:text-white truncate group-hover:text-kova-600 dark:group-hover:text-kova-400">{{ user.full_name|default:user.email }}</p>
                   <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ user.email }}</p>
+                  <a href="{% url 'admin_dashboard:user_usage_detail' pk=user.pk %}" class="text-[10px] text-kova-600 dark:text-kova-400 hover:underline">Usage →</a>
                 </div>
               </div>
             </a>

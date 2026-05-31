@@ -148,6 +148,33 @@ def whatsapp_overview(request):
         .order_by("-last_message_at")[:8]
     )
 
+    # Plan v2 marketing conversation caps (utility/auth templates excluded)
+    from apps.billing.models import PLAN_LIMITS, get_all_plan_limits
+    from apps.billing.whatsapp_marketing import MARKETING_TEMPLATE_CATEGORIES
+
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    marketing_msgs_month = WhatsAppMessage.objects.filter(
+        direction=WhatsAppMessage.Direction.OUTBOUND,
+        message_type=WhatsAppMessage.MessageType.TEMPLATE,
+        template__category__in=MARKETING_TEMPLATE_CATEGORIES,
+        created_at__gte=month_start,
+        status__in=[
+            WhatsAppMessage.MessageStatus.SENT,
+            WhatsAppMessage.MessageStatus.DELIVERED,
+            WhatsAppMessage.MessageStatus.READ,
+        ],
+    )
+    marketing_conversations_month = marketing_msgs_month.values("conversation_id").distinct().count()
+    marketing_plan_caps = []
+    for tier in ("starter", "growth", "pro", "agency"):
+        lim = PLAN_LIMITS.get(tier, {})
+        marketing_plan_caps.append({
+            "tier": tier,
+            "label": lim.get("label", tier),
+            "cap": lim.get("whatsapp_marketing_conversations_per_month", 0),
+            "whatsapp_business": lim.get("whatsapp_enabled", False),
+        })
+
     context = {
         "page_title": "WhatsApp Management",
         # Conversations
@@ -186,6 +213,9 @@ def whatsapp_overview(request):
         "message_chart_json": message_chart,
         "recent_conversations": recent_conversations,
         "escalated_conversations": escalated_conversations,
+        "marketing_conversations_month": marketing_conversations_month,
+        "marketing_plan_caps": marketing_plan_caps,
+        "plan_limits": get_all_plan_limits(),
     }
     return render(request, "admin_dashboard/whatsapp/overview.html", context)
 

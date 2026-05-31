@@ -28,7 +28,8 @@ def landing_page(request):
     from apps.billing.models import get_plan_limits, get_public_plan_limits
     return render(request, "pages/landing.html", {
         "all_plans": get_public_plan_limits(),
-        "trial_days": get_plan_limits("growth")["trial_days"],
+        "agency_plan": get_plan_limits("agency"),
+        "trial_days": get_plan_limits("starter")["trial_days"],
     })
 
 

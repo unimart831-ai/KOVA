@@ -89,6 +89,7 @@ def pricing(request):
     return render(request, "billing/pricing.html", {
         "page_title": "Choose Your Plan",
         "all_plans": get_public_plan_limits(),
+        "agency_plan": get_plan_limits("agency"),
         "current_plan": request.user.profile.plan,
         "can_start_free_trial": can_start_free_trial(request.user),
         "is_kazi_trial": is_active_trial(request.user.profile),

@@ -1,0 +1,32 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ target_user.email }} · Plan v2 monthly metering</p>
+{% endblock %}
+
+{% block content %}
+<a href="{% url 'admin_dashboard:user_list' %}" class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4">
+  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+  Back to Users
+</a>
+
+<div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+  <div class="flex items-center gap-3">
+    <div class="w-10 h-10 rounded-full bg-kova-100 dark:bg-kova-900/30 flex items-center justify-center text-sm font-bold text-kova-700 dark:text-kova-300">
+      {{ target_user.first_initial }}
+    </div>
+    <div>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ target_user.full_name|default:target_user.email }}</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400">{{ target_user.email }}</p>
+    </div>
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'admin_dashboard:user_detail' pk=target_user.pk %}" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Full profile</a>
+    <a href="{% url 'admin_dashboard:user_detail' pk=target_user.pk %}?tab=usage" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-kova-600 text-white hover:bg-kova-700">Usage tab</a>
+  </div>
+</div>
+
+{% include "admin_dashboard/users/_usage_panel.html" %}
+{% endblock %}

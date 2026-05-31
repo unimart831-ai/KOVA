@@ -383,6 +383,7 @@
             <th class="text-left px-5 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Max Calls / Hour</th>
             <th class="text-left px-5 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">UI Max Tokens / Day</th>
             <th class="text-left px-5 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Enforced Daily Cap</th>
+            <th class="text-left px-5 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Enforced Monthly Cap</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -401,6 +402,7 @@
                      class="w-40 text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500">
             </td>
             <td class="px-5 py-3 text-sm font-mono text-emerald-600">{{ rl.enforced_daily_tokens|format_number }}</td>
+            <td class="px-5 py-3 text-sm font-mono text-indigo-600 dark:text-indigo-400">{{ rl.enforced_monthly_tokens|format_number }}</td>
           </tr>
           {% endfor %}
         </tbody>

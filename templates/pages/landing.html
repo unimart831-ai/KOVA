@@ -362,9 +362,9 @@
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">For solopreneurs getting started</p>
         <ul class="mt-6 space-y-2 text-sm text-gray-600 dark:text-gray-400 flex-1">
           <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 2 social accounts</li>
-          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 15 AI posts/month</li>
-          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Daily brief</li>
-          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Basic analytics</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {{ all_plans.starter.max_posts_per_month }} AI posts/month</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {{ all_plans.starter.visual_enhancements_per_month }} studio polish credits/mo</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Daily brief &amp; basic analytics</li>
         </ul>
         <a href="{% url 'account_signup' %}" class="btn-secondary w-full justify-center mt-6">Get started</a>
       </div>
@@ -390,10 +390,10 @@
         </div>
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">For growing brands</p>
         <ul class="mt-6 space-y-2 text-sm text-gray-600 dark:text-gray-400 flex-1">
-          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 5 social platforms</li>
-          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 60 AI posts/month</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 4 social platforms</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {{ all_plans.growth.max_posts_per_month }} AI posts/month</li>
           <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> M-Pesa commerce &amp; AI images</li>
-          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Engagement agent</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Engagement agent &amp; competitor tracking</li>
         </ul>
         <a href="{% url 'account_signup' %}" class="btn-primary w-full justify-center mt-6">Start free trial</a>
       </div>
@@ -416,14 +416,35 @@
         </div>
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">For serious marketers</p>
         <ul class="mt-6 space-y-2 text-sm text-gray-600 dark:text-gray-400 flex-1">
-          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> All 7 platforms + WhatsApp</li>
-          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 150 AI posts/month</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> All 5 platforms + WhatsApp</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> {{ all_plans.pro.max_posts_per_month }} AI posts/month</li>
           <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> All 6 AI agents</li>
-          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Team (5 seats)</li>
+          <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Team (5 seats) &amp; auto-approve</li>
         </ul>
         <a href="{% url 'account_signup' %}" class="btn-secondary w-full justify-center mt-6">Get started</a>
       </div>
     </div>
+
+    <!-- Agency / Wakala — contact sales -->
+    <div class="mt-8 max-w-3xl mx-auto">
+      <div class="marketing-card p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border border-gray-200 dark:border-gray-700">
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <span x-show="currency === 'kes'">Wakala</span>
+            <span x-show="currency === 'usd'" x-cloak>Agency</span>
+          </h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Multi-client teams · 25 accounts · 300 posts/mo · sales onboarding only</p>
+          <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            <template x-if="currency === 'kes'"><span class="font-bold text-gray-900 dark:text-white">KSh {{ agency_plan.price_kes }}</span></template>
+            <template x-if="currency === 'usd'"><span class="font-bold text-gray-900 dark:text-white">${{ agency_plan.price_usd }}</span></template>
+            <span class="text-gray-500">/mo — contact us to get approved</span>
+          </p>
+        </div>
+        <a href="mailto:hello@kova.ai?subject=Agency%20plan%20inquiry" class="btn-secondary whitespace-nowrap justify-center shrink-0">Contact sales</a>
+      </div>
+    </div>
+
+    <p class="mt-6 text-center text-xs text-gray-400 dark:text-gray-500">7-day Starter trial on signup · No credit card required</p>
 
     <!-- M-Pesa callout (KES only) -->
     <div x-show="currency === 'kes'" x-transition class="mt-10 text-center">
@@ -489,7 +510,7 @@
       Your AI team handles <span class="text-gradient-hero">social media.</span>
     </h2>
     <p class="mt-4 text-lg text-gray-600 dark:text-gray-400 font-medium">You approve in 5 minutes.</p>
-    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">From KSh {{ all_plans.starter.price_kes }}/mo · 7-day Kazi trial · No credit card</p>
+    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">From KSh {{ all_plans.starter.price_kes }}/mo · 7-day Starter trial · No credit card</p>
     <div class="mt-8">
       <a href="{% url 'account_signup' %}" class="group btn-primary text-lg px-10 py-3.5 shadow-lg shadow-kova-200 dark:shadow-none">
         Start your free trial

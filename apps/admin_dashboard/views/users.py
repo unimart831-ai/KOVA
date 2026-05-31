@@ -136,8 +136,26 @@ def user_list(request):
 
 
 @staff_required
+def user_usage_detail(request, pk):
+    """Plan v2 monthly usage — dedicated admin page."""
+    user = get_object_or_404(
+        User.objects.select_related("profile").prefetch_related("social_accounts"),
+        pk=pk,
+    )
+    from apps.admin_dashboard.user_usage import get_admin_user_usage
+
+    return render(request, "admin_dashboard/users/usage.html", {
+        "page_title": f"Usage: {user.full_name or user.email}",
+        "target_user": user,
+        "profile": user.profile,
+        "usage": get_admin_user_usage(user),
+        "business_mode": _user_mode_payload(user),
+    })
+
+
+@staff_required
 def user_detail(request, pk):
-    """Full user detail with tabs: profile, content, platforms, agents, billing, engagement, briefs."""
+    """Full user detail with tabs: profile, usage, content, platforms, agents, billing, engagement, briefs."""
     from apps.agents.models import AgentAction, AgentConfig
     from apps.analytics.models import PostMetric
     from apps.billing.models import MpesaPayment
@@ -199,7 +217,12 @@ def user_detail(request, pk):
         "command_counts": command_counts,
     }
 
-    if tab == "profile":
+    if tab == "usage":
+        from apps.admin_dashboard.user_usage import get_admin_user_usage
+
+        context["usage"] = get_admin_user_usage(user)
+
+    elif tab == "profile":
         from apps.billing.enforcement import get_seed_usage
         from apps.billing.models import ContentSeedQuotaLog
 

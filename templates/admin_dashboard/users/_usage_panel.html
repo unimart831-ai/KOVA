@@ -1,0 +1,97 @@
+{% load dashboard_tags %}
+<div class="mb-4 flex flex-wrap items-center gap-2">
+  <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {{ profile.plan|status_color }}">{{ profile.get_plan_display }}</span>
+  <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {{ profile.subscription_status|status_color }}">{{ profile.subscription_status|default:"none" }}</span>
+  {% if usage.is_trialing %}
+  <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">Starter trial{% if usage.trial_ends_at %} · ends {{ usage.trial_ends_at|date:"M j, Y" }}{% endif %}</span>
+  {% endif %}
+  {% if usage.effective_tier != profile.plan %}
+  <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">Effective: {{ usage.effective_label }}</span>
+  {% endif %}
+  {% if usage.is_agency_approved %}
+  <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">Agency approved</span>
+  {% endif %}
+</div>
+
+<p class="text-xs text-gray-500 dark:text-gray-400 mb-6">This month (calendar month, UTC). LLM caps enforced via daily + monthly token budgets (DeepSeek routing in production).</p>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">LLM tokens (today)</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ usage.llm_daily.used|format_number }} <span class="text-sm font-normal text-gray-400">/ {{ usage.llm_daily.cap|format_number }}</span></p>
+    <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 mt-3">
+      <div class="bg-kova-500 h-2 rounded-full" style="width: {% if usage.llm_daily.cap %}{% widthratio usage.llm_daily.used usage.llm_daily.cap 100 %}{% else %}0{% endif %}%"></div>
+    </div>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">LLM tokens (month)</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ usage.llm_monthly.used|format_number }} <span class="text-sm font-normal text-gray-400">/ {{ usage.llm_monthly.cap|format_number }}</span></p>
+    <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 mt-3">
+      <div class="bg-indigo-500 h-2 rounded-full" style="width: {% if usage.llm_monthly.cap %}{% widthratio usage.llm_monthly.used usage.llm_monthly.cap 100 %}{% else %}0{% endif %}%"></div>
+    </div>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Posts</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ usage.posts.used }} <span class="text-sm font-normal text-gray-400">/ {{ usage.posts.cap }}</span></p>
+    <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 mt-3">
+      <div class="bg-emerald-500 h-2 rounded-full" style="width: {% if usage.posts.cap %}{% widthratio usage.posts.used usage.posts.cap 100 %}{% else %}0{% endif %}%"></div>
+    </div>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Content seeds</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ usage.seeds.used }} <span class="text-sm font-normal text-gray-400">/ {% if usage.seeds.unlimited %}∞{% else %}{{ usage.seeds.max }}{% endif %}</span></p>
+    {% if not usage.seeds.unlimited %}
+    <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 mt-3">
+      <div class="bg-violet-500 h-2 rounded-full" style="width: {% if usage.seeds.max %}{% widthratio usage.seeds.used usage.seeds.max 100 %}{% else %}0{% endif %}%"></div>
+    </div>
+    {% endif %}
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Studio polish credits</p>
+    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">{{ usage.studio_polish.used }} <span class="text-sm font-normal text-gray-400">/ {{ usage.studio_polish.max }}</span></p>
+    {% if usage.studio_polish.growth_throttled %}
+    <p class="text-[10px] text-amber-600 dark:text-amber-400 mt-2">Growth throttled — platform pool &gt;80%</p>
+    {% elif usage.studio_polish.platform_blocked %}
+    <p class="text-[10px] text-red-600 dark:text-red-400 mt-2">Platform pool exhausted</p>
+    {% endif %}
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">WhatsApp marketing convos</p>
+    <p class="text-2xl font-bold text-[#25D366] mt-1">{{ usage.whatsapp_marketing.used }} <span class="text-sm font-normal text-gray-400">/ {% if usage.whatsapp_marketing.max %}{{ usage.whatsapp_marketing.max }}{% else %}—{% endif %}</span></p>
+    <p class="text-[10px] text-gray-400 mt-2">Marketing templates only</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Photoroom / platform pool</h3>
+    <dl class="space-y-2 text-sm">
+      <div class="flex justify-between"><dt class="text-gray-500">User polish calls (month)</dt><dd class="font-medium text-gray-900 dark:text-white">{{ usage.user_photoroom_calls }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500">Platform pool used</dt><dd class="font-medium text-gray-900 dark:text-white">{{ usage.platform_photoroom.used|format_number }} / {{ usage.platform_photoroom.usable|format_number }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500">Pool remaining</dt><dd class="font-medium text-gray-900 dark:text-white">{{ usage.platform_photoroom.remaining|format_number }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500">Est. cost per call</dt><dd class="font-medium text-gray-900 dark:text-white">${{ usage.platform_photoroom.cost_per_image|floatformat:4 }}</dd></div>
+    </dl>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Activity</h3>
+    <dl class="space-y-2 text-sm">
+      <div class="flex justify-between"><dt class="text-gray-500">Last login</dt><dd class="text-gray-900 dark:text-white">{{ usage.last_login|date:"M j, Y H:i"|default:"Never" }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500">Last activity</dt><dd class="text-gray-900 dark:text-white">{{ usage.last_activity|date:"M j, Y H:i"|default:"—" }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500">Billing plan</dt><dd class="text-gray-900 dark:text-white">{{ usage.billing_plan|title }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500">Effective limits tier</dt><dd class="text-gray-900 dark:text-white">{{ usage.effective_label }}</dd></div>
+    </dl>
+  </div>
+</div>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Plan features &amp; flags</h3>
+  </div>
+  <div class="p-4 flex flex-wrap gap-2">
+    {% for flag in usage.feature_flags %}
+    <span class="inline-flex px-2 py-1 text-xs rounded-lg {% if flag.enabled %}bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300{% else %}bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500{% endif %}">
+      {% if flag.enabled %}✓{% else %}✗{% endif %} {{ flag.label }}
+    </span>
+    {% endfor %}
+  </div>
+</div>

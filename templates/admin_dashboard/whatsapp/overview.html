@@ -79,6 +79,37 @@
   </div>
 </div>
 
+<!-- Plan v2 — WhatsApp marketing caps -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5 mb-6">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Marketing conversation caps (Plan v2)</h2>
+      <p class="text-[10px] text-gray-400 mt-0.5">Distinct conversations contacted via marketing templates this month — utility/auth excluded</p>
+    </div>
+    <span class="text-lg font-bold text-[#25D366]">{{ marketing_conversations_month|format_number }} platform-wide</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-xs">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-3 py-2 font-semibold text-gray-500 uppercase">Plan</th>
+          <th class="px-3 py-2 font-semibold text-gray-500 uppercase text-right">Cap / mo</th>
+          <th class="px-3 py-2 font-semibold text-gray-500 uppercase text-center">WhatsApp Business</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for row in marketing_plan_caps %}
+        <tr>
+          <td class="px-3 py-2 font-medium text-gray-900 dark:text-white">{{ row.label }}</td>
+          <td class="px-3 py-2 text-right text-gray-700 dark:text-gray-300">{% if row.cap %}{{ row.cap }}{% else %}—{% endif %}</td>
+          <td class="px-3 py-2 text-center">{% if row.whatsapp_business %}<span class="text-emerald-600">Yes</span>{% else %}<span class="text-gray-400">No</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
 {% if escalated %}
 <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-xl p-5 mb-6">
   <div class="flex items-center justify-between mb-3">

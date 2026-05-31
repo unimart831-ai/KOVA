@@ -148,11 +148,12 @@ POPULAR_MODELS = {
 }
 
 # Default rate limits per plan
+# UI defaults mirror PLAN_LIMITS daily_llm_tokens (Plan v2)
 DEFAULT_RATE_LIMITS = {
-    "starter": {"max_calls_per_hour": 30, "max_tokens_per_day": 200_000},
-    "growth": {"max_calls_per_hour": 100, "max_tokens_per_day": 1_000_000},
-    "pro": {"max_calls_per_hour": 300, "max_tokens_per_day": 4_000_000},
-    "agency": {"max_calls_per_hour": 600, "max_tokens_per_day": 8_000_000},
+    "starter": {"max_calls_per_hour": 30, "max_tokens_per_day": 50_000},
+    "growth": {"max_calls_per_hour": 100, "max_tokens_per_day": 200_000},
+    "pro": {"max_calls_per_hour": 300, "max_tokens_per_day": 500_000},
+    "agency": {"max_calls_per_hour": 600, "max_tokens_per_day": 2_000_000},
 }
 
 
@@ -292,12 +293,14 @@ def llm_overview(request):
     for plan_code, plan_label in PLAN_TIERS:
         current = plan_rate_limits.get(plan_code, {})
         defaults = DEFAULT_RATE_LIMITS.get(plan_code, {})
+        plan_limits = PLAN_LIMITS.get(plan_code, {})
         rate_limits_display.append({
             "code": plan_code,
-            "label": PLAN_LIMITS.get(plan_code, {}).get("label", plan_label),
+            "label": plan_limits.get("label", plan_label),
             "max_calls_per_hour": current.get("max_calls_per_hour", defaults.get("max_calls_per_hour", 100)),
             "max_tokens_per_day": current.get("max_tokens_per_day", defaults.get("max_tokens_per_day", 1_000_000)),
             "enforced_daily_tokens": get_daily_llm_token_cap(plan_code),
+            "enforced_monthly_tokens": plan_limits.get("monthly_llm_tokens", 0),
             "is_custom": bool(current),
         })
 
