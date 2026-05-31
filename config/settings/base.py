@@ -146,6 +146,7 @@ TEMPLATES = [
                 "apps.products.context_processors.product_nav",
                 "apps.billing.context_processors.plan_limit_notice",
                 "apps.accounts.context_processors.nav_badges",
+                "apps.teams.context_processors.agency_theme",
             ],
         },
     },
@@ -249,6 +250,14 @@ CELERY_BEAT_SCHEDULE = {
     "check-mpesa-subscriptions": {
         "task": "billing.check_mpesa_subscriptions",
         "schedule": 24 * 3600.0,  # daily — expiry checks, grace period, renewals
+    },
+    "calculate-partner-commissions": {
+        "task": "partners.calculate_monthly_commissions",
+        "schedule": 24 * 3600.0,  # daily — no-ops except when previous month not yet billed
+    },
+    "check-partner-milestones": {
+        "task": "partners.check_partner_milestones",
+        "schedule": 24 * 3600.0,  # daily — award milestone bonuses when thresholds hit
     },
     "calendar-intel-holiday-watcher": {
         "task": "calendar_intel.run_holiday_watcher",
@@ -830,6 +839,14 @@ STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
 
 # ─── SITE URL ────────────────────────────────────────────────────────────────
 SITE_URL = env("SITE_URL", default="http://localhost:8000")
+
+# ─── SHOPIFY INTEGRATION ─────────────────────────────────────────────────────
+SHOPIFY_API_KEY = env("SHOPIFY_API_KEY", default="")
+SHOPIFY_API_SECRET = env("SHOPIFY_API_SECRET", default="")
+SHOPIFY_SCOPES = env(
+    "SHOPIFY_SCOPES",
+    default="read_products,write_products,read_orders,read_inventory",
+)
 
 # ─── EMAIL ───────────────────────────────────────────────────────────────────
 # Default: console backend for dev. Production uses Resend SMTP.

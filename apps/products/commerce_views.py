@@ -87,6 +87,11 @@ def public_shop_index(request, page_slug):
     wa_text = f"Hi! I'd like to browse your offers — {brand}."
     seo = build_shop_page_seo(request, profile, user, products)
     shop_reels = get_public_shop_reels(profile)
+    from apps.teams.branding import get_commerce_branding
+
+    commerce_branding = get_commerce_branding(user)
+    if commerce_branding.get("custom_domain"):
+        seo["canonical_url"] = f"https://{commerce_branding['custom_domain']}/shop/{resolve_page_slug(profile)}/"
 
     return render(request, "products/public/shop_index.html", {
         "profile": profile,
@@ -96,6 +101,7 @@ def public_shop_index(request, page_slug):
         "brand_name": brand,
         "wa_url": _whatsapp_url(profile, wa_text),
         "shop_reels": shop_reels,
+        "commerce_branding": commerce_branding,
         **seo,
     })
 

@@ -7,6 +7,7 @@ from django.db.models import Avg, Count, Q, Sum
 from django.db.models.functions import TruncWeek
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -427,6 +428,7 @@ def revenue_dashboard(request):
 
     # Shopify stores
     shopify_stores = ShopifyStore.objects.filter(user=request.user, is_active=True)
+    from apps.analytics.shopify_oauth import shopify_configured
 
     return render(request, "analytics/revenue.html", {
         "conversions": conversions,
@@ -441,6 +443,7 @@ def revenue_dashboard(request):
         "roi": summary["roi"],
         "funnel": summary["funnel"],
         "shopify_stores": shopify_stores,
+        "shopify_oauth_available": shopify_configured(),
         "days": days,
         "insight": insight,
     })
@@ -448,8 +451,9 @@ def revenue_dashboard(request):
 
 @login_required
 def shopify_connect(request):
-    """Connect a Shopify store for revenue attribution."""
+    """Connect a Shopify store manually (legacy) or redirect to OAuth."""
     from apps.analytics.models import ShopifyStore
+    from apps.analytics.shopify_oauth import normalize_shop_domain, shopify_configured
     from apps.billing.enforcement import check_shopify_integration, enforce_or_redirect
 
     allowed, msg = check_shopify_integration(request.user)
@@ -459,17 +463,21 @@ def shopify_connect(request):
     if request.method != "POST":
         return redirect("analytics:revenue")
 
-    shop_domain = request.POST.get("shop_domain", "").strip().lower()
+    use_oauth = request.POST.get("use_oauth") == "1"
+    shop_domain = normalize_shop_domain(request.POST.get("shop_domain", ""))
+
+    if use_oauth and shopify_configured():
+        if not shop_domain:
+            messages.error(request, "Enter your shop domain to connect with Shopify.")
+            return redirect("analytics:revenue")
+        return redirect(f"{reverse('analytics:shopify_oauth_begin')}?shop={shop_domain}")
+
     access_token = request.POST.get("access_token", "").strip()
     webhook_secret = request.POST.get("webhook_secret", "").strip()
 
     if not shop_domain or not access_token:
         messages.error(request, "Shop domain and access token are required.")
         return redirect("analytics:revenue")
-
-    # Normalize domain
-    if not shop_domain.endswith(".myshopify.com"):
-        shop_domain = f"{shop_domain}.myshopify.com"
 
     store, created = ShopifyStore.objects.get_or_create(
         user=request.user,
@@ -487,6 +495,122 @@ def shopify_connect(request):
         store.save(update_fields=["access_token", "webhook_secret", "is_active", "updated_at"])
 
     messages.success(request, f"Connected {shop_domain} for revenue tracking.")
+    return redirect("analytics:revenue")
+
+
+@login_required
+def shopify_oauth_begin(request):
+    """Start Shopify OAuth install flow."""
+    from apps.analytics.shopify_oauth import (
+        new_oauth_state,
+        normalize_shop_domain,
+        oauth_begin_url,
+        shopify_configured,
+    )
+    from apps.billing.enforcement import check_shopify_integration, enforce_or_redirect
+
+    allowed, msg = check_shopify_integration(request.user)
+    if blocked := enforce_or_redirect(request, allowed, msg, "analytics:revenue"):
+        return blocked
+
+    if not shopify_configured():
+        messages.error(request, "Shopify OAuth is not configured. Contact support or use manual token.")
+        return redirect("analytics:revenue")
+
+    shop_domain = normalize_shop_domain(request.GET.get("shop", ""))
+    if not shop_domain:
+        messages.error(request, "Enter your Shopify shop domain.")
+        return redirect("analytics:revenue")
+
+    state = new_oauth_state()
+    request.session["shopify_oauth_state"] = state
+    request.session["shopify_oauth_shop"] = shop_domain
+    request.session["shopify_oauth_user_id"] = request.user.pk
+
+    return redirect(oauth_begin_url(request, shop_domain, state))
+
+
+@login_required
+def shopify_oauth_callback(request):
+    """Complete Shopify OAuth and register webhooks."""
+    from apps.analytics.models import ShopifyStore
+    from apps.analytics.shopify_oauth import (
+        exchange_code_for_token,
+        normalize_shop_domain,
+        register_shopify_webhooks,
+        verify_shopify_oauth_hmac,
+    )
+    from apps.billing.enforcement import check_shopify_integration, enforce_or_redirect
+    from apps.products.shopify_import import sync_shopify_store_products
+
+    allowed, msg = check_shopify_integration(request.user)
+    if blocked := enforce_or_redirect(request, allowed, msg, "analytics:revenue"):
+        return blocked
+
+    params = request.GET.dict()
+    shop_domain = normalize_shop_domain(params.get("shop", ""))
+    code = params.get("code", "")
+    state = params.get("state", "")
+
+    expected_state = request.session.pop("shopify_oauth_state", "")
+    expected_shop = request.session.pop("shopify_oauth_shop", "")
+    expected_user = request.session.pop("shopify_oauth_user_id", None)
+
+    if not code or state != expected_state or shop_domain != expected_shop:
+        messages.error(request, "Shopify authorization failed or expired. Try again.")
+        return redirect("analytics:revenue")
+
+    if expected_user and str(request.user.pk) != str(expected_user):
+        messages.error(request, "Shopify authorization session mismatch.")
+        return redirect("analytics:revenue")
+
+    from django.conf import settings
+
+    if not verify_shopify_oauth_hmac(params, settings.SHOPIFY_API_SECRET):
+        messages.error(request, "Shopify authorization could not be verified.")
+        return redirect("analytics:revenue")
+
+    try:
+        token_data = exchange_code_for_token(shop_domain, code)
+    except Exception as exc:
+        messages.error(request, f"Could not connect Shopify: {exc}")
+        return redirect("analytics:revenue")
+
+    access_token = token_data.get("access_token", "")
+    scopes = token_data.get("scope", "")
+
+    store, created = ShopifyStore.objects.get_or_create(
+        user=request.user,
+        shop_domain=shop_domain,
+        defaults={
+            "access_token": access_token,
+            "scopes": scopes,
+            "is_active": True,
+            "oauth_installed_at": timezone.now(),
+        },
+    )
+    if not created:
+        store.access_token = access_token
+        store.scopes = scopes
+        store.is_active = True
+        store.oauth_installed_at = timezone.now()
+        store.save(update_fields=[
+            "access_token", "scopes", "is_active", "oauth_installed_at", "updated_at",
+        ])
+
+    webhook_result = register_shopify_webhooks(store, request)
+    sync_result = sync_shopify_store_products(store)
+
+    msg = f"Connected {shop_domain} via Shopify."
+    if sync_result.get("created") or sync_result.get("updated"):
+        msg += (
+            f" Imported {sync_result.get('created', 0)} new and "
+            f"{sync_result.get('updated', 0)} updated products."
+        )
+    if webhook_result.get("errors"):
+        msg += " Some webhooks could not be registered — check logs."
+
+    messages.success(request, msg)
     return redirect("analytics:revenue")
 
 

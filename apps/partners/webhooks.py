@@ -33,6 +33,34 @@ def _sign_payload(secret: str, body: bytes) -> str:
     return hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
 
 
+def _log_delivery(
+    mp,
+    event: str,
+    payload: dict,
+    *,
+    status: str,
+    response_code: int | None = None,
+    attempts: int = 1,
+    error_message: str = "",
+):
+    from apps.partners.models import WebhookDeliveryLog
+
+    body_preview = json.dumps(payload, default=str, sort_keys=True)
+    payload_hash = hashlib.sha256(body_preview.encode()).hexdigest()
+    try:
+        WebhookDeliveryLog.objects.create(
+            marketplace=mp,
+            event=event,
+            payload_hash=payload_hash,
+            status=status,
+            response_code=response_code,
+            attempts=attempts,
+            error_message=(error_message or "")[:2000],
+        )
+    except Exception:
+        logger.exception("Failed to write webhook delivery log for %s/%s", mp.slug, event)
+
+
 @shared_task(name="partners.dispatch_marketplace_webhook", bind=True, max_retries=3)
 def dispatch_marketplace_webhook(self, marketplace_id: int, event: str, payload: dict):
     from apps.partners.models import MarketplacePartner
@@ -43,6 +71,7 @@ def dispatch_marketplace_webhook(self, marketplace_id: int, event: str, payload:
         return {"skipped": "partner_not_found"}
 
     if not _webhook_enabled(mp, event):
+        _log_delivery(mp, event, payload, status="skipped", attempts=self.request.retries + 1)
         return {"skipped": "event_disabled"}
 
     body = json.dumps({
@@ -57,13 +86,42 @@ def dispatch_marketplace_webhook(self, marketplace_id: int, event: str, payload:
     if signature:
         headers["X-Kova-Signature"] = signature
 
+    attempt = self.request.retries + 1
     try:
         resp = requests.post(mp.webhook_url, data=body, headers=headers, timeout=15)
         resp.raise_for_status()
+        _log_delivery(
+            mp, event, payload,
+            status="success",
+            response_code=resp.status_code,
+            attempts=attempt,
+        )
         return {"ok": True, "status": resp.status_code}
     except Exception as exc:
         logger.warning("Marketplace webhook %s failed for %s: %s", event, mp.slug, exc)
+        _log_delivery(
+            mp, event, payload,
+            status="failed",
+            response_code=getattr(getattr(exc, "response", None), "status_code", None),
+            attempts=attempt,
+            error_message=str(exc),
+        )
         raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+
+
+def notify_seller_activated(mp, seller, *, auto_activated: bool = False):
+    dispatch_marketplace_webhook.delay(
+        mp.pk,
+        "seller.activated",
+        {
+            "external_seller_id": seller.external_seller_id,
+            "seller_email": seller.user.email,
+            "business_name": seller.business_name,
+            "seller_status": seller.status,
+            "auto_activated": auto_activated,
+            "is_sandbox": bool(getattr(mp, "is_sandbox", False)),
+        },
+    )
 
 
 def notify_product_synced(mp, seller, *, created: int, updated: int, product_ids: list[str]):

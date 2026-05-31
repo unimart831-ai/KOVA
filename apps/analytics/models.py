@@ -4,6 +4,8 @@ from datetime import timedelta
 from django.db import models
 from django.utils import timezone
 
+from apps.platforms.encryption import EncryptedTokenField
+
 
 class PostMetric(models.Model):
     """Engagement metrics for a published post."""
@@ -312,10 +314,20 @@ class ShopifyStore(models.Model):
     shop_domain = models.CharField(
         max_length=255, help_text="myshop.myshopify.com",
     )
-    access_token = models.CharField(max_length=255)
+    access_token = EncryptedTokenField(
+        help_text="Shopify Admin API access token (encrypted at rest).",
+    )
     webhook_secret = models.CharField(
         max_length=255, blank=True,
-        help_text="HMAC secret for verifying Shopify webhook signatures.",
+        help_text="Optional per-store HMAC secret; OAuth apps use SHOPIFY_API_SECRET.",
+    )
+    oauth_installed_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the store was connected via Shopify OAuth.",
+    )
+    scopes = models.CharField(
+        max_length=500, blank=True,
+        help_text="Granted OAuth scopes.",
     )
     is_active = models.BooleanField(default=True)
     orders_tracked = models.PositiveIntegerField(default=0)

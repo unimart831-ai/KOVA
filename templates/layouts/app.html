@@ -4,6 +4,9 @@
 {% block body_class %}bg-gray-50 dark:bg-gray-950{% endblock %}
 
 {% block body %}
+{% if agency_brand_theme %}
+<style>:root { --brand-accent: {{ agency_brand_theme.primary_color }}; }</style>
+{% endif %}
 {% csrf_token %}
 <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-kova-600 focus:text-white focus:shadow-lg">
   Skip to main content
@@ -26,7 +29,7 @@
     <!-- Logo -->
     <div class="flex items-center h-16 px-6 border-b border-gray-200 dark:border-gray-800">
       <a href="{% url 'brief:home' %}" class="flex items-center space-x-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-kova-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
-        <div class="w-8 h-8 rounded-lg bg-kova-600 flex items-center justify-center shadow-kova">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-kova" style="background-color: var(--brand-accent, #7c3aed);">
           <span class="text-white font-bold text-sm">K</span>
         </div>
         <span class="text-lg font-bold text-gray-900 dark:text-white">Kova Agent</span>

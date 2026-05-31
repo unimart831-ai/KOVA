@@ -34,7 +34,9 @@ def _collect_home_stats(user, today, week_ago):
     from apps.leads.models import Lead
     from apps.platforms.models import SocialAccount
 
-    post_stats = Post.objects.filter(user=user).aggregate(
+    from apps.teams.permissions import get_scoped_post_queryset
+
+    post_stats = get_scoped_post_queryset(user).aggregate(
         published_today=Count("id", filter=Q(
             status="published", published_at__date=today,
         )),

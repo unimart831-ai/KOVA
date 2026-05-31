@@ -152,11 +152,14 @@ urlpatterns = [
     path("partners/applications/action/", partners.application_action, name="partner_application_action"),
     path("partners/list/", partners.partner_list, name="partner_list"),
     path("partners/<int:pk>/", partners.partner_detail, name="partner_detail"),
+    path("partners/<int:pk>/commissions/pay/", partners.partner_mark_commissions_paid, name="partner_commissions_pay"),
+    path("partners/<int:pk>/payouts/<int:request_id>/", partners.partner_payout_action, name="partner_payout_action"),
 
     # Marketplace Partners
     path("partners/marketplaces/", partners.marketplace_list, name="marketplace_list"),
     path("partners/marketplaces/create/", partners.marketplace_create, name="marketplace_create"),
     path("partners/marketplaces/<int:pk>/", partners.marketplace_detail, name="marketplace_detail"),
+    path("partners/marketplaces/<int:pk>/import-sellers/", partners.marketplace_import_sellers, name="marketplace_import_sellers"),
     path("partners/marketplaces/<int:pk>/update/", partners.marketplace_update, name="marketplace_update"),
 
     # Help Center

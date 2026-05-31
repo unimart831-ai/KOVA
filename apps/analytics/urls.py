@@ -19,6 +19,8 @@ urlpatterns = [
     # Revenue Attribution
     path("revenue/", views.revenue_dashboard, name="revenue"),
     path("revenue/shopify/connect/", views.shopify_connect, name="shopify_connect"),
+    path("revenue/shopify/oauth/begin/", views.shopify_oauth_begin, name="shopify_oauth_begin"),
+    path("revenue/shopify/oauth/callback/", views.shopify_oauth_callback, name="shopify_oauth_callback"),
     path("revenue/shopify/<uuid:pk>/disconnect/", views.shopify_disconnect, name="shopify_disconnect"),
     path("revenue/shopify/<uuid:pk>/sync-products/", views.shopify_sync_products, name="shopify_sync_products"),
     # Attribution Dashboard (the single answer)
@@ -40,5 +42,6 @@ urlpatterns = [
     path("recycle/<uuid:pk>/action/", views.recycle_action, name="recycle_action"),
     # Webhooks (external — no auth)
     path("webhooks/shopify/order/", webhooks.shopify_order_webhook, name="shopify_order_webhook"),
+    path("webhooks/shopify/products/", webhooks.shopify_product_webhook, name="shopify_product_webhook"),
     path("webhooks/mpesa/commerce/", webhooks.mpesa_commerce_callback, name="mpesa_commerce_callback"),
 ]

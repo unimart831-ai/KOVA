@@ -15,6 +15,7 @@ from apps.products.commerce_views import (
     public_shop_index,
 )
 from apps.products.commerce_sitemap import commerce_sitemap_xml, robots_txt
+from apps.partners.views import referral_redirect
 
 admin.site.site_header = "KOVA AI ADMIN"
 admin.site.site_title = "Kova AI"
@@ -100,6 +101,7 @@ urlpatterns = [
     path("blog/", include("apps.help.urls_blog")),
     # Growth Partners (public + authenticated)
     path("partners/", include("apps.partners.urls")),
+    path("r/<str:referral_code>/", referral_redirect, name="referral_redirect"),
     # Public Kova Link pages (no login required)
     path("k/<slug:slug>/", public_page, name="public_page"),
     path("k/<slug:slug>/click/<uuid:link_id>/", public_link_click, name="public_link_click"),

@@ -89,6 +89,10 @@
             <span><strong>Seller welcome email</strong></span>
           </label>
           <label class="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-300">
+            <input type="checkbox" name="is_sandbox" {% if mp.is_sandbox %}checked{% endif %} class="mt-0.5 rounded border-gray-300 text-kova-600">
+            <span><strong>Sandbox mode</strong><br><span class="text-gray-400">Sellers provision normally but posts dry-run instead of publishing live.</span></span>
+          </label>
+          <label class="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-300">
             <input type="checkbox" name="is_active" {% if mp.is_active %}checked{% endif %} class="mt-0.5 rounded border-gray-300 text-kova-600">
             <span><strong>Integration active</strong></span>
           </label>
@@ -291,6 +295,47 @@
   </div>
 </div>
 
+{# ── File import (no API) ─────────────────────────────────────────────── #}
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5 mb-6">
+  <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Import sellers CSV</h2>
+  <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+    When the marketplace has no API integration, upload an export spreadsheet to provision sellers on Kova.
+    Optional products CSV must include <code class="text-[10px]">external_seller_id</code> per row.
+  </p>
+  <form method="post" action="{% url 'admin_dashboard:marketplace_import_sellers' mp.pk %}" enctype="multipart/form-data" class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+    {% csrf_token %}
+    <div>
+      <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Sellers CSV</label>
+      <input type="file" name="sellers_csv" accept=".csv,text/csv" required
+        class="w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-kova-50 file:text-kova-700">
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Products CSV (optional)</label>
+      <input type="file" name="products_csv" accept=".csv,text/csv"
+        class="w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700">
+    </div>
+    <div class="sm:col-span-2 flex flex-wrap items-center gap-3">
+      <button type="submit" class="px-4 py-2 bg-kova-600 text-white text-sm font-medium rounded-lg hover:bg-kova-700">
+        Import CSV
+      </button>
+      <p class="text-[10px] text-gray-400">
+        Vendor self-serve: <a href="{{ vendor_join_url }}" target="_blank" class="text-kova-600 hover:underline">{{ vendor_join_url }}</a>
+      </p>
+    </div>
+  </form>
+  {% if import_result %}
+  <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-xs">
+    <p class="font-medium text-gray-700 dark:text-gray-300 mb-1">Last import summary</p>
+    <p class="text-gray-600 dark:text-gray-400">
+      Provisioned: {{ import_result.summary.provisioned }} ·
+      Already existed: {{ import_result.summary.already_exists }} ·
+      Failed: {{ import_result.summary.failed }}
+      {% if import_result.summary.pending_added %} · Pending invites: {{ import_result.summary.pending_added }}{% endif %}
+    </p>
+  </div>
+  {% endif %}
+</div>
+
 {# ── Sellers table ──────────────────────────────────────────────────── #}
 <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
   <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
@@ -331,6 +376,41 @@
         </tr>
         {% empty %}
         <tr><td colspan="7" class="px-4 py-8 text-center text-sm text-gray-400">No sellers provisioned yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden mt-6">
+  <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Webhook delivery log</h3>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Recent outbound webhook attempts (last 30)</p>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-800/50 text-xs text-gray-500 dark:text-gray-400 uppercase">
+        <tr>
+          <th class="px-4 py-2 text-left">Time</th>
+          <th class="px-4 py-2 text-left">Event</th>
+          <th class="px-4 py-2 text-center">Status</th>
+          <th class="px-4 py-2 text-center">HTTP</th>
+          <th class="px-4 py-2 text-center">Attempts</th>
+          <th class="px-4 py-2 text-left">Payload hash</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for log in webhook_logs %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30">
+          <td class="px-4 py-2 text-xs text-gray-500">{{ log.created_at|timesince }} ago</td>
+          <td class="px-4 py-2 font-mono text-xs">{{ log.event }}</td>
+          <td class="px-4 py-2 text-center text-xs">{{ log.get_status_display }}</td>
+          <td class="px-4 py-2 text-center text-xs">{{ log.response_code|default:"—" }}</td>
+          <td class="px-4 py-2 text-center text-xs">{{ log.attempts }}</td>
+          <td class="px-4 py-2 font-mono text-[10px] text-gray-400">{{ log.payload_hash|slice:":12" }}…</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">No webhook deliveries logged yet</td></tr>
         {% endfor %}
       </tbody>
     </table>

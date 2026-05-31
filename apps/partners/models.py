@@ -77,6 +77,10 @@ class PartnerApplication(models.Model):
         APPROVED = "approved", "Approved"
         REJECTED = "rejected", "Rejected"
 
+    class ApplicationType(models.TextChoices):
+        STANDARD = "standard", "Standard Partner"
+        CAMPUS_REP = "campus_rep", "Campus Rep"
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -92,6 +96,12 @@ class PartnerApplication(models.Model):
     website = models.URLField(blank=True)
     audience_description = models.TextField(
         help_text="Describe your audience, channels, and how you plan to promote Kova."
+    )
+    application_type = models.CharField(
+        max_length=20,
+        choices=ApplicationType.choices,
+        default=ApplicationType.STANDARD,
+        db_index=True,
     )
     status = models.CharField(
         max_length=10, choices=Status.choices, default=Status.PENDING, db_index=True
@@ -149,6 +159,16 @@ class Partner(models.Model):
     )
     pending_payout_kes = models.DecimalField(
         max_digits=10, decimal_places=2, default=Decimal("0.00")
+    )
+    application_type = models.CharField(
+        max_length=20,
+        choices=PartnerApplication.ApplicationType.choices,
+        default=PartnerApplication.ApplicationType.STANDARD,
+        db_index=True,
+    )
+    stripe_connect_account_id = models.CharField(
+        max_length=255, blank=True,
+        help_text="Stripe Connect account ID for international payouts (v2 full Connect).",
     )
     joined_at = models.DateTimeField(auto_now_add=True)
 
@@ -220,6 +240,10 @@ class Referral(models.Model):
     )
     referral_code_used = models.CharField(max_length=30)
     signed_up_at = models.DateTimeField(auto_now_add=True)
+    last_payment_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Timestamp of last counted subscription payment (dedupes webhook retries)",
+    )
     activated_at = models.DateTimeField(
         null=True, blank=True,
         help_text="Set when client completes 2 consecutive paid months",
@@ -293,6 +317,7 @@ class Commission(models.Model):
 
     class Meta:
         ordering = ["-period_start"]
+        unique_together = [("partner", "referral", "period_start")]
 
     def __str__(self):
         return f"{self.partner.referral_code} — {self.period_start} — KES {self.amount_kes}"
@@ -318,6 +343,63 @@ class MilestoneAward(models.Model):
 
     def __str__(self):
         return f"{self.partner.referral_code} — {self.label} ({self.clients_required} clients)"
+
+
+class ReferralClick(models.Model):
+    """Tracks clicks on partner referral short links."""
+
+    partner = models.ForeignKey(
+        Partner, on_delete=models.SET_NULL, null=True, blank=True, related_name="clicks",
+    )
+    referral_code = models.CharField(max_length=30, db_index=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    landing_path = models.CharField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["referral_code", "-created_at"]),
+            models.Index(fields=["partner", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.referral_code} @ {self.created_at:%Y-%m-%d %H:%M}"
+
+
+class PayoutRequest(models.Model):
+    """Partner-initiated payout request (M-Pesa or Stripe Connect)."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending Review"
+        APPROVED = "approved", "Approved"
+        PAID = "paid", "Paid"
+        REJECTED = "rejected", "Rejected"
+
+    MIN_AMOUNT_KES = Decimal("500.00")
+
+    partner = models.ForeignKey(
+        Partner, on_delete=models.CASCADE, related_name="payout_requests",
+    )
+    amount_kes = models.DecimalField(max_digits=10, decimal_places=2)
+    mpesa_number = models.CharField(
+        max_length=30, blank=True,
+        help_text="Kenyan M-Pesa number (254XXXXXXXXX).",
+    )
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.PENDING, db_index=True,
+    )
+    admin_notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.partner.referral_code} — KES {self.amount_kes} ({self.get_status_display()})"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -500,6 +582,11 @@ class MarketplacePartner(models.Model):
         help_text="Secret for signing webhook payloads (HMAC-SHA256)",
     )
 
+    is_sandbox = models.BooleanField(
+        default=False,
+        help_text="Sandbox mode — sellers provisioned but posts dry-run instead of publishing live",
+    )
+
     # ── Status ──
     is_active = models.BooleanField(default=True)
     notes = models.TextField(blank=True, help_text="Internal notes about this partnership")
@@ -645,3 +732,32 @@ class MarketplaceSellerAccount(models.Model):
         self.status = self.Status.SUSPENDED
         self.suspended_at = timezone.now()
         self.save(update_fields=["status", "suspended_at"])
+
+
+class WebhookDeliveryLog(models.Model):
+    """Audit log for outbound marketplace webhook dispatches."""
+
+    class Status(models.TextChoices):
+        SUCCESS = "success", "Success"
+        FAILED = "failed", "Failed"
+        SKIPPED = "skipped", "Skipped"
+
+    marketplace = models.ForeignKey(
+        MarketplacePartner, on_delete=models.CASCADE, related_name="webhook_logs",
+    )
+    event = models.CharField(max_length=50, db_index=True)
+    payload_hash = models.CharField(max_length=64, blank=True)
+    status = models.CharField(max_length=10, choices=Status.choices, db_index=True)
+    response_code = models.PositiveIntegerField(null=True, blank=True)
+    attempts = models.PositiveIntegerField(default=1)
+    error_message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["marketplace", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.marketplace.slug} — {self.event} — {self.status}"

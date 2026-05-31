@@ -296,6 +296,21 @@ def send_partner_milestone_email(partner_user_id, milestone_label, bonus_kes, ex
         logger.error("Partner milestone email failed for user %s: %s", partner_user_id, e)
 
 
+@shared_task(name="emails.send_marketplace_seller_welcome")
+def send_marketplace_seller_welcome_email(user_id, marketplace_name, marketplace_slug="", branding=None):
+    from apps.accounts.models import User
+    from apps.emails.services import email_service
+
+    try:
+        user = User.objects.get(pk=user_id)
+        email_service.send_marketplace_seller_welcome(user, marketplace_name, branding or {})
+    except Exception as e:
+        logger.error(
+            "Marketplace seller welcome email failed for user %s (%s): %s",
+            user_id, marketplace_slug, e,
+        )
+
+
 # ─── Scheduled tasks ────────────────────────────────────────────────────────
 
 @shared_task(name="emails.check_trial_expiry_emails")

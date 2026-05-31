@@ -58,6 +58,22 @@ class Brand(models.Model):
         default=list, blank=True,
         help_text='Social media goals for this brand.',
     )
+    custom_domain = models.CharField(
+        max_length=255, blank=True,
+        help_text="Custom domain for commerce/Kova Link (display + CNAME setup).",
+    )
+    custom_domain_verified = models.BooleanField(
+        default=False,
+        help_text="True once DNS CNAME is verified (manual for v1).",
+    )
+    theme_primary_color = models.CharField(
+        max_length=7, blank=True,
+        help_text="Hex accent color for client-facing pages, e.g. #059669.",
+    )
+    logo_url = models.URLField(
+        blank=True,
+        help_text="Agency/client logo URL for reports and commerce pages.",
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -78,6 +94,7 @@ class TeamMember(models.Model):
         ADMIN = "admin", "Admin"
         EDITOR = "editor", "Editor"
         VIEWER = "viewer", "Viewer"
+        CLIENT = "client", "Client"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="members")
@@ -85,6 +102,14 @@ class TeamMember(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="team_memberships",
+    )
+    brand = models.ForeignKey(
+        "teams.Brand",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="client_members",
+        help_text="For client role — limits dashboard to this brand's content.",
     )
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.EDITOR)
     invited_by = models.ForeignKey(
@@ -126,6 +151,14 @@ class TeamInvitation(models.Model):
         max_length=20,
         choices=TeamMember.Role.choices,
         default=TeamMember.Role.EDITOR,
+    )
+    brand = models.ForeignKey(
+        "teams.Brand",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="invitations",
+        help_text="Required when inviting a client — scopes them to one brand.",
     )
     token = models.CharField(max_length=64, unique=True, db_index=True)
     invited_by = models.ForeignKey(

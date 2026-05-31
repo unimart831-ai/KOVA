@@ -68,6 +68,7 @@ EMAIL_TEMPLATES = {
     "partner_app_rejected": ("emails/partner_app_rejected.html", "Update on your Growth Partner application — Kova Agent"),
     "partner_new_referral": ("emails/partner_new_referral.html", "New referral! Someone signed up with your link 🔥"),
     "partner_milestone": ("emails/partner_milestone.html", "Milestone achieved! You've unlocked a bonus 🏆"),
+    "marketplace_seller_welcome": ("emails/marketplace_seller_welcome.html", "Your Kova seller account is ready"),
 
     # Monthly attribution report
     "monthly_report": ("emails/monthly_report.html", "Your monthly performance report — Kova Agent"),
@@ -396,6 +397,23 @@ class EmailService:
                 "dashboard_url": f"{getattr(settings, 'SITE_URL', '')}/partners/dashboard/",
             },
             metadata={"milestone": milestone_label, "bonus_kes": str(bonus_kes)},
+        )
+
+    def send_marketplace_seller_welcome(self, user, marketplace_name, branding=None):
+        branding = branding or {}
+        from apps.partners.seller_provisioning import build_password_reset_url
+
+        return self._send(
+            "marketplace_seller_welcome",
+            user.email,
+            user=user,
+            context={
+                "marketplace_name": marketplace_name,
+                "password_reset_url": build_password_reset_url(user),
+                "accent_color": branding.get("accent_color", "#0d8474"),
+                "powered_by_text": branding.get("powered_by_text", ""),
+            },
+            metadata={"marketplace": marketplace_name},
         )
 
 

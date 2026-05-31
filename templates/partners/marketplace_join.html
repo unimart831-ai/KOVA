@@ -1,0 +1,46 @@
+{% extends "layouts/marketing.html" %}
+
+{% block title %}Join {{ marketplace.name }} on Kova{% endblock %}
+
+{% block content %}
+<div class="brand-atmosphere min-h-[85vh] flex items-center justify-center py-12 px-4">
+  {% include "components/brand/_atmosphere_orbs.html" %}
+  <div class="relative w-full max-w-md mx-auto reveal">
+    <div class="text-center mb-6">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Connect your shop to Kova</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+        {{ marketplace.name }} sellers — get AI social posts for your products. Enter your USK seller ID below.
+      </p>
+    </div>
+
+    <form method="post" class="glass-panel rounded-2xl shadow-xl p-6 space-y-4">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-lg p-3 text-sm">
+        {{ form.non_field_errors.0 }}
+      </div>
+      {% endif %}
+
+      {% for field in form %}
+      <div>
+        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          {{ field.label }}{% if field.field.required %} <span class="text-red-400">*</span>{% endif %}
+        </label>
+        {{ field }}
+        {% if field.errors %}
+        <p class="text-red-500 text-xs mt-1">{{ field.errors.0 }}</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+
+      <button type="submit" class="w-full py-3 px-4 text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl font-semibold shadow-sm transition-colors">
+        Join on Kova
+      </button>
+      <p class="text-xs text-gray-400 dark:text-gray-500 text-center">
+        After signup, check your email to set a password and connect Instagram or TikTok.
+      </p>
+    </form>
+  </div>
+</div>
+{% endblock %}

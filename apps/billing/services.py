@@ -277,6 +277,11 @@ def _handle_invoice_paid(event, billing_event):
             user_id=str(user.pk),
         )
 
+        from decimal import Decimal
+        from apps.partners.referral_billing import record_referral_payment_safe
+        amount_kes = Decimal(str((invoice.get("amount_paid", 0) or 0) / 100))
+        record_referral_payment_safe(user, user.profile.plan, amount_kes)
+
 
 def _handle_invoice_failed(event, billing_event):
     """invoice.payment_failed — Payment failed (card declined, etc.)."""

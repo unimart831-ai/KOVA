@@ -141,8 +141,22 @@ def team_invite(request, slug):
             messages.error(request, "Email is required.")
             return redirect("teams:detail", slug=slug)
 
-        if role not in [TeamMember.Role.ADMIN, TeamMember.Role.EDITOR, TeamMember.Role.VIEWER]:
+        if role not in [
+            TeamMember.Role.ADMIN,
+            TeamMember.Role.EDITOR,
+            TeamMember.Role.VIEWER,
+            TeamMember.Role.CLIENT,
+        ]:
             role = TeamMember.Role.EDITOR
+
+        brand = None
+        if role == TeamMember.Role.CLIENT:
+            brand_id = request.POST.get("brand_id")
+            if brand_id:
+                brand = team.brands.filter(pk=brand_id).first()
+            if not brand:
+                messages.error(request, "Select a brand for client invitations.")
+                return redirect("teams:detail", slug=slug)
 
         # Check if already a member
         if TeamMember.objects.filter(team=team, user__email=email).exists():
@@ -162,6 +176,7 @@ def team_invite(request, slug):
             team=team,
             email=email,
             role=role,
+            brand=brand,
             token=token,
             invited_by=request.user,
             expires_at=timezone.now() + timezone.timedelta(days=7),
@@ -206,6 +221,7 @@ def invitation_accept(request, token):
                 user=request.user,
                 role=invitation.role,
                 invited_by=invitation.invited_by,
+                brand=getattr(invitation, "brand", None) or invitation.brand,
             )
         invitation.accepted = True
         invitation.save(update_fields=["accepted"])
@@ -364,6 +380,10 @@ def brand_edit(request, slug, brand_id):
             brand.goals = [g.strip() for g in goals_raw.split(",") if g.strip()]
         else:
             brand.goals = []
+
+        brand.custom_domain = request.POST.get("custom_domain", "").strip().lower()
+        brand.theme_primary_color = request.POST.get("theme_primary_color", "").strip()
+        brand.logo_url = request.POST.get("logo_url", "").strip()
 
         brand.save()
         TeamActivity.log(team, request.user, TeamActivity.EventType.BRAND_UPDATED, f'Updated brand "{brand.name}"', brand_id=str(brand.id))

@@ -16,10 +16,13 @@ urlpatterns = [
     path("info/", partner_views.MarketplaceInfoView.as_view(), name="info"),
 
     # Seller management
+    path("sellers/bulk/", partner_views.SellerBulkProvisionView.as_view(), name="seller-bulk-provision"),
     path("sellers/", partner_views.SellerListCreateView.as_view(), name="seller-list-create"),
     path("sellers/<str:external_seller_id>/", partner_views.SellerDetailView.as_view(), name="seller-detail"),
     path("sellers/<str:external_seller_id>/suspend/", partner_views.SellerSuspendView.as_view(), name="seller-suspend"),
     path("sellers/<str:external_seller_id>/activate/", partner_views.SellerActivateView.as_view(), name="seller-activate"),
+    path("sellers/<str:external_seller_id>/content/", partner_views.SellerContentView.as_view(), name="seller-content"),
+    path("sellers/<str:external_seller_id>/analytics/", partner_views.SellerAnalyticsView.as_view(), name="seller-analytics"),
 
     # Product sync
     path("sellers/<str:external_seller_id>/products/sync/", partner_views.ProductSyncView.as_view(), name="product-sync"),

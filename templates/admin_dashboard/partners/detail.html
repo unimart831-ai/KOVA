@@ -112,13 +112,25 @@
 
 <!-- ── Commissions Table ─────────────────────────────────────────────── -->
 <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-  <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+  <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-3">
     <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Commission History</h3>
+    {% if partner.pending_payout_kes > 0 %}
+    <form method="post" action="{% url 'admin_dashboard:partner_commissions_pay' partner.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="mark_all" value="1">
+      <button type="submit" class="text-xs px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">
+        Mark all pending paid (KES {{ partner.pending_payout_kes|floatformat:0 }})
+      </button>
+    </form>
+    {% endif %}
   </div>
+  <form method="post" action="{% url 'admin_dashboard:partner_commissions_pay' partner.pk %}">
+    {% csrf_token %}
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead class="bg-gray-50 dark:bg-gray-800/50 text-xs text-gray-500 dark:text-gray-400 uppercase">
         <tr>
+          <th class="px-4 py-2 text-left w-8"></th>
           <th class="px-4 py-2 text-left">Period</th>
           <th class="px-4 py-2 text-right">Client Revenue</th>
           <th class="px-4 py-2 text-center">Rate</th>
@@ -130,6 +142,11 @@
       <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
         {% for c in commissions %}
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30">
+          <td class="px-4 py-2">
+            {% if c.status == 'pending' or c.status == 'approved' %}
+            <input type="checkbox" name="commission_ids" value="{{ c.pk }}" class="rounded border-gray-300">
+            {% endif %}
+          </td>
           <td class="px-4 py-2 text-gray-900 dark:text-white">{{ c.period_start|date:"M Y" }}</td>
           <td class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">KES {{ c.client_revenue_kes|floatformat:0 }}</td>
           <td class="px-4 py-2 text-center text-gray-700 dark:text-gray-300">{{ c.commission_rate|floatformat:0 }}%</td>
@@ -145,10 +162,51 @@
           <td class="px-4 py-2 text-right text-xs text-gray-500 dark:text-gray-400">{{ c.paid_at|date:"M d, Y"|default:"-" }}</td>
         </tr>
         {% empty %}
-        <tr><td colspan="6" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">No commissions yet</td></tr>
+        <tr><td colspan="7" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">No commissions yet</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+  <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-800">
+    <button type="submit" class="text-xs px-3 py-1.5 rounded-lg bg-kova-600 text-white hover:bg-kova-700">Mark selected paid</button>
+  </div>
+  </form>
 </div>
+
+{% if payout_requests %}
+<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl mt-6">
+  <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Payout requests</h3>
+  </div>
+  <table class="w-full text-sm">
+    <thead class="bg-gray-50 dark:bg-gray-800/50 text-xs text-gray-500 uppercase">
+      <tr>
+        <th class="px-4 py-2 text-left">Date</th>
+        <th class="px-4 py-2 text-right">Amount</th>
+        <th class="px-4 py-2 text-left">M-Pesa</th>
+        <th class="px-4 py-2 text-center">Status</th>
+        <th class="px-4 py-2 text-right">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for pr in payout_requests %}
+      <tr>
+        <td class="px-4 py-2">{{ pr.created_at|date:"M d, Y" }}</td>
+        <td class="px-4 py-2 text-right">KES {{ pr.amount_kes|floatformat:0 }}</td>
+        <td class="px-4 py-2">{{ pr.mpesa_number }}</td>
+        <td class="px-4 py-2 text-center">{{ pr.get_status_display }}</td>
+        <td class="px-4 py-2 text-right space-x-2">
+          {% if pr.status == 'pending' %}
+          <form method="post" action="{% url 'admin_dashboard:partner_payout_action' partner.pk pr.pk %}" class="inline">{% csrf_token %}<input type="hidden" name="action" value="approve"><button type="submit" class="text-xs text-blue-600">Approve</button></form>
+          <form method="post" action="{% url 'admin_dashboard:partner_payout_action' partner.pk pr.pk %}" class="inline">{% csrf_token %}<input type="hidden" name="action" value="reject"><button type="submit" class="text-xs text-red-600">Reject</button></form>
+          {% elif pr.status == 'approved' or pr.status == 'pending' %}
+          <form method="post" action="{% url 'admin_dashboard:partner_payout_action' partner.pk pr.pk %}" class="inline">{% csrf_token %}<input type="hidden" name="action" value="paid"><button type="submit" class="text-xs text-green-600">Mark paid</button></form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
 {% endblock %}

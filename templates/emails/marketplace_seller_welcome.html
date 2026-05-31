@@ -1,0 +1,26 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Welcome to Kova — {{ marketplace_name }}{% endblock %}
+{% block header_title %}Your Kova seller account is ready{% endblock %}
+{% block header_subtitle %}<p style="margin:4px 0 0;color:#a3e8d7;font-size:14px;">{{ powered_by_text|default:"Powered by Kova" }}</p>{% endblock %}
+{% block header_badge %}SELLER ACCOUNT{% endblock %}
+
+{% block content %}
+<h2 style="margin:0 0 12px;font-size:18px;font-weight:600;color:#111827;">Hey {{ first_name }}, welcome!</h2>
+<p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#374151;">
+  <strong>{{ marketplace_name }}</strong> provisioned a Kova Agent account for your shop.
+  Set your password below, then review AI-generated social content for your products.
+</p>
+
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:24px;">
+  <tr>
+    <td align="center">
+      <a href="{{ password_reset_url }}" style="display:inline-block;background-color:{{ accent_color|default:'#0d8474' }};color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">Set my password</a>
+    </td>
+  </tr>
+</table>
+
+<p style="margin:0;font-size:13px;line-height:1.6;color:#6b7280;">
+  This link expires after use. If you did not expect this email, you can ignore it.
+</p>
+{% endblock %}

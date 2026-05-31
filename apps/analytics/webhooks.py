@@ -35,6 +35,21 @@ def _verify_shopify_hmac(body: bytes, hmac_header: str, secret: str) -> bool:
     return hmac.compare_digest(expected, hmac_header)
 
 
+def _shopify_webhook_secret(store) -> str:
+    """Per-store secret or app client secret for OAuth-installed stores."""
+    if store.webhook_secret:
+        return store.webhook_secret
+    return getattr(settings, "SHOPIFY_API_SECRET", "")
+
+
+def _get_shopify_store(shop_domain: str):
+    from apps.analytics.models import ShopifyStore
+
+    return ShopifyStore.objects.select_related("user").get(
+        shop_domain=shop_domain, is_active=True,
+    )
+
+
 @csrf_exempt
 @require_POST
 def shopify_order_webhook(request):
@@ -58,15 +73,14 @@ def shopify_order_webhook(request):
 
     # Find the store
     try:
-        store = ShopifyStore.objects.select_related("user").get(
-            shop_domain=shop_domain, is_active=True,
-        )
+        store = _get_shopify_store(shop_domain)
     except ShopifyStore.DoesNotExist:
         logger.warning("Shopify webhook from unknown store: %s", shop_domain)
         return HttpResponseForbidden("Unknown store")
 
     # Verify HMAC
-    if store.webhook_secret and not _verify_shopify_hmac(body, hmac_header, store.webhook_secret):
+    secret = _shopify_webhook_secret(store)
+    if secret and not _verify_shopify_hmac(body, hmac_header, secret):
         logger.warning("Shopify HMAC verification failed for %s", shop_domain)
         return HttpResponseForbidden("Invalid signature")
 
@@ -158,6 +172,52 @@ def shopify_order_webhook(request):
         "Shopify order %s tracked: %s %s → conversion %s (post=%s)",
         order_id, total_price, currency, conversion.pk, post.pk if post else "none",
     )
+    return HttpResponse("OK", status=200)
+
+
+@csrf_exempt
+@require_POST
+def shopify_product_webhook(request):
+    """
+    Receive Shopify products/create and products/update webhooks.
+    Upserts Kova Product by external_id (Shopify product id).
+    """
+    from apps.products.shopify_import import upsert_shopify_product
+
+    shop_domain = request.headers.get("X-Shopify-Shop-Domain", "")
+    hmac_header = request.headers.get("X-Shopify-Hmac-Sha256", "")
+    topic = request.headers.get("X-Shopify-Topic", "")
+    body = request.body
+
+    if not shop_domain:
+        return HttpResponseBadRequest("Missing shop domain")
+
+    try:
+        store = _get_shopify_store(shop_domain)
+    except ShopifyStore.DoesNotExist:
+        logger.warning("Shopify product webhook from unknown store: %s", shop_domain)
+        return HttpResponseForbidden("Unknown store")
+
+    secret = _shopify_webhook_secret(store)
+    if secret and not _verify_shopify_hmac(body, hmac_header, secret):
+        logger.warning("Shopify product HMAC failed for %s", shop_domain)
+        return HttpResponseForbidden("Invalid signature")
+
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError:
+        return HttpResponseBadRequest("Invalid JSON")
+
+    try:
+        _, action = upsert_shopify_product(store, data)
+        logger.info(
+            "Shopify product webhook %s for %s: %s (id=%s)",
+            topic, shop_domain, action or "skipped", data.get("id"),
+        )
+    except Exception:
+        logger.exception("Shopify product webhook upsert failed for %s", shop_domain)
+        return HttpResponse("Error", status=500)
+
     return HttpResponse("OK", status=200)
 
 

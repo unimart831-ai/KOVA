@@ -150,6 +150,8 @@ def gather_report_data(user, days=30):
 
 def generate_report_pdf(user, days=30):
     """Generate a PDF report and return bytes."""
+    from apps.teams.branding import get_report_branding
+
     data = gather_report_data(user, days)
 
     # Add display helpers
@@ -157,6 +159,9 @@ def generate_report_pdf(user, days=30):
     profile = getattr(user, "profile", None)
     if profile:
         data["business_name"] = getattr(profile, "company_name", "") or ""
+
+    branding = get_report_branding(user)
+    data.update(branding)
 
     html = render_to_string("analytics/report_pdf.html", data)
 

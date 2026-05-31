@@ -24,6 +24,7 @@ from apps.partners.models import (
     MilestoneAward,
     Partner,
     PartnerApplication,
+    PayoutRequest,
     Referral,
     generate_api_key,
     generate_referral_code,
@@ -194,10 +195,14 @@ def application_action(request):
         # Auto-create Partner if user linked
         if application.user and not Partner.objects.filter(user=application.user).exists():
             name = application.full_name or application.user.get_full_name()
+            is_campus = application.application_type == PartnerApplication.ApplicationType.CAMPUS_REP
             partner = Partner.objects.create(
                 user=application.user,
                 application=application,
                 referral_code=generate_referral_code(name),
+                application_type=application.application_type,
+                commission_rate=Decimal("0.20") if is_campus else Decimal("0.15"),
+                tier=Partner.Tier.CONNECTOR if is_campus else Partner.Tier.STARTER,
             )
             try:
                 from apps.emails.tasks import send_partner_app_approved_email
@@ -290,6 +295,7 @@ def partner_detail(request, pk):
     referrals = partner.referrals.select_related("referred_user").order_by("-signed_up_at")[:50]
     commissions = partner.commissions.order_by("-period_start")[:20]
     milestones = partner.milestones.all()
+    payout_requests = partner.payout_requests.order_by("-created_at")[:20]
 
     context = {
         "page_title": f"Partner: {partner.referral_code}",
@@ -297,6 +303,7 @@ def partner_detail(request, pk):
         "referrals": referrals,
         "commissions": commissions,
         "milestones": milestones,
+        "payout_requests": payout_requests,
         "active_count": partner.active_referrals_count,
         "pending_count": partner.pending_referrals_count,
         "total_count": partner.total_referrals_count,
@@ -304,11 +311,81 @@ def partner_detail(request, pk):
     return render(request, "admin_dashboard/partners/detail.html", context)
 
 
+@senior_staff_required
+@require_POST
+def partner_mark_commissions_paid(request, pk):
+    """Mark selected (or all pending) commissions paid and adjust partner balances."""
+    partner = get_object_or_404(Partner, pk=pk)
+    commission_ids = request.POST.getlist("commission_ids")
+    mark_all = request.POST.get("mark_all") == "1"
+
+    qs = partner.commissions.filter(status__in=[Commission.Status.PENDING, Commission.Status.APPROVED])
+    if not mark_all and commission_ids:
+        qs = qs.filter(pk__in=commission_ids)
+    elif not mark_all:
+        messages.error(request, "Select commissions to pay or use Mark all pending.")
+        return redirect("admin_dashboard:partner_detail", pk=pk)
+
+    now = timezone.now()
+    total = qs.aggregate(total=Sum("amount_kes"))["total"] or Decimal("0.00")
+    updated = qs.update(status=Commission.Status.PAID, paid_at=now)
+
+    if updated:
+        partner.pending_payout_kes = max(Decimal("0.00"), partner.pending_payout_kes - total)
+        partner.total_earned_kes += total
+        partner.save(update_fields=["pending_payout_kes", "total_earned_kes"])
+        messages.success(request, f"Marked {updated} commission(s) paid — KES {total:,.0f}.")
+    else:
+        messages.info(request, "No pending commissions to mark as paid.")
+
+    return redirect("admin_dashboard:partner_detail", pk=pk)
+
+
+@senior_staff_required
+@require_POST
+def partner_payout_action(request, pk, request_id):
+    """Approve, mark paid, or reject a partner payout request."""
+    partner = get_object_or_404(Partner, pk=pk)
+    payout = get_object_or_404(PayoutRequest, pk=request_id, partner=partner)
+    action = request.POST.get("action")
+    now = timezone.now()
+
+    if action == "approve" and payout.status == PayoutRequest.Status.PENDING:
+        payout.status = PayoutRequest.Status.APPROVED
+        payout.reviewed_at = now
+        payout.save(update_fields=["status", "reviewed_at"])
+        messages.success(request, f"Approved payout request for KES {payout.amount_kes:,.0f}.")
+    elif action == "paid" and payout.status in (
+        PayoutRequest.Status.PENDING, PayoutRequest.Status.APPROVED,
+    ):
+        payout.status = PayoutRequest.Status.PAID
+        payout.reviewed_at = payout.reviewed_at or now
+        payout.paid_at = now
+        payout.save(update_fields=["status", "reviewed_at", "paid_at"])
+        partner.pending_payout_kes = max(
+            Decimal("0.00"), partner.pending_payout_kes - payout.amount_kes,
+        )
+        partner.total_earned_kes += payout.amount_kes
+        partner.save(update_fields=["pending_payout_kes", "total_earned_kes"])
+        messages.success(request, f"Marked payout KES {payout.amount_kes:,.0f} as paid.")
+    elif action == "reject" and payout.status == PayoutRequest.Status.PENDING:
+        payout.status = PayoutRequest.Status.REJECTED
+        payout.reviewed_at = now
+        payout.admin_notes = request.POST.get("reason", payout.admin_notes)
+        payout.save(update_fields=["status", "reviewed_at", "admin_notes"])
+        messages.info(request, "Payout request rejected.")
+    else:
+        messages.error(request, "Invalid payout action.")
+
+    return redirect("admin_dashboard:partner_detail", pk=pk)
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # MARKETPLACE PARTNERS
 # ══════════════════════════════════════════════════════════════════════════════
 
 DEFAULT_WEBHOOK_EVENTS = [
+    "seller.activated",
     "product.synced",
     "content.generated",
     "post.published",
@@ -402,6 +479,8 @@ def marketplace_detail(request, pk):
     seller_stats = mp.seller_accounts.values("status").annotate(count=Count("id"))
     seller_breakdown = {row["status"]: row["count"] for row in seller_stats}
     integration = _marketplace_integration_stats(mp)
+    webhook_logs = mp.webhook_logs.order_by("-created_at")[:30]
+    import_result = request.session.pop(f"marketplace_import_{mp.pk}", None)
 
     context = {
         "page_title": f"Marketplace: {mp.name}",
@@ -419,8 +498,54 @@ def marketplace_detail(request, pk):
         "webhook_events_json": json.dumps(integration["webhook_events"], indent=2),
         "sync_direction_choices": MarketplacePartner.SyncDirection.choices,
         "default_webhook_events": DEFAULT_WEBHOOK_EVENTS,
+        "webhook_logs": webhook_logs,
+        "import_result": import_result,
+        "vendor_join_url": f"{getattr(settings, 'SITE_URL', '').rstrip('/')}/partners/{mp.slug}/join/",
     }
     return render(request, "admin_dashboard/partners/marketplace_detail.html", context)
+
+
+@senior_staff_required
+@require_POST
+def marketplace_import_sellers(request, pk):
+    """Upload sellers CSV (and optional products CSV) for file-based onboarding."""
+    mp = get_object_or_404(MarketplacePartner, pk=pk)
+    sellers_file = request.FILES.get("sellers_csv")
+    products_file = request.FILES.get("products_csv")
+
+    if not sellers_file:
+        messages.error(request, "Choose a sellers CSV file to upload.")
+        return redirect("admin_dashboard:marketplace_detail", pk=mp.pk)
+
+    from apps.partners.marketplace_csv_import import import_products_csv, import_sellers_csv
+
+    seller_summary = import_sellers_csv(mp, sellers_file)
+    s = seller_summary.to_dict()["summary"]
+    msg_parts = [
+        f"{s['provisioned']} provisioned",
+        f"{s['already_exists']} already existed",
+        f"{s['failed']} failed",
+    ]
+    if s["pending_added"]:
+        msg_parts.append(f"{s['pending_added']} added to invite list")
+    messages.success(request, f"Seller import complete: {', '.join(msg_parts)}.")
+
+    for err in seller_summary.errors[:5]:
+        messages.warning(request, err)
+
+    if products_file:
+        product_summary = import_products_csv(mp, products_file)
+        p = product_summary.to_dict()["summary"]
+        messages.success(
+            request,
+            f"Product import: {p['products_created']} created, "
+            f"{p['products_updated']} updated, {p['failed']} failed.",
+        )
+        for err in product_summary.errors[:5]:
+            messages.warning(request, err)
+
+    request.session[f"marketplace_import_{mp.pk}"] = seller_summary.to_dict()
+    return redirect("admin_dashboard:marketplace_detail", pk=mp.pk)
 
 
 @senior_staff_required
@@ -459,6 +584,7 @@ def marketplace_update(request, pk):
         mp.auto_snap_on_sync = request.POST.get("auto_snap_on_sync") == "on"
         mp.enrich_descriptions = request.POST.get("enrich_descriptions") == "on"
         mp.seller_welcome_email = request.POST.get("seller_welcome_email") == "on"
+        mp.is_sandbox = request.POST.get("is_sandbox") == "on"
         mp.product_field_mapping = (
             _parse_json_field(
                 request.POST.get("product_field_mapping_json", ""),

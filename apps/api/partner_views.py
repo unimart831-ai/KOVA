@@ -7,6 +7,7 @@ Operations are scoped to the authenticated marketplace partner.
 Endpoints:
     GET  /api/v1/partner/info/                              → marketplace info
     POST /api/v1/partner/sellers/                            → provision seller
+    POST /api/v1/partner/sellers/bulk/                       → bulk provision sellers
     GET  /api/v1/partner/sellers/                            → list sellers
     GET  /api/v1/partner/sellers/<external_id>/              → seller detail
     POST /api/v1/partner/sellers/<external_id>/suspend/      → suspend seller
@@ -15,16 +16,17 @@ Endpoints:
     GET  /api/v1/partner/stats/                              → aggregate stats
 """
 
-import secrets
-
-from django.db import IntegrityError, models
+from django.db import models
 from django.utils import timezone
 from rest_framework import serializers, status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accounts.models import User
+from apps.partners.seller_provisioning import (
+    provision_marketplace_seller,
+    provision_result_to_response,
+)
 from apps.products.models import Product, ProductCategory
 
 from .partner_auth import MarketplaceAPIKeyAuthentication, IsMarketplacePartner
@@ -160,6 +162,7 @@ class MarketplaceInfoView(APIView):
             "auto_snap_on_sync": mp.auto_snap_on_sync,
             "product_field_mapping": mp.product_field_mapping,
             "settings": mp.settings,
+            "is_sandbox": mp.is_sandbox,
         })
 
 
@@ -213,117 +216,99 @@ class SellerListCreateView(APIView):
             return Response({"errors": sz.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         data = sz.validated_data
-        ext_id = data["external_seller_id"]
-
-        # Check if seller already provisioned
-        existing = mp.seller_accounts.filter(external_seller_id=ext_id).first()
-        if existing:
-            return Response({
-                "status": "already_exists",
-                "external_seller_id": ext_id,
-                "email": existing.user.email,
-                "seller_status": existing.status,
-            }, status=status.HTTP_200_OK)
-
-        # Find or create the Kova user
-        identity_field = mp.seller_identity_field
-        user = None
-
-        if identity_field == "email" and data.get("email"):
-            user = User.objects.filter(email__iexact=data["email"]).first()
-            if not user:
-                user = User.objects.create_user(
-                    email=data["email"],
-                    username=data["email"],
-                    password=secrets.token_urlsafe(16),
-                    full_name=data.get("full_name", ""),
-                )
-        elif identity_field == "phone" and data.get("phone"):
-            user = User.objects.filter(phone_number=data["phone"]).first()
-            if not user:
-                # Phone-based marketplaces: generate placeholder email
-                placeholder_email = f"{ext_id}@{mp.slug}.marketplace.kova.co.ke"
-                user = User.objects.create_user(
-                    email=placeholder_email,
-                    username=placeholder_email,
-                    password=secrets.token_urlsafe(16),
-                    full_name=data.get("full_name", ""),
-                    phone_number=data["phone"],
-                )
-        elif identity_field == "external_id":
-            # External-ID based: check if user was already linked
-            linked = MarketplaceSellerAccount.objects.filter(
-                marketplace=mp, external_seller_id=ext_id,
-            ).select_related("user").first()
-            if linked:
-                user = linked.user
-            elif data.get("email"):
-                user = User.objects.filter(email__iexact=data["email"]).first()
-            if not user:
-                email = data.get("email") or f"{ext_id}@{mp.slug}.marketplace.kova.co.ke"
-                user = User.objects.create_user(
-                    email=email,
-                    username=email,
-                    password=secrets.token_urlsafe(16),
-                    full_name=data.get("full_name", ""),
-                )
-
-        if not user:
+        result = provision_marketplace_seller(mp, data)
+        if not result.ok and result.status == "limit_reached":
             return Response(
-                {"error": "Could not create or find user for this seller."},
+                {"error": result.error},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if not result.ok:
+            return Response(
+                provision_result_to_response(result),
+                status=result.http_status,
+            )
+
+        return Response(
+            provision_result_to_response(result),
+            status=result.http_status,
+        )
+
+
+class SellerBulkProvisionView(APIView):
+    """
+    POST — provision up to 100 sellers in one request.
+
+    Body: { "sellers": [ { ...same fields as POST /sellers/... }, ... ] }
+    """
+    authentication_classes = PARTNER_AUTH
+    permission_classes = PARTNER_PERM
+    MAX_BATCH = 100
+
+    def post(self, request):
+        mp = _get_mp(request)
+        raw_sellers = request.data.get("sellers", [])
+
+        if not isinstance(raw_sellers, list) or not raw_sellers:
+            return Response(
+                {"error": "Provide a 'sellers' array with at least one seller."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if len(raw_sellers) > self.MAX_BATCH:
+            return Response(
+                {"error": f"Maximum {self.MAX_BATCH} sellers per bulk request."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Set plan on user profile
-        profile = user.profile
-        profile.plan = mp.seller_default_plan
-        profile.save(update_fields=["plan"])
+        results = []
+        summary = {
+            "provisioned": 0,
+            "already_exists": 0,
+            "failed": 0,
+        }
 
-        # Create seller account
-        try:
-            seller_status = (
-                MarketplaceSellerAccount.Status.ACTIVE
-                if mp.auto_activate_sellers
-                else MarketplaceSellerAccount.Status.INVITED
-            )
+        for index, item in enumerate(raw_sellers):
+            if not isinstance(item, dict):
+                summary["failed"] += 1
+                results.append({
+                    "index": index,
+                    "status": "validation_error",
+                    "errors": {"non_field_errors": ["Each seller must be a JSON object."]},
+                })
+                continue
 
-            # Build enriched seller_metadata from explicit fields + raw metadata
-            enriched_metadata = data.get("seller_metadata", {})
-            if data.get("business_description"):
-                enriched_metadata["business_description"] = data["business_description"]
-            if data.get("location"):
-                enriched_metadata["location"] = data["location"]
-            # Apply marketplace seller_data_mapping if configured
-            if mp.seller_data_mapping:
-                for src_key, dst_key in mp.seller_data_mapping.items():
-                    if src_key in enriched_metadata:
-                        enriched_metadata[dst_key] = enriched_metadata.pop(src_key)
+            sz = SellerProvisionSerializer(data=item, context={"marketplace": mp})
+            if not sz.is_valid():
+                summary["failed"] += 1
+                results.append({
+                    "index": index,
+                    "external_seller_id": item.get("external_seller_id", ""),
+                    "status": "validation_error",
+                    "errors": sz.errors,
+                })
+                continue
 
-            seller = MarketplaceSellerAccount.objects.create(
-                marketplace=mp,
-                user=user,
-                external_seller_id=ext_id,
-                status=seller_status,
-                business_name=data.get("business_name", ""),
-                business_url=data.get("business_url", ""),
-                seller_metadata=enriched_metadata,
-                activated_at=timezone.now() if mp.auto_activate_sellers else None,
-            )
-        except IntegrityError:
-            return Response(
-                {"error": f"Seller {ext_id} already linked to a different user in this marketplace."},
-                status=status.HTTP_409_CONFLICT,
-            )
+            result = provision_marketplace_seller(mp, sz.validated_data)
+            payload = provision_result_to_response(result)
+            payload["index"] = index
+
+            if result.ok:
+                if result.status == "already_exists":
+                    summary["already_exists"] += 1
+                else:
+                    summary["provisioned"] += 1
+            else:
+                summary["failed"] += 1
+
+            results.append(payload)
+
+        http_status = status.HTTP_201_CREATED if summary["provisioned"] else status.HTTP_200_OK
+        if summary["failed"] and not summary["provisioned"] and not summary["already_exists"]:
+            http_status = status.HTTP_400_BAD_REQUEST
 
         return Response({
-            "status": "provisioned",
-            "external_seller_id": ext_id,
-            "email": user.email,
-            "business_name": seller.business_name,
-            "seller_status": seller.status,
-            "plan": profile.plan,
-            "auto_activated": mp.auto_activate_sellers,
-        }, status=status.HTTP_201_CREATED)
+            "summary": summary,
+            "results": results,
+        }, status=http_status)
 
 
 # ─── Seller Detail / Actions ────────────────────────────────────────────────
@@ -387,6 +372,8 @@ class SellerActivateView(APIView):
         if not seller:
             return Response({"error": "Seller not found"}, status=status.HTTP_404_NOT_FOUND)
         seller.activate()
+        from apps.partners.seller_provisioning import on_seller_activated
+        on_seller_activated(mp, seller, auto_activated=True, send_welcome=True)
         return Response({"status": "active", "external_seller_id": external_seller_id})
 
 
@@ -643,5 +630,76 @@ class MarketplaceStatsView(APIView):
                 "rate_per_seller_kes": float(mp.rate_per_seller_kes),
                 "estimated_monthly_kes": float(mp.rate_per_seller_kes * (stats["active"] or 0))
                 if mp.billing_model == "per_seller" else float(mp.flat_fee_kes),
+            },
+        })
+
+
+class SellerContentView(APIView):
+    """List generated/published content for a marketplace seller."""
+    authentication_classes = PARTNER_AUTH
+    permission_classes = PARTNER_PERM
+
+    def get(self, request, external_seller_id):
+        from apps.content.models import Post
+
+        mp = _get_mp(request)
+        seller = _get_seller_or_404(mp, external_seller_id)
+        if not seller:
+            return Response({"error": "Seller not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        status_filter = request.query_params.get("status", "").strip()
+        posts = Post.objects.filter(user=seller.user).select_related("product").order_by("-created_at")
+        if status_filter:
+            posts = posts.filter(status=status_filter)
+
+        limit = min(int(request.query_params.get("limit", 50)), 200)
+        data = []
+        for post in posts[:limit]:
+            data.append({
+                "post_id": str(post.pk),
+                "status": post.status,
+                "platform": post.platform or "",
+                "content_preview": (post.content_text or "")[:160],
+                "scheduled_at": post.scheduled_at.isoformat() if post.scheduled_at else None,
+                "published_at": post.published_at.isoformat() if post.published_at else None,
+                "platform_post_url": post.platform_post_url or "",
+                "product_id": str(post.product_id) if post.product_id else None,
+                "external_product_id": post.product.external_id if post.product else "",
+            })
+
+        return Response({
+            "external_seller_id": seller.external_seller_id,
+            "count": len(data),
+            "posts": data,
+        })
+
+
+class SellerAnalyticsView(APIView):
+    """Basic content analytics for a marketplace seller."""
+    authentication_classes = PARTNER_AUTH
+    permission_classes = PARTNER_PERM
+
+    def get(self, request, external_seller_id):
+        from django.db.models import Count
+
+        from apps.content.models import Post
+
+        mp = _get_mp(request)
+        seller = _get_seller_or_404(mp, external_seller_id)
+        if not seller:
+            return Response({"error": "Seller not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        posts = Post.objects.filter(user=seller.user)
+        by_status = posts.values("status").annotate(count=Count("id"))
+        by_platform = posts.filter(status=Post.Status.PUBLISHED).values("platform").annotate(count=Count("id"))
+
+        return Response({
+            "external_seller_id": seller.external_seller_id,
+            "products_synced": seller.products_synced,
+            "content_generated": seller.content_generated,
+            "posts": {
+                "total": posts.count(),
+                "by_status": {row["status"]: row["count"] for row in by_status},
+                "published_by_platform": {row["platform"]: row["count"] for row in by_platform if row["platform"]},
             },
         })

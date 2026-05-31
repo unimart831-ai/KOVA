@@ -22,6 +22,7 @@ class MarketplacePartnerUser:
     def __init__(self, marketplace_partner):
         self.marketplace_partner = marketplace_partner
         self.partner = marketplace_partner.partner
+        self.is_sandbox = bool(getattr(marketplace_partner, "is_sandbox", False))
         # DRF expects these attributes
         self.is_authenticated = True
         self.pk = marketplace_partner.pk

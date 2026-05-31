@@ -3,6 +3,55 @@
 from .models import TeamMember
 
 
+def get_client_membership(user):
+    """Return TeamMember row for client-role users."""
+    if not user or not user.is_authenticated:
+        return None
+    return (
+        TeamMember.objects.filter(user=user, role=TeamMember.Role.CLIENT)
+        .select_related("brand", "team")
+        .first()
+    )
+
+
+def get_client_brand_scope(user):
+    """
+    Return brand_id for client-role users, else None.
+    Clients see only content tagged with their assigned brand.
+    """
+    membership = get_client_membership(user)
+    if membership and membership.brand_id:
+        return membership.brand_id
+    return None
+
+
+def get_scoped_post_queryset(user):
+    """Base Post queryset respecting client brand scoping."""
+    from apps.content.models import Post
+
+    membership = get_client_membership(user)
+    if membership and membership.brand_id:
+        teammate_ids = TeamMember.objects.filter(team=membership.team_id).values_list(
+            "user_id", flat=True,
+        )
+        return Post.objects.filter(user_id__in=teammate_ids, brand_id=membership.brand_id)
+    return Post.objects.filter(user=user)
+
+
+def filter_posts_by_brand_scope(qs, user):
+    """Filter a Post queryset for client-role brand scoping."""
+    brand_id = get_client_brand_scope(user)
+    if brand_id:
+        membership = get_client_membership(user)
+        if membership:
+            teammate_ids = TeamMember.objects.filter(team=membership.team_id).values_list(
+                "user_id", flat=True,
+            )
+            return qs.filter(user_id__in=teammate_ids, brand_id=brand_id)
+        return qs.filter(brand_id=brand_id)
+    return qs
+
+
 def get_teammate_ids(user):
     """Return user IDs of all teammates (including self).
 

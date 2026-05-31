@@ -270,6 +270,9 @@ def activate_subscription(payment):
         period_start.strftime("%Y-%m-%d"), period_end.strftime("%Y-%m-%d"),
     )
 
+    from apps.partners.referral_billing import record_referral_payment_safe
+    record_referral_payment_safe(payment.user, payment.plan_tier, payment.amount)
+
 
 def activate_trial(user, plan_tier, phone_number):
     """
