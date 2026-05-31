@@ -113,7 +113,7 @@ Legend: ✅ Works · 🔧 Partial / buggy · 🔲 Not built · ❌ API won’t a
 | Graphic design / templates | 🔧 | AI images + `graphics.py` templates; **no Canva-style editor** |
 | Video post (feed) | 🔧 | `publish_video` exists on provider; **content tasks don’t call it** for FB |
 | **Facebook Reels** | 🔲 | Create Agent can label `post_format=reel`; **no FB Reels publish path** |
-| **Facebook Stories** | 🔲 | Pipeline sets `STORIES` media type; **provider ignores — publishes as normal photo** |
+| **Facebook Stories** | ✅ | `publish_story()` — photo via `photo_stories`, video via `video_stories` |
 | Link in post without reach penalty | ✅ | **First-comment strategy** — link auto-posted as comment after publish |
 | Product link in first comment | ✅ | `compose_first_comment()` + publish task |
 | Hashtags (3–5) | ✅ | Prompt rules; appended in caption |

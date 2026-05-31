@@ -407,6 +407,14 @@ class FacebookProvider(BaseProvider):
             return self.publish_reel(
                 access_token, video_url, description=content, **kwargs,
             )
+        if media_type == "STORIES":
+            return self.publish_story(
+                access_token,
+                media_urls=media_urls,
+                media_files=media_files,
+                video_url=kwargs.get("video_url"),
+                **kwargs,
+            )
         if media_type == "VIDEO" or (
             media_urls and len(media_urls) == 1 and _is_video_media_url(media_urls[0])
         ):
@@ -603,6 +611,188 @@ class FacebookProvider(BaseProvider):
             status_code = e.response.status_code
             error_text = _graph_api_error_text(e.response)
             logger.error("Facebook Reel publish failed (HTTP %d): %s", status_code, error_text)
+            if status_code in (429, 500, 502, 503, 504):
+                raise
+            return PublishResult(success=False, error=error_text)
+
+    def publish_story(
+        self,
+        access_token: str,
+        media_urls: Optional[list[str]] = None,
+        media_files: Optional[list[tuple]] = None,
+        video_url: Optional[str] = None,
+        **kwargs,
+    ) -> PublishResult:
+        """Publish a photo or video Story to a Facebook Page."""
+        page_id = kwargs.get("page_id", "")
+        page_token = kwargs.get("page_access_token", access_token)
+        if not page_id:
+            return PublishResult(success=False, error="page_id is required for Facebook Stories")
+
+        video_url = video_url or _reel_url_from_media_list(media_urls)
+        if not video_url and media_files:
+            fname, _data, ctype = media_files[0]
+            if (ctype or "").startswith("video/") or _is_video_media_url(fname):
+                return self._publish_fb_video_story(
+                    page_id, page_token, media_files=media_files,
+                )
+        if video_url:
+            return self._publish_fb_video_story(
+                page_id, page_token, video_url, media_files=media_files,
+            )
+        return self._publish_fb_photo_story(
+            page_id, page_token, media_urls=media_urls, media_files=media_files,
+        )
+
+    def _publish_fb_photo_story(
+        self,
+        page_id: str,
+        page_token: str,
+        *,
+        media_urls: Optional[list[str]] = None,
+        media_files: Optional[list[tuple]] = None,
+    ) -> PublishResult:
+        """Upload an unpublished photo, then publish it as a Page Story."""
+        try:
+            with httpx.Client(timeout=HTTP_TIMEOUT) as client:
+                if media_files:
+                    fname, data, ctype = media_files[0]
+                    upload_resp = client.post(
+                        f"{FB_API_BASE}/{page_id}/photos",
+                        data={"published": "false", "access_token": page_token},
+                        files={"source": (fname, data, ctype)},
+                    )
+                elif media_urls:
+                    image_url = media_urls[0]
+                    if "localhost" in image_url or "127.0.0.1" in image_url:
+                        return PublishResult(
+                            success=False,
+                            error="Image URL is not publicly accessible (localhost)",
+                        )
+                    upload_resp = client.post(
+                        f"{FB_API_BASE}/{page_id}/photos",
+                        data={
+                            "url": image_url,
+                            "published": "false",
+                            "access_token": page_token,
+                        },
+                    )
+                else:
+                    return PublishResult(
+                        success=False,
+                        error="Facebook Stories require a photo or video.",
+                    )
+
+                upload_resp.raise_for_status()
+                photo_id = upload_resp.json().get("id", "")
+                if not photo_id:
+                    return PublishResult(
+                        success=False,
+                        error="Facebook photo upload did not return a photo_id.",
+                    )
+
+                story_resp = client.post(
+                    f"{FB_API_BASE}/{page_id}/photo_stories",
+                    data={"photo_id": photo_id, "access_token": page_token},
+                )
+                story_resp.raise_for_status()
+                story_data = story_resp.json()
+                post_id = story_data.get("post_id", photo_id)
+                url = story_data.get("url") or f"https://www.facebook.com/stories/{post_id}"
+                return PublishResult(
+                    success=True,
+                    platform_post_id=str(post_id),
+                    url=url,
+                    metadata={"media_type": "story", "photo_id": photo_id},
+                )
+        except httpx.HTTPStatusError as e:
+            status_code = e.response.status_code
+            error_text = _graph_api_error_text(e.response)
+            logger.error("Facebook photo story publish failed (HTTP %d): %s", status_code, error_text)
+            if status_code in (429, 500, 502, 503, 504):
+                raise
+            return PublishResult(success=False, error=error_text)
+
+    def _publish_fb_video_story(
+        self,
+        page_id: str,
+        page_token: str,
+        video_url: str = "",
+        *,
+        media_files: Optional[list[tuple]] = None,
+    ) -> PublishResult:
+        """Publish a video Story via the Page video_stories API."""
+        if video_url and ("localhost" in video_url or "127.0.0.1" in video_url):
+            return PublishResult(
+                success=False,
+                error="Video URL is not publicly accessible (localhost)",
+            )
+        if not video_url and not media_files:
+            return PublishResult(
+                success=False,
+                error="Facebook video Stories require a public HTTPS video URL or uploaded file.",
+            )
+
+        try:
+            with httpx.Client(timeout=180.0) as client:
+                start_resp = client.post(
+                    f"{FB_API_BASE}/{page_id}/video_stories",
+                    data={"upload_phase": "start", "access_token": page_token},
+                )
+                start_resp.raise_for_status()
+                start_data = start_resp.json()
+                video_id = start_data.get("video_id")
+                upload_url = start_data.get("upload_url")
+                if not video_id:
+                    return PublishResult(
+                        success=False,
+                        error=start_data.get("message", "Facebook Story video upload start failed"),
+                    )
+
+                target_url = upload_url or f"{FB_REEL_UPLOAD_BASE}/{video_id}"
+                if media_files and not video_url:
+                    _fname, data, _ctype = media_files[0]
+                    upload_resp = client.post(
+                        target_url,
+                        headers={
+                            "Authorization": f"OAuth {page_token}",
+                            "offset": "0",
+                            "file_size": str(len(data)),
+                        },
+                        content=data,
+                    )
+                else:
+                    upload_resp = client.post(
+                        target_url,
+                        headers={
+                            "Authorization": f"OAuth {page_token}",
+                            "file_url": video_url,
+                        },
+                    )
+                upload_resp.raise_for_status()
+
+                finish_resp = client.post(
+                    f"{FB_API_BASE}/{page_id}/video_stories",
+                    data={
+                        "upload_phase": "finish",
+                        "video_id": video_id,
+                        "access_token": page_token,
+                    },
+                )
+                finish_resp.raise_for_status()
+                finish_data = finish_resp.json()
+                post_id = finish_data.get("post_id") or video_id
+                url = finish_data.get("url") or f"https://www.facebook.com/stories/{post_id}"
+                return PublishResult(
+                    success=True,
+                    platform_post_id=str(post_id),
+                    url=url,
+                    metadata={"media_type": "story", "video_id": video_id},
+                )
+        except httpx.HTTPStatusError as e:
+            status_code = e.response.status_code
+            error_text = _graph_api_error_text(e.response)
+            logger.error("Facebook video story publish failed (HTTP %d): %s", status_code, error_text)
             if status_code in (429, 500, 502, 503, 504):
                 raise
             return PublishResult(success=False, error=error_text)
@@ -1318,7 +1508,12 @@ class InstagramProvider(BaseProvider):
                     video_url = kwargs.get("video_url") or _reel_url_from_media_list(media_urls)
                     return self._publish_reels(client, token, ig_user_id, content, video_url)
                 elif media_type == "STORIES":
-                    return self._publish_story(client, token, ig_user_id, media_urls)
+                    return self.publish_story(
+                        token,
+                        media_urls=media_urls,
+                        ig_user_id=ig_user_id,
+                        page_access_token=kwargs.get("page_access_token"),
+                    )
                 elif media_urls:
                     return self._publish_single_image(client, token, ig_user_id, content, media_urls[0])
                 else:
@@ -1547,14 +1742,38 @@ class InstagramProvider(BaseProvider):
         url = self._fetch_ig_permalink(client, token, post_id)
         return PublishResult(success=True, platform_post_id=post_id, url=url)
 
+    def publish_story(
+        self,
+        access_token: str,
+        media_urls: Optional[list[str]] = None,
+        **kwargs,
+    ) -> PublishResult:
+        """Publish an image or video Story to Instagram."""
+        ig_user_id = kwargs.get("ig_user_id", "")
+        token = kwargs.get("page_access_token") or access_token
+        if not ig_user_id:
+            return PublishResult(success=False, error="ig_user_id is required")
+
+        try:
+            with httpx.Client(timeout=120.0) as client:
+                return self._publish_story(client, token, ig_user_id, media_urls)
+        except httpx.HTTPStatusError as e:
+            status_code = e.response.status_code
+            error_text = _graph_api_error_text(e.response)
+            logger.error("Instagram story publish failed (HTTP %d): %s", status_code, error_text)
+            if status_code in (429, 500, 502, 503, 504):
+                raise
+            return PublishResult(success=False, error=error_text)
+
     def _publish_story(self, client: httpx.Client, token: str,
                        ig_id: str, media_urls: Optional[list[str]]) -> PublishResult:
         """Publish a Story (image or video)."""
-        if not media_urls:
-            return PublishResult(success=False, error="Media URL required for Stories")
+        url_err = _validate_ig_https_urls(media_urls or [])
+        if url_err:
+            return PublishResult(success=False, error=url_err)
 
         media_url = media_urls[0]
-        is_video = any(media_url.lower().endswith(ext) for ext in [".mp4", ".mov", ".avi"])
+        is_video = _is_video_media_url(media_url)
 
         data = {"media_type": "STORIES", "access_token": token}
         if is_video:
@@ -1566,37 +1785,17 @@ class InstagramProvider(BaseProvider):
         container.raise_for_status()
         container_id = container.json()["id"]
 
-        if is_video:
-            status_code = "IN_PROGRESS"
-            for attempt in range(30):
-                status_resp = client.get(f"{FB_API_BASE}/{container_id}", params={
-                    "fields": "status_code,status", "access_token": token,
-                })
-                status_resp.raise_for_status()
-                status_data = status_resp.json()
-                status_code = status_data.get("status_code", "IN_PROGRESS")
-
-                if status_code == "FINISHED":
-                    break
-                if status_code == "ERROR":
-                    error_detail = status_data.get("status", "Video processing failed.")
-                    logger.error(
-                        "Instagram Story container %s ERROR after %d polls: %s",
-                        container_id, attempt + 1, error_detail,
-                    )
-                    return PublishResult(
-                        success=False,
-                        error=(
-                            f"Instagram could not process your Story video: {error_detail}. "
-                            "Check video format (MP4/MOV, H.264, AAC audio)."
-                        ),
-                    )
-                if status_code == "EXPIRED":
-                    return PublishResult(
-                        success=False,
-                        error="Story container expired before publishing. Please try again.",
-                    )
-                time.sleep(2)
+        ready, err = _wait_for_ig_container(
+            client, token, container_id,
+            max_polls=30 if is_video else IG_CONTAINER_MAX_POLLS,
+            poll_interval=2 if is_video else IG_CONTAINER_POLL_INTERVAL,
+        )
+        if not ready:
+            prefix = "Story video" if is_video else "Story image"
+            return PublishResult(
+                success=False,
+                error=err or f"{prefix} processing failed before publish.",
+            )
 
         pub = client.post(f"{FB_API_BASE}/{ig_id}/media_publish", data={
             "creation_id": container_id,
@@ -1604,7 +1803,11 @@ class InstagramProvider(BaseProvider):
         })
         pub.raise_for_status()
         post_id = pub.json().get("id", "")
-        return PublishResult(success=True, platform_post_id=post_id)
+        return PublishResult(
+            success=True,
+            platform_post_id=post_id,
+            metadata={"media_type": "story"},
+        )
 
     # ── Metrics & Insights ───────────────────────────────────────────────────
 

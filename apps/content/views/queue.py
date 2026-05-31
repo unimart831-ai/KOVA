@@ -14,9 +14,11 @@ from apps.teams.permissions import can_approve_post, get_teammate_ids
 from apps.utils import fire_task
 
 
-def _apply_queue_filters(qs, platform_filter=None, search_query=None):
+def _apply_queue_filters(qs, platform_filter=None, format_filter=None, search_query=None):
     if platform_filter:
         qs = qs.filter(platform=platform_filter)
+    if format_filter:
+        qs = qs.filter(post_format=format_filter)
     if search_query:
         from apps.utils.search import full_text_search
         qs = full_text_search(qs, search_query, ["content_text", "first_comment"])
@@ -54,7 +56,7 @@ def _group_queue_by_seed(posts_list):
     return batches, ungrouped
 
 
-def _get_queue_context(user, section_filter=None, platform_filter=None, search_query=None):
+def _get_queue_context(user, section_filter=None, platform_filter=None, format_filter=None, search_query=None):
     """Build queue sections, stats, and filter state."""
     from django.db.models import Q
 
@@ -65,25 +67,25 @@ def _get_queue_context(user, section_filter=None, platform_filter=None, search_q
 
     failed_qs = _apply_queue_filters(
         base.filter(status="failed").order_by("-created_at"),
-        platform_filter, search_query,
+        platform_filter, format_filter, search_query,
     )
     publishing_qs = _apply_queue_filters(
         base.filter(status="publishing").order_by("-created_at"),
-        platform_filter, search_query,
+        platform_filter, format_filter, search_query,
     )
     ready_qs = _apply_queue_filters(
         base.filter(status="approved", scheduled_at__isnull=True).order_by("-created_at"),
-        platform_filter, search_query,
+        platform_filter, format_filter, search_query,
     )
     scheduled_qs = _apply_queue_filters(
         base.filter(
             Q(status="scheduled") | Q(status="approved", scheduled_at__isnull=False)
         ).order_by("-created_at"),
-        platform_filter, search_query,
+        platform_filter, format_filter, search_query,
     )
     published_qs = _apply_queue_filters(
         base.filter(status="published").order_by("-published_at")[:50],
-        platform_filter, search_query,
+        platform_filter, format_filter, search_query,
     )
 
     stats_base = Post.objects.filter(user_id__in=visible_user_ids)
@@ -125,6 +127,7 @@ def _get_queue_context(user, section_filter=None, platform_filter=None, search_q
         "published_count": len(published),
         "current_section": section,
         "current_platform": platform_filter or "",
+        "current_format": format_filter or "",
         "current_search": search_query or "",
     }
 
@@ -136,6 +139,7 @@ def content_queue(request):
         request.user,
         section_filter=request.GET.get("section"),
         platform_filter=request.GET.get("platform"),
+        format_filter=request.GET.get("post_format"),
         search_query=request.GET.get("q"),
     )
     ctx["page_title"] = "Content Queue"
@@ -149,6 +153,7 @@ def queue_sections(request):
         request.user,
         section_filter=request.GET.get("section"),
         platform_filter=request.GET.get("platform"),
+        format_filter=request.GET.get("post_format"),
         search_query=request.GET.get("q"),
     )
     return render(request, "content/_queue_sections.html", ctx)

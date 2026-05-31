@@ -829,12 +829,12 @@ No inbound webhooks — OAuth + REST API only.
 |------------|----------|---------------------|--------------|
 | `email`, `public_profile` | Login | Standard | Account identity |
 | `pages_manage_metadata` | FB | Advanced | List Pages |
-| `pages_manage_posts` | FB | Advanced | Publish posts |
+| `pages_manage_posts` | FB | Advanced | Publish posts, **Page Stories** |
 | `pages_read_engagement` | FB | Advanced | Metrics, read comments |
 | `pages_manage_engagement` | FB | Advanced | Reply to comments |
 | `pages_messaging` | FB | Advanced | Messenger inbox |
 | `read_insights` | FB | Advanced | Page insights |
-| `instagram_content_publish` | IG | Advanced | Publish posts/reels |
+| `instagram_content_publish` | IG | Advanced | Publish posts, Reels, **Stories** |
 | `instagram_manage_insights` | IG | Advanced | IG analytics |
 | `instagram_manage_comments` | IG | Advanced | Comment replies |
 | `instagram_manage_messages` | IG | Advanced | IG DMs |
@@ -847,11 +847,11 @@ Prepare these before submitting. Adjust wording to match your actual UI.
 
 | Meta question | Suggested answer |
 |---------------|-----------------|
-| **How will your app use `pages_manage_posts`?** | Authorized users connect their Facebook Page via OAuth. Kova publishes organic content (text, images, videos, Reels) they create or approve in our content studio. We do not post without user action or explicit autopilot approval settings. |
+| **How will your app use `pages_manage_posts`?** | Authorized users connect their Facebook Page via OAuth. Kova publishes organic content (text, images, videos, Reels, **Page Stories**) they create or approve in our content studio. We do not post without user action or explicit autopilot approval settings. |
 | **How will your app use `pages_read_engagement`?** | We fetch post-level metrics (reach, impressions, likes, comments) to show performance dashboards and train our Adapt content agent on what resonates with their audience. |
 | **How will your app use `pages_manage_engagement`?** | Our Engage Agent drafts replies to Page comments; users review or enable graduated auto-reply. We reply as the Page, not as the user personally. |
 | **How will your app use `pages_messaging`?** | We read Page Messenger conversations to display an unified inbox and send replies the business approves — for customer sales and support queries. |
-| **How will your app use `instagram_content_publish`?** | Users connect their Instagram Professional account linked to their Page. Kova publishes images, carousels, and Reels they create or schedule in Kova. |
+| **How will your app use `instagram_content_publish`?** | Users connect their Instagram Professional account linked to their Page. Kova publishes images, carousels, Reels, and **Stories** they create or schedule in Kova. |
 | **How will your app use `instagram_manage_comments`?** | We fetch comments on the user's posts and allow reply from Kova's Engage inbox — with optional AI-drafted responses under user control. |
 | **How will your app use `instagram_manage_messages`?** | We display Instagram Direct messages in the unified Engage inbox and send replies authorized by the business. |
 | **How will your app use WhatsApp permissions?** | Businesses connect their WhatsApp Business Account. Kova provides customer inbox, AI-assisted replies within the 24-hour window, approved template broadcasts, and order/booking notifications they configure. |
@@ -951,7 +951,7 @@ A: No — Engage Agent polls every ~30 minutes.
 A: Instagram Graph API requires a Page-linked Professional account; Meta issues Page-scoped tokens.
 
 **Q: Can I post text-only to Instagram?**  
-A: No — Kova requires media (image, carousel, reel, or story).
+A: No — Kova requires media (image, carousel, reel, or story). See [STORIES_PUBLISHING.md](./STORIES_PUBLISHING.md) for Story-specific setup.
 
 ### TikTok
 

@@ -60,7 +60,22 @@
         <option value="twitter" {% if current_platform == 'twitter' %}selected{% endif %}>Twitter / X</option>
       </select>
 
-      {% if current_search or current_platform or current_section != 'all' %}
+      <select name="post_format" class="input text-xs h-8 w-auto"
+              hx-get="{% url 'content:queue_sections' %}"
+              hx-trigger="change"
+              hx-target="#queue-sections"
+              hx-swap="innerHTML"
+              hx-include="#queue-filter-form">
+        <option value="">All formats</option>
+        <option value="text" {% if current_format == 'text' %}selected{% endif %}>Text</option>
+        <option value="image" {% if current_format == 'image' %}selected{% endif %}>Image</option>
+        <option value="carousel" {% if current_format == 'carousel' %}selected{% endif %}>Carousel</option>
+        <option value="story" {% if current_format == 'story' %}selected{% endif %}>Story</option>
+        <option value="reel" {% if current_format == 'reel' %}selected{% endif %}>Reel</option>
+        <option value="video" {% if current_format == 'video' %}selected{% endif %}>Video</option>
+      </select>
+
+      {% if current_search or current_platform or current_format or current_section != 'all' %}
       <a href="{% url 'content:queue' %}"
          class="inline-flex items-center h-8 px-3 text-xs font-medium rounded-md border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
         Clear filters

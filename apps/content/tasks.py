@@ -1420,6 +1420,30 @@ def publish_post(self, post_id: str):
             )
             return {"error": "no_public_media"}
 
+        if is_story_post and not absolute_media_urls and not media_files:
+            _fail_post(
+                post,
+                "Stories require an image or video — upload media or regenerate in Studio.",
+            )
+            Notification.create_for_user(
+                post.user, "publish_failed",
+                "Story publish failed: add a 9:16 image or video before publishing.",
+                related_post=post,
+            )
+            return {"error": "story_media_missing"}
+
+        if is_story_post and platform_name not in ("instagram", "facebook"):
+            _fail_post(
+                post,
+                f"Stories are not supported on {platform_name or 'this platform'}.",
+            )
+            Notification.create_for_user(
+                post.user, "publish_failed",
+                f"Stories can only be published to Instagram or Facebook — not {platform_name}.",
+                related_post=post,
+            )
+            return {"error": "story_platform_unsupported"}
+
         reel_video_url = _reel_video_url(absolute_media_urls) if is_reel_post else None
         if is_reel_post and not reel_video_url:
             _fail_post(
@@ -1437,6 +1461,10 @@ def publish_post(self, post_id: str):
 
         if reel_video_url:
             publish_kwargs["video_url"] = reel_video_url
+
+        story_video_url = _reel_video_url(absolute_media_urls) if is_story_post else None
+        if story_video_url:
+            publish_kwargs["video_url"] = story_video_url
 
         # Route publish to the correct platform API based on post_format.
         if account.platform == "instagram":

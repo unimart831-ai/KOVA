@@ -480,6 +480,8 @@ class Post(SoftDeleteMixin, models.Model):
         if self.media_status == self.MediaStatus.FAILED:
             if self.post_format == self.PostFormat.REEL:
                 return "Image step failed. Retry or re-compose the reel."
+            if self.post_format == self.PostFormat.STORY:
+                return "Story image generation failed. Upload a 9:16 image or retry."
             return "Image generation failed. Upload an image or retry."
         if self.needs_media:
             if self.social_account:
