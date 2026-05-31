@@ -29,7 +29,8 @@ module.exports = {
         glow: "0 0 20px rgba(13, 132, 116, 0.15)",
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["Plus Jakarta Sans", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
+        display: ["Sora", "Plus Jakarta Sans", "system-ui", "sans-serif"],
       },
       keyframes: {
         "shimmer": {
