@@ -3,6 +3,8 @@
 > **Version**: 1.0 · **Last Updated**: April 16, 2026
 > Covers: Platform setup (admin), user onboarding, AI auto-reply, templates, broadcasts, and webhook configuration.
 
+> **Master guide:** For consolidated Meta + WhatsApp + Facebook + Instagram + TikTok + LinkedIn infrastructure setup (env vars, OAuth URIs, App Review, security), see **[`KOVA_PLATFORM_SETUP_GUIDE.md`](./KOVA_PLATFORM_SETUP_GUIDE.md)**. This document remains the detailed WhatsApp-specific admin and user reference.
+
 ---
 
 ## Table of Contents
