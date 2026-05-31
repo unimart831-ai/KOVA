@@ -16,6 +16,10 @@ from apps.products.commerce_views import (
 )
 from apps.products.commerce_sitemap import commerce_sitemap_xml, robots_txt
 from apps.partners.views import referral_redirect
+from apps.platforms.facebook_data_deletion_views import (
+    facebook_data_deletion_instructions,
+    facebook_data_deletion_status,
+)
 
 admin.site.site_header = "KOVA AI ADMIN"
 admin.site.site_title = "Kova AI"
@@ -94,6 +98,25 @@ urlpatterns = [
     path("cookies/", legal_page("cookies.html"), name="cookies"),
     path("acceptable-use/", legal_page("acceptable_use.html"), name="acceptable_use"),
     path("dpa/", legal_page("dpa.html"), name="dpa"),
+    # Meta (Facebook) user data deletion — App Dashboard URLs
+    path(
+        "legal/facebook-data-deletion/",
+        facebook_data_deletion_instructions,
+        name="facebook_data_deletion",
+    ),
+    path(
+        "legal/facebook-data-deletion/status/<str:confirmation_code>/",
+        facebook_data_deletion_status,
+        name="facebook_data_deletion_status",
+    ),
+    path(
+        "privacy/data-deletion/",
+        RedirectView.as_view(
+            pattern_name="facebook_data_deletion",
+            permanent=False,
+        ),
+        name="privacy_data_deletion",
+    ),
     # Campus Rep program (public)
     path("campus-rep/", legal_page("campus_rep.html"), name="campus_rep"),
     # Public help / learn section (no login required)

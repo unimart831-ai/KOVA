@@ -194,7 +194,18 @@ In the App Dashboard, add these use cases (Meta's 2025+ flow):
 3. **App Domains**: add your domain without protocol, e.g. `app.kovaagent.com`
 4. **Privacy Policy URL**: `{SITE_URL}/privacy/` (required for App Review and WhatsApp)
 5. **Terms of Service URL**: `{SITE_URL}/terms/` (recommended)
-6. **User data deletion**: `{SITE_URL}/privacy/` or a dedicated callback URL — confirm in Meta console
+6. **User data deletion** (Meta App Dashboard → Settings → Basic):
+   - **Data Deletion Instructions URL**: `{SITE_URL}/legal/facebook-data-deletion/`  
+     (alias: `{SITE_URL}/privacy/data-deletion/`)
+   - **Data Deletion Callback URL** (optional but recommended): `{SITE_URL}/platforms/facebook/data-deletion/`  
+     Meta POSTs `signed_request` here when a user removes the app; Kova clears Facebook/Instagram OAuth data and returns a status URL + `confirmation_code`.
+
+**Production example** (`SITE_URL=https://kovaagents-production.up.railway.app`):
+
+| Meta field | URL |
+|------------|-----|
+| Data Deletion Instructions URL | `https://kovaagents-production.up.railway.app/legal/facebook-data-deletion/` |
+| Data Deletion Callback URL | `https://kovaagents-production.up.railway.app/platforms/facebook/data-deletion/` |
 
 ### Step 3.4 — Facebook Login for Business (recommended)
 
@@ -846,7 +857,7 @@ Prepare these before submitting. Adjust wording to match your actual UI.
 | **How will your app use WhatsApp permissions?** | Businesses connect their WhatsApp Business Account. Kova provides customer inbox, AI-assisted replies within the 24-hour window, approved template broadcasts, and order/booking notifications they configure. |
 | **Do you store user data?** | Yes — encrypted OAuth tokens and message content necessary to provide the service. Privacy policy at `{SITE_URL}/privacy/`. |
 | **Provide a screencast** | Record: login → Platforms → Connect Facebook → create post → publish → Engage comment reply. Separate clip for WhatsApp inbox if requesting WhatsApp permissions. |
-| **Data deletion** | Users disconnect platforms in Settings; we deactivate accounts and clear tokens. Account deletion per privacy policy. |
+| **Data deletion** | Instructions: `{SITE_URL}/legal/facebook-data-deletion/`. Automated callback: `{SITE_URL}/platforms/facebook/data-deletion/`. Users can also disconnect in Platforms or email support@kovaagent.com for full account deletion (privacy policy). |
 
 **Business Verification** (separate from App Review): required for full WhatsApp tier — see Section 3.7.
 
@@ -1007,6 +1018,10 @@ Valid `<platform>` values for connect: `facebook`, `instagram`, `tiktok`, `linke
 |------|---------|
 | `{SITE_URL}/privacy/` | Privacy policy |
 | `{SITE_URL}/terms/` | Terms of service |
+| `{SITE_URL}/legal/facebook-data-deletion/` | Meta **Data Deletion Instructions URL** |
+| `{SITE_URL}/privacy/data-deletion/` | Redirect to instructions (short alias) |
+| `{SITE_URL}/legal/facebook-data-deletion/status/<code>/` | Deletion status page (from callback) |
+| `{SITE_URL}/platforms/facebook/data-deletion/` | Meta **Data Deletion Callback URL** (POST `signed_request`) |
 
 ### Health
 
@@ -1052,6 +1067,7 @@ Valid `<platform>` values for connect: `facebook`, `instagram`, `tiktok`, `linke
 - [ ] Celery worker + beat running
 - [ ] Redis connected
 - [ ] Privacy policy live at `{SITE_URL}/privacy/`
+- [ ] Meta data deletion URLs set (instructions + callback — Section 3.3)
 - [ ] System WhatsApp templates approved (see `WHATSAPP_TEMPLATES.md`)
 - [ ] Test end-to-end: connect → publish → engage reply for each platform
 
