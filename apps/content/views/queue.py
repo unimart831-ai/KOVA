@@ -155,6 +155,44 @@ def queue_sections(request):
 
 
 @login_required
+@require_POST
+def clear_failed_posts(request):
+    """
+    Bulk-remove failed posts from the queue (soft delete).
+
+    Scoped to the requesting user's team. Honors the active platform filter so
+    'Clear all' only clears what the user is currently looking at. Returns the
+    refreshed queue sections partial for HTMX, or redirects on a normal POST.
+    """
+    visible_user_ids = get_teammate_ids(request.user)
+    qs = Post.objects.filter(user_id__in=visible_user_ids, status=Post.Status.FAILED)
+
+    platform_filter = request.POST.get("platform") or request.GET.get("platform")
+    if platform_filter:
+        qs = qs.filter(platform=platform_filter)
+
+    cleared = 0
+    for post in qs:
+        post.soft_delete()
+        cleared += 1
+
+    if request.headers.get("HX-Request") == "true":
+        ctx = _get_queue_context(
+            request.user,
+            section_filter=request.GET.get("section"),
+            platform_filter=platform_filter,
+            search_query=request.GET.get("q"),
+        )
+        return render(request, "content/_queue_sections.html", ctx)
+
+    if cleared:
+        messages.success(request, f"Removed {cleared} failed post{'s' if cleared != 1 else ''}.")
+    else:
+        messages.info(request, "No failed posts to remove.")
+    return redirect("content:queue")
+
+
+@login_required
 def calendar_view(request):
     """Timeline view — scheduled + published posts grouped by day, then by seed."""
     visible_user_ids = get_teammate_ids(request.user)
