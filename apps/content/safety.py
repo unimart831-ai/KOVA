@@ -33,6 +33,8 @@ SNAP_POLICY_MESSAGE = (
 )
 
 HIGH_SEVERITY_THRESHOLD = 70
+STRIKE_SUSPEND_THRESHOLD = 3
+DEFAULT_SNAP_BLOCK_HOURS = 72
 
 # ── Keyword-based risk signals (fast, no API needed) ─────────────────────────
 
@@ -169,6 +171,94 @@ def is_publishing_paused(user=None) -> tuple[bool, str]:
         return True, "Publishing paused — emergency pause is active."
 
     return False, ""
+
+
+def _strike_suspend_threshold() -> int:
+    return int(getattr(settings, "CONTENT_SAFETY_STRIKE_SUSPEND_THRESHOLD", STRIKE_SUSPEND_THRESHOLD))
+
+
+def is_snap_blocked(user) -> tuple[bool, str]:
+    """Return (blocked, reason) for per-user Snap to Sell policy blocks only."""
+    from django.utils import timezone
+
+    profile = getattr(user, "profile", None)
+    if not profile:
+        return False, ""
+
+    if profile.suspended_for_policy:
+        return True, "Your account is suspended for content policy violations."
+
+    if profile.snap_blocked_until and profile.snap_blocked_until > timezone.now():
+        return True, (
+            "Snap to Sell is temporarily blocked while your recent upload is reviewed."
+        )
+
+    if (profile.content_safety_strike_count or 0) >= _strike_suspend_threshold():
+        return True, "Snap to Sell is blocked due to repeated content policy violations."
+
+    return False, ""
+
+
+def apply_user_snap_block(user, incident, result: SafetyResult) -> None:
+    """Apply a per-user snap block for confirmed policy violations — never global."""
+    if result.api_failed or result.severity < HIGH_SEVERITY_THRESHOLD:
+        return
+
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    profile = getattr(user, "profile", None)
+    if not profile:
+        return
+
+    hours = int(getattr(settings, "CONTENT_SAFETY_SNAP_BLOCK_HOURS", DEFAULT_SNAP_BLOCK_HOURS))
+    profile.snap_blocked_until = timezone.now() + timedelta(hours=hours)
+    profile.snap_blocked_incident = incident
+    profile.save(update_fields=["snap_blocked_until", "snap_blocked_incident"])
+
+
+def clear_snap_block_for_dismissed_incident(incident) -> None:
+    """Clear snap block when staff dismisses a false-positive incident."""
+    from apps.accounts.models import UserProfile
+
+    profile = UserProfile.objects.filter(user=incident.user).first()
+    if not profile or profile.snap_blocked_incident_id != incident.pk:
+        return
+
+    profile.snap_blocked_until = None
+    profile.snap_blocked_incident = None
+    profile.save(update_fields=["snap_blocked_until", "snap_blocked_incident"])
+
+
+def staff_incident_image_url(incident) -> str | None:
+    """Resolve a staff-only view URL for flagged media (presigned when private R2/S3)."""
+    ref = (incident.image_url or "").strip()
+    if not ref:
+        return None
+    if ref.startswith("data:"):
+        return None
+    if ref.startswith(("http://", "https://")):
+        return ref
+
+    from apps.content.tasks import _public_url_for_file
+
+    return _public_url_for_file(ref.lstrip("/"), for_platform_api=True)
+
+
+def save_incident_image(uploaded_file) -> str:
+    """Persist an uploaded image for staff review; returns storage path."""
+    import uuid
+
+    from django.core.files.storage import default_storage
+
+    from apps.products.image_utils import normalize_uploaded_image
+
+    path = default_storage.save(
+        f"content_safety/incidents/{uuid.uuid4()}.jpg",
+        normalize_uploaded_image(uploaded_file),
+    )
+    return path
 
 
 def _fail_closed_result(reason: str) -> SafetyResult:
@@ -501,7 +591,10 @@ def record_content_safety_incident(
         action_taken=action_taken,
     )
 
-    if result.severity >= HIGH_SEVERITY_THRESHOLD:
+    # Per-user snap block only — never auto-pause platform-wide publishing.
+    apply_user_snap_block(user, incident, result)
+
+    if result.severity >= HIGH_SEVERITY_THRESHOLD and not result.api_failed:
         notify_staff_content_safety_incident(incident)
 
     return incident

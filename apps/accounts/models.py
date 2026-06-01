@@ -312,6 +312,19 @@ class UserProfile(models.Model):
         default=False,
         help_text="When True, this user's posts are not auto-published (manual only).",
     )
+    snap_blocked_until = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When set and in the future, Snap to Sell is blocked for this user only.",
+    )
+    snap_blocked_incident = models.ForeignKey(
+        "content.ContentSafetyIncident",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="Incident that applied the current snap block (cleared on dismiss).",
+    )
 
     # ── Content Autopilot (Phase 3, May 2026) ──
     autopilot_enabled = models.BooleanField(

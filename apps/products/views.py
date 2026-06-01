@@ -922,20 +922,29 @@ def snap_launch(request):
     if offering_type not in valid_types:
         offering_type = "product"
 
-    # Content safety — block explicit imagery before product creation
+    # Content safety — per-user block, then image moderation
     from apps.content.models import ContentSafetyIncident
     from apps.content.safety import (
         SNAP_POLICY_MESSAGE,
         check_uploaded_images_safe,
+        is_snap_blocked,
         record_content_safety_incident,
+        save_incident_image,
     )
+
+    snap_blocked, snap_block_reason = is_snap_blocked(request.user)
+    if snap_blocked:
+        messages.error(request, snap_block_reason)
+        return redirect("products:snap")
 
     upload_safety = check_uploaded_images_safe(photos, request.user)
     if not upload_safety.safe:
+        image_ref = save_incident_image(photos[0]) if photos else ""
         record_content_safety_incident(
             user=request.user,
             source=ContentSafetyIncident.Source.UPLOAD,
             result=upload_safety,
+            image_url=image_ref,
             action_taken="snap_upload_blocked",
         )
         messages.error(request, SNAP_POLICY_MESSAGE)

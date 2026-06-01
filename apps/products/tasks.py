@@ -1388,6 +1388,16 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
 
     user = product.user
 
+    # ── Per-user policy block (not global) ─────────────────────────
+    from apps.content.safety import is_snap_blocked
+
+    snap_blocked, snap_block_reason = is_snap_blocked(user)
+    if snap_blocked:
+        logger.warning(
+            "Snap to Sell BLOCKED user %s (policy): %s", user.email, snap_block_reason,
+        )
+        return {"error": "policy_blocked", "message": snap_block_reason}
+
     # ── Content safety — block before generating posts ───────────────
     from apps.content.models import ContentSafetyIncident
     from apps.content.safety import (
@@ -1664,6 +1674,17 @@ def snap_batch_process(session_id: str):
         return {"error": "session_not_found"}
 
     user = session.user
+
+    from apps.content.safety import is_snap_blocked
+
+    snap_blocked, snap_block_reason = is_snap_blocked(user)
+    if snap_blocked:
+        session.status = BatchSnapSession.Status.FAILED
+        session.error_message = snap_block_reason
+        session.save(update_fields=["status", "error_message"])
+        logger.warning("Batch Snap BLOCKED user %s (policy): %s", user.email, snap_block_reason)
+        return {"error": "policy_blocked", "message": snap_block_reason}
+
     products = list(
         Product.objects.filter(batch_snap_session=session, user=user).order_by("batch_index", "created_at")
     )

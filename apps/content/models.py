@@ -798,7 +798,11 @@ class ContentSafetyIncident(models.Model):
         related_name="safety_incidents",
     )
     source = models.CharField(max_length=20, choices=Source.choices, db_index=True)
-    image_url = models.URLField(max_length=2000, blank=True)
+    image_url = models.CharField(
+        max_length=2000,
+        blank=True,
+        help_text="HTTPS URL or private storage path for staff review.",
+    )
     reasons = models.JSONField(default=list, blank=True)
     categories = models.JSONField(default=list, blank=True)
     severity = models.PositiveSmallIntegerField(default=0, db_index=True)

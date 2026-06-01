@@ -10,6 +10,7 @@ from django.utils import timezone
 from apps.accounts.models import User, UserProfile
 from apps.admin_dashboard.decorators import senior_staff_required, staff_required
 from apps.content.models import ContentSafetyIncident, SystemSafetyConfig
+from apps.content.safety import clear_snap_block_for_dismissed_incident, staff_incident_image_url
 
 
 def _safety_stats():
@@ -112,6 +113,7 @@ def content_safety_incident_detail(request, pk):
             incident.save(update_fields=[
                 "review_status", "reviewed_at", "reviewed_by", "action_taken",
             ])
+            clear_snap_block_for_dismissed_incident(incident)
             messages.success(request, "Incident dismissed as false positive.")
 
         elif action == "confirm":
@@ -139,8 +141,11 @@ def content_safety_incident_detail(request, pk):
         elif action == "clear_strikes" and profile:
             profile.content_safety_strike_count = 0
             profile.suspended_for_policy = False
+            profile.snap_blocked_until = None
+            profile.snap_blocked_incident = None
             profile.save(update_fields=[
                 "content_safety_strike_count", "suspended_for_policy",
+                "snap_blocked_until", "snap_blocked_incident",
             ])
             messages.success(request, "Strikes cleared and suspension lifted.")
 
@@ -160,6 +165,7 @@ def content_safety_incident_detail(request, pk):
         "page_title": f"Incident — {incident.user.email}",
         "incident": incident,
         "profile": profile,
+        "staff_image_url": staff_incident_image_url(incident),
     })
 
 

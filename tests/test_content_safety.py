@@ -5,17 +5,35 @@ from unittest.mock import MagicMock, patch
 import pytest
 from django.test import override_settings
 
-from apps.content.models import ContentSafetyIncident, Post
+from apps.accounts.models import User, UserProfile
+from apps.content.models import ContentSafetyIncident, Post, SystemSafetyConfig
 from apps.content.safety import (
     POLICY_BLOCK_MESSAGE,
     SafetyResult,
+    apply_user_snap_block,
     check_image_safe,
     check_post_safe,
     check_text_safe,
+    clear_snap_block_for_dismissed_incident,
     content_safety_enabled,
+    is_snap_blocked,
+    record_content_safety_incident,
 )
 from apps.content.tasks import publish_post
 from apps.platforms.models import SocialAccount
+
+
+@pytest.fixture
+def user_b(db):
+    u = User.objects.create_user(
+        username="otheruser",
+        email="other@kova.ai",
+        password="TestPass123!",
+        full_name="Other User",
+    )
+    UserProfile.objects.filter(user=u).update(plan="growth")
+    u.refresh_from_db()
+    return u
 
 
 @pytest.fixture
@@ -134,3 +152,90 @@ class TestPublishPostBlocks:
         assert POLICY_BLOCK_MESSAGE in approved_post.publish_error
         assert "error" in result
         assert ContentSafetyIncident.objects.filter(post=approved_post).exists()
+
+
+class TestPerUserSnapBlock:
+    @override_settings(CONTENT_SAFETY_ENABLED=True)
+    def test_user_a_incident_does_not_block_user_b_snap(self, user, user_b):
+        unsafe = SafetyResult(
+            safe=False,
+            reasons=["explicit nudity"],
+            severity=95,
+            categories=["nudity"],
+        )
+        incident = record_content_safety_incident(
+            user=user,
+            source=ContentSafetyIncident.Source.UPLOAD,
+            result=unsafe,
+            image_url="https://cdn.example.com/flagged.jpg",
+            action_taken="snap_upload_blocked",
+        )
+
+        blocked_a, _ = is_snap_blocked(user)
+        blocked_b, _ = is_snap_blocked(user_b)
+        assert blocked_a is True
+        assert blocked_b is False
+        assert incident.pk is not None
+
+    @override_settings(CONTENT_SAFETY_ENABLED=True)
+    def test_global_auto_publish_unchanged_on_incident_create(self, user):
+        config, _ = SystemSafetyConfig.objects.get_or_create(pk=1)
+        config.auto_publish_paused = False
+        config.save()
+
+        record_content_safety_incident(
+            user=user,
+            source=ContentSafetyIncident.Source.UPLOAD,
+            result=SafetyResult(
+                safe=False,
+                reasons=["pornographic content"],
+                severity=100,
+                categories=["porn"],
+            ),
+            action_taken="snap_upload_blocked",
+        )
+
+        config.refresh_from_db()
+        assert config.auto_publish_paused is False
+
+    @override_settings(CONTENT_SAFETY_ENABLED=True)
+    def test_dismissed_incident_clears_snap_block(self, user):
+        unsafe = SafetyResult(
+            safe=False,
+            reasons=["false alarm test"],
+            severity=90,
+            categories=["nudity"],
+        )
+        incident = record_content_safety_incident(
+            user=user,
+            source=ContentSafetyIncident.Source.UPLOAD,
+            result=unsafe,
+            action_taken="snap_upload_blocked",
+        )
+        assert is_snap_blocked(user)[0] is True
+
+        incident.review_status = ContentSafetyIncident.ReviewStatus.DISMISSED
+        incident.save(update_fields=["review_status"])
+        clear_snap_block_for_dismissed_incident(incident)
+
+        user.refresh_from_db()
+        assert is_snap_blocked(user)[0] is False
+
+    @override_settings(CONTENT_SAFETY_ENABLED=True)
+    def test_api_failure_does_not_apply_snap_block(self, user):
+        api_fail = SafetyResult(
+            safe=False,
+            reasons=["Moderation API error"],
+            severity=100,
+            api_failed=True,
+        )
+        incident = ContentSafetyIncident.objects.create(
+            user=user,
+            source=ContentSafetyIncident.Source.UPLOAD,
+            reasons=api_fail.reasons,
+            severity=api_fail.severity,
+            action_taken="snap_upload_blocked",
+        )
+        apply_user_snap_block(user, incident, api_fail)
+
+        assert is_snap_blocked(user)[0] is False
