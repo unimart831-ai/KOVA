@@ -1,8 +1,8 @@
-"""Seed the 12 test businesses from docs/TEST_BUSINESSES.md.
+"""Seed the 14 test businesses from docs/TEST_BUSINESSES.md.
 
 Creates User + UserProfile (+ a handful of representative Products) for each
 business so QA / staging can hit the dashboard, agents, and admin panels with
-realistic data — without manually walking through the onboarding wizard 12
+realistic data — without manually walking through the onboarding wizard 14
 times.
 
 Idempotent: re-run to update existing test users in place. Passwords are
@@ -11,6 +11,7 @@ re-set every run so testers can always log in with the documented default.
 Usage:
     python manage.py seed_test_businesses
     python manage.py seed_test_businesses --complete-onboarding
+    python manage.py seed_test_businesses --complete-onboarding --run-intelligence
     python manage.py seed_test_businesses --only kawaida,nyama
     python manage.py seed_test_businesses --skip-products
     python manage.py seed_test_businesses --password MyTestPass123!
@@ -18,7 +19,7 @@ Usage:
 """
 from __future__ import annotations
 
-from decimal import Decimal
+from datetime import Decimal, timedelta
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -395,7 +396,7 @@ PLAN_TO_TIER = {
 
 class Command(BaseCommand):
     help = (
-        "Seed the 12 test businesses from docs/TEST_BUSINESSES.md. "
+        "Seed the 14 test businesses from docs/TEST_BUSINESSES.md. "
         "Idempotent — re-run to update existing test users in place."
     )
 
@@ -405,12 +406,17 @@ class Command(BaseCommand):
             help="Mark each seeded user as onboarding_completed=True (skip wizard).",
         )
         parser.add_argument(
+            "--run-intelligence", action="store_true",
+            help="With --complete-onboarding, fire the agency first-meeting intelligence "
+                 "chain (research → seeds → content → brief). Default for agency-plan seeds.",
+        )
+        parser.add_argument(
             "--skip-products", action="store_true",
             help="Don't create the per-business sample product catalogue.",
         )
         parser.add_argument(
             "--only", default="",
-            help="Comma-separated business slugs to seed (default: all 12). "
+            help="Comma-separated business slugs to seed (default: all 14). "
                  "E.g. --only kawaida,nyama,kakuma",
         )
         parser.add_argument(
@@ -427,6 +433,7 @@ class Command(BaseCommand):
         only = {s.strip().lower() for s in options["only"].split(",") if s.strip()}
         password = options["password"]
         complete = options["complete_onboarding"]
+        run_intelligence = options["run_intelligence"]
         skip_products = options["skip_products"]
         delete_existing = options["delete_existing"]
 
@@ -465,7 +472,10 @@ class Command(BaseCommand):
 
                 # Optionally fast-forward through the wizard.
                 if complete:
-                    self._complete_onboarding(user, profile)
+                    self._complete_onboarding(
+                        user, profile, biz,
+                        run_intelligence=run_intelligence or biz["plan"] == "agency",
+                    )
 
                 if not skip_products and biz["products"]:
                     product_count += self._create_products(user, biz["products"])
@@ -486,6 +496,11 @@ class Command(BaseCommand):
             self.stdout.write(self.style.NOTICE(
                 "All users marked onboarding_completed — they'll skip the wizard on next login."
             ))
+            if run_intelligence:
+                self.stdout.write(self.style.NOTICE(
+                    "Agency intelligence chain queued for agency-plan seeds "
+                    "(and any --run-intelligence targets)."
+                ))
         else:
             self.stdout.write(
                 "Users have NOT completed onboarding — they'll land on the path-choice screen "
@@ -544,13 +559,23 @@ class Command(BaseCommand):
         # Smart-default mimicry from signup
         profile.country = "KE"
         profile.mpesa_phone = biz["phone"]
+
+        if biz["plan"] == "agency":
+            profile.is_agency_approved = True
+            profile.subscription_status = "active"
+            if not profile.current_period_end:
+                profile.current_period_end = timezone.now() + timedelta(days=30)
+
         profile.save()
         return profile
 
-    def _complete_onboarding(self, user, profile: UserProfile) -> None:
+    def _complete_onboarding(
+        self, user, profile: UserProfile, biz: dict, *, run_intelligence: bool = False,
+    ) -> None:
         """Fast-forward through the wizard — stamps every step marker and
-        flips `onboarding_completed`. Doesn't fire the agency intelligence
-        chain (that's a separate side-effect we keep out of seed runs)."""
+        flips `onboarding_completed`. Optionally queues agency intelligence."""
+        from apps.utils import fire_task
+
         for marker in (
             "step_1_completed",
             "step_2_completed",
@@ -560,6 +585,14 @@ class Command(BaseCommand):
             profile.record_onboarding_step(marker)
         user.onboarding_completed = True
         user.save(update_fields=["onboarding_completed"])
+
+        if run_intelligence:
+            from apps.agents.onboarding_tasks import run_onboarding_intelligence
+
+            profile.onboarding_intelligence_started_at = timezone.now()
+            profile.save(update_fields=["onboarding_intelligence_started_at"])
+            profile.record_onboarding_step("intelligence_started")
+            fire_task(run_onboarding_intelligence, str(user.pk))
 
     def _create_products(self, user, products: list[tuple[str, str]]) -> int:
         """Create a small representative catalogue per business."""
