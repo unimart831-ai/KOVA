@@ -173,5 +173,11 @@ class ContentSafetyIncidentAdmin(admin.ModelAdmin):
 
 @admin.register(SystemSafetyConfig)
 class SystemSafetyConfigAdmin(admin.ModelAdmin):
-    list_display = ["auto_publish_paused", "paused_by", "paused_at", "updated_at"]
+    list_display = [
+        "auto_publish_paused",
+        "content_safety_checks_enabled",
+        "paused_by",
+        "content_safety_paused_by",
+        "updated_at",
+    ]
     readonly_fields = ["updated_at"]

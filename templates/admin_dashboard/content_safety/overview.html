@@ -7,6 +7,44 @@
 {% endblock %}
 
 {% block content %}
+{% if content_safety_env_enabled %}
+<div class="mb-6 rounded-xl border px-5 py-4 {% if content_safety_staff_paused %}bg-amber-50 border-amber-300 dark:bg-amber-950/30 dark:border-amber-800{% else %}bg-emerald-50 border-emerald-300 dark:bg-emerald-950/30 dark:border-emerald-800{% endif %}">
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <p class="text-sm font-semibold {% if content_safety_staff_paused %}text-amber-900 dark:text-amber-200{% else %}text-emerald-900 dark:text-emerald-200{% endif %}">
+        Safety checks: {% if content_safety_checks_running %}ON{% else %}OFF (staff paused){% endif %}
+      </p>
+      <p class="text-xs mt-1 {% if content_safety_staff_paused %}text-amber-800/80 dark:text-amber-300/80{% else %}text-emerald-800/80 dark:text-emerald-300/80{% endif %}">
+        {% if content_safety_staff_paused %}
+        Vision, API text, and local blocklist are bypassed — content publishes without moderation.
+        {% else %}
+        All moderation gates are active (OpenRouter + local blocklist when env is on).
+        {% endif %}
+      </p>
+      {% if content_safety_staff_paused and stats.content_safety_paused_by %}
+      <p class="text-[10px] mt-1 text-amber-700 dark:text-amber-400">
+        Paused by {{ stats.content_safety_paused_by.email }} · {{ stats.content_safety_paused_at|date:"M j, H:i" }}
+      </p>
+      {% endif %}
+    </div>
+    <form method="post" action="{% url 'admin_dashboard:content_safety_checks_toggle' %}">
+      {% csrf_token %}
+      <button type="submit"
+              class="px-4 py-2 text-sm font-medium rounded-lg {% if content_safety_staff_paused %}bg-emerald-600 text-white hover:bg-emerald-700{% else %}bg-amber-600 text-white hover:bg-amber-700{% endif %}">
+        {% if content_safety_staff_paused %}Resume safety checks{% else %}Pause all safety checks{% endif %}
+      </button>
+    </form>
+  </div>
+</div>
+{% else %}
+<div class="mb-6 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 px-5 py-3">
+  <p class="text-xs text-gray-600 dark:text-gray-400">
+    <span class="font-medium text-gray-900 dark:text-white">Deploy switch off:</span>
+    <code class="text-[10px]">CONTENT_SAFETY_ENABLED</code> is false — moderation is disabled at the environment level. Runtime pause/resume applies only when env safety is enabled.
+  </p>
+</div>
+{% endif %}
+
 <div class="flex flex-wrap gap-2 mb-6">
   <a href="{% url 'admin_dashboard:content_safety_overview' %}"
      class="px-3 py-1.5 text-xs font-medium rounded-lg bg-kova-100 text-kova-700 dark:bg-kova-900/40 dark:text-kova-300">Overview</a>
@@ -56,7 +94,8 @@
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
     <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Configuration</h2>
     <dl class="text-xs space-y-2 text-gray-600 dark:text-gray-400">
-      <div class="flex justify-between"><dt>Moderation enabled</dt><dd class="font-medium text-gray-900 dark:text-white">{{ content_safety_enabled|yesno:"Yes,No" }}</dd></div>
+      <div class="flex justify-between"><dt>Env enabled</dt><dd class="font-medium text-gray-900 dark:text-white">{{ content_safety_env_enabled|yesno:"Yes,No" }}</dd></div>
+      <div class="flex justify-between"><dt>Checks running</dt><dd class="font-medium text-gray-900 dark:text-white">{{ content_safety_checks_running|yesno:"Yes,No" }}</dd></div>
       <div class="flex justify-between"><dt>Model</dt><dd class="font-mono text-[11px]">{{ content_safety_model }}</dd></div>
     </dl>
     <p class="text-[10px] text-gray-400 mt-3">See <code class="text-[10px]">docs/CONTENT_SAFETY.md</code> for env vars and policy.</p>

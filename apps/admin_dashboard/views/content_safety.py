@@ -10,7 +10,12 @@ from django.utils import timezone
 from apps.accounts.models import User, UserProfile
 from apps.admin_dashboard.decorators import senior_staff_required, staff_required
 from apps.content.models import ContentSafetyIncident, SystemSafetyConfig
-from apps.content.safety import clear_snap_block_for_dismissed_incident, staff_incident_image_url
+from apps.content.safety import (
+    clear_snap_block_for_dismissed_incident,
+    content_safety_checks_running,
+    content_safety_staff_paused,
+    staff_incident_image_url,
+)
 
 
 def _safety_stats():
@@ -28,6 +33,9 @@ def _safety_stats():
         "auto_publish_paused": config.auto_publish_paused,
         "paused_by": config.paused_by,
         "paused_at": config.paused_at,
+        "content_safety_checks_enabled": config.content_safety_checks_enabled,
+        "content_safety_paused_by": config.content_safety_paused_by,
+        "content_safety_paused_at": config.content_safety_paused_at,
     }
 
 
@@ -186,4 +194,24 @@ def content_safety_global_toggle(request):
 
     state = "paused" if config.auto_publish_paused else "resumed"
     messages.warning(request, f"Platform auto-publish {state}.")
+    return redirect("admin_dashboard:content_safety_overview")
+
+
+@senior_staff_required
+def content_safety_checks_toggle(request):
+    if request.method != "POST":
+        return redirect("admin_dashboard:content_safety_overview")
+
+    config, _ = SystemSafetyConfig.objects.get_or_create(pk=1)
+    config.content_safety_checks_enabled = not config.content_safety_checks_enabled
+    if config.content_safety_checks_enabled:
+        config.content_safety_paused_by = None
+        config.content_safety_paused_at = None
+        messages.success(request, "Content safety checks resumed.")
+    else:
+        config.content_safety_paused_by = request.user
+        config.content_safety_paused_at = timezone.now()
+        messages.warning(request, "All content safety checks paused.")
+    config.save()
+
     return redirect("admin_dashboard:content_safety_overview")

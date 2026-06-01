@@ -10,12 +10,17 @@ from apps.content.models import ContentSafetyIncident, Post, SystemSafetyConfig
 from apps.content.safety import (
     POLICY_BLOCK_MESSAGE,
     SafetyResult,
+    _parse_moderation_response,
     apply_user_snap_block,
+    block_post_for_policy,
     check_image_safe,
     check_post_safe,
     check_text_safe,
     clear_snap_block_for_dismissed_incident,
+    content_safety_checks_running,
     content_safety_enabled,
+    content_safety_staff_paused,
+    is_sexual_policy_violation,
     is_snap_blocked,
     record_content_safety_incident,
 )
@@ -75,6 +80,53 @@ class TestContentSafetyEnabled:
     @override_settings(CONTENT_SAFETY_ENABLED=True)
     def test_enabled_when_set(self):
         assert content_safety_enabled() is True
+
+
+class TestStaffModerationToggle:
+    @override_settings(CONTENT_SAFETY_ENABLED=True, OPENROUTER_API_KEY="test-key")
+    @patch("apps.content.safety._openrouter_moderate_image")
+    def test_paused_skips_api_returns_safe(self, mock_mod, user):
+        config, _ = SystemSafetyConfig.objects.get_or_create(pk=1)
+        config.content_safety_checks_enabled = False
+        config.save()
+
+        result = check_image_safe("https://cdn.example.com/x.jpg", user=user)
+
+        assert result.safe is True
+        assert content_safety_staff_paused() is True
+        assert content_safety_checks_running() is False
+        mock_mod.assert_not_called()
+
+    @override_settings(CONTENT_SAFETY_ENABLED=True, OPENROUTER_API_KEY="test-key")
+    @patch("apps.content.safety._openrouter_moderate_image")
+    def test_enabled_calls_api(self, mock_mod, user):
+        config, _ = SystemSafetyConfig.objects.get_or_create(pk=1)
+        config.content_safety_checks_enabled = True
+        config.save()
+        mock_mod.return_value = SafetyResult(safe=True)
+
+        check_image_safe("https://cdn.example.com/x.jpg", user=user)
+
+        mock_mod.assert_called_once()
+
+    @override_settings(CONTENT_SAFETY_ENABLED=True)
+    def test_paused_skips_blocklist(self, user):
+        config, _ = SystemSafetyConfig.objects.get_or_create(pk=1)
+        config.content_safety_checks_enabled = False
+        config.save()
+
+        result = check_text_safe("buy my porn collection", user=user)
+
+        assert result.safe is True
+
+    @override_settings(CONTENT_SAFETY_ENABLED=False)
+    def test_env_off_staff_pause_has_no_effect(self):
+        config, _ = SystemSafetyConfig.objects.get_or_create(pk=1)
+        config.content_safety_checks_enabled = False
+        config.save()
+
+        assert content_safety_staff_paused() is False
+        assert content_safety_checks_running() is False
 
 
 class TestCheckTextSafe:
@@ -152,6 +204,85 @@ class TestPublishPostBlocks:
         assert POLICY_BLOCK_MESSAGE in approved_post.publish_error
         assert "error" in result
         assert ContentSafetyIncident.objects.filter(post=approved_post).exists()
+
+
+class TestSexualOnlyPolicy:
+    def test_construction_scene_allowed(self):
+        result = _parse_moderation_response({
+            "safe": False,
+            "severity": 72,
+            "categories": ["graphic_violence"],
+            "reasons": ["construction site with scaffolding"],
+        })
+        assert result.safe is True
+        assert result.categories == []
+
+    def test_architecture_low_severity_allowed(self):
+        result = _parse_moderation_response({
+            "safe": False,
+            "severity": 60,
+            "categories": ["sexual"],
+            "reasons": ["building facade might look suggestive"],
+        })
+        assert result.safe is True
+
+    def test_explicit_sexual_content_blocked(self):
+        result = _parse_moderation_response({
+            "safe": False,
+            "severity": 95,
+            "categories": ["porn"],
+            "reasons": ["explicit sexual acts visible"],
+        })
+        assert result.safe is False
+        assert "porn" in result.categories
+        assert is_sexual_policy_violation(result) is True
+
+    @override_settings(CONTENT_SAFETY_ENABLED=True, OPENROUTER_API_KEY="test-key")
+    @patch("apps.content.safety._openrouter_moderate_image")
+    def test_construction_image_no_incident_path(self, mock_mod, user):
+        mock_mod.return_value = _parse_moderation_response({
+            "safe": False,
+            "severity": 72,
+            "categories": [],
+            "reasons": ["construction site with workers in hard hats"],
+        })
+        result = check_image_safe("https://cdn.example.com/building.jpg", user=user)
+        assert result.safe is True
+        assert is_sexual_policy_violation(result) is False
+        assert ContentSafetyIncident.objects.filter(user=user).count() == 0
+
+    @override_settings(CONTENT_SAFETY_ENABLED=True)
+    def test_borderline_sexual_no_snap_block(self, user):
+        borderline = SafetyResult(
+            safe=True,
+            severity=70,
+            categories=["sexual"],
+            reasons=["uncertain"],
+        )
+        incident = ContentSafetyIncident.objects.create(
+            user=user,
+            source=ContentSafetyIncident.Source.UPLOAD,
+            reasons=borderline.reasons,
+            categories=borderline.categories,
+            severity=borderline.severity,
+            action_taken="snap_upload_blocked",
+        )
+        apply_user_snap_block(user, incident, borderline)
+        assert is_snap_blocked(user)[0] is False
+
+    @override_settings(CONTENT_SAFETY_ENABLED=True)
+    @patch("apps.content.safety.check_post_safe")
+    def test_block_post_no_strike_without_sexual_category(self, mock_check, approved_post):
+        mock_check.return_value = SafetyResult(
+            safe=False,
+            reasons=["Matched blocked pattern"],
+            severity=100,
+            categories=["policy"],
+        )
+        block_post_for_policy(approved_post, mock_check.return_value, source="publish")
+        approved_post.user.refresh_from_db()
+        assert approved_post.status == Post.Status.BLOCKED
+        assert (approved_post.user.profile.content_safety_strike_count or 0) == 0
 
 
 class TestPerUserSnapBlock:

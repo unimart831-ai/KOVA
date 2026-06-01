@@ -1,7 +1,7 @@
 """
 Content safety — OpenRouter vision/text moderation with fail-closed publishing gates.
 
-Blocks explicit, violent, or policy-violating images and captions before they reach
+Blocks clearly sexual or sexually explicit images and captions before they reach
 social platforms. Incidents are logged for staff review in the admin dashboard.
 """
 
@@ -17,13 +17,14 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-POLICY_CATEGORIES = frozenset({
+# Sexual/explicit only — violence, hate, drugs, etc. are out of scope for vision moderation.
+SEXUAL_POLICY_CATEGORIES = frozenset({
     "adult",
     "sexual",
     "nudity",
     "porn",
-    "graphic_violence",
 })
+POLICY_CATEGORIES = SEXUAL_POLICY_CATEGORIES  # backward-compatible alias
 
 POLICY_BLOCK_MESSAGE = (
     "This content violates Kova content policy and cannot be published."
@@ -32,7 +33,8 @@ SNAP_POLICY_MESSAGE = (
     "This image violates Kova content policy and cannot be used."
 )
 
-HIGH_SEVERITY_THRESHOLD = 70
+DEFAULT_HIGH_SEVERITY_THRESHOLD = 85
+HIGH_SEVERITY_THRESHOLD = DEFAULT_HIGH_SEVERITY_THRESHOLD  # backward-compatible alias
 STRIKE_SUSPEND_THRESHOLD = 3
 DEFAULT_SNAP_BLOCK_HOURS = 72
 
@@ -67,19 +69,27 @@ ENGAGEMENT_BAIT_PATTERNS = [
 ]
 
 _MODERATION_SYSTEM = (
-    "You are a strict content moderation system for a business social-media platform. "
-    "Flag any content that is NOT safe for professional brand accounts. "
-    "Categories to detect: adult, sexual, nudity, porn, graphic_violence. "
-    "Product photos of clothing on mannequins, swimwear catalog shots, and medical "
-    "education are generally safe. Explicit nudity, pornography, sexual acts, and "
-    "graphic gore are NEVER safe. Respond with JSON only."
+    "You are a content moderation assistant for a business social-media platform. "
+    "Your ONLY job is to detect clearly sexual or sexually explicit content. "
+    "BLOCK only: clear sexual nudity intended to arouse, pornography, sexually explicit "
+    "poses or acts meant to arouse, or overt sexual solicitation. "
+    "Do NOT flag: construction sites, architecture, landscapes, industrial or work scenes, "
+    "people in normal street or work clothing, news or documentary violence, weapons without "
+    "sexual context, drugs or alcohol unless sexualized, swimwear or underwear in catalog or "
+    "product context, fitness or sports, non-pornographic art, medical or educational imagery, "
+    "breastfeeding in non-sexual documentary context, or generic 'sensitive' scenes. "
+    "When uncertain, return safe=true (benefit of the doubt). "
+    "Require high confidence before flagging. Respond with JSON only."
 )
 
 _MODERATION_JSON_SCHEMA = (
     'Return JSON: {"safe": boolean, "severity": 0-100, '
-    '"categories": ["adult"|"sexual"|"nudity"|"porn"|"graphic_violence"], '
+    '"categories": ["adult"|"sexual"|"nudity"|"porn"], '
     '"reasons": ["short explanation"]}. '
-    "Set safe=false if ANY policy category applies or severity >= 70."
+    "Use categories ONLY for sexual/explicit violations — never for violence, gore, hate, "
+    "drugs, or non-sexual topics. "
+    "Set safe=false only when highly confident of a sexual/explicit violation; "
+    "severity must be 85+ to flag. If unsure, set safe=true and severity below 50."
 )
 
 
@@ -137,7 +147,23 @@ class SafetyResult:
 
 
 def content_safety_enabled() -> bool:
+    """Deploy-time master switch (CONTENT_SAFETY_ENABLED)."""
     return bool(getattr(settings, "CONTENT_SAFETY_ENABLED", False))
+
+
+def content_safety_staff_paused() -> bool:
+    """Staff paused all checks via admin while env safety is on."""
+    if not content_safety_enabled():
+        return False
+    from apps.content.models import SystemSafetyConfig
+
+    config = SystemSafetyConfig.load()
+    return not getattr(config, "content_safety_checks_enabled", True)
+
+
+def content_safety_checks_running() -> bool:
+    """Env enabled and staff have not paused moderation."""
+    return content_safety_enabled() and not content_safety_staff_paused()
 
 
 def moderation_model() -> str:
@@ -177,6 +203,25 @@ def _strike_suspend_threshold() -> int:
     return int(getattr(settings, "CONTENT_SAFETY_STRIKE_SUSPEND_THRESHOLD", STRIKE_SUSPEND_THRESHOLD))
 
 
+def _high_severity_threshold() -> int:
+    return int(
+        getattr(
+            settings,
+            "CONTENT_SAFETY_HIGH_SEVERITY_THRESHOLD",
+            DEFAULT_HIGH_SEVERITY_THRESHOLD,
+        )
+    )
+
+
+def is_sexual_policy_violation(result: SafetyResult) -> bool:
+    """True for confident sexual/explicit violations — drives strikes and snap blocks."""
+    if result.api_failed or result.safe:
+        return False
+    if not any(c in SEXUAL_POLICY_CATEGORIES for c in result.categories):
+        return False
+    return result.severity >= _high_severity_threshold()
+
+
 def is_snap_blocked(user) -> tuple[bool, str]:
     """Return (blocked, reason) for per-user Snap to Sell policy blocks only."""
     from django.utils import timezone
@@ -200,8 +245,8 @@ def is_snap_blocked(user) -> tuple[bool, str]:
 
 
 def apply_user_snap_block(user, incident, result: SafetyResult) -> None:
-    """Apply a per-user snap block for confirmed policy violations — never global."""
-    if result.api_failed or result.severity < HIGH_SEVERITY_THRESHOLD:
+    """Apply a per-user snap block for confirmed sexual policy violations — never global."""
+    if not is_sexual_policy_violation(result):
         return
 
     from datetime import timedelta
@@ -315,35 +360,31 @@ def _local_text_checks(text: str, result: SafetyResult) -> SafetyResult:
         result.reasons.append("Excessive character repetition")
         result.severity = max(result.severity, 20)
 
-    if result.severity >= HIGH_SEVERITY_THRESHOLD:
+    if result.severity >= _high_severity_threshold():
         result.safe = False
 
     return result
 
 
 def _parse_moderation_response(data: dict) -> SafetyResult:
-    safe = bool(data.get("safe", True))
     severity = int(data.get("severity") or 0)
     categories = [
         c for c in (data.get("categories") or [])
-        if c in POLICY_CATEGORIES
+        if c in SEXUAL_POLICY_CATEGORIES
     ]
     reasons = [str(r) for r in (data.get("reasons") or []) if r]
 
     if categories and not reasons:
         reasons = [f"Detected: {', '.join(categories)}"]
 
-    if severity >= HIGH_SEVERITY_THRESHOLD:
-        safe = False
-
-    if categories:
-        safe = False
+    threshold = _high_severity_threshold()
+    safe = bool(categories and severity >= threshold)
 
     return SafetyResult(
         safe=safe,
-        reasons=reasons,
-        severity=severity,
-        categories=categories,
+        reasons=reasons if not safe else [],
+        severity=severity if not safe else min(severity, threshold - 1),
+        categories=categories if not safe else [],
     )
 
 
@@ -391,8 +432,10 @@ def _openrouter_moderate_image(image_url: str, user=None) -> SafetyResult:
     model = moderation_model()
     prompt = (
         f"{_MODERATION_JSON_SCHEMA}\n\n"
-        "Review this image for explicit nudity, pornography, sexual content, "
-        "or graphic violence. Business product photos are usually safe."
+        "Review this image ONLY for clear sexual nudity, pornography, sexually explicit "
+        "poses meant to arouse, or overt sexual solicitation. "
+        "Construction, architecture, work sites, street photography, catalog swimwear, "
+        "and normal business product photos are safe. When uncertain, allow."
     )
 
     try:
@@ -482,6 +525,8 @@ def resolve_image_for_moderation(url_or_bytes, product=None) -> str | None:
 
 def check_image_safe(url_or_bytes, user=None, *, product=None) -> SafetyResult:
     """Vision moderation via OpenRouter. Fail-closed when safety is enabled."""
+    if content_safety_staff_paused():
+        return SafetyResult(safe=True)
     if not content_safety_enabled():
         return SafetyResult()
 
@@ -494,6 +539,8 @@ def check_image_safe(url_or_bytes, user=None, *, product=None) -> SafetyResult:
 
 def check_text_safe(text, user=None) -> SafetyResult:
     """Text moderation — local blocklist plus OpenRouter when enabled."""
+    if content_safety_staff_paused():
+        return SafetyResult(safe=True)
     result = SafetyResult()
     result = _local_text_checks(text or "", result)
     if not result.safe:
@@ -522,6 +569,8 @@ def _post_image_urls(post) -> list[str]:
 
 def check_post_safe(post) -> SafetyResult:
     """Check caption and all attached images."""
+    if content_safety_staff_paused():
+        return SafetyResult(safe=True)
     result = check_text_safe(post.content_text, user=post.user)
 
     if not content_safety_enabled():
@@ -530,7 +579,7 @@ def check_post_safe(post) -> SafetyResult:
     for image_url in _post_image_urls(post):
         img_result = check_image_safe(image_url, user=post.user)
         result.merge(img_result)
-        if not result.safe and result.severity >= HIGH_SEVERITY_THRESHOLD:
+        if is_sexual_policy_violation(result):
             break
 
     return result
@@ -538,6 +587,8 @@ def check_post_safe(post) -> SafetyResult:
 
 def check_uploaded_images_safe(uploaded_files, user) -> SafetyResult:
     """Check all uploaded files before snap/product creation."""
+    if content_safety_staff_paused():
+        return SafetyResult(safe=True)
     if not content_safety_enabled():
         return SafetyResult()
 
@@ -553,6 +604,8 @@ def check_uploaded_images_safe(uploaded_files, user) -> SafetyResult:
 
 def check_product_images_safe(product, user, *, source: str = "snap") -> SafetyResult:
     """Check all images on a product (snap / batch flows)."""
+    if content_safety_staff_paused():
+        return SafetyResult(safe=True)
     if not content_safety_enabled():
         return SafetyResult()
 
@@ -594,7 +647,7 @@ def record_content_safety_incident(
     # Per-user snap block only — never auto-pause platform-wide publishing.
     apply_user_snap_block(user, incident, result)
 
-    if result.severity >= HIGH_SEVERITY_THRESHOLD and not result.api_failed:
+    if is_sexual_policy_violation(result):
         notify_staff_content_safety_incident(incident)
 
     return incident
@@ -686,7 +739,7 @@ def block_post_for_policy(post, result: SafetyResult, *, source: str = "publish"
     )
 
     profile = getattr(post.user, "profile", None)
-    if profile and result.severity >= HIGH_SEVERITY_THRESHOLD:
+    if profile and is_sexual_policy_violation(result):
         profile.content_safety_strike_count = (profile.content_safety_strike_count or 0) + 1
         profile.save(update_fields=["content_safety_strike_count"])
 

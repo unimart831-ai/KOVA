@@ -849,6 +849,22 @@ class SystemSafetyConfig(models.Model):
         related_name="+",
     )
     paused_at = models.DateTimeField(null=True, blank=True)
+    content_safety_checks_enabled = models.BooleanField(
+        default=True,
+        help_text=(
+            "When False, staff have paused all moderation checks "
+            "(vision, API text, local blocklist). Env CONTENT_SAFETY_ENABLED "
+            "must still be true for this to take effect."
+        ),
+    )
+    content_safety_paused_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    content_safety_paused_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

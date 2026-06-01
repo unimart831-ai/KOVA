@@ -608,6 +608,14 @@ CONTENT_SAFETY_MODEL = env(
     default="google/gemini-2.0-flash-001",
 )
 CONTENT_SAFETY_NOTIFY_EMAIL = env("CONTENT_SAFETY_NOTIFY_EMAIL", default="")
+# Lenient sex-only defaults — raise threshold to tighten without code changes.
+CONTENT_SAFETY_HIGH_SEVERITY_THRESHOLD = env.int(
+    "CONTENT_SAFETY_HIGH_SEVERITY_THRESHOLD", default=85,
+)
+CONTENT_SAFETY_STRIKE_SUSPEND_THRESHOLD = env.int(
+    "CONTENT_SAFETY_STRIKE_SUSPEND_THRESHOLD", default=3,
+)
+CONTENT_SAFETY_SNAP_BLOCK_HOURS = env.int("CONTENT_SAFETY_SNAP_BLOCK_HOURS", default=72)
 
 AGENT_MODELS = {
     # Create Agent — user-facing content, needs top creative quality

@@ -65,6 +65,11 @@ urlpatterns = [
     path("content-safety/review/", content_safety.content_safety_review, name="content_safety_review"),
     path("content-safety/review/<uuid:pk>/", content_safety.content_safety_incident_detail, name="content_safety_incident_detail"),
     path("content-safety/global-toggle/", content_safety.content_safety_global_toggle, name="content_safety_global_toggle"),
+    path(
+        "content-safety/checks-toggle/",
+        content_safety.content_safety_checks_toggle,
+        name="content_safety_checks_toggle",
+    ),
 
     # Agents
     path("agents/", agents.agent_overview, name="agent_overview"),

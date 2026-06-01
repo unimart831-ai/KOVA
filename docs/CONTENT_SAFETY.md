@@ -1,20 +1,24 @@
 # Content Safety
 
-Kova blocks explicit, violent, or policy-violating images and captions **before** they reach social platforms. Moderation runs via OpenRouter vision/text models with a fail-closed default in production.
+Kova blocks **clearly sexual or sexually explicit** images and captions **before** they reach social platforms. Moderation runs via OpenRouter vision/text models with a fail-closed default in production (API errors), but **benefit of the doubt** on borderline vision results.
 
-## Policy categories
+## Policy scope (sexual/explicit only)
 
-- `adult`, `sexual`, `nudity`, `porn`, `graphic_violence`
-
-Product catalog photos (clothing on mannequins, swimwear listings, etc.) are generally allowed. Explicit nudity, pornography, sexual acts, and graphic gore are blocked.
+- Categories: `adult`, `sexual`, `nudity`, `porn`
+- Block only when the model is highly confident (severity ≥ 85 by default)
+- **Not flagged:** construction, architecture, normal street/work clothing, news violence, catalog swimwear, medical/educational imagery, etc.
+- Text blocklist (slurs, threats, scam patterns) still runs locally and can block captions independently
 
 ## Environment variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `CONTENT_SAFETY_ENABLED` | `False` (dev), `True` (production) | Master switch |
+| `CONTENT_SAFETY_ENABLED` | `False` (dev), `True` (production) | Deploy kill-switch; when false, moderation never runs |
 | `OPENROUTER_API_KEY` | — | Required when safety is enabled |
 | `CONTENT_SAFETY_MODEL` | `google/gemini-2.0-flash-001` | OpenRouter model slug for moderation |
+| `CONTENT_SAFETY_HIGH_SEVERITY_THRESHOLD` | `85` | Min severity for block, snap block, strikes, staff email |
+| `CONTENT_SAFETY_STRIKE_SUSPEND_THRESHOLD` | `3` | Strikes before Snap is blocked via strike count |
+| `CONTENT_SAFETY_SNAP_BLOCK_HOURS` | `72` | Per-user Snap block duration after violation |
 | `CONTENT_SAFETY_NOTIFY_EMAIL` | — | Optional extra recipient for high-severity alerts |
 
 ## OpenRouter model
@@ -40,7 +44,10 @@ Staff → **Content Safety** (`/dashboard/content-safety/`):
 - **Overview** — pending review count, incidents today, global auto-publish status
 - **Review queue** — flagged incidents (sensitive placeholder, no explicit thumbnails)
 - **Incident detail** — dismiss, confirm violation, suspend user, pause auto-publish
-- **Global controls** — pause/resume platform-wide auto-publish
+- **Safety checks toggle** — pause/resume all moderation (vision, API, blocklist); superuser POST to `/dashboard/content-safety/checks-toggle/`
+- **Auto-publish toggle** — separate control; pause/resume platform-wide auto-publish only
+
+When staff pause checks (`SystemSafetyConfig.content_safety_checks_enabled=false`), all `check_*` paths return safe with no API calls or incidents. When `CONTENT_SAFETY_ENABLED=false` at deploy, moderation is off entirely (text blocklist may still run in dev — see tests).
 
 Link to user usage: `/dashboard/users/<uuid>/usage/`
 
@@ -52,7 +59,7 @@ Link to user usage: `/dashboard/users/<uuid>/usage/`
 ## Data model
 
 - `ContentSafetyIncident` — audit log with review workflow
-- `SystemSafetyConfig` (singleton) — `auto_publish_paused`, who toggled, when
+- `SystemSafetyConfig` (singleton) — `auto_publish_paused`, `content_safety_checks_enabled`, pause audit fields
 - `UserProfile.content_safety_strike_count`, `suspended_for_policy`, `auto_publish_paused`
 
 ## Tests
