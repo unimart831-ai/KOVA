@@ -336,12 +336,18 @@ def nurture_list(request):
     })
 
 
+def _nurture_whatsapp_allowed(user) -> bool:
+    from apps.billing.models import get_user_plan_limits
+
+    return bool(get_user_plan_limits(user).get("whatsapp_enabled"))
+
+
 @login_required
 def nurture_create(request):
     """Create a new nurture sequence with steps."""
-    import json
-
     from apps.leads.models import NurtureSequence, NurtureStep
+
+    whatsapp_enabled = _nurture_whatsapp_allowed(request.user)
 
     if request.method == "POST":
         name = request.POST.get("name", "").strip()
@@ -363,6 +369,13 @@ def nurture_create(request):
         for i in range(step_count):
             delay = int(request.POST.get(f"step_{i}_delay", 1))
             action = request.POST.get(f"step_{i}_action", "send_email")
+            if action == NurtureStep.ActionType.SEND_WHATSAPP and not whatsapp_enabled:
+                messages.error(
+                    request,
+                    "WhatsApp nurture steps require a Pro or Agency plan with WhatsApp enabled.",
+                )
+                sequence.delete()
+                return redirect("leads:nurture_create")
             NurtureStep.objects.create(
                 sequence=sequence,
                 order=i,
@@ -380,6 +393,7 @@ def nurture_create(request):
     return render(request, "leads/nurture_form.html", {
         "page_title": "New Nurture Sequence",
         "is_edit": False,
+        "whatsapp_enabled": whatsapp_enabled,
     })
 
 

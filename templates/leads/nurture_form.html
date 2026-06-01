@@ -70,9 +70,21 @@
               <select :name="'step_' + index + '_action'" x-model="step.action"
                       class="block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-sm">
                 <option value="send_email">Send Email</option>
+                {% if whatsapp_enabled %}<option value="send_whatsapp">Send WhatsApp</option>{% endif %}
                 <option value="add_tag">Add Tag</option>
                 <option value="change_status">Change Status</option>
               </select>
+            </div>
+          </div>
+
+          {# WhatsApp message (Pro+ with WhatsApp connected) #}
+          <div x-show="step.action === 'send_whatsapp'" x-cloak class="space-y-3">
+            <p class="text-[11px] text-gray-500 dark:text-gray-400">Sent when the lead has a phone number; falls back to email otherwise.</p>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">WhatsApp Message</label>
+              <textarea :name="'step_' + index + '_body'" x-model="step.body" rows="4"
+                        class="block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-sm"
+                        placeholder="Hi {{name}}! Thanks for reaching out…"></textarea>
             </div>
           </div>
 
