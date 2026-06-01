@@ -54,12 +54,22 @@
   </div>
 
   <!-- Content safety -->
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm {% if ops_hub.auto_publish_paused or ops_hub.safety_pending %}ring-1 ring-amber-300 dark:ring-amber-800/60{% endif %}">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm {% if ops_hub.auto_publish_paused or ops_hub.safety_pending or ops_hub.content_safety_staff_paused %}ring-1 ring-amber-300 dark:ring-amber-800/60{% endif %}">
     <div class="flex items-start justify-between gap-2 mb-3">
       <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Content Safety</h3>
-      <a href="{% url 'admin_dashboard:content_safety_overview' %}" class="text-[10px] font-medium text-kova-600 dark:text-kova-400 hover:underline shrink-0">Safety →</a>
+      <a href="{% url 'admin_dashboard:content_safety_overview' %}" class="text-[10px] font-medium text-kova-600 dark:text-kova-400 hover:underline shrink-0">Full safety hub →</a>
     </div>
+    {% if ops_hub.content_safety_env_enabled %}
+    {% include "admin_dashboard/partials/content_safety_checks_toggle.html" with compact=True next_url=request.build_absolute_uri content_safety_env_enabled=ops_hub.content_safety_env_enabled content_safety_staff_paused=ops_hub.content_safety_staff_paused content_safety_checks_running=ops_hub.content_safety_checks_running content_safety_paused_by=ops_hub.content_safety_paused_by content_safety_paused_at=ops_hub.content_safety_paused_at %}
+    {% else %}
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 mb-2">
+      Env moderation off (<code>CONTENT_SAFETY_ENABLED</code>). <a href="{% url 'admin_dashboard:content_safety_overview' %}" class="text-kova-600 dark:text-kova-400 hover:underline">Open hub</a>
+    </p>
+    {% endif %}
     <dl class="space-y-1.5 text-xs">
+      {% if ops_hub.content_safety_env_enabled %}
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Safety checks</dt><dd class="font-semibold {% if ops_hub.content_safety_checks_running %}text-emerald-600 dark:text-emerald-400{% else %}text-amber-600 dark:text-amber-400{% endif %}">{% if ops_hub.content_safety_checks_running %}RUNNING{% else %}PAUSED{% endif %}</dd></div>
+      {% endif %}
       <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Pending review</dt><dd class="font-semibold {% if ops_hub.safety_pending %}text-amber-600 dark:text-amber-400{% else %}text-gray-900 dark:text-white{% endif %}"><a href="{% url 'admin_dashboard:content_safety_review' %}" class="hover:underline">{{ ops_hub.safety_pending }}</a></dd></div>
       <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Incidents today</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.safety_today }}</dd></div>
       <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Snap blocks / paused publish</dt><dd class="font-semibold {% if ops_hub.snap_blocked_users %}text-red-600 dark:text-red-400{% else %}text-gray-900 dark:text-white{% endif %}">{{ ops_hub.snap_blocked_users }}</dd></div>

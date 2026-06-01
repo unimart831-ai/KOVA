@@ -48,6 +48,12 @@ def build_ops_hub_snapshot() -> dict:
     failed_posts_7d = Post.objects.filter(status="failed", updated_at__gte=seven_days_ago).count()
     failed_posts_open = Post.objects.filter(status="failed").count()
 
+    from apps.content.safety import (
+        content_safety_checks_running,
+        content_safety_enabled,
+        content_safety_staff_paused,
+    )
+
     safety_config = SystemSafetyConfig.load()
     safety_pending = ContentSafetyIncident.objects.filter(
         review_status=ContentSafetyIncident.ReviewStatus.PENDING,
@@ -90,6 +96,11 @@ def build_ops_hub_snapshot() -> dict:
         "safety_pending": safety_pending,
         "safety_today": safety_today,
         "auto_publish_paused": safety_config.auto_publish_paused,
+        "content_safety_env_enabled": content_safety_enabled(),
+        "content_safety_staff_paused": content_safety_staff_paused(),
+        "content_safety_checks_running": content_safety_checks_running(),
+        "content_safety_paused_by": safety_config.content_safety_paused_by,
+        "content_safety_paused_at": safety_config.content_safety_paused_at,
         "snap_blocked_users": snap_blocked_users,
         "agency_sales_new": agency_sales_new,
         "active_marketplaces": active_marketplaces,

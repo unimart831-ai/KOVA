@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from apps.accounts.models import User, UserProfile
 from apps.admin_dashboard.decorators import senior_staff_required, staff_required
@@ -13,9 +14,35 @@ from apps.content.models import ContentSafetyIncident, SystemSafetyConfig
 from apps.content.safety import (
     clear_snap_block_for_dismissed_incident,
     content_safety_checks_running,
+    content_safety_enabled,
     content_safety_staff_paused,
     staff_incident_image_url,
 )
+
+
+def content_safety_ui_context() -> dict:
+    """Template context for pause/resume UI (overview + ops hub)."""
+    config = SystemSafetyConfig.load()
+    return {
+        "content_safety_env_enabled": content_safety_enabled(),
+        "content_safety_staff_paused": content_safety_staff_paused(),
+        "content_safety_checks_running": content_safety_checks_running(),
+        "content_safety_paused_by": config.content_safety_paused_by,
+        "content_safety_paused_at": config.content_safety_paused_at,
+        "content_safety_model": getattr(
+            settings, "CONTENT_SAFETY_MODEL", "google/gemini-2.0-flash-001",
+        ),
+    }
+
+
+def _redirect_after_checks_toggle(request):
+    next_url = request.POST.get("next", "").strip()
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts={request.get_host()},
+    ):
+        return redirect(next_url)
+    return redirect("admin_dashboard:content_safety_overview")
 
 
 def _safety_stats():
@@ -56,10 +83,8 @@ def content_safety_overview(request):
         "stats": stats,
         "recent_incidents": recent,
         "high_severity_pending": high_severity,
-        "content_safety_enabled": getattr(settings, "CONTENT_SAFETY_ENABLED", False),
-        "content_safety_model": getattr(
-            settings, "CONTENT_SAFETY_MODEL", "google/gemini-2.0-flash-001",
-        ),
+        "toggle_next_url": request.build_absolute_uri(),
+        **content_safety_ui_context(),
     })
 
 
@@ -214,4 +239,4 @@ def content_safety_checks_toggle(request):
         messages.warning(request, "All content safety checks paused.")
     config.save()
 
-    return redirect("admin_dashboard:content_safety_overview")
+    return _redirect_after_checks_toggle(request)

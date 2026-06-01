@@ -3,10 +3,12 @@ from __future__ import annotations
 from datetime import date
 
 import pytest
+from django.test import override_settings
 from django.urls import reverse
 
 from apps.analytics.models import PageView
 from apps.briefs.models import DailyBrief
+from apps.content.models import SystemSafetyConfig
 from apps.products.models import Product
 
 
@@ -115,3 +117,47 @@ class TestAdminDashboardSurfaces:
         assert b"Plans & Billing" in resp.content
         assert b"Content Safety" in resp.content
         assert b"Marketplace Partners" in resp.content
+
+    @override_settings(CONTENT_SAFETY_ENABLED=True)
+    def test_overview_shows_safety_checks_toggle_when_env_on(self, client, superuser):
+        config, _ = SystemSafetyConfig.objects.get_or_create(pk=1)
+        config.content_safety_checks_enabled = True
+        config.save()
+
+        client.force_login(superuser)
+        resp = client.get(reverse("admin_dashboard:overview"))
+
+        assert resp.status_code == 200
+        assert b"Safety checks: RUNNING" in resp.content
+        assert b"Pause all safety checks" in resp.content
+
+    @override_settings(CONTENT_SAFETY_ENABLED=True)
+    def test_content_safety_overview_shows_master_toggle(self, client, superuser):
+        config, _ = SystemSafetyConfig.objects.get_or_create(pk=1)
+        config.content_safety_checks_enabled = False
+        config.save()
+
+        client.force_login(superuser)
+        resp = client.get(reverse("admin_dashboard:content_safety_overview"))
+
+        assert resp.status_code == 200
+        assert b"Safety checks: PAUSED" in resp.content
+        assert b"Resume all safety checks" in resp.content
+
+    @override_settings(CONTENT_SAFETY_ENABLED=True)
+    def test_checks_toggle_redirects_to_dashboard_when_next_set(self, client, superuser):
+        config, _ = SystemSafetyConfig.objects.get_or_create(pk=1)
+        config.content_safety_checks_enabled = True
+        config.save()
+
+        client.force_login(superuser)
+        overview_url = reverse("admin_dashboard:overview")
+        resp = client.post(
+            reverse("admin_dashboard:content_safety_checks_toggle"),
+            {"next": overview_url},
+        )
+
+        assert resp.status_code == 302
+        assert resp["Location"] == overview_url
+        config.refresh_from_db()
+        assert config.content_safety_checks_enabled is False
