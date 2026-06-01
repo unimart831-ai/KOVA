@@ -300,6 +300,18 @@ class UserProfile(models.Model):
         help_text="If True, ALL autonomous agent actions are halted immediately. "
                   "No publishing, no seeds, no replies, no media queue processing.",
     )
+    content_safety_strike_count = models.PositiveSmallIntegerField(
+        default=0,
+        help_text="Count of confirmed or high-severity content policy violations.",
+    )
+    suspended_for_policy = models.BooleanField(
+        default=False,
+        help_text="When True, user cannot publish until staff clears the suspension.",
+    )
+    auto_publish_paused = models.BooleanField(
+        default=False,
+        help_text="When True, this user's posts are not auto-published (manual only).",
+    )
 
     # ── Content Autopilot (Phase 3, May 2026) ──
     autopilot_enabled = models.BooleanField(

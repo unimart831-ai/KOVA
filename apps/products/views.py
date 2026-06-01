@@ -922,6 +922,25 @@ def snap_launch(request):
     if offering_type not in valid_types:
         offering_type = "product"
 
+    # Content safety — block explicit imagery before product creation
+    from apps.content.models import ContentSafetyIncident
+    from apps.content.safety import (
+        SNAP_POLICY_MESSAGE,
+        check_uploaded_images_safe,
+        record_content_safety_incident,
+    )
+
+    upload_safety = check_uploaded_images_safe(photos, request.user)
+    if not upload_safety.safe:
+        record_content_safety_incident(
+            user=request.user,
+            source=ContentSafetyIncident.Source.UPLOAD,
+            result=upload_safety,
+            action_taken="snap_upload_blocked",
+        )
+        messages.error(request, SNAP_POLICY_MESSAGE)
+        return redirect("products:snap")
+
     # Create the product with the first image as primary
     stock_status = (
         Product.StockStatus.UNLIMITED

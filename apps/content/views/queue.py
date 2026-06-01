@@ -66,7 +66,7 @@ def _get_queue_context(user, section_filter=None, platform_filter=None, format_f
     )
 
     failed_qs = _apply_queue_filters(
-        base.filter(status="failed").order_by("-created_at"),
+        base.filter(status__in=("failed", "blocked")).order_by("-created_at"),
         platform_filter, format_filter, search_query,
     )
     publishing_qs = _apply_queue_filters(
@@ -95,7 +95,7 @@ def _get_queue_context(user, section_filter=None, platform_filter=None, format_f
             Q(status="scheduled") | Q(status="approved", scheduled_at__isnull=False)
         ).count(),
         "publishing_count": stats_base.filter(status="publishing").count(),
-        "failed_count": stats_base.filter(status="failed").count(),
+        "failed_count": stats_base.filter(status__in=("failed", "blocked")).count(),
         "published_count": stats_base.filter(status="published").count(),
     }
 

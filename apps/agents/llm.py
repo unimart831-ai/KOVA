@@ -663,6 +663,7 @@ def analyze_image(
     max_tokens: int = 1024,
     json_mode: bool = False,
     user=None,
+    content_safety_check: bool = False,
 ) -> LLMResponse:
     """
     Send an image to a vision-capable LLM and get a text/JSON response.
@@ -685,6 +686,21 @@ def analyze_image(
     if user is not None:
         from apps.agents.budget import check_budget
         check_budget(user, max_tokens)
+
+    if content_safety_check and user is not None:
+        from apps.content.models import ContentSafetyIncident
+        from apps.content.safety import check_image_safe, record_content_safety_incident
+
+        safety = check_image_safe(image_url, user=user)
+        if not safety.safe:
+            record_content_safety_incident(
+                user=user,
+                source=ContentSafetyIncident.Source.VISION,
+                result=safety,
+                image_url=image_url[:2000] if image_url.startswith("http") else "",
+                action_taken="vision_blocked",
+            )
+            raise ValueError("Image blocked by content safety policy")
 
     config = _get_llm_config()
 

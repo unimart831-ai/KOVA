@@ -58,6 +58,7 @@
           </div>
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
             {% if post.status == 'published' %}bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300
+            {% elif post.status == 'blocked' %}bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-200
             {% elif post.status == 'failed' %}bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300
             {% elif post.status == 'approved' or post.status == 'scheduled' %}bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300
             {% elif post.status == 'publishing' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300
@@ -71,7 +72,12 @@
           <div class="prose dark:prose-invert prose-sm max-w-none whitespace-pre-wrap text-gray-800 dark:text-gray-200">{{ post.content_text }}</div>
         </div>
 
-        {% if post.status == 'failed' and post.publish_failure_message %}
+        {% if post.status == 'blocked' and post.publish_failure_message %}
+        <div class="rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 p-4 mb-4">
+          <p class="text-sm font-semibold text-red-800 dark:text-red-200">Blocked — content policy</p>
+          <p class="text-sm text-red-700 dark:text-red-300 whitespace-pre-wrap mt-1">{{ post.publish_failure_message }}</p>
+        </div>
+        {% elif post.status == 'failed' and post.publish_failure_message %}
         <div class="px-5 pb-4">
           <div class="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-lg">
             <p class="text-xs font-semibold text-red-700 dark:text-red-300 uppercase tracking-wide mb-1">Publish error</p>

@@ -61,6 +61,31 @@ def approve_post_for_user(
             "message": f"{platform_name} requires media before approval.",
         }
 
+    from apps.content.safety import (
+        POLICY_BLOCK_MESSAGE,
+        block_post_for_policy,
+        check_post_safe,
+        is_publishing_paused,
+    )
+    paused, pause_reason = is_publishing_paused(user)
+    if paused:
+        return {
+            "success": False,
+            "error": "publish_paused",
+            "post_id": str(post.id),
+            "message": pause_reason,
+        }
+
+    safety = check_post_safe(post)
+    if not safety.safe:
+        block_post_for_policy(post, safety, source="approve")
+        return {
+            "success": False,
+            "error": "policy_blocked",
+            "post_id": str(post.id),
+            "message": POLICY_BLOCK_MESSAGE,
+        }
+
     scheduled_at, publish_now = _resolve_scheduled_at(
         user, post, schedule_intent, exact_datetime,
     )

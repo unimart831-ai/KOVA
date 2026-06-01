@@ -10,6 +10,11 @@
 {% block content %}
 <div class="max-w-lg mx-auto space-y-5" x-data="snapToSell({{ commerce_autopilot|yesno:'true,false' }}, {{ visual_credits.remaining|default:15 }}, {{ visual_credits.at_limit|yesno:'true,false' }}, {{ studio_polish_notice|yesno:'true,false' }})">
 
+  <div class="rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-xs text-amber-900 dark:text-amber-200">
+    Photos must follow Kova's <a href="{% url 'acceptable_use' %}" class="underline font-medium">content policy</a>.
+    Explicit or violent imagery cannot be used for posts or your shop.
+  </div>
+
   {% include "products/_products_subnav.html" %}
 
   <form method="post" action="{% url 'products:snap_launch' %}" enctype="multipart/form-data" class="space-y-4"

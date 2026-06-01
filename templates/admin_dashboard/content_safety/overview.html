@@ -1,0 +1,100 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Moderation incidents, review queue, and platform controls</p>
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap gap-2 mb-6">
+  <a href="{% url 'admin_dashboard:content_safety_overview' %}"
+     class="px-3 py-1.5 text-xs font-medium rounded-lg bg-kova-100 text-kova-700 dark:bg-kova-900/40 dark:text-kova-300">Overview</a>
+  <a href="{% url 'admin_dashboard:content_safety_review' %}"
+     class="px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200">Review queue</a>
+</div>
+
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Pending review</p>
+    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{{ stats.pending_review|format_number }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Incidents today</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ stats.incidents_today|format_number }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">High severity pending</p>
+    <p class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{{ high_severity_pending|format_number }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border {% if stats.auto_publish_paused %}border-red-300 dark:border-red-900{% else %}border-emerald-200 dark:border-emerald-900{% endif %} p-4 shadow-sm">
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Global auto-publish</p>
+    <p class="text-lg font-bold mt-1 {% if stats.auto_publish_paused %}text-red-600 dark:text-red-400{% else %}text-emerald-600 dark:text-emerald-400{% endif %}">
+      {% if stats.auto_publish_paused %}PAUSED{% else %}Active{% endif %}
+    </p>
+    {% if stats.auto_publish_paused and stats.paused_by %}
+    <p class="text-[10px] text-gray-500 mt-1">By {{ stats.paused_by.email }} · {{ stats.paused_at|date:"M j, H:i" }}</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Global controls</h2>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+      Pause all autonomous publishing platform-wide. Manual approvals still work; publish tasks will skip until resumed.
+    </p>
+    <form method="post" action="{% url 'admin_dashboard:content_safety_global_toggle' %}">
+      {% csrf_token %}
+      <button type="submit"
+              class="px-4 py-2 text-sm font-medium rounded-lg {% if stats.auto_publish_paused %}bg-emerald-600 text-white hover:bg-emerald-700{% else %}bg-red-600 text-white hover:bg-red-700{% endif %}">
+        {% if stats.auto_publish_paused %}Resume platform auto-publish{% else %}Pause platform auto-publish{% endif %}
+      </button>
+    </form>
+  </div>
+
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Configuration</h2>
+    <dl class="text-xs space-y-2 text-gray-600 dark:text-gray-400">
+      <div class="flex justify-between"><dt>Moderation enabled</dt><dd class="font-medium text-gray-900 dark:text-white">{{ content_safety_enabled|yesno:"Yes,No" }}</dd></div>
+      <div class="flex justify-between"><dt>Model</dt><dd class="font-mono text-[11px]">{{ content_safety_model }}</dd></div>
+    </dl>
+    <p class="text-[10px] text-gray-400 mt-3">See <code class="text-[10px]">docs/CONTENT_SAFETY.md</code> for env vars and policy.</p>
+  </div>
+</div>
+
+<div class="mt-6 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+  <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Recent incidents</h2>
+    <a href="{% url 'admin_dashboard:content_safety_review' %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">View all</a>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-xs">
+      <thead class="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
+        <tr>
+          <th class="px-4 py-2 text-left font-medium">User</th>
+          <th class="px-4 py-2 text-left font-medium">Source</th>
+          <th class="px-4 py-2 text-left font-medium">Severity</th>
+          <th class="px-4 py-2 text-left font-medium">Status</th>
+          <th class="px-4 py-2 text-left font-medium">When</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for incident in recent_incidents %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30">
+          <td class="px-4 py-2">
+            <a href="{% url 'admin_dashboard:user_usage_detail' incident.user_id %}" class="text-kova-600 dark:text-kova-400 hover:underline">{{ incident.user.email }}</a>
+          </td>
+          <td class="px-4 py-2">{{ incident.get_source_display }}</td>
+          <td class="px-4 py-2"><span class="font-semibold {% if incident.severity >= 70 %}text-red-600{% else %}text-amber-600{% endif %}">{{ incident.severity }}</span></td>
+          <td class="px-4 py-2">{{ incident.get_review_status_display }}</td>
+          <td class="px-4 py-2 text-gray-500">{{ incident.created_at|timesince }} ago</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">No incidents logged yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

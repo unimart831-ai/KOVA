@@ -267,3 +267,6 @@ else:
         "Get a DSN from https://sentry.io"
     )
 
+# ─── CONTENT SAFETY ──────────────────────────────────────────────────────────
+CONTENT_SAFETY_ENABLED = env.bool("CONTENT_SAFETY_ENABLED", default=True)  # noqa: F405
+

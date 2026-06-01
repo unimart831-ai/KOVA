@@ -1,0 +1,65 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap gap-2 mb-6">
+  <a href="{% url 'admin_dashboard:content_safety_overview' %}"
+     class="px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200">Overview</a>
+  <a href="{% url 'admin_dashboard:content_safety_review' %}"
+     class="px-3 py-1.5 text-xs font-medium rounded-lg bg-kova-100 text-kova-700 dark:bg-kova-900/40 dark:text-kova-300">Review queue</a>
+</div>
+
+<form method="get" class="flex flex-wrap gap-2 mb-4">
+  <select name="status" class="input text-xs h-8 w-auto">
+    {% for value, label in status_choices %}
+    <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }} ({{ status_counts|default_if_none:0 }})</option>
+    {% endfor %}
+  </select>
+  <input type="text" name="q" value="{{ current_q }}" placeholder="Search email, reasons…" class="input text-xs h-8 w-48">
+  <button type="submit" class="btn-secondary text-xs h-8 px-3">Filter</button>
+</form>
+
+<div class="space-y-3">
+  {% for incident in page_obj %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 flex gap-4">
+    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-800 flex flex-col items-center justify-center text-gray-400 border border-dashed border-gray-300 dark:border-gray-700">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      <span class="text-[9px] font-semibold mt-1 uppercase tracking-wide">Sensitive</span>
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="flex flex-wrap items-center gap-2 mb-1">
+        <a href="{% url 'admin_dashboard:content_safety_incident_detail' incident.pk %}" class="text-sm font-semibold text-gray-900 dark:text-white hover:text-kova-600">{{ incident.user.email }}</a>
+        <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">{{ incident.get_source_display }}</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded font-semibold {% if incident.severity >= 70 %}bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300{% else %}bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200{% endif %}">Severity {{ incident.severity }}</span>
+      </div>
+      {% if incident.categories %}
+      <p class="text-xs text-gray-500 dark:text-gray-400">Categories: {{ incident.categories|join:", " }}</p>
+      {% endif %}
+      {% if incident.reasons %}
+      <p class="text-xs text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">{{ incident.reasons|join:" · " }}</p>
+      {% endif %}
+      <p class="text-[10px] text-gray-400 mt-2">{{ incident.created_at|timesince }} ago · {{ incident.get_review_status_display }}</p>
+    </div>
+    <div class="flex flex-col gap-1 shrink-0">
+      <a href="{% url 'admin_dashboard:content_safety_incident_detail' incident.pk %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">Review</a>
+      <a href="{% url 'admin_dashboard:user_usage_detail' incident.user_id %}" class="text-xs text-gray-500 hover:underline">User usage</a>
+    </div>
+  </div>
+  {% empty %}
+  <p class="text-sm text-gray-400 text-center py-12">No incidents match this filter.</p>
+  {% endfor %}
+</div>
+
+{% if page_obj.has_other_pages %}
+<div class="mt-4 flex justify-center gap-2 text-xs">
+  {% if page_obj.has_previous %}
+  <a href="?page={{ page_obj.previous_page_number }}&status={{ current_status }}&q={{ current_q|urlencode }}" class="px-3 py-1 rounded border">Previous</a>
+  {% endif %}
+  <span class="px-3 py-1 text-gray-500">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+  <a href="?page={{ page_obj.next_page_number }}&status={{ current_status }}&q={{ current_q|urlencode }}" class="px-3 py-1 rounded border">Next</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

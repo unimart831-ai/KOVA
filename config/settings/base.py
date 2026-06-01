@@ -585,7 +585,6 @@ GROQ_API_KEY = env("GROQ_API_KEY", default="")
 OPENROUTER_API_KEY = env("OPENROUTER_API_KEY", default="")
 DEFAULT_LLM_PROVIDER = env("DEFAULT_LLM_PROVIDER", default="openai")  # openai | anthropic | openrouter
 DEFAULT_LLM_MODEL = env("DEFAULT_LLM_MODEL", default="gpt-4o-mini")
-# Paid fallback — auto-escalate to a DIFFERENT provider when the primary model fails.
 # Gemini 2.0 Flash: $0.10/$0.40 per 1M tokens — fast, cheap, different provider for redundancy.
 LLM_PAID_FALLBACK = env("LLM_PAID_FALLBACK", default="google/gemini-2.0-flash-001")
 LLM_PAID_FALLBACK_PROVIDER = env("LLM_PAID_FALLBACK_PROVIDER", default="openrouter")
@@ -599,6 +598,14 @@ LLM_PAID_FALLBACK_PROVIDER = env("LLM_PAID_FALLBACK_PROVIDER", default="openrout
 LLM_MODEL_PREMIUM = env("LLM_MODEL_PREMIUM", default="deepseek/deepseek-v3.2")
 LLM_MODEL_WORKHORSE = env("LLM_MODEL_WORKHORSE", default="deepseek/deepseek-v3.2")
 LLM_MODEL_FAST = env("LLM_MODEL_FAST", default="deepseek/deepseek-v3.2")
+
+# ─── CONTENT SAFETY (OpenRouter moderation) ─────────────────────────────────
+CONTENT_SAFETY_ENABLED = env.bool("CONTENT_SAFETY_ENABLED", default=False)
+CONTENT_SAFETY_MODEL = env(
+    "CONTENT_SAFETY_MODEL",
+    default="google/gemini-2.0-flash-001",
+)
+CONTENT_SAFETY_NOTIFY_EMAIL = env("CONTENT_SAFETY_NOTIFY_EMAIL", default="")
 
 AGENT_MODELS = {
     # Create Agent — user-facing content, needs top creative quality

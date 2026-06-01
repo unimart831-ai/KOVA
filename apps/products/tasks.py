@@ -1388,6 +1388,28 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
 
     user = product.user
 
+    # ── Content safety — block before generating posts ───────────────
+    from apps.content.models import ContentSafetyIncident
+    from apps.content.safety import (
+        SNAP_POLICY_MESSAGE,
+        check_product_images_safe,
+        record_content_safety_incident,
+    )
+
+    image_safety = check_product_images_safe(product, user, source="snap")
+    if not image_safety.safe:
+        record_content_safety_incident(
+            user=user,
+            source=ContentSafetyIncident.Source.SNAP,
+            result=image_safety,
+            image_url=product.all_image_urls[0] if product.all_image_urls else "",
+            action_taken="snap_blocked",
+        )
+        logger.warning(
+            "Snap to Sell BLOCKED product %s: %s", product_id, image_safety.summary,
+        )
+        return {"error": "policy_blocked", "message": SNAP_POLICY_MESSAGE}
+
     # ── Gather all product images ────────────────────────────────────
     all_images = product.all_image_urls  # primary + additional_images
     if not all_images:
@@ -1676,6 +1698,26 @@ def snap_batch_process(session_id: str):
         pid = str(product.pk)
         if not product.all_image_urls:
             results.append({"product_id": pid, "error": "No image"})
+            continue
+
+        from apps.content.models import ContentSafetyIncident
+        from apps.content.safety import (
+            check_product_images_safe,
+            record_content_safety_incident,
+        )
+
+        batch_safety = check_product_images_safe(
+            product, user, source="batch_snap",
+        )
+        if not batch_safety.safe:
+            record_content_safety_incident(
+                user=user,
+                source=ContentSafetyIncident.Source.BATCH_SNAP,
+                result=batch_safety,
+                image_url=product.all_image_urls[0],
+                action_taken="batch_item_blocked",
+            )
+            results.append({"product_id": pid, "error": "policy_blocked"})
             continue
 
         image_url = product.all_image_urls[0]

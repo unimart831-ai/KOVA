@@ -86,6 +86,7 @@ class Post(SoftDeleteMixin, models.Model):
         PUBLISHING = "publishing", "Publishing..."
         PUBLISHED = "published", "Published"
         FAILED = "failed", "Failed"
+        BLOCKED = "blocked", "Blocked (Policy)"
         REJECTED = "rejected", "Rejected"
 
     class ContentType(models.TextChoices):
@@ -765,3 +766,109 @@ class WeeklyContentPlan(models.Model):
 
     def __str__(self):
         return f"Week of {self.week_start} — {self.get_status_display()}"
+
+
+class ContentSafetyIncident(models.Model):
+    """Logged when content fails moderation — staff review queue."""
+
+    class Source(models.TextChoices):
+        SNAP = "snap", "Snap to Sell"
+        BATCH_SNAP = "batch_snap", "Batch Snap"
+        PUBLISH = "publish", "Publish gate"
+        APPROVE = "approve", "Approval gate"
+        UPLOAD = "upload", "Upload"
+        VISION = "vision", "Vision analyze"
+
+    class ReviewStatus(models.TextChoices):
+        PENDING = "pending", "Pending review"
+        DISMISSED = "dismissed", "Dismissed (false positive)"
+        CONFIRMED = "confirmed", "Confirmed violation"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="content_safety_incidents",
+    )
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="safety_incidents",
+    )
+    source = models.CharField(max_length=20, choices=Source.choices, db_index=True)
+    image_url = models.URLField(max_length=2000, blank=True)
+    reasons = models.JSONField(default=list, blank=True)
+    categories = models.JSONField(default=list, blank=True)
+    severity = models.PositiveSmallIntegerField(default=0, db_index=True)
+    review_status = models.CharField(
+        max_length=20,
+        choices=ReviewStatus.choices,
+        default=ReviewStatus.PENDING,
+        db_index=True,
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_safety_incidents",
+    )
+    action_taken = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["review_status", "-created_at"]),
+            models.Index(fields=["user", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"Incident {self.pk} — {self.user.email} ({self.get_source_display()})"
+
+
+class SystemSafetyConfig(models.Model):
+    """Singleton platform-wide content safety controls."""
+
+    auto_publish_paused = models.BooleanField(
+        default=False,
+        help_text="When True, no posts are auto-published platform-wide.",
+    )
+    paused_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    paused_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "System Safety Configuration"
+        verbose_name_plural = "System Safety Configuration"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+        SystemSafetyConfig._cached = None
+
+    @classmethod
+    def load(cls):
+        if getattr(cls, "_cached", None) is not None:
+            return cls._cached
+        try:
+            obj = cls.objects.get(pk=1)
+        except cls.DoesNotExist:
+            obj = cls()
+        cls._cached = obj
+        return obj
+
+    _cached = None
+
+    def __str__(self):
+        state = "paused" if self.auto_publish_paused else "active"
+        return f"SystemSafetyConfig ({state})"

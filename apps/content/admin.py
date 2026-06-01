@@ -2,10 +2,12 @@ from django.contrib import admin
 
 from apps.content.models import (
     ABTest,
+    ContentSafetyIncident,
     ContentSeed,
     MediaAttachment,
     Post,
     PostVersion,
+    SystemSafetyConfig,
     VoiceBrief,
 )
 
@@ -156,3 +158,20 @@ class VoiceBriefAdmin(admin.ModelAdmin):
         s = obj.duration_seconds or 0
         return f"{s // 60}:{s % 60:02d}"
     duration_display.short_description = "Duration"
+
+
+@admin.register(ContentSafetyIncident)
+class ContentSafetyIncidentAdmin(admin.ModelAdmin):
+    list_display = [
+        "user", "source", "severity", "review_status", "created_at",
+    ]
+    list_filter = ["source", "review_status", "severity"]
+    search_fields = ["user__email", "reasons", "categories"]
+    readonly_fields = ["created_at", "reviewed_at"]
+    raw_id_fields = ["user", "post", "reviewed_by"]
+
+
+@admin.register(SystemSafetyConfig)
+class SystemSafetyConfigAdmin(admin.ModelAdmin):
+    list_display = ["auto_publish_paused", "paused_by", "paused_at", "updated_at"]
+    readonly_fields = ["updated_at"]

@@ -1,0 +1,79 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <a href="{% url 'admin_dashboard:content_safety_review' %}" class="text-xs text-gray-500 hover:underline">← Review queue</a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-4">
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+      <div class="flex items-start gap-4">
+        <div class="w-24 h-24 rounded-lg bg-gray-100 dark:bg-gray-800 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-red-200 dark:border-red-900">
+          <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          <span class="text-[10px] font-bold text-red-500 mt-1 uppercase">Sensitive</span>
+        </div>
+        <div class="flex-1">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Incident metadata</h2>
+          <dl class="mt-3 text-sm space-y-2">
+            <div><dt class="text-gray-500 text-xs">User</dt><dd><a href="{% url 'admin_dashboard:user_usage_detail' incident.user_id %}" class="text-kova-600 hover:underline">{{ incident.user.email }}</a></dd></div>
+            <div><dt class="text-gray-500 text-xs">Source</dt><dd>{{ incident.get_source_display }}</dd></div>
+            <div><dt class="text-gray-500 text-xs">Severity</dt><dd class="font-bold {% if incident.severity >= 70 %}text-red-600{% else %}text-amber-600{% endif %}">{{ incident.severity }}</dd></div>
+            <div><dt class="text-gray-500 text-xs">Categories</dt><dd>{{ incident.categories|join:", "|default:"—" }}</dd></div>
+            <div><dt class="text-gray-500 text-xs">Reasons</dt><dd class="whitespace-pre-wrap">{{ incident.reasons|join:" · "|default:"—" }}</dd></div>
+            <div><dt class="text-gray-500 text-xs">Action taken</dt><dd>{{ incident.action_taken|default:"—" }}</dd></div>
+            <div><dt class="text-gray-500 text-xs">Created</dt><dd>{{ incident.created_at }}</dd></div>
+            {% if incident.image_url and incident.image_url|slice:":5" == "https" %}
+            <div><dt class="text-gray-500 text-xs">Image reference</dt><dd class="font-mono text-[11px] break-all">{{ incident.image_url|truncatechars:80 }} (not rendered — staff safety)</dd></div>
+            {% endif %}
+            {% if incident.post_id %}
+            <div><dt class="text-gray-500 text-xs">Related post</dt><dd><a href="{% url 'admin_dashboard:post_detail_admin' incident.post_id %}" class="text-kova-600 hover:underline">{{ incident.post_id }}</a></dd></div>
+            {% endif %}
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Review decision</h3>
+      <form method="post" class="flex flex-wrap gap-2">
+        {% csrf_token %}
+        <button type="submit" name="action" value="dismiss" class="btn-secondary text-xs">Dismiss (false positive)</button>
+        <button type="submit" name="action" value="confirm" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-600 text-white hover:bg-red-700">Confirm violation</button>
+      </form>
+      {% if incident.reviewed_at %}
+      <p class="text-xs text-gray-500 mt-3">Reviewed {{ incident.reviewed_at }} by {{ incident.reviewed_by.email|default:"—" }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="space-y-4">
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">User actions</h3>
+      {% if profile %}
+      <dl class="text-xs space-y-2 mb-4 text-gray-600 dark:text-gray-400">
+        <div class="flex justify-between"><dt>Strikes</dt><dd class="font-bold">{{ profile.content_safety_strike_count }}</dd></div>
+        <div class="flex justify-between"><dt>Suspended</dt><dd>{% if profile.suspended_for_policy %}Yes{% else %}No{% endif %}</dd></div>
+        <div class="flex justify-between"><dt>Auto-publish paused</dt><dd>{% if profile.auto_publish_paused %}Yes{% else %}No{% endif %}</dd></div>
+      </dl>
+      <form method="post" class="space-y-2">
+        {% csrf_token %}
+        {% if not profile.suspended_for_policy %}
+        <button type="submit" name="action" value="suspend_user" class="w-full px-3 py-2 text-xs font-medium rounded-lg bg-red-600 text-white hover:bg-red-700">Suspend for policy</button>
+        {% endif %}
+        <button type="submit" name="action" value="clear_strikes" class="w-full btn-secondary text-xs">Clear strikes & lift suspension</button>
+        {% if profile.auto_publish_paused %}
+        <button type="submit" name="action" value="resume_user_autopublish" class="w-full btn-secondary text-xs">Resume user auto-publish</button>
+        {% else %}
+        <button type="submit" name="action" value="pause_user_autopublish" class="w-full btn-secondary text-xs">Pause user auto-publish</button>
+        {% endif %}
+      </form>
+      {% else %}
+      <p class="text-xs text-gray-400">No profile found.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

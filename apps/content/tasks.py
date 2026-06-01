@@ -1091,32 +1091,34 @@ def publish_post(self, post_id: str):
         logger.info("EMERGENCY PAUSE: skipping publish for post %s (user %s)", post_id, post.user.email)
         return {"error": "Publishing paused — emergency pause is active"}
 
+    # ── Global / per-user auto-publish pause ──────────────────────────
+    from apps.content.safety import is_publishing_paused
+    paused, pause_reason = is_publishing_paused(post.user)
+    if paused:
+        logger.info("PUBLISH PAUSED: skipping post %s — %s", post_id, pause_reason)
+        return {"error": pause_reason}
+
     # ── Content safety gate — last line of defense before going live ──
-    from apps.content.safety import check_content_safety
-    safety = check_content_safety(post.content_text, user=post.user)
-    if safety.blocked:
-        # Hard block: content is dangerous, revert to pending approval
+    from apps.content.safety import (
+        POLICY_BLOCK_MESSAGE,
+        block_post_for_policy,
+        check_post_safe,
+        content_safety_enabled,
+    )
+    safety = check_post_safe(post)
+    if not safety.safe:
+        block_post_for_policy(post, safety, source="publish")
+        return {"error": f"Content blocked: {POLICY_BLOCK_MESSAGE}"}
+    elif safety.severity >= 70 and content_safety_enabled():
         post.status = Post.Status.PENDING_APPROVAL
-        post.ai_reasoning = f"SAFETY BLOCKED: {safety.summary}"
+        post.ai_reasoning = f"SAFETY REVIEW (score={safety.severity}): {safety.summary}"
         post.save(update_fields=["status", "ai_reasoning", "updated_at"])
         Notification.create_for_user(
             post.user, "system",
-            f"⚠️ Post blocked by safety check: {safety.summary[:150]}. Please review and edit.",
+            f"⚠️ Post needs review (risk score {safety.severity}): {safety.summary[:150]}",
             related_post=post,
         )
-        logger.warning("SAFETY BLOCKED post %s: %s", post_id, safety.summary)
-        return {"error": f"Content blocked: {safety.summary}"}
-    elif not safety.is_safe:
-        # Soft block: risky content, send back for human review
-        post.status = Post.Status.PENDING_APPROVAL
-        post.ai_reasoning = f"SAFETY REVIEW (score={safety.risk_score}): {safety.summary}"
-        post.save(update_fields=["status", "ai_reasoning", "updated_at"])
-        Notification.create_for_user(
-            post.user, "system",
-            f"⚠️ Post needs review (risk score {safety.risk_score}): {safety.summary[:150]}",
-            related_post=post,
-        )
-        logger.info("SAFETY REVIEW post %s (score=%d): %s", post_id, safety.risk_score, safety.summary)
+        logger.info("SAFETY REVIEW post %s (score=%d): %s", post_id, safety.severity, safety.summary)
         return {"error": f"Content flagged for review: {safety.summary}"}
 
     # ── Reel/video gate — wait for MP4 composition before publishing ─────
