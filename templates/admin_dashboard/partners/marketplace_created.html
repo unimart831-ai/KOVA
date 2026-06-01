@@ -80,11 +80,15 @@
     </div>
   </div>
 
-  <div class="flex items-center gap-3">
-    <a href="{% url 'admin_dashboard:marketplace_detail' mp.pk %}" class="px-4 py-2 bg-kova-600 text-white text-sm font-medium rounded-lg hover:bg-kova-700 transition-colors">
-      View Marketplace Dashboard →
+  <div class="flex flex-wrap items-center gap-3">
+    <a href="{% url 'admin_dashboard:marketplace_import' mp.pk %}" class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">
+      Import vendors (CSV) →
     </a>
-    <a href="{% url 'admin_dashboard:marketplace_list' %}" class="text-sm text-gray-500 hover:text-gray-700">All Marketplaces</a>
+    <a href="{% url 'admin_dashboard:marketplace_detail' mp.pk %}" class="px-4 py-2 bg-kova-600 text-white text-sm font-medium rounded-lg hover:bg-kova-700 transition-colors">
+      Marketplace dashboard →
+    </a>
+    <a href="{% url 'admin_dashboard:marketplace_list' %}" class="text-sm text-gray-500 hover:text-gray-700">All marketplaces</a>
   </div>
+  <p class="text-xs text-gray-500">Self-serve join link: <code class="text-gray-800 dark:text-gray-200">/partners/{{ mp.slug }}/join/</code></p>
 </div>
 {% endblock %}

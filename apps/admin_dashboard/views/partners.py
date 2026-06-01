@@ -569,6 +569,24 @@ def marketplace_detail(request, pk):
     return render(request, "admin_dashboard/partners/marketplace_detail.html", context)
 
 
+@staff_required
+def marketplace_import(request, pk):
+    """Dedicated CSV vendor import page (visible entry point for file-based onboarding)."""
+    from django.conf import settings
+
+    mp = get_object_or_404(
+        MarketplacePartner.objects.select_related("partner__user"), pk=pk
+    )
+    import_result = request.session.pop(f"marketplace_import_{mp.pk}", None)
+    site_url = getattr(settings, "SITE_URL", "").rstrip("/")
+    return render(request, "admin_dashboard/partners/marketplace_import.html", {
+        "page_title": f"Import vendors: {mp.name}",
+        "mp": mp,
+        "import_result": import_result,
+        "vendor_join_url": f"{site_url}/partners/{mp.slug}/join/",
+    })
+
+
 @senior_staff_required
 @require_POST
 def marketplace_import_sellers(request, pk):
@@ -576,10 +594,16 @@ def marketplace_import_sellers(request, pk):
     mp = get_object_or_404(MarketplacePartner, pk=pk)
     sellers_file = request.FILES.get("sellers_csv")
     products_file = request.FILES.get("products_csv")
+    redirect_to = request.POST.get("redirect_to", "detail")
+
+    def _import_redirect():
+        if redirect_to == "import":
+            return redirect("admin_dashboard:marketplace_import", pk=mp.pk)
+        return redirect("admin_dashboard:marketplace_detail", pk=mp.pk)
 
     if not sellers_file:
         messages.error(request, "Choose a sellers CSV file to upload.")
-        return redirect("admin_dashboard:marketplace_detail", pk=mp.pk)
+        return _import_redirect()
 
     from apps.partners.marketplace_csv_import import import_products_csv, import_sellers_csv
 
@@ -609,7 +633,7 @@ def marketplace_import_sellers(request, pk):
             messages.warning(request, err)
 
     request.session[f"marketplace_import_{mp.pk}"] = seller_summary.to_dict()
-    return redirect("admin_dashboard:marketplace_detail", pk=mp.pk)
+    return _import_redirect()
 
 
 @senior_staff_required

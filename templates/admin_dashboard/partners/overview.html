@@ -105,8 +105,8 @@
     Webhook logs {% if webhook_failed_7d %}<span class="ml-2 px-2 py-0.5 text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-full">{{ webhook_failed_7d }} failed (7d)</span>{% endif %}
   </a>
   {% if unimart_mp %}
-  <a href="{% url 'admin_dashboard:marketplace_detail' pk=unimart_mp.pk %}" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-kova-50 text-kova-700 border border-kova-200 dark:bg-kova-900/20 dark:text-kova-400">
-    UNIMART vendor import →
+  <a href="{% url 'admin_dashboard:marketplace_import' pk=unimart_mp.pk %}" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400">
+    UNIMART vendor CSV import →
   </a>
   {% endif %}
 </div>

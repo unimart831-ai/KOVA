@@ -27,7 +27,7 @@ UNIMART uses the **Marketplace Partner API**. Kova does not mirror UNIMART’s D
 
 ### 0. Prerequisites
 
-- UNIMART `MarketplacePartner` created in Kova admin (`slug=unimart`)
+- UNIMART `MarketplacePartner` created in Kova admin (slug e.g. `unimart` or `unimart-africa` — must match self-serve join URL)
 - API key copied at creation (shown once)
 - Celery worker running (for welcome email, Snap/Autopilot, webhooks)
 - For staging: enable **Sandbox mode** on the partner (posts dry-run, no live publish)
@@ -39,7 +39,7 @@ curl -s -H "X-Kova-Partner-Key: $KOVA_PARTNER_KEY" \
   "https://app.kova.co.ke/api/v1/partner/info/"
 ```
 
-Expected: `"slug": "unimart"`, `"seller_identity_field": "external_id"`.
+Expected: `"slug": "<your-slug>"` (e.g. `unimart-africa`), `"seller_identity_field": "external_id"`.
 
 ### 2. Provision the seller
 
@@ -200,7 +200,7 @@ Then sync products per seller with the same `/products/sync/` endpoint. Run prod
 ### Phase A — Kova admin setup (Kova team, once)
 
 1. **Admin Dashboard → Partners → Marketplaces → Create**
-   - Name: `UNIMART Africa`, slug: `unimart`
+   - Name: `UNIMART Africa`, slug: `unimart-africa` (or legacy `unimart` — slug drives join URL and CLI `--partner-slug`)
    - Seller identity: **External ID**
    - Plan: **Growth**, auto-activate: **on**
    - Webhook URL: UNIMART endpoint (e.g. `https://api.unimartafrica.com/webhooks/kova/`)
@@ -271,13 +271,22 @@ If UNIMART cannot call Kova's Partner API yet, use **file-based onboarding**. Ko
 **Management command:**
 
 ```bash
-python manage.py import_unimart_vendors path/to/sellers.csv --partner-slug unimart
-python manage.py import_unimart_vendors sellers.csv --products-csv products.csv
+python manage.py import_unimart_vendors path/to/sellers.csv --partner-slug unimart-africa
+python manage.py import_unimart_vendors sellers.csv --products-csv products.csv --partner-slug unimart-africa
 python manage.py import_unimart_vendors sellers.csv --dry-run   # parse only
 python manage.py import_unimart_vendors sellers.csv --create-partner  # if slug missing
 ```
 
-**Admin UI:** Admin Dashboard → Partners → Marketplaces → UNIMART → **Import sellers CSV** (optional products CSV on same form).
+**Admin UI (recommended):**
+
+1. **Admin Dashboard → Partners → Marketplaces** → open your marketplace (e.g. UNIMART Africa)
+2. Click **Import vendors (CSV)** (green button), or go directly to:
+   - `/dashboard/partners/marketplaces/<id>/import/`
+3. Upload **Sellers CSV**; optionally **Products CSV** on the same form
+
+The import block also appears at the top of the marketplace detail page (`/dashboard/partners/marketplaces/<id>/`). CSV upload requires **superuser** (senior staff); viewing the page is available to all staff.
+
+**Slug note:** Docs and examples often use `unimart`; if you created the partner with slug `unimart-africa`, use that slug everywhere — API `info` response, CLI `--partner-slug`, and self-serve join URL `/partners/unimart-africa/join/`.
 
 Uses the same `provision_marketplace_seller()` logic as the Partner API — welcome emails, webhooks, and auto-activation still apply.
 
@@ -313,9 +322,11 @@ Import sellers first, then products. Rows are grouped by `external_seller_id`.
 Share this link with UNIMART sellers (campus email, WhatsApp, in-app banner):
 
 ```
-https://app.kova.co.ke/partners/unimart/join/
-https://app.kova.co.ke/partners/unimart/join/?usk=USK-00123
+https://app.kova.co.ke/partners/<slug>/join/
+https://app.kova.co.ke/partners/unimart-africa/join/?usk=USK-00123
 ```
+
+Replace `<slug>` with your marketplace slug (`unimart` or `unimart-africa`).
 
 **Flow:**
 
@@ -338,7 +349,7 @@ https://app.kova.co.ke/partners/unimart/join/?usk=USK-00123
 
 | Step | Who | Action | Time |
 |------|-----|--------|------|
-| 1 | Kova team | Create `MarketplacePartner` slug `unimart` in admin (sandbox ON) | 10 min |
+| 1 | Kova team | Create `MarketplacePartner` (e.g. slug `unimart-africa`) in admin (sandbox ON) | 10 min |
 | 2 | UNIMART ops | Export active USIU sellers to CSV (USK, name, shop, email, campus) | 15 min |
 | 3 | Kova / UNIMART ops | Upload CSV in marketplace admin **or** run `import_unimart_vendors` | 2 min |
 | 4 | UNIMART ops | Export product catalog CSV; upload products file | 30 min |

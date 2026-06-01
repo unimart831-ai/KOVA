@@ -1,0 +1,41 @@
+{# Shared CSV import form — used on marketplace import page and detail. #}
+<div id="vendor-csv-import" class="bg-white dark:bg-gray-900 rounded-xl border border-emerald-200 dark:border-emerald-900/50 shadow-sm p-5">
+  <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Import vendors (CSV)</h2>
+  <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+    Upload a UNIMART (or marketplace) seller export to provision accounts on Kova — same logic as the Partner API.
+    Optional products CSV must include <code class="text-[10px]">external_seller_id</code> per row.
+  </p>
+  <form method="post" action="{% url 'admin_dashboard:marketplace_import_sellers' mp.pk %}" enctype="multipart/form-data" class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+    {% csrf_token %}
+    <input type="hidden" name="redirect_to" value="{{ redirect_to|default:'detail' }}">
+    <div>
+      <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Sellers CSV</label>
+      <input type="file" name="sellers_csv" accept=".csv,text/csv" required
+        class="w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-kova-50 file:text-kova-700">
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Products CSV (optional)</label>
+      <input type="file" name="products_csv" accept=".csv,text/csv"
+        class="w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700">
+    </div>
+    <div class="sm:col-span-2 flex flex-wrap items-center gap-3">
+      <button type="submit" class="px-4 py-2 bg-kova-600 text-white text-sm font-medium rounded-lg hover:bg-kova-700">
+        Import CSV
+      </button>
+      <p class="text-[10px] text-gray-400">
+        Vendor self-serve: <a href="{{ vendor_join_url }}" target="_blank" class="text-kova-600 hover:underline">{{ vendor_join_url }}</a>
+      </p>
+    </div>
+  </form>
+  {% if import_result %}
+  <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-xs">
+    <p class="font-medium text-gray-700 dark:text-gray-300 mb-1">Last import summary</p>
+    <p class="text-gray-600 dark:text-gray-400">
+      Provisioned: {{ import_result.summary.provisioned }} ·
+      Already existed: {{ import_result.summary.already_exists }} ·
+      Failed: {{ import_result.summary.failed }}
+      {% if import_result.summary.pending_added %} · Pending invites: {{ import_result.summary.pending_added }}{% endif %}
+    </p>
+  </div>
+  {% endif %}
+</div>
