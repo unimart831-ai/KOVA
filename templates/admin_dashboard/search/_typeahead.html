@@ -1,0 +1,31 @@
+{# Reusable typeahead wrapper. Requires: input_id, input_name, input_value, placeholder, dropdown_id, input_class (optional) #}
+<div class="relative w-full"
+     x-data="adminSearchTypeahead()"
+     @click.outside="close()"
+     @keydown.escape.window="close()"
+     @htmx:after-swap="onSuggestSwap($event)">
+  <input id="{{ input_id }}" type="search" name="{{ input_name }}" value="{{ input_value|default:'' }}"
+         placeholder="{{ placeholder }}"
+         autocomplete="off"
+         role="combobox"
+         aria-expanded="false"
+         aria-controls="{{ dropdown_id }}"
+         aria-autocomplete="list"
+         class="{{ input_class|default:'w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-kova-500 focus:border-kova-500' }}"
+         hx-get="{% url 'admin_dashboard:global_search_suggest' %}"
+         hx-trigger="keyup changed delay:300ms, search"
+         hx-target="#{{ dropdown_id }}"
+         hx-swap="innerHTML"
+         hx-include="[name='{{ input_name }}']"
+         @focus="open()"
+         @input="open()"
+         @keydown.arrow-down.prevent="move(1)"
+         @keydown.arrow-up.prevent="move(-1)"
+         @keydown.enter.prevent="goActive()" />
+  <div id="{{ dropdown_id }}"
+       x-show="isOpen"
+       x-cloak
+       x-ref="dropdown"
+       class="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg overflow-hidden">
+  </div>
+</div>

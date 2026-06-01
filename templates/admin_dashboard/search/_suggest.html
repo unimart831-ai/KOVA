@@ -1,0 +1,13 @@
+{% if not q or q|length < min_len %}
+  <p class="px-3 py-3 text-xs text-gray-500 dark:text-gray-400">Type at least {{ min_len }} characters…</p>
+{% elif not groups %}
+  <p class="px-3 py-3 text-xs text-gray-500 dark:text-gray-400">No results for “{{ q }}”.</p>
+{% else %}
+  <div class="max-h-[min(70vh,24rem)] overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800" role="listbox" aria-label="Search suggestions">
+    {% include "admin_dashboard/search/_hits.html" %}
+  </div>
+  <div class="border-t border-gray-100 dark:border-gray-800 px-3 py-2 bg-gray-50/80 dark:bg-gray-950/50">
+    <a href="{% url 'admin_dashboard:global_search' %}?q={{ q|urlencode }}"
+       class="text-xs text-kova-600 dark:text-kova-400 hover:underline">View all results for “{{ q }}”</a>
+  </div>
+{% endif %}

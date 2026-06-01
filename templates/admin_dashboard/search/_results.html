@@ -7,27 +7,6 @@
     <p class="px-3 py-2 text-xs text-kova-700 dark:text-kova-300 bg-kova-50 dark:bg-kova-900/20 border-b border-gray-100 dark:border-gray-800">{{ ai_hint }}</p>
   {% endif %}
   <div class="max-h-[min(70vh,28rem)] overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
-    {% for group in groups %}
-      <div class="py-2">
-        <p class="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{{ group.label }}</p>
-        <ul>
-          {% for hit in group.hits %}
-            <li>
-              <a href="{{ hit.url }}"
-                 class="block px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors">
-                <span class="block text-sm font-medium text-gray-900 dark:text-white truncate">{{ hit.title }}</span>
-                {% if hit.subtitle %}
-                  <span class="block text-xs text-gray-500 dark:text-gray-400 truncate">{{ hit.subtitle }}</span>
-                {% endif %}
-              </a>
-            </li>
-          {% endfor %}
-        </ul>
-      </div>
-    {% endfor %}
-  </div>
-  <div class="border-t border-gray-100 dark:border-gray-800 px-3 py-2">
-    <a href="{% url 'admin_dashboard:global_search' %}?q={{ q|urlencode }}&interpret=1"
-       class="text-xs text-kova-600 dark:text-kova-400 hover:underline">View all results</a>
+    {% include "admin_dashboard/search/_hits.html" %}
   </div>
 {% endif %}

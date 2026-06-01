@@ -7,11 +7,10 @@
   <form method="get" action="{% url 'admin_dashboard:global_search' %}" class="mb-6">
     <label for="admin-search-page-q" class="sr-only">Search</label>
     <div class="flex gap-2">
-      <input id="admin-search-page-q" type="search" name="q" value="{{ q }}"
-             placeholder="Users, posts, leads, products, agency sales…"
-             autocomplete="off"
-             class="flex-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-kova-500 focus:border-kova-500" />
-      <button type="submit" class="px-4 py-2 text-sm font-medium rounded-lg bg-kova-600 text-white hover:bg-kova-700">Search</button>
+      <div class="flex-1 relative">
+        {% include "admin_dashboard/search/_typeahead.html" with input_id="admin-search-page-q" input_name="q" input_value=q placeholder="Users, posts, leads, products, agency sales…" dropdown_id="search-page-dropdown" input_class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-kova-500 focus:border-kova-500" %}
+      </div>
+      <button type="submit" class="px-4 py-2 text-sm font-medium rounded-lg bg-kova-600 text-white hover:bg-kova-700 self-start">Search</button>
     </div>
     <label class="mt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
       <input type="checkbox" name="interpret" value="1" {% if request.GET.interpret %}checked{% endif %} class="rounded border-gray-300 dark:border-gray-600" />
@@ -19,7 +18,13 @@
     </label>
   </form>
 
-  <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+  <div id="search-results-panel"
+       class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden"
+       hx-get="{% url 'admin_dashboard:global_search' %}"
+       hx-trigger="keyup changed delay:300ms from:#admin-search-page-q, search from:#admin-search-page-q"
+       hx-include="#admin-search-page-q, [name='interpret']"
+       hx-target="#search-results-panel"
+       hx-swap="innerHTML">
     {% include "admin_dashboard/search/_results.html" %}
   </div>
 </div>

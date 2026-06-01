@@ -57,3 +57,19 @@ class TestAdminGlobalSearch:
         )
         assert resp.status_code == 200
         assert user.email.encode() in resp.content
+
+    def test_suggest_requires_staff(self, client, user):
+        resp = client.get(reverse("admin_dashboard:global_search_suggest"), {"q": "te"})
+        assert resp.status_code == 302
+
+    def test_suggest_returns_200_for_staff(self, client, staff_user, user):
+        client.force_login(staff_user)
+        resp = client.get(reverse("admin_dashboard:global_search_suggest"), {"q": user.email[:2]})
+        assert resp.status_code == 200
+
+    def test_suggest_finds_user(self, client, staff_user, user):
+        client.force_login(staff_user)
+        resp = client.get(reverse("admin_dashboard:global_search_suggest"), {"q": user.email})
+        assert resp.status_code == 200
+        assert user.email.encode() in resp.content
+        assert b"Users" in resp.content

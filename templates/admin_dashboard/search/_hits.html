@@ -1,0 +1,18 @@
+{% for group in groups %}
+  <div class="py-2">
+    <p class="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{{ group.label }}</p>
+    <ul role="listbox" aria-label="{{ group.label }}">
+      {% for hit in group.hits %}
+        <li role="option">
+          <a href="{{ hit.url }}"
+             class="admin-search-hit block px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/80 focus:bg-gray-50 dark:focus:bg-gray-800/80 transition-colors outline-none">
+            <span class="block text-sm font-medium text-gray-900 dark:text-white truncate">{{ hit.title }}</span>
+            {% if hit.subtitle %}
+              <span class="block text-xs text-gray-500 dark:text-gray-400 truncate">{{ hit.subtitle }}</span>
+            {% endif %}
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endfor %}

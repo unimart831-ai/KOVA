@@ -8,6 +8,7 @@ urlpatterns = [
     # Overview
     path("", overview.overview, name="overview"),
     path("search/", search.global_search, name="global_search"),
+    path("search/suggest/", search.search_suggest, name="global_search_suggest"),
     path("feature-usage/", feature_usage.feature_usage, name="feature_usage"),
 
     # Users

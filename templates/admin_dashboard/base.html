@@ -494,30 +494,13 @@
         </div>
 
         <!-- Global search -->
-        <div class="hidden sm:flex flex-1 max-w-md mx-2 lg:mx-4 relative"
-             x-data="{ open: false }"
-             @click.outside="open = false">
+        <div class="hidden sm:flex flex-1 max-w-md mx-2 lg:mx-4">
           <label for="admin-global-search" class="sr-only">Search admin</label>
           <div class="relative w-full">
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
-            <input id="admin-global-search" type="search" name="q" value="" placeholder="Search users, posts, leads…"
-                   autocomplete="off"
-                   class="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-kova-500 focus:border-kova-500"
-                   hx-get="{% url 'admin_dashboard:global_search' %}"
-                   hx-trigger="keyup changed delay:350ms, search"
-                   hx-target="#admin-search-dropdown"
-                   hx-swap="innerHTML"
-                   hx-include="[name='q']"
-                   @focus="open = true"
-                   @input="open = true"
-                   @keydown.escape="open = false" />
-          </div>
-          <div id="admin-search-dropdown"
-               x-show="open"
-               x-cloak
-               class="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg overflow-hidden">
+            {% include "admin_dashboard/search/_typeahead.html" with input_id="admin-global-search" input_name="q" input_value="" placeholder="Search users, posts, leads…" dropdown_id="admin-search-dropdown" %}
           </div>
         </div>
 
@@ -560,6 +543,57 @@
     const isDark = html.classList.contains('dark');
     html.classList.toggle('dark');
     localStorage.setItem('kova-theme', isDark ? 'light' : 'dark');
+  }
+
+  function adminSearchTypeahead() {
+    return {
+      isOpen: false,
+      activeIndex: -1,
+      open() {
+        this.isOpen = true;
+        this.syncHits();
+      },
+      close() {
+        this.isOpen = false;
+        this.activeIndex = -1;
+      },
+      hits() {
+        if (!this.$refs.dropdown) return [];
+        return Array.from(this.$refs.dropdown.querySelectorAll('.admin-search-hit'));
+      },
+      syncHits() {
+        this.$nextTick(() => {
+          this.hits().forEach((el, i) => {
+            el.classList.toggle('bg-gray-50', i === this.activeIndex);
+            el.classList.toggle('dark:bg-gray-800/80', i === this.activeIndex);
+          });
+        });
+      },
+      move(delta) {
+        if (!this.isOpen) {
+          this.open();
+          return;
+        }
+        const hits = this.hits();
+        if (!hits.length) return;
+        this.activeIndex = (this.activeIndex + delta + hits.length) % hits.length;
+        this.syncHits();
+        hits[this.activeIndex]?.scrollIntoView({ block: 'nearest' });
+      },
+      goActive() {
+        const hits = this.hits();
+        if (this.activeIndex >= 0 && hits[this.activeIndex]) {
+          window.location.href = hits[this.activeIndex].href;
+        }
+      },
+      onSuggestSwap(event) {
+        const dropdownId = this.$refs.dropdown?.id;
+        if (dropdownId && event.detail.target.id === dropdownId) {
+          this.activeIndex = -1;
+          this.syncHits();
+        }
+      },
+    };
   }
 </script>
 {% block extra_js %}{% endblock %}

@@ -40,7 +40,7 @@ def _safe_subtitle(*parts: str) -> str:
     return _clip(" · ".join(p for p in parts if p))
 
 
-def run_admin_search(query: str) -> list[SearchGroup]:
+def admin_global_search(query: str, limit_per_group: int = PER_GROUP) -> list[SearchGroup]:
     q = (query or "").strip()
     if len(q) < MIN_QUERY_LEN:
         return []
@@ -52,21 +52,26 @@ def run_admin_search(query: str) -> list[SearchGroup]:
     except ValueError:
         pass
 
-    groups.append(_search_users(q, uuid_filter))
-    groups.append(_search_posts(q, uuid_filter))
-    groups.append(_search_leads(q, uuid_filter))
-    groups.append(_search_products(q, uuid_filter))
-    groups.append(_search_sales_inquiries(q, uuid_filter))
-    groups.append(_search_content_safety(q, uuid_filter))
-    groups.append(_search_marketplaces(q))
-    groups.append(_search_marketplace_sellers(q))
-    groups.append(_search_partners(q))
-    groups.append(_search_partner_applications(q))
+    groups.append(_search_users(q, uuid_filter, limit_per_group))
+    groups.append(_search_posts(q, uuid_filter, limit_per_group))
+    groups.append(_search_leads(q, uuid_filter, limit_per_group))
+    groups.append(_search_products(q, uuid_filter, limit_per_group))
+    groups.append(_search_sales_inquiries(q, uuid_filter, limit_per_group))
+    groups.append(_search_content_safety(q, uuid_filter, limit_per_group))
+    groups.append(_search_marketplaces(q, limit_per_group))
+    groups.append(_search_marketplace_sellers(q, limit_per_group))
+    groups.append(_search_partners(q, limit_per_group))
+    groups.append(_search_partner_applications(q, limit_per_group))
 
     return [g for g in groups if g.hits]
 
 
-def _search_users(q: str, uid: uuid.UUID | None) -> SearchGroup:
+def run_admin_search(query: str) -> list[SearchGroup]:
+    """Backward-compatible alias for :func:`admin_global_search`."""
+    return admin_global_search(query)
+
+
+def _search_users(q: str, uid: uuid.UUID | None, limit: int = PER_GROUP) -> SearchGroup:
     from apps.accounts.models import User
 
     filt = Q(email__icontains=q) | Q(full_name__icontains=q) | Q(username__icontains=q)
@@ -76,7 +81,7 @@ def _search_users(q: str, uid: uuid.UUID | None) -> SearchGroup:
     qs = (
         User.objects.filter(filt)
         .select_related("profile")
-        .order_by("-date_joined")[:PER_GROUP]
+        .order_by("-date_joined")[:limit]
     )
     hits = []
     for u in qs:
@@ -96,13 +101,13 @@ def _search_users(q: str, uid: uuid.UUID | None) -> SearchGroup:
     return SearchGroup(label="Users", hits=hits)
 
 
-def _search_posts(q: str, uid: uuid.UUID | None) -> SearchGroup:
+def _search_posts(q: str, uid: uuid.UUID | None, limit: int = PER_GROUP) -> SearchGroup:
     from apps.content.models import Post
 
     filt = Q(content_text__icontains=q) | Q(platform__icontains=q)
     if uid:
         filt |= Q(pk=uid)
-    qs = Post.objects.select_related("user").filter(filt).order_by("-created_at")[:PER_GROUP]
+    qs = Post.objects.select_related("user").filter(filt).order_by("-created_at")[:limit]
     hits = [
         SearchHit(
             title=_clip(p.content_text, 60) or f"Post {p.pk}",
@@ -114,13 +119,13 @@ def _search_posts(q: str, uid: uuid.UUID | None) -> SearchGroup:
     return SearchGroup(label="Posts", hits=hits)
 
 
-def _search_leads(q: str, uid: uuid.UUID | None) -> SearchGroup:
+def _search_leads(q: str, uid: uuid.UUID | None, limit: int = PER_GROUP) -> SearchGroup:
     from apps.leads.models import Lead
 
     filt = Q(name__icontains=q) | Q(email__icontains=q) | Q(phone__icontains=q)
     if uid:
         filt |= Q(pk=uid)
-    qs = Lead.objects.select_related("user").filter(filt).order_by("-first_seen_at")[:PER_GROUP]
+    qs = Lead.objects.select_related("user").filter(filt).order_by("-first_seen_at")[:limit]
     hits = [
         SearchHit(
             title=lead.name or lead.email,
@@ -132,13 +137,13 @@ def _search_leads(q: str, uid: uuid.UUID | None) -> SearchGroup:
     return SearchGroup(label="Leads", hits=hits)
 
 
-def _search_products(q: str, uid: uuid.UUID | None) -> SearchGroup:
+def _search_products(q: str, uid: uuid.UUID | None, limit: int = PER_GROUP) -> SearchGroup:
     from apps.products.models import Product
 
     filt = Q(name__icontains=q) | Q(description__icontains=q)
     if uid:
         filt |= Q(pk=uid)
-    qs = Product.objects.select_related("user").filter(filt).order_by("-updated_at")[:PER_GROUP]
+    qs = Product.objects.select_related("user").filter(filt).order_by("-updated_at")[:limit]
     hits = [
         SearchHit(
             title=p.name,
@@ -150,7 +155,7 @@ def _search_products(q: str, uid: uuid.UUID | None) -> SearchGroup:
     return SearchGroup(label="Products", hits=hits)
 
 
-def _search_sales_inquiries(q: str, uid: uuid.UUID | None) -> SearchGroup:
+def _search_sales_inquiries(q: str, uid: uuid.UUID | None, limit: int = PER_GROUP) -> SearchGroup:
     from apps.billing.models import AgencySalesInquiry
 
     filt = (
@@ -162,7 +167,7 @@ def _search_sales_inquiries(q: str, uid: uuid.UUID | None) -> SearchGroup:
     )
     if uid:
         filt |= Q(pk=uid)
-    qs = AgencySalesInquiry.objects.filter(filt).order_by("-created_at")[:PER_GROUP]
+    qs = AgencySalesInquiry.objects.filter(filt).order_by("-created_at")[:limit]
     hits = [
         SearchHit(
             title=inquiry.company_name or inquiry.name,
@@ -174,7 +179,7 @@ def _search_sales_inquiries(q: str, uid: uuid.UUID | None) -> SearchGroup:
     return SearchGroup(label="Agency Sales", hits=hits)
 
 
-def _search_content_safety(q: str, uid: uuid.UUID | None) -> SearchGroup:
+def _search_content_safety(q: str, uid: uuid.UUID | None, limit: int = PER_GROUP) -> SearchGroup:
     from apps.content.models import ContentSafetyIncident
 
     filt = Q(user__email__icontains=q) | Q(user__full_name__icontains=q)
@@ -184,7 +189,7 @@ def _search_content_safety(q: str, uid: uuid.UUID | None) -> SearchGroup:
     qs = (
         ContentSafetyIncident.objects.select_related("user", "post")
         .filter(filt)
-        .order_by("-created_at")[:PER_GROUP]
+        .order_by("-created_at")[:limit]
     )
     hits = []
     for inc in qs:
@@ -199,12 +204,12 @@ def _search_content_safety(q: str, uid: uuid.UUID | None) -> SearchGroup:
     return SearchGroup(label="Content Safety", hits=hits)
 
 
-def _search_marketplaces(q: str) -> SearchGroup:
+def _search_marketplaces(q: str, limit: int = PER_GROUP) -> SearchGroup:
     from apps.partners.models import MarketplacePartner
 
     qs = MarketplacePartner.objects.filter(
         Q(name__icontains=q) | Q(slug__icontains=q) | Q(contact_email__icontains=q),
-    ).order_by("name")[:PER_GROUP]
+    ).order_by("name")[:limit]
     hits = [
         SearchHit(
             title=mp.name,
@@ -216,7 +221,7 @@ def _search_marketplaces(q: str) -> SearchGroup:
     return SearchGroup(label="Marketplaces", hits=hits)
 
 
-def _search_marketplace_sellers(q: str) -> SearchGroup:
+def _search_marketplace_sellers(q: str, limit: int = PER_GROUP) -> SearchGroup:
     from apps.partners.models import MarketplaceSellerAccount
 
     qs = (
@@ -228,7 +233,7 @@ def _search_marketplace_sellers(q: str) -> SearchGroup:
             | Q(user__full_name__icontains=q)
             | Q(marketplace__name__icontains=q),
         )
-        .order_by("-last_product_sync")[:PER_GROUP]
+        .order_by("-last_product_sync")[:limit]
     )
     hits = [
         SearchHit(
@@ -241,7 +246,7 @@ def _search_marketplace_sellers(q: str) -> SearchGroup:
     return SearchGroup(label="Marketplace Sellers", hits=hits)
 
 
-def _search_partners(q: str) -> SearchGroup:
+def _search_partners(q: str, limit: int = PER_GROUP) -> SearchGroup:
     from apps.partners.models import Partner
 
     qs = (
@@ -251,7 +256,7 @@ def _search_partners(q: str) -> SearchGroup:
             | Q(user__email__icontains=q)
             | Q(user__full_name__icontains=q),
         )
-        .order_by("-id")[:PER_GROUP]
+        .order_by("-id")[:limit]
     )
     hits = [
         SearchHit(
@@ -264,14 +269,14 @@ def _search_partners(q: str) -> SearchGroup:
     return SearchGroup(label="Partners", hits=hits)
 
 
-def _search_partner_applications(q: str) -> SearchGroup:
+def _search_partner_applications(q: str, limit: int = PER_GROUP) -> SearchGroup:
     from apps.partners.models import PartnerApplication
 
     qs = PartnerApplication.objects.filter(
         Q(full_name__icontains=q)
         | Q(email__icontains=q)
         | Q(company__icontains=q),
-    ).order_by("-created_at")[:PER_GROUP]
+    ).order_by("-created_at")[:limit]
     hits = [
         SearchHit(
             title=app.full_name,
