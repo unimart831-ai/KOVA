@@ -15,6 +15,8 @@
 
 KOVA is entering a fundraising phase targeting **angel investors, African and diaspora VCs, accelerators, corporate venture, and grant programs** (Mastercard Foundation ecosystem, USAID/Digital Frontiers-style programs, local innovation funds, university incubators, and SDG-aligned foundations).
 
+**Draft pack (Tier 1):** Working copies of executive summary, one-pager, pitch deck, investor FAQ, use of funds, data room index, founders/IP/NDA templates, and cap table CSV live in **[`fundraising/README.md`](../fundraising/README.md)** with PDF export via `python fundraising/scripts/build_pdfs.py`.
+
 This document lists **every document category** you are likely to need — from first coffee chat through term sheet, close, and grant compliance. Items are tiered so you can prioritize under time pressure.
 
 ### How to work the list
@@ -708,6 +710,7 @@ Copy this table to `DATA_ROOM_INDEX.xlsx` or Notion. Update weekly.
 
 ## 12. Related Internal Documents
 
+- [**Fundraising draft pack**](../fundraising/README.md) — Tier 1 markdown + PDFs (`fundraising/`)
 - [KOVA Business Proposal](./KOVA_BUSINESS_PROPOSAL.md)
 - [KOVA Funding Plan](./KOVA_FUNDING_PLAN.md)
 - [KOVA Financial Audit](./KOVA_FINANCIAL_AUDIT.md)
