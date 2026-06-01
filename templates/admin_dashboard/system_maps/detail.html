@@ -1,4 +1,5 @@
 {% extends "admin_dashboard/base.html" %}
+{% load help_tags %}
 
 {% block page_title %}{{ page_title }}{% endblock %}
 {% block page_subtitle %}<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ map.nav_group }} · Map #{{ map.print_order }}</p>{% endblock %}
@@ -56,7 +57,7 @@
   {% endif %}
 
   <div class="mt-8 p-4 sm:p-6 rounded-xl bg-gray-900 border border-gray-800 overflow-x-auto">
-    <pre class="mermaid text-center">{{ map.diagram }}</pre>
+    <pre class="mermaid text-center">{{ map.diagram|mermaid_diagram }}</pre>
   </div>
 
   <div class="mt-8">
@@ -85,12 +86,5 @@
   </div>
 </div>
 
-<script>
-  mermaid.initialize({
-    startOnLoad: true,
-    theme: 'dark',
-    flowchart: { curve: 'basis', padding: 16 },
-    securityLevel: 'loose',
-  });
-</script>
+{% include "help/_mermaid_init.html" %}
 {% endblock %}

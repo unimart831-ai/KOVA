@@ -1,4 +1,5 @@
 {% extends "layouts/app.html" %}
+{% load help_tags %}
 
 {% block page_title %}{{ map.title }}{% endblock %}
 {% block page_subtitle %}
@@ -48,7 +49,7 @@
 
   <!-- Flow diagram -->
   <div class="mt-8 p-4 sm:p-6 rounded-xl bg-gray-900 border border-gray-800 overflow-x-auto">
-    <pre class="mermaid text-center">{{ map.diagram }}</pre>
+    <pre class="mermaid text-center">{{ map.diagram|mermaid_diagram }}</pre>
   </div>
 
   <!-- Audit notes -->
@@ -79,12 +80,5 @@
   </div>
 </div>
 
-<script>
-  mermaid.initialize({
-    startOnLoad: true,
-    theme: 'dark',
-    flowchart: { curve: 'basis', padding: 16 },
-    securityLevel: 'loose',
-  });
-</script>
+{% include "help/_mermaid_init.html" %}
 {% endblock %}

@@ -1,4 +1,5 @@
 {% extends "admin_dashboard/base.html" %}
+{% load help_tags %}
 
 {% block page_title %}{{ page_title }}{% endblock %}
 {% block page_subtitle %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Kova workflow reference — {{ total_maps }} diagrams traced from codebase</p>{% endblock %}
@@ -94,7 +95,7 @@
         {% endif %}
 
         <div class="mt-4 p-4 rounded-xl bg-gray-900 border border-gray-800 overflow-x-auto">
-          <pre class="mermaid text-center">{{ m.diagram }}</pre>
+          <pre class="mermaid text-center">{{ m.diagram|mermaid_diagram }}</pre>
         </div>
 
         <ul class="mt-4 space-y-1.5">
@@ -122,12 +123,5 @@
   </p>
 </div>
 
-<script>
-  mermaid.initialize({
-    startOnLoad: true,
-    theme: 'dark',
-    flowchart: { curve: 'basis', padding: 16 },
-    securityLevel: 'loose',
-  });
-</script>
+{% include "help/_mermaid_init.html" %}
 {% endblock %}

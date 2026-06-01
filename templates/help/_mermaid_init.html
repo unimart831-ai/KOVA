@@ -1,0 +1,34 @@
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (typeof mermaid === 'undefined') return;
+
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'dark',
+      flowchart: { curve: 'basis', padding: 16 },
+      securityLevel: 'loose',
+    });
+
+    const blocks = document.querySelectorAll('pre.mermaid');
+    let index = 0;
+    for (const block of blocks) {
+      const source = block.textContent.trim();
+      const renderId = 'mermaid-diagram-' + index++;
+      try {
+        const { svg, bindFunctions } = await mermaid.render(renderId, source);
+        block.innerHTML = svg;
+        if (bindFunctions) bindFunctions(block);
+      } catch (err) {
+        block.classList.remove('mermaid');
+        block.classList.add(
+          'mermaid-raw', 'text-left', 'text-xs', 'text-gray-300', 'whitespace-pre-wrap', 'font-mono'
+        );
+        block.textContent = source;
+        const note = document.createElement('p');
+        note.className = 'text-xs text-amber-400 mt-2 mermaid-fallback-note';
+        note.textContent = 'Diagram preview unavailable — showing source.';
+        block.parentNode.appendChild(note);
+      }
+    }
+  });
+</script>

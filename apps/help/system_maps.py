@@ -6,6 +6,8 @@ Each map includes audit notes + a Mermaid diagram (print-friendly via /help/syst
 from dataclasses import dataclass, field
 from typing import Optional
 
+from apps.help.mermaid_utils import sanitize_mermaid
+
 
 @dataclass
 class SystemMap:
@@ -19,6 +21,9 @@ class SystemMap:
     daily_tip: str = ""
     tags: list[str] = field(default_factory=list)
     admin_links: list[tuple[str, str]] = field(default_factory=list)  # (label, admin_dashboard url name)
+
+    def __post_init__(self) -> None:
+        self.diagram = sanitize_mermaid(self.diagram)
 
 
 TAB_ORDER: list[str] = [
@@ -327,7 +332,7 @@ flowchart LR
         diagram="""
 flowchart TB
   WH[WhatsApp webhook] --> IN[Inbox]
-  IN --> AI{AI enabled?}
+  IN --> AI{"AI enabled?"}
   AI -->|yes| REPLY[Auto draft/send]
   AI -->|no| MAN[Manual reply]
   SS[Status Studio] --> SQ[Daily status queue]
@@ -405,7 +410,7 @@ flowchart TB
         ],
         diagram="""
 flowchart LR
-  BL[BookingLink setup] --> PUB[/book/slug/ public]
+  BL[BookingLink setup] --> PUB["/book/slug/ public"]
   PUB --> BK[Booking confirmed]
   BK --> WA[WhatsApp notify]
   BK --> ATTR[Attribution stored]
@@ -565,7 +570,7 @@ flowchart TB
         ],
         diagram="""
 flowchart LR
-  UI[/platforms/ UI] --> META[Meta OAuth IG + FB]
+  UI["/platforms/ UI"] --> META[Meta OAuth IG + FB]
   UI --> TT[TikTok OAuth]
   UI --> LI[LinkedIn OAuth]
   UI --> WA[WhatsApp Cloud / Embedded]
@@ -650,8 +655,8 @@ flowchart LR
         diagram="""
 flowchart TB
   subgraph hidden["Not in primary nav"]
-    C1[/campaigns/ CRUD]
-    AB[/content/ab-tests/]
+    C1["/campaigns/ CRUD"]
+    AB["/content/ab-tests/"]
     CI[Calendar Intel prefs]
     PH[Profile Health]
     PX[Analytics Pixel]
@@ -813,7 +818,7 @@ flowchart LR
         diagram="""
 flowchart TB
   ADMIN[Admin create MarketplacePartner] --> KEY[API key issued]
-  KEY --> API[/api/v1/partner/ REST]
+  KEY --> API["/api/v1/partner/ REST"]
   API --> PROV[provision_marketplace_seller]
   PROV --> USER[Kova user + plan]
   PROV --> WH[Outbound webhook]
@@ -927,7 +932,7 @@ flowchart TB
         ],
         diagram="""
 flowchart TB
-  STAFF[Staff login] --> DASH[/dashboard/ overview]
+  STAFF[Staff login] --> DASH["/dashboard/ overview"]
   DASH --> USR[Users + onboarding funnel]
   DASH --> CNT[Content + safety + agents]
   DASH --> BILL[Billing + sales inquiries]

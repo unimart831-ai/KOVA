@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+{% load help_tags %}
 <head>
   <meta charset="utf-8">
   <title>Kova System Maps — Print Reference</title>
@@ -58,7 +59,7 @@
     <p class="summary">{{ map.summary }}</p>
     {% if map.daily_tip %}<div class="tip"><strong>Daily tip:</strong> {{ map.daily_tip }}</div>{% endif %}
     <div class="diagram">
-      <pre class="mermaid">{{ map.diagram }}</pre>
+      <pre class="mermaid">{{ map.diagram|mermaid_diagram }}</pre>
     </div>
     <ul class="audit">
       {% for note in map.audit %}
@@ -68,8 +69,6 @@
   </div>
   {% endfor %}
 
-  <script>
-    mermaid.initialize({ startOnLoad: true, theme: 'dark', flowchart: { curve: 'basis' }, securityLevel: 'loose' });
-  </script>
+  {% include "help/_mermaid_init.html" %}
 </body>
 </html>
