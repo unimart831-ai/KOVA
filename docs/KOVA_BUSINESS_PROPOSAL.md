@@ -8,6 +8,8 @@
 
 > **One sentence:** Kova is a Business Intelligence Operating System that gives African SMEs an autonomous AI team — content creation, publishing, engagement, analytics, conversion tools, lead capture, email marketing, and strategic planning — starting at KES 299/month ($2).
 
+> **Fundraising prep:** See [KOVA Fundraising & Legal Document Checklist](./KOVA_FUNDRAISING_AND_LEGAL_DOCUMENT_CHECKLIST.md) for investor/grant document requirements.
+
 ---
 
 ## Table of Contents
