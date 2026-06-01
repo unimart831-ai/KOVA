@@ -18,6 +18,23 @@ class SystemMap:
     diagram: str
     daily_tip: str = ""
     tags: list[str] = field(default_factory=list)
+    admin_links: list[tuple[str, str]] = field(default_factory=list)  # (label, admin_dashboard url name)
+
+
+TAB_ORDER: list[str] = [
+    "Foundation",
+    "Create",
+    "Customers",
+    "Business",
+    "Partners",
+    "Safety",
+    "Admin",
+    "Settings",
+    "Agents",
+    "Home",
+    "Daily",
+    "Reference",
+]
 
 
 SYSTEM_MAPS: list[SystemMap] = [
@@ -272,8 +289,12 @@ flowchart TB
             "PRO gate: engagement_agent plan limit.",
             "run_engage_cycle every 30 min: fetch → analyze → generate_replies → auto_respond.",
             "Default engage_autonomy_level=suggest — user approves in inbox.",
-            "ENGAGE_GRADUATED_AUTONOMY_ENABLED=False blocks actual platform auto-send.",
+            "Levels: suggest (manual), assisted, auto — gated by ENGAGE_GRADUATED_AUTONOMY_ENABLED.",
             "auto_sent_list allows undo/correct for AI-sent replies.",
+        ],
+        admin_links=[
+            ("Engage overview", "engagement_overview"),
+            ("Interaction feed", "interaction_feed"),
         ],
         diagram="""
 flowchart LR
@@ -298,6 +319,10 @@ flowchart LR
             "Status Studio: daily status queue generation.",
             "Broadcasts + sequences processed every 30 min.",
             "Channel curation every 6h.",
+            "Delivery status webhooks update message state.",
+        ],
+        admin_links=[
+            ("WhatsApp overview", "whatsapp_overview"),
         ],
         diagram="""
 flowchart TB
@@ -398,6 +423,11 @@ flowchart LR
             "auto_promote_products daily creates seeds for under-promoted products.",
             "check-stock-alerts daily.",
             "Marketplace sync via partner API → Product source=marketplace.",
+            "M-Pesa commerce webhooks → Conversion records → Revenue dashboard.",
+        ],
+        admin_links=[
+            ("Products overview", "products_overview"),
+            ("Revenue", "revenue_overview"),
         ],
         diagram="""
 flowchart LR
@@ -480,22 +510,34 @@ flowchart LR
     ),
     SystemMap(
         slug="onboarding-first-value",
-        title="Signup → Onboarding → First Value",
+        title="Onboarding & Auth",
         nav_group="Foundation",
         print_order=18,
-        summary="New user path from signup to draft posts + brief.",
+        summary="Email signup, Facebook OAuth, phone capture, wizard, 7-day Starter trial, and first-value intelligence chain.",
         audit=[
-            "OnboardingMiddleware gates app until onboarding_completed.",
-            "finish_onboarding: trial, AgentConfigs, welcome email, intelligence chain.",
+            "Signup: email/password or Google OAuth (allauth) → OnboardingMiddleware gates app.",
+            "Facebook signup/login: /accounts/facebook/signup/ connects Meta early (facebook_oauth.py).",
+            "Phone capture: /accounts/onboarding/phone/ required before full app access.",
+            "Wizard: brand steps → finish_onboarding (onboarding_flow.py) sets trialing + AgentConfigs.",
+            "7-day Starter trial (MPESA_TRIAL_DAYS); Stripe trial for international checkout.",
             "run_onboarding_intelligence: research → seeds → create (force pending) → welcome brief.",
-            "Step 3 platforms optional; publishing gated until connect.",
-            "Returning users land on brief:home.",
+            "Step 3 platforms optional; publishing gated until SocialAccount connected.",
+        ],
+        admin_links=[
+            ("Onboarding funnel", "onboarding_funnel"),
+            ("Users", "user_list"),
         ],
         diagram="""
 flowchart TB
-  SU[Signup / Google OAuth] --> PATH[Path choice]
-  PATH --> WIZ[Wizard steps 1-3 brand]
+  subgraph auth["Auth"]
+    EM[Email signup]
+    GO[Google OAuth]
+    FB[Facebook OAuth signup]
+  end
+  auth --> PH[Phone capture]
+  PH --> WIZ[Wizard brand steps]
   WIZ --> FIN[finish_onboarding]
+  FIN --> TRIAL[7-day Starter trial]
   FIN --> INT[run_onboarding_intelligence]
   INT --> POSTS[Draft posts in Studio]
   INT --> BRIEF[Welcome DailyBrief]
@@ -503,10 +545,43 @@ flowchart TB
 """,
     ),
     SystemMap(
+        slug="platforms-connect",
+        title="Platforms Connect",
+        nav_group="Foundation",
+        print_order=19,
+        summary="OAuth connect for Meta IG/FB, TikTok, LinkedIn, and WhatsApp. Tokens refresh every 30 min; plan limits cap account count.",
+        audit=[
+            "User UI: /platforms/ — connect per provider (KOVA_PLATFORM_SETUP_GUIDE.md).",
+            "Meta (shared app): Facebook Pages + Instagram Business via instagram_facebook.py.",
+            "TikTok: OAuth Content Posting API via tiktok.py.",
+            "LinkedIn: OAuth Posts API via linkedin.py.",
+            "WhatsApp: Cloud API or Embedded Signup via whatsapp.py provider.",
+            "refresh_expiring_tokens Celery beat every 30 min.",
+            "Plan v2 channel ladder: Starter 2, Growth 4 (no WA), Pro/Agency 5 incl. WhatsApp.",
+        ],
+        admin_links=[
+            ("Platform overview", "platform_overview"),
+            ("Connected accounts", "platform_accounts"),
+        ],
+        diagram="""
+flowchart LR
+  UI[/platforms/ UI] --> META[Meta OAuth IG + FB]
+  UI --> TT[TikTok OAuth]
+  UI --> LI[LinkedIn OAuth]
+  UI --> WA[WhatsApp Cloud / Embedded]
+  META --> SA[(SocialAccount)]
+  TT --> SA
+  LI --> SA
+  WA --> SA
+  SA --> TOK[Token refresh 30 min]
+  SA --> PUB[publish_post routing]
+""",
+    ),
+    SystemMap(
         slug="platforms-agents-settings",
         title="Platforms, Agents & Settings",
         nav_group="Settings",
-        print_order=19,
+        print_order=20,
         summary="Foundation controls for the whole system.",
         audit=[
             "Platforms: OAuth connect; refresh_expiring_tokens every 30 min.",
@@ -526,21 +601,33 @@ flowchart TB
     ),
     SystemMap(
         slug="billing-plan-gates",
-        title="Billing & Plan Gates",
+        title="Billing & Plan v2 Gates",
         nav_group="Settings",
-        print_order=20,
-        summary="Trial, M-Pesa, and feature enforcement.",
+        print_order=21,
+        summary="7-day Starter trial, M-Pesa STK Push checkout, Stripe international, and PlanEnforcementMiddleware hard caps.",
         audit=[
-            "14-day trial on onboarding finish.",
-            "M-Pesa STK primary; check_mpesa_subscriptions daily.",
-            "PlanEnforcementMiddleware gates: engage, whatsapp, memes, competitors, teams, limits.",
-            "Downgrade pauses scheduled posts.",
+            "Trial: 7-day Starter limits on finish_onboarding (MPESA_TRIAL_DAYS setting).",
+            "M-Pesa: /billing/mpesa/checkout/ → STK Push → webhook → activate_subscription.",
+            "Stripe: card checkout with trial for international users.",
+            "PLAN_LIMITS in billing/models.py — authoritative Plan v2 caps (KOVA_PLANS_GUIDE.md).",
+            "PlanEnforcementMiddleware gates: engage, whatsapp, memes, competitors, teams, posts/seeds/tokens.",
+            "100% of any cap = hard block with upgrade message; downgrade pauses scheduled posts.",
+            "Agency tier sales-only via AgencySalesInquiry contact form.",
+        ],
+        admin_links=[
+            ("Billing overview", "billing_overview"),
+            ("Subscriptions", "subscription_management"),
+            ("Plan pricing", "plan_pricing"),
+            ("Payments", "payment_list"),
         ],
         diagram="""
 flowchart LR
-  TRIAL[14-day trial] --> PAY[M-Pesa checkout]
-  PAY --> ACT[activate_subscription]
-  ACT --> PLAN[Plan limits unlocked]
+  TRIAL[7-day Starter trial] --> PAY{Checkout}
+  PAY -->|Kenya| MP[M-Pesa STK Push]
+  PAY -->|Intl| ST[Stripe card]
+  MP --> ACT[activate_subscription]
+  ST --> ACT
+  ACT --> PLAN[Plan v2 limits unlocked]
   PLAN --> MW[PlanEnforcementMiddleware]
   MW --> FEAT[Feature gates app-wide]
 """,
@@ -549,7 +636,7 @@ flowchart LR
         slug="hidden-surfaces",
         title="Hidden Surfaces (Founder's Cut)",
         nav_group="Reference",
-        print_order=21,
+        print_order=32,
         summary="Features reachable by URL but not primary sidebar.",
         audit=[
             "/campaigns/ — Campaign CRUD (not sidebar; voice-campaign is).",
@@ -577,7 +664,7 @@ flowchart TB
         slug="celery-beat-schedule",
         title="Background Jobs (Celery Beat)",
         nav_group="Reference",
-        print_order=22,
+        print_order=33,
         summary="What runs without you clicking.",
         audit=[
             "5 min: publish due posts, media queues.",
@@ -608,6 +695,279 @@ flowchart TB
   end
 """,
     ),
+    SystemMap(
+        slug="content-pipeline",
+        title="Content Pipeline",
+        nav_group="Create",
+        print_order=23,
+        summary="End-to-end path: Studio seeds → Create Agent → Queue → approve → publish_post → platform metrics fetch.",
+        audit=[
+            "ContentSeed created from Studio, Autopilot, Voice Campaign, Brief action, Snap promote.",
+            "generate_from_seed → run_create_agent → Post (pending_approval default).",
+            "Queue (/content/queue/): approve_post sets approved/scheduled; batch approve supported.",
+            "check_and_publish_due_posts every 5 min → publish_post → provider API.",
+            "Content safety gate at approve + publish (CONTENT_SAFETY.md).",
+            "fetch_all_recent_metrics every 6h → Insights / Analyst loop.",
+        ],
+        admin_links=[
+            ("Content overview", "content_overview"),
+            ("Posts", "post_list"),
+            ("Seeds", "seed_list"),
+            ("Failed content", "failed_content"),
+        ],
+        diagram="""
+flowchart LR
+  SEED[ContentSeed] --> CA[Create Agent]
+  CA --> POST[Post pending]
+  POST --> Q[Queue review]
+  Q --> APP[approve_post]
+  APP --> SCH[scheduled_at set]
+  SCH --> BEAT[Publish beat 5 min]
+  BEAT --> PUB[publish_post]
+  PUB --> LIVE[Platform APIs]
+  LIVE --> MET[Metrics fetch 6h]
+""",
+    ),
+    SystemMap(
+        slug="reels-stories-carousel",
+        title="Reels, Stories & Carousel",
+        nav_group="Create",
+        print_order=24,
+        summary="Format-specific publishing: motion reels (compose + upload), 9:16 Stories (Meta), multi-slide carousels.",
+        audit=[
+            "post_format routes publish: feed, reel, story, carousel (STORIES_PUBLISHING.md).",
+            "Reels: compose_reel_video task → rupload to Meta/TikTok; retry_reel in Studio/Queue.",
+            "Stories: Instagram STORIES container + FB photo_stories/video_stories APIs.",
+            "Carousel: carousel_slides JSON; one image per slide; update_carousel_slides in Studio.",
+            "Queue filter by format; same approve → publish_post pipeline.",
+            "Reel music catalog managed in admin /dashboard/reel-music/.",
+        ],
+        admin_links=[
+            ("Posts", "post_list"),
+            ("Reel music", "reel_music_manage"),
+        ],
+        diagram="""
+flowchart TB
+  subgraph formats["Post formats"]
+    FEED[Feed post]
+    REEL[Reel — compose_reel_video]
+    STORY[Story 9:16 — publish_story]
+    CAR[Carousel slides]
+  end
+  formats --> Q[Queue approve]
+  Q --> PUB[publish_post]
+  PUB --> META[Meta IG/FB APIs]
+  PUB --> TT[TikTok video]
+  REEL --> RUP[rupload.facebook.com]
+""",
+    ),
+    SystemMap(
+        slug="reach-walk-in",
+        title="REACH — QR & Walk-ins",
+        nav_group="Customers",
+        print_order=25,
+        summary="Walk-in QR scan → attribution → Lead → nurture sequences → sales pipeline. Admin tracks QR codes and walk-in events.",
+        audit=[
+            "QR codes: owner creates tracked QR → public scan → WalkInEvent + Lead attribution.",
+            "Lead sources include QR, walk-in, kova_page, WhatsApp, bookings, link forms.",
+            "process_nurture_steps every 30 min advances enrollments.",
+            "score_all_leads daily with auto-enroll into sequences.",
+            "Admin: /dashboard/qr/ for walk-in stats; /dashboard/leads/ for pipeline.",
+        ],
+        admin_links=[
+            ("QR overview", "qr_overview"),
+            ("QR list", "qr_list"),
+            ("Leads overview", "leads_overview"),
+            ("Nurture", "leads_nurture"),
+        ],
+        diagram="""
+flowchart LR
+  QR[Tracked QR code] --> SCAN[Walk-in scan]
+  SCAN --> WI[WalkInEvent]
+  WI --> LEAD[(Lead)]
+  LEAD --> SCORE[Daily scoring]
+  SCORE --> NUR[Nurture 30 min]
+  NUR --> PIPE[Pipeline / hot list]
+  NUR --> EMAIL[Email steps]
+""",
+    ),
+    SystemMap(
+        slug="partners-marketplace",
+        title="Partners & Marketplace",
+        nav_group="Partners",
+        print_order=26,
+        summary="Marketplace Partner API: API key auth, seller provision, CSV import, self-serve join link, outbound webhooks.",
+        audit=[
+            "MarketplacePartner: API key (X-Kova-Partner-Key) created in admin; shown once.",
+            "REST: /api/v1/partner/ — provision seller, sync products (UNIMART_VENDOR_ONBOARDING.md).",
+            "provision_marketplace_seller → user account + welcome email + webhook.",
+            "CSV import: import_sellers_csv / import_products_csv management + admin UI.",
+            "Self-serve join: provision_vendor_self_serve for open/pending vendor signup.",
+            "Webhook logs: /dashboard/partners/webhooks/.",
+        ],
+        admin_links=[
+            ("Marketplaces", "marketplace_list"),
+            ("Partner webhooks", "partners_webhook_logs"),
+            ("Growth partners", "partners_overview"),
+        ],
+        diagram="""
+flowchart TB
+  ADMIN[Admin create MarketplacePartner] --> KEY[API key issued]
+  KEY --> API[/api/v1/partner/ REST]
+  API --> PROV[provision_marketplace_seller]
+  PROV --> USER[Kova user + plan]
+  PROV --> WH[Outbound webhook]
+  CSV[CSV import sellers/products] --> PROV
+  JOIN[Self-serve join link] --> PROV
+""",
+    ),
+    SystemMap(
+        slug="growth-partners-referral",
+        title="Growth Partners & Referrals",
+        nav_group="Partners",
+        print_order=27,
+        summary="Referral program: partner applies, gets referral code, referred users sign up via ReferralMiddleware cookie.",
+        audit=[
+            "Partner application → admin approve → Partner record + referral_code.",
+            "ReferralMiddleware captures ?ref= code on signup.",
+            "Referral model tracks signed_up_at, activated_at, commission eligibility.",
+            "Admin: /dashboard/partners/ — overview, applications, commissions, payouts.",
+            "Separate from Marketplace Partner API (different Partner models).",
+        ],
+        admin_links=[
+            ("Partners overview", "partners_overview"),
+            ("Applications", "partner_applications"),
+            ("Partner list", "partner_list"),
+        ],
+        diagram="""
+flowchart LR
+  APP[Partner application] --> REV[Admin review]
+  REV --> PART[Partner + referral_code]
+  PART --> LINK[?ref= signup link]
+  LINK --> SIGN[New user signup]
+  SIGN --> REF[(Referral record)]
+  REF --> ACT[Activation on subscribe]
+  ACT --> COMM[Commission tracking]
+""",
+    ),
+    SystemMap(
+        slug="agency-sales",
+        title="Agency Sales Inquiries",
+        nav_group="Partners",
+        print_order=28,
+        summary="Public Agency/Wakala contact form → AgencySalesInquiry → admin review and status workflow.",
+        audit=[
+            "Agency plan is sales-only (not public checkout) — KOVA_PLANS_GUIDE.md.",
+            "Public form creates AgencySalesInquiry with status NEW.",
+            "Admin: /dashboard/billing/sales-inquiries/ — list, filter, staff notes.",
+            "Status workflow: NEW → CONTACTED → QUALIFIED → CLOSED/WON/LOST.",
+            "Nav badge shows new inquiry count (admin_nav context processor).",
+        ],
+        admin_links=[
+            ("Sales inquiries", "sales_inquiry_list"),
+            ("Billing overview", "billing_overview"),
+        ],
+        diagram="""
+flowchart LR
+  FORM[Agency contact form] --> INQ[(AgencySalesInquiry NEW)]
+  INQ --> ADMIN[Admin review]
+  ADMIN --> CONTACT[Staff contacts prospect]
+  CONTACT --> PLAN[Manual Agency plan grant]
+  ADMIN --> STATUS[Status: WON / LOST]
+""",
+    ),
+    SystemMap(
+        slug="content-safety",
+        title="Content Safety",
+        nav_group="Safety",
+        print_order=29,
+        summary="Snap upload, post approval, and publish gates block policy violations before they reach platforms.",
+        audit=[
+            "CONTENT_SAFETY_ENABLED (default True in prod) — OpenRouter vision/text moderation.",
+            "Gates: snap_launch, snap_to_sell_analyze, approve_post_for_user, publish_post.",
+            "Blocked posts: status=blocked, never calls Meta; user sees policy message.",
+            "ContentSafetyIncident audit log → admin review queue.",
+            "Admin: dismiss, confirm violation, suspend user, pause auto-publish globally.",
+        ],
+        admin_links=[
+            ("Safety overview", "content_safety_overview"),
+            ("Review queue", "content_safety_review"),
+        ],
+        diagram="""
+flowchart TB
+  SNAP[Snap upload] --> CHK{Moderation check}
+  CHK -->|safe| PROD[Product / content gen]
+  CHK -->|unsafe| BLOCK1[Block upload]
+  APP[approve_post] --> CHK2{Safety gate}
+  CHK2 -->|unsafe| INC[ContentSafetyIncident]
+  PUB[publish_post] --> CHK3{Final gate}
+  CHK3 -->|unsafe| BLOCK2[Post blocked]
+  INC --> ADMIN[Admin review queue]
+  ADMIN --> ACT[Dismiss / suspend / pause publish]
+""",
+    ),
+    SystemMap(
+        slug="admin-dashboard-overview",
+        title="Admin Dashboard",
+        nav_group="Admin",
+        print_order=30,
+        summary="Staff-only /dashboard/ — user ops, content, billing, partners, system health, and this System Map reference.",
+        audit=[
+            "Entry: /dashboard/ overview with stat cards + activity feed (staff_required).",
+            "Sections: Users, Content, Agents, Billing, Partners, Engage, WhatsApp, System.",
+            "HTMX partials auto-refresh stat cards and agent health.",
+            "Global search: /dashboard/search/ across users, posts, partners, sales inquiries.",
+            "System Map tab documents all Kova workflows for internal ops.",
+        ],
+        admin_links=[
+            ("Dashboard home", "overview"),
+            ("Operations", "operations_overview"),
+            ("System health", "system_health"),
+            ("Global search", "global_search"),
+        ],
+        diagram="""
+flowchart TB
+  STAFF[Staff login] --> DASH[/dashboard/ overview]
+  DASH --> USR[Users + onboarding funnel]
+  DASH --> CNT[Content + safety + agents]
+  DASH --> BILL[Billing + sales inquiries]
+  DASH --> PTN[Partners + marketplace]
+  DASH --> SYS[System health + logs]
+  DASH --> MAP[System Map workflows]
+""",
+    ),
+    SystemMap(
+        slug="autopilot-agent-loop",
+        title="Autopilot & Agent Loop",
+        nav_group="Agents",
+        print_order=31,
+        summary="Research → Strategist → Create → publish → Analyst → Adapt closes the intelligence loop.",
+        audit=[
+            "Six agents: Research, Create, Adapt, Engage, Analyst, Chief Strategist.",
+            "Research every 12h — trends, optional auto-seed (max 1/12h).",
+            "Strategist every 8h — proactive ContentSeeds + brief narrative.",
+            "Autopilot: plan_weekly_autopilot → user approves → execute_autopilot_plan.",
+            "Adapt v2 learning every 12h — profile mutations gated by ADAPT_AGENT_V2_ENABLED.",
+            "Emergency pause on UserProfile halts all autonomous agent actions.",
+        ],
+        admin_links=[
+            ("Agent overview", "agent_overview"),
+            ("Agent log", "agent_log"),
+            ("Token economics", "token_economics"),
+        ],
+        diagram="""
+flowchart TB
+  R[Research 12h] --> CR[Create Agent]
+  ST[Strategist 8h] --> CR
+  AP[Autopilot weekly plan] --> CR
+  CR --> P[Posts published]
+  P --> AN[Analyst Agent]
+  AN --> AD[Adapt Agent 12h]
+  AD --> CR
+  P --> EN[Engage Agent 30m]
+  EN --> AN
+""",
+    ),
 ]
 
 
@@ -629,3 +989,34 @@ def daily_print_maps() -> list[SystemMap]:
     """Maps tagged for daily wall print — pin these first."""
     daily = [m for m in SYSTEM_MAPS if "daily" in m.tags or "print-first" in m.tags]
     return sorted(daily, key=lambda x: x.print_order)
+
+
+def ordered_tab_groups() -> list[tuple[str, list[SystemMap]]]:
+    """Return nav groups in TAB_ORDER for the System Map UI."""
+    grouped = maps_by_group()
+    ordered: list[tuple[str, list[SystemMap]]] = []
+    seen: set[str] = set()
+    for name in TAB_ORDER:
+        if name in grouped:
+            ordered.append((name, grouped[name]))
+            seen.add(name)
+    for name in sorted(grouped.keys()):
+        if name not in seen:
+            ordered.append((name, grouped[name]))
+    return ordered
+
+
+def resolve_admin_links(map_obj: SystemMap) -> list[dict[str, str]]:
+    """Resolve admin_dashboard URL names to paths for templates."""
+    from django.urls import NoReverseMatch, reverse
+
+    resolved: list[dict[str, str]] = []
+    for label, url_name in map_obj.admin_links:
+        try:
+            resolved.append({
+                "label": label,
+                "url": reverse(f"admin_dashboard:{url_name}"),
+            })
+        except NoReverseMatch:
+            continue
+    return resolved

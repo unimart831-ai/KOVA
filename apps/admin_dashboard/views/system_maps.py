@@ -5,15 +5,32 @@ from django.shortcuts import render
 
 from apps.admin_dashboard.decorators import staff_required
 from apps.help.models import HelpPageView
-from apps.help.system_maps import SYSTEM_MAPS, daily_print_maps, get_map, maps_by_group
+from apps.help.system_maps import (
+    SYSTEM_MAPS,
+    daily_print_maps,
+    get_map,
+    ordered_tab_groups,
+    resolve_admin_links,
+)
+
+
+def _enrich_tab_groups():
+    """Attach resolved admin links to each map for template rendering."""
+    enriched = []
+    for group_name, maps in ordered_tab_groups():
+        enriched.append((
+            group_name,
+            [{"map": m, "admin_links": resolve_admin_links(m)} for m in maps],
+        ))
+    return enriched
 
 
 @staff_required
 def system_maps_index(request):
     HelpPageView.objects.create(user=request.user, page_type="system_maps")
     return render(request, "admin_dashboard/system_maps/index.html", {
-        "page_title": "System Maps",
-        "maps_by_group": maps_by_group(),
+        "page_title": "System Map",
+        "tab_groups": _enrich_tab_groups(),
         "daily_maps": daily_print_maps(),
         "total_maps": len(SYSTEM_MAPS),
     })
@@ -39,6 +56,7 @@ def system_map_detail(request, slug):
     return render(request, "admin_dashboard/system_maps/detail.html", {
         "page_title": map_obj.title,
         "map": map_obj,
+        "admin_links": resolve_admin_links(map_obj),
         "prev_map": prev_map,
         "next_map": next_map,
     })

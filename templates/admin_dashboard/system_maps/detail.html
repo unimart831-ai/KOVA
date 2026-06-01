@@ -37,6 +37,17 @@
   <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ map.title }}</h1>
   <p class="text-base text-gray-600 dark:text-gray-400 mt-2">{{ map.summary }}</p>
 
+  {% if admin_links %}
+  <div class="no-print mt-4 flex flex-wrap gap-2">
+    {% for link in admin_links %}
+    <a href="{{ link.url }}"
+       class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-kova-50 dark:bg-kova-950/40 text-kova-700 dark:text-kova-300 border border-kova-200 dark:border-kova-800 hover:border-kova-400 transition-colors">
+      {{ link.label }} →
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   {% if map.daily_tip %}
   <div class="mt-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40">
     <p class="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">Daily tip</p>
