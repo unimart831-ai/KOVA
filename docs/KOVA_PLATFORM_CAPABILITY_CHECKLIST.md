@@ -6,7 +6,7 @@
 > the platform API makes impossible. Use this doc to prioritise engineering
 > sprints and communicate capability gaps to founders and investors.
 >
-> **Last updated:** 2026-05-17
+> **Last updated:** 2026-06-02
 > **Informed by:** Platform audit (`KOVA_CAPABILITIES_UPDATE_2026_05.md`),
 > full provider code review, and Engage/WhatsApp model audit.
 
@@ -40,7 +40,7 @@
 | 9 | Add stickers, polls, questions to Stories | ❌ | No API for Story interactive elements |
 | 10 | Add text overlays / captions to video | ❌ | Must be baked into the video file before upload |
 | 11 | Generate AI image for post | 🔲 | `apps/media_queue` infrastructure exists; not wired to publishing |
-| 12 | Auto-add first comment after publish | 🔧 | `post_comment` exists but `NameError` — missing `**kwargs` in signature |
+| 12 | Auto-add first comment after publish | ✅ | `post_comment(**kwargs)` + publish task for FB/IG/LinkedIn |
 | 13 | Add hashtags to post | ✅ | Via caption |
 | 14 | AI-suggest hashtags based on content | 🔲 | `search_hashtag` exists but not wired to Create Agent |
 | 15 | Tag products (Instagram Shopping) | 🔲 | API supports `product_tags` field — not implemented |
@@ -150,7 +150,7 @@
 | 14 | Tag location | 🔲 | Not implemented |
 | 15 | Tag people or Pages | 🔲 | Not implemented |
 | 16 | Go Live | ❌ | Not available for third-party apps via Content Publishing API |
-| 17 | First comment with clickable link | 🔧 | `post_comment` exists; link strategy not wired into publish pipeline |
+| 17 | First comment with clickable link | ✅ | Link-in-first-comment wired in publish pipeline |
 
 ### Scheduling & Publishing
 
@@ -169,7 +169,7 @@
 | 23 | Fetch comments | ✅ | |
 | 24 | Reply to comments | ✅ | |
 | 25 | Delete comments | ✅ | |
-| 26 | Auto-send first comment with clickable link | 🔧 | `post_comment` wired; link-in-first-comment strategy not enforced |
+| 26 | Auto-send first comment with clickable link | ✅ | First-comment strategy enforced for FB/IG/LinkedIn |
 | 27 | Like a comment | 🔲 | `POST /{comment-id}/likes` with page token — not implemented |
 | 28 | Hide a comment | 🔲 | `is_hidden=true` — not implemented |
 | 29 | AI-generate reply | ✅ | Engage Agent |
@@ -440,10 +440,10 @@
 
 ## The Five Highest-ROI Fixes (in order)
 
-### Fix 1 — Instagram `post_comment` NameError
-**File:** `apps/platforms/providers/instagram_facebook.py:1338`
-**Problem:** `def post_comment(self, page_token, post_id, message)` — no `**kwargs` in the signature, but the body calls `kwargs.get(...)`. NameError on every call. The first-comment CTA strategy, which drives save prompts and link-in-bio clicks on every published post, never fires.
-**Fix:** Add `**kwargs` to the signature.
+### Fix 1 — Instagram `post_comment` NameError — ✅ Fixed (Jun 2026)
+**File:** `apps/platforms/providers/instagram_facebook.py`
+**Was:** Missing `**kwargs` caused NameError on first-comment calls.
+**Now:** `post_comment(..., **kwargs)`; publish task posts first comments for FB/IG/LinkedIn.
 
 ### Fix 2 — Instagram / Facebook broken post URLs
 **Instagram:** Returns `https://www.instagram.com/p/{raw_graph_api_id}/` — this 404s.

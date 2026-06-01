@@ -1,5 +1,7 @@
 # Kova AI — 14 Test Businesses for Full Platform Testing
 
+> **Pricing source of truth:** Plan tiers, caps, and monthly prices are defined in [KOVA_PLANS_GUIDE.md](./KOVA_PLANS_GUIDE.md) and `apps/billing/models.py` → `PLAN_LIMITS` (Plan v2, May 2026). If this doc disagrees, trust the guide.
+
 > **Purpose:** 14 fictional businesses across different industries to onboard onto Kova and test every feature end-to-end.
 > Each business has a unique profile, plan, platforms, and testing focus.
 
@@ -29,7 +31,7 @@
 ## Business 1: Mara & Moto
 
 **Category:** E-commerce — Fashion & Lifestyle
-**Plan:** Agency (KES 2,999/mo)
+**Plan:** Agency (KES 7,999/mo)
 **Website:** maraandmoto.co.ke
 
 ### Brand Profile
@@ -96,7 +98,7 @@
 ## Business 2: PixelCraft Studios
 
 **Category:** Web Design & Development Agency
-**Plan:** Pro (KES 1,999/mo)
+**Plan:** Pro (KES 2,999/mo)
 **Website:** pixelcraftstudios.com
 
 ### Brand Profile
@@ -145,7 +147,7 @@
 ## Business 3: Elimu Hub
 
 **Category:** Online Learning Platform
-**Plan:** Growth (KES 999/mo)
+**Plan:** Growth (KES 1,499/mo)
 **Website:** elimuhub.co.ke
 
 ### Brand Profile
@@ -194,7 +196,7 @@
 ## Business 4: Nyama Mama Express
 
 **Category:** Restaurant / Food & Beverage
-**Plan:** Pro (KES 1,999/mo)
+**Plan:** Pro (KES 2,999/mo)
 **Website:** nyamamamaexpress.co.ke
 
 ### Brand Profile
@@ -256,7 +258,7 @@
 ## Business 5: CloudStack Africa
 
 **Category:** SaaS / B2B Technology
-**Plan:** Agency (KES 2,999/mo)
+**Plan:** Agency (KES 7,999/mo)
 **Website:** cloudstackafrica.com
 
 ### Brand Profile
@@ -305,7 +307,7 @@
 ## Business 6: Makao Homes
 
 **Category:** Real Estate
-**Plan:** Pro (KES 1,999/mo)
+**Plan:** Pro (KES 2,999/mo)
 **Website:** makaohomes.co.ke
 
 ### Brand Profile
@@ -354,7 +356,7 @@
 ## Business 7: Coach Amara Fitness
 
 **Category:** Personal Brand / Health & Fitness
-**Plan:** Starter (KES 299/mo)
+**Plan:** Starter (KES 499/mo)
 **Website:** (none — uses Kova Page as main link)
 
 ### Brand Profile
@@ -416,7 +418,7 @@
 ## Business 8: Green Roots Foundation
 
 **Category:** NGO / Non-Profit
-**Plan:** Growth (KES 999/mo)
+**Plan:** Growth (KES 1,499/mo)
 **Website:** greenrootsfoundation.org
 
 ### Brand Profile
@@ -467,7 +469,7 @@
 ## Business 9: Neon Wave Agency
 
 **Category:** Creative & Marketing Agency (Multi-Brand)
-**Plan:** Agency (KES 2,999/mo)
+**Plan:** Agency (KES 7,999/mo)
 **Website:** neonwave.agency
 
 ### Brand Profile
@@ -545,7 +547,7 @@
 ## Business 10: PesaPal Finance
 
 **Category:** Fintech / Financial Services
-**Plan:** Growth (KES 999/mo)
+**Plan:** Growth (KES 1,499/mo)
 **Website:** pesapalfinance.co.ke
 
 ### Brand Profile
@@ -597,7 +599,7 @@
 ## Business 11: Kakuma Wholesale
 
 **Category:** Wholesale & Retail — Mtumba, Bales & New Products
-**Plan:** Pro (KES 1,999/mo)
+**Plan:** Pro (KES 2,999/mo)
 **Website:** kakumawholesale.co.ke
 
 ### Brand Profile
@@ -695,7 +697,7 @@ Kakuma Wholesale bridges Nairobi's biggest markets to one of East Africa's large
 ## Business 12: Kawaida Hair & Beauty
 
 **Category:** Salon & Beauty Services
-**Plan:** Growth (KES 999/mo)
+**Plan:** Growth (KES 1,499/mo)
 **Website:** kawaidabeauty.co.ke
 **Location:** Eastlands, Nairobi
 
@@ -777,7 +779,7 @@ defaults, smart Kenya signup defaults, the WhatsApp completion ping.
 ## Business 13: Bridge Academy
 
 **Category:** EdTech / Skills Training — Ideation Stage
-**Plan:** Growth (KES 999/mo)
+**Plan:** Growth (KES 1,499/mo)
 **Website:** (none yet — development started, no public site)
 
 Bridge Academy is a pre-launch venture focused on practical, mission-based skills
@@ -869,7 +871,7 @@ closers, signing off with the founder's first name where it fits.
 ## Business 14: Django Sasa
 
 **Category:** Developer Education — 30-Day Django Track
-**Plan:** Growth (KES 999/mo)
+**Plan:** Growth (KES 1,499/mo)
 **Website:** (none yet — link-in-bio acts as homepage)
 **Tagline:** *Sasa = "now" in Swahili. Start today, not someday.*
 
@@ -1011,7 +1013,7 @@ any course / cohort / curriculum-based educator.
 ### Phase 1: Setup (Day 1)
 
 1. **Bulk-seed accounts (recommended):** run `python manage.py seed_test_businesses`.
-   This creates all 12 users with the right plan, profile (industry, voice,
+   This creates all 14 users with the right plan, profile (industry, voice,
    audience, pillars, tones, goals, CTA, brand colors), and a starter set of
    products. Pass `--complete-onboarding` to skip the wizard entirely for
    businesses you don't need to manually walk through.
@@ -1121,16 +1123,16 @@ Spot-check at least these:
 
 - [ ] Verify admin marker: `industry_pack_applied:<industry>` recorded
 - [ ] Verify "Industry pack — applied" stat shows count + % of completed users
-- [ ] Verify "Industry mix (top 10)" panel shows the 12-business distribution
+- [ ] Verify "Industry mix (top 10)" panel shows the 14-business distribution
 
 ### Smart Kenya Defaults (signup)
 
-All 12 businesses use Kenyan phone numbers, so all should auto-set:
+All 14 businesses use Kenyan phone numbers, so all should auto-set:
 
 - [ ] `user.timezone == "Africa/Nairobi"`
 - [ ] `profile.country == "KE"`
 - [ ] `profile.mpesa_phone` matches the signup phone
-- [ ] Verify "Country mix" panel shows **KE** dominating (should be 12/12)
+- [ ] Verify "Country mix" panel shows **KE** dominating (should be 14/14)
 
 ### Wizard Structure
 
@@ -1164,7 +1166,23 @@ After running the full test cohort, the admin funnel at
 
 ---
 
-## Test Coverage Matrix
+## Commerce sandbox (M-Pesa, Shopify, Kova Pixel)
+
+Live M-Pesa and Shopify need production credentials. For local / staging test businesses use:
+
+| Business | Commerce focus | Dev setup |
+|----------|----------------|-----------|
+| **Mara & Moto** | Shopify + Pixel + M-Pesa commerce | `MPESA_ENVIRONMENT=sandbox`, test phone `254708374149`; Shopify dev store + OAuth from **Analytics → Revenue**; Pixel snippet from **Analytics → Pixel** |
+| **Nyama Mama** | WhatsApp orders + M-Pesa | Sandbox STK for subscription tests; WA Cloud API env vars for order flows |
+| **CloudStack** | B2B revenue attribution | Pixel on marketing site; optional Shopify for demo SKUs |
+
+**Kova Pixel (all tiers):** After login → Analytics → Pixel — copy the snippet; no extra env vars. Events appear in Revenue dashboard once the snippet fires on a page you control.
+
+**Shopify OAuth callback:** `{SITE_URL}/analytics/revenue/shopify/oauth/callback/` — must match your dev store app settings.
+
+**QR → Lead (walk-in):** Preferred path is the **cashier UI** (`/walkin/<slug>/`) where staff tap attribution source and optionally enter `customer_phone` — this creates a REACH lead automatically. QR scan landing pages are offer/display only; phone capture on scan is not required for testing.
+
+---
 
 | Feature | Mara&Moto | PixelCraft | Elimu | Nyama | CloudStack | Makao | Amara | GreenRoots | NeonWave | PesaPal | KakumaWS | Kawaida | Bridge | Django |
 |---------|:---------:|:----------:|:-----:|:-----:|:----------:|:-----:|:-----:|:----------:|:--------:|:-------:|:--------:|:-------:|:------:|:------:|

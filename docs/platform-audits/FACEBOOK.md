@@ -93,7 +93,7 @@ Legend: ✅ Works · 🔧 Partial / buggy · 🔲 Not built · ❌ API won’t a
 | SMB task | Kova today | Notes |
 |----------|------------|-------|
 | Connect Facebook Page | ✅ | OAuth via Meta; requires **Facebook Page** (not personal profile) |
-| Choose which Page to publish to | 🔧 | `selected_page_id` in metadata; **no UI picker** — defaults to first Page; “contact support” to switch |
+| Choose which Page to publish to | ✅ | `selected_page_id` + **Set active** on Platforms list (multi-Page accounts) |
 | Audit Page completeness | 🔧 | Provider supports 10-field audit; **orchestration may use wrong page ID/token after OAuth** — needs fix |
 | AI suggest profile improvements | ✅ | Profile Health + suggester (`profile_audit` app) |
 | Apply text fields (about, hours, phone…) | ✅ | `update_profile` field-by-field |
@@ -177,7 +177,7 @@ Legend: ✅ Works · 🔧 Partial / buggy · 🔲 Not built · ❌ API won’t a
 |-------|--------|---------------|
 | Profile audit uses wrong Page ID/token after OAuth | Profile Health lies or fails | Resolve `selected_page_id` + page token in `auditor._audit_kwargs_for` |
 | FB Stories/Reels promised in Create Agent but don’t publish correctly | User approves “Reel”, gets feed photo or failure | Wire `publish_video` / Reels endpoint OR stop suggesting formats until ready |
-| No Page picker UI | Multi-Page businesses publish to wrong Page | Settings UI like LinkedIn org picker |
+| No Page picker UI | ~~Multi-Page businesses publish to wrong Page~~ | ✅ Set active on Platforms (Jun 2026) |
 | Auto-reply wrong API path | Broken auto-engage on comments | Use `reply_to_comment`, not `post_comment` on comment ID |
 
 ### P1 — Major value gap for SMBs
@@ -230,7 +230,7 @@ WEEKLY — Learn
   Insights: which format won → Adapt Agent adjusts → more carousels / fewer link posts
 ```
 
-**Today’s gap in that journey:** Page picker, Messenger, Reels/video, profile images, follower growth on Brief.
+**Today's gap in that journey:** Messenger inbox in Engage, Reels/video polish, profile images, follower growth on Brief.
 
 ---
 
@@ -267,7 +267,7 @@ From `apps/billing/models.py` — Facebook is not singled out; limits are cross-
 ## Recommended build order (Facebook sprint)
 
 **Sprint 1 — Trust fixes (1–2 weeks)**  
-1. Page picker UI + fix audit token/ID  
+1. ~~Page picker UI~~ ✅ Set active on Platforms list  
 2. Fix auto-reply API method  
 3. Stop Create Agent suggesting FB Reels/Stories until publish works (or gate with “coming soon”)
 

@@ -1,9 +1,20 @@
 # Kova Platform Resilience — Founder Decision Document
 
 **Written:** 2026-05-20  
-**Status:** Decisions made — pending implementation  
+**Status:** Baseline implemented (Jun 2026) — token warnings, auto-refresh, publish errors surfaced  
 **Owner:** Iranzi Innocent (Founder)  
 **Purpose:** Define how Kova survives every third-party platform failure before going live with real users
+
+### Implementation status (Jun 2026)
+
+| Decision area | Status | Where |
+|---|---|---|
+| Token expiry warnings (7-day / 1-day / expired) | ✅ Shipped | `platforms.warn_expiring_tokens`, Platforms list banners, in-app notifications |
+| Facebook/Instagram token auto-extension | ✅ Shipped | `platforms.refresh_expiring_tokens` (Celery Beat, every 30 min) |
+| Publish failure → user-visible error | ✅ Shipped | `Post.publish_error`, failed status, in-app notification on publish fail |
+| Stuck publishing recovery (Reels/Stories timeouts) | ✅ Shipped | `content.recover_stuck_publishing_posts` (12 min cutoff) |
+| Rate-limit retry with backoff | 🔲 Partial | Basic retry in providers; full 3-strike reschedule UX not built |
+| Platform outage hold + auto-resume | 🔲 Partial | Outage banners on Platforms list; full queue hold not built |
 
 ---
 

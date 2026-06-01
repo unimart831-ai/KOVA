@@ -27,7 +27,7 @@ UNIMART uses the **Marketplace Partner API**. Kova does not mirror UNIMART’s D
 
 ### 0. Prerequisites
 
-- UNIMART `MarketplacePartner` created in Kova admin (slug e.g. `unimart` or `unimart-africa` — must match self-serve join URL)
+- UNIMART `MarketplacePartner` created in Kova admin (slug **`unimart-africa`** — canonical; legacy `unimart` still resolves via fallback)
 - API key copied at creation (shown once)
 - Celery worker running (for welcome email, Snap/Autopilot, webhooks)
 - For staging: enable **Sandbox mode** on the partner (posts dry-run, no live publish)
@@ -286,7 +286,7 @@ python manage.py import_unimart_vendors sellers.csv --create-partner  # if slug 
 
 The import block also appears at the top of the marketplace detail page (`/dashboard/partners/marketplaces/<id>/`). CSV upload requires **superuser** (senior staff); viewing the page is available to all staff.
 
-**Slug note:** Docs and examples often use `unimart`; if you created the partner with slug `unimart-africa`, use that slug everywhere — API `info` response, CLI `--partner-slug`, and self-serve join URL `/partners/unimart-africa/join/`.
+**Slug note:** Canonical slug is **`unimart-africa`** (join URL `/partners/unimart-africa/join/`). Legacy partners created as `unimart` still work — ops hub and CLI resolve both via `apps/partners/unimart_partner.py`.
 
 Uses the same `provision_marketplace_seller()` logic as the Partner API — welcome emails, webhooks, and auto-activation still apply.
 
@@ -399,7 +399,7 @@ partner = Partner.objects.get(referral_code="...")  # or create one
 raw_key = generate_api_key()
 mp = MarketplacePartner.objects.create(
     name="UNIMART Africa",
-    slug="unimart",
+    slug="unimart-africa",
     partner=partner,
     api_key_hash=hash_api_key(raw_key),
     api_key_prefix=raw_key[:8],

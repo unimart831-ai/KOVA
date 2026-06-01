@@ -70,12 +70,12 @@
       {% endif %}
     </div>
     <div class="glass-panel rounded-xl p-6">
-      <h2 class="font-semibold text-gray-900 dark:text-white mb-2">International payouts</h2>
+      <h2 class="font-semibold text-gray-900 dark:text-white mb-2">International payouts (Stripe Connect)</h2>
       {% if partner.stripe_connect_account_id %}
-      <p class="text-sm text-gray-600 dark:text-gray-400">Stripe Connect: {{ partner.stripe_connect_account_id }}</p>
+      <p class="text-sm text-gray-600 dark:text-gray-400">Stripe Connect account linked: {{ partner.stripe_connect_account_id }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Automated Stripe payouts are not live yet — M-Pesa requests above are the active payout path for Kenya partners.</p>
       {% else %}
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Stripe Connect onboarding for non-Kenya partners is coming soon.</p>
-      <button type="button" disabled class="btn-secondary text-sm px-4 py-2 opacity-60 cursor-not-allowed">Connect Stripe (v2)</button>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">Stripe Connect for non-Kenya partners is planned but not live. Referrals, commissions, and M-Pesa payout requests on this dashboard work today.</p>
       {% endif %}
     </div>
   </div>
