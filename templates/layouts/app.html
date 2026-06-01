@@ -291,6 +291,17 @@
           <div class="flex-1 text-left min-w-0">
             <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ user.full_name|default:"User" }}</p>
             <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ user.email }}</p>
+            {% if user_plan_sidebar.label %}
+            <p class="mt-0.5 truncate">
+              <span class="inline-flex items-center text-[10px] font-medium tracking-wide
+                {% if user_plan_sidebar.variant == 'trial' %}text-kova-600 dark:text-kova-400
+                {% elif user_plan_sidebar.variant == 'paid' %}text-gray-500 dark:text-gray-500
+                {% elif user_plan_sidebar.variant == 'pending' %}text-amber-600 dark:text-amber-400
+                {% else %}text-gray-400 dark:text-gray-500{% endif %}">
+                {{ user_plan_sidebar.label }}{% if user_plan_sidebar.is_staff %} · Staff{% endif %}
+              </span>
+            </p>
+            {% endif %}
           </div>
           <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>

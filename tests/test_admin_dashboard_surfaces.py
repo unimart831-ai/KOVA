@@ -105,3 +105,13 @@ class TestAdminDashboardSurfaces:
         assert b"Today" in resp.content
         assert b"Workspace" in resp.content
         assert b"Snap2sell" in resp.content
+
+    def test_overview_includes_platform_operations_hub(self, client, staff_user):
+        client.force_login(staff_user)
+        resp = client.get(reverse("admin_dashboard:overview"))
+
+        assert resp.status_code == 200
+        assert b"Platform Operations" in resp.content
+        assert b"Plans & Billing" in resp.content
+        assert b"Content Safety" in resp.content
+        assert b"Marketplace Partners" in resp.content

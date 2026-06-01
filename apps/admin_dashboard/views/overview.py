@@ -6,6 +6,7 @@ from django.shortcuts import render
 from django.utils import timezone
 
 from apps.admin_dashboard.decorators import staff_required
+from apps.admin_dashboard.ops_hub import build_ops_hub_snapshot
 
 
 @staff_required
@@ -440,5 +441,6 @@ def overview(request):
         "today_briefs_7d": today_briefs_7d,
         "voice_launches_7d": voice_launches_7d,
         "moment_packs_ready": moment_packs_ready,
+        "ops_hub": build_ops_hub_snapshot(),
     }
     return render(request, "admin_dashboard/overview.html", context)

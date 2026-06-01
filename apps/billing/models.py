@@ -353,6 +353,52 @@ def get_user_plan_limits(user):
     return limits
 
 
+SIDEBAR_PLAN_NAMES = {
+    "starter": "Starter",
+    "growth": "Growth",
+    "pro": "Pro",
+    "agency": "Agency",
+}
+
+
+def get_sidebar_plan_display(user) -> dict:
+    """
+    Plan label for the app sidebar — Plan v2 tier names (Free, Starter, Growth, Pro, Agency).
+
+    Returns dict with keys: label, variant (free|trial|paid|pending|none), is_staff.
+    Uses profile already on user — no extra queries when profile is cached.
+    """
+    if not getattr(user, "is_authenticated", False):
+        return {"label": "", "variant": "none", "is_staff": False}
+
+    is_staff = bool(user.is_staff or user.is_superuser)
+    profile = getattr(user, "profile", None)
+    if not profile:
+        return {"label": "Free", "variant": "free", "is_staff": is_staff}
+
+    if is_active_trial(profile):
+        return {"label": "Starter trial", "variant": "trial", "is_staff": is_staff}
+
+    plan = (profile.plan or "starter").lower()
+    status = profile.subscription_status or "none"
+
+    if plan == "agency" and not profile.is_agency_approved:
+        return {"label": "Agency pending", "variant": "pending", "is_staff": is_staff}
+
+    tier_name = SIDEBAR_PLAN_NAMES.get(plan, profile.get_plan_display())
+
+    if status in ("active", "past_due"):
+        return {"label": tier_name, "variant": "paid", "is_staff": is_staff}
+
+    if status in ("none", "canceled", "incomplete"):
+        return {"label": "Free", "variant": "free", "is_staff": is_staff}
+
+    if status == "trialing":
+        return {"label": "Free", "variant": "free", "is_staff": is_staff}
+
+    return {"label": tier_name, "variant": "paid", "is_staff": is_staff}
+
+
 def can_subscribe_to_agency(user) -> bool:
     """Agency checkout requires explicit sales approval on the profile."""
     profile = getattr(user, "profile", None)

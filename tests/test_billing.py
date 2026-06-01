@@ -89,6 +89,69 @@ class TestPlanLimits:
 
 
 @pytest.mark.django_db
+class TestSidebarPlanDisplay:
+    def test_active_trial_shows_starter_trial(self, user):
+        from apps.billing.models import get_sidebar_plan_display
+
+        profile = user.profile
+        profile.subscription_status = "trialing"
+        profile.trial_ends_at = timezone.now() + timezone.timedelta(days=5)
+        profile.plan = "growth"
+        profile.save(update_fields=["subscription_status", "trial_ends_at", "plan"])
+
+        display = get_sidebar_plan_display(user)
+        assert display["label"] == "Starter trial"
+        assert display["variant"] == "trial"
+
+    def test_active_paid_shows_tier_name(self, user):
+        from apps.billing.models import get_sidebar_plan_display
+
+        profile = user.profile
+        profile.plan = "pro"
+        profile.subscription_status = "active"
+        profile.save(update_fields=["plan", "subscription_status"])
+
+        display = get_sidebar_plan_display(user)
+        assert display["label"] == "Pro"
+        assert display["variant"] == "paid"
+
+    def test_no_subscription_shows_free(self, user):
+        from apps.billing.models import get_sidebar_plan_display
+
+        profile = user.profile
+        profile.subscription_status = "none"
+        profile.save(update_fields=["subscription_status"])
+
+        display = get_sidebar_plan_display(user)
+        assert display["label"] == "Free"
+        assert display["variant"] == "free"
+
+    def test_agency_without_approval_shows_pending(self, user):
+        from apps.billing.models import get_sidebar_plan_display
+
+        profile = user.profile
+        profile.plan = "agency"
+        profile.subscription_status = "active"
+        profile.is_agency_approved = False
+        profile.save(update_fields=["plan", "subscription_status", "is_agency_approved"])
+
+        display = get_sidebar_plan_display(user)
+        assert display["label"] == "Agency pending"
+        assert display["variant"] == "pending"
+
+    def test_sidebar_label_in_app_layout(self, client, user):
+        profile = user.profile
+        profile.plan = "growth"
+        profile.subscription_status = "active"
+        profile.save(update_fields=["plan", "subscription_status"])
+
+        client.force_login(user)
+        resp = client.get(reverse("brief:home"))
+        assert resp.status_code == 200
+        assert b"Growth" in resp.content
+
+
+@pytest.mark.django_db
 class TestBillingAccess:
     def test_can_start_free_trial_before_payment(self, user):
         from apps.billing.access import can_start_free_trial

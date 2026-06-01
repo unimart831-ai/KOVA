@@ -13,6 +13,18 @@
   {% include "admin_dashboard/partials/stat_cards.html" %}
 </div>
 
+<!-- ── Platform Operations Hub ───────────────────────────────────────── -->
+<div class="mt-6">
+  <div class="flex items-center justify-between gap-3 mb-3">
+    <div>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Platform Operations</h3>
+      <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Billing, caps, safety, platforms, publishing, and marketplace — links to full admin pages</p>
+    </div>
+    <a href="{% url 'admin_dashboard:system_maps' %}" class="text-[10px] font-medium text-kova-600 dark:text-kova-400 hover:underline shrink-0">System map →</a>
+  </div>
+  {% include "admin_dashboard/partials/ops_hub.html" %}
+</div>
+
 <!-- ── Charts Row ────────────────────────────────────────────────────── -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mt-6">
 

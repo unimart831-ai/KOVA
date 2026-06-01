@@ -1,0 +1,122 @@
+{% load dashboard_tags %}
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+
+  <!-- Plans & billing -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <div class="flex items-start justify-between gap-2 mb-3">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Plans & Billing</h3>
+      <a href="{% url 'admin_dashboard:billing_overview' %}" class="text-[10px] font-medium text-kova-600 dark:text-kova-400 hover:underline shrink-0">Billing →</a>
+    </div>
+    <dl class="space-y-1.5 text-xs">
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Starter</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.plan_counts.starter|default:0 }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Growth</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.plan_counts.growth|default:0 }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Pro</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.plan_counts.pro|default:0 }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Agency</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.plan_counts.agency|default:0 }}{% if ops_hub.agency_pending %} <span class="text-amber-600 dark:text-amber-400 font-normal">({{ ops_hub.agency_pending }} pending)</span>{% endif %}</dd></div>
+      <div class="border-t border-gray-100 dark:border-gray-800 my-2"></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Trialing</dt><dd class="font-semibold text-kova-600 dark:text-kova-400">{{ ops_hub.trialing_users }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Active paid</dt><dd class="font-semibold text-green-600 dark:text-green-400">{{ ops_hub.active_paid_users }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Free / lapsed</dt><dd class="font-semibold text-gray-600 dark:text-gray-300">{{ ops_hub.free_users }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Stripe customers</dt><dd class="font-semibold text-gray-900 dark:text-white"><a href="{% url 'admin_dashboard:subscription_management' %}" class="hover:underline">{{ ops_hub.stripe_customers }}</a></dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">M-Pesa users</dt><dd class="font-semibold text-gray-900 dark:text-white"><a href="{% url 'admin_dashboard:payment_list' %}" class="hover:underline">{{ ops_hub.mpesa_users }}</a></dd></div>
+    </dl>
+    {% if ops_hub.agency_sales_new %}
+    <a href="{% url 'admin_dashboard:sales_inquiry_list' %}?status=new" class="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">
+      {{ ops_hub.agency_sales_new }} agency sales inquir{{ ops_hub.agency_sales_new|pluralize:"y,ies" }}
+    </a>
+    {% else %}
+    <p class="mt-3 text-[10px] text-gray-400"><a href="{% url 'admin_dashboard:sales_inquiry_list' %}" class="text-kova-600 dark:text-kova-400 hover:underline">Agency sales inquiries</a></p>
+    {% endif %}
+  </div>
+
+  <!-- Usage caps -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <div class="flex items-start justify-between gap-2 mb-3">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Usage & Caps (Plan v2)</h3>
+      <a href="{% url 'admin_dashboard:cost_overview' %}" class="text-[10px] font-medium text-kova-600 dark:text-kova-400 hover:underline shrink-0">Costs →</a>
+    </div>
+    <dl class="space-y-1.5 text-xs">
+      <div class="flex justify-between gap-2">
+        <dt class="text-gray-500 dark:text-gray-400">Photoroom pool</dt>
+        <dd class="font-semibold text-gray-900 dark:text-white text-right">
+          {{ ops_hub.photoroom.used|format_number }} / {{ ops_hub.photoroom.usable|format_number }}
+          <span class="text-gray-400 font-normal">({{ ops_hub.photoroom.pool_pct_display }}%)</span>
+        </dd>
+      </div>
+      <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-1">
+        <div class="h-1.5 rounded-full {% if ops_hub.photoroom.pool_pct >= 0.8 %}bg-amber-500{% else %}bg-kova-500{% endif %}" style="width: {% if ops_hub.photoroom.pool_pct_display > 100 %}100{% else %}{{ ops_hub.photoroom.pool_pct_display }}{% endif %}%"></div>
+      </div>
+      <div class="flex justify-between pt-2"><dt class="text-gray-500 dark:text-gray-400">Per-user usage</dt><dd><a href="{% url 'admin_dashboard:user_list' %}" class="text-kova-600 dark:text-kova-400 hover:underline font-medium">User list → usage tab</a></dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">LLM config</dt><dd><a href="{% url 'admin_dashboard:llm_overview' %}" class="text-kova-600 dark:text-kova-400 hover:underline font-medium">Models & rate limits</a></dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">WhatsApp ops</dt><dd><a href="{% url 'admin_dashboard:whatsapp_overview' %}" class="text-kova-600 dark:text-kova-400 hover:underline font-medium">Conversations & caps</a></dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Studio polish</dt><dd><a href="{% url 'admin_dashboard:commerce_photoroom' %}" class="text-kova-600 dark:text-kova-400 hover:underline font-medium">Photoroom admin</a></dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Seed quotas</dt><dd><a href="{% url 'admin_dashboard:seed_quota_hub' %}" class="text-kova-600 dark:text-kova-400 hover:underline font-medium">Overrides log</a></dd></div>
+    </dl>
+  </div>
+
+  <!-- Content safety -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm {% if ops_hub.auto_publish_paused or ops_hub.safety_pending %}ring-1 ring-amber-300 dark:ring-amber-800/60{% endif %}">
+    <div class="flex items-start justify-between gap-2 mb-3">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Content Safety</h3>
+      <a href="{% url 'admin_dashboard:content_safety_overview' %}" class="text-[10px] font-medium text-kova-600 dark:text-kova-400 hover:underline shrink-0">Safety →</a>
+    </div>
+    <dl class="space-y-1.5 text-xs">
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Pending review</dt><dd class="font-semibold {% if ops_hub.safety_pending %}text-amber-600 dark:text-amber-400{% else %}text-gray-900 dark:text-white{% endif %}"><a href="{% url 'admin_dashboard:content_safety_review' %}" class="hover:underline">{{ ops_hub.safety_pending }}</a></dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Incidents today</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.safety_today }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Snap blocks / paused publish</dt><dd class="font-semibold {% if ops_hub.snap_blocked_users %}text-red-600 dark:text-red-400{% else %}text-gray-900 dark:text-white{% endif %}">{{ ops_hub.snap_blocked_users }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Global auto-publish</dt><dd class="font-semibold {% if ops_hub.auto_publish_paused %}text-red-600 dark:text-red-400{% else %}text-green-600 dark:text-green-400{% endif %}">{% if ops_hub.auto_publish_paused %}PAUSED{% else %}Active{% endif %}</dd></div>
+    </dl>
+    {% if ops_hub.auto_publish_paused %}
+    <p class="mt-3 text-[10px] text-red-600 dark:text-red-400"><a href="{% url 'admin_dashboard:content_safety_overview' %}" class="hover:underline font-medium">Manage global publish pause →</a></p>
+    {% endif %}
+  </div>
+
+  <!-- Platform connections -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <div class="flex items-start justify-between gap-2 mb-3">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Platform Connections</h3>
+      <a href="{% url 'admin_dashboard:platform_overview' %}" class="text-[10px] font-medium text-kova-600 dark:text-kova-400 hover:underline shrink-0">Platforms →</a>
+    </div>
+    <dl class="space-y-1.5 text-xs">
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Instagram</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.platform_counts.instagram|default:0 }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Facebook</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.platform_counts.facebook|default:0 }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">WhatsApp</dt><dd class="font-semibold text-[#128C7E] dark:text-[#25D366]">{{ ops_hub.platform_counts.whatsapp|default:0 }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">TikTok</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.platform_counts.tiktok|default:0 }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">LinkedIn</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.platform_counts.linkedin|default:0 }}</dd></div>
+      <div class="border-t border-gray-100 dark:border-gray-800 my-2"></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Active total</dt><dd class="font-semibold text-gray-900 dark:text-white"><a href="{% url 'admin_dashboard:platform_accounts' %}" class="hover:underline">{{ ops_hub.platform_total }}</a></dd></div>
+    </dl>
+  </div>
+
+  <!-- Publish errors -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm {% if ops_hub.failed_posts_open %}ring-1 ring-red-200 dark:ring-red-900/40{% endif %}">
+    <div class="flex items-start justify-between gap-2 mb-3">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Publish Errors</h3>
+      <a href="{% url 'admin_dashboard:failed_content' %}" class="text-[10px] font-medium text-kova-600 dark:text-kova-400 hover:underline shrink-0">Failed content →</a>
+    </div>
+    <dl class="space-y-1.5 text-xs">
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Open failures</dt><dd class="font-semibold {% if ops_hub.failed_posts_open %}text-red-600 dark:text-red-400{% else %}text-gray-900 dark:text-white{% endif %}">{{ ops_hub.failed_posts_open }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Failed (7d)</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.failed_posts_7d }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Recent posts</dt><dd><a href="{% url 'admin_dashboard:post_list' %}?status=failed" class="text-kova-600 dark:text-kova-400 hover:underline font-medium">Filter failed posts</a></dd></div>
+    </dl>
+  </div>
+
+  <!-- Marketplace / UNIMART -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+    <div class="flex items-start justify-between gap-2 mb-3">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Marketplace Partners</h3>
+      <a href="{% url 'admin_dashboard:marketplace_list' %}" class="text-[10px] font-medium text-kova-600 dark:text-kova-400 hover:underline shrink-0">Marketplaces →</a>
+    </div>
+    <dl class="space-y-1.5 text-xs">
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Active integrations</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.active_marketplaces }}</dd></div>
+      {% if ops_hub.unimart %}
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">UNIMART ({{ ops_hub.unimart.slug }})</dt><dd class="font-semibold {% if ops_hub.unimart.is_active %}text-green-600 dark:text-green-400{% else %}text-gray-400{% endif %}">{% if ops_hub.unimart.is_active %}Active{% else %}Inactive{% endif %}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">UNIMART sellers</dt><dd class="font-semibold text-gray-900 dark:text-white"><a href="{% url 'admin_dashboard:marketplace_detail' pk=ops_hub.unimart.pk %}" class="hover:underline">{{ ops_hub.unimart_sellers }}</a></dd></div>
+      {% else %}
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">UNIMART</dt><dd class="text-gray-400">Not configured</dd></div>
+      {% endif %}
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Webhook failures (7d)</dt><dd class="font-semibold {% if ops_hub.webhook_failed_7d %}text-red-600 dark:text-red-400{% else %}text-gray-900 dark:text-white{% endif %}"><a href="{% url 'admin_dashboard:partners_webhook_logs' %}" class="hover:underline">{{ ops_hub.webhook_failed_7d }}</a></dd></div>
+    </dl>
+    <p class="mt-3 text-[10px] text-gray-400"><a href="{% url 'admin_dashboard:system_maps' %}" class="text-kova-600 dark:text-kova-400 hover:underline">System maps</a> · <a href="{% url 'admin_dashboard:system_health' %}" class="text-kova-600 dark:text-kova-400 hover:underline">System health</a></p>
+  </div>
+
+</div>
