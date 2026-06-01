@@ -31,14 +31,20 @@ CSS_VARS = {
     "var(--kova-navy)": "#0c1222",
     "var(--kova-charcoal)": "#151d2e",
     "var(--kova-slate)": "#1e293b",
+    "var(--kova-deep-navy)": "#0f172a",
     "var(--kova-teal)": "#00d4aa",
     "var(--kova-teal-dim)": "#00a888",
     "var(--kova-teal-glow)": "rgba(0, 212, 170, 0.25)",
+    "var(--kova-teal-soft)": "rgba(0, 212, 170, 0.12)",
     "var(--kova-white)": "#f8fafc",
     "var(--kova-muted)": "#94a3b8",
     "var(--kova-body)": "#334155",
     "var(--kova-light)": "#f1f5f9",
     "var(--kova-border)": "#e2e8f0",
+    "var(--section-title)": "14px",
+    "var(--body-sm)": "11px",
+    "var(--body-xs)": "10px",
+    "var(--hero-size)": "28px",
     'var(--font)': '"Inter", "DM Sans", system-ui, sans-serif',
 }
 
@@ -50,22 +56,63 @@ def expand_css_vars(css: str) -> str:
     return css
 
 
-def inline_css(html: str, html_path: Path) -> str:
-    """Embed brochure-base.css for PDF engines that struggle with relative links."""
-    css_path = ASSETS / "brochure-base.css"
-    if not css_path.exists():
-        return html
-    css = css_path.read_text(encoding="utf-8")
-    css_offline = "\n".join(
-        line for line in css.splitlines() if not line.strip().startswith("@import url")
+def resolve_css_imports(css: str) -> str:
+    """Expand local @import statements (e.g. brochure-master.css → brochure-base.css)."""
+    lines: list[str] = []
+    for line in css.splitlines():
+        stripped = line.strip()
+        if stripped.startswith('@import url("') and stripped.endswith('");'):
+            rel = stripped[len('@import url("') : -3]
+            imported = ASSETS / rel
+            if imported.exists():
+                lines.append(f"/* --- {rel} --- */")
+                lines.extend(
+                    ln
+                    for ln in imported.read_text(encoding="utf-8").splitlines()
+                    if not ln.strip().startswith("@import url")
+                )
+                continue
+        if stripped.startswith("@import url"):
+            continue
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def collect_stylesheets(html: str) -> tuple[str, list[str]]:
+    """Return HTML with stylesheet links removed and ordered CSS hrefs."""
+    import re
+
+    pattern = re.compile(
+        r'<link rel="stylesheet" href="\.\./assets/([^"]+\.css)">\s*'
     )
-    css_offline = expand_css_vars(css_offline)
-    link_tag = '<link rel="stylesheet" href="../assets/brochure-base.css">'
-    if link_tag in html:
-        html = html.replace(
-            link_tag,
-            f"<style>\n{css_offline}\n</style>",
+    hrefs = pattern.findall(html)
+    html = pattern.sub("", html)
+    return html, hrefs
+
+
+def inline_css(html: str, html_path: Path) -> str:
+    """Embed linked brochure CSS for PDF engines that struggle with relative links."""
+    html, hrefs = collect_stylesheets(html)
+    if not hrefs:
+        return expand_css_vars(html)
+
+    css_parts: list[str] = []
+    for href in hrefs:
+        css_path = ASSETS / href
+        if not css_path.exists():
+            continue
+        css = css_path.read_text(encoding="utf-8")
+        css = resolve_css_imports(css)
+        css_offline = "\n".join(
+            line
+            for line in css.splitlines()
+            if not line.strip().startswith("@import url")
         )
+        css_parts.append(f"/* --- {href} --- */\n{expand_css_vars(css_offline)}")
+
+    if css_parts:
+        style_block = "<style>\n" + "\n\n".join(css_parts) + "\n</style>"
+        html = html.replace("</head>", f"{style_block}\n</head>", 1)
     return expand_css_vars(html)
 
 
