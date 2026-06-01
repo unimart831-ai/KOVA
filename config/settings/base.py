@@ -147,6 +147,7 @@ TEMPLATES = [
                 "apps.billing.context_processors.plan_limit_notice",
                 "apps.accounts.context_processors.nav_badges",
                 "apps.teams.context_processors.agency_theme",
+                "apps.admin_dashboard.context_processors.admin_nav",
             ],
         },
     },

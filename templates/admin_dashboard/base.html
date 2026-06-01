@@ -376,9 +376,19 @@
       </a>
 
       <p class="nav-section">Finance</p>
+      <a href="{% url 'admin_dashboard:sales_inquiry_list' %}"
+         class="{% if '/dashboard/billing/sales-inquiries' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/dashboard/billing/sales-inquiries' in request.path %}text-amber-600 dark:text-amber-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        <span class="flex-1">Agency Sales</span>
+        {% if admin_sales_inquiry_new_count %}
+          <span class="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300" title="{{ admin_sales_inquiry_new_count }} new inquiry{{ admin_sales_inquiry_new_count|pluralize }}">{{ admin_sales_inquiry_new_count }}</span>
+        {% endif %}
+      </a>
       <a href="{% url 'admin_dashboard:billing_overview' %}"
-         class="{% if '/dashboard/billing' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
-        <svg class="mr-3 h-5 w-5 {% if '/dashboard/billing' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+         class="{% if '/dashboard/billing' in request.path and '/sales-inquiries' not in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/dashboard/billing' in request.path and '/sales-inquiries' not in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
         </svg>
         Billing
@@ -394,10 +404,6 @@
       <a href="{% url 'admin_dashboard:plan_pricing' %}"
          class="{% if '/dashboard/billing/pricing' in request.path %}nav-link-active{% else %}nav-link{% endif %} ml-6">
         Plan Pricing
-      </a>
-      <a href="{% url 'admin_dashboard:sales_inquiry_list' %}"
-         class="{% if '/dashboard/billing/sales-inquiries' in request.path %}nav-link-active{% else %}nav-link{% endif %} ml-6">
-        Agency Sales
       </a>
 
       <a href="{% url 'admin_dashboard:cost_overview' %}"
@@ -487,7 +493,38 @@
           </div>
         </div>
 
+        <!-- Global search -->
+        <div class="hidden sm:flex flex-1 max-w-md mx-2 lg:mx-4 relative"
+             x-data="{ open: false }"
+             @click.outside="open = false">
+          <label for="admin-global-search" class="sr-only">Search admin</label>
+          <div class="relative w-full">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input id="admin-global-search" type="search" name="q" value="" placeholder="Search users, posts, leads…"
+                   autocomplete="off"
+                   class="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-kova-500 focus:border-kova-500"
+                   hx-get="{% url 'admin_dashboard:global_search' %}"
+                   hx-trigger="keyup changed delay:350ms, search"
+                   hx-target="#admin-search-dropdown"
+                   hx-swap="innerHTML"
+                   hx-include="[name='q']"
+                   @focus="open = true"
+                   @input="open = true"
+                   @keydown.escape="open = false" />
+          </div>
+          <div id="admin-search-dropdown"
+               x-show="open"
+               x-cloak
+               class="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg overflow-hidden">
+          </div>
+        </div>
+
         <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <a href="{% url 'admin_dashboard:global_search' %}" class="sm:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Search">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </a>
           <!-- Theme toggle -->
           <button type="button" onclick="toggleTheme()" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800" aria-label="Toggle dark mode">
             <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
