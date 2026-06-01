@@ -70,6 +70,7 @@ jobs:
       DATABASE_URL: postgres://kova:kova@localhost:5432/kova_test
       REDIS_URL: redis://localhost:6379/0
       SECRET_KEY: ci-test-secret-key-not-for-production
+      FIELD_ENCRYPTION_KEY: test-key-not-for-production-aaaaaaaaaaaaaa==
       DEBUG: "True"
 
     steps:

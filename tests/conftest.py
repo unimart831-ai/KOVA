@@ -2,6 +2,15 @@
 Shared pytest fixtures for the Kova Agent test suite.
 """
 
+import os
+
+# Fernet-backed OAuth fields require a stable test key before Django loads settings.
+# Requires django-fernet-fields-v2 (not legacy fernet_fields) — see requirements/base.txt.
+os.environ.setdefault(
+    "FIELD_ENCRYPTION_KEY",
+    "test-key-not-for-production-aaaaaaaaaaaaaa==",
+)
+
 import pytest
 from django.test import RequestFactory
 
