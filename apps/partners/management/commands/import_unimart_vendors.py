@@ -5,6 +5,7 @@ from __future__ import annotations
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.partners.models import MarketplacePartner
+from apps.partners.unimart_partner import CANONICAL_UNIMART_SLUG
 from apps.partners.marketplace_csv_import import (
     SELLER_CSV_COLUMNS,
     PRODUCT_CSV_COLUMNS,
@@ -27,8 +28,8 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--partner-slug",
-            default="unimart",
-            help="MarketplacePartner slug (default: unimart)",
+            default=CANONICAL_UNIMART_SLUG,
+            help=f"MarketplacePartner slug (default: {CANONICAL_UNIMART_SLUG})",
         )
         parser.add_argument(
             "--products-csv",

@@ -133,7 +133,9 @@ def partners_overview(request):
         .select_related("marketplace")
         .order_by("-created_at")[:8]
     )
-    unimart_mp = MarketplacePartner.objects.filter(slug__icontains="unimart").first()
+    from apps.partners.unimart_partner import resolve_unimart_partner
+
+    unimart_mp = resolve_unimart_partner()
 
     context = {
         "page_title": "Growth Partners",

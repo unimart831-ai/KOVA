@@ -68,7 +68,9 @@ def build_ops_hub_snapshot() -> dict:
     ).count()
 
     active_marketplaces = MarketplacePartner.objects.filter(is_active=True).count()
-    unimart = MarketplacePartner.objects.filter(slug__icontains="unimart").first()
+    from apps.partners.unimart_partner import resolve_unimart_partner
+
+    unimart = resolve_unimart_partner()
     unimart_sellers = 0
     if unimart:
         unimart_sellers = MarketplaceSellerAccount.objects.filter(marketplace=unimart).count()

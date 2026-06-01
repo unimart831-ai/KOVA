@@ -649,3 +649,27 @@ def linkedin_select_page(request):
         "organizations": organizations,
         "page_title": "Connect LinkedIn Company Page",
     })
+
+
+@login_required
+@require_POST
+def facebook_select_page(request, pk):
+    """Set which Facebook Page Kova publishes to (multi-Page accounts)."""
+    from apps.platforms.models import SocialAccount
+
+    account = get_object_or_404(
+        SocialAccount, pk=pk, user=request.user, platform="facebook", is_active=True,
+    )
+    page_id = request.POST.get("page_id", "").strip()
+    pages = (account.metadata or {}).get("pages", [])
+    selected = next((p for p in pages if p.get("id") == page_id), None)
+    if not selected:
+        messages.error(request, "That Page is not connected to your Facebook account.")
+        return redirect("platforms:list")
+
+    metadata = dict(account.metadata or {})
+    metadata["selected_page_id"] = page_id
+    account.metadata = metadata
+    account.save(update_fields=["metadata", "updated_at"])
+    messages.success(request, f"Active Facebook Page set to {selected.get('name', 'Page')}.")
+    return redirect("platforms:list")
