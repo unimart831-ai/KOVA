@@ -84,6 +84,12 @@ python fundraising/scripts/build_pdfs.py
 
 ---
 
+## Marketing brochures (SMB / demo handouts)
+
+Print-ready HTML + PDF: [`../marketing/brochures/`](../marketing/brochures/) — regenerate with `python marketing/brochures/scripts/build_brochure_pdfs.py`.
+
+---
+
 ## Related internal docs
 
 - [KOVA Fundraising & Legal Document Checklist](../docs/KOVA_FUNDRAISING_AND_LEGAL_DOCUMENT_CHECKLIST.md)
