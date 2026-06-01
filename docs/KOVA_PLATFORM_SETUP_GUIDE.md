@@ -67,6 +67,7 @@ Kova uses **one Meta Developer App** for Facebook, Instagram, and WhatsApp (Clou
 | Doc | Purpose |
 |-----|---------|
 | [`WHATSAPP_SETUP_GUIDE.md`](./WHATSAPP_SETUP_GUIDE.md) | WhatsApp admin + **user guide** (inbox, AI, templates, broadcasts) |
+| [`KOVA_USER_GUIDE_WHATSAPP_REACH_EMAIL.md`](./KOVA_USER_GUIDE_WHATSAPP_REACH_EMAIL.md) | **End-user operator manual** — WhatsApp, REACH, and Email (day-to-day, non-admin) |
 | [`WHATSAPP_TEMPLATES.md`](./WHATSAPP_TEMPLATES.md) | System template catalog + env vars |
 | [`DAILY_BRIEF_WHATSAPP_SETUP.md`](./DAILY_BRIEF_WHATSAPP_SETUP.md) | Daily brief template + reply-to-act commands |
 | [`PLATFORM_DEVELOPER_SETUP.md`](./PLATFORM_DEVELOPER_SETUP.md) | All 9 platforms (Twitter, YouTube, Pinterest, Threads, Bluesky) |
