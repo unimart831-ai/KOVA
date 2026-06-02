@@ -99,4 +99,5 @@ class TestCommandTab:
         assert b'aria-label="Sell"' in resp.content
         assert b'aria-label="Catch"' in resp.content
         assert b'aria-label="Close"' in resp.content
-        assert b'aria-label="Grow"' in resp.content
+        assert b'aria-label="Platforms"' in resp.content
+        assert b'>Platforms<' in resp.content

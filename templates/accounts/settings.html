@@ -8,6 +8,9 @@
 
 {% block content %}
 <div class="max-w-3xl mx-auto space-y-8">
+  <p class="text-sm text-gray-600 dark:text-gray-400">
+    <a href="{% url 'platforms:list' %}" class="font-medium text-kova-600 dark:text-kova-400 hover:text-kova-800 dark:hover:text-kova-300">Manage connected platforms →</a>
+  </p>
   <nav class="subnav-pills" aria-label="Settings sections">
     <a href="#settings-account" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-kova-100 dark:hover:bg-kova-950/50 font-medium transition-colors">Account</a>
     <a href="#settings-brand" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-kova-100 dark:hover:bg-kova-950/50 font-medium transition-colors">Brand</a>
