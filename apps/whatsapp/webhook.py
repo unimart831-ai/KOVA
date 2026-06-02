@@ -205,7 +205,7 @@ def _process_inbound_message(social_account, msg_data, contacts):
     if created:
         try:
             profile = getattr(social_account.user, "profile", None)
-            if profile and profile.auto_create_wa_leads:
+            if profile and profile.autopilot_auto_create_wa_leads:
                 from apps.leads.bridges import create_lead_from_whatsapp_conversation
                 create_lead_from_whatsapp_conversation(conversation)
         except Exception as e:
@@ -242,6 +242,15 @@ def _process_inbound_message(social_account, msg_data, contacts):
         )
     except Exception as e:
         logger.warning("WhatsApp inbox bridge failed: %s", e)
+
+    # Operations Autopilot — FAQ keyword auto-replies (before AI queue)
+    try:
+        from apps.whatsapp.autopilot import try_faq_auto_reply
+        if try_faq_auto_reply(conversation, message):
+            logger.info("WhatsApp FAQ autopilot handled message %s", wamid[:12])
+            return
+    except Exception as e:
+        logger.warning("FAQ autopilot failed: %s", e)
 
     if created:
         try:

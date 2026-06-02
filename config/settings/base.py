@@ -389,6 +389,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "whatsapp.process_sequence_steps",
         "schedule": 30 * 60.0,  # every 30 minutes
     },
+    "whatsapp-followup-nudges": {
+        "task": "whatsapp.send_followup_nudges",
+        "schedule": 3600.0,  # hourly — 24h missed-reply follow-ups
+    },
     "aggregate-daily-wa-analytics": {
         "task": "whatsapp.aggregate_daily_analytics",
         "schedule": 24 * 3600.0,  # daily

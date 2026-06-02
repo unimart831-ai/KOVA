@@ -295,10 +295,33 @@ class UserProfile(models.Model):
             "Plan-tier-gated — see docs/specs/ENGAGE_AGENT_V2_SPEC.md."
         ),
     )
-    auto_create_wa_leads = models.BooleanField(
+    # ── Operations Autopilot (Jun 2026) — off by default ──
+    autopilot_auto_publish_approved = models.BooleanField(
+        default=False,
+        help_text="Publish approved posts when scheduled_at is due — no extra click.",
+    )
+    autopilot_auto_enroll_leads = models.BooleanField(
+        default=False,
+        help_text="Auto-enroll new leads in your default Welcome nurture sequence.",
+    )
+    autopilot_auto_create_wa_leads = models.BooleanField(
         default=False,
         help_text="When True, inbound WhatsApp messages from new numbers auto-create a lead stub.",
     )
+    autopilot_wa_followup_24h = models.BooleanField(
+        default=False,
+        help_text="Send a utility follow-up if a customer message has no owner reply in 24h.",
+    )
+    autopilot_wa_faq_replies = models.BooleanField(
+        default=False,
+        help_text="Auto-reply to WhatsApp messages matching your FAQ keyword rules.",
+    )
+    wa_faq_answers = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Up to 5 FAQ rules: [{"keywords": ["hours", "open"], "reply": "..."}]',
+    )
+
     emergency_pause = models.BooleanField(
         default=False,
         help_text="If True, ALL autonomous agent actions are halted immediately. "

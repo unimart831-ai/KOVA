@@ -66,20 +66,19 @@ def create_lead_from_submission(sender, instance, created, **kwargs):
     lead.compute_priority()
     lead.save(update_fields=["priority"])
 
-    # Re-check enrollment after priority is computed.
-    # The post_save signal already enrolled for non-priority triggers,
-    # but HIGH_PRIORITY sequences were skipped because priority was still "medium".
-    # enroll_lead_in_sequences() won't double-enroll (has existence check).
+    # Re-check enrollment after priority is computed (when autopilot enroll is on).
     if was_created:
+        from apps.accounts.autopilot_helpers import should_auto_enroll_leads
         from apps.leads.tasks import enroll_lead_in_sequences
 
-        try:
-            enroll_lead_in_sequences(lead)
-        except Exception:
-            import logging
-            logging.getLogger(__name__).exception(
-                "Failed to re-enroll lead %s after priority scoring", lead.pk
-            )
+        if should_auto_enroll_leads(user):
+            try:
+                enroll_lead_in_sequences(lead)
+            except Exception:
+                import logging
+                logging.getLogger(__name__).exception(
+                    "Failed to re-enroll lead %s after priority scoring", lead.pk
+                )
 
 
 @receiver(post_save, sender="leads.Lead")
@@ -98,6 +97,11 @@ def enroll_new_lead_in_sequences(sender, instance, created, **kwargs):
         logging.getLogger(__name__).exception(
             "Failed to ensure default nurture sequences for user %s", instance.user_id
         )
+
+    from apps.accounts.autopilot_helpers import should_auto_enroll_leads
+
+    if not should_auto_enroll_leads(instance.user):
+        return
 
     try:
         enroll_lead_in_sequences(instance)

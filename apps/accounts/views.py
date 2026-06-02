@@ -10,6 +10,7 @@ from django_ratelimit.decorators import ratelimit
 from apps.accounts.facebook_oauth import start_facebook_platform_oauth
 
 from apps.accounts.forms import (
+    AutopilotSettingsForm,
     UserSettingsForm,
     BrandProfileForm,
     CTASettingsForm,
@@ -52,21 +53,28 @@ def _onboarding_setup_context(*, step=None, path_choice=False, complete=False):
 @login_required
 def settings_view(request):
     """User settings page with two forms: account info + brand profile."""
+    profile = request.user.profile
     if request.method == "POST":
         user_form = UserSettingsForm(request.POST, request.FILES, instance=request.user)
-        brand_form = BrandProfileForm(request.POST, instance=request.user.profile)
-        if user_form.is_valid() and brand_form.is_valid():
+        brand_form = BrandProfileForm(request.POST, instance=profile)
+        autopilot_form = AutopilotSettingsForm(
+            request.POST, instance=profile, user=request.user,
+        )
+        if user_form.is_valid() and brand_form.is_valid() and autopilot_form.is_valid():
             user_form.save()
             brand_form.save()
+            autopilot_form.save()
             messages.success(request, "Settings saved.")
             return redirect("accounts:settings")
     else:
         user_form = UserSettingsForm(instance=request.user)
-        brand_form = BrandProfileForm(instance=request.user.profile)
+        brand_form = BrandProfileForm(instance=profile)
+        autopilot_form = AutopilotSettingsForm(instance=profile, user=request.user)
 
     return render(request, "accounts/settings.html", {
         "user_form": user_form,
         "brand_form": brand_form,
+        "autopilot_form": autopilot_form,
         "plan_limits": get_user_plan_limits(request.user),
         "page_title": "Settings",
     })

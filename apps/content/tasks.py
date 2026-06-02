@@ -1925,18 +1925,33 @@ def check_and_publish_due_posts():
         logger.info("Auto-scheduled %d approved posts that were missing scheduled_at", auto_scheduled)
 
     # ── Step 2: Dispatch posts whose scheduled_at has arrived ─────────
-    due_posts = Post.objects.filter(
-        status__in=[Post.Status.APPROVED, Post.Status.SCHEDULED],
-        scheduled_at__lte=now,
-    ).values_list("id", flat=True)
+    from apps.accounts.autopilot_helpers import should_auto_publish_approved
+
+    due_posts = (
+        Post.objects.filter(
+            status__in=[Post.Status.APPROVED, Post.Status.SCHEDULED],
+            scheduled_at__lte=now,
+        )
+        .select_related("user", "user__profile")
+        .order_by("scheduled_at")
+    )
 
     count = 0
-    for post_id in due_posts:
-        publish_post.delay(str(post_id))
+    skipped_autopilot = 0
+    for post in due_posts:
+        if not should_auto_publish_approved(post.user):
+            skipped_autopilot += 1
+            continue
+        publish_post.delay(str(post.id))
         count += 1
 
     if count:
         logger.info("Dispatched %d posts for publishing", count)
+    elif skipped_autopilot:
+        logger.info(
+            "Publish check: %d due post(s) skipped — autopilot auto-publish off or paused",
+            skipped_autopilot,
+        )
     else:
         # Diagnostic: log pipeline state so we can see why nothing publishes
         total_approved = Post.objects.filter(status=Post.Status.APPROVED).count()

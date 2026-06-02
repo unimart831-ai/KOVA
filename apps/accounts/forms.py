@@ -389,6 +389,85 @@ class BrandProfileForm(forms.ModelForm):
         return instance
 
 
+class AutopilotSettingsForm(forms.ModelForm):
+    """Operations Autopilot toggles — all default off."""
+
+    class Meta:
+        model = UserProfile
+        fields = [
+            "autopilot_auto_publish_approved",
+            "autopilot_auto_enroll_leads",
+            "autopilot_auto_create_wa_leads",
+            "autopilot_wa_followup_24h",
+            "autopilot_wa_faq_replies",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        from apps.accounts.autopilot_helpers import MAX_FAQ_ENTRIES
+
+        for i in range(MAX_FAQ_ENTRIES):
+            self.fields[f"faq_keywords_{i}"] = forms.CharField(
+                required=False,
+                label=f"FAQ keywords {i + 1}",
+                widget=forms.TextInput(
+                    attrs={
+                        "class": "input",
+                        "placeholder": "hours, open, location (comma-separated)",
+                    }
+                ),
+            )
+            self.fields[f"faq_reply_{i}"] = forms.CharField(
+                required=False,
+                label=f"FAQ reply {i + 1}",
+                widget=forms.Textarea(
+                    attrs={"class": "input", "rows": 2, "placeholder": "Auto-reply when keywords match"},
+                ),
+            )
+
+        if self.instance and self.instance.pk:
+            for i, entry in enumerate((self.instance.wa_faq_answers or [])[:MAX_FAQ_ENTRIES]):
+                kws = entry.get("keywords") or []
+                if isinstance(kws, list):
+                    kws = ", ".join(kws)
+                self.fields[f"faq_keywords_{i}"].initial = kws
+                self.fields[f"faq_reply_{i}"].initial = entry.get("reply", "")
+
+    def clean(self):
+        cleaned = super().clean()
+        from apps.accounts.autopilot_helpers import whatsapp_autopilot_allowed
+        from django.forms import ValidationError
+
+        user = self.user or getattr(self.instance, "user", None)
+        wa_fields = (
+            "autopilot_auto_create_wa_leads",
+            "autopilot_wa_followup_24h",
+            "autopilot_wa_faq_replies",
+        )
+        if user and any(cleaned.get(f) for f in wa_fields):
+            if not whatsapp_autopilot_allowed(user):
+                raise ValidationError(
+                    "WhatsApp automations require Biashara (Pro) or Agency with WhatsApp enabled."
+                )
+        return cleaned
+
+    def save(self, commit=True):
+        from apps.accounts.autopilot_helpers import MAX_FAQ_ENTRIES, normalize_faq_answers
+
+        instance = super().save(commit=False)
+        faq_raw = []
+        for i in range(MAX_FAQ_ENTRIES):
+            keywords = self.cleaned_data.get(f"faq_keywords_{i}", "")
+            reply = self.cleaned_data.get(f"faq_reply_{i}", "")
+            if keywords or reply:
+                faq_raw.append({"keywords": keywords, "reply": reply})
+        instance.wa_faq_answers = normalize_faq_answers(faq_raw)
+        if commit:
+            instance.save()
+        return instance
+
+
 class CTASettingsForm(forms.ModelForm):
     """Default CTA preferences for post generation."""
 

@@ -13,6 +13,7 @@
     <a href="#settings-brand" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-kova-100 dark:hover:bg-kova-950/50 font-medium transition-colors">Brand</a>
     <a href="#settings-voice" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-kova-100 dark:hover:bg-kova-950/50 font-medium transition-colors">Voice</a>
     <a href="#settings-goals" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-kova-100 dark:hover:bg-kova-950/50 font-medium transition-colors">Goals</a>
+    <a href="#settings-autopilot" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-kova-100 dark:hover:bg-kova-950/50 font-medium transition-colors">Autopilot</a>
     <a href="#settings-cta" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-kova-100 dark:hover:bg-kova-950/50 font-medium transition-colors">CTA</a>
     <a href="#settings-visual" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-kova-100 dark:hover:bg-kova-950/50 font-medium transition-colors">Visual</a>
     <a href="#settings-billing" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-kova-100 dark:hover:bg-kova-950/50 font-medium transition-colors">Plan</a>
@@ -372,6 +373,110 @@
                 </p>
               </div>
             {% endif %}
+          {% endfor %}
+        </div>
+
+        {# ═══════ Operations Autopilot ═══════ #}
+        <div id="settings-autopilot" class="pt-6 border-t border-gray-100 dark:border-gray-800 scroll-mt-24">
+          <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1">Autopilot — chases money while you run the shop</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Optional automations that follow up on leads and publish on schedule. All off by default — turn on only what you want.
+            {% if not plan_limits.whatsapp_enabled %}
+              <span class="block mt-1 text-amber-700 dark:text-amber-400">WhatsApp automations require <a href="{% url 'billing:pricing' %}" class="underline font-medium">Biashara (Pro)</a>.</span>
+            {% endif %}
+          </p>
+
+          {% for field in autopilot_form %}
+            {% if field.name == 'autopilot_auto_publish_approved' %}
+              <div class="flex items-start space-x-3 mb-4 p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
+                       {% if field.value %}checked{% endif %}
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-emerald-600 focus:ring-emerald-500 dark:bg-gray-900">
+                <div>
+                  <label for="id_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">Auto-publish approved posts</label>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">When a post is approved and its schedule time arrives, publish without an extra click. Respects emergency pause and content safety.</p>
+                </div>
+              </div>
+            {% elif field.name == 'autopilot_auto_enroll_leads' %}
+              <div class="flex items-start space-x-3 mb-4 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-800">
+                <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
+                       {% if field.value %}checked{% endif %}
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:bg-gray-900">
+                <div>
+                  <label for="id_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">Auto-enroll new leads</label>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">New leads from forms, walk-ins, WhatsApp, and QR automatically join your Welcome nurture sequence. Manual enroll still works anytime.</p>
+                </div>
+              </div>
+            {% elif field.name == 'autopilot_auto_create_wa_leads' %}
+              <div class="flex items-start space-x-3 mb-4 p-4 bg-green-50 dark:bg-green-950/30 rounded-xl border border-green-200 dark:border-green-800 {% if not plan_limits.whatsapp_enabled %}opacity-60{% endif %}">
+                <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
+                       {% if field.value %}checked{% endif %}
+                       {% if not plan_limits.whatsapp_enabled %}disabled{% endif %}
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-green-600 focus:ring-green-500 dark:bg-gray-900">
+                <div>
+                  <label for="id_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">Auto-create leads from WhatsApp</label>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">First message from a new number creates a hot lead stub. Use Save as lead in inbox for one-off cases.</p>
+                </div>
+              </div>
+            {% elif field.name == 'autopilot_wa_followup_24h' %}
+              <div class="flex items-start space-x-3 mb-4 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800 {% if not plan_limits.whatsapp_enabled %}opacity-60{% endif %}">
+                <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
+                       {% if field.value %}checked{% endif %}
+                       {% if not plan_limits.whatsapp_enabled %}disabled{% endif %}
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-amber-600 focus:ring-amber-500 dark:bg-gray-900">
+                <div>
+                  <label for="id_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">24h WhatsApp follow-up</label>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">If a customer messaged and you have not replied in 24 hours, send a gentle nudge (max once per week per chat, within the 24h window).</p>
+                </div>
+              </div>
+            {% elif field.name == 'autopilot_wa_faq_replies' %}
+              <div class="flex items-start space-x-3 mb-4 p-4 bg-teal-50 dark:bg-teal-950/30 rounded-xl border border-teal-200 dark:border-teal-800 {% if not plan_limits.whatsapp_enabled %}opacity-60{% endif %}">
+                <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
+                       {% if field.value %}checked{% endif %}
+                       {% if not plan_limits.whatsapp_enabled %}disabled{% endif %}
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-teal-600 focus:ring-teal-500 dark:bg-gray-900">
+                <div class="flex-1">
+                  <label for="id_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">WhatsApp FAQ auto-replies</label>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Instant answers when messages match your keywords. Skips if you replied in the last 5 minutes. Max 3 auto-replies per chat per day.</p>
+                </div>
+              </div>
+            {% elif field.name|slice:":12" == 'faq_keywords' or field.name|slice:":9" == 'faq_reply' %}
+              {# rendered in FAQ block below #}
+            {% else %}
+              <div class="mb-4">
+                <label for="id_{{ field.name }}" class="label">{{ field.label }}</label>
+                {{ field }}
+              </div>
+            {% endif %}
+          {% endfor %}
+
+          <div class="mt-2 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/40">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">FAQ keyword rules (up to 5)</h4>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Comma-separated keywords, first match wins. Only used when FAQ auto-replies is on.</p>
+            {% for i in "01234" %}
+            <div class="grid sm:grid-cols-2 gap-3 mb-3">
+              <div>
+                <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Keywords {{ forloop.counter }}</label>
+                {% if forloop.counter0 == 0 %}{{ autopilot_form.faq_keywords_0 }}{% endif %}
+                {% if forloop.counter0 == 1 %}{{ autopilot_form.faq_keywords_1 }}{% endif %}
+                {% if forloop.counter0 == 2 %}{{ autopilot_form.faq_keywords_2 }}{% endif %}
+                {% if forloop.counter0 == 3 %}{{ autopilot_form.faq_keywords_3 }}{% endif %}
+                {% if forloop.counter0 == 4 %}{{ autopilot_form.faq_keywords_4 }}{% endif %}
+              </div>
+              <div>
+                <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Reply {{ forloop.counter }}</label>
+                {% if forloop.counter0 == 0 %}{{ autopilot_form.faq_reply_0 }}{% endif %}
+                {% if forloop.counter0 == 1 %}{{ autopilot_form.faq_reply_1 }}{% endif %}
+                {% if forloop.counter0 == 2 %}{{ autopilot_form.faq_reply_2 }}{% endif %}
+                {% if forloop.counter0 == 3 %}{{ autopilot_form.faq_reply_3 }}{% endif %}
+                {% if forloop.counter0 == 4 %}{{ autopilot_form.faq_reply_4 }}{% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          {% for error in autopilot_form.non_field_errors %}
+            <p class="text-xs text-red-600 dark:text-red-400 mt-2">{{ error }}</p>
           {% endfor %}
         </div>
 

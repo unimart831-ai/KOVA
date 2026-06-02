@@ -62,6 +62,7 @@ app.conf.task_routes = {
     "whatsapp.handle_incoming_message": {"queue": "critical"},
     "whatsapp.execute_broadcast": {"queue": "critical"},
     "whatsapp.process_sequence_steps": {"queue": "critical"},
+    "whatsapp.send_followup_nudges": {"queue": "default"},
     "whatsapp.generate_status_content": {"queue": "default"},
     "whatsapp.repurpose_post_to_status": {"queue": "default"},
     "whatsapp.cross_post_to_channel": {"queue": "default"},

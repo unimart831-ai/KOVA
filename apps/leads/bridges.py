@@ -101,12 +101,14 @@ def create_lead_from_whatsapp_conversation(conversation, *, enroll: bool = True)
         conversation.save(update_fields=["context", "updated_at"])
 
         if enroll:
+            from apps.accounts.autopilot_helpers import should_auto_enroll_leads
             from apps.leads.tasks import enroll_lead_in_sequences
 
-            try:
-                enroll_lead_in_sequences(lead)
-            except Exception:
-                logger.exception("Failed to enroll WhatsApp lead %s", lead.pk)
+            if should_auto_enroll_leads(user):
+                try:
+                    enroll_lead_in_sequences(lead)
+                except Exception:
+                    logger.exception("Failed to enroll WhatsApp lead %s", lead.pk)
 
     return lead
 
@@ -183,12 +185,14 @@ def create_lead_from_commerce_payment(payment):
     lead.save(update_fields=["priority"])
 
     if created:
+        from apps.accounts.autopilot_helpers import should_auto_enroll_leads
         from apps.leads.tasks import enroll_lead_in_sequences
 
-        try:
-            enroll_lead_in_sequences(lead)
-        except Exception:
-            logger.exception("Failed to enroll commerce lead %s", lead.pk)
+        if should_auto_enroll_leads(user):
+            try:
+                enroll_lead_in_sequences(lead)
+            except Exception:
+                logger.exception("Failed to enroll commerce lead %s", lead.pk)
 
     return lead
 
@@ -266,12 +270,14 @@ def create_lead_from_booking(booking):
     lead.save(update_fields=["priority"])
 
     if created:
+        from apps.accounts.autopilot_helpers import should_auto_enroll_leads
         from apps.leads.tasks import enroll_lead_in_sequences
 
-        try:
-            enroll_lead_in_sequences(lead)
-        except Exception:
-            logger.exception("Failed to enroll booking lead %s", lead.pk)
+        if should_auto_enroll_leads(user):
+            try:
+                enroll_lead_in_sequences(lead)
+            except Exception:
+                logger.exception("Failed to enroll booking lead %s", lead.pk)
 
     return lead
 
@@ -340,12 +346,14 @@ def create_lead_from_walkin(walkin_event):
     if created:
         lead.compute_priority()
         lead.save(update_fields=["priority"])
+        from apps.accounts.autopilot_helpers import should_auto_enroll_leads
         from apps.leads.tasks import enroll_lead_in_sequences
 
-        try:
-            enroll_lead_in_sequences(lead)
-        except Exception:
-            logger.exception("Failed to enroll walk-in lead %s", lead.pk)
+        if should_auto_enroll_leads(user):
+            try:
+                enroll_lead_in_sequences(lead)
+            except Exception:
+                logger.exception("Failed to enroll walk-in lead %s", lead.pk)
 
     return lead
 
@@ -413,11 +421,13 @@ def create_lead_from_engage_intent(interaction):
     if created:
         lead.compute_priority()
         lead.save(update_fields=["priority"])
+        from apps.accounts.autopilot_helpers import should_auto_enroll_leads
         from apps.leads.tasks import enroll_lead_in_sequences
 
-        try:
-            enroll_lead_in_sequences(lead)
-        except Exception:
-            logger.exception("Failed to enroll engage-intent lead %s", lead.pk)
+        if should_auto_enroll_leads(user):
+            try:
+                enroll_lead_in_sequences(lead)
+            except Exception:
+                logger.exception("Failed to enroll engage-intent lead %s", lead.pk)
 
     return lead
