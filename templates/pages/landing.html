@@ -4,7 +4,9 @@
 <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/intersect@3.14.8/dist/cdn.min.js"></script>
 {% endblock %}
 
-{% block title %}Kova Agent — AI That Gets You Results, Not Just Posts{% endblock %}
+{% block title %}Kova Agent — Chases Money While You Run the Shop{% endblock %}
+
+{% block meta_description %}The system that chases money for your business while you run the shop. AI team, Snap to Sell, WhatsApp, and M-Pesa — you approve in 5 minutes.{% endblock %}
 
 {% block content %}
 <!-- Hero Section -->
@@ -14,13 +16,11 @@
   <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-28 text-center">
     {% include "components/brand/_agent_loop_badge.html" %}
 
-    <h1 class="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-[1.1] reveal reveal-delay-1">
-      Your AI team handles<br>
-      <span class="text-gradient-hero">social media.</span><br>
-      <span class="marketing-hero-tagline">You approve in 5 minutes.</span>
+    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-[1.1] reveal reveal-delay-1">
+      {% include "components/brand/_north_star_tagline.html" %}
     </h1>
     <p class="mt-6 max-w-2xl mx-auto text-lg sm:text-xl text-gray-600 dark:text-gray-300 leading-relaxed reveal reveal-delay-2">
-      Describe your business — Kova builds your brand profile, prepares posts, and keeps you consistent. You approve in 5 minutes.
+      Your AI team · Snap to Sell · WhatsApp · M-Pesa — capture leads, follow up, and get paid while you stay on the shop floor. Approve in 5 minutes.
     </p>
 
     {% include "components/brand/_hero_prompt.html" %}
@@ -506,10 +506,10 @@
   {% include "components/brand/_atmosphere_orbs.html" %}
   <div class="relative max-w-4xl mx-auto px-4 text-center reveal">
     {% include "components/brand/_agent_loop_badge.html" %}
-    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mt-2">
-      Your AI team handles <span class="text-gradient-hero">social media.</span>
+    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mt-2 leading-tight">
+      {% include "components/brand/_north_star_tagline.html" %}
     </h2>
-    <p class="mt-4 text-lg text-gray-600 dark:text-gray-400 font-medium">You approve in 5 minutes.</p>
+    <p class="mt-4 text-lg text-gray-600 dark:text-gray-400 font-medium">AI team · Snap · WhatsApp · M-Pesa — approve in 5 minutes.</p>
     <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">From KSh {{ all_plans.starter.price_kes }}/mo · 7-day Starter trial · No credit card</p>
     <div class="mt-8">
       <a href="{% url 'account_signup' %}" class="group btn-primary text-lg px-10 py-3.5 shadow-lg shadow-kova-200 dark:shadow-none">

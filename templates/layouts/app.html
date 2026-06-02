@@ -38,14 +38,13 @@
 
     <!-- Navigation -->
     {% comment %}
-      Social-first navigation:
-      Home + Command stay at the top, then the app groups work into
-      SOCIAL, CUSTOMERS, COMMERCE, DEMAND, and BACKSTAGE.
-      This consolidates related tabs without deleting any capabilities.
+      Phase 2 IA target: Sell → Catch → Close → Grow (+ Settings).
+      data-nav-group marks items for future sidebar regroup — labels unchanged in Phase 1.
+      See docs/KOVA_PRODUCT_STRUCTURE_AND_PLATFORM_PRIORITY.md
     {% endcomment %}
     <nav class="sidebar-scroll flex-1 px-3 py-4 overflow-y-auto" aria-label="Primary">
 
-      <a href="{% url 'brief:home' %}"
+      <a href="{% url 'brief:home' %}" data-nav-group="home"
          {% if request.resolver_match.url_name == 'home' and request.resolver_match.namespace == 'brief' %}aria-current="page"{% endif %}
          class="{% if request.resolver_match.url_name == 'home' and request.resolver_match.namespace == 'brief' %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if request.resolver_match.url_name == 'home' and request.resolver_match.namespace == 'brief' %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -54,7 +53,7 @@
         Today
       </a>
 
-      <a href="{% url 'command:home' %}"
+      <a href="{% url 'command:home' %}" data-nav-group="grow"
          {% if '/command/' in request.path %}aria-current="page"{% endif %}
          class="{% if '/command/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if '/command/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -72,10 +71,10 @@
       </div>
       {% endif %}
 
-      <p class="nav-section">Channels</p>
+      <p class="nav-section" data-nav-group="grow">Channels</p>
 
       {% nav_active request.path '/content/studio' '/content/voice-campaign' '/content/autopilot' '/memes/' '/media-queue/' '/content/edit/' as create_active %}
-      <a href="{% url 'content:studio' %}"
+      <a href="{% url 'content:studio' %}" data-nav-group="grow"
          {% if create_active %}aria-current="page"{% endif %}
          class="{% if create_active %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if create_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -99,7 +98,7 @@
       {% endif %}
 
       {% nav_active request.path '/content/queue' '/content/calendar' as queue_active %}
-      <a href="{% url 'content:queue' %}"
+      <a href="{% url 'content:queue' %}" data-nav-group="grow"
          {% if queue_active %}aria-current="page"{% endif %}
          class="{% if queue_active %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if queue_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -117,7 +116,7 @@
       </div>
       {% endif %}
 
-      <a href="{% if request.plan_limits.engagement_agent %}{% url 'engage:inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}"
+      <a href="{% if request.plan_limits.engagement_agent %}{% url 'engage:inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}" data-nav-group="catch"
          {% if '/engage/' in request.path %}aria-current="page"{% endif %}
          class="{% if '/engage/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if '/engage/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -135,7 +134,7 @@
       </div>
       {% endif %}
 
-      <a href="{% if request.plan_limits.whatsapp_enabled %}{% url 'whatsapp:inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}"
+      <a href="{% if request.plan_limits.whatsapp_enabled %}{% url 'whatsapp:inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}" data-nav-group="close"
          {% if '/whatsapp/' in request.path %}aria-current="page"{% endif %}
          class="{% if '/whatsapp/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if '/whatsapp/' in request.path %}text-[#25D366]{% else %}text-gray-400 dark:text-gray-500{% endif %}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -155,7 +154,7 @@
       </div>
       {% endif %}
 
-      <a href="{% url 'emails:dashboard' %}"
+      <a href="{% url 'emails:dashboard' %}" data-nav-group="close"
          {% if '/emails/' in request.path %}aria-current="page"{% endif %}
          class="{% if '/emails/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if '/emails/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -173,7 +172,7 @@
       </div>
       {% endif %}
 
-      <a href="{% url 'bookings:list' %}"
+      <a href="{% url 'bookings:list' %}" data-nav-group="close"
          {% if '/bookings/' in request.path or '/book/' in request.path %}aria-current="page"{% endif %}
          class="{% if '/bookings/' in request.path or '/book/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if '/bookings/' in request.path or '/book/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -182,10 +181,10 @@
         Bookings
       </a>
 
-      <p class="nav-section">Snap2sell</p>
+      <p class="nav-section" data-nav-group="sell">Snap2sell</p>
 
       {% nav_active request.path '/analytics/revenue' '/analytics/attribution' as revenue_active %}
-      <a href="{% url 'analytics:revenue' %}"
+      <a href="{% url 'analytics:revenue' %}" data-nav-group="grow"
          {% if revenue_active %}aria-current="page"{% endif %}
          class="{% if revenue_active %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if revenue_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -195,7 +194,7 @@
       </a>
 
       {% nav_active request.path '/analytics/' '!/analytics/revenue' '!/analytics/attribution' '!/analytics/pixel' '!/analytics/competitors' '!/analytics/screenshot-compete' as performance_active %}
-      <a href="{% url 'analytics:insights' %}"
+      <a href="{% url 'analytics:insights' %}" data-nav-group="grow"
          {% if performance_active %}aria-current="page"{% endif %}
          class="{% if performance_active %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if performance_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -204,7 +203,7 @@
         Performance
       </a>
 
-      <a href="{% url 'products:list' %}"
+      <a href="{% url 'products:list' %}" data-nav-group="sell"
          {% if '/products/' in request.path %}aria-current="page"{% endif %}
          class="{% if '/products/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if '/products/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -221,10 +220,10 @@
       </div>
       {% endif %}
 
-      <p class="nav-section">Reach</p>
+      <p class="nav-section" data-nav-group="catch">Reach</p>
 
       {% nav_active request.path '/leads/' '/links/' '/qr/' '/walkin/' as reach_active %}
-      <a href="{% url 'leads:list' %}"
+      <a href="{% url 'leads:list' %}" data-nav-group="catch"
          {% if reach_active %}aria-current="page"{% endif %}
          class="{% if reach_active %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if reach_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -245,10 +244,10 @@
       </div>
       {% endif %}
 
-      <p class="nav-section">Control</p>
+      <p class="nav-section" data-nav-group="settings">Control</p>
 
       {% nav_active request.path '/accounts/settings' '/platforms/' '/teams/' '/billing/' '/agents/' '/help/' '/analytics/pixel' '/calendar/' '/profile-health/' '/ai-learning' as settings_active %}
-      <a href="{% url 'accounts:settings' %}"
+      <a href="{% url 'accounts:settings' %}" data-nav-group="settings"
          {% if settings_active %}aria-current="page"{% endif %}
          class="{% if settings_active %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if settings_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -274,9 +273,9 @@
 
     <!-- Brand mission strip -->
     <div class="px-4 py-3 mx-3 mb-2 rounded-lg bg-kova-50/80 dark:bg-kova-950/30 border border-kova-100 dark:border-kova-900/50">
-      <p class="text-[10px] font-semibold uppercase tracking-wider text-kova-600 dark:text-kova-400 mb-1">Your AI team</p>
+      <p class="text-[10px] font-semibold uppercase tracking-wider text-kova-600 dark:text-kova-400 mb-1">Money chase</p>
       <p class="text-xs text-gray-600 dark:text-gray-400 leading-snug">
-        Approve in <span class="font-semibold text-gray-900 dark:text-white">5 min</span> · 6 agents learning daily
+        Leads · follow-up · M-Pesa — approve in <span class="font-semibold text-gray-900 dark:text-white">5 min</span>
       </p>
     </div>
 
