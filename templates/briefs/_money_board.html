@@ -1,0 +1,41 @@
+{# ── Money chase board — what needs attention today ── #}
+{% if money_board %}
+<div class="space-y-3">
+  <p class="text-sm text-gray-600 dark:text-gray-400">{{ money_board.summary_line }}</p>
+
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    {% with card=money_board.needs_reply %}
+    <a href="{% url card.url_name %}"
+       class="group card hover:border-kova-300 dark:hover:border-kova-700 transition-colors">
+      <div class="px-5 py-4">
+        <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ card.label }}</p>
+        <p class="mt-1 text-3xl font-black tabular-nums text-gray-900 dark:text-white">{{ card.count }}</p>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 group-hover:text-kova-600 dark:group-hover:text-kova-400">{{ card.detail }}</p>
+      </div>
+    </a>
+    {% endwith %}
+
+    {% with card=money_board.hot_leads %}
+    <a href="{% url card.url_name %}?status=new"
+       class="group card hover:border-purple-300 dark:hover:border-purple-800 transition-colors">
+      <div class="px-5 py-4">
+        <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ card.label }}</p>
+        <p class="mt-1 text-3xl font-black tabular-nums text-gray-900 dark:text-white">{{ card.count }}</p>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-400">{{ card.detail }}</p>
+      </div>
+    </a>
+    {% endwith %}
+
+    {% with card=money_board.ready_to_approve %}
+    <a href="{% url card.url_name %}"
+       class="group card hover:border-kova-300 dark:hover:border-kova-700 transition-colors">
+      <div class="px-5 py-4">
+        <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ card.label }}</p>
+        <p class="mt-1 text-3xl font-black tabular-nums text-gray-900 dark:text-white">{{ card.count }}</p>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 group-hover:text-kova-600 dark:group-hover:text-kova-400">{{ card.detail }}</p>
+      </div>
+    </a>
+    {% endwith %}
+  </div>
+</div>
+{% endif %}

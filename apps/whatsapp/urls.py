@@ -11,6 +11,7 @@ urlpatterns = [
     # ── Inbox (Sprint 5A) ────────────────────────────────────────────────
     path("", views.whatsapp_inbox, name="inbox"),
     path("conversation/<uuid:pk>/", views.whatsapp_conversation, name="conversation"),
+    path("conversation/<uuid:pk>/save-lead/", views.save_as_lead, name="save_as_lead"),
     path("conversation/<uuid:pk>/send/", views.send_message, name="send_message"),
     path("conversation/<uuid:pk>/toggle-ai/", views.toggle_ai, name="toggle_ai"),
 

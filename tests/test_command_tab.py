@@ -90,13 +90,13 @@ class TestCommandTab:
         resp = client.get(reverse("command:home"))
 
         assert resp.status_code == 200
-        assert b'nav-section">Channels<' in resp.content
-        assert b'nav-section">Leads<' in resp.content
-        assert b'nav-section">Snap2sell<' in resp.content
-        assert b'nav-section">Reach<' in resp.content
-        assert b'nav-section">Control<' in resp.content
+        assert b'nav-section">Sell<' in resp.content
+        assert b'nav-section">Catch<' in resp.content
+        assert b'nav-section">Close<' in resp.content
+        assert b'nav-section">Grow<' in resp.content
+        assert b'nav-section">Settings<' in resp.content
         assert b'aria-label="Today"' in resp.content
-        assert b'aria-label="Workspace"' in resp.content
-        assert b'aria-label="Channels"' in resp.content
-        assert b'aria-label="Snap2sell"' in resp.content
-        assert b'aria-label="Leads"' in resp.content
+        assert b'aria-label="Sell"' in resp.content
+        assert b'aria-label="Catch"' in resp.content
+        assert b'aria-label="Close"' in resp.content
+        assert b'aria-label="Grow"' in resp.content

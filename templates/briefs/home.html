@@ -1,9 +1,9 @@
 {% extends "layouts/app.html" %}
 {% load humanize %}
 
-{% block page_title %}Home{% endblock %}
+{% block page_title %}Today{% endblock %}
 {% block page_subtitle %}
-<p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Your business operating system — morning check-in, live signals, and your next move</p>
+<p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">What needs your attention — leads, replies, and approvals in 5 minutes</p>
 {% endblock %}
 
 {% block content %}
@@ -23,6 +23,12 @@
     </div>
   </div>
   {% endif %}
+
+  {# ── Money chase board ── #}
+  {% include "briefs/_money_board.html" %}
+
+  {# ── Wedge onboarding checklist ── #}
+  {% include "briefs/_wedge_checklist.html" %}
 
   {# ── First-week setup checklist (auto-hides once all done or after 14 days) ── #}
   {% include "briefs/_setup_checklist.html" %}

@@ -29,6 +29,14 @@
       Back to inbox
     </a>
     <div class="flex items-center gap-2" id="ai-toggle-result">
+      {% if linked_lead %}
+      <a href="{% url 'leads:detail' lead_id=linked_lead.pk %}" class="btn-sm btn-secondary">View lead</a>
+      {% else %}
+      <form method="post" action="{% url 'whatsapp:save_as_lead' conversation.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-sm btn-primary">Save as lead</button>
+      </form>
+      {% endif %}
       <button type="button"
               hx-post="{% url 'whatsapp:toggle_ai' conversation.pk %}"
               hx-target="#ai-toggle-result"

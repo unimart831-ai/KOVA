@@ -114,15 +114,39 @@ def whatsapp_conversation(request, pk):
         is_ai_generated=True,
     )
 
+    from apps.leads.bridges import find_lead_for_whatsapp_conversation
+    linked_lead = find_lead_for_whatsapp_conversation(conversation)
+
     return render(request, "whatsapp/conversation.html", {
         "conversation": conversation,
         "messages": messages,
         "pending_drafts": pending_drafts,
+        "linked_lead": linked_lead,
         "page_title": f"Chat with {conversation.contact_name or conversation.contact_wa_id}",
     })
 
 
 # ─── Send Message ───────────────────────────────────────────────────────────
+
+@login_required
+@require_POST
+def save_as_lead(request, pk):
+    """Create or link a REACH lead from this WhatsApp conversation."""
+    conversation = get_object_or_404(
+        WhatsAppConversation.objects.select_related("social_account"),
+        pk=pk,
+        social_account__user=request.user,
+    )
+    from apps.leads.bridges import create_lead_from_whatsapp_conversation
+
+    lead = create_lead_from_whatsapp_conversation(conversation)
+    if not lead:
+        django_messages.error(request, "Could not create lead — check your plan limits.")
+        return redirect("whatsapp:conversation", pk=pk)
+
+    django_messages.success(request, f"Saved {lead.name or lead.phone or 'contact'} as a lead.")
+    return redirect("leads:detail", lead_id=lead.pk)
+
 
 @login_required
 @require_POST

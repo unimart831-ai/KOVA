@@ -7,8 +7,28 @@
 
   <div class="flex items-center justify-between">
     <a href="{% url 'leads:list' %}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">← Lead Inbox</a>
-    <a href="{% url 'leads:edit' lead_id=lead.pk %}" class="btn-secondary text-sm px-3 py-1.5">Edit</a>
+    <div class="flex items-center gap-2">
+      {% if not active_enrollment and suggested_sequence %}
+      <form method="post" action="{% url 'leads:enroll_nurture' lead_id=lead.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="sequence_id" value="{{ suggested_sequence.pk }}">
+        <button type="submit" class="btn-primary text-sm px-3 py-1.5">
+          Start “{{ suggested_sequence.name }}”
+        </button>
+      </form>
+      {% endif %}
+      <a href="{% url 'leads:edit' lead_id=lead.pk %}" class="btn-secondary text-sm px-3 py-1.5">Edit</a>
+    </div>
   </div>
+
+  {% if not active_enrollment and suggested_sequence %}
+  <div class="card bg-kova-50 dark:bg-kova-950/40 border-kova-200 dark:border-kova-800 px-5 py-4">
+    <p class="text-sm font-medium text-gray-900 dark:text-white">Chase this lead automatically</p>
+    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+      Enroll in <span class="font-medium">{{ suggested_sequence.name }}</span> — WhatsApp first, then email if needed.
+    </p>
+  </div>
+  {% endif %}
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 

@@ -12,6 +12,105 @@ logger = logging.getLogger(__name__)
 PURCHASE_INTENT_SIGNALS = frozenset({"pricing", "booking", "purchase", "buy", "order"})
 
 
+def _whatsapp_lead_email(wa_id: str) -> str:
+    return f"wa_{wa_id}@kova.page"
+
+
+def find_lead_for_whatsapp_conversation(conversation):
+    """Return an existing Lead linked to this WhatsApp thread, if any."""
+    from apps.leads.models import Lead
+
+    user = conversation.social_account.user
+    wa_id = conversation.contact_wa_id
+    email = _whatsapp_lead_email(wa_id)
+    lead = Lead.objects.filter(user=user, email=email).first()
+    if lead:
+        return lead
+    phone = (conversation.contact_phone or wa_id or "").strip()
+    if phone:
+        return Lead.objects.filter(user=user, phone=phone).first()
+    meta_id = (conversation.context or {}).get("lead_id")
+    if meta_id:
+        return Lead.objects.filter(user=user, pk=meta_id).first()
+    return None
+
+
+def create_lead_from_whatsapp_conversation(conversation, *, enroll: bool = True):
+    """Create or return a Lead from a WhatsApp conversation."""
+    from apps.billing.enforcement import check_leads_limit
+    from apps.leads.models import Lead, LeadActivity
+
+    existing = find_lead_for_whatsapp_conversation(conversation)
+    if existing:
+        return existing
+
+    user = conversation.social_account.user
+    wa_id = conversation.contact_wa_id
+    contact_name = (conversation.contact_name or "").strip()
+    phone = (conversation.contact_phone or wa_id or "").strip()
+    email = _whatsapp_lead_email(wa_id)
+
+    allowed, _msg = check_leads_limit(user, creating=True)
+    if not allowed:
+        return None
+
+    lead, created = Lead.objects.get_or_create(
+        user=user,
+        email=email,
+        defaults={
+            "name": contact_name,
+            "phone": phone,
+            "source_type": Lead.Source.SOCIAL_DM,
+            "source_platform": "whatsapp",
+            "temperature": Lead.Temperature.HOT,
+            "metadata": {
+                "wa_id": wa_id,
+                "conversation_id": str(conversation.pk),
+            },
+        },
+    )
+
+    if not created:
+        updates = []
+        if contact_name and not lead.name:
+            lead.name = contact_name
+            updates.append("name")
+        if phone and not lead.phone:
+            lead.phone = phone
+            updates.append("phone")
+        if updates:
+            updates.append("last_activity_at")
+            lead.save(update_fields=updates)
+    else:
+        LeadActivity.objects.create(
+            lead=lead,
+            activity_type=LeadActivity.ActivityType.SOCIAL_INTERACTION,
+            description=f"WhatsApp conversation started with {contact_name or wa_id}",
+            metadata={
+                "conversation_id": str(conversation.pk),
+                "wa_id": wa_id,
+                "channel": "whatsapp",
+            },
+        )
+        lead.compute_priority()
+        lead.save(update_fields=["priority"])
+
+        ctx = conversation.context or {}
+        ctx["lead_id"] = str(lead.pk)
+        conversation.context = ctx
+        conversation.save(update_fields=["context", "updated_at"])
+
+        if enroll:
+            from apps.leads.tasks import enroll_lead_in_sequences
+
+            try:
+                enroll_lead_in_sequences(lead)
+            except Exception:
+                logger.exception("Failed to enroll WhatsApp lead %s", lead.pk)
+
+    return lead
+
+
 def create_lead_from_commerce_payment(payment):
     """Create or update a Lead when a commerce payment completes."""
     from apps.billing.enforcement import check_leads_limit

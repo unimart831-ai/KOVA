@@ -451,7 +451,7 @@ def brief_home(request):
         "ready_moment_packs": ready_moment_packs,
         "moment_pack_id": moment_pack_id,
         "operations_update": operations_update,
-        "page_title": "Home",
+        "page_title": "Today",
         "segment_surface": build_surface_experience(
             profile=getattr(request.user, "profile", None),
             connected_platforms=connected_platforms,

@@ -104,7 +104,8 @@ def lead_create(request):
 @login_required
 def lead_detail(request, lead_id):
     """Lead detail with activity timeline."""
-    from apps.leads.models import LeadEnrollment, NurtureStep
+    from apps.leads.defaults import WELCOME_SEQUENCE_NAME, ensure_default_nurture_sequences
+    from apps.leads.models import LeadEnrollment, NurtureSequence, NurtureStep
 
     lead = get_object_or_404(Lead, pk=lead_id, user=request.user)
     activities = lead.activities.all()[:50]
@@ -124,6 +125,17 @@ def lead_detail(request, lead_id):
             order=active_enrollment.current_step,
         ).first()
 
+    ensure_default_nurture_sequences(request.user)
+    suggested_sequence = NurtureSequence.objects.filter(
+        user=request.user,
+        name=WELCOME_SEQUENCE_NAME,
+        is_active=True,
+    ).first()
+    if not suggested_sequence:
+        suggested_sequence = NurtureSequence.objects.filter(
+            user=request.user, is_active=True,
+        ).first()
+
     return render(request, "leads/lead_detail.html", {
         "lead": lead,
         "activities": activities,
@@ -131,6 +143,7 @@ def lead_detail(request, lead_id):
         "tag_form": tag_form,
         "active_enrollment": active_enrollment,
         "current_nurture_step": current_nurture_step,
+        "suggested_sequence": suggested_sequence,
         "page_title": lead.name or lead.email,
     })
 
@@ -426,3 +439,55 @@ def nurture_toggle(request, sequence_id):
     status = "activated" if sequence.is_active else "paused"
     messages.success(request, f"Sequence '{sequence.name}' {status}.")
     return redirect("leads:nurture_list")
+
+
+@login_required
+@require_POST
+def lead_enroll_nurture(request, lead_id):
+    """Manually enroll a lead in a nurture sequence (default: Welcome new leads)."""
+    from datetime import timedelta
+
+    from apps.leads.defaults import WELCOME_SEQUENCE_NAME, ensure_default_nurture_sequences
+    from apps.leads.models import LeadEnrollment, NurtureSequence, NurtureStep
+
+    lead = get_object_or_404(Lead, pk=lead_id, user=request.user)
+
+    if lead.enrollments.filter(completed=False, paused=False, sequence__is_active=True).exists():
+        messages.info(request, "This lead is already in an active nurture sequence.")
+        return redirect("leads:detail", lead_id=lead.pk)
+
+    ensure_default_nurture_sequences(request.user)
+    sequence_id = request.POST.get("sequence_id", "").strip()
+    if sequence_id:
+        sequence = get_object_or_404(NurtureSequence, pk=sequence_id, user=request.user)
+    else:
+        sequence = NurtureSequence.objects.filter(
+            user=request.user, name=WELCOME_SEQUENCE_NAME, is_active=True,
+        ).first()
+        if not sequence:
+            sequence = NurtureSequence.objects.filter(
+                user=request.user, is_active=True,
+            ).first()
+
+    if not sequence:
+        messages.error(request, "No active nurture sequence — create one first.")
+        return redirect("leads:nurture_create")
+
+    if LeadEnrollment.objects.filter(lead=lead, sequence=sequence).exists():
+        messages.info(request, f"Already enrolled in “{sequence.name}”.")
+        return redirect("leads:detail", lead_id=lead.pk)
+
+    first_step = NurtureStep.objects.filter(sequence=sequence, order=0).first()
+    if not first_step:
+        messages.error(request, "That sequence has no steps yet.")
+        return redirect("leads:nurture_detail", sequence_id=sequence.pk)
+
+    now = timezone.now()
+    LeadEnrollment.objects.create(
+        lead=lead,
+        sequence=sequence,
+        current_step=0,
+        next_step_at=now + timedelta(hours=first_step.delay_hours),
+    )
+    messages.success(request, f"Enrolled in “{sequence.name}” — follow-up starts automatically.")
+    return redirect("leads:detail", lead_id=lead.pk)

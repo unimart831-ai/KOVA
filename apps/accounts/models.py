@@ -295,6 +295,10 @@ class UserProfile(models.Model):
             "Plan-tier-gated — see docs/specs/ENGAGE_AGENT_V2_SPEC.md."
         ),
     )
+    auto_create_wa_leads = models.BooleanField(
+        default=False,
+        help_text="When True, inbound WhatsApp messages from new numbers auto-create a lead stub.",
+    )
     emergency_pause = models.BooleanField(
         default=False,
         help_text="If True, ALL autonomous agent actions are halted immediately. "

@@ -1,6 +1,6 @@
 # KOVA Product Structure & Platform Priority
 
-**Status:** Phase 1 (copy + `data-nav-group` hooks) · Phase 2 (visual sidebar regroup)  
+**Status:** Phase 2 sidebar regroup + Today money board **DONE** (June 2026)  
 **Last updated:** June 2026  
 **Code reference:** `apps/platforms/views.py` → `ACTIVE_PLATFORMS`, `COMING_SOON_PLATFORMS`  
 **Nav template:** `templates/layouts/app.html`
@@ -154,12 +154,14 @@ Aligned with founder wedge and `ACTIVE_PLATFORMS` / `COMING_SOON_PLATFORMS` in `
 
 ## F. Phase 2 sidebar regroup (checklist)
 
-- [ ] Rename sections: Sell / Catch / Close / Grow / Settings
-- [ ] Move Studio + Queue under **Grow** (or split Studio create vs Queue schedule)
-- [ ] Move Commerce under **Sell**; elevate Snap to Sell first sub-link
-- [ ] Collapse **Workspace** into Today or remove from default nav
+- [x] Rename sections: Sell / Catch / Close / Grow / Settings
+- [x] Move Studio + Queue under **Grow** (Workspace collapsed under “More”)
+- [x] Move Commerce under **Sell**; Snap to Sell first sub-link
+- [x] Collapse **Workspace** into Grow “More” for default nav
+- [x] Today home: money-chase board (needs reply · hot leads · ready to approve)
+- [x] Wedge onboarding checklist on Today (WA → Snap → publish → automation)
+- [x] Mobile bottom nav: Home / Sell / Catch / Close / Grow
 - [ ] Platform picker: sort by §D; hide coming-soon behind “More platforms”
-- [ ] Mobile bottom nav: align 5 tabs to Home / Sell / Catch / Close / Grow
 
 ---
 

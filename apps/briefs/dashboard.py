@@ -70,7 +70,10 @@ def _collect_home_stats(user, today, week_ago):
     has_brief_read = DailyBrief.objects.filter(user=user, is_read=True).exists()
 
     wa_escalated = 0
+    has_whatsapp = False
+    has_instagram = False
     if SocialAccount.objects.filter(user=user, platform="whatsapp", is_active=True).exists():
+        has_whatsapp = True
         try:
             from apps.whatsapp.models import WhatsAppConversation
             wa_escalated = WhatsAppConversation.objects.filter(
@@ -79,6 +82,35 @@ def _collect_home_stats(user, today, week_ago):
             ).count()
         except Exception:
             pass
+    has_instagram = SocialAccount.objects.filter(
+        user=user, platform="instagram", is_active=True,
+    ).exists()
+
+    has_snap_product = False
+    has_publish_with_link = False
+    has_automation_or_lead = False
+    try:
+        from apps.products.models import Product
+        has_snap_product = Product.objects.filter(user=user).exists()
+    except Exception:
+        pass
+    try:
+        from apps.content.models import Post
+        has_publish_with_link = Post.objects.filter(
+            user=user, status="published",
+        ).filter(
+            Q(cta_url__gt="") | ~Q(cta_type="none"),
+        ).exists()
+    except Exception:
+        pass
+    try:
+        from apps.leads.models import Lead, LeadEnrollment
+        has_automation_or_lead = (
+            Lead.objects.filter(user=user).exists()
+            or LeadEnrollment.objects.filter(lead__user=user).exists()
+        )
+    except Exception:
+        pass
 
     product_tasks = 0
     try:
@@ -103,6 +135,11 @@ def _collect_home_stats(user, today, week_ago):
         "has_brief_read": has_brief_read,
         "wa_escalated": wa_escalated,
         "product_tasks_week": product_tasks,
+        "has_whatsapp": has_whatsapp,
+        "has_instagram": has_instagram,
+        "has_snap_product": has_snap_product,
+        "has_publish_with_link": has_publish_with_link,
+        "has_automation_or_lead": has_automation_or_lead,
     }
 
 
@@ -151,6 +188,12 @@ def _customer_pulse_from_stats(stats):
     return pulse
 
 
+def _wedge_checklist_from_stats(user, stats):
+    from apps.accounts.wedge_checklist import build_wedge_checklist
+
+    return build_wedge_checklist(user, stats)
+
+
 def _setup_checklist_from_stats(user, stats):
     from apps.accounts.setup_mission import build_setup_mission
 
@@ -181,6 +224,82 @@ _SETUP_MISSION_ICONS = {
     "platform": "🔗",
     "publish": "🚀",
 }
+
+
+def _collect_money_board_stats(user, week_ago):
+    """Single aggregate pass for Today money-chase board."""
+    from apps.content.models import Post
+    from apps.engage.models import Interaction
+    from apps.leads.models import Lead
+    from apps.whatsapp.models import WhatsAppConversation
+
+    row = Interaction.objects.filter(user=user).aggregate(
+        engage_needs_reply=Count("id", filter=Q(status__in=["new", "flagged"])),
+    )
+    wa_needs_reply = WhatsAppConversation.objects.filter(
+        social_account__user=user,
+        status=WhatsAppConversation.Status.ESCALATED,
+    ).count()
+    needs_reply = row["engage_needs_reply"] + wa_needs_reply
+
+    hot_leads = Lead.objects.filter(user=user).filter(
+        Q(status=Lead.Status.NEW)
+        | Q(status=Lead.Status.CONTACTED, last_activity_at__gte=week_ago),
+    ).count()
+
+    ready_to_approve = Post.objects.filter(
+        user=user, status__in=["pending_approval", "draft"],
+    ).count()
+
+    leads_week = Lead.objects.filter(
+        user=user, first_seen_at__gte=week_ago,
+    ).count()
+
+    return {
+        "needs_reply": needs_reply,
+        "needs_reply_wa": wa_needs_reply,
+        "needs_reply_engage": row["engage_needs_reply"],
+        "hot_leads": hot_leads,
+        "ready_to_approve": ready_to_approve,
+        "leads_week": leads_week,
+    }
+
+
+def get_money_board_stats(user):
+    """Public helper for tests and Today view."""
+    week_ago = timezone.now() - timedelta(days=7)
+    return _collect_money_board_stats(user, week_ago)
+
+
+def _money_board_from_stats(stats):
+    return {
+        "summary_line": (
+            f"This week: {stats['leads_week']} lead{'s' if stats['leads_week'] != 1 else ''}"
+            f" · {stats['needs_reply']} need reply"
+            f" · {stats['ready_to_approve']} to approve"
+        ),
+        "needs_reply": {
+            "count": stats["needs_reply"],
+            "label": "Needs reply",
+            "detail": "WhatsApp + social inbox waiting on you",
+            "url_name": "whatsapp:inbox" if stats["needs_reply_wa"] else "engage:inbox",
+            "tone": "red" if stats["needs_reply"] >= 3 else "amber",
+        },
+        "hot_leads": {
+            "count": stats["hot_leads"],
+            "label": "Hot leads",
+            "detail": "New + contacted in the last 7 days",
+            "url_name": "leads:list",
+            "tone": "purple",
+        },
+        "ready_to_approve": {
+            "count": stats["ready_to_approve"],
+            "label": "Ready to approve",
+            "detail": "Posts waiting for your OK",
+            "url_name": "content:studio",
+            "tone": "kova",
+        },
+    }
 
 
 def _value_summary_from_stats(stats):
@@ -270,6 +389,7 @@ def get_cached_home_extras(user, brief):
 
     week_ago = timezone.now() - timedelta(days=7)
     stats = _collect_home_stats(user, today, week_ago)
+    money_stats = _collect_money_board_stats(user, week_ago)
 
     from apps.briefs.views import (
         _build_brief_streak,
@@ -284,6 +404,8 @@ def get_cached_home_extras(user, brief):
         "has_connected_platform": stats["has_platform"],
         "customer_pulse": _customer_pulse_from_stats(stats),
         "setup_checklist": _setup_checklist_from_stats(user, stats),
+        "wedge_checklist": _wedge_checklist_from_stats(user, stats),
+        "money_board": _money_board_from_stats(money_stats),
         "value_summary": _value_summary_from_stats(stats),
         "profile_health_alerts": _profile_health_alerts(user),
         "revenue_stat": get_cached_revenue_stat(user),
