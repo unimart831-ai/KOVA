@@ -8,6 +8,8 @@ from pathlib import Path
 
 import environ
 
+from config.redis_channels import build_channels_redis_layer_config
+
 # ─── PATHS ───────────────────────────────────────────────────────────────────
 # BASE_DIR = kova_agent/ (the project root containing manage.py)
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -175,12 +177,17 @@ if REDIS_URL:
     }
     SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
     SESSION_CACHE_ALIAS = "default"
+    # Same REDIS_URL as Celery; channels_redis needs higher socket timeouts on Railway.
+    _CHANNEL_REDIS_CONNECT_TIMEOUT = env.float("CHANNEL_REDIS_CONNECT_TIMEOUT", default=15.0)
+    _CHANNEL_REDIS_SOCKET_TIMEOUT = env.float("CHANNEL_REDIS_SOCKET_TIMEOUT", default=15.0)
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {
-                "hosts": [REDIS_URL],
-            },
+            "CONFIG": build_channels_redis_layer_config(
+                REDIS_URL,
+                socket_connect_timeout=_CHANNEL_REDIS_CONNECT_TIMEOUT,
+                socket_timeout=_CHANNEL_REDIS_SOCKET_TIMEOUT,
+            ),
         },
     }
     CELERY_BROKER_URL = env("CELERY_BROKER_URL", default=REDIS_URL)

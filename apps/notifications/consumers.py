@@ -38,7 +38,18 @@ class UpdatesConsumer(AsyncJsonWebsocketConsumer):
         self.user_id = str(user.pk)
         self.group_name = f"user_{self.user_id}"
 
-        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        try:
+            await self.channel_layer.group_add(self.group_name, self.channel_name)
+        except Exception as exc:
+            # Redis/channel layer unavailable — close cleanly; client JS reconnects.
+            logger.warning(
+                "WebSocket channel layer unavailable for user %s: %s",
+                self.user_id,
+                exc,
+            )
+            await self.close()
+            return
+
         await self.accept()
 
         count = await self._unread_notification_count()
@@ -46,7 +57,14 @@ class UpdatesConsumer(AsyncJsonWebsocketConsumer):
 
     async def disconnect(self, close_code):
         if hasattr(self, "group_name"):
-            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+            try:
+                await self.channel_layer.group_discard(self.group_name, self.channel_name)
+            except Exception as exc:
+                logger.debug(
+                    "WebSocket group_discard failed for user %s: %s",
+                    getattr(self, "user_id", "?"),
+                    exc,
+                )
 
     async def receive_json(self, content, **kwargs):
         msg_type = content.get("type", "")

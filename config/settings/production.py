@@ -130,9 +130,12 @@ CSP_FORM_ACTION = ("'self'",)
 DATABASES["default"]["CONN_MAX_AGE"] = 600  # noqa: F405
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = True  # noqa: F405
 
-# ─── CELERY ──────────────────────────────────────────────────────────────────
-# Railway Redis: use REDIS_URL from env (base.py reads it already).
-# No changes needed unless you want a separate broker URL.
+# ─── REDIS / CHANNELS (WebSockets) ───────────────────────────────────────────
+# Celery, Django cache, and Channels all use REDIS_URL from base.py.
+# WebSocket /ws/updates/ uses channels_redis (async); Celery uses sync redis —
+# if Celery works but WS fails with "Timeout reading from redis.railway.internal",
+# raise CHANNEL_REDIS_* timeouts (defaults 15s) or verify Redis is not sleeping.
+# Optional overrides: CHANNEL_REDIS_CONNECT_TIMEOUT, CHANNEL_REDIS_SOCKET_TIMEOUT
 
 # ─── EMAIL (Resend HTTP API via django-anymail) ──────────────────────────────
 # Resend is the source of truth for transactional email in production. The

@@ -90,7 +90,9 @@ Replace `{SITE_URL}` with your canonical base URL, e.g. `https://app.kovaagent.c
 | `ALLOWED_HOSTS` | ✅ | — | Comma-separated hostnames |
 | `CSRF_TRUSTED_ORIGINS` | ✅ prod | — | e.g. `https://app.kovaagent.com` |
 | `DATABASE_URL` | ✅ | local Postgres | Database connection |
-| `REDIS_URL` | ✅ prod | — | Celery broker, cache, Channels |
+| `REDIS_URL` | ✅ prod | — | Celery broker, cache, Channels (WebSockets) |
+
+**Redis on Railway:** Use one `REDIS_URL` for Celery, Django cache, and Channels — do not split host/port for WebSockets. If Celery tasks succeed but `/ws/updates/` logs `Timeout reading from redis.railway.internal`, the Redis instance is reachable but **channels_redis** async clients hit the default 5s socket timeout; set `CHANNEL_REDIS_CONNECT_TIMEOUT` and `CHANNEL_REDIS_SOCKET_TIMEOUT` (default `15`) on the web service. Ensure the Redis plugin is not on a sleeping/free tier during production traffic. For TLS URLs (`rediss://`), pass the full URL; Channels config sets `ssl_cert_reqs=None` for managed Redis.
 | `FIELD_ENCRYPTION_KEY` | ✅ prod | falls back to `SECRET_KEY` | Fernet key for OAuth token encryption |
 
 ### Meta — shared (Facebook + Instagram + WhatsApp Embedded Signup)
