@@ -3,6 +3,7 @@ Tests for content creation flow: seeds, posts, scheduling.
 """
 
 import pytest
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import User, UserProfile
@@ -125,3 +126,37 @@ class TestContentStudioView:
         # Should redirect or return HTMX partial
         assert resp.status_code in (200, 302)
         assert ContentSeed.objects.filter(user=user, idea="Test idea from pytest").exists()
+
+
+@pytest.mark.django_db
+class TestRescheduleRateLimited:
+    def test_reschedules_failed_rate_limited_post(self, auth_client, user, social_account):
+        post = Post.objects.create(
+            user=user,
+            social_account=social_account,
+            content_text="Rate limited post",
+            status=Post.Status.FAILED,
+            publish_error="Twitter API rate limit exceeded (429)",
+        )
+        before = timezone.now()
+        url = reverse("content:reschedule_rate_limited", kwargs={"post_id": post.id})
+        resp = auth_client.post(url)
+        assert resp.status_code == 302
+        post.refresh_from_db()
+        assert post.status == Post.Status.SCHEDULED
+        assert post.publish_error == ""
+        assert post.scheduled_at >= before + timezone.timedelta(minutes=29)
+
+    def test_rejects_non_rate_limited_failure(self, auth_client, user, social_account):
+        post = Post.objects.create(
+            user=user,
+            social_account=social_account,
+            content_text="Other failure",
+            status=Post.Status.FAILED,
+            publish_error="Invalid media format",
+        )
+        url = reverse("content:reschedule_rate_limited", kwargs={"post_id": post.id})
+        resp = auth_client.post(url)
+        assert resp.status_code == 400
+        post.refresh_from_db()
+        assert post.status == Post.Status.FAILED
