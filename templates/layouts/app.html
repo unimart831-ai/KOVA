@@ -93,45 +93,47 @@
       </div>
       {% endif %}
 
-      <a href="{% if request.plan_limits.engagement_agent %}{% url 'engage:inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}" data-nav-group="catch"
+      <a href="{% if request.plan_limits.engagement_agent or request.plan_limits.engage_trial_enabled %}{% url 'engage:inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}" data-nav-group="catch"
          {% if '/engage/' in request.path %}aria-current="page"{% endif %}
          class="{% if '/engage/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if '/engage/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
         </svg>
         Inbox
-        {% if not request.plan_limits.engagement_agent %}<span class="ml-auto text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">PRO</span>{% elif nav_badge_inbox %}<span class="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_inbox }}</span>{% endif %}
+        {% if not request.plan_limits.engagement_agent and request.plan_limits.engage_trial_enabled %}<span class="ml-auto text-[10px] font-medium text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/30 px-1.5 py-0.5 rounded">TRIAL</span>{% elif not request.plan_limits.engagement_agent %}<span class="ml-auto text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">PRO</span>{% elif nav_badge_inbox %}<span class="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_inbox }}</span>{% endif %}
       </a>
 
-      {% if request.plan_limits.engagement_agent and '/engage/' in request.path %}
+      {% if request.plan_limits.engagement_agent or request.plan_limits.engage_trial_enabled %}{% if '/engage/' in request.path %}
       <div class="ml-8 space-y-0.5 mb-1">
         <a href="{% url 'engage:inbox' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'inbox' and request.resolver_match.namespace == 'engage' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Comments & Mentions</a>
         <a href="{% url 'engage:dm_inbox' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'dm_inbox' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Messages</a>
         <a href="{% url 'engage:auto_sent_list' %}" class="block text-xs py-1 px-2 rounded {% if 'auto_sent' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">AI auto-sent</a>
       </div>
-      {% endif %}
+      {% endif %}{% endif %}
 
       <p class="nav-section" data-nav-group="close">Close</p>
 
-      <a href="{% if request.plan_limits.whatsapp_enabled %}{% url 'whatsapp:inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}" data-nav-group="close"
+      <a href="{% if request.plan_limits.whatsapp_enabled or request.plan_limits.whatsapp_inbox_enabled %}{% url 'whatsapp:inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}" data-nav-group="close"
          {% if '/whatsapp/' in request.path %}aria-current="page"{% endif %}
          class="{% if '/whatsapp/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if '/whatsapp/' in request.path %}text-[#25D366]{% else %}text-gray-400 dark:text-gray-500{% endif %}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
         </svg>
         WhatsApp
-        {% if not request.plan_limits.whatsapp_enabled %}<span class="ml-auto text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">PRO</span>{% elif nav_badge_whatsapp %}<span class="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_whatsapp }}</span>{% endif %}
+        {% if not request.plan_limits.whatsapp_enabled and not request.plan_limits.whatsapp_inbox_enabled %}<span class="ml-auto text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">PRO</span>{% elif not request.plan_limits.whatsapp_enabled and request.plan_limits.whatsapp_inbox_enabled %}<span class="ml-auto text-[10px] font-medium text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/30 px-1.5 py-0.5 rounded">INBOX</span>{% elif nav_badge_whatsapp %}<span class="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_whatsapp }}</span>{% endif %}
       </a>
 
-      {% if request.plan_limits.whatsapp_enabled and '/whatsapp/' in request.path %}
+      {% if request.plan_limits.whatsapp_inbox_enabled or request.plan_limits.whatsapp_enabled %}{% if '/whatsapp/' in request.path %}
       <div class="ml-8 space-y-0.5 mb-1">
         <a href="{% url 'whatsapp:inbox' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'inbox' or request.resolver_match.url_name == 'conversation' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Inbox</a>
+        {% if request.plan_limits.whatsapp_enabled %}
         <a href="{% url 'whatsapp:template_list' %}" class="block text-xs py-1 px-2 rounded {% if 'template' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Templates</a>
         <a href="{% url 'whatsapp:status_studio' %}" class="block text-xs py-1 px-2 rounded {% if 'status' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Status Studio</a>
         <a href="{% url 'whatsapp:broadcast_list' %}" class="block text-xs py-1 px-2 rounded {% if 'broadcast' in request.resolver_match.url_name or 'sequence' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Broadcasts</a>
         <a href="{% url 'whatsapp:wa_analytics' %}" class="block text-xs py-1 px-2 rounded {% if 'analytics' in request.resolver_match.url_name or 'digest' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Analytics</a>
+        {% endif %}
       </div>
-      {% endif %}
+      {% endif %}{% endif %}
 
       <a href="{% url 'emails:dashboard' %}" data-nav-group="close"
          {% if '/emails/' in request.path %}aria-current="page"{% endif %}
@@ -205,24 +207,14 @@
       </div>
       {% endif %}
 
-      {% nav_active request.path '/analytics/revenue' '/analytics/attribution' as revenue_active %}
+      {% nav_active request.path '/analytics/revenue' '/analytics/attribution' '/analytics/' '!/analytics/pixel' '!/analytics/competitors' '!/analytics/screenshot-compete' '!/analytics/content' as results_active %}
       <a href="{% url 'analytics:revenue' %}" data-nav-group="grow"
-         {% if revenue_active %}aria-current="page"{% endif %}
-         class="{% if revenue_active %}nav-link-active{% else %}nav-link{% endif %}">
-        <svg class="mr-3 h-5 w-5 {% if revenue_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-        Revenue
-      </a>
-
-      {% nav_active request.path '/analytics/' '!/analytics/revenue' '!/analytics/attribution' '!/analytics/pixel' '!/analytics/competitors' '!/analytics/screenshot-compete' as performance_active %}
-      <a href="{% url 'analytics:insights' %}" data-nav-group="grow"
-         {% if performance_active %}aria-current="page"{% endif %}
-         class="{% if performance_active %}nav-link-active{% else %}nav-link{% endif %}">
-        <svg class="mr-3 h-5 w-5 {% if performance_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+         {% if results_active %}aria-current="page"{% endif %}
+         class="{% if results_active %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if results_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
         </svg>
-        Performance
+        Results
       </a>
 
       <div x-data="{ growMore: {% if '/command/' in request.path %}true{% else %}false{% endif %} }" class="mt-1 mb-1">

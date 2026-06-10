@@ -107,6 +107,17 @@
       </button>
       {% endif %}
       {% if post.status == 'failed' %}
+      {% if 'rate limit' in post.publish_failure_message|lower or '429' in post.publish_failure_message %}
+      <form method="post" action="{% url 'content:reschedule_rate_limited' post.id %}"
+            hx-post="{% url 'content:reschedule_rate_limited' post.id %}"
+            hx-target="#post-{{ post.id }}" hx-swap="outerHTML">
+        {% csrf_token %}
+        <button type="submit"
+                class="inline-flex items-center gap-1 h-8 px-3 text-xs font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors">
+          Retry in 30 min
+        </button>
+      </form>
+      {% endif %}
       <form method="post" action="{% url 'content:retry_publish' post.id %}"
             hx-post="{% url 'content:retry_publish' post.id %}"
             hx-target="#post-{{ post.id }}" hx-swap="outerHTML">
@@ -114,7 +125,7 @@
         <button type="submit"
                 class="inline-flex items-center gap-1 h-8 px-3 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:12px;height:12px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-          Retry
+          Retry now
         </button>
       </form>
       {% endif %}

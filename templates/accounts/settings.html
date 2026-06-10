@@ -84,6 +84,16 @@
               </p>
             </div>
           </div>
+
+          <div class="flex items-start gap-3">
+            {{ user_form.money_board_digest_enabled }}
+            <div>
+              <label for="id_money_board_digest_enabled" class="text-sm font-medium text-gray-900 dark:text-white">Money board digest</label>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                Daily email + in-app ping when you have replies waiting, hot leads, or posts to approve. Off by default.
+              </p>
+            </div>
+          </div>
         </div>
 
         {# ═══════ Brand Basics ═══════ #}
@@ -381,11 +391,16 @@
 
         {# ═══════ Operations Autopilot ═══════ #}
         <div id="settings-autopilot" class="pt-6 border-t border-gray-100 dark:border-gray-800 scroll-mt-24">
-          <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1">Autopilot — chases money while you run the shop</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Optional automations that follow up on leads and publish on schedule. All off by default — turn on only what you want.
-            {% if not plan_limits.whatsapp_enabled %}
-              <span class="block mt-1 text-amber-700 dark:text-amber-400">WhatsApp automations require <a href="{% url 'billing:pricing' %}" class="underline font-medium">Biashara (Pro)</a>.</span>
+          <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1">Follow-up autopilot</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+            Lead follow-up, WhatsApp nudges, and auto-publish — all off by default. Turn on only what you want.
+          </p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+            <strong>Content autopilot</strong> (weekly post plans) lives in <a href="{% url 'content:studio' %}" class="text-kova-600 dark:text-kova-400 underline">Studio → Autopilot</a>.
+            {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}
+              <span class="block mt-1 text-amber-700 dark:text-amber-400">WhatsApp follow-ups require <a href="{% url 'billing:pricing' %}" class="underline font-medium">Kazi (Growth)</a> or above.</span>
+            {% elif not plan_limits.whatsapp_enabled %}
+              <span class="block mt-1 text-teal-700 dark:text-teal-400">Your plan includes WhatsApp inbox — broadcasts need <a href="{% url 'billing:pricing' %}" class="underline font-medium">Biashara (Pro)</a>.</span>
             {% endif %}
           </p>
 
@@ -411,10 +426,10 @@
                 </div>
               </div>
             {% elif field.name == 'autopilot_auto_create_wa_leads' %}
-              <div class="flex items-start space-x-3 mb-4 p-4 bg-green-50 dark:bg-green-950/30 rounded-xl border border-green-200 dark:border-green-800 {% if not plan_limits.whatsapp_enabled %}opacity-60{% endif %}">
+              <div class="flex items-start space-x-3 mb-4 p-4 bg-green-50 dark:bg-green-950/30 rounded-xl border border-green-200 dark:border-green-800 {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}opacity-60{% endif %}">
                 <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
                        {% if field.value %}checked{% endif %}
-                       {% if not plan_limits.whatsapp_enabled %}disabled{% endif %}
+                       {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}disabled{% endif %}
                        class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-green-600 focus:ring-green-500 dark:bg-gray-900">
                 <div>
                   <label for="id_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">Auto-create leads from WhatsApp</label>
@@ -422,10 +437,10 @@
                 </div>
               </div>
             {% elif field.name == 'autopilot_wa_followup_24h' %}
-              <div class="flex items-start space-x-3 mb-4 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800 {% if not plan_limits.whatsapp_enabled %}opacity-60{% endif %}">
+              <div class="flex items-start space-x-3 mb-4 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800 {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}opacity-60{% endif %}">
                 <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
                        {% if field.value %}checked{% endif %}
-                       {% if not plan_limits.whatsapp_enabled %}disabled{% endif %}
+                       {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}disabled{% endif %}
                        class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-amber-600 focus:ring-amber-500 dark:bg-gray-900">
                 <div>
                   <label for="id_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">24h WhatsApp follow-up</label>
@@ -433,10 +448,10 @@
                 </div>
               </div>
             {% elif field.name == 'autopilot_wa_faq_replies' %}
-              <div class="flex items-start space-x-3 mb-4 p-4 bg-teal-50 dark:bg-teal-950/30 rounded-xl border border-teal-200 dark:border-teal-800 {% if not plan_limits.whatsapp_enabled %}opacity-60{% endif %}">
+              <div class="flex items-start space-x-3 mb-4 p-4 bg-teal-50 dark:bg-teal-950/30 rounded-xl border border-teal-200 dark:border-teal-800 {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}opacity-60{% endif %}">
                 <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
                        {% if field.value %}checked{% endif %}
-                       {% if not plan_limits.whatsapp_enabled %}disabled{% endif %}
+                       {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}disabled{% endif %}
                        class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-teal-600 focus:ring-teal-500 dark:bg-gray-900">
                 <div class="flex-1">
                   <label for="id_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">WhatsApp FAQ auto-replies</label>

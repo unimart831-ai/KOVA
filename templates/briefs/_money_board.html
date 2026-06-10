@@ -5,7 +5,23 @@
 
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
     {% with card=money_board.needs_reply %}
-    <a href="{% url card.url_name %}"
+    {% if card.needs_reply_wa and card.needs_reply_engage %}
+    <div class="card">
+      <div class="px-5 py-4">
+        <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ card.label }}</p>
+        <p class="mt-1 text-3xl font-black tabular-nums text-gray-900 dark:text-white">{{ card.count }}</p>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ card.detail }}</p>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <a href="{% url 'whatsapp:inbox' %}?status=escalated"
+             class="text-xs font-medium text-kova-600 dark:text-kova-400 hover:underline">WA {{ card.needs_reply_wa }}</a>
+          <span class="text-xs text-gray-300 dark:text-gray-600">·</span>
+          <a href="{% url 'engage:inbox' %}?needs_reply=1"
+             class="text-xs font-medium text-kova-600 dark:text-kova-400 hover:underline">Social {{ card.needs_reply_engage }}</a>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <a href="{% url card.url_name %}{% if card.url_query %}?{{ card.url_query }}{% endif %}"
        class="group card hover:border-kova-300 dark:hover:border-kova-700 transition-colors">
       <div class="px-5 py-4">
         <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ card.label }}</p>
@@ -13,6 +29,7 @@
         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 group-hover:text-kova-600 dark:group-hover:text-kova-400">{{ card.detail }}</p>
       </div>
     </a>
+    {% endif %}
     {% endwith %}
 
     {% with card=money_board.hot_leads %}

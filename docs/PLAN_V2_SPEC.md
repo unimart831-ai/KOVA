@@ -31,7 +31,8 @@ Effective: May 2026 (founder decision).
 | Studio polish/month | 8 | 30 | 100 | 150 |
 | AI images/month | 0 | 50 | 100 | 200 |
 | WhatsApp marketing convos/month | 0 | 50 | 300 | 1,000 |
-| WhatsApp Business | No | No | Yes | Yes |
+| WhatsApp inbox (utility replies) | No | Yes | Yes | Yes |
+| WhatsApp Business (broadcasts/templates) | No | No | Yes | Yes |
 | Max campaigns | 2 | 5 | 15 | 25 |
 | Team members | 0 | 0 | 5 | 25 |
 

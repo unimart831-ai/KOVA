@@ -1067,8 +1067,9 @@ Valid `<platform>` values for connect: `facebook`, `instagram`, `tiktok`, `linke
 - [ ] TikTok app audited (public posting)
 - [ ] TikTok media domain verified
 - [ ] LinkedIn Advertising API approved (if Company Page posting needed)
-- [ ] Celery worker + beat running
-- [ ] Redis connected
+- [ ] Celery worker + beat running (django-celery-beat tables via release migrate)
+- [ ] Railway `releaseCommand` = `bash scripts/release.sh` (`migrate --noinput` before traffic)
+- [ ] Redis connected (`REDIS_URL` on web + worker)
 - [ ] Privacy policy live at `{SITE_URL}/privacy/`
 - [ ] Meta data deletion URLs set (instructions + callback — Section 3.3)
 - [ ] System WhatsApp templates approved (see `WHATSAPP_TEMPLATES.md`)
