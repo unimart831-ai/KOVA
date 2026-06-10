@@ -89,6 +89,9 @@ class UpdatesConsumer(AsyncJsonWebsocketConsumer):
     async def engage_new(self, event):
         await self.send_json(event)
 
+    async def token_warning(self, event):
+        await self.send_json(event)
+
     async def brief_ready(self, event):
         await self.send_json(event)
 

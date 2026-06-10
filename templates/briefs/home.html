@@ -33,6 +33,16 @@
   {# ── First-week setup checklist (auto-hides once all done or after 14 days) ── #}
   {% include "briefs/_setup_checklist.html" %}
 
+  {% if today_compact %}
+  <div x-data="{ showMoreToday: false }" class="border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+    <button type="button" @click="showMoreToday = !showMoreToday"
+            class="w-full flex items-center justify-between px-4 py-3 text-left bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition">
+      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Daily brief &amp; insights</span>
+      <span class="text-xs text-gray-500 dark:text-gray-400" x-text="showMoreToday ? 'Collapse ↑' : 'Expand ↓'"></span>
+    </button>
+    <div x-show="showMoreToday" x-cloak class="p-1 space-y-6">
+  {% endif %}
+
   {% if brief %}
 
     {% if brief_is_stale %}
@@ -791,6 +801,11 @@
         {% include "briefs/_value_summary.html" %}
       </div>
     </div>
+  {% endif %}
+
+  {% if today_compact %}
+    </div>
+  </div>
   {% endif %}
 </div>
 

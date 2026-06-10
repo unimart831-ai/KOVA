@@ -224,7 +224,7 @@ def _fetch_post_comments(user, account, provider):
                 ).exists():
                     continue
 
-                Interaction.objects.create(
+                interaction = Interaction.objects.create(
                     user=user,
                     social_account=account,
                     post=post,
@@ -234,6 +234,8 @@ def _fetch_post_comments(user, account, provider):
                     content=comment.get("text", ""),
                     platform_interaction_id=ext_id,
                 )
+                from apps.engage.realtime import notify_engage_new
+                notify_engage_new(interaction)
                 new_count += 1
 
         except PlatformAuthError as e:
@@ -277,7 +279,7 @@ def _fetch_mentions(user, account, provider):
             ).exists():
                 continue
 
-            Interaction.objects.create(
+            interaction = Interaction.objects.create(
                 user=user,
                 social_account=account,
                 interaction_type=Interaction.InteractionType.MENTION,
@@ -286,6 +288,8 @@ def _fetch_mentions(user, account, provider):
                 content=mention.get("text", ""),
                 platform_interaction_id=ext_id,
             )
+            from apps.engage.realtime import notify_engage_new
+            notify_engage_new(interaction)
             new_count += 1
 
     except Exception as e:

@@ -1151,12 +1151,23 @@ def publish_post(self, post_id: str):
             )
             return {"error": "reel_video_not_ready"}
 
+    account = post.social_account
+    platform_name = (account.platform if account else post.platform or "").lower()
+
+    # Hold publish while platform outage is active — queue resumes automatically
+    if platform_name:
+        from apps.platforms.outage import is_outage
+        if is_outage(platform_name):
+            post.status = Post.Status.SCHEDULED
+            post.save(update_fields=["status", "updated_at"])
+            try:
+                raise self.retry(countdown=1800, exc=Exception(f"{platform_name} outage hold"))
+            except self.MaxRetriesExceededError:
+                return {"error": "outage_hold_max_retries", "platform": platform_name}
+
     # Mark as publishing
     post.status = Post.Status.PUBLISHING
     post.save(update_fields=["status", "updated_at"])
-
-    account = post.social_account
-    platform_name = (account.platform if account else post.platform or "").lower()
 
     # ── Marketplace seller rules ──
     from apps.partners.marketplace_rules import is_platform_allowed, is_sandbox_publish
@@ -1936,15 +1947,29 @@ def check_and_publish_due_posts():
         .order_by("scheduled_at")
     )
 
+    from apps.platforms.outage import is_outage
+
     count = 0
     skipped_autopilot = 0
+    held_outage = 0
     for post in due_posts:
         if not should_auto_publish_approved(post.user):
             skipped_autopilot += 1
             continue
+        platform_key = (post.platform or "").lower()
+        if not platform_key and post.social_account_id:
+            platform_key = (post.social_account.platform or "").lower()
+        if platform_key and is_outage(platform_key):
+            held_outage += 1
+            continue
         publish_post.delay(str(post.id))
         count += 1
 
+    if held_outage:
+        logger.info(
+            "Publish check: held %d due post(s) — platform outage detected",
+            held_outage,
+        )
     if count:
         logger.info("Dispatched %d posts for publishing", count)
     elif skipped_autopilot:

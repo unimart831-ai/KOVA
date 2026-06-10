@@ -52,5 +52,24 @@
         badge.classList.toggle("hidden", data.unread_count < 1);
       }
     }
+
+    if (type === "engage_new") {
+      if (typeof htmx !== "undefined") {
+        htmx.trigger(document.body, "kovaRefresh");
+      }
+      if (window.location.pathname.indexOf("/engage/") === 0) {
+        setTimeout(function () {
+          window.location.reload();
+        }, 800);
+      }
+    }
+
+    if (type === "token_warning" && data.message) {
+      window.dispatchEvent(
+        new CustomEvent("notify", {
+          detail: { message: data.message, type: data.level || "warning" },
+        })
+      );
+    }
   });
 })();

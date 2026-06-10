@@ -1,6 +1,6 @@
 # KOVA System Section Ratings
 
-**Scan date:** June 10, 2026  
+**Scan date:** June 11, 2026  
 **Codebase:** `kova_agent` (27 apps, Phase 2 sidebar IA)  
 **Positioning:** *"The system that chases money for my business while I run the shop."*
 
@@ -20,9 +20,9 @@
 
 ## Executive summary
 
-### Overall platform score: **7.6 / 10** (weighted) → **~8.4 / 10** post-P0 sprint (June 10, 2026)
+### Overall platform score: **7.6 / 10** (weighted) → **~8.4 / 10** post-P0 → **~8.9 / 10** post-Phase 2 (June 11, 2026)
 
-*Updated post-sprint:* See `KOVA_SCORE_9_5_ROADMAP.md` for P0 completion and remaining path to 9.5.
+*Updated post-Phase 2:* See `KOVA_SCORE_9_5_ROADMAP.md` for P0 + Phase 2 completion and path to 9.5.
 
 **Weighting:** ~80% user-facing product sections, ~20% infrastructure.
 
@@ -59,7 +59,7 @@ KOVA is an unusually deep pre-launch SMB platform: full Sell → Catch → Close
 ## Core / Today
 
 ### Home / Today (money board, brief, wedge checklist)
-**Score: 8/10** → **8.7/10** post-P0  
+**Score: 8/10** → **8.7/10** post-P0 → **9.0/10** post-Phase 2  
 **Status:** Pilot-ready
 
 **Strengths**
@@ -159,7 +159,7 @@ KOVA is an unusually deep pre-launch SMB platform: full Sell → Catch → Close
 **Dependencies / blockers:** `leads` + `qr_attribution` migrations; Celery `reengage-stale-leads`.
 
 ### Social Inbox / Engage
-**Score: 8/10** → **8.4/10** post-P0  
+**Score: 8/10** → **8.4/10** post-P0 → **8.8/10** post-Phase 2  
 **Status:** Pilot-ready
 
 **Strengths**
@@ -186,7 +186,7 @@ KOVA is an unusually deep pre-launch SMB platform: full Sell → Catch → Close
 ## Close
 
 ### WhatsApp (inbox, templates, broadcasts, sequences, channels)
-**Score: 7.5/10** → **8.5/10** post-P0  
+**Score: 7.5/10** → **8.5/10** post-P0 → **8.8/10** post-Phase 2  
 **Status:** Pilot-ready
 
 **Strengths**
@@ -351,7 +351,7 @@ KOVA is an unusually deep pre-launch SMB platform: full Sell → Catch → Close
 **Dependencies / blockers:** Platform analytics API quotas.
 
 ### Workspace (Command)
-**Score: 6/10**  
+**Score: 6/10** → **7.0/10** post-Phase 2  
 **Status:** Beta
 
 **Strengths**
@@ -401,7 +401,7 @@ KOVA is an unusually deep pre-launch SMB platform: full Sell → Catch → Close
 ## Settings / infra (user-facing)
 
 ### Platforms (OAuth connect, FB page picker)
-**Score: 7.5/10**  
+**Score: 7.5/10** → **8.0/10** post-Phase 2  
 **Status:** Pilot-ready
 
 **Strengths**
@@ -447,7 +447,7 @@ KOVA is an unusually deep pre-launch SMB platform: full Sell → Catch → Close
 **Dependencies / blockers:** Stripe live mode; Safaricom M-Pesa production passkey; `PlanPrice` DB rows.
 
 ### Teams / agency
-**Score: 7/10**  
+**Score: 7/10** → **7.6/10** post-Phase 2  
 **Status:** Pilot-ready
 
 **Strengths**
@@ -703,13 +703,13 @@ KOVA is an unusually deep pre-launch SMB platform: full Sell → Catch → Close
 **Dependencies / blockers:** Railway Postgres + Redis services; `DATABASE_URL`.
 
 ### Tests / CI
-**Score: 7.5/10**  
+**Score: 7.5/10** → **8.0/10** post-Phase 2  
 **Status:** Pilot-ready
 
 **Strengths**
 - GitHub Actions: ruff lint, pytest with **70% coverage gate**, Playwright E2E, security job.
-- ~900+ test functions across 81 files; strong module coverage for email, engage, billing.
-- `tests/e2e/test_critical_paths.py` for landing, auth, public pages.
+- ~791 pytest functions across 82 files + 14 E2E; strong module coverage for email, engage, billing.
+- `tests/e2e/test_critical_paths.py` includes wedge checklist on Today post-signup.
 
 **Weaknesses**
 - May 2026 audit said "0 CI" — now fixed but audit docs stale.
@@ -734,4 +734,4 @@ KOVA is an unusually deep pre-launch SMB platform: full Sell → Catch → Close
 |----------|-----|--------|--------------|
 | User-facing (24 sections) | 7.77 | 80% | 6.22 |
 | Infrastructure (4 sections) | 7.38 | 20% | 1.48 |
-| **Overall** | | | **7.6 / 10** (baseline) · **~8.4 / 10** post-P0 |
+| **Overall** | | | **7.6 / 10** (baseline) · **~8.4 / 10** post-P0 · **~8.9 / 10** post-Phase 2 |

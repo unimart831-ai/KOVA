@@ -1384,7 +1384,7 @@ tests/
 └── test_agents.py      # 5 tests: AgentConfig types, AgentAction logging, indexes
 ```
 
-**Total: 33 automated tests** covering core models and critical paths.
+**Total (June 2026):** ~**791 pytest** functions across **82** files + **14 Playwright E2E** tests in `tests/e2e/test_critical_paths.py`. CI enforces **70% coverage** on PRs. Phase 2 added `tests/test_phase2_score_sprint.py` (8) and wedge E2E in `test_critical_paths.py`.
 
 ### pytest Configuration (pyproject.toml)
 

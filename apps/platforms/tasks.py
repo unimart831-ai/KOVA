@@ -131,6 +131,20 @@ def refresh_expiring_tokens():
     return {"refreshed": refreshed, "failed": failed}
 
 
+def _push_token_warning_ws(user_id, message: str, *, level: str = "warning") -> None:
+    """Real-time toast when a token needs reconnect (logged-in users)."""
+    try:
+        from apps.notifications.realtime import send_user_event
+
+        send_user_event(
+            user_id,
+            "token_warning",
+            {"message": message, "level": level, "reconnect_url": "/platforms/"},
+        )
+    except Exception:
+        pass
+
+
 @shared_task(name="platforms.warn_expiring_tokens")
 def warn_expiring_tokens():
     """
@@ -173,41 +187,47 @@ def warn_expiring_tokens():
 
         if account.token_expires_at <= now:
             # Already expired
+            msg = (
+                f"🔴 Your {platform_name} connection (@{account.username}) has expired. "
+                f"Scheduled posts are paused. "
+                f"Reconnect now to resume: Settings → Platforms → Reconnect."
+            )
             Notification.create_for_user(
                 user=account.user,
                 notification_type=Notification.NotificationType.SYSTEM,
-                message=(
-                    f"🔴 Your {platform_name} connection (@{account.username}) has expired. "
-                    f"Scheduled posts are paused. "
-                    f"Reconnect now to resume: Settings → Platforms → Reconnect."
-                ),
+                message=msg,
             )
+            _push_token_warning_ws(account.user_id, msg, level="error")
             warned_expired += 1
 
         elif days_left <= 1:
             # 1 day or less — urgent
+            msg = (
+                f"🔴 Urgent: Your {platform_name} connection (@{account.username}) expires "
+                f"{'today' if days_left == 0 else 'tomorrow'}. "
+                f"Reconnect now to keep your posts going: Settings → Platforms → Reconnect."
+            )
             Notification.create_for_user(
                 user=account.user,
                 notification_type=Notification.NotificationType.SYSTEM,
-                message=(
-                    f"🔴 Urgent: Your {platform_name} connection (@{account.username}) expires "
-                    f"{'today' if days_left == 0 else 'tomorrow'}. "
-                    f"Reconnect now to keep your posts going: Settings → Platforms → Reconnect."
-                ),
+                message=msg,
             )
+            _push_token_warning_ws(account.user_id, msg, level="error")
             warned_1day += 1
 
         elif days_left <= 7:
             # 7 days — early warning
+            msg = (
+                f"⚠️ Your {platform_name} connection (@{account.username}) expires in "
+                f"{days_left} day{'s' if days_left != 1 else ''}. "
+                f"Reconnect soon to avoid any interruption: Settings → Platforms → Reconnect."
+            )
             Notification.create_for_user(
                 user=account.user,
                 notification_type=Notification.NotificationType.SYSTEM,
-                message=(
-                    f"⚠️ Your {platform_name} connection (@{account.username}) expires in "
-                    f"{days_left} day{'s' if days_left != 1 else ''}. "
-                    f"Reconnect soon to avoid any interruption: Settings → Platforms → Reconnect."
-                ),
+                message=msg,
             )
+            _push_token_warning_ws(account.user_id, msg, level="warning")
             warned_7day += 1
 
     logger.info(

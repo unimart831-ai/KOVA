@@ -14,7 +14,8 @@
 | Publish failure → user-visible error | ✅ Shipped | `Post.publish_error`, failed status, in-app notification on publish fail |
 | Stuck publishing recovery (Reels/Stories timeouts) | ✅ Shipped | `content.recover_stuck_publishing_posts` (12 min cutoff) |
 | Rate-limit retry with backoff | 🔲 Partial | Basic retry in providers; full 3-strike reschedule UX not built |
-| Platform outage hold + auto-resume | 🔲 Partial | Outage banners on Platforms list; full queue hold not built |
+| Platform outage hold + auto-resume | ✅ Shipped (Jun 2026) | `check_and_publish_due_posts` + `publish_post` hold when `is_outage`; auto-resume on success |
+| Token expiry WebSocket toasts | ✅ Shipped (Jun 2026) | `warn_expiring_tokens` → `token_warning` WS event + notification |
 
 ---
 

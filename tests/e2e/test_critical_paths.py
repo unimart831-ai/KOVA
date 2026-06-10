@@ -105,6 +105,32 @@ class TestAuthFlow:
 
 
 @pytest.mark.django_db(transaction=True)
+class TestWedgeChecklistOnToday:
+    """After signup/onboarding, wedge checklist visible on Today."""
+
+    def test_wedge_checklist_visible_after_onboarding(self, page, base_url):
+        user = User.objects.create_user(
+            username="wedgeuser",
+            email="wedge@example.com",
+            password="TestPass123!@#",
+        )
+        user.phone_number = "0712345678"
+        user.onboarding_completed = True
+        user.save()
+
+        page.goto(f"{base_url}/accounts/login/")
+        page.fill("input[name='login']", "wedge@example.com")
+        page.fill("input[name='password']", "TestPass123!@#")
+        page.click("button[type='submit']")
+        page.wait_for_load_state("networkidle")
+
+        page.goto(f"{base_url}/brief/")
+        page.wait_for_load_state("networkidle")
+        assert "Get the wedge loop running" in page.content()
+        assert "Connect WhatsApp" in page.content() or "WhatsApp" in page.content()
+
+
+@pytest.mark.django_db(transaction=True)
 class TestOnboardingFlow:
     """Signup → onboarding wizard → completion page."""
 

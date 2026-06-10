@@ -161,7 +161,8 @@ Aligned with founder wedge and `ACTIVE_PLATFORMS` / `COMING_SOON_PLATFORMS` in `
 - [x] Today home: money-chase board (needs reply · hot leads · ready to approve)
 - [x] Wedge onboarding checklist on Today (WA → Snap → publish → automation)
 - [x] Mobile bottom nav: Home / Sell / Catch / Close / Grow
-- [ ] Platform picker: sort by §D; hide coming-soon behind “More platforms”
+- [x] Platform picker: hide coming-soon behind “More platforms” (collapsed on `/platforms/`)
+- [ ] Platform picker: sort active platforms by §D wedge priority
 
 ---
 
