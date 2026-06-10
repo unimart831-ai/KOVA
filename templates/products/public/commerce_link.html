@@ -6,6 +6,7 @@
   <title>{{ seo_title }}</title>
   <meta name="description" content="{{ seo_description }}">
   <link rel="canonical" href="{{ canonical_url }}">
+  {% if commerce_branding.logo_url %}<link rel="icon" href="{{ commerce_branding.logo_url }}">{% endif %}
   <meta property="og:type" content="product">
   <meta property="og:title" content="{{ seo_title }}">
   <meta property="og:description" content="{{ seo_description }}">
@@ -16,28 +17,30 @@
   <meta name="twitter:description" content="{{ seo_description }}">
   {% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}
   <script type="application/ld+json">{{ product_schema_json|safe }}</script>
+  {% include "products/public/_shop_public_styles.html" %}
   {% include "products/public/_shop_reels_styles.html" %}
   {% include "products/public/_commerce_page_styles.html" %}
-  <style>
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #f4f4f5;
-      color: var(--commerce-text);
-      -webkit-font-smoothing: antialiased;
-    }
-  </style>
 </head>
-<body>
-<div class="commerce-page">
+<body class="shop-site">
+<div class="offer-page">
 
-  <header class="shop-header">
-    <p class="eyebrow">Offer from</p>
-    <a class="brand-link" href="{{ shop_index_url }}">{{ brand_name }}</a>
-  </header>
+  <nav class="offer-nav" aria-label="Shop navigation">
+    <a class="offer-nav-back" href="{{ shop_index_url }}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      All offers
+    </a>
+    <a class="offer-nav-brand" href="{{ shop_index_url }}">
+      {% if commerce_branding.logo_url %}
+      <img class="offer-nav-logo" src="{{ commerce_branding.logo_url }}" alt="">
+      {% else %}
+      <span class="offer-nav-logo-fallback" aria-hidden="true">{{ brand_name|slice:":1"|upper }}</span>
+      {% endif %}
+      <span class="offer-nav-name">{{ brand_name }}</span>
+    </a>
+  </nav>
 
   {% if product_reel %}
-  <section class="surface-card product-reel-hero" aria-label="Product reel">
+  <section class="offer-reel-card" aria-label="Product reel">
     <div class="product-reel-head">
       <h2 class="product-reel-title">See it in action</h2>
       <div class="product-reel-head-badges">
@@ -56,151 +59,177 @@
   </section>
   {% endif %}
 
-  {% with gallery=product.shop_gallery_urls %}
-  {% if gallery %}
-  <section class="surface-card gallery-card" aria-label="Offer photos">
-    <p class="gallery-section-label">Offer photos</p>
-    <div class="gallery-stage">
-      <img id="hero-img" class="hero-main" src="{{ gallery.0 }}" alt="{{ product.name }}">
-    </div>
-    {% if gallery|length > 1 %}
-    <div class="gallery-toolbar">
-      <span class="gallery-counter" id="gallery-counter">Photo 1 of {{ gallery|length }}</span>
-    </div>
-    <div class="gallery-thumbs" role="tablist" aria-label="Product photos">
-      {% for img in gallery %}
-      <button type="button" class="thumb-btn{% if forloop.first %} active{% endif %}"
-              role="tab" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
-              aria-label="View photo {{ forloop.counter }}"
-              data-src="{{ img }}"
-              data-index="{{ forloop.counter }}">
-        <img src="{{ img }}" alt="{{ product.name }} — photo {{ forloop.counter }}">
-      </button>
-      {% endfor %}
-    </div>
-    {% endif %}
-  </section>
-  {% endif %}
-  {% endwith %}
-
-  <section class="surface-card pad" aria-label="Offer details">
-    <h1 class="product-title">{{ product.name }}</h1>
-    <div class="price-row">
-      {% if product.display_price %}
-      <div class="price">{{ product.display_price }}</div>
-      {% endif %}
-      {% if product.offering_type == 'product' and product.stock_status == 'out_of_stock' %}
-      <span class="stock-badge out">Out of stock</span>
-      {% elif product.offering_type == 'product' and product.stock_status == 'low_stock' %}
-      <span class="stock-badge">Limited stock</span>
-      {% elif product.offering_type == 'service' %}
-      <span class="stock-badge">Bookable</span>
-      {% elif product.offering_type == 'digital' %}
-      <span class="stock-badge">Instant access</span>
-      {% endif %}
-    </div>
-    {% if product_description_paragraphs %}
-    <div class="desc-blocks">
-      {% for para in product_description_paragraphs %}
-      <p>{{ para }}</p>
-      {% endfor %}
-    </div>
-    {% endif %}
-    {% if product.fulfillment_notes %}
-    <div class="desc-blocks">
-      <p><strong>{% if product.offering_type == 'digital' %}Access notes:{% else %}How it works:{% endif %}</strong> {{ product.fulfillment_notes }}</p>
-    </div>
-    {% endif %}
-  </section>
-
-  {% if product.offering_type != 'product' or product.stock_status != 'out_of_stock' %}
-  <section class="surface-card pad" aria-label="Offer actions">
-    <p class="actions-title">{{ action_heading }}</p>
-    {% if primary_action_url %}
-    <a href="{{ primary_action_url }}" class="btn btn-outline"{% if primary_action_external %} target="_blank" rel="noopener"{% endif %}>{{ primary_action_label }}</a>
-    {% endif %}
-    {% if wa_url %}
-    <a href="{{ wa_url }}" class="btn btn-wa" target="_blank" rel="noopener">Chat on WhatsApp</a>
-    {% endif %}
-
-    {% if mpesa_available %}
-    <div x-data="mpesaPay()" x-cloak>
-      <!-- Pay form — visible only before STK push starts -->
-      <form @submit.prevent="initiate" x-show="state === 'idle' || state === 'error'">
-        {% csrf_token %}
-        <input class="field" type="tel" name="phone" x-model="phone" placeholder="M-Pesa number (07… or 254…)" required autocomplete="tel">
-        <button type="submit" class="btn btn-mpesa" :disabled="submitting">
-          <span x-show="!submitting">Pay with M-Pesa</span>
-          <span x-show="submitting">Starting payment…</span>
+  <div class="offer-magazine">
+    <div class="offer-visual">
+      {% with gallery=product.shop_gallery_urls hero=product.shop_hero_image_url %}
+      {% if gallery or hero %}
+      <div class="offer-hero-frame">
+        <img id="hero-img" src="{{ hero|default:gallery.0 }}" alt="{{ product.name }}">
+      </div>
+      {% if gallery|length > 1 %}
+      <p class="offer-gallery-counter" id="gallery-counter">Photo 1 of {{ gallery|length }}</p>
+      <div class="offer-thumbs" role="tablist" aria-label="Product photos">
+        {% for img in gallery %}
+        <button type="button" class="offer-thumb{% if forloop.first %} active{% endif %}"
+                role="tab" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+                aria-label="View photo {{ forloop.counter }}"
+                data-src="{{ img }}"
+                data-index="{{ forloop.counter }}">
+          <img src="{{ img }}" alt="{{ product.name }} — photo {{ forloop.counter }}">
         </button>
-        <p class="msg err" x-show="errorMsg" x-text="errorMsg"></p>
-      </form>
-
-      <!-- Polling state — waiting for M-Pesa callback -->
-      <div x-show="state === 'polling'" class="pay-polling">
-        <div class="pay-spinner"></div>
-        <p class="pay-polling-text">Waiting for M-Pesa confirmation…</p>
-        <p class="pay-polling-sub">Enter your PIN on the prompt sent to your phone.</p>
-        <p class="pay-polling-timer" x-text="timerText"></p>
+        {% endfor %}
       </div>
-
-      <!-- Success state -->
-      <div x-show="state === 'success'" class="pay-result pay-success">
-        <div class="pay-result-icon">&#10003;</div>
-        <p class="pay-result-title">Payment successful!</p>
-        <div class="pay-receipt">
-          <p><strong>Receipt:</strong> <span x-text="receipt.receipt_number"></span></p>
-          <p><strong>Amount:</strong> <span x-text="receipt.currency + ' ' + receipt.amount"></span></p>
-          <template x-if="receipt.product_name">
-            <p><strong>Item:</strong> <span x-text="receipt.product_name"></span></p>
-          </template>
-        </div>
-      </div>
-
-      <!-- Failure state -->
-      <div x-show="state === 'failed'" class="pay-result pay-failed">
-        <p class="pay-result-title">Payment was not completed</p>
-        <p class="pay-result-desc" x-text="failReason"></p>
-        <button type="button" class="btn btn-mpesa" @click="retry">Try again</button>
-      </div>
-
-      <!-- Timeout state -->
-      <div x-show="state === 'timeout'" class="pay-result pay-timeout">
-        <p class="pay-result-title">Payment timed out</p>
-        <p class="pay-result-desc">We didn't receive a confirmation from M-Pesa. You were not charged.</p>
-        <button type="button" class="btn btn-mpesa" @click="retry">Try again</button>
-      </div>
+      {% endif %}
+      {% endif %}
+      {% endwith %}
     </div>
-    {% elif product.display_price and product.currency != 'KES' %}
-    <p style="margin-top:10px;font-size:14px;color:var(--commerce-muted);line-height:1.5;">Contact the seller to complete payment.</p>
-    {% endif %}
 
-    <a href="{{ shop_index_url }}" class="btn btn-outline">View all offers</a>
+    <div class="offer-info offer-info--sticky">
+      <p class="offer-eyebrow">{{ brand_name }}</p>
+      <h1 class="offer-title">{{ product.name }}</h1>
+
+      <div class="offer-price-row">
+        {% if product.display_price %}
+        <div class="offer-price">{{ product.display_price }}</div>
+        {% endif %}
+        {% if product.offering_type == 'product' and product.stock_status == 'out_of_stock' %}
+        <span class="offer-stock-badge offer-stock-badge--out">Out of stock</span>
+        {% elif product.offering_type == 'product' and product.stock_status == 'low_stock' %}
+        <span class="offer-stock-badge">Limited stock</span>
+        {% elif product.offering_type == 'service' %}
+        <span class="offer-stock-badge">Bookable</span>
+        {% elif product.offering_type == 'digital' %}
+        <span class="offer-stock-badge">Instant access</span>
+        {% endif %}
+      </div>
+
+      {% if product_description_paragraphs %}
+      <div class="offer-desc">
+        {% for para in product_description_paragraphs %}
+        <p>{{ para }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% if product.fulfillment_notes %}
+      <div class="offer-desc">
+        <p><strong>{% if product.offering_type == 'digital' %}Access notes:{% else %}How it works:{% endif %}</strong> {{ product.fulfillment_notes }}</p>
+      </div>
+      {% endif %}
+
+      {% if can_purchase %}
+      <div class="offer-actions-card" aria-label="Offer actions">
+        <p class="offer-actions-title">{{ action_heading }}</p>
+        {% if primary_action_url %}
+        <a href="{{ primary_action_url }}" class="shop-btn shop-btn--outline"{% if primary_action_external %} target="_blank" rel="noopener"{% endif %}>{{ primary_action_label }}</a>
+        {% endif %}
+        {% if wa_url %}
+        <a href="{{ wa_url }}" class="shop-btn shop-btn--wa" target="_blank" rel="noopener">Chat on WhatsApp</a>
+        {% endif %}
+
+        {% if mpesa_available %}
+        <div x-data="mpesaPay()" x-cloak>
+          <form @submit.prevent="initiate" x-show="state === 'idle' || state === 'error'">
+            {% csrf_token %}
+            <input class="offer-field" type="tel" name="phone" x-model="phone" placeholder="M-Pesa number (07… or 254…)" required autocomplete="tel">
+            <button type="submit" class="shop-btn shop-btn--accent" :disabled="submitting">
+              <span x-show="!submitting">Pay with M-Pesa</span>
+              <span x-show="submitting">Starting payment…</span>
+            </button>
+            <p class="offer-msg-err" x-show="errorMsg" x-text="errorMsg"></p>
+          </form>
+
+          <div x-show="state === 'polling'" class="pay-polling">
+            <div class="pay-spinner"></div>
+            <p class="pay-polling-text">Waiting for M-Pesa confirmation…</p>
+            <p class="pay-polling-sub">Enter your PIN on the prompt sent to your phone.</p>
+            <p class="pay-polling-timer" x-text="timerText"></p>
+          </div>
+
+          <div x-show="state === 'success'" class="pay-result pay-success">
+            <div class="pay-result-icon">&#10003;</div>
+            <p class="pay-result-title">Payment successful!</p>
+            <div class="pay-receipt">
+              <p><strong>Receipt:</strong> <span x-text="receipt.receipt_number"></span></p>
+              <p><strong>Amount:</strong> <span x-text="receipt.currency + ' ' + receipt.amount"></span></p>
+              <template x-if="receipt.product_name">
+                <p><strong>Item:</strong> <span x-text="receipt.product_name"></span></p>
+              </template>
+            </div>
+          </div>
+
+          <div x-show="state === 'failed'" class="pay-result pay-failed">
+            <p class="pay-result-title">Payment was not completed</p>
+            <p class="pay-result-desc" x-text="failReason"></p>
+            <button type="button" class="shop-btn shop-btn--accent" @click="retry">Try again</button>
+          </div>
+
+          <div x-show="state === 'timeout'" class="pay-result pay-timeout">
+            <p class="pay-result-title">Payment timed out</p>
+            <p class="pay-result-desc">We didn't receive a confirmation from M-Pesa. You were not charged.</p>
+            <button type="button" class="shop-btn shop-btn--accent" @click="retry">Try again</button>
+          </div>
+        </div>
+        {% elif product.display_price and product.currency != 'KES' %}
+        <p style="margin-top:10px;font-size:14px;color:var(--shop-muted);line-height:1.5;">Contact the seller to complete payment.</p>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if related_products %}
+  <section class="offer-related" aria-label="More from this shop">
+    <div class="shop-section-head">
+      <h2 class="shop-section-title">More from {{ brand_name }}</h2>
+    </div>
+    <div class="shop-grid">
+      {% for related in related_products %}
+      <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=related.commerce_slug %}" class="shop-card">
+        <div class="shop-card-photo">
+          {% with hero=related.shop_hero_image_url %}
+          {% if hero %}
+          <img src="{{ hero }}" alt="{{ related.name }}" loading="lazy">
+          {% else %}
+          <div class="shop-placeholder" aria-hidden="true">{{ related.name|slice:":1"|upper }}</div>
+          {% endif %}
+          {% endwith %}
+        </div>
+        <div class="shop-card-body">
+          <div class="shop-card-name">{{ related.name }}</div>
+          {% if related.display_price %}
+          <div class="shop-card-price">{{ related.display_price }}</div>
+          {% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
   </section>
   {% endif %}
 
-  <p class="page-footer">Powered by Kova</p>
+  <p class="shop-powered">Powered by <a href="https://kovaagents.com" rel="noopener">Kova</a></p>
 </div>
+
+{% if can_purchase and wa_url or can_purchase and mpesa_available %}
+<div class="offer-sticky-bar" aria-label="Quick actions">
+  {% if product.display_price %}
+  <div class="offer-sticky-price">
+    <span class="offer-sticky-price-label">Price</span>
+    <span class="offer-sticky-price-value">{{ product.display_price }}</span>
+  </div>
+  {% endif %}
+  <div class="offer-sticky-actions">
+    {% if wa_url %}
+    <a href="{{ wa_url }}" class="shop-btn shop-btn--wa" target="_blank" rel="noopener">Chat</a>
+    {% endif %}
+    {% if mpesa_available %}
+    <a href="#hero-img" class="shop-btn shop-btn--accent" onclick="document.querySelector('.offer-field')?.focus();return false;">Buy</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
 
 {% if mpesa_available %}
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-<style>
-[x-cloak]{display:none!important}
-.pay-polling{text-align:center;padding:24px 0}
-.pay-spinner{width:36px;height:36px;margin:0 auto 12px;border:3.5px solid #e5e7eb;border-top-color:#16a34a;border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.pay-polling-text{font-size:15px;font-weight:600;color:var(--commerce-text,#111);margin:0 0 4px}
-.pay-polling-sub{font-size:13px;color:var(--commerce-muted,#666);margin:0 0 8px}
-.pay-polling-timer{font-size:12px;color:var(--commerce-muted,#999);margin:0;font-variant-numeric:tabular-nums}
-.pay-result{text-align:center;padding:20px 0}
-.pay-result-icon{font-size:36px;width:56px;height:56px;line-height:56px;margin:0 auto 10px;border-radius:50%;background:#dcfce7;color:#16a34a}
-.pay-result-title{font-size:16px;font-weight:700;margin:0 0 6px}
-.pay-result-desc{font-size:13px;color:var(--commerce-muted,#666);margin:0 0 14px}
-.pay-receipt{text-align:left;background:#f9fafb;border-radius:8px;padding:12px 16px;font-size:13px;margin:12px 0 0}
-.pay-receipt p{margin:4px 0}
-.pay-success .pay-result-title{color:#16a34a}
-.pay-failed .pay-result-title,.pay-timeout .pay-result-title{color:#dc2626}
-</style>
 <script>
 function mpesaPay() {
   return {
@@ -312,12 +341,12 @@ function mpesaPay() {
   var hero = document.getElementById('hero-img');
   var counter = document.getElementById('gallery-counter');
   if (!hero) return;
-  document.querySelectorAll('.thumb-btn').forEach(function (btn) {
+  document.querySelectorAll('.offer-thumb').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var src = btn.getAttribute('data-src');
       if (!src) return;
       hero.src = src;
-      document.querySelectorAll('.thumb-btn').forEach(function (b) {
+      document.querySelectorAll('.offer-thumb').forEach(function (b) {
         b.classList.remove('active');
         b.setAttribute('aria-selected', 'false');
       });
@@ -325,7 +354,7 @@ function mpesaPay() {
       btn.setAttribute('aria-selected', 'true');
       if (counter) {
         var idx = btn.getAttribute('data-index');
-        var total = document.querySelectorAll('.thumb-btn').length;
+        var total = document.querySelectorAll('.offer-thumb').length;
         counter.textContent = 'Photo ' + idx + ' of ' + total;
       }
     });

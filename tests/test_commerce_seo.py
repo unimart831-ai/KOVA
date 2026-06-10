@@ -131,6 +131,27 @@ class TestPublicShopPages:
         assert b"Test Item" in response.content
         assert b'application/ld+json' in response.content
         assert b'"@type": "Store"' in response.content
+        assert b"Shop our collection" in response.content
+        assert b"Powered by" in response.content
+
+    def test_public_shop_index_uses_profile_branding(self, client, user):
+        user.profile.page_slug = "branded-shop"
+        user.profile.company_name = "Branded Co"
+        user.profile.brand_logo_url = "https://cdn.example.com/logo.png"
+        user.profile.brand_colors = ["#7c3aed"]
+        user.profile.save()
+        Product.objects.create(
+            user=user,
+            name="Branded Item",
+            price=500,
+            commerce_slug="branded-item",
+            stock_status=Product.StockStatus.IN_STOCK,
+        )
+        response = client.get(reverse("public_shop", kwargs={"page_slug": "branded-shop"}))
+        content = response.content.decode()
+        assert response.status_code == 200
+        assert "https://cdn.example.com/logo.png" in content
+        assert "#7c3aed" in content
 
     def test_public_commerce_page_has_seo_meta(self, client, user):
         user.profile.page_slug = "demo-shop"
@@ -155,7 +176,35 @@ class TestPublicShopPages:
         assert 'rel="canonical"' in content
         assert 'property="og:title"' in content
         assert '"@type": "Product"' in content
-        assert "View all products" in content
+        assert "All offers" in content
+
+    def test_public_commerce_page_shows_related_products(self, client, user):
+        user.profile.page_slug = "demo-shop"
+        user.profile.company_name = "Demo Shop"
+        user.profile.save()
+        Product.objects.create(
+            user=user,
+            name="Main Item",
+            price=1000,
+            commerce_slug="main-item",
+            stock_status=Product.StockStatus.IN_STOCK,
+        )
+        Product.objects.create(
+            user=user,
+            name="Related Item",
+            price=800,
+            commerce_slug="related-item",
+            stock_status=Product.StockStatus.IN_STOCK,
+        )
+        url = reverse(
+            "public_commerce",
+            kwargs={"page_slug": "demo-shop", "commerce_slug": "main-item"},
+        )
+        response = client.get(url)
+        content = response.content.decode()
+        assert response.status_code == 200
+        assert "More from Demo Shop" in content
+        assert "Related Item" in content
 
     def test_sitemap_lists_shop_and_product(self, client, user):
         user.profile.page_slug = "seo-shop"

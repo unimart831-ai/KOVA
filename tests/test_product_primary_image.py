@@ -39,6 +39,20 @@ def test_carousel_image_urls_excludes_channel(db):
     assert "studio_white" in product.carousel_image_urls[0]
 
 
+def test_shop_hero_image_url_prefers_plus_scene(db):
+    product = Product.objects.create(
+        name="Test",
+        additional_images=[
+            "https://cdn.example.com/ai_scene_table.jpg",
+            "https://cdn.example.com/studio_white.jpg",
+        ],
+    )
+    product.image = "product_images/snap_original.jpg"
+    product.save()
+    assert "studio_white" in product.shop_hero_image_url or "ai_scene" in product.shop_hero_image_url
+    assert "snap_original" not in product.shop_hero_image_url
+
+
 def test_shop_gallery_urls_excludes_promo_frame(db):
     product = Product.objects.create(
         name="Test",

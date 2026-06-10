@@ -279,6 +279,25 @@ class Product(models.Model):
         return ""
 
     @property
+    def shop_hero_image_url(self):
+        """Best buyer-facing hero — prefer polished Plus/studio scenes over raw Snap."""
+        urls = self.shop_gallery_urls
+        if not urls:
+            return self.cover_image_url
+        polished_markers = (
+            "studio_white",
+            "studio_brand",
+            "ai_scene_",
+            "ai_creative_",
+            "edit_ai_",
+            "ai_lifestyle",
+        )
+        for url in urls:
+            if any(marker in url for marker in polished_markers):
+                return url
+        return urls[0]
+
+    @property
     def sync_source_label(self) -> str:
         """Human label for where this product was imported from."""
         if self.source == self.Source.MARKETPLACE and self.marketplace_partner_id:

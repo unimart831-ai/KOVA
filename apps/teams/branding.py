@@ -91,24 +91,47 @@ def get_report_branding(user):
     }
 
 
-def get_commerce_branding(user):
-    """Theme tokens for public commerce pages."""
+def _profile_accent_color(profile) -> str:
+    """First brand color from profile, validated as hex."""
+    if not profile:
+        return ""
+    colors = profile.brand_colors or []
+    for raw in colors:
+        color = str(raw).strip()
+        if color.startswith("#") and len(color) in (4, 7):
+            return color
+    return ""
+
+
+def get_commerce_branding(user, profile=None):
+    """Theme tokens for public commerce pages (agency brand + profile fallbacks)."""
     brand = get_active_brand_for_user(user)
-    if not brand:
-        return {}
+    primary = "#0f766e"
+    logo_url = ""
+    custom_domain = ""
+    custom_domain_verified = False
 
-    primary = brand.theme_primary_color or "#059669"
-    logo_url = brand.logo_url or ""
-    if not logo_url and brand.logo:
-        try:
-            logo_url = brand.logo.url
-        except Exception:
-            logo_url = ""
+    if brand:
+        primary = brand.theme_primary_color or primary
+        logo_url = brand.logo_url or ""
+        if not logo_url and brand.logo:
+            try:
+                logo_url = brand.logo.url
+            except Exception:
+                logo_url = ""
+        custom_domain = (brand.custom_domain or "").strip()
+        custom_domain_verified = brand.custom_domain_verified
 
-    custom_domain = (brand.custom_domain or "").strip()
+    if profile:
+        if not logo_url and profile.brand_logo_url:
+            logo_url = profile.brand_logo_url.strip()
+        profile_accent = _profile_accent_color(profile)
+        if profile_accent and (not brand or not brand.theme_primary_color):
+            primary = profile_accent
+
     return {
         "theme_primary_color": primary,
         "logo_url": logo_url,
         "custom_domain": custom_domain,
-        "custom_domain_verified": brand.custom_domain_verified,
+        "custom_domain_verified": custom_domain_verified,
     }

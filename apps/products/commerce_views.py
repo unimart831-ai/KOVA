@@ -89,9 +89,14 @@ def public_shop_index(request, page_slug):
     shop_reels = get_public_shop_reels(profile)
     from apps.teams.branding import get_commerce_branding
 
-    commerce_branding = get_commerce_branding(user)
+    commerce_branding = get_commerce_branding(user, profile)
     if commerce_branding.get("custom_domain"):
         seo["canonical_url"] = f"https://{commerce_branding['custom_domain']}/shop/{resolve_page_slug(profile)}/"
+
+    from apps.billing.models import get_user_plan_limits
+
+    seller_limits = get_user_plan_limits(user)
+    mpesa_shop_enabled = bool(seller_limits.get("mpesa_commerce"))
 
     return render(request, "products/public/shop_index.html", {
         "profile": profile,
@@ -102,6 +107,7 @@ def public_shop_index(request, page_slug):
         "wa_url": _whatsapp_url(profile, wa_text),
         "shop_reels": shop_reels,
         "commerce_branding": commerce_branding,
+        "mpesa_shop_enabled": mpesa_shop_enabled,
         **seo,
     })
 
@@ -153,6 +159,26 @@ def public_commerce_link(request, page_slug, commerce_slug):
         product, profile, user,
     )
 
+    from apps.teams.branding import get_commerce_branding
+
+    commerce_branding = get_commerce_branding(user, profile)
+    if commerce_branding.get("custom_domain"):
+        seo["canonical_url"] = (
+            f"https://{commerce_branding['custom_domain']}"
+            f"/shop/{shop_slug}/{product.commerce_slug}/"
+        )
+
+    _, shop_products = resolve_public_shop(page_slug)
+    related_products = [
+        p for p in shop_products
+        if p.pk != product.pk
+    ][:4]
+
+    can_purchase = (
+        product.offering_type != product.OfferingType.PRODUCT
+        or product.stock_status != product.StockStatus.OUT_OF_STOCK
+    )
+
     return render(request, "products/public/commerce_link.html", {
         "profile": profile,
         "product": product,
@@ -164,11 +190,14 @@ def public_commerce_link(request, page_slug, commerce_slug):
         "whatsapp": whatsapp,
         "wa_url": wa_url,
         "mpesa_available": mpesa_available,
+        "can_purchase": can_purchase,
         "action_heading": public_action_heading_for(product),
         "primary_action_url": primary_action_url,
         "primary_action_label": primary_action_label,
         "primary_action_external": primary_action_url.startswith(("http://", "https://")) if primary_action_url else False,
         "product_reel": product_reel,
+        "commerce_branding": commerce_branding,
+        "related_products": related_products,
         **seo,
     })
 
