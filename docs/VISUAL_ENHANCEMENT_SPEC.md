@@ -2,7 +2,7 @@
 
 > **Status:** Plus pack + Phase A/B preflight & channel exports  
 > **Last updated:** May 2026  
-> **See also:** `docs/Photoroom upgrade.md`
+> **See also:** `docs/Photoroom upgrade.md` · [KOVA_PHOTOROOM_STRATEGY.md](KOVA_PHOTOROOM_STRATEGY.md)
 
 ---
 
