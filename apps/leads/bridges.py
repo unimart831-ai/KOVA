@@ -282,6 +282,78 @@ def create_lead_from_booking(booking):
     return lead
 
 
+def create_lead_from_qr_scan(*, user, phone: str, name: str = "", qr_code=None, scan=None):
+    """Create or update a Lead when a customer submits phone on a QR landing page."""
+    from apps.billing.enforcement import check_leads_limit
+    from apps.leads.models import Lead, LeadActivity
+
+    customer_phone = (phone or "").strip()
+    customer_name = (name or "").strip()
+    if not customer_phone:
+        return None
+
+    phone_key = "".join(c for c in customer_phone if c.isdigit())[-12:] or customer_phone
+    email = f"qr_{phone_key}@kova.page"
+
+    allowed, _msg = check_leads_limit(user, creating=True)
+    if not allowed:
+        return None
+
+    lead, created = Lead.objects.get_or_create(
+        user=user,
+        email=email,
+        defaults={
+            "name": customer_name,
+            "phone": customer_phone,
+            "source_type": Lead.Source.QR_SCAN,
+            "source_platform": "qr",
+            "temperature": Lead.Temperature.WARM,
+            "metadata": {
+                "qr_id": str(qr_code.pk) if qr_code else "",
+                "qr_label": getattr(qr_code, "label", "") if qr_code else "",
+                "scan_id": str(scan.pk) if scan else "",
+            },
+        },
+    )
+
+    if not created:
+        updates = []
+        if customer_name and not lead.name:
+            lead.name = customer_name
+            updates.append("name")
+        if customer_phone and not lead.phone:
+            lead.phone = customer_phone
+            updates.append("phone")
+        if updates:
+            updates.append("last_activity_at")
+            lead.save(update_fields=updates)
+
+    LeadActivity.objects.create(
+        lead=lead,
+        activity_type=LeadActivity.ActivityType.QR_SCANNED,
+        description=f"QR scan lead capture{f' — {qr_code.label}' if qr_code else ''}",
+        metadata={
+            "qr_id": str(qr_code.pk) if qr_code else "",
+            "scan_id": str(scan.pk) if scan else "",
+            "phone": customer_phone,
+        },
+    )
+
+    if created:
+        lead.compute_priority()
+        lead.save(update_fields=["priority"])
+        from apps.accounts.autopilot_helpers import should_auto_enroll_leads
+        from apps.leads.tasks import enroll_lead_in_sequences
+
+        if should_auto_enroll_leads(user):
+            try:
+                enroll_lead_in_sequences(lead)
+            except Exception:
+                logger.exception("Failed to enroll QR scan lead %s", lead.pk)
+
+    return lead
+
+
 def create_lead_from_walkin(walkin_event):
     """Create or update a Lead from a walk-in event (if customer info available)."""
     from apps.billing.enforcement import check_leads_limit

@@ -1125,3 +1125,56 @@ def generate_all_daily_briefs():
     if generated:
         logger.info("Daily brief run: generated %d briefs for %d eligible users", generated, eligible_count)
     return generated
+
+
+@shared_task(name="briefs.send_money_board_digests")
+def send_money_board_digests():
+    """Daily digest: needs reply, hot leads, posts to approve (opt-in, default off)."""
+    from apps.briefs.dashboard import get_money_board_stats
+
+    sent = 0
+    users = User.objects.filter(
+        money_board_digest_enabled=True,
+        is_active=True,
+    ).select_related("profile")
+
+    for user in users:
+        try:
+            stats = get_money_board_stats(user)
+            needs = stats["needs_reply"]
+            hot = stats["hot_leads"]
+            approve = stats["ready_to_approve"]
+            if needs == 0 and hot == 0 and approve == 0:
+                continue
+
+            parts = []
+            if needs:
+                parts.append(f"{needs} need reply")
+            if hot:
+                parts.append(f"{hot} hot lead{'s' if hot != 1 else ''}")
+            if approve:
+                parts.append(f"{approve} to approve")
+            message = "Money board: " + ", ".join(parts) + "."
+
+            Notification.create_for_user(
+                user=user,
+                notification_type=Notification.NotificationType.SYSTEM,
+                message=message,
+            )
+
+            if user.email and getattr(user, "brief_email_enabled", True):
+                site_url = getattr(settings, "SITE_URL", "https://app.kova.ai").rstrip("/")
+                send_mail(
+                    subject="Kova — money needs your attention",
+                    message=f"{message}\n\nOpen Today: {site_url}/brief/\n",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=True,
+                )
+            sent += 1
+        except Exception:
+            logger.exception("Money board digest failed for %s", user.email)
+
+    if sent:
+        logger.info("Money board digests sent to %d users", sent)
+    return sent

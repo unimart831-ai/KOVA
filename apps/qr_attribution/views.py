@@ -81,6 +81,13 @@ def scan_landing(request, token):
         "brand_name": (profile.company_name if profile else "") or qr.user.full_name or "",
         "brand_logo": (profile.brand_logo_url if profile else ""),
     }
+    scan = QRScan.objects.filter(
+        qr_code=qr, visitor_id=visitor_id,
+    ).order_by("-scanned_at").first()
+    context["latest_scan_id"] = str(scan.pk) if scan else ""
+    context["capture_url"] = reverse(
+        "qr_attribution:scan_capture", kwargs={"token": qr.token},
+    )
     response = render(request, template_name, context)
     response.set_cookie(
         "kova_visitor_id", visitor_id,
@@ -88,6 +95,34 @@ def scan_landing(request, token):
         httponly=True, samesite="Lax",
     )
     return response
+
+
+@ratelimit(key="ip", rate="20/m", method="POST", block=True)
+@require_POST
+def scan_capture_lead(request, token):
+    """Optional phone + name capture after QR scan — creates a REACH lead."""
+    qr = get_object_or_404(QRCode, token=token, is_active=True)
+    phone = (request.POST.get("phone") or "").strip()
+    name = (request.POST.get("name") or "").strip()[:200]
+    if not phone:
+        return JsonResponse({"ok": False, "error": "phone_required"}, status=400)
+
+    scan = None
+    scan_id = (request.POST.get("scan_id") or "").strip()
+    if scan_id:
+        scan = QRScan.objects.filter(pk=scan_id, qr_code=qr).first()
+
+    from apps.leads.bridges import create_lead_from_qr_scan
+
+    lead = create_lead_from_qr_scan(
+        user=qr.user, phone=phone, name=name, qr_code=qr, scan=scan,
+    )
+    if not lead:
+        return JsonResponse({"ok": False, "error": "lead_limit"}, status=403)
+
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse({"ok": True, "lead_id": str(lead.pk)})
+    return redirect("qr_attribution:scan_landing", token=token)
 
 
 # ── User-side QR management ─────────────────────────────────────────────────

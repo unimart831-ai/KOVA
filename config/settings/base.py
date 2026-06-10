@@ -244,6 +244,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "briefs.generate_all_daily_briefs",
         "schedule": 15 * 60.0,  # every 15 minutes — checks which users' brief time has passed
     },
+    "send-money-board-digests": {
+        "task": "briefs.send_money_board_digests",
+        "schedule": 24 * 3600.0,  # daily — opt-in money chase digest
+    },
     "run-daily-research": {
         "task": "agents.run_daily_research",
         "schedule": 12 * 3600.0,  # every 12 hours — trend data for daily briefs

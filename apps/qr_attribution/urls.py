@@ -19,4 +19,5 @@ urlpatterns = [
     path("walkin/<slug:slug>/record/", views.cashier_record, name="cashier_record"),
     # Public scan landing
     path("qr/<slug:token>/", views.scan_landing, name="scan_landing"),
+    path("qr/<slug:token>/capture/", views.scan_capture_lead, name="scan_capture"),
 ]

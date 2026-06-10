@@ -61,6 +61,18 @@ def approve_post_for_user(
             "message": f"{platform_name} requires media before approval.",
         }
 
+    from apps.platforms.token_health import get_post_token_block
+
+    token_block = get_post_token_block(post)
+    if token_block:
+        return {
+            "success": False,
+            "error": "token_expiring",
+            "post_id": str(post.id),
+            "message": token_block["message"],
+            "reconnect_url_name": token_block["reconnect_url_name"],
+        }
+
     from apps.content.safety import (
         POLICY_BLOCK_MESSAGE,
         block_post_for_policy,

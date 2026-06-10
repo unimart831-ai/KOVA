@@ -20,10 +20,13 @@ def engage_inbox(request):
 
     # Filters
     status_filter = request.GET.get("status", "")
+    needs_reply_filter = request.GET.get("needs_reply", "")
     sentiment_filter = request.GET.get("sentiment", "")
     platform_filter = request.GET.get("platform", "")
 
-    if status_filter:
+    if needs_reply_filter in ("1", "true", "yes"):
+        interactions = interactions.filter(status__in=["new", "flagged"])
+    elif status_filter:
         interactions = interactions.filter(status=status_filter)
     if sentiment_filter:
         interactions = interactions.filter(sentiment=sentiment_filter)

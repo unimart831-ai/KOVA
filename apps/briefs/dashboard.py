@@ -282,7 +282,18 @@ def _money_board_from_stats(stats):
             "count": stats["needs_reply"],
             "label": "Needs reply",
             "detail": "WhatsApp + social inbox waiting on you",
-            "url_name": "whatsapp:inbox" if stats["needs_reply_wa"] else "engage:inbox",
+            "url_name": (
+                "whatsapp:inbox"
+                if stats["needs_reply_wa"] and not stats["needs_reply_engage"]
+                else "engage:inbox"
+            ),
+            "url_query": (
+                "status=escalated"
+                if stats["needs_reply_wa"] and not stats["needs_reply_engage"]
+                else "needs_reply=1"
+            ),
+            "needs_reply_wa": stats["needs_reply_wa"],
+            "needs_reply_engage": stats["needs_reply_engage"],
             "tone": "red" if stats["needs_reply"] >= 3 else "amber",
         },
         "hot_leads": {

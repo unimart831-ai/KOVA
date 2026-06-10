@@ -42,6 +42,7 @@ urlpatterns = [
     path("<uuid:post_id>/retry-image/", views.retry_image, name="retry_image"),
     path("<uuid:post_id>/retry-reel/", views.retry_reel, name="retry_reel"),
     path("<uuid:post_id>/retry-publish/", views.retry_publish, name="retry_publish"),
+    path("<uuid:post_id>/reschedule-rate-limited/", views.reschedule_rate_limited, name="reschedule_rate_limited"),
     path("<uuid:post_id>/slides/", views.update_carousel_slides, name="update_slides"),
     path("<uuid:post_id>/generate-image/", views.generate_image, name="generate_image"),
     path("<uuid:post_id>/regenerate-image/", views.regenerate_image, name="regenerate_image"),

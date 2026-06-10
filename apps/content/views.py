@@ -765,6 +765,20 @@ def approve_post(request, post_id):
             return render(request, "components/post_card.html", {"post": post})
         return redirect("content:post_detail", post_id=post.id)
 
+    from apps.platforms.token_health import get_post_token_block
+
+    token_block = get_post_token_block(post)
+    if token_block:
+        from django.contrib import messages
+        messages.warning(request, token_block["message"])
+        if is_htmx:
+            return render(
+                request,
+                "components/post_card.html",
+                {"post": post, "token_block": token_block},
+            )
+        return redirect("platforms:list")
+
     intent = request.POST.get("schedule_intent", "next_best")
     platform = post.social_account.platform if post.social_account else None
 
@@ -1191,6 +1205,36 @@ def retry_reel(request, post_id):
         return render(request, "components/post_card.html", {"post": post})
     messages.info(request, "Re-composing motion reel…")
     return redirect("content:edit", post_id=post.id)
+
+
+@login_required
+@require_POST
+def reschedule_rate_limited(request, post_id):
+    """One-click reschedule for rate-limited failed posts (+30 minutes)."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    post = get_object_or_404(Post.objects.select_related("user", "social_account"), id=post_id)
+    if not can_edit_post(request.user, post):
+        raise Http404
+    if post.status != Post.Status.FAILED:
+        return HttpResponse("Post is not in failed state", status=400)
+
+    err = (post.publish_error or post.publish_failure_message or "").lower()
+    if "rate limit" not in err and "429" not in err:
+        return HttpResponse("Post is not rate-limited", status=400)
+
+    post.status = Post.Status.SCHEDULED
+    post.scheduled_at = timezone.now() + timedelta(minutes=30)
+    post.publish_error = ""
+    post.ai_reasoning = ""
+    post.save(update_fields=["status", "scheduled_at", "publish_error", "ai_reasoning", "updated_at"])
+
+    if request.headers.get("HX-Request"):
+        return render(request, "components/post_card.html", {"post": post})
+    messages.info(request, "Scheduled for retry in 30 minutes.")
+    return redirect("content:queue")
 
 
 @login_required
