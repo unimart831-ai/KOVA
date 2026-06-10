@@ -1,10 +1,11 @@
 from django.urls import path
 
-from apps.engage import views
+from apps.engage import messenger_webhook, views
 
 app_name = "engage"
 
 urlpatterns = [
+    path("webhook/messenger/", messenger_webhook.messenger_webhook, name="messenger_webhook"),
     path("", views.engage_inbox, name="inbox"),
     path("needs-reply/", views.unified_needs_reply, name="unified_inbox"),
     path("reply/<uuid:pk>/", views.send_reply, name="send_reply"),

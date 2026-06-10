@@ -1,10 +1,12 @@
 from django.urls import path
+from django.views.generic import RedirectView
 
 from apps.content import views
 
 app_name = "content"
 
 urlpatterns = [
+    path("create/", RedirectView.as_view(pattern_name="content:studio", permanent=False), name="create"),
     path("studio/", views.content_studio, name="studio"),
     path("studio/posts/", views.studio_posts, name="studio_posts"),
     path("studio/submit/", views.submit_seed, name="submit_seed"),

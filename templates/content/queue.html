@@ -8,7 +8,9 @@
 {% block content %}
 <div class="max-w-6xl mx-auto space-y-6">
 
-  {# ━━━ View toggle + Studio link ━━━ #}
+  {% include "content/_create_tabs.html" %}
+
+  {# Queue view toggle — calendar variants stay under Queue tab #}
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div class="flex items-center gap-2">
       <a href="{% url 'content:queue' %}"
@@ -22,9 +24,6 @@
         Calendar
       </a>
     </div>
-    <a href="{% url 'content:studio' %}" class="text-xs font-medium text-gray-500 dark:text-gray-400 hover:underline">
-      Studio
-    </a>
   </div>
 
   {% include "content/_queue_stats_strip.html" %}

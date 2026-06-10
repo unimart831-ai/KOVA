@@ -111,7 +111,10 @@ else:
 # django-csp with nonce-based inline script allowlisting.
 # CSP_INCLUDE_NONCE_IN adds a per-request nonce to the CSP header and makes
 # request.csp_nonce available in templates. Inline <script> tags must include
-# nonce="{{ request.csp_nonce }}" to execute.
+# nonce="{{ request.csp_nonce }}" to execute (see templates/base.html).
+# Full removal of 'unsafe-inline' for style-src is DEFERRED — Alpine/HTMX and
+# Tailwind utility classes rely on inline styles; audit before tightening.
+# See docs/CSP.md for migration notes.
 CSP_DEFAULT_SRC = ("'self'",)
 CSP_INCLUDE_NONCE_IN = ["script-src"]
 CSP_SCRIPT_SRC = ("'self'", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://js.stripe.com")

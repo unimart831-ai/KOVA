@@ -476,11 +476,26 @@ From `FacebookProvider` (`instagram_facebook.py`):
 - Read and send **Page Messenger** messages (`pages_messaging`)
 - Profile audit + selective field updates
 
-### What Kova does **not** do via webhooks
+### Messenger webhooks (real-time DMs)
 
-There is **no** Facebook Page webhook endpoint in Kova. Page comment fetching and Messenger inbox use **polling** via the Engage Agent Celery cycle (`run-engage-cycle` every 30 minutes in `base.py`), not real-time Meta webhooks.
+Kova registers a **Page webhook** for Messenger DMs at:
 
-If you need real-time Messenger, you would configure Meta Page webhooks separately — **not implemented in current Kova codebase**. Confirm requirements before promising real-time FB Messenger to customers.
+```
+https://<your-domain>/engage/webhook/messenger/
+```
+
+| Setting | Purpose |
+|---------|---------|
+| `WHATSAPP_VERIFY_TOKEN` | **Reused** for GET webhook verification (same Meta app as WhatsApp) |
+| `FACEBOOK_APP_SECRET` | POST signature validation (`X-Hub-Signature-256`); falls back to `WHATSAPP_APP_SECRET` |
+
+In Meta Developer Portal → **Webhooks** → **Page** → subscribe to **`messages`**.
+
+Polling via `run-engage-cycle` (every 30 min) remains as fallback when webhooks are not configured.
+
+### Legacy note (pre–Phase 4)
+
+Page comment fetching still uses polling via the Engage Agent Celery cycle. Only **Messenger DMs** are real-time via webhook.
 
 ### Step 5.1 — Permissions
 

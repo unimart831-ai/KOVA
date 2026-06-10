@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, bookings, calendar_intel, campaigns, content, content_safety, costs, emails, engage, feature_usage, help, innovations, leads, llm, logs, media_queue, memes, notifications, onboarding, operations, overview, partners, partials, photoroom, pixel, platforms, products, profile_audit, qr, reel_music, revenue, reviews, sales_inquiries, search, seed_quota, system, system_maps, teams, user_health, users, whatsapp
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, bookings, calendar_intel, campaigns, content, content_safety, costs, emails, engage, feature_usage, help, innovations, leads, llm, logs, media_queue, memes, notifications, onboarding, operations, ops, overview, partners, partials, photoroom, pixel, platforms, products, profile_audit, qr, reel_music, revenue, reviews, sales_inquiries, search, seed_quota, system, system_maps, teams, user_health, users, whatsapp
 
 app_name = "admin_dashboard"
 
@@ -25,6 +25,7 @@ urlpatterns = [
 
     # Operations (platform-wide task activity)
     path("operations/", operations.operations_overview, name="operations_overview"),
+    path("ops/celery/", ops.celery_health, name="ops_celery"),
 
     # Reel music catalog
     path("reel-music/", reel_music.reel_music_manage, name="reel_music_manage"),

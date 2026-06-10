@@ -135,6 +135,52 @@ def bridge_whatsapp_message_to_inbox(user, sender_phone: str, sender_name: str,
     return interaction
 
 
+def bridge_messenger_message_to_inbox(
+    social_account,
+    sender_id: str,
+    sender_name: str,
+    message_text: str,
+    message_id: str,
+):
+    """
+    Bridge a real-time Facebook Messenger DM into the unified inbox.
+    Called from the Page webhook handler; polling remains as fallback.
+    """
+    user = social_account.user
+
+    if Interaction.objects.filter(
+        social_account=social_account,
+        platform_interaction_id=message_id,
+    ).exists():
+        return None
+
+    interaction = Interaction.objects.create(
+        user=user,
+        social_account=social_account,
+        platform="facebook",
+        interaction_type=Interaction.InteractionType.DM,
+        author_name=sender_name or sender_id,
+        author_username=sender_id,
+        content=(message_text or "")[:2000],
+        platform_interaction_id=message_id,
+    )
+
+    try:
+        from apps.engage.realtime import notify_engage_new
+
+        notify_engage_new(interaction)
+    except Exception:
+        logger.debug("Messenger engage_new notify failed", exc_info=True)
+
+    logger.info(
+        "Messenger inbound: %s → page %s [%s]",
+        sender_id,
+        social_account.username,
+        message_id[:12],
+    )
+    return interaction
+
+
 def get_dm_threads(user, platform=None, limit=30):
     """
     Get DM threads grouped by sender for the unified inbox view.

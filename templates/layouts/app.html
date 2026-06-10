@@ -183,44 +183,21 @@
 
       <p class="nav-section" data-nav-group="grow">Grow</p>
 
-      {% nav_active request.path '/content/studio' '/content/voice-campaign' '/content/autopilot' '/memes/' '/media-queue/' '/content/edit/' as create_active %}
+      {% nav_active request.path '/content/studio' '/content/voice-campaign' '/content/autopilot' '/content/queue' '/content/calendar' '/memes/' '/media-queue/' '/content/edit/' as create_active %}
       <a href="{% url 'content:studio' %}" data-nav-group="grow"
          {% if create_active %}aria-current="page"{% endif %}
          class="{% if create_active %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if create_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
         </svg>
-        Studio
+        Create
+        {% if nav_badge_queue %}<span class="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_queue }}</span>{% endif %}
       </a>
 
       {% if create_active %}
       <div class="ml-8 space-y-0.5 mb-1">
-        <a href="{% url 'content:voice_campaign' %}" class="block text-xs py-1 px-2 rounded {% if '/content/voice-campaign' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Campaigns</a>
-        <a href="{% url 'media_queue:list' %}" class="block text-xs py-1 px-2 rounded {% if '/media-queue/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Visual Publisher</a>
-        {% if request.plan_limits.memes_enabled %}
-        <a href="{% url 'memes:discover' %}" class="block text-xs py-1 px-2 rounded {% if '/memes/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Memes & Trends</a>
-        {% endif %}
-        <a href="{% url 'content:autopilot' %}" class="block text-xs py-1 px-2 rounded {% if '/content/autopilot' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Autopilot</a>
-        {% if request.plan_limits.competitor_tracking %}
-        <a href="{% url 'analytics:competitors' %}" class="block text-xs py-1 px-2 rounded {% if '/analytics/competitors' in request.path or '/analytics/screenshot-compete' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Competitors</a>
-        {% endif %}
-      </div>
-      {% endif %}
-
-      {% nav_active request.path '/content/queue' '/content/calendar' as queue_active %}
-      <a href="{% url 'content:queue' %}" data-nav-group="grow"
-         {% if queue_active %}aria-current="page"{% endif %}
-         class="{% if queue_active %}nav-link-active{% else %}nav-link{% endif %}">
-        <svg class="mr-3 h-5 w-5 {% if queue_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-        </svg>
-        Queue
-        {% if nav_badge_queue %}<span class="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_queue }}</span>{% endif %}
-      </a>
-
-      {% if queue_active %}
-      <div class="ml-8 space-y-0.5 mb-1">
-        <a href="{% url 'content:queue' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'queue' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">List</a>
+        <a href="{% url 'content:studio' %}" class="block text-xs py-1 px-2 rounded {% if '/content/studio' in request.path or '/content/voice-campaign' in request.path or '/content/autopilot' in request.path or '/memes/' in request.path or '/media-queue/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Studio</a>
+        <a href="{% url 'content:queue' %}" class="block text-xs py-1 px-2 rounded {% if '/content/queue' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Queue list</a>
         <a href="{% url 'content:calendar_grid' %}" class="block text-xs py-1 px-2 rounded {% if 'calendar_grid' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Calendar</a>
         <a href="{% url 'content:calendar' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'calendar' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Timeline</a>
       </div>

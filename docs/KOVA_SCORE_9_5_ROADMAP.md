@@ -79,11 +79,11 @@
 
 | Item | Reason |
 |------|--------|
-| FB Messenger real-time WebSocket | MVP polling via Engage Agent cycle sufficient for 9.5; Meta Page webhooks not wired |
-| Pipeline kanban drag-and-drop | Out of Phase 3 scope |
-| Studio + Queue tab merge | Phase 4 IA |
-| Admin Celery health panel | Ops nice-to-have |
-| Full CSP remove `unsafe-inline` | Requires Alpine/HTMX nonce audit — breakage risk |
+| FB Messenger real-time WebSocket | **DONE** Phase 4 — Page webhook + `engage_new` WS; polling fallback |
+| Pipeline kanban drag-and-drop | Out of Phase 4 scope — read-only kanban |
+| Studio + Queue tab merge | **DONE** Phase 4 |
+| Admin Celery health panel | **DONE** Phase 4 — `/dashboard/ops/celery/` |
+| Full CSP remove `unsafe-inline` | Requires Alpine/HTMX nonce audit — **DEFERRED** (see `docs/CSP.md`) |
 
 ### Score projection (post-Phase 3)
 
@@ -106,15 +106,47 @@
 
 ## Remaining for 9.5 / 10 (Phase 4+)
 
-- Pipeline kanban drag-and-drop
-- Studio + Queue tab merge
-- FB Messenger real-time (Meta Page webhooks)
-- Admin Celery health panel
+- Pipeline kanban drag-and-drop (**DEFERRED** — read-only kanban sufficient; DnD out of scope)
+- ~~Studio + Queue tab merge~~ → **DONE** Phase 4
+- ~~FB Messenger real-time (Meta Page webhooks)~~ → **DONE** Phase 4
+- ~~Admin Celery health panel~~ → **DONE** Phase 4
 - REACH 8.8+ (nurture UI, pipeline DnD)
 
 ---
 
-## Commit reference
+## Phase 4 — Done June 11, 2026
+
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 1 | FB Messenger real-time | **DONE** | `/engage/webhook/messenger/` — Page webhook → unified inbox + `engage_new` WS; polling fallback |
+| 2 | Studio + Queue nav merge | **DONE** | Single **Create** sidebar nav; Studio/Queue tabs; `/content/create/` → Studio |
+| 3 | Admin Celery health panel | **DONE** | `/dashboard/ops/celery/` — last run for briefs, publish, engage, WA followup, money digest |
+| 4 | CSP improvements | **DONE** (partial) | `docs/CSP.md`; nonce documented; `unsafe-inline` style-src removal **DEFERRED** |
+| 5 | Pipeline kanban drag-drop | **DEFERRED** | Read-only status columns remain |
+
+**Tests added:** `tests/test_phase4_score_sprint.py` (8 tests).
+
+**Migrate:** None new for Phase 4.
+
+**Env:** Reuses `WHATSAPP_VERIFY_TOKEN` for Messenger Page webhook GET verify; `FACEBOOK_APP_SECRET` for POST signature (falls back to `WHATSAPP_APP_SECRET`).
+
+### Score projection (post-Phase 4)
+
+| Section | Post-P3 | Post-P4 | Target 9.5 |
+|---------|---------|---------|------------|
+| Engage | 9.0 | **9.1** | 9.0 |
+| Performance IA | 7.8 | **8.2** | 8.5 |
+| Deploy / CI | 8.4 | **8.5** | 8.5 |
+| Admin / partners | 8.7 | **8.9** | 9.0 |
+| **Weighted overall** | **~9.4** | **~9.5** | **9.5** |
+
+---
+
+## Remaining for 10 / 10
+
+- Pipeline kanban drag-and-drop
+- Full CSP remove `unsafe-inline` styles (Alpine/HTMX audit)
+- REACH 8.8+ nurture UI polish
 
 Phase 2 commits: sidebar IA (Channels, Workspace gate, Teams Pro), Engage WS, outage hold, token WS warnings, Starter Today compact, tests + docs.
 

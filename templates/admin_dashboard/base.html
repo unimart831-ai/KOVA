@@ -446,6 +446,14 @@
         System
       </a>
 
+      <a href="{% url 'admin_dashboard:ops_celery' %}"
+         class="{% if '/dashboard/ops/celery' in request.path %}nav-link-active{% else %}nav-link{% endif %} ml-6">
+        <svg class="mr-3 h-5 w-5 {% if '/dashboard/ops/celery' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Celery health
+      </a>
+
       <a href="{% url 'admin_dashboard:activity_log' %}"
          class="{% if '/dashboard/logs' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if '/dashboard/logs' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
