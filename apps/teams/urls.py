@@ -5,6 +5,7 @@ from . import views
 app_name = "teams"
 
 urlpatterns = [
+    path("switch-brand/", views.switch_agency_brand, name="switch_brand"),
     path("", views.team_list, name="list"),
     path("create/", views.team_create, name="create"),
     path("invite/<str:token>/", views.invitation_accept, name="invitation_accept"),

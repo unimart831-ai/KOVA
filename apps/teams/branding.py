@@ -3,12 +3,48 @@
 from __future__ import annotations
 
 
-def get_active_brand_for_user(user):
+def get_agency_brands_for_user(user):
+    """Brands an agency user can switch between (team owner/admin)."""
+    from apps.teams.models import Brand, TeamMember
+
+    if not user or not user.is_authenticated:
+        return []
+
+    team_ids = TeamMember.objects.filter(
+        user=user,
+        role__in=[TeamMember.Role.OWNER, TeamMember.Role.ADMIN],
+    ).values_list("team_id", flat=True)
+    if not team_ids:
+        return []
+
+    return list(
+        Brand.objects.filter(team_id__in=team_ids, is_active=True).order_by("name")
+    )
+
+
+def _user_can_access_brand(user, brand) -> bool:
+    from apps.teams.models import TeamMember
+
+    return TeamMember.objects.filter(
+        user=user,
+        team_id=brand.team_id,
+        role__in=[TeamMember.Role.OWNER, TeamMember.Role.ADMIN, TeamMember.Role.CLIENT],
+    ).exists()
+
+
+def get_active_brand_for_user(user, session=None):
     """Primary active Brand with theming for commerce and reports."""
     from apps.teams.models import Brand, TeamMember
 
     if not user or not user.is_authenticated:
         return None
+
+    if session:
+        brand_id = session.get("agency_active_brand_id")
+        if brand_id:
+            brand = Brand.objects.filter(pk=brand_id, is_active=True).first()
+            if brand and _user_can_access_brand(user, brand):
+                return brand
 
     client = (
         TeamMember.objects.filter(user=user, role=TeamMember.Role.CLIENT)

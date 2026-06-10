@@ -165,6 +165,7 @@ urlpatterns = [
 
     # Partners
     path("partners/", partners.partners_overview, name="partners_overview"),
+    path("partners/health/", partners.partners_health, name="partners_health"),
     path("partners/applications/", partners.application_list, name="partner_applications"),
     path("partners/applications/action/", partners.application_action, name="partner_application_action"),
     path("partners/list/", partners.partner_list, name="partner_list"),

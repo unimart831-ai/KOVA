@@ -415,8 +415,11 @@ def mpesa_webhook(request):
             )
             return HttpResponse(status=403)
 
-    # ── Layer 2: Optional webhook secret token ────────────────────────
+    # ── Layer 2: Webhook secret token (required in production) ───────
     webhook_secret = getattr(settings, "MPESA_WEBHOOK_SECRET", "")
+    if mpesa_env == "production" and not webhook_secret:
+        logger.error("MPESA_WEBHOOK_SECRET not configured in production — rejecting callback")
+        return HttpResponse(status=403)
     if webhook_secret:
         provided_token = request.GET.get("token", "")
         if not hmac.compare_digest(provided_token, webhook_secret):

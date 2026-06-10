@@ -1,15 +1,25 @@
 """Template context for agency white-label theming."""
 
-from apps.teams.branding import get_active_brand_for_user
+from apps.teams.branding import get_active_brand_for_user, get_agency_brands_for_user
 
 
 def agency_theme(request):
     if not getattr(request, "user", None) or not request.user.is_authenticated:
         return {}
 
-    brand = get_active_brand_for_user(request.user)
+    session = getattr(request, "session", None)
+    brand = get_active_brand_for_user(request.user, session=session)
+    agency_brands = get_agency_brands_for_user(request.user)
+
+    ctx = {
+        "agency_brands": agency_brands,
+        "active_agency_brand_id": str(brand.pk) if brand else "",
+        "client_brand_scope": brand.name if brand else "",
+    }
+
     if not brand or not brand.theme_primary_color:
-        return {"agency_brand_theme": None}
+        ctx["agency_brand_theme"] = None
+        return ctx
 
     logo_url = brand.logo_url or ""
     if not logo_url and brand.logo:
@@ -18,11 +28,9 @@ def agency_theme(request):
         except Exception:
             logo_url = ""
 
-    return {
-        "agency_brand_theme": {
-            "primary_color": brand.theme_primary_color,
-            "brand_name": brand.name,
-            "logo_url": logo_url,
-        },
-        "client_brand_scope": brand.name if brand else "",
+    ctx["agency_brand_theme"] = {
+        "primary_color": brand.theme_primary_color,
+        "brand_name": brand.name,
+        "logo_url": logo_url,
     }
+    return ctx

@@ -35,6 +35,13 @@ class User(SoftDeleteMixin, AbstractUser):
         default=False,
         help_text="Daily email/in-app digest when money board counts need attention.",
     )
+    is_support_staff = models.BooleanField(
+        default=False,
+        help_text=(
+            "Limited staff role: read-only admin dashboard. Requires is_staff=True. "
+            "Superusers bypass write restrictions."
+        ),
+    )
 
     # Override the default SoftDeleteManager with UserManager-compatible version
     objects = SoftDeleteUserManager()

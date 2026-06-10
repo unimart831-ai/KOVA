@@ -99,10 +99,13 @@ def _handle_event(request):
       }]
     }
     """
-    # Verify webhook signature
+    # Verify webhook signature (required in production)
     provider = get_provider("whatsapp")
+    signature = request.headers.get("X-Hub-Signature-256", "")
+    if not settings.DEBUG and not signature:
+        logger.warning("WhatsApp webhook missing X-Hub-Signature-256 in production")
+        return HttpResponse("Missing signature", status=403)
     if provider:
-        signature = request.headers.get("X-Hub-Signature-256", "")
         if not provider.verify_webhook_signature(request.body, signature):
             logger.warning("WhatsApp webhook signature verification failed")
             return HttpResponse("Invalid signature", status=403)

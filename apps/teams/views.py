@@ -428,3 +428,23 @@ def brand_toggle(request, slug, brand_id):
         messages.success(request, f'Brand "{brand.name}" {state}.')
 
     return redirect("teams:detail", slug=slug)
+
+
+@login_required
+def switch_agency_brand(request):
+    """Agency client switcher — store active brand in session."""
+    if request.method != "POST":
+        return redirect("brief:home")
+
+    from apps.teams.branding import _user_can_access_brand, get_agency_brands_for_user
+
+    brand_id = request.POST.get("brand_id", "").strip()
+    agency_brands = {str(b.pk): b for b in get_agency_brands_for_user(request.user)}
+
+    if brand_id in agency_brands and _user_can_access_brand(request.user, agency_brands[brand_id]):
+        request.session["agency_active_brand_id"] = brand_id
+        messages.success(request, f"Switched to {agency_brands[brand_id].name}.")
+    else:
+        messages.error(request, "Could not switch to that client.")
+
+    return redirect(request.META.get("HTTP_REFERER") or reverse("brief:home"))

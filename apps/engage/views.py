@@ -326,7 +326,101 @@ def auto_sent_correct(request, pk):
     )
 
 
-# ── Phase 5 — Unified DM Inbox ─────────────────────────────────────────────
+# ── Unified needs-reply inbox (WA + Engage) ───────────────────────────────────
+
+
+@login_required
+def unified_needs_reply(request):
+    """Single queue for WhatsApp escalations and social inbox items needing reply."""
+    from datetime import timedelta
+
+    from django.urls import reverse
+    from django.utils.timesince import timesince
+
+    from apps.whatsapp.models import WhatsAppConversation, WhatsAppMessage
+
+    items = []
+    week_ago = timezone.now() - timedelta(days=7)
+
+    wa_convs = (
+        WhatsAppConversation.objects.filter(
+            social_account__user=request.user,
+            status=WhatsAppConversation.Status.ESCALATED,
+        )
+        .select_related("social_account")
+        .order_by("-last_message_at")[:25]
+    )
+    for conv in wa_convs:
+        last_msg = (
+            WhatsAppMessage.objects.filter(conversation=conv)
+            .order_by("-created_at")
+            .first()
+        )
+        preview = (last_msg.content if last_msg else "")[:160]
+        items.append({
+            "source": "whatsapp",
+            "source_label": "WhatsApp",
+            "title": conv.contact_name or conv.contact_phone,
+            "preview": preview or "Escalated conversation",
+            "time_ago": timesince(conv.last_message_at or conv.created_at),
+            "sort_at": conv.last_message_at or conv.created_at,
+            "url": reverse("whatsapp:inbox") + f"?status=escalated&conv={conv.pk}",
+        })
+
+    engage_qs = (
+        request.user.interactions.filter(status__in=["new", "flagged"])
+        .select_related("social_account")
+        .order_by("-created_at")[:25]
+    )
+    for interaction in engage_qs:
+        items.append({
+            "source": "engage",
+            "source_label": interaction.platform.title(),
+            "title": interaction.author_name or interaction.author_username or "Unknown",
+            "preview": (interaction.content or "")[:160],
+            "time_ago": timesince(interaction.created_at),
+            "sort_at": interaction.created_at,
+            "url": reverse("engage:inbox") + f"?needs_reply=1",
+        })
+
+    items.sort(key=lambda i: i["sort_at"], reverse=True)
+
+    stats = {
+        "total": len(items),
+        "wa_count": wa_convs.count(),
+        "engage_count": engage_qs.count(),
+    }
+
+    return render(request, "engage/unified_inbox.html", {
+        "items": items,
+        "stats": stats,
+        "page_title": "Needs reply",
+    })
+
+
+# ── Phase 5 — Unified DM Inbox / Messenger threads ──────────────────────────
+
+
+@login_required
+def messenger_threads(request):
+    """Thin MVP: Facebook Messenger threads via DM inbox pipeline."""
+    from apps.engage.dm_inbox import get_dm_threads
+
+    threads = get_dm_threads(request.user, platform="facebook", limit=30)
+    stats = {
+        "total_threads": len(threads),
+        "unread": sum(t["unread_count"] for t in threads),
+        "platforms": ["facebook"],
+    }
+    return render(request, "engage/dm_inbox.html", {
+        "threads": threads,
+        "messages": [],
+        "stats": stats,
+        "platform_filter": "facebook",
+        "selected_sender": "",
+        "page_title": "Messenger threads",
+        "messenger_mode": True,
+    })
 
 
 @login_required

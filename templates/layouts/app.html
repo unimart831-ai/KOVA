@@ -26,14 +26,30 @@
          id="app-sidebar"
          class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-transform duration-200 ease-in-out lg:translate-x-0 flex flex-col">
 
-    <!-- Logo -->
-    <div class="flex items-center h-16 px-6 border-b border-gray-200 dark:border-gray-800">
-      <a href="{% url 'brief:home' %}" class="flex items-center space-x-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-kova-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-kova" style="background-color: var(--brand-accent, #7c3aed);">
-          <span class="text-white font-bold text-sm">K</span>
-        </div>
-        <span class="text-lg font-bold text-gray-900 dark:text-white">Kova Agent</span>
-      </a>
+    <!-- Logo + agency client switcher -->
+    <div class="px-6 border-b border-gray-200 dark:border-gray-800">
+      <div class="flex items-center h-16">
+        <a href="{% url 'brief:home' %}" class="flex items-center space-x-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-kova-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-kova" style="background-color: var(--brand-accent, #7c3aed);">
+            <span class="text-white font-bold text-sm">K</span>
+          </div>
+          <span class="text-lg font-bold text-gray-900 dark:text-white">Kova Agent</span>
+        </a>
+      </div>
+      {% if agency_brands|length > 1 %}
+      <form method="post" action="{% url 'teams:switch_brand' %}" class="pb-3">
+        {% csrf_token %}
+        <label for="agency-brand-select" class="sr-only">Active client</label>
+        <select id="agency-brand-select" name="brand_id" onchange="this.form.submit()"
+                class="w-full text-xs rounded-lg border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 py-1.5 px-2">
+          {% for b in agency_brands %}
+          <option value="{{ b.id }}" {% if b.id == active_agency_brand_id %}selected{% endif %}>{{ b.name }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      {% elif agency_brands|length == 1 %}
+      <p class="pb-3 text-[10px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">{{ agency_brands.0.name }}</p>
+      {% endif %}
     </div>
 
     <!-- Navigation -->
@@ -106,7 +122,9 @@
       {% if request.plan_limits.engagement_agent or request.plan_limits.engage_trial_enabled %}{% if '/engage/' in request.path %}
       <div class="ml-8 space-y-0.5 mb-1">
         <a href="{% url 'engage:inbox' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'inbox' and request.resolver_match.namespace == 'engage' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Comments & Mentions</a>
+        <a href="{% url 'engage:unified_inbox' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'unified_inbox' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Needs reply (all)</a>
         <a href="{% url 'engage:dm_inbox' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'dm_inbox' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Messages</a>
+        <a href="{% url 'engage:messenger_threads' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'messenger_threads' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Messenger</a>
         <a href="{% url 'engage:auto_sent_list' %}" class="block text-xs py-1 px-2 rounded {% if 'auto_sent' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">AI auto-sent</a>
       </div>
       {% endif %}{% endif %}

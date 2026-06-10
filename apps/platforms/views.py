@@ -95,6 +95,17 @@ ACTIVE_PLATFORM_KEYS = {p["key"] for p in ACTIVE_PLATFORMS}
 # Keep backward-compat name — code that imports AVAILABLE_PLATFORMS still works
 AVAILABLE_PLATFORMS = ACTIVE_PLATFORMS
 
+# Wedge GTM priority: WhatsApp → Instagram → Facebook first on connect page
+WEDGE_PLATFORM_ORDER = ("whatsapp", "instagram", "facebook")
+
+
+def _sort_platforms_wedge_first(platforms: list[dict]) -> list[dict]:
+    order = {key: idx for idx, key in enumerate(WEDGE_PLATFORM_ORDER)}
+    return sorted(
+        platforms,
+        key=lambda p: (order.get(p["key"], 99), p["label"]),
+    )
+
 
 @login_required
 def platform_list(request):
@@ -150,7 +161,7 @@ def platform_list(request):
 
     return render(request, "platforms/list.html", {
         "accounts": accounts,
-        "platforms": platforms,
+        "platforms": _sort_platforms_wedge_first(platforms),
         "coming_soon_platforms": COMING_SOON_PLATFORMS,
         "platform_outages": platform_outages,
         "page_title": "Connected Platforms",

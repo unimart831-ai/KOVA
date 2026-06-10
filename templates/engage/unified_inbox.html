@@ -1,0 +1,49 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Needs reply{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">WhatsApp escalations and social inbox — one queue</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+  <div class="flex flex-wrap items-center gap-3 text-sm">
+    <span class="font-semibold text-gray-900 dark:text-white">{{ stats.total }} waiting</span>
+    {% if stats.wa_count %}
+    <span class="text-gray-500 dark:text-gray-400">· {{ stats.wa_count }} WhatsApp</span>
+    {% endif %}
+    {% if stats.engage_count %}
+    <span class="text-gray-500 dark:text-gray-400">· {{ stats.engage_count }} social</span>
+    {% endif %}
+  </div>
+
+  {% if not items %}
+  <div class="card px-6 py-10 text-center">
+    <p class="text-gray-600 dark:text-gray-400">Nothing needs a reply right now.</p>
+    <a href="{% url 'brief:home' %}" class="inline-block mt-3 text-sm font-medium text-kova-600 dark:text-kova-400 hover:underline">Back to Today</a>
+  </div>
+  {% else %}
+  <div class="space-y-3">
+    {% for item in items %}
+    <a href="{{ item.url }}"
+       class="block card hover:border-kova-300 dark:hover:border-kova-700 transition-colors">
+      <div class="px-5 py-4 flex items-start justify-between gap-4">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded
+              {% if item.source == 'whatsapp' %}bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300
+              {% else %}bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300{% endif %}">
+              {{ item.source_label }}
+            </span>
+            <span class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ item.title }}</span>
+          </div>
+          <p class="mt-1 text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{{ item.preview }}</p>
+        </div>
+        <span class="text-xs text-gray-400 shrink-0">{{ item.time_ago }}</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

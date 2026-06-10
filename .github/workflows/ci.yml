@@ -124,10 +124,16 @@ jobs:
           ! grep -rn "INSECURE-dev-key\|bfb279f9aa9bdbcf158e97dd71a467cd" --include="*.py" config/ apps/ || echo "No hardcoded secrets found"
 
       - name: pip-audit (known vulnerabilities)
-        run: pip-audit -r requirements/production.txt --desc on --fix --dry-run || true
+        run: |
+          pip-audit -r requirements/production.txt --desc on || {
+            echo "::warning::pip-audit found vulnerabilities — review artifact and fix deps"
+            exit 0
+          }
 
       - name: Bandit (Python security linter)
-        run: bandit -r apps/ -c pyproject.toml --severity-level medium --confidence-level medium -f json -o bandit-report.json || true
+        run: |
+          bandit -r apps/ -c pyproject.toml --severity-level medium --confidence-level medium -f json -o bandit-report.json
+          # Fail CI on medium+ findings; report still uploaded via artifact step below
 
       - name: Check Django deployment settings
         run: |

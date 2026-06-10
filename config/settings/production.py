@@ -118,7 +118,9 @@ CSP_SCRIPT_SRC = ("'self'", "https://unpkg.com", "https://cdn.jsdelivr.net", "ht
 CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com")
 CSP_IMG_SRC = ("'self'", "data:", "https:", "blob:")
 CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net")
-CSP_CONNECT_SRC = ("'self'", "https://api.stripe.com")
+# wss: required for /ws/updates/ real-time (Engage, token warnings). Full nonce-based
+# style-src removal deferred — Alpine/HTMX inline styles would break without audit.
+CSP_CONNECT_SRC = ("'self'", "https://api.stripe.com", "wss:")
 CSP_FRAME_SRC = ("'self'", "https://js.stripe.com")
 CSP_OBJECT_SRC = ("'none'",)
 CSP_BASE_URI = ("'self'",)
@@ -148,6 +150,11 @@ if not RESEND_API_KEY:
         "RESEND_API_KEY must be set in production. "
         "Without it, password resets and trial emails would be silently dropped."
     )
+
+# Webhook signature secrets — unsigned callbacks rejected at the view layer when unset.
+RESEND_WEBHOOK_SECRET = env("RESEND_WEBHOOK_SECRET", default="")  # noqa: F405
+WHATSAPP_APP_SECRET = env("WHATSAPP_APP_SECRET", default="")  # noqa: F405
+MPESA_WEBHOOK_SECRET = env("MPESA_WEBHOOK_SECRET", default="")  # noqa: F405
 INSTALLED_APPS += ["anymail"]  # noqa: F405
 EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
 ANYMAIL = {

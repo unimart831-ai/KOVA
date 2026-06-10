@@ -1,25 +1,37 @@
 {# ── Money chase board — what needs attention today ── #}
 {% if money_board %}
 <div class="space-y-3">
+  {% if revenue_stat and revenue_stat.has_data %}
+  <a href="{% url 'analytics:revenue' %}"
+     class="flex flex-wrap items-baseline gap-x-3 gap-y-1 p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/80 dark:bg-emerald-950/20 hover:border-emerald-300 dark:hover:border-emerald-800 transition-colors group">
+    <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Money proved this week</span>
+    <span class="text-2xl font-black tabular-nums text-gray-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300">KES {{ revenue_stat.current_kes|floatformat:0 }}</span>
+    {% if revenue_stat.direction == 'up' %}
+    <span class="text-xs font-semibold text-green-600 dark:text-green-400">+{{ revenue_stat.delta_pct|floatformat:0 }}% vs last week</span>
+    {% elif revenue_stat.direction == 'down' %}
+    <span class="text-xs font-semibold text-red-600 dark:text-red-400">{{ revenue_stat.delta_pct|floatformat:0 }}% vs last week</span>
+    {% endif %}
+  </a>
+  {% endif %}
+
   <p class="text-sm text-gray-600 dark:text-gray-400">{{ money_board.summary_line }}</p>
 
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
     {% with card=money_board.needs_reply %}
     {% if card.needs_reply_wa and card.needs_reply_engage %}
-    <div class="card">
+    <a href="{% url 'engage:unified_inbox' %}"
+       class="group card hover:border-kova-300 dark:hover:border-kova-700 transition-colors">
       <div class="px-5 py-4">
         <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ card.label }}</p>
         <p class="mt-1 text-3xl font-black tabular-nums text-gray-900 dark:text-white">{{ card.count }}</p>
-        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ card.detail }}</p>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 group-hover:text-kova-600 dark:group-hover:text-kova-400">{{ card.detail }}</p>
         <div class="mt-3 flex flex-wrap gap-2">
-          <a href="{% url 'whatsapp:inbox' %}?status=escalated"
-             class="text-xs font-medium text-kova-600 dark:text-kova-400 hover:underline">WA {{ card.needs_reply_wa }}</a>
+          <span class="text-xs font-medium text-kova-600 dark:text-kova-400">WA {{ card.needs_reply_wa }}</span>
           <span class="text-xs text-gray-300 dark:text-gray-600">·</span>
-          <a href="{% url 'engage:inbox' %}?needs_reply=1"
-             class="text-xs font-medium text-kova-600 dark:text-kova-400 hover:underline">Social {{ card.needs_reply_engage }}</a>
+          <span class="text-xs font-medium text-kova-600 dark:text-kova-400">Social {{ card.needs_reply_engage }}</span>
         </div>
       </div>
-    </div>
+    </a>
     {% else %}
     <a href="{% url card.url_name %}{% if card.url_query %}?{{ card.url_query }}{% endif %}"
        class="group card hover:border-kova-300 dark:hover:border-kova-700 transition-colors">

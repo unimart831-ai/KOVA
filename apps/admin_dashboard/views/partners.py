@@ -766,3 +766,43 @@ def marketplace_create(request):
         "mp": mp,
         "raw_api_key": raw_key,
     })
+
+
+@staff_required
+def partners_health(request):
+    """Partner health slice — sync errors, webhook failures, content backlog."""
+    seven_days_ago = timezone.now() - timedelta(days=7)
+    stale_cutoff = timezone.now() - timedelta(days=2)
+
+    webhook_failures_7d = WebhookDeliveryLog.objects.filter(
+        status=WebhookDeliveryLog.Status.FAILED,
+        created_at__gte=seven_days_ago,
+    ).count()
+
+    recent_failures = (
+        WebhookDeliveryLog.objects.filter(status=WebhookDeliveryLog.Status.FAILED)
+        .select_related("marketplace")
+        .order_by("-created_at")[:15]
+    )
+
+    stale_sync_count = MarketplaceSellerAccount.objects.filter(
+        status=MarketplaceSellerAccount.Status.ACTIVE,
+    ).filter(
+        Q(last_product_sync__isnull=True) | Q(last_product_sync__lt=stale_cutoff),
+    ).count()
+
+    zero_content_sellers = MarketplaceSellerAccount.objects.filter(
+        status=MarketplaceSellerAccount.Status.ACTIVE,
+        content_generated=0,
+    ).count()
+
+    active_marketplaces = MarketplacePartner.objects.filter(is_active=True).count()
+
+    return render(request, "admin_dashboard/partners/health.html", {
+        "page_title": "Partner health",
+        "webhook_failures_7d": webhook_failures_7d,
+        "recent_failures": recent_failures,
+        "stale_sync_count": stale_sync_count,
+        "zero_content_sellers": zero_content_sellers,
+        "active_marketplaces": active_marketplaces,
+    })

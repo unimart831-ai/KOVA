@@ -617,8 +617,16 @@ class WhatsAppProvider(BaseProvider):
         The signature header format is: sha256=<hex_digest>
         """
         if not self.app_secret:
-            logger.warning("WHATSAPP_APP_SECRET not set — skipping signature verification")
-            return True  # Allow in dev, but log warning
+            from django.conf import settings
+            if settings.DEBUG:
+                logger.warning(
+                    "WHATSAPP_APP_SECRET not set — skipping signature verification (dev only)"
+                )
+                return True
+            logger.error(
+                "WHATSAPP_APP_SECRET not set in production — rejecting unsigned webhook"
+            )
+            return False
 
         expected = hmac.new(
             self.app_secret.encode(),

@@ -170,20 +170,19 @@ def check_mpesa_subscriptions():
                 profile.subscription_status = "past_due"
                 profile.save(update_fields=["subscription_status"])
                 logger.info("Subscription past due: user=%s", profile.user.email)
-                # Send notification — subscription expired, renew to keep plan
-                from apps.emails.tasks import send_payment_reminder_email
-                send_payment_reminder_email.delay(str(profile.user.pk), 0)
+            from apps.billing.renewal_notifications import send_mpesa_renewal_warning
+            if send_mpesa_renewal_warning(profile.user, 0):
+                actions["warnings"] += 1
 
         elif days_until_expiry <= 3:
-            # 3 days or less until expiry — send reminder
-            actions["warnings"] += 1
+            # 3 days or less until expiry — send reminder (email + in-app)
             logger.info(
                 "Subscription expiring soon: user=%s days=%d",
                 profile.user.email, days_until_expiry,
             )
-            # Send reminder — plan expiring soon
-            from apps.emails.tasks import send_payment_reminder_email
-            send_payment_reminder_email.delay(str(profile.user.pk), days_until_expiry)
+            from apps.billing.renewal_notifications import send_mpesa_renewal_warning
+            if send_mpesa_renewal_warning(profile.user, days_until_expiry):
+                actions["warnings"] += 1
 
     logger.info(
         "M-Pesa subscription check: expired_payments=%d expired_subs=%d warnings=%d",
