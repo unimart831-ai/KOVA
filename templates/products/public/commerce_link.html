@@ -24,23 +24,25 @@
 <body class="shop-site">
 <div class="offer-page">
 
-  <nav class="offer-nav" aria-label="Shop navigation">
-    <a class="offer-nav-back" href="{{ shop_index_url }}">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-      All offers
-    </a>
-    <a class="offer-nav-brand" href="{{ shop_index_url }}">
-      {% if commerce_branding.logo_url %}
-      <img class="offer-nav-logo" src="{{ commerce_branding.logo_url }}" alt="">
-      {% else %}
-      <span class="offer-nav-logo-fallback" aria-hidden="true">{{ brand_name|slice:":1"|upper }}</span>
-      {% endif %}
-      <span class="offer-nav-name">{{ brand_name }}</span>
-    </a>
-  </nav>
+  <div class="offer-hero-band">
+    <nav class="offer-nav" aria-label="Shop navigation">
+      <a class="offer-nav-back" href="{{ shop_index_url }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        All offers
+      </a>
+      <a class="offer-nav-brand" href="{{ shop_index_url }}">
+        {% if commerce_branding.logo_url %}
+        <img class="offer-nav-logo" src="{{ commerce_branding.logo_url }}" alt="">
+        {% else %}
+        <span class="offer-nav-logo-fallback" aria-hidden="true">{{ brand_name|slice:":1"|upper }}</span>
+        {% endif %}
+        <span class="offer-nav-name">{{ brand_name }}</span>
+      </a>
+    </nav>
+  </div>
 
   {% if product_reel %}
-  <section class="offer-reel-card" aria-label="Product reel">
+  <section class="offer-reel-card product-reel-hero" aria-label="Product reel">
     <div class="product-reel-head">
       <h2 class="product-reel-title">See it in action</h2>
       <div class="product-reel-head-badges">
@@ -59,6 +61,7 @@
   </section>
   {% endif %}
 
+  <div class="offer-page-body">
   <div class="offer-magazine">
     <div class="offer-visual">
       {% with gallery=product.shop_gallery_urls hero=product.shop_hero_image_url %}
@@ -119,11 +122,16 @@
       {% if can_purchase %}
       <div class="offer-actions-card" aria-label="Offer actions">
         <p class="offer-actions-title">{{ action_heading }}</p>
+        {% if wa_url %}
+        <a href="{{ wa_url }}" class="shop-btn shop-btn--wa shop-btn--wa-primary" target="_blank" rel="noopener">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+          Order on WhatsApp
+        </a>
+        {% else %}
+        <p class="shop-wa-unavailable">WhatsApp ordering isn't set up for this shop yet. Use the options below or visit all offers.</p>
+        {% endif %}
         {% if primary_action_url %}
         <a href="{{ primary_action_url }}" class="shop-btn shop-btn--outline"{% if primary_action_external %} target="_blank" rel="noopener"{% endif %}>{{ primary_action_label }}</a>
-        {% endif %}
-        {% if wa_url %}
-        <a href="{{ wa_url }}" class="shop-btn shop-btn--wa" target="_blank" rel="noopener">Chat on WhatsApp</a>
         {% endif %}
 
         {% if mpesa_available %}
@@ -178,7 +186,7 @@
   </div>
 
   {% if related_products %}
-  <section class="offer-related" aria-label="More from this shop">
+  <section class="offer-related offer-page-body" aria-label="More from this shop">
     <div class="shop-section-head">
       <h2 class="shop-section-title">More from {{ brand_name }}</h2>
     </div>
@@ -206,7 +214,8 @@
   </section>
   {% endif %}
 
-  <p class="shop-powered">Powered by <a href="https://kovaagents.com" rel="noopener">Kova</a></p>
+  <p class="shop-powered offer-page-body">Powered by <a href="https://kovaagents.com" rel="noopener">Kova</a></p>
+  </div>
 </div>
 
 {% if can_purchase and wa_url or can_purchase and mpesa_available %}
@@ -219,7 +228,10 @@
   {% endif %}
   <div class="offer-sticky-actions">
     {% if wa_url %}
-    <a href="{{ wa_url }}" class="shop-btn shop-btn--wa" target="_blank" rel="noopener">Chat</a>
+    <a href="{{ wa_url }}" class="shop-btn shop-btn--wa" target="_blank" rel="noopener">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+      WhatsApp
+    </a>
     {% endif %}
     {% if mpesa_available %}
     <a href="#hero-img" class="shop-btn shop-btn--accent" onclick="document.querySelector('.offer-field')?.focus();return false;">Buy</a>

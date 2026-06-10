@@ -1,27 +1,39 @@
-{# Shared design system for public shop storefront pages #}
+{# Shared design system for public shop storefront pages — Kova dark/teal palette #}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --shop-accent: {{ commerce_branding.theme_primary_color|default:"#0f766e" }};
-    --shop-accent-hover: color-mix(in srgb, var(--shop-accent) 85%, #000);
-    --shop-accent-soft: color-mix(in srgb, var(--shop-accent) 12%, #fff);
-    --shop-accent-muted: color-mix(in srgb, var(--shop-accent) 28%, #fff);
-    --shop-bg: #fafafa;
-    --shop-surface: #ffffff;
-    --shop-text: #111827;
-    --shop-muted: #6b7280;
-    --shop-border: #e5e7eb;
-    --shop-gallery: #f3f4f6;
+    /* Kova brand foundation */
+    --kova-navy: #0c1222;
+    --kova-navy-soft: #151b2e;
+    --kova-navy-elevated: #1a2235;
+    --kova-teal: #0d8474;
+    --kova-teal-bright: #14b8a6;
+    --kova-teal-glow: rgba(13, 132, 116, 0.35);
+
+    --shop-accent: {{ commerce_branding.theme_primary_color|default:"#0d8474" }};
+    --shop-accent-hover: color-mix(in srgb, var(--shop-accent) 82%, #fff);
+    --shop-accent-soft: color-mix(in srgb, var(--shop-accent) 18%, var(--kova-navy-soft));
+    --shop-accent-muted: color-mix(in srgb, var(--shop-accent) 35%, var(--kova-navy-soft));
+    --shop-bg: var(--kova-navy);
+    --shop-surface: var(--kova-navy-soft);
+    --shop-surface-elevated: var(--kova-navy-elevated);
+    --shop-text: #f3f4f6;
+    --shop-muted: #9ca3af;
+    --shop-border: rgba(255, 255, 255, 0.08);
+    --shop-border-strong: rgba(255, 255, 255, 0.14);
+    --shop-gallery: #16162a;
+    --shop-gallery-border: #2a2a42;
     --shop-wa: #25D366;
+    --shop-wa-hover: #1ebe57;
     --shop-mpesa: #16a34a;
     --shop-radius-sm: 10px;
     --shop-radius-md: 14px;
     --shop-radius-lg: 20px;
-    --shop-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
-    --shop-shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
-    --shop-shadow-lg: 0 16px 40px rgba(15, 23, 42, 0.1);
+    --shop-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+    --shop-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --shop-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.4);
     --shop-max: 1120px;
     --shop-content: 680px;
   }
@@ -54,22 +66,12 @@
   /* ── Site header / hero ── */
   .shop-hero {
     position: relative;
-    padding: 28px 0 32px;
-    margin-bottom: 8px;
-  }
-
-  .shop-hero::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 180px;
-    background: linear-gradient(
-      165deg,
-      var(--shop-accent-soft) 0%,
-      rgba(255, 255, 255, 0) 72%
-    );
-    pointer-events: none;
-    z-index: 0;
+    padding: 32px 24px 28px;
+    margin: 0 -20px 20px;
+    background:
+      radial-gradient(ellipse 90% 70% at 50% -10%, var(--kova-teal-glow), transparent 55%),
+      linear-gradient(165deg, var(--kova-navy-elevated) 0%, var(--kova-navy) 100%);
+    border-bottom: 1px solid var(--shop-border);
   }
 
   .shop-hero-inner {
@@ -80,6 +82,8 @@
     align-items: center;
     text-align: center;
     gap: 14px;
+    max-width: var(--shop-max);
+    margin: 0 auto;
   }
 
   .shop-logo {
@@ -87,9 +91,9 @@
     height: 72px;
     border-radius: 18px;
     object-fit: cover;
-    background: var(--shop-surface);
+    background: var(--shop-surface-elevated);
     box-shadow: var(--shop-shadow-md);
-    border: 2px solid rgba(255, 255, 255, 0.9);
+    border: 2px solid var(--shop-border-strong);
   }
 
   .shop-logo-fallback {
@@ -102,7 +106,7 @@
     font-size: 28px;
     font-weight: 800;
     color: #fff;
-    background: var(--shop-accent);
+    background: linear-gradient(135deg, var(--shop-accent), var(--kova-teal-bright));
     box-shadow: var(--shop-shadow-md);
   }
 
@@ -128,10 +132,23 @@
     gap: 6px;
     font-size: 0.8125rem;
     font-weight: 600;
-    color: var(--shop-accent);
+    color: var(--kova-teal-bright);
     background: var(--shop-accent-soft);
     padding: 6px 12px;
     border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--shop-accent) 35%, transparent);
+  }
+
+  .shop-hero-cta {
+    width: 100%;
+    max-width: 320px;
+    margin-top: 4px;
+  }
+
+  .shop-hero-wa-note {
+    font-size: 0.75rem;
+    color: var(--shop-muted);
+    margin: 0;
   }
 
   /* ── Section headings ── */
@@ -152,6 +169,7 @@
     font-weight: 700;
     letter-spacing: -0.02em;
     margin: 0;
+    color: var(--shop-text);
   }
 
   .shop-section-meta {
@@ -190,13 +208,14 @@
     border-radius: var(--shop-radius-md);
     overflow: hidden;
     box-shadow: var(--shop-shadow-sm);
-    border: 1px solid rgba(15, 23, 42, 0.04);
-    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    border: 1px solid var(--shop-border);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
   }
 
   .shop-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shop-shadow-md);
+    border-color: color-mix(in srgb, var(--shop-accent) 40%, transparent);
   }
 
   .shop-card-photo {
@@ -204,13 +223,15 @@
     aspect-ratio: 1;
     background: var(--shop-gallery);
     overflow: hidden;
+    border-bottom: 1px solid var(--shop-gallery-border);
   }
 
   .shop-card-photo img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     display: block;
+    background: var(--shop-gallery);
     transition: transform 0.3s ease;
   }
 
@@ -239,7 +260,7 @@
   .shop-card-price {
     font-size: 0.9375rem;
     font-weight: 800;
-    color: var(--shop-accent);
+    color: var(--kova-teal-bright);
     margin-top: auto;
   }
 
@@ -256,12 +277,14 @@
 
   .shop-badge--featured {
     background: var(--shop-accent-soft);
-    color: var(--shop-accent);
+    color: var(--kova-teal-bright);
+    border: 1px solid color-mix(in srgb, var(--shop-accent) 30%, transparent);
   }
 
   .shop-badge--stock {
-    background: #fef3c7;
-    color: #92400e;
+    background: rgba(251, 191, 36, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.25);
   }
 
   .shop-placeholder {
@@ -272,8 +295,8 @@
     justify-content: center;
     font-size: 2rem;
     font-weight: 800;
-    color: var(--shop-accent);
-    background: var(--shop-accent-soft);
+    color: var(--kova-teal-bright);
+    background: var(--shop-gallery);
   }
 
   /* ── Trust footer ── */
@@ -291,6 +314,7 @@
     font-size: 0.9375rem;
     font-weight: 700;
     margin: 0 0 12px;
+    color: var(--shop-text);
   }
 
   .shop-trust-badges {
@@ -309,21 +333,21 @@
     font-weight: 600;
     padding: 8px 14px;
     border-radius: 999px;
-    background: #f9fafb;
+    background: var(--shop-surface-elevated);
     border: 1px solid var(--shop-border);
     color: var(--shop-text);
   }
 
   .shop-trust-badge--wa {
-    background: rgba(37, 211, 102, 0.1);
-    border-color: rgba(37, 211, 102, 0.25);
-    color: #15803d;
+    background: rgba(37, 211, 102, 0.12);
+    border-color: rgba(37, 211, 102, 0.28);
+    color: #4ade80;
   }
 
   .shop-trust-badge--mpesa {
-    background: rgba(22, 163, 74, 0.08);
-    border-color: rgba(22, 163, 74, 0.2);
-    color: #166534;
+    background: rgba(22, 163, 74, 0.1);
+    border-color: rgba(22, 163, 74, 0.25);
+    color: #86efac;
   }
 
   /* ── Buttons ── */
@@ -341,25 +365,38 @@
     text-decoration: none;
     border: 0;
     cursor: pointer;
-    transition: background 0.15s, transform 0.12s;
+    transition: background 0.15s, transform 0.12s, box-shadow 0.15s;
   }
 
   .shop-btn:active {
     transform: scale(0.98);
   }
 
+  .shop-btn svg {
+    flex-shrink: 0;
+  }
+
   .shop-btn--wa {
     background: var(--shop-wa);
     color: #fff;
+    box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
   }
 
   .shop-btn--wa:hover {
-    background: #1ebe57;
+    background: var(--shop-wa-hover);
+    box-shadow: 0 6px 20px rgba(37, 211, 102, 0.45);
+  }
+
+  .shop-btn--wa-primary {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    padding: 16px 22px;
   }
 
   .shop-btn--accent {
     background: var(--shop-accent);
     color: #fff;
+    box-shadow: 0 4px 14px var(--kova-teal-glow);
   }
 
   .shop-btn--accent:hover {
@@ -367,9 +404,19 @@
   }
 
   .shop-btn--outline {
-    background: var(--shop-surface);
-    color: var(--shop-accent);
-    border: 1.5px solid var(--shop-accent);
+    background: transparent;
+    color: var(--kova-teal-bright);
+    border: 1.5px solid color-mix(in srgb, var(--shop-accent) 55%, transparent);
+  }
+
+  .shop-btn--outline:hover {
+    background: var(--shop-accent-soft);
+  }
+
+  .shop-btn--ghost {
+    background: var(--shop-surface-elevated);
+    color: var(--shop-muted);
+    border: 1px solid var(--shop-border);
   }
 
   .shop-btn:disabled {
@@ -377,18 +424,30 @@
     cursor: not-allowed;
   }
 
+  .shop-wa-unavailable {
+    font-size: 0.875rem;
+    color: var(--shop-muted);
+    text-align: center;
+    padding: 12px 14px;
+    border-radius: var(--shop-radius-sm);
+    background: var(--shop-surface-elevated);
+    border: 1px dashed var(--shop-border-strong);
+    line-height: 1.5;
+    margin: 0;
+  }
+
   /* ── Site footer ── */
   .shop-powered {
     text-align: center;
     font-size: 0.6875rem;
-    color: #9ca3af;
+    color: var(--shop-muted);
     margin-top: 32px;
     padding-bottom: 8px;
     letter-spacing: 0.02em;
   }
 
   .shop-powered a {
-    color: #6b7280;
+    color: var(--kova-teal-bright);
     text-decoration: none;
   }
 

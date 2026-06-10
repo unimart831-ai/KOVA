@@ -1,19 +1,19 @@
-{# Shared reel styles for public commerce pages — flat, no floating cards #}
+{# Shared reel styles for public commerce pages — Kova dark gallery palette #}
 <style>
   :root {
     --commerce-gallery: #16162a;
     --commerce-gallery-border: #2a2a42;
-    --commerce-radius-sm: 4px;
-    --commerce-radius-md: 6px;
+    --commerce-radius-sm: 6px;
+    --commerce-radius-md: 10px;
   }
 
   .reels-section {
-    margin: 0 0 18px;
-    padding: 14px 14px 12px;
-    border-radius: var(--commerce-radius-sm);
+    margin: 0 0 20px;
+    padding: 16px 16px 14px;
+    border-radius: var(--shop-radius-md, 14px);
     background: var(--commerce-gallery);
     border: 1px solid var(--commerce-gallery-border);
-    box-shadow: none;
+    box-shadow: var(--shop-shadow-md, 0 8px 24px rgba(0, 0, 0, 0.35));
   }
 
   .reels-head {
@@ -21,7 +21,7 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
 
   .reels-head-copy {
@@ -29,51 +29,52 @@
   }
 
   .reels-title {
-    font-size: 16px;
+    font-size: 1rem;
     font-weight: 700;
     color: #f9fafb;
     letter-spacing: -0.02em;
+    margin: 0;
   }
 
   .reels-sub {
-    font-size: 12px;
+    font-size: 0.75rem;
     color: #9ca3af;
-    margin-top: 2px;
+    margin: 2px 0 0;
   }
 
   .reels-hint {
-    font-size: 11px;
-    color: #a7f3d0;
+    font-size: 0.6875rem;
+    color: #6ee7b7;
     white-space: nowrap;
-    padding: 4px 8px;
-    border-radius: var(--commerce-radius-sm);
-    background: rgba(5, 150, 105, 0.15);
-    border: 1px solid rgba(167, 243, 208, 0.2);
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(13, 132, 116, 0.18);
+    border: 1px solid rgba(110, 231, 183, 0.22);
     flex-shrink: 0;
   }
 
   .reels-track {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     overflow-x: auto;
-    padding: 2px 0 4px;
+    padding: 2px 0 6px;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x mandatory;
   }
 
   .reels-track::-webkit-scrollbar {
-    height: 3px;
+    height: 4px;
   }
 
   .reels-track::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.18);
-    border-radius: 0;
+    border-radius: 4px;
   }
 
   .reel-card {
     position: relative;
     flex-shrink: 0;
-    width: 140px;
+    width: 148px;
     scroll-snap-align: start;
   }
 
@@ -85,7 +86,7 @@
 
   .reel-frame {
     position: relative;
-    border-radius: 0;
+    border-radius: var(--commerce-radius-sm);
     overflow: hidden;
     background: #0b0b14;
     aspect-ratio: 9/16;
@@ -105,7 +106,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    margin-top: 6px;
+    margin-top: 8px;
     padding: 0;
   }
 
@@ -123,7 +124,7 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: #fff;
-    background: rgba(249, 115, 22, 0.92);
+    background: linear-gradient(135deg, #0d8474, #14b8a6);
     padding: 3px 7px;
     border-radius: var(--commerce-radius-sm);
     pointer-events: none;
@@ -132,9 +133,9 @@
   .reel-sound-btn {
     width: 28px;
     height: 28px;
-    border: 1px solid rgba(167, 243, 208, 0.35);
+    border: 1px solid rgba(110, 231, 183, 0.35);
     border-radius: var(--commerce-radius-sm);
-    background: rgba(236, 253, 245, 0.12);
+    background: rgba(13, 132, 116, 0.15);
     color: #ecfdf5;
     font-size: 13px;
     line-height: 1;
@@ -171,13 +172,14 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    padding: 12px 16px 0;
+    padding: 14px 18px 0;
   }
 
   .product-reel-title {
-    font-size: 14px;
+    font-size: 0.9375rem;
     font-weight: 700;
-    color: var(--commerce-text, #111827);
+    color: #f9fafb;
+    margin: 0;
   }
 
   .product-reel-head-badges {
@@ -190,9 +192,9 @@
   .reel-unmute-btn {
     font-size: 11px;
     font-weight: 600;
-    color: #059669;
-    background: #ecfdf5;
-    border: 1px solid #d1fae5;
+    color: #6ee7b7;
+    background: rgba(13, 132, 116, 0.15);
+    border: 1px solid rgba(110, 231, 183, 0.25);
     border-radius: var(--commerce-radius-sm);
     padding: 6px 10px;
     cursor: pointer;
@@ -203,12 +205,12 @@
     position: relative;
     width: auto;
     max-width: none;
-    margin: 8px 12px 0;
+    margin: 10px 14px 14px;
     border-radius: var(--commerce-radius-sm);
     overflow: hidden;
     background: var(--commerce-gallery);
     aspect-ratio: 9/16;
-    max-height: min(58vh, 400px);
+    max-height: min(58vh, 420px);
     border: 1px solid var(--commerce-gallery-border);
   }
 
