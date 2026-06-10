@@ -381,12 +381,34 @@ def _build_promotion_idea(product):
 
 # ── Offering-type-aware prompt builders ──────────────────────────────
 
-def _build_vision_prompt(*, offering_type, name, display_price, num_images, photo_context="", name_is_placeholder=False):
+def _build_vision_prompt(
+    *,
+    offering_type,
+    name,
+    display_price,
+    num_images,
+    photo_context="",
+    name_is_placeholder=False,
+    category_name="",
+    industry_label="",
+):
     """Build the vision AI prompt based on offering type."""
 
     context_line = ""
     if photo_context:
         context_line = f"\nUser context about this photo: {photo_context}\n"
+
+    catalog_line = ""
+    if category_name:
+        catalog_line += f"\nSeller catalog category: {category_name}"
+    if industry_label:
+        catalog_line += f"\nSeller business industry: {industry_label}"
+    if catalog_line:
+        catalog_line += (
+            "\nWrite description_sentences for this category — lead with what the buyer gets, "
+            "mention visible specs/materials from the photo, and avoid generic filler like "
+            "'perfect for your needs' or 'product showcase'.\n"
+        )
 
     placeholder_hint = ""
     if name_is_placeholder:
@@ -508,7 +530,7 @@ def _build_vision_prompt(*, offering_type, name, display_price, num_images, phot
             f'] (provide {num_images} different angles, one per photo)'
         )
     prompt += "\n}"
-    return prompt + placeholder_hint
+    return prompt + catalog_line + placeholder_hint
 
 
 def _build_seed_idea(*, offering_type, name, display_price, features_text,
@@ -1458,6 +1480,12 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
     offering_type = product.offering_type
 
     # ── Build offering-type-aware vision prompt ──────────────────────
+    profile = user.profile
+    category_name = product.category.name if product.category_id else ""
+    from apps.products.product_copy import _profile_industry_label
+
+    industry_label = _profile_industry_label(profile)
+
     vision_prompt = _build_vision_prompt(
         offering_type=offering_type,
         name=product.name,
@@ -1465,6 +1493,8 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
         num_images=num_images,
         photo_context=photo_context,
         name_is_placeholder=is_placeholder_product_name(product.name),
+        category_name=category_name,
+        industry_label=industry_label,
     )
 
     try:
@@ -1501,14 +1531,9 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
         )
     except Exception as exc:
         logger.error("Snap to Sell vision failed for %s: %s", product_id, exc)
-        analysis = {
-            "description": f"Quality {product.name} — perfect for your needs.",
-            "key_features": [],
-            "target_audience": "General consumers",
-            "suggested_tags": [],
-            "visual_style": "Product photo",
-            "campaign_angle": "Product showcase",
-        }
+        from apps.products.product_copy import build_snap_fallback_analysis
+
+        analysis = build_snap_fallback_analysis(product, profile)
 
     # ── Step 2: Enrich the product with AI analysis ──────────────────
     renamed_fields = apply_ai_detected_product_fields(product, analysis)

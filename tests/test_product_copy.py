@@ -2,9 +2,12 @@
 
 from apps.products.product_copy import (
     build_product_carousel_plan,
+    build_snap_fallback_analysis,
     description_sentence_count,
     format_feature_bullets,
     format_product_description,
+    generate_product_description,
+    get_product_display_highlights,
     improve_product_name,
     should_improve_product_name,
 )
@@ -116,6 +119,50 @@ def test_clean_description_sentence_removes_labels():
     assert "Sentence 2" not in out
     assert "VON microwave" in out
     assert description_sentence_count(out) >= 3
+
+
+def test_snap_fallback_avoids_generic_copy():
+    product = _Product(name="Moses Chisunka", price=2500)
+    profile = type("Profile", (), {
+        "industry": "wholesale_retail",
+        "industry_other": "",
+        "target_audience": "",
+        "get_industry_display": lambda self: "Wholesale & Retail",
+    })()
+    analysis = build_snap_fallback_analysis(product, profile)
+    joined = " ".join(analysis["description_sentences"])
+    assert "perfect for your needs" not in joined.lower()
+    assert "product showcase" not in joined.lower()
+    assert "Moses Chisunka" in joined
+    assert len(analysis["description_sentences"]) >= 3
+
+
+def test_generate_product_description_uses_category_context():
+    product = _Product(name="Amara Body Lotion", price=350)
+    product.category = type("Cat", (), {"name": "Skincare"})()
+    product.category_id = True
+    profile = type("Profile", (), {
+        "industry": "fashion_beauty",
+        "industry_other": "",
+        "target_audience": "",
+        "company_name": "Amara Beauty",
+        "get_industry_display": lambda self: "Fashion & Beauty",
+    })()
+    product.user = type("User", (), {
+        "profile": profile,
+        "full_name": "Amara Seller",
+        "username": "amara",
+    })()
+    desc = generate_product_description(product, {}, profile)
+    assert description_sentence_count(desc) >= 3
+    assert "perfect for your needs" not in desc.lower()
+
+
+def test_get_product_display_highlights_from_tags():
+    product = _Product(name="Widget")
+    product.tags = ["Fast charging", "Travel size"]
+    highlights = get_product_display_highlights(product)
+    assert highlights == ["Fast charging", "Travel size"]
 
 
 def test_carousel_plan_includes_story_and_price():

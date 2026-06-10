@@ -20,7 +20,8 @@
   {% include "products/public/_shop_public_styles.html" %}
   {% include "products/public/_shop_reels_styles.html" %}
 </head>
-<body class="shop-site">
+<body class="shop-site{% if social_links %} shop-site--has-mobile-nav{% endif %}">
+{% include "products/public/_shop_nav.html" %}
 <div class="shop-container">
   <header class="shop-hero">
     <div class="shop-hero-inner">
@@ -72,6 +73,9 @@
         </div>
         <div class="shop-card-body">
           <div class="shop-card-name">{{ product.name }}</div>
+          {% if product.shop_teaser %}
+          <p class="shop-card-teaser">{{ product.shop_teaser }}</p>
+          {% endif %}
           {% if product.display_price %}
           <div class="shop-card-price">{{ product.display_price }}</div>
           {% endif %}
@@ -114,6 +118,7 @@
 
   <p class="shop-powered">Powered by <a href="https://kovaagents.com" rel="noopener">Kova</a></p>
 </div>
+{% include "products/public/_shop_mobile_nav.html" %}
 {% include "products/public/_shop_reels_autoplay.js.html" %}
 </body>
 </html>

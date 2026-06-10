@@ -94,9 +94,36 @@
 
   @media (min-width: 768px) {
     .offer-magazine {
-      grid-template-columns: 1.1fr 0.9fr;
+      grid-template-columns: 1.15fr 0.85fr;
       gap: 40px;
       align-items: start;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .offer-magazine {
+      gap: 48px;
+    }
+
+    .offer-page-body {
+      max-width: var(--shop-max, 1120px);
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .offer-magazine {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .offer-visual {
+      order: 1;
+    }
+
+    .offer-info {
+      order: 2;
     }
   }
 
@@ -232,10 +259,20 @@
     border-color: rgba(239, 68, 68, 0.25);
   }
 
+  .offer-desc-block {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 18px;
+    background: var(--shop-surface, #151b2e);
+    border: 1px solid var(--shop-border, rgba(255, 255, 255, 0.08));
+    border-radius: var(--shop-radius-md, 14px);
+  }
+
   .offer-desc {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
   }
 
   .offer-desc p {
@@ -243,6 +280,43 @@
     line-height: 1.65;
     color: var(--shop-muted, #9ca3af);
     margin: 0;
+  }
+
+  .offer-desc-lead {
+    font-size: 1.0625rem !important;
+    font-weight: 600;
+    color: var(--shop-text, #f3f4f6) !important;
+    line-height: 1.55 !important;
+  }
+
+  .offer-highlights {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .offer-highlights li {
+    position: relative;
+    padding-left: 1.35rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--kova-teal-bright, #14b8a6);
+  }
+
+  .offer-highlights li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--shop-accent, #0d8474);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--shop-accent, #0d8474) 25%, transparent);
   }
 
   .offer-actions-card {
@@ -334,12 +408,20 @@
   }
 
   /* ── Sticky mobile CTA bar ── */
+  .shop-site--has-mobile-nav .offer-sticky-bar {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .shop-site--has-mobile-nav.shop-site--has-sticky-cta .offer-page {
+    padding-bottom: calc(168px + env(safe-area-inset-bottom, 0px));
+  }
+
   .offer-sticky-bar {
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 50;
+    z-index: 54;
     display: flex;
     gap: 10px;
     padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));

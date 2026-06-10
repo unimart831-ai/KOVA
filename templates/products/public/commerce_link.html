@@ -21,22 +21,14 @@
   {% include "products/public/_shop_reels_styles.html" %}
   {% include "products/public/_commerce_page_styles.html" %}
 </head>
-<body class="shop-site">
+<body class="shop-site{% if social_links %} shop-site--has-mobile-nav{% endif %}{% if can_purchase and wa_url or can_purchase and mpesa_available %} shop-site--has-sticky-cta{% endif %}">
 <div class="offer-page">
-
+  {% include "products/public/_shop_nav.html" %}
   <div class="offer-hero-band">
     <nav class="offer-nav" aria-label="Shop navigation">
       <a class="offer-nav-back" href="{{ shop_index_url }}">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
         All offers
-      </a>
-      <a class="offer-nav-brand" href="{{ shop_index_url }}">
-        {% if commerce_branding.logo_url %}
-        <img class="offer-nav-logo" src="{{ commerce_branding.logo_url }}" alt="">
-        {% else %}
-        <span class="offer-nav-logo-fallback" aria-hidden="true">{{ brand_name|slice:":1"|upper }}</span>
-        {% endif %}
-        <span class="offer-nav-name">{{ brand_name }}</span>
       </a>
     </nav>
   </div>
@@ -106,11 +98,22 @@
         {% endif %}
       </div>
 
-      {% if product_description_paragraphs %}
-      <div class="offer-desc">
-        {% for para in product_description_paragraphs %}
-        <p>{{ para }}</p>
-        {% endfor %}
+      {% if product_description_paragraphs or product_highlights %}
+      <div class="offer-desc-block">
+        {% if product_description_paragraphs %}
+        <div class="offer-desc">
+          {% for para in product_description_paragraphs %}
+          <p class="{% if forloop.first %}offer-desc-lead{% endif %}">{{ para }}</p>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% if product_highlights %}
+        <ul class="offer-highlights" aria-label="Key benefits">
+          {% for highlight in product_highlights %}
+          <li>{{ highlight }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
       </div>
       {% endif %}
       {% if product.fulfillment_notes %}
@@ -373,6 +376,7 @@ function mpesaPay() {
   });
 })();
 </script>
+{% include "products/public/_shop_mobile_nav.html" %}
 {% include "products/public/_shop_reels_autoplay.js.html" %}
 </body>
 </html>

@@ -24,7 +24,12 @@ from apps.products.commerce_seo import (
     build_commerce_page_seo,
     build_shop_page_seo,
 )
-from apps.products.product_copy import format_product_description
+from apps.products.commerce_social import get_public_social_links, resolve_shop_whatsapp
+from apps.products.product_copy import (
+    format_product_description,
+    get_product_display_highlights,
+    get_product_shop_teaser,
+)
 from apps.products.product_cta import (
     primary_action_label_for,
     public_action_heading_for,
@@ -53,11 +58,26 @@ def _track_commerce_view(request, product, profile):
         logger.exception("commerce link view tracking failed for product %s", product.pk)
 
 
-def _whatsapp_url(profile, text: str) -> str:
-    whatsapp = profile.cta_whatsapp or ""
+def _whatsapp_url(profile, text: str, user=None) -> str:
+    whatsapp = resolve_shop_whatsapp(profile, user)
     if not whatsapp:
         return ""
     return f"https://wa.me/{whatsapp}?text={quote(text)}"
+
+
+def _commerce_context(profile, user, *, wa_text: str) -> dict:
+    social_links = get_public_social_links(user, profile, wa_text=wa_text)
+    wa_url = _whatsapp_url(profile, wa_text, user)
+    if not wa_url:
+        for link in social_links:
+            if link["platform"] == "whatsapp":
+                wa_url = link["url"]
+                break
+    return {
+        "social_links": social_links,
+        "wa_url": wa_url,
+        "whatsapp": resolve_shop_whatsapp(profile, user),
+    }
 
 
 def _product_description_paragraphs(product, profile, user) -> tuple[str, list[str]]:
@@ -85,6 +105,7 @@ def public_shop_index(request, page_slug):
     user = profile.user
     brand = brand_name(profile, user)
     wa_text = f"Hi! I'd like to browse your offers — {brand}."
+    commerce_ctx = _commerce_context(profile, user, wa_text=wa_text)
     seo = build_shop_page_seo(request, profile, user, products)
     shop_reels = get_public_shop_reels(profile)
     from apps.teams.branding import get_commerce_branding
@@ -98,16 +119,19 @@ def public_shop_index(request, page_slug):
     seller_limits = get_user_plan_limits(user)
     mpesa_shop_enabled = bool(seller_limits.get("mpesa_commerce"))
 
+    for p in products:
+        p.shop_teaser = get_product_shop_teaser(p)
+
     return render(request, "products/public/shop_index.html", {
         "profile": profile,
         "products": products,
         "user": user,
         "shop_slug": resolve_page_slug(profile),
         "brand_name": brand,
-        "wa_url": _whatsapp_url(profile, wa_text),
         "shop_reels": shop_reels,
         "commerce_branding": commerce_branding,
         "mpesa_shop_enabled": mpesa_shop_enabled,
+        **commerce_ctx,
         **seo,
     })
 
@@ -122,13 +146,14 @@ def public_commerce_link(request, page_slug, commerce_slug):
 
     user = product.user
     brand = brand_name(profile, user)
-    whatsapp = profile.cta_whatsapp or ""
     wa_text = (
         f"Hi! I'm interested in {product.name}"
         f"{f' ({product.display_price})' if product.display_price else ''} "
         f"from your Kova offer page."
     )
-    wa_url = _whatsapp_url(profile, wa_text)
+    commerce_ctx = _commerce_context(profile, user, wa_text=wa_text)
+    whatsapp = commerce_ctx["whatsapp"]
+    wa_url = commerce_ctx["wa_url"]
 
     from apps.billing.models import get_user_plan_limits
 
@@ -158,6 +183,7 @@ def public_commerce_link(request, page_slug, commerce_slug):
     product_description, product_description_paragraphs = _product_description_paragraphs(
         product, profile, user,
     )
+    product_highlights = get_product_display_highlights(product)
 
     from apps.teams.branding import get_commerce_branding
 
@@ -184,11 +210,11 @@ def public_commerce_link(request, page_slug, commerce_slug):
         "product": product,
         "product_description": product_description,
         "product_description_paragraphs": product_description_paragraphs,
+        "product_highlights": product_highlights,
         "user": user,
         "shop_slug": shop_slug,
         "brand_name": brand,
         "whatsapp": whatsapp,
-        "wa_url": wa_url,
         "mpesa_available": mpesa_available,
         "can_purchase": can_purchase,
         "action_heading": public_action_heading_for(product),
@@ -198,6 +224,7 @@ def public_commerce_link(request, page_slug, commerce_slug):
         "product_reel": product_reel,
         "commerce_branding": commerce_branding,
         "related_products": related_products,
+        **commerce_ctx,
         **seo,
     })
 

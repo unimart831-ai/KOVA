@@ -129,6 +129,185 @@ def description_sentence_count(text: str) -> int:
     return len(normalize_description_sentences(split_description_sentences(text)))
 
 
+def _profile_industry_label(profile) -> str:
+    if not profile:
+        return ""
+    if profile.industry == "other" and (profile.industry_other or "").strip():
+        return profile.industry_other.strip()
+    if profile.industry:
+        try:
+            return profile.get_industry_display()
+        except Exception:
+            return str(profile.industry).replace("_", " ").title()
+    return ""
+
+
+def _category_context_phrase(category_name: str, offering_type: str = "product") -> str:
+    cat = (category_name or "").strip()
+    if cat:
+        return cat.lower()
+    if offering_type == "service":
+        return "professional service"
+    if offering_type == "digital":
+        return "digital resource"
+    return "everyday essential"
+
+
+def _price_tier_hint(price) -> str:
+    if price is None:
+        return ""
+    try:
+        amount = float(price)
+    except (TypeError, ValueError):
+        return ""
+    if amount >= 50000:
+        return "premium"
+    if amount >= 15000:
+        return "mid-range"
+    if amount > 0:
+        return "great value"
+    return ""
+
+
+def build_snap_fallback_analysis(product, profile) -> dict:
+    """
+    Rich template analysis when vision AI fails — category- and industry-aware.
+    Used at snap creation time, not on every page view.
+    """
+    category_name = product.category.name if getattr(product, "category_id", None) else ""
+    industry = _profile_industry_label(profile)
+    name = (product.name or "This item").strip()
+    offering = getattr(product, "offering_type", "product") or "product"
+    context = _category_context_phrase(category_name, offering)
+    tier = _price_tier_hint(getattr(product, "price", None))
+
+    key_features: list[str] = []
+    if category_name:
+        key_features.append(f"Curated for {category_name.lower()} shoppers")
+    if tier:
+        key_features.append(f"{tier.title()} quality you can trust")
+    if industry:
+        key_features.append(f"From a trusted {industry.lower()} seller")
+
+    audience = (profile.target_audience or "").strip() if profile else ""
+    if not audience and industry:
+        audience = f"customers looking for {context}"
+    elif not audience:
+        audience = "shoppers who want reliable quality"
+
+    sentences: list[str] = []
+    if offering == "service":
+        sentences = [
+            f"{name} helps you get professional results without the hassle.",
+            f"Built for {audience} who need dependable expertise.",
+            "Book today and see why clients keep coming back.",
+        ]
+    elif offering == "digital":
+        sentences = [
+            f"{name} gives you instant access to practical know-how.",
+            f"Designed for {audience} ready to level up.",
+            "Download or access immediately after purchase.",
+        ]
+    else:
+        lead = f"{name} is a standout {context}"
+        if tier:
+            lead += f" offering {tier} performance"
+        lead += "."
+        sentences = [
+            lead,
+            f"Carefully chosen for {audience}.",
+            "Order today and enjoy fast, friendly service from a seller you can trust.",
+        ]
+        if category_name:
+            sentences[1] = (
+                f"Perfect for {audience} who appreciate quality {category_name.lower()}."
+            )
+
+    return {
+        "description_sentences": sentences[:MAX_DESCRIPTION_SENTENCES],
+        "description": " ".join(sentences[:MAX_DESCRIPTION_SENTENCES]),
+        "key_features": key_features[:3],
+        "target_audience": audience,
+        "suggested_tags": [category_name] if category_name else [],
+        "visual_style": "Product photo",
+        "campaign_angle": f"Discover {name}",
+        "category_name": category_name,
+        "industry_label": industry,
+    }
+
+
+def generate_product_description(product, analysis: dict | None, profile) -> str:
+    """
+    Build stored shop copy from snap analysis plus catalog context.
+
+    Prefer vision output; enrich thin/generic analysis with category, industry, and price.
+    """
+    from apps.products.commerce_seo import brand_name
+
+    analysis = dict(analysis or {})
+    if not analysis.get("description_sentences") and not analysis.get("description"):
+        analysis = {**build_snap_fallback_analysis(product, profile), **analysis}
+
+    if analysis.get("category_name") is None:
+        analysis["category_name"] = (
+            product.category.name if getattr(product, "category_id", None) else ""
+        )
+    if not analysis.get("industry_label"):
+        analysis["industry_label"] = _profile_industry_label(profile)
+
+    brand = brand_name(profile, product.user)
+    return format_product_description(
+        product.description or "",
+        analysis,
+        product_name=product.name,
+        brand=brand,
+        price=product.display_price or "",
+    )
+
+
+def get_product_display_highlights(product, analysis: dict | None = None) -> list[str]:
+    """Buyer-facing bullet highlights for product detail pages."""
+    analysis = analysis or {}
+    highlights: list[str] = []
+    seen: set[str] = set()
+
+    def _add(text: str) -> None:
+        feat = strip_feature_bullet(str(text))
+        if not feat or feat.lower() in seen:
+            return
+        seen.add(feat.lower())
+        highlights.append(feat)
+
+    for feat in analysis.get("key_features") or []:
+        _add(feat)
+        if len(highlights) >= 4:
+            return highlights
+
+    for tag in product.tags or []:
+        _add(tag)
+        if len(highlights) >= 4:
+            return highlights
+
+    return highlights[:4]
+
+
+def get_product_shop_teaser(product, *, max_len: int = 90) -> str:
+    """Short card teaser from stored description."""
+    text = (product.description or "").strip()
+    if not text:
+        return ""
+    if "\n\n" in text:
+        lead = text.split("\n\n", 1)[0].strip()
+    else:
+        parts = split_description_sentences(text)
+        lead = parts[0] if parts else text
+    lead = clean_description_sentence(lead)
+    if len(lead) <= max_len:
+        return lead
+    trimmed = lead[: max_len - 1].rsplit(" ", 1)[0]
+    return f"{trimmed}…" if trimmed else lead[:max_len]
+
+
 def expand_to_description_sentences(
     sentences: list[str],
     *,
@@ -184,8 +363,18 @@ def expand_to_description_sentences(
     if len(out) < MIN_DESCRIPTION_SENTENCES and price:
         _add(f"Priced at {price}")
 
+    category = (analysis.get("category_name") or "").strip()
+    industry = (analysis.get("industry_label") or "").strip()
+    offering = analysis.get("offering_type") or "product"
+
     if len(out) < MIN_DESCRIPTION_SENTENCES:
-        _add(f"{name} is a quality pick for everyday use")
+        context = _category_context_phrase(category, offering)
+        if category:
+            _add(f"This {context} is hand-picked for quality and everyday reliability")
+        elif industry:
+            _add(f"{name} comes from a trusted {industry.lower()} seller you can count on")
+        else:
+            _add(f"{name} delivers dependable quality for everyday use")
 
     return out[:MAX_DESCRIPTION_SENTENCES]
 
@@ -326,13 +515,12 @@ def enrich_product_copy(product, analysis: dict, profile) -> list[str]:
     from apps.products.commerce_seo import brand_name
 
     brand = brand_name(profile, product.user)
-    new_desc = format_product_description(
-        product.description or "",
-        analysis,
-        product_name=product.name,
-        brand=brand,
-        price=product.display_price or "",
-    )
+    analysis = dict(analysis or {})
+    if product.category_id:
+        analysis.setdefault("category_name", product.category.name)
+    analysis.setdefault("industry_label", _profile_industry_label(profile))
+    analysis.setdefault("offering_type", product.offering_type)
+    new_desc = generate_product_description(product, analysis, profile)
     current_count = description_sentence_count(product.description or "")
     new_count = description_sentence_count(new_desc)
     should_update_desc = (
