@@ -50,6 +50,22 @@ textarea {
 }
 
 @layer base {
+  :root {
+    /* Light-mode public surface tokens (marketing, auth, legal) */
+    --kova-light-bg: #ffffff;
+    --kova-light-bg-muted: #f9fafb;
+    --kova-light-bg-subtle: #f3f4f6;
+    --kova-light-text: #111827;
+    --kova-light-text-muted: #4b5563;
+    --kova-light-text-subtle: #6b7280;
+    --kova-light-border: #e5e7eb;
+    --kova-light-border-subtle: #f3f4f6;
+    --kova-accent: #0d8474;
+    --kova-accent-hover: #0a6d60;
+    --kova-accent-subtle: #edfcf8;
+    --kova-navy: #0c1222;
+  }
+
   html {
     @apply scroll-smooth overflow-x-hidden;
   }
@@ -148,9 +164,9 @@ textarea {
     @apply text-transparent bg-clip-text bg-gradient-to-r from-kova-600 to-kova-400 dark:from-kova-300 dark:to-kova-500;
   }
 
-  /* Hero headline gradient — matches landing page */
+  /* Hero headline gradient — static (no shifting animation) for a cleaner light-mode read */
   .text-gradient-hero {
-    @apply text-transparent bg-clip-text bg-gradient-to-r from-kova-600 via-indigo-600 to-purple-600 dark:from-kova-400 dark:via-indigo-400 dark:to-purple-400 bg-[length:200%_auto] animate-gradient-shift;
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-kova-600 via-kova-500 to-kova-700 dark:from-kova-400 dark:via-indigo-400 dark:to-purple-400;
   }
 
   /* Glass card for mission / auth panels */
@@ -221,7 +237,7 @@ textarea {
     @apply relative w-full aspect-square max-w-[280px] mx-auto;
   }
   .agent-orbit-node {
-    @apply absolute w-9 h-9 rounded-lg flex items-center justify-center shadow-sm border border-gray-200/80 dark:border-gray-700/80 bg-white dark:bg-gray-900 animate-agent-glow;
+    @apply absolute w-9 h-9 rounded-lg flex items-center justify-center shadow-sm border border-gray-200/80 dark:border-gray-700/80 bg-white dark:bg-gray-900;
   }
 
   /* Mission value stat */
@@ -308,12 +324,12 @@ textarea {
 
   /* ── Landing Page Animations ──────────────────────────────────────── */
 
-  /* Scroll reveal - elements start invisible and slide up */
+  /* Scroll reveal - subtle fade-up on scroll (one-time) */
   .reveal {
     opacity: 0;
-    transform: translateY(24px);
-    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-                transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateY(12px);
+    transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .reveal.visible {
     opacity: 1;
@@ -326,22 +342,26 @@ textarea {
   .reveal-delay-5 { transition-delay: 0.5s; }
   .reveal-delay-6 { transition-delay: 0.6s; }
 
-  /* Agent network connection lines */
-  .agent-connection {
-    stroke-dasharray: 6 4;
-    animation: dash-flow 2s linear infinite;
-  }
+  /* Agent network connection lines — static in light mode; motion only when allowed */
+  .agent-connection,
   .agent-connection-reverse {
     stroke-dasharray: 6 4;
-    animation: dash-flow-reverse 2s linear infinite;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .agent-connection {
+      animation: dash-flow 3s linear infinite;
+    }
+    .agent-connection-reverse {
+      animation: dash-flow-reverse 3s linear infinite;
+    }
   }
 
-  /* Agent node hover glow */
+  /* Agent node — shadow lift only, no scale */
   .agent-node {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
   }
   .agent-node:hover {
-    transform: scale(1.05);
+    @apply shadow-md;
   }
 
   /* Gradient orb backgrounds */
@@ -444,19 +464,51 @@ textarea {
     @apply sr-only;
   }
 
-  /* Reduced motion: disable animations for users who prefer it */
+  /* Decorative motion — gated behind user preference (public/marketing surfaces) */
+  @media (prefers-reduced-motion: no-preference) {
+    .motion-orb {
+      animation: float 8s ease-in-out infinite;
+    }
+    .motion-orb-delayed {
+      animation: float-delayed 10s ease-in-out infinite;
+    }
+    .motion-hub-ring {
+      animation: pulse-ring 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  }
+
+  /* Reduced motion: disable decorative animations; keep functional spinners via Tailwind defaults */
   @media (prefers-reduced-motion: reduce) {
     .reveal,
     .shimmer,
     .agent-connection,
     .agent-connection-reverse,
-    .agent-node {
+    .agent-node,
+    .motion-orb,
+    .motion-orb-delayed,
+    .motion-hub-ring,
+    .orb,
+    .animate-float,
+    .animate-float-delayed,
+    .animate-ping,
+    .animate-pulse,
+    .animate-pulse-ring,
+    .animate-glow-breathe,
+    .animate-gradient-shift,
+    .animate-agent-glow,
+    .animate-bounce {
       animation: none !important;
       transition: none !important;
     }
     .reveal {
       opacity: 1;
       transform: none;
+    }
+    .agent-node:hover {
+      transform: none;
+    }
+    html {
+      scroll-behavior: auto;
     }
   }
 
