@@ -100,7 +100,7 @@ class MpesaPayment(models.Model):
 # Plan v2 spec: docs/PLAN_V2_SPEC.md
 #
 # Platform ladder (5 channels: FB, IG, TikTok, LinkedIn, WhatsApp):
-#   Starter 2 · Growth 4 (no WA) · Pro 5 (incl. WA)
+#   Starter 2 · Growth 4 (WA inbox wedge) · Pro 5 (full WA Business)
 PLAN_LIMITS = {
     "starter": {
         "label": "Jipange / Starter",
@@ -114,6 +114,8 @@ PLAN_LIMITS = {
         "email_brief": False,
         "whatsapp_brief": False,
         "engagement_agent": False,
+        "engage_trial_enabled": True,
+        "engage_trial_auto_replies_per_week": 5,
         "competitor_tracking": False,
         "ai_image_generation": False,
         "ai_images_per_month": 0,
@@ -140,6 +142,7 @@ PLAN_LIMITS = {
         "multi_touch_attribution": False,
         "revenue_dashboard": True,
         "whatsapp_enabled": False,
+        "whatsapp_inbox_enabled": False,
         "whatsapp_marketing_conversations_per_month": 0,
         "memes_enabled": False,
         "adapt_v2_enabled": False,
@@ -186,6 +189,7 @@ PLAN_LIMITS = {
         "multi_touch_attribution": False,
         "revenue_dashboard": True,
         "whatsapp_enabled": False,
+        "whatsapp_inbox_enabled": True,
         "whatsapp_marketing_conversations_per_month": 50,
         "memes_enabled": False,
         "adapt_v2_enabled": True,
@@ -232,6 +236,7 @@ PLAN_LIMITS = {
         "multi_touch_attribution": True,
         "revenue_dashboard": True,
         "whatsapp_enabled": True,
+        "whatsapp_inbox_enabled": True,
         "whatsapp_marketing_conversations_per_month": 300,
         "memes_enabled": True,
         "adapt_v2_enabled": True,
@@ -278,6 +283,7 @@ PLAN_LIMITS = {
         "multi_touch_attribution": True,
         "revenue_dashboard": True,
         "whatsapp_enabled": True,
+        "whatsapp_inbox_enabled": True,
         "whatsapp_marketing_conversations_per_month": 1000,
         "memes_enabled": True,
         "adapt_v2_enabled": True,

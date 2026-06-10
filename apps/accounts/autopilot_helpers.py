@@ -24,7 +24,9 @@ def whatsapp_autopilot_allowed(user) -> bool:
     from apps.billing.models import get_user_plan_limits
 
     limits = get_user_plan_limits(user)
-    return bool(limits.get("whatsapp_enabled", False))
+    from apps.billing.whatsapp_access import whatsapp_inbox_allowed
+
+    return whatsapp_inbox_allowed(limits)
 
 
 def should_auto_enroll_leads(user) -> bool:

@@ -352,7 +352,9 @@ def nurture_list(request):
 def _nurture_whatsapp_allowed(user) -> bool:
     from apps.billing.models import get_user_plan_limits
 
-    return bool(get_user_plan_limits(user).get("whatsapp_enabled"))
+    from apps.billing.whatsapp_access import whatsapp_inbox_allowed
+
+    return whatsapp_inbox_allowed(get_user_plan_limits(user))
 
 
 @login_required

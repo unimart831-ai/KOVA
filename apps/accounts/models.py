@@ -31,6 +31,10 @@ class User(SoftDeleteMixin, AbstractUser):
         default=True,
         help_text="Send a morning brief ping to WhatsApp (Pro plan and above).",
     )
+    money_board_digest_enabled = models.BooleanField(
+        default=False,
+        help_text="Daily email/in-app digest when money board counts need attention.",
+    )
 
     # Override the default SoftDeleteManager with UserManager-compatible version
     objects = SoftDeleteUserManager()
@@ -294,6 +298,15 @@ class UserProfile(models.Model):
             "0.50-0.85 as drafts. AGGRESSIVE auto-sends at ≥ 0.70. "
             "Plan-tier-gated — see docs/specs/ENGAGE_AGENT_V2_SPEC.md."
         ),
+    )
+    engage_trial_replies_this_week = models.PositiveSmallIntegerField(
+        default=0,
+        help_text="Starter trial: auto-replies sent this ISO week.",
+    )
+    engage_trial_week_start = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Week boundary for engage_trial_replies_this_week reset.",
     )
     # ── Operations Autopilot (Jun 2026) — off by default ──
     autopilot_auto_publish_approved = models.BooleanField(

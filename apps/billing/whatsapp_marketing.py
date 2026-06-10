@@ -78,7 +78,7 @@ def check_whatsapp_marketing_limit(
     if max_convos <= 0:
         return False, (
             f"WhatsApp marketing is not included on your {usage['plan_label']} plan. "
-            "Upgrade to Pro for marketing broadcasts."
+            "Upgrade to Kazi or Biashara for marketing broadcasts."
         )
 
     projected = usage["used"] + max(0, additional_conversations)

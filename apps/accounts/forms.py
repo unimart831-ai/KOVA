@@ -74,7 +74,8 @@ class UserSettingsForm(forms.ModelForm):
         model = User
         fields = [
             "full_name", "timezone", "daily_brief_time", "phone_number",
-            "brief_email_enabled", "brief_whatsapp_enabled", "avatar",
+            "brief_email_enabled", "brief_whatsapp_enabled",
+            "money_board_digest_enabled", "avatar",
         ]
         widgets = {
             "full_name": forms.TextInput(attrs={"class": "input", "placeholder": "Your full name"}),
@@ -82,6 +83,7 @@ class UserSettingsForm(forms.ModelForm):
             "daily_brief_time": forms.TimeInput(attrs={"class": "input", "type": "time"}),
             "brief_email_enabled": forms.CheckboxInput(attrs={"class": "rounded border-gray-300 text-kova-600 focus:ring-kova-500"}),
             "brief_whatsapp_enabled": forms.CheckboxInput(attrs={"class": "rounded border-gray-300 text-kova-600 focus:ring-kova-500"}),
+            "money_board_digest_enabled": forms.CheckboxInput(attrs={"class": "rounded border-gray-300 text-kova-600 focus:ring-kova-500"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -448,7 +450,7 @@ class AutopilotSettingsForm(forms.ModelForm):
         if user and any(cleaned.get(f) for f in wa_fields):
             if not whatsapp_autopilot_allowed(user):
                 raise ValidationError(
-                    "WhatsApp automations require Biashara (Pro) or Agency with WhatsApp enabled."
+                    "WhatsApp follow-up automations require Kazi (Growth) inbox or Biashara (Pro)."
                 )
         return cleaned
 

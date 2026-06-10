@@ -250,7 +250,8 @@ def run_engage_cycle():
         from apps.billing.models import get_effective_plan_tier, get_plan_limits
 
         plan = get_effective_plan_tier(getattr(user, "profile", None))
-        if not get_plan_limits(plan).get("engagement_agent", False):
+        limits = get_plan_limits(plan)
+        if not limits.get("engagement_agent") and not limits.get("engage_trial_enabled"):
             continue
         _run_engage_for_user.delay(user.pk)
         dispatched += 1

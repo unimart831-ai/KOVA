@@ -26,9 +26,12 @@ COMPETITOR_URLS = [
     "analytics:competitor_landscape",
 ]
 ENGAGE_URLS = ["engage:inbox", "engage:send_reply", "engage:trigger"]
-WHATSAPP_URLS = [
+WHATSAPP_INBOX_URLS = [
     "whatsapp:inbox", "whatsapp:conversation", "whatsapp:send_message",
-    "whatsapp:toggle_ai", "whatsapp:template_list", "whatsapp:template_create",
+    "whatsapp:toggle_ai",
+]
+WHATSAPP_PRO_URLS = [
+    "whatsapp:template_list", "whatsapp:template_create",
     # Sprint 5C — Status Studio
     "whatsapp:status_studio", "whatsapp:status_create", "whatsapp:status_share",
     "whatsapp:status_skip", "whatsapp:status_repurpose", "whatsapp:status_calendar",
@@ -43,6 +46,7 @@ WHATSAPP_URLS = [
     "whatsapp:channel_post_create", "whatsapp:channel_post_publish",
     "whatsapp:channel_toggle_curate",
 ]
+WHATSAPP_URLS = WHATSAPP_INBOX_URLS + WHATSAPP_PRO_URLS
 MEMES_URLS = [
     "memes:discover", "memes:queue", "memes:settings", "memes:detail",
     "memes:adapt", "memes:card", "memes:approve", "memes:reject", "memes:to_post",
@@ -143,9 +147,11 @@ class PlanEnforcementMiddleware:
 
     def _check_engage_access(self, request):
         """Check if user's plan includes the engagement inbox."""
+        from apps.billing.engage_trial import engage_inbox_allowed
+
         limits = get_user_plan_limits(request.user)
 
-        if not limits.get("engagement_agent", False):
+        if not engage_inbox_allowed(request.user):
             return plan_limit_redirect(
                 request,
                 f"The engagement inbox is not included in your {limits['label']} plan. "
@@ -154,18 +160,40 @@ class PlanEnforcementMiddleware:
             )
         return None
 
-    def _check_whatsapp_access(self, request):
-        """Check if user's plan includes WhatsApp features."""
-        limits = get_user_plan_limits(request.user)
+    def _check_whatsapp_inbox_access(self, request):
+        """Growth wedge: inbox + utility replies."""
+        from apps.billing.whatsapp_access import whatsapp_inbox_allowed
 
-        if not limits.get("whatsapp_enabled", False):
+        limits = get_user_plan_limits(request.user)
+        if not whatsapp_inbox_allowed(limits):
             return plan_limit_redirect(
                 request,
                 f"WhatsApp is not included in your {limits['label']} plan. "
-                f"Upgrade to Biashara / Pro or higher to unlock.",
+                f"Upgrade to Kazi or Biashara to unlock.",
                 "brief:home",
             )
         return None
+
+    def _check_whatsapp_pro_access(self, request):
+        """Pro+ broadcasts, templates, Status Studio, channels."""
+        from apps.billing.whatsapp_access import whatsapp_full_allowed
+
+        limits = get_user_plan_limits(request.user)
+        if whatsapp_full_allowed(limits):
+            return None
+        if limits.get("whatsapp_inbox_enabled"):
+            return plan_limit_redirect(
+                request,
+                f"WhatsApp broadcasts and templates require Biashara (Pro). "
+                f"Your {limits['label']} plan includes inbox + utility replies.",
+                "whatsapp:inbox",
+            )
+        return plan_limit_redirect(
+            request,
+            f"WhatsApp is not included in your {limits['label']} plan. "
+            f"Upgrade to Kazi or Biashara to unlock.",
+            "brief:home",
+        )
 
     def _check_memes_access(self, request):
         """Check if user's plan includes Meme Intelligence."""
@@ -203,8 +231,11 @@ class PlanEnforcementMiddleware:
         if full_name in ENGAGE_URLS:
             return self._check_engage_access(request)
 
-        if full_name in WHATSAPP_URLS:
-            return self._check_whatsapp_access(request)
+        if full_name in WHATSAPP_PRO_URLS:
+            return self._check_whatsapp_pro_access(request)
+
+        if full_name in WHATSAPP_INBOX_URLS:
+            return self._check_whatsapp_inbox_access(request)
 
         if full_name in MEMES_URLS:
             return self._check_memes_access(request)
@@ -226,4 +257,4 @@ class PlanEnforcementMiddleware:
             return self._check_seed_limit(request)
 
         return None
-
+

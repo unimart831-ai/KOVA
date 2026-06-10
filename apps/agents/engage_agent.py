@@ -1004,8 +1004,19 @@ def auto_respond(user):
             action = RoutingAction.DRAFT_FOR_REVIEW
 
         if action == RoutingAction.AUTO_SEND:
+            from apps.billing.engage_trial import (
+                can_consume_engage_trial_reply,
+                record_engage_trial_reply,
+            )
+
+            allowed, _trial_msg = can_consume_engage_trial_reply(user)
+            if not allowed:
+                counts["skipped"] += 1
+                continue
+
             send_result = _send_reply_to_platform(interaction)
             if send_result.get("ok"):
+                record_engage_trial_reply(user)
                 interaction.status = Interaction.Status.AI_REPLIED
                 interaction.ai_reply_sent = interaction.ai_suggested_reply
                 interaction.responded_at = timezone.now()
