@@ -1384,7 +1384,11 @@ tests/
 └── test_agents.py      # 5 tests: AgentConfig types, AgentAction logging, indexes
 ```
 
-**Total (June 2026):** ~**791 pytest** functions across **82** files + **14 Playwright E2E** tests in `tests/e2e/test_critical_paths.py`. CI enforces **70% coverage** on PRs. Phase 2 added `tests/test_phase2_score_sprint.py` (8) and wedge E2E in `test_critical_paths.py`.
+**Total (June 2026):** ~**800+ pytest** functions across **83+** files + **15 Playwright E2E** tests (`test_critical_paths.py`, `test_wedge_flow.py`). CI enforces **70% coverage** on PRs.
+
+**Phase 3 additions:** `tests/test_phase3_score_sprint.py` (10) — wedge E2E mock, unified inbox, M-Pesa renewal, webhook signatures, support staff, money KPI.
+
+**CI security (Phase 3):** Bandit **hard-fails** on medium+ severity (`ci.yml` security job). pip-audit runs without `|| true` but emits `::warning::` if advisories exist (dependency pins may need updates). Secrets grep blocks `INSECURE-dev-key` and Daraja sandbox passkey in `apps/` + `config/`.
 
 ### pytest Configuration (pyproject.toml)
 

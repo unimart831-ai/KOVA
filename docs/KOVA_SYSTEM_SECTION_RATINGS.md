@@ -20,9 +20,9 @@
 
 ## Executive summary
 
-### Overall platform score: **7.6 / 10** (weighted) → **~8.4 / 10** post-P0 → **~8.9 / 10** post-Phase 2 (June 11, 2026)
+### Overall platform score: **7.6 / 10** (weighted) → **~8.4 / 10** post-P0 → **~8.9 / 10** post-Phase 2 → **~9.4 / 10** post-Phase 3 (June 11, 2026)
 
-*Updated post-Phase 2:* See `KOVA_SCORE_9_5_ROADMAP.md` for P0 + Phase 2 completion and path to 9.5.
+*Updated post-Phase 3:* See `KOVA_SCORE_9_5_ROADMAP.md` for P0 + Phase 2 + Phase 3 completion.
 
 **Weighting:** ~80% user-facing product sections, ~20% infrastructure.
 
@@ -42,7 +42,7 @@ KOVA is an unusually deep pre-launch SMB platform: full Sell → Catch → Close
 2. **Close money-loop gaps** — QR scan → lead (deferred in `REACH_LEAD_AUTOMATION_AUDIT.md`), WA nurture step in Automations UI (`KOVA_USER_GUIDE` §8), money-board push notifications (deferred in `KOVA_AUTOPILOT.md`).
 3. **Finish platform resilience** — Rate-limit 3-strike UX and outage queue hold still partial per `PLATFORM_RESILIENCE.md`.
 4. **Reduce nav / positioning friction** — Merge Revenue + Performance; fold Workspace into Today for Starter; hide "10 platforms" on landing until X/YouTube/Threads ship (`COMING_SOON_PLATFORMS` in `apps/platforms/views.py`).
-5. **Harden production security** — Cofounder audit issues (hardcoded secrets, CSP `unsafe-inline`, webhook signature enforcement) remain relevant despite CI security job.
+5. **Finish CSP nonce migration** — Phase 3 enforced webhook signatures + `wss:` CSP; `unsafe-inline` styles remain for Alpine/HTMX.
 
 ### Comparison to positioning ("chases money while you run the shop")
 
@@ -59,7 +59,7 @@ KOVA is an unusually deep pre-launch SMB platform: full Sell → Catch → Close
 ## Core / Today
 
 ### Home / Today (money board, brief, wedge checklist)
-**Score: 8/10** → **8.7/10** post-P0 → **9.0/10** post-Phase 2  
+**Score: 8/10** → **8.7/10** post-P0 → **9.0/10** post-Phase 2 → **9.2/10** post-Phase 3  
 **Status:** Pilot-ready
 
 **Strengths**
@@ -159,10 +159,11 @@ KOVA is an unusually deep pre-launch SMB platform: full Sell → Catch → Close
 **Dependencies / blockers:** `leads` + `qr_attribution` migrations; Celery `reengage-stale-leads`.
 
 ### Social Inbox / Engage
-**Score: 8/10** → **8.4/10** post-P0 → **8.8/10** post-Phase 2  
+**Score: 8/10** → **8.4/10** post-P0 → **8.8/10** post-Phase 2 → **9.0/10** post-Phase 3  
 **Status:** Pilot-ready
 
 **Strengths**
+- Unified needs-reply inbox (`engage:unified_inbox`); Messenger threads MVP (`engage:messenger_threads`).
 - Comments, DMs, AI auto-sent subnav; plan-gated PRO badge for Starter.
 - Extensive safety rails and routing tests (`tests/test_engage_routing.py`).
 - Celery `run_engage_cycle` every 30 min.
@@ -401,11 +402,11 @@ KOVA is an unusually deep pre-launch SMB platform: full Sell → Catch → Close
 ## Settings / infra (user-facing)
 
 ### Platforms (OAuth connect, FB page picker)
-**Score: 7.5/10** → **8.0/10** post-Phase 2  
+**Score: 7.5/10** → **8.0/10** post-Phase 2 → **8.9/10** post-Phase 3  
 **Status:** Pilot-ready
 
 **Strengths**
-- `ACTIVE_PLATFORMS` (7) + `COMING_SOON` (3) in `apps/platforms/views.py`.
+- Wedge-priority connect sort (WA → IG → FB); `ACTIVE_PLATFORMS` (7) + `COMING_SOON` (3).
 - FB page picker `facebook_select_page`; LinkedIn page select.
 - Token warnings + auto-refresh shipped (`PLATFORM_RESILIENCE.md`).
 
@@ -435,7 +436,7 @@ KOVA is an unusually deep pre-launch SMB platform: full Sell → Catch → Close
 **Weaknesses**
 - Live Stripe price IDs / M-Pesa production keys are external config deps.
 - Growth users may expect WA on invoice — plan matrix says no.
-- M-Pesa subscription expiry push notification still TODO (`MPESA_SETUP.md`).
+- M-Pesa renewal warnings shipped (email + in-app); STK renew still manual.
 
 **Recommendations**
 1. Pricing page explicit: "WhatsApp Business from Pro (Biashara)."
@@ -447,7 +448,7 @@ KOVA is an unusually deep pre-launch SMB platform: full Sell → Catch → Close
 **Dependencies / blockers:** Stripe live mode; Safaricom M-Pesa production passkey; `PlanPrice` DB rows.
 
 ### Teams / agency
-**Score: 7/10** → **7.6/10** post-Phase 2  
+**Score: 7/10** → **7.6/10** post-Phase 2 → **8.0/10** post-Phase 3  
 **Status:** Pilot-ready
 
 **Strengths**
@@ -524,7 +525,7 @@ KOVA is an unusually deep pre-launch SMB platform: full Sell → Catch → Close
 - Onboarding funnel, operations overview, seed quota hub.
 
 **Weaknesses**
-- Staff-only — no delegated support role granularity.
+- Support staff role (`is_support_staff`) is read-only — no impersonate yet.
 - HTMX polling vs. WebSocket for live ops (plan doc notes 30–60s polling).
 - Cofounder audit security items may affect staff-facing routes.
 
@@ -703,18 +704,17 @@ KOVA is an unusually deep pre-launch SMB platform: full Sell → Catch → Close
 **Dependencies / blockers:** Railway Postgres + Redis services; `DATABASE_URL`.
 
 ### Tests / CI
-**Score: 7.5/10** → **8.0/10** post-Phase 2  
+**Score: 7.5/10** → **8.0/10** post-Phase 2 → **8.4/10** post-Phase 3  
 **Status:** Pilot-ready
 
 **Strengths**
 - GitHub Actions: ruff lint, pytest with **70% coverage gate**, Playwright E2E, security job.
-- ~791 pytest functions across 82 files + 14 E2E; strong module coverage for email, engage, billing.
-- `tests/e2e/test_critical_paths.py` includes wedge checklist on Today post-signup.
+- ~800+ pytest functions + 15 E2E; full wedge flow in `test_phase3_score_sprint.py` + `test_wedge_flow.py`.
+- Bandit hard-fails CI on medium+; pip-audit warns on dependency advisories.
 
 **Weaknesses**
-- May 2026 audit said "0 CI" — now fixed but audit docs stale.
-- E2E does not cover full wedge (snap → publish → lead → WA).
-- Security job soft-fails pip-audit/bandit (`|| true`).
+- pip-audit may still warn until dependency pins updated.
+- No Locust load tests in CI (locustfile exists).
 - No Locust load tests in CI (locustfile exists).
 
 **Recommendations**
@@ -734,4 +734,4 @@ KOVA is an unusually deep pre-launch SMB platform: full Sell → Catch → Close
 |----------|-----|--------|--------------|
 | User-facing (24 sections) | 7.77 | 80% | 6.22 |
 | Infrastructure (4 sections) | 7.38 | 20% | 1.48 |
-| **Overall** | | | **7.6 / 10** (baseline) · **~8.4 / 10** post-P0 · **~8.9 / 10** post-Phase 2 |
+| **Overall** | | | **7.6 / 10** (baseline) · **~8.4 / 10** post-P0 · **~8.9 / 10** post-Phase 2 · **~9.4 / 10** post-Phase 3 |

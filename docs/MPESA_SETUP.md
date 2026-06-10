@@ -615,8 +615,8 @@ The `check_mpesa_subscriptions` task runs once per day and handles:
 | Condition | Action |
 |-----------|--------|
 | Pending payment older than 5 minutes | Mark as `expired` (user didn't enter PIN) |
-| Subscription expires in ≤ 3 days | Log warning (TODO: send push notification) |
-| Subscription expired (within 3-day grace) | Set status to `past_due` |
+| Subscription expires in ≤ 3 days | Email + in-app notification via `send_mpesa_renewal_warning()` (once/day per tier) |
+| Subscription expired (within 3-day grace) | Set status to `past_due` + renewal warning (days=0) |
 | Subscription expired 3+ days ago | Downgrade to Starter plan (`canceled`) |
 
 ### Renewal Flow

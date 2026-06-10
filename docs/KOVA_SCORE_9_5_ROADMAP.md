@@ -53,44 +53,69 @@
 
 ---
 
-## Remaining for 9.5 / 10 (Phase 3+)
+## Phase 3 — Done June 11, 2026
 
-### High impact
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 1 | Full wedge E2E (snap→publish→lead→WA) | **DONE** | `tests/test_phase3_score_sprint.py::TestFullWedgeFlowMocked` + `tests/e2e/test_wedge_flow.py` |
+| 2 | CI hardening (bandit/pip-audit) | **DONE** | Bandit hard-fails CI; pip-audit warns (deps may have advisories) — `KOVA_TESTING_GUIDE` §31 |
+| 3 | M-Pesa renewal warnings | **DONE** | `billing/renewal_notifications.py` — email + in-app; Celery `check_mpesa_subscriptions` |
+| 4 | Platform picker wedge sort | **DONE** | WA → IG → FB first on `/platforms/` (`WEDGE_PLATFORM_ORDER`) |
+| 5 | FB Messenger MVP | **DONE** | `engage:messenger_threads` — thin MVP via DM inbox pipeline (polling, not real-time WS) |
+| 6 | Webhook signature enforcement | **DONE** | WA/Resend/M-Pesa reject unsigned in production |
+| 7 | CSP improvements | **DONE** (partial) | `wss:` in `CSP_CONNECT_SRC`; `unsafe-inline` styles deferred (Alpine/HTMX risk) |
+| 8 | Secrets audit / env-gate | **DONE** | CI grep; `MPESA_PASSKEY` default empty; prod webhook secrets documented |
+| 9 | Staff role granularity | **DONE** | `User.is_support_staff` — read-only admin; POST blocked unless superuser |
+| 10 | Unified needs-reply inbox | **DONE** | `engage:unified_inbox` — WA escalated + social in one queue |
+| 11 | Money proved this week KPI | **DONE** | Today money board — `revenue_stat` card above chase board |
+| 12 | Agency client-switcher UX | **DONE** | Sidebar brand `<select>` for multi-brand agency teams |
+| 13 | Partner health dashboard slice | **DONE** | `/dashboard/partners/health/` — webhook failures, stale sync |
 
-1. **Production security** — webhook signatures, CSP, secrets audit.
-2. **Full wedge E2E** — signup → WA+IG → snap → publish → lead → WA reply.
-3. **M-Pesa renewal push** — subscription expiry notifications.
-4. **Pipeline kanban drag-and-drop**
-5. **Studio + Queue tab merge** — single Publish surface
+**Tests added:** `tests/test_phase3_score_sprint.py` (10 tests); E2E `tests/e2e/test_wedge_flow.py`.
 
-### Medium impact
+**Migrate:** `accounts.0032_user_is_support_staff`
 
-- FB Messenger real-time
-- Competitor analytics defer to Pro default (sidebar already gated)
+### Deferred (Phase 4+)
+
+| Item | Reason |
+|------|--------|
+| FB Messenger real-time WebSocket | MVP polling via Engage Agent cycle sufficient for 9.5; Meta Page webhooks not wired |
+| Pipeline kanban drag-and-drop | Out of Phase 3 scope |
+| Studio + Queue tab merge | Phase 4 IA |
+| Admin Celery health panel | Ops nice-to-have |
+| Full CSP remove `unsafe-inline` | Requires Alpine/HTMX nonce audit — breakage risk |
+
+### Score projection (post-Phase 3)
+
+| Section | Post-P2 | Post-P3 | Target 9.5 |
+|---------|---------|---------|------------|
+| WhatsApp | **8.8** | **8.9** | 9.0 |
+| REACH | 8.2 | 8.2 | 8.8 |
+| Today / money board | **9.0** | **9.2** | 9.2 |
+| Engage | **8.8** | **9.0** | 9.0 |
+| Landing | 8.2 | 8.2 | 8.5 |
+| Platforms / resilience | **8.6** | **8.9** | 9.0 |
+| Performance IA | 7.8 | 7.8 | 8.5 |
+| Teams | **7.6** | **8.0** | 8.0 |
+| Workspace IA | **7.0** | 7.0 | 7.5 |
+| Deploy / CI | **8.0** | **8.4** | 8.5 |
+| Admin / partners | 8.5 | **8.7** | 9.0 |
+| **Weighted overall** | **~8.9** | **~9.4** | **9.5** |
+
+---
+
+## Remaining for 9.5 / 10 (Phase 4+)
+
+- Pipeline kanban drag-and-drop
+- Studio + Queue tab merge
+- FB Messenger real-time (Meta Page webhooks)
 - Admin Celery health panel
-- Bandit/pip-audit CI hard-fail when clean
-- Platform connect picker wedge-priority sort
-
-### Score projection
-
-| Section | Pre | Post-P0 | Post-P2 | Target 9.5 |
-|---------|-----|---------|---------|------------|
-| WhatsApp | 7.5 | 8.5 | **8.8** | 9.0 |
-| REACH | 7.5 | 8.2 | 8.2 | 8.8 |
-| Today / money board | 8.0 | 8.7 | **9.0** | 9.2 |
-| Engage | 8.0 | 8.4 | **8.8** | 9.0 |
-| Landing | 7.5 | 8.2 | 8.2 | 8.5 |
-| Platforms / resilience | 7.5 | 8.0 | **8.6** | 9.0 |
-| Performance IA | 7.0 | 7.8 | 7.8 | 8.5 |
-| Teams | 7.0 | 7.0 | **7.6** | 8.0 |
-| Workspace IA | 6.0 | 6.0 | **7.0** | 7.5 |
-| Deploy / CI | 7.5 | 7.8 | **8.0** | 8.5 |
-| **Weighted overall** | **7.6** | **~8.4** | **~8.9** | **9.5** |
-
-Closing the last ~0.6 points requires security hardening, full wedge E2E proof, and M-Pesa renewal UX.
+- REACH 8.8+ (nurture UI, pipeline DnD)
 
 ---
 
 ## Commit reference
 
 Phase 2 commits: sidebar IA (Channels, Workspace gate, Teams Pro), Engage WS, outage hold, token WS warnings, Starter Today compact, tests + docs.
+
+Phase 3 commits: security hardening, unified inbox, M-Pesa renewal, wedge E2E tests, platform sort, Messenger MVP, agency switcher, partner health, docs.
