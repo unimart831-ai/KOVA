@@ -179,5 +179,5 @@ def save_studio_polish_image(product_id, image_bytes: bytes, suffix: str = "hero
     return _public_url_for_file(saved)
 
 
-# Legacy alias
+# Legacy alias — Basic routing lives in photoroom_basic.py (Phase 2)
 studio_polish_via_photoroom_basic = studio_polish_via_photoroom

@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 PHOTOROOM_EDIT_URL = "https://image-api.photoroom.com/v2/edit"
 AI_BG_MODEL_HEADER = "background-studio-beta-2025-03-17"
+AI_SHADOWS_MODEL_HEADER = "2026-04-15"
 AI_BG_SEEDS = (117879368, 55994449, 48672244, 65080068, 88210391, 33120477)
 
 # Photoroom Edit With AI — official prompt templates (docs.photoroom.com)
@@ -54,7 +55,7 @@ EDIT_WITH_AI_VARIANT_IDS = frozenset({
 # Commerce-first AI scenes — category → grounded scene variant ids (Option A)
 CATEGORY_COMMERCE_SCENES: dict[str, tuple[str, ...]] = {
     "apparel": ("ai_scene_table", "ai_scene_shelf", "ai_scene_retail"),
-    "food": ("ai_scene_table", "ai_creative_marble", "ai_scene_shelf"),
+    "food": ("food_surface_marble", "food_surface_rustic", "food_surface_delivery"),
     "beauty": ("ai_scene_table", "ai_creative_marble", "ai_scene_shelf"),
     "jewelry": ("ai_scene_table", "ai_creative_marble", "ai_scene_wall"),
     "electronics": ("ai_scene_table", "ai_scene_shelf", "ai_creative_podium"),
@@ -69,6 +70,9 @@ COMMERCE_SCENE_VARIANT_IDS = frozenset({
     "ai_scene_shelf",
     "ai_scene_wall",
     "ai_scene_retail",
+    "food_surface_marble",
+    "food_surface_rustic",
+    "food_surface_delivery",
 })
 SOFT_CREATIVE_VARIANT_IDS = frozenset({
     "ai_creative_marble",
@@ -159,6 +163,21 @@ LAYOUT_VARIANT_IDS = frozenset({
     "studio_dark",
     "outline",
 }) | AI_SCENE_VARIANT_IDS | COMMERCE_SCENE_VARIANT_IDS | SOFT_CREATIVE_VARIANT_IDS
+
+# Studio variants that receive pr-ai-shadows-model-version when enabled (Phase 2).
+STUDIO_SHADOW_HEADER_VARIANT_IDS = frozenset({
+    "studio_white",
+    "studio_brand",
+    "studio_dark",
+    "relight",
+    "beautify",
+    "outline",
+    "upscale",
+    "expand",
+    "uncrop",
+    "channel_marketplace",
+    "channel_marketplace_jpeg",
+})
 
 PLAN_TIER_ORDER = ("starter", "growth", "pro", "agency")
 
@@ -310,6 +329,20 @@ def _ai_bg_headers() -> dict[str, str]:
     return {"pr-ai-background-model-version": AI_BG_MODEL_HEADER}
 
 
+def _shadow_model_headers() -> dict[str, str]:
+    """Optional A/B shadow model header on studio cutout variants."""
+    if not getattr(settings, "PHOTOROOM_AI_SHADOWS_MODEL_ENABLED", True):
+        return {}
+    return {"pr-ai-shadows-model-version": AI_SHADOWS_MODEL_HEADER}
+
+
+def _studio_variant_headers(variant_id: str, extra: dict[str, str] | None = None) -> dict[str, str]:
+    headers = dict(extra or {})
+    if variant_id in STUDIO_SHADOW_HEADER_VARIANT_IDS:
+        headers.update(_shadow_model_headers())
+    return headers
+
+
 PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
     # ── Core studio (every product) ──────────────────────────────────────
     "studio_white": PlusVariantSpec(
@@ -320,6 +353,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
             "background.color": "FFFFFF",
             **_export_defaults(),
         },
+        headers=_studio_variant_headers("studio_white"),
         categories=(),
         priority=100,
     ),
@@ -331,6 +365,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
             "background.color": "{brand_color}",
             **_export_defaults(),
         },
+        headers=_studio_variant_headers("studio_brand"),
         categories=(),
         priority=95,
     ),
@@ -342,6 +377,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
             "background.color": "1A1A2E",
             **_export_defaults(),
         },
+        headers=_studio_variant_headers("studio_dark"),
         categories=("jewelry", "electronics", "general"),
         priority=70,
     ),
@@ -442,6 +478,49 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         categories=(),
         min_plan="growth",
         priority=92,
+    ),
+    # ── Food delivery preset pack (locked surfaces — Phase 2) ─────────────
+    "food_surface_marble": PlusVariantSpec(
+        id="food_surface_marble",
+        label="Marble counter",
+        params={
+            **_ai_scene_studio(),
+            "background.prompt": "{food_surface_marble_prompt}",
+            "background.seed": "117879368",
+            **_export_defaults(),
+        },
+        headers=_ai_bg_headers(),
+        categories=("food",),
+        min_plan="growth",
+        priority=96,
+    ),
+    "food_surface_rustic": PlusVariantSpec(
+        id="food_surface_rustic",
+        label="Rustic table",
+        params={
+            **_ai_scene_studio(),
+            "background.prompt": "{food_surface_rustic_prompt}",
+            "background.seed": "55994449",
+            **_export_defaults(),
+        },
+        headers=_ai_bg_headers(),
+        categories=("food",),
+        min_plan="growth",
+        priority=95,
+    ),
+    "food_surface_delivery": PlusVariantSpec(
+        id="food_surface_delivery",
+        label="Delivery surface",
+        params={
+            **_ai_scene_studio(),
+            "background.prompt": "{food_surface_delivery_prompt}",
+            "background.seed": "48672244",
+            **_export_defaults(),
+        },
+        headers=_ai_bg_headers(),
+        categories=("food",),
+        min_plan="growth",
+        priority=94,
     ),
     # ── Soft studio creatives (subtle surfaces — still commerce-safe) ───
     "ai_creative_splash": PlusVariantSpec(
@@ -574,6 +653,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
             "shadow.mode": "ai.soft",
             **_export_defaults(),
         },
+        headers=_studio_variant_headers("relight"),
         categories=(),
         min_plan="growth",
         priority=75,
@@ -590,6 +670,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
             "shadow.mode": "ai.soft",
             **_export_defaults(),
         },
+        headers=_studio_variant_headers("beautify"),
         categories=("beauty", "jewelry", "general", "food"),
         min_plan="growth",
         priority=72,
@@ -664,6 +745,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
             **_export_defaults(),
         },
         categories=("apparel",),
+        min_plan="pro",
         priority=92,
     ),
     "virtual_model": PlusVariantSpec(
@@ -863,6 +945,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="channel_marketplace",
         label="Marketplace (Google Shopping PNG)",
         params=_marketplace_export_params(export_format="png"),
+        headers=_studio_variant_headers("channel_marketplace"),
         categories=(),
         offering_types=("product",),
         min_plan="growth",
@@ -873,6 +956,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         id="channel_marketplace_jpeg",
         label="Marketplace (Google Shopping JPEG)",
         params=_marketplace_export_params(export_format="jpeg"),
+        headers=_studio_variant_headers("channel_marketplace_jpeg"),
         categories=(),
         offering_types=("product",),
         min_plan="growth",
@@ -1322,6 +1406,18 @@ def resolve_variant_params(
             resolved[key] = build_commerce_scene_prompt("ai_scene_wall", product, analysis)
         elif value == "{commerce_retail_prompt}":
             resolved[key] = build_commerce_scene_prompt("ai_scene_retail", product, analysis)
+        elif value == "{food_surface_marble_prompt}":
+            from apps.products.photoroom_food import build_food_surface_prompt
+
+            resolved[key] = build_food_surface_prompt("food_surface_marble", product, analysis)
+        elif value == "{food_surface_rustic_prompt}":
+            from apps.products.photoroom_food import build_food_surface_prompt
+
+            resolved[key] = build_food_surface_prompt("food_surface_rustic", product, analysis)
+        elif value == "{food_surface_delivery_prompt}":
+            from apps.products.photoroom_food import build_food_surface_prompt
+
+            resolved[key] = build_food_surface_prompt("food_surface_delivery", product, analysis)
         elif value == "{contextual_prompt}":
             resolved[key] = build_contextual_prompt(product, analysis)
         elif value == "{flat_lay_prompt}":
@@ -1406,6 +1502,8 @@ def slide_role_for_variant(variant_id: str, offering: str, category: str) -> str
         return "lifestyle_edit"
     if variant_id in COMMERCE_SCENE_VARIANT_IDS:
         return "commerce"
+    if variant_id.startswith("food_surface_"):
+        return "food_surface"
     if variant_id in SOFT_CREATIVE_VARIANT_IDS | DEPRECATED_CREATIVE_VARIANT_IDS:
         return "creative"
     for role_name, variant_ids in _slide_roles_for(offering, category):
@@ -1610,11 +1708,33 @@ def select_plus_variants(
 
     # Category boosters (skip cutout-sensitive AI when uncertainty is high)
     if category == "apparel" and not skip_risky:
-        for vid in ("ghost_mannequin", "virtual_model"):
-            spec = PLUS_VARIANT_CATALOG.get(vid)
-            if spec and spec not in candidates:
-                candidates.append(spec)
-    elif category in ("food", "beauty") and not skip_risky:
+        ghost = PLUS_VARIANT_CATALOG.get("ghost_mannequin")
+        if ghost and _plan_rank(ghost.min_plan) <= plan_rank and ghost not in candidates:
+            candidates.append(ghost)
+        if getattr(settings, "PHOTOROOM_VIRTUAL_MODEL_ENABLED", False):
+            vm = PLUS_VARIANT_CATALOG.get("virtual_model")
+            if vm and vm not in candidates:
+                candidates.append(vm)
+    elif category == "food":
+        from apps.products.photoroom_food import (
+            FOOD_SURFACE_VARIANT_IDS,
+            should_boost_food_beautify,
+        )
+
+        if not skip_risky:
+            flat = PLUS_VARIANT_CATALOG.get("flat_lay")
+            if flat and flat not in candidates:
+                candidates.append(flat)
+        if should_boost_food_beautify(category, commerce_source):
+            beautify = PLUS_VARIANT_CATALOG.get("beautify")
+            if beautify and beautify not in candidates:
+                candidates.append(beautify)
+        if (commerce_source or "") in {"snap", "batch_snap", "snap_to_sell"}:
+            for vid in FOOD_SURFACE_VARIANT_IDS:
+                spec = PLUS_VARIANT_CATALOG.get(vid)
+                if spec and spec not in candidates:
+                    candidates.append(spec)
+    elif category == "beauty" and not skip_risky:
         spec = PLUS_VARIANT_CATALOG.get("flat_lay")
         if spec and spec not in candidates:
             candidates.append(spec)
@@ -1839,12 +1959,26 @@ def run_plus_variant(
     layout_index: int = 0,
 ) -> "PhotoroomEditResult":
     from apps.products.photoroom_api import PhotoroomEditResult
+    from apps.products.photoroom_basic import is_basic_routable_variant, run_basic_white_cutout
 
     params = resolve_variant_params(
         spec, product, analysis, brand_colors, brand_template=brand_template
     )
     params = apply_variant_layout(params, spec.id, layout_index)
-    return photoroom_edit(image_url, params, extra_headers=spec.headers)
+    headers = {**spec.headers, **_studio_variant_headers(spec.id)}
+
+    if is_basic_routable_variant(spec.id, params):
+        content = run_basic_white_cutout(image_url, params)
+        if content:
+            return PhotoroomEditResult(
+                content=content,
+                uncertainty_score=None,
+                api="basic/v1/segment",
+            )
+        logger.info("Basic cutout failed for %s — falling back to Plus", spec.id)
+
+    result = photoroom_edit(image_url, params, extra_headers=headers)
+    return result
 
 
 def catalog_labels() -> list[str]:

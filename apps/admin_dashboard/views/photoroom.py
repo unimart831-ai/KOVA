@@ -17,6 +17,7 @@ from apps.products.photoroom import photoroom_enabled
 from apps.products.photoroom_plus import (
     AI_BG_MODEL_HEADER,
     AI_BG_SEEDS,
+    AI_SHADOWS_MODEL_HEADER,
     PHOTOROOM_EDIT_URL,
     PLUS_VARIANT_CATALOG,
     PRODUCT_CATEGORIES,
@@ -156,6 +157,26 @@ API_PARAM_GROUPS = [
 ]
 
 ENV_SETTINGS = [
+    {
+        "key": "PHOTOROOM_BASIC_API_KEY",
+        "kind": "secret",
+        "description": "Basic v1/segment key for white-bg cutout routing (Phase 2).",
+    },
+    {
+        "key": "PHOTOROOM_BASIC_ROUTING_ENABLED",
+        "kind": "bool",
+        "description": "Route studio_white / marketplace cutouts to Basic when key set.",
+    },
+    {
+        "key": "PHOTOROOM_REVIEW_ALTERATIONS",
+        "kind": "bool",
+        "description": "Flag ghost mannequin / alteration outputs for review-before-publish.",
+    },
+    {
+        "key": "PHOTOROOM_AI_SHADOWS_MODEL_ENABLED",
+        "kind": "bool",
+        "description": "Send pr-ai-shadows-model-version: 2026-04-15 on studio variants.",
+    },
     {
         "key": "PHOTOROOM_API_KEY",
         "kind": "secret",
@@ -305,6 +326,7 @@ def photoroom_config(request):
     usage_30d = studio_qs.filter(created_at__gte=days_30).count()
 
     variant_usage = []
+    basic_usage_30d = 0
     for row in (
         studio_qs.filter(created_at__gte=days_30)
         .values("output_data__variant")
@@ -313,6 +335,12 @@ def photoroom_config(request):
     ):
         vid = row.get("output_data__variant") or "(legacy)"
         variant_usage.append({"variant": vid, "count": row["count"]})
+
+    basic_usage_30d = studio_qs.filter(
+        created_at__gte=days_30,
+        input_data__provider="photoroom_basic",
+    ).count()
+    plus_usage_30d = max(0, usage_30d - basic_usage_30d)
 
     recent_actions = (
         studio_qs.select_related("user")
@@ -356,7 +384,11 @@ def photoroom_config(request):
             "api_param_groups": API_PARAM_GROUPS,
             "api_endpoint": PHOTOROOM_EDIT_URL,
             "ai_bg_model": AI_BG_MODEL_HEADER,
+            "ai_shadows_model": AI_SHADOWS_MODEL_HEADER,
             "ai_bg_seeds": AI_BG_SEEDS,
+            "basic_usage_30d": basic_usage_30d,
+            "plus_usage_30d": plus_usage_30d,
+            "basic_routing_enabled": bool(getattr(settings, "PHOTOROOM_BASIC_API_KEY", "")),
             "product_categories": PRODUCT_CATEGORIES,
             "usage_month": usage_month,
             "usage_30d": usage_30d,

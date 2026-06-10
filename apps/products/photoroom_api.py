@@ -35,6 +35,7 @@ class PhotoroomEditResult:
     uncertainty_score: float | None = None
     sandbox_limited: bool = False
     error: str | None = None
+    api: str = "v2/edit"
 
     @property
     def ok(self) -> bool:

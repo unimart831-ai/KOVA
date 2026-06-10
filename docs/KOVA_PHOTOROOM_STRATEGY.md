@@ -71,7 +71,7 @@ Docs: [Introduction](https://docs.photoroom.com/) · [Image Editing Quickstart](
 | Endpoint | Used? | Module |
 |----------|-------|--------|
 | **Plus v2/edit** | ✅ Primary | `apps/products/photoroom_plus.py`, `photoroom.py` |
-| **Basic v1/segment** | ❌ Not called (legacy comment in `visual_enhance.py` routes to Plus) | — |
+| **Basic v1/segment** | ✅ Cutout routing (Phase 2) | `photoroom_basic.py` |
 | **Video v1/animate** | ⚠️ Partial | `apps/products/photoroom_video.py` (sandbox/default off) |
 
 ### Features enabled (params sent)
@@ -157,7 +157,7 @@ Platform pool: `PHOTOROOM_MONTHLY_POOL=5000`, reserve 500; Growth throttled when
 | Sandbox mode | **Used** | Dev + quota tracking |
 | export.dpi / metadata | **Not used** | JPEG only, no DPI |
 | Google Shopping preset | **Used** | `channel_marketplace` + `channel_marketplace_jpeg` (Phase 1) |
-| Basic API routing | **Not used** | All calls are Plus-priced |
+| Basic API routing | **Used** | White-bg cutouts via v1/segment when key set |
 | Batch API | **Not used** | ThreadPoolExecutor locally |
 | Human-in-the-loop QA | **Partial** | Uncertainty skip only; no review UI |
 
@@ -198,13 +198,13 @@ Platform pool: `PHOTOROOM_MONTHLY_POOL=5000`, reserve 500; Growth throttled when
 - ✅ Tune relight to **`ai.preserve-hue-and-saturation`** for product categories (`PHOTOROOM_RELIGHT_PRODUCT_MODE`; services keep `ai.auto`).
 - ✅ Operator runbook note in admin Photoroom tab → `docs/KOVA_PHOTOROOM_STRATEGY.md`.
 
-### Phase 2 — Days 31–60: "Sell on more channels"
+### Phase 2 — Days 31–60: "Sell on more channels" ✅ DONE
 
-- **Restaurant / food preset pack** (3 locked AI surface prompts + food beautify).
-- **Apparel pilot:** enable ghost mannequin for Pro+ with **review-before-publish** flag.
-- **Basic API router** for cutout-only exports (internal cost dashboard).
-- Enable **new shadow model** header (`pr-ai-shadows-model-version: 2026-04-15`) A/B on studio variants.
-- Credit UX: show "X of Y polish credits" per Snap with scene breakdown.
+- ✅ **Restaurant / food preset pack** (3 locked AI surface prompts + food beautify on Snap/Batch).
+- ✅ **Apparel pilot:** ghost mannequin for Pro+ with **review-before-publish** flag (`PHOTOROOM_REVIEW_ALTERATIONS`).
+- ✅ **Basic API router** for cutout-only exports (`PHOTOROOM_BASIC_API_KEY`; admin Basic vs Plus split).
+- ✅ **New shadow model** header (`pr-ai-shadows-model-version: 2026-04-15`; `PHOTOROOM_AI_SHADOWS_MODEL_ENABLED`).
+- ✅ Credit UX: Snap modal shows "X of Y polish credits" with scene breakdown after expand.
 
 ### Phase 3 — Days 61–90: "Scale & agency"
 
@@ -230,11 +230,13 @@ Platform pool: `PHOTOROOM_MONTHLY_POOL=5000`, reserve 500; Growth throttled when
 | `PHOTOROOM_PREFLIGHT_ENABLED` | Repair-before-scenes |
 | `PHOTOROOM_CHANNEL_EXPORTS_ENABLED` | Story/banner |
 | **Proposed:** `PHOTOROOM_BASIC_API_KEY` | Separate Basic key for cutout-only |
+| `PHOTOROOM_BASIC_ROUTING_ENABLED` | Toggle Basic v1/segment routing |
+| `PHOTOROOM_REVIEW_ALTERATIONS` | Human QA gate for alteration outputs |
+| `PHOTOROOM_AI_SHADOWS_MODEL_ENABLED` | Shadow model header on studio variants |
 | `PHOTOROOM_MARKETPLACE_EXPORT_ENABLED` | Google Shopping preset (PNG + JPEG) |
 | `PHOTOROOM_MARKETPLACE_SIZE` / `PHOTOROOM_MARKETPLACE_PADDING` | Marketplace export dimensions & fill |
 | `PHOTOROOM_MARKET_DAY_ENABLED` | Batch Snap Market Day preset |
 | `PHOTOROOM_RELIGHT_PRODUCT_MODE` | Color-safe relight for products |
-| **Proposed:** `PHOTOROOM_REVIEW_ALTERATIONS` | Human QA gate |
 
 ### Billing model recommendations
 

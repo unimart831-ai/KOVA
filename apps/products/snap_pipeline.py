@@ -14,6 +14,63 @@ EXPAND_STALE = timedelta(minutes=6)
 REEL_COMPOSE_STALE = timedelta(minutes=6)
 
 
+def _polish_credit_snapshot(user, product_id: str) -> dict:
+    """Monthly polish credits + per-product scene debits for Snap UX."""
+    from apps.agents.models import AgentAction
+    from apps.billing.visual_credits import get_visual_credit_usage
+
+    usage = get_visual_credit_usage(user)
+    product_actions = AgentAction.objects.filter(
+        user=user,
+        action_type__in=("commerce.studio_polish", "commerce.pro_scene"),
+        input_data__product_id=product_id,
+        status=AgentAction.ActionStatus.COMPLETED,
+    ).exclude(input_data__session=True)
+
+    session_used = product_actions.count()
+    scenes: list[dict] = []
+    for action in product_actions.order_by("created_at"):
+        out = action.output_data or {}
+        if out.get("phase") not in (None, "scene", "preflight", "channel", "marketplace"):
+            continue
+        variant = out.get("variant") or ""
+        if not variant and out.get("phase") != "preflight":
+            continue
+        scenes.append({
+            "variant": variant,
+            "label": out.get("label") or variant or "Repair",
+            "slide_role": out.get("slide_role") or out.get("phase") or "",
+            "api": out.get("api") or "v2/edit",
+            "needs_review": bool(out.get("needs_review")),
+        })
+
+    return {
+        "used": usage.get("used", 0),
+        "max": usage.get("max", 0),
+        "remaining": usage.get("remaining", 0),
+        "session_used": session_used,
+        "scenes": scenes,
+    }
+
+
+def _format_polish_credit_detail(credits: dict) -> str:
+    used = credits.get("session_used", 0)
+    monthly_used = credits.get("used", 0)
+    monthly_max = credits.get("max", 0)
+    if monthly_max:
+        headline = f"{monthly_used} of {monthly_max} polish credits"
+    else:
+        headline = f"{used} polish credit{'s' if used != 1 else ''} this Snap"
+    scenes = credits.get("scenes") or []
+    if not scenes:
+        return headline
+    labels = [s.get("label") or s.get("variant") for s in scenes[:6]]
+    breakdown = ", ".join(label for label in labels if label)
+    if len(scenes) > 6:
+        breakdown += f" +{len(scenes) - 6} more"
+    return f"{headline} · {breakdown}" if breakdown else headline
+
+
 def _reel_compose_stuck(post, now):
     """True when compose was marked pending but has not finished within the stale window."""
     if post.reel_compose_status != "pending":
@@ -249,20 +306,14 @@ def build_snap_pipeline_status(product, user):
             if variation_action
             else 1
         )
-        plus_n = 0
-        if studio_polish_action:
-            plus_n = len(
-                AgentAction.objects.filter(
-                    user=user,
-                    action_type__in=("commerce.studio_polish", "commerce.pro_scene"),
-                    input_data__product_id=product_id,
-                )
-            )
+        polish_credits = _polish_credit_snapshot(user, product_id)
         expand_status = "completed"
-        if plus_n > 1:
-            expand_detail = f"{plus_n} Plus scenes + promo ready for carousel & posts"
+        if polish_credits.get("session_used") or polish_credits.get("scenes"):
+            expand_detail = _format_polish_credit_detail(polish_credits)
+        elif n == 1:
+            expand_detail = copy["expand_done"]
         else:
-            expand_detail = copy["expand_done"] if n == 1 else f"{n} scenes ready for carousel & posts"
+            expand_detail = f"{n} scenes ready for carousel & posts"
     elif analyze_status == "running":
         expand_status = "pending"
         expand_detail = copy["carousel_waiting"]
@@ -525,6 +576,14 @@ def build_snap_pipeline_status(product, user):
         round((completed_steps / max(len(steps), 1)) * 100),
     )
 
+    polish_credits = _polish_credit_snapshot(user, product_id)
+    review_notice = ""
+    if studio_polish_action and (studio_polish_action.output_data or {}).get("alteration_review_required"):
+        pending = (studio_polish_action.output_data or {}).get("review_pending_count", 0)
+        review_notice = (
+            f"{pending} AI scene{'s' if pending != 1 else ''} need your review before publishing."
+        )
+
     return {
         "product_id": product_id,
         "product_name": product.name,
@@ -546,7 +605,17 @@ def build_snap_pipeline_status(product, user):
         "pending_count": pending_count,
         "auto_approve_posts": auto_approve_posts,
         "error_message": error_message,
-        "studio_polish_notice": studio_polish_notice,
+        "studio_polish_notice": studio_polish_notice or review_notice,
+        "polish_credits": polish_credits,
+        "polish_credit_summary": _format_polish_credit_detail(polish_credits)
+        if expand_status == "completed" and polish_credits.get("scenes")
+        else "",
+        "scene_breakdown": polish_credits.get("scenes") or [],
+        "alteration_review_required": bool(
+            (studio_polish_action.output_data or {}).get("alteration_review_required")
+            if studio_polish_action
+            else False
+        ),
         "terminal": terminal,
         "progress_percent": progress_percent,
     }

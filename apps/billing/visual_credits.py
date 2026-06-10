@@ -44,10 +44,18 @@ def get_platform_photoroom_usage() -> dict:
     usable = max(0, pool - reserve)
 
     used = _countable_polish_actions().filter(created_at__gte=month_start).count()
+    basic_used = _countable_polish_actions().filter(
+        created_at__gte=month_start,
+        input_data__provider="photoroom_basic",
+    ).count()
+    plus_used = max(0, used - basic_used)
     pool_pct = (used / usable) if usable else 1.0
 
     return {
         "used": used,
+        "plus_used": plus_used,
+        "basic_used": basic_used,
+        "basic_equiv_plus": round(basic_used / 5, 2),
         "pool": pool,
         "reserve": reserve,
         "usable": usable,

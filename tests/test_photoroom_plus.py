@@ -40,11 +40,11 @@ def test_select_variants_includes_studio_and_lifestyle():
     assert "ai_lifestyle" in ids
 
 
-def test_apparel_gets_mannequin_or_model():
+def test_apparel_gets_mannequin_on_pro():
     p = _Product(name="Summer Dress", tags=["fashion", "apparel"])
-    specs = select_plus_variants(p, {}, plan_tier="growth", max_count=8)
+    specs = select_plus_variants(p, {}, plan_tier="pro", max_count=8)
     ids = {s.id for s in specs}
-    assert "ghost_mannequin" in ids or "virtual_model" in ids
+    assert "ghost_mannequin" in ids
 
 
 def test_starter_plan_excludes_pro_only_variants():

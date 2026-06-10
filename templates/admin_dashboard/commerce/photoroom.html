@@ -60,7 +60,8 @@
     <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Pipeline</h3>
     <dl class="space-y-2 text-xs">
       <div class="flex justify-between gap-4"><dt class="text-gray-500">Endpoint</dt><dd class="font-mono text-gray-800 dark:text-gray-200 text-right">{{ api_endpoint }}</dd></div>
-      <div class="flex justify-between gap-4"><dt class="text-gray-500">AI background model</dt><dd class="font-mono text-gray-800 dark:text-gray-200 text-right truncate">{{ ai_bg_model }}</dd></div>
+      <div class="flex justify-between gap-4"><dt class="text-gray-500">AI shadows model</dt><dd class="font-mono text-gray-800 dark:text-gray-200 text-right truncate">{{ ai_shadows_model }}</dd></div>
+      <div class="flex justify-between gap-4"><dt class="text-gray-500">Basic routing (30d)</dt><dd class="text-gray-800 dark:text-gray-200">{{ basic_usage_30d|format_number }} Basic · {{ plus_usage_30d|format_number }} Plus</dd></div>
       <div class="flex justify-between gap-4"><dt class="text-gray-500">Variant catalog</dt><dd class="text-gray-800 dark:text-gray-200">{{ variant_count }} scenes</dd></div>
       <div class="flex justify-between gap-4"><dt class="text-gray-500">Cost assumption</dt><dd class="text-gray-800 dark:text-gray-200">${{ pool.cost_usd_monthly|floatformat:0 }}/mo · ${{ pool.cost_per_image|floatformat:4 }}/call</dd></div>
     </dl>
@@ -72,7 +73,8 @@
       <li>Set <code class="text-[10px]">PHOTOROOM_SANDBOX=True</code> for free watermarked dev calls.</li>
       <li>Worker service must have the same <code class="text-[10px]">PHOTOROOM_*</code> vars as web.</li>
       <li>1 credit = 1 Plus API call = 1 variant in the scene pack.</li>
-      <li>Phase 1 (live): brand <code class="text-[10px]">studio_brand</code> hero default, Google Shopping <code class="text-[10px]">channel_marketplace</code> exports, Market Day batch preset — see <code class="text-[10px]">docs/KOVA_PHOTOROOM_STRATEGY.md</code>.</li>
+      <li>Phase 2 (live): food preset pack, Basic cutout routing, apparel review gate, shadow model header — see <code class="text-[10px]">docs/KOVA_PHOTOROOM_STRATEGY.md</code>.</li>
+      <li>Basic routing: set <code class="text-[10px]">PHOTOROOM_BASIC_API_KEY</code> for white-bg cutouts (5 Basic ≈ 1 Plus internally).</li>
       <li>Marketplace exports: <code class="text-[10px]">PHOTOROOM_MARKETPLACE_EXPORT_ENABLED</code> (PNG + JPEG, 1000×1000 white bg).</li>
     </ul>
     <p class="text-[10px] text-gray-400 mt-3">

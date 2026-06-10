@@ -777,6 +777,8 @@ def _expand_studio_polish(
 
     from apps.products.photoroom_api import merge_uncertainty
 
+    from apps.products.photoroom_review import review_flags_for_output
+
     # Process results in order
     for spec, edit_result in results_ordered:
         if edit_result and edit_result.uncertainty_score is not None:
@@ -809,7 +811,7 @@ def _expand_studio_polish(
         record_studio_polish(
             product.user,
             product_id=product.pk,
-            provider="photoroom_plus",
+            provider="photoroom_basic" if edit_result.api == "basic/v1/segment" else "photoroom_plus",
             output_data={
                 "variant": spec.id,
                 "label": spec.label,
@@ -822,7 +824,11 @@ def _expand_studio_polish(
                     detect_product_category(product, analysis),
                 ),
                 "brand_template": brand_template.as_log_dict() if brand_template else {},
-                "api": "v2/edit",
+                "api": edit_result.api if edit_result else "v2/edit",
+                **review_flags_for_output(
+                    spec.id,
+                    uncertainty_score=edit_result.uncertainty_score if edit_result else None,
+                ),
             },
         )
         new_urls.append(hero_url)
@@ -903,6 +909,19 @@ def _expand_studio_polish(
     product.additional_images = kept + new_urls
     product.save(update_fields=["additional_images", "updated_at"])
 
+    from apps.agents.models import AgentAction
+    from apps.products.photoroom_review import summarize_review_state
+
+    polish_actions = list(
+        AgentAction.objects.filter(
+            user=product.user,
+            action_type__in=("commerce.studio_polish", "commerce.pro_scene"),
+            input_data__product_id=str(product.pk),
+            status=AgentAction.ActionStatus.COMPLETED,
+        ).exclude(input_data__session=True).order_by("-created_at")[:50]
+    )
+    review_state = summarize_review_state(polish_actions)
+
     logger.info(
         "Plus pack: product=%s variants=%d/%d failed=%s preflight=%s channel=%s marketplace=%s",
         product.pk,
@@ -932,6 +951,7 @@ def _expand_studio_polish(
         "mode": VISUAL_MODE_PRO_SCENE,
         "provider": "photoroom_plus",
         "urls": new_urls,
+        **review_state,
     })
 
 

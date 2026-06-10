@@ -438,6 +438,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "agents.educator_compile_weekly_digest",
         "schedule": 7 * 24 * 3600.0,  # weekly — assembles the Kova digest before Sunday send
     },
+    "snapshot-pilot-metrics": {
+        "task": "accounts.snapshot_pilot_metrics",
+        "schedule": 24 * 3600.0,  # nightly — TEST_BUSINESSES pilot dashboard snapshot
+    },
 }
 
 # ─── AUTH ────────────────────────────────────────────────────────────────────
@@ -769,6 +773,11 @@ PHOTOROOM_SCALING = env("PHOTOROOM_SCALING", default="fill")  # fit | fill
 PHOTOROOM_EXPAND_MAX_WORKERS = env.int("PHOTOROOM_EXPAND_MAX_WORKERS", default=2)
 PHOTOROOM_DEFAULT_BLUR_MODE = env("PHOTOROOM_DEFAULT_BLUR_MODE", default="bokeh")  # bokeh | gaussian
 PHOTOROOM_DEFAULT_BLUR_RADIUS = env.float("PHOTOROOM_DEFAULT_BLUR_RADIUS", default=0.01)
+# Phase 2 — Basic cutout routing, food preset, apparel review, shadow model
+PHOTOROOM_BASIC_API_KEY = env("PHOTOROOM_BASIC_API_KEY", default="")
+PHOTOROOM_BASIC_ROUTING_ENABLED = env.bool("PHOTOROOM_BASIC_ROUTING_ENABLED", default=True)
+PHOTOROOM_REVIEW_ALTERATIONS = env.bool("PHOTOROOM_REVIEW_ALTERATIONS", default=True)
+PHOTOROOM_AI_SHADOWS_MODEL_ENABLED = env.bool("PHOTOROOM_AI_SHADOWS_MODEL_ENABLED", default=True)
 BEAUTIFY_SEED_DEFAULT = 117879368
 EDIT_WITH_AI_SEED_DEFAULT = 2016886668
 
