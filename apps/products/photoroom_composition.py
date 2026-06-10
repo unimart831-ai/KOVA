@@ -126,6 +126,7 @@ def compose_product_hero(
     prompt: str = "",
     output_size: str | None = None,
     user=None,
+    brand_template=None,
 ) -> str | None:
     """
     Build a multi-product hero image URL for batch showcase reels / collection posts.
@@ -150,8 +151,19 @@ def compose_product_hero(
         return None
 
     profile_user = user or (products[0].user if products else None)
-    brand = _get_brand_palette(getattr(profile_user, "profile", None) if profile_user else None)
-    primary = brand.get("primary", "#F8F6F3").lstrip("#")
+    if brand_template is None and profile_user:
+        from apps.products.photoroom_brand_template import build_photoroom_brand_template
+
+        brand_template = build_photoroom_brand_template(
+            getattr(profile_user, "profile", None),
+            profile_user.pk,
+        )
+
+    if brand_template and brand_template.enabled:
+        primary = brand_template.studio_color_hex.lstrip("#")
+    else:
+        brand = _get_brand_palette(getattr(profile_user, "profile", None) if profile_user else None)
+        primary = brand.get("primary", "#F8F6F3").lstrip("#")
     try:
         bg_rgb = tuple(int(primary[i : i + 2], 16) for i in (0, 2, 4))
     except ValueError:

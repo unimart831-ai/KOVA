@@ -189,7 +189,16 @@ CATEGORY_PROOF_VARIANTS: dict[str, tuple[str, ...]] = {
     "home": ("flat_lay", "ai_contextual"),
     "general": ("relight", "flat_lay", "background_blur"),
 }
-CAROUSEL_EXCLUDE_URL_MARKERS = ("channel_story", "channel_banner", "preflight_")
+MARKETPLACE_CHANNEL_VARIANT_IDS = frozenset({
+    "channel_marketplace",
+    "channel_marketplace_jpeg",
+})
+CAROUSEL_EXCLUDE_URL_MARKERS = (
+    "channel_story",
+    "channel_banner",
+    "channel_marketplace",
+    "preflight_",
+)
 SHOP_GALLERY_EXCLUDE_MARKERS = CAROUSEL_EXCLUDE_URL_MARKERS + ("promo_frame",)
 
 PRODUCT_CATEGORIES = (
@@ -252,6 +261,20 @@ def _edit_with_ai_params(*, seed: int) -> dict[str, str]:
         "editWithAI.mode": "ai.auto",
         "editWithAI.seed": str(seed),
         **_export_defaults(),
+    }
+
+
+def _marketplace_export_params(*, export_format: str) -> dict[str, str]:
+    """Google Shopping–style white-bg square (≥75% product fill)."""
+    return {
+        "removeBackground": "true",
+        "background.color": "FFFFFF",
+        "outputSize": str(getattr(settings, "PHOTOROOM_MARKETPLACE_SIZE", "1000x1000")),
+        "padding": str(getattr(settings, "PHOTOROOM_MARKETPLACE_PADDING", 0.075)),
+        "shadow.mode": str(getattr(settings, "PHOTOROOM_DEFAULT_SHADOW", "ai.soft")),
+        "scaling": "fill",
+        "referenceBox": "originalImage",
+        "export.format": export_format,
     }
 
 
@@ -545,7 +568,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         label="AI relight",
         params={
             "removeBackground": "true",
-            "lighting.mode": "ai.auto",
+            "lighting.mode": "{relight_mode}",
             "background.color": "FFFFFF",
             "padding": str(getattr(settings, "PHOTOROOM_PADDING", 0.12)),
             "shadow.mode": "ai.soft",
@@ -834,6 +857,26 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         offering_types=("product", "service", "digital"),
         min_plan="growth",
         priority=28,
+        pack_eligible=False,
+    ),
+    "channel_marketplace": PlusVariantSpec(
+        id="channel_marketplace",
+        label="Marketplace (Google Shopping PNG)",
+        params=_marketplace_export_params(export_format="png"),
+        categories=(),
+        offering_types=("product",),
+        min_plan="growth",
+        priority=27,
+        pack_eligible=False,
+    ),
+    "channel_marketplace_jpeg": PlusVariantSpec(
+        id="channel_marketplace_jpeg",
+        label="Marketplace (Google Shopping JPEG)",
+        params=_marketplace_export_params(export_format="jpeg"),
+        categories=(),
+        offering_types=("product",),
+        min_plan="growth",
+        priority=26,
         pack_eligible=False,
     ),
 }
@@ -1308,12 +1351,23 @@ def resolve_variant_params(
 
             category = detect_product_category(product, analysis)
             resolved[key] = beautify_mode_for_category(category)
+        elif value == "{relight_mode}":
+            from apps.products.photoroom_api import relight_mode_for
+
+            offering = getattr(product, "offering_type", "product") or "product"
+            category = detect_product_category(product, analysis)
+            resolved[key] = relight_mode_for(offering, category)
         else:
             resolved[key] = value
     return apply_brand_template(resolved, brand_template, spec)
 
 
-def _slide_roles_for(offering: str, category: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
+def _slide_roles_for(
+    offering: str,
+    category: str,
+    *,
+    hero_studio_ids: tuple[str, ...] | None = None,
+) -> tuple[tuple[str, tuple[str, ...]], ...]:
     if offering == "service":
         return SLIDE_ROLE_SERVICE
     if offering == "digital":
@@ -1330,9 +1384,12 @@ def _slide_roles_for(offering: str, category: str) -> tuple[tuple[str, tuple[str
         "ai_lifestyle_alt",
         "ai_contextual",
     ) + commerce_ids
+    hero_ids = hero_studio_ids or ("studio_white", "studio_brand")
     roles: list[tuple[str, tuple[str, ...]]] = []
     for role_name, variant_ids in SLIDE_ROLE_PRODUCT:
-        if role_name == "proof":
+        if role_name == "hero":
+            roles.append((role_name, hero_ids))
+        elif role_name == "proof":
             roles.append((role_name, proof_ids))
         elif role_name == "desire":
             roles.append((role_name, desire_ids))
@@ -1343,6 +1400,8 @@ def _slide_roles_for(offering: str, category: str) -> tuple[tuple[str, tuple[str
 
 def slide_role_for_variant(variant_id: str, offering: str, category: str) -> str:
     """Carousel role label for a variant id."""
+    if variant_id in MARKETPLACE_CHANNEL_VARIANT_IDS:
+        return "marketplace"
     if variant_id in EDIT_WITH_AI_VARIANT_IDS:
         return "lifestyle_edit"
     if variant_id in COMMERCE_SCENE_VARIANT_IDS:
@@ -1424,6 +1483,7 @@ def order_variants_by_slide_role(
     category: str,
     max_count: int,
     uncertainty_score: float | None = None,
+    hero_studio_ids: tuple[str, ...] | None = None,
 ) -> list[PlusVariantSpec]:
     """Pick variants to fill hero → desire (2–3 AI) → proof → standout."""
     from apps.products.photoroom_api import (
@@ -1438,7 +1498,9 @@ def order_variants_by_slide_role(
     edit_target = _target_edit_with_ai_count(max_count)
     skip_risky = uncertainty_is_high(uncertainty_score)
 
-    for role_name, preferred_ids in _slide_roles_for(offering, category):
+    for role_name, preferred_ids in _slide_roles_for(
+        offering, category, hero_studio_ids=hero_studio_ids,
+    ):
         if role_name == "desire":
             picked_desire = 0
             for vid in preferred_ids:
@@ -1495,12 +1557,17 @@ def select_plus_variants(
     plan_tier: str = "starter",
     max_count: int = 5,
     uncertainty_score: float | None = None,
+    brand_template=None,
+    brand_colors: dict | None = None,
+    commerce_source: str | None = None,
 ) -> list[PlusVariantSpec]:
     """Pick applicable Plus variants for this product, highest priority first."""
+    from apps.products.batch_snap_intelligence import is_market_day_mode
     from apps.products.photoroom_api import (
         HIGH_UNCERTAINTY_VARIANT_IDS,
         uncertainty_is_high,
     )
+    from apps.products.photoroom_brand_template import hero_studio_variant_ids
 
     offering = getattr(product, "offering_type", "product") or "product"
     category = detect_product_category(product, analysis)
@@ -1519,9 +1586,14 @@ def select_plus_variants(
             continue
         candidates.append(spec)
 
-    # Always include universal studio + lifestyle for physical products
+    force_brand = is_market_day_mode(commerce_source)
+    hero_studio_ids = hero_studio_variant_ids(
+        brand_template, brand_colors, force_brand=force_brand,
+    )
+
+    # Always include brand-aware studio hero + lifestyle for physical products
     if offering == "product":
-        for required_id in ("studio_white", "ai_lifestyle"):
+        for required_id in (*hero_studio_ids, "ai_lifestyle"):
             req = PLUS_VARIANT_CATALOG.get(required_id)
             if req and req not in candidates:
                 candidates.append(req)
@@ -1587,6 +1659,7 @@ def select_plus_variants(
             category=category,
             max_count=max_count,
             uncertainty_score=uncertainty_score,
+            hero_studio_ids=hero_studio_ids,
         )
     return ordered[: max(1, max_count)]
 

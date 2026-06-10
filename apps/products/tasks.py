@@ -1999,7 +1999,11 @@ def finalize_batch_snap_session(session_id: str):
     from apps.content.models import ContentSeed, Post
     from apps.content.tasks import compose_reel_video, generate_from_seed, _normalize_reel_image_source
     from apps.platforms.models import SocialAccount
-    from apps.products.batch_snap_intelligence import build_stall_launch_campaign
+    from apps.products.batch_snap_intelligence import (
+        build_market_day_composition_prompt,
+        build_stall_launch_campaign,
+    )
+    from apps.products.photoroom_brand_template import build_photoroom_brand_template
     from apps.products.commerce_autopilot import initial_commerce_post_status
     from apps.products.commerce_links import resolve_page_slug
     from apps.products.models import BatchSnapSession, Product
@@ -2080,8 +2084,10 @@ def finalize_batch_snap_session(session_id: str):
     if composition_enabled() and len(products) >= 2:
         composition_hero_url = compose_product_hero(
             products,
-            prompt=campaign.get("composition_prompt", ""),
+            prompt=campaign.get("composition_prompt", "")
+            or build_market_day_composition_prompt(stall_context),
             user=user,
+            brand_template=build_photoroom_brand_template(profile, user.pk),
         )
         if composition_hero_url:
             image_sources = [composition_hero_url] + [

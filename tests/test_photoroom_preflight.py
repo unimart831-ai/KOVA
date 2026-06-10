@@ -5,7 +5,10 @@ from apps.products.photoroom_preflight import (
     assess_photo_quality,
     build_repair_plan,
     channel_export_budget,
+    marketplace_export_budget,
     select_channel_variant_ids,
+    select_marketplace_variant_ids,
+    total_export_channel_budget,
 )
 
 
@@ -59,6 +62,21 @@ def test_assess_merges_vision_photo_quality():
 def test_channel_export_budget_growth():
     assert channel_export_budget("growth") == 2
     assert channel_export_budget("starter") == 0
+
+
+def test_marketplace_export_budget_growth():
+    assert marketplace_export_budget("growth") == 2
+    assert marketplace_export_budget("starter") == 0
+    assert select_marketplace_variant_ids() == [
+        "channel_marketplace",
+        "channel_marketplace_jpeg",
+    ]
+
+
+def test_total_export_channel_budget():
+    story_banner, marketplace = total_export_channel_budget("growth")
+    assert story_banner == 2
+    assert marketplace == 2
 
 
 def test_select_channel_variant_portrait_uses_uncrop():

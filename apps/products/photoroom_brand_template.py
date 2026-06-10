@@ -175,6 +175,32 @@ def build_photoroom_brand_template(profile, user_id) -> PhotoroomBrandTemplate:
     )
 
 
+def prefers_brand_studio_hero(
+    brand_template: PhotoroomBrandTemplate | None,
+    brand_colors: dict | None = None,
+) -> bool:
+    """True when seller has a locked brand template or non-default profile colors."""
+    if brand_template and brand_template.enabled:
+        return True
+    if brand_colors:
+        primary = (brand_colors.get("primary") or "").strip().lstrip("#").upper()
+        if primary and primary not in ("FFFFFF", "F8F6F3", "FFF", ""):
+            return True
+    return False
+
+
+def hero_studio_variant_ids(
+    brand_template: PhotoroomBrandTemplate | None = None,
+    brand_colors: dict | None = None,
+    *,
+    force_brand: bool = False,
+) -> tuple[str, ...]:
+    """Hero slide preference — brand studio first when styling is available."""
+    if force_brand or prefers_brand_studio_hero(brand_template, brand_colors):
+        return ("studio_brand", "studio_white")
+    return ("studio_white", "studio_brand")
+
+
 def brand_prompt_suffix(template: PhotoroomBrandTemplate | None) -> str:
     if template and template.enabled and template.style_suffix:
         return f" Consistent brand look: {template.style_suffix}"

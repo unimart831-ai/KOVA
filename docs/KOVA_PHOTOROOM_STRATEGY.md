@@ -156,7 +156,7 @@ Platform pool: `PHOTOROOM_MONTHLY_POOL=5000`, reserve 500; Growth throttled when
 | Video animate | **Partial** | Sandbox only |
 | Sandbox mode | **Used** | Dev + quota tracking |
 | export.dpi / metadata | **Not used** | JPEG only, no DPI |
-| Google Shopping preset | **Not used** | White studio exists but not compliance-tuned |
+| Google Shopping preset | **Used** | `channel_marketplace` + `channel_marketplace_jpeg` (Phase 1) |
 | Basic API routing | **Not used** | All calls are Plus-priced |
 | Batch API | **Not used** | ThreadPoolExecutor locally |
 | Human-in-the-loop QA | **Partial** | Uncertainty skip only; no review UI |
@@ -190,13 +190,13 @@ Platform pool: `PHOTOROOM_MONTHLY_POOL=5000`, reserve 500; Growth throttled when
 
 ## 90-day implementation roadmap
 
-### Phase 1 — Days 0–30: "Look like a real shop"
+### Phase 1 — Days 0–30: "Look like a real shop" ✅ DONE
 
-- Make **brand studio hero default** in Snap (not optional alternate).
-- Add **`channel_marketplace`** export: 1000×1000 white, 85% fill, PNG option.
-- **Market Day preset** in Batch Snap: shared stall bg color + PhotoFix always + composition hero.
-- Tune relight to **`ai.preserve-hue-and-saturation`** for product categories.
-- Document operator runbook in admin Photoroom tab.
+- ✅ Make **brand studio hero default** in Snap (`studio_brand` first when brand template or profile colors; `photoroom_brand_template.py`, `select_plus_variants`).
+- ✅ Add **`channel_marketplace`** export: 1000×1000 white `#FFFFFF`, ~85% fill (`PHOTOROOM_MARKETPLACE_PADDING=0.075`), PNG + JPEG (`PHOTOROOM_MARKETPLACE_EXPORT_ENABLED`).
+- ✅ **Market Day preset** in Batch Snap: brand stall bg + PhotoFix always + composition hero (`batch_snap_intelligence`, `PHOTOROOM_MARKET_DAY_ENABLED`).
+- ✅ Tune relight to **`ai.preserve-hue-and-saturation`** for product categories (`PHOTOROOM_RELIGHT_PRODUCT_MODE`; services keep `ai.auto`).
+- ✅ Operator runbook note in admin Photoroom tab → `docs/KOVA_PHOTOROOM_STRATEGY.md`.
 
 ### Phase 2 — Days 31–60: "Sell on more channels"
 
@@ -230,7 +230,10 @@ Platform pool: `PHOTOROOM_MONTHLY_POOL=5000`, reserve 500; Growth throttled when
 | `PHOTOROOM_PREFLIGHT_ENABLED` | Repair-before-scenes |
 | `PHOTOROOM_CHANNEL_EXPORTS_ENABLED` | Story/banner |
 | **Proposed:** `PHOTOROOM_BASIC_API_KEY` | Separate Basic key for cutout-only |
-| **Proposed:** `PHOTOROOM_MARKETPLACE_EXPORT_ENABLED` | Google Shopping preset |
+| `PHOTOROOM_MARKETPLACE_EXPORT_ENABLED` | Google Shopping preset (PNG + JPEG) |
+| `PHOTOROOM_MARKETPLACE_SIZE` / `PHOTOROOM_MARKETPLACE_PADDING` | Marketplace export dimensions & fill |
+| `PHOTOROOM_MARKET_DAY_ENABLED` | Batch Snap Market Day preset |
+| `PHOTOROOM_RELIGHT_PRODUCT_MODE` | Color-safe relight for products |
 | **Proposed:** `PHOTOROOM_REVIEW_ALTERATIONS` | Human QA gate |
 
 ### Billing model recommendations

@@ -634,10 +634,12 @@ def _expand_studio_polish(
     from django.conf import settings as django_settings
 
     from apps.products.photoroom_brand_template import build_photoroom_brand_template
+    from apps.products.photoroom_brand_template import hero_studio_variant_ids
     from apps.products.photoroom_preflight import (
-        channel_export_budget,
         run_channel_exports,
+        run_marketplace_exports,
         run_preflight_repairs,
+        total_export_channel_budget,
     )
 
     profile = getattr(product.user, "profile", None)
@@ -692,13 +694,20 @@ def _expand_studio_polish(
                 uncertainty = merge_uncertainty(uncertainty, score)
                 preflight.quality.uncertainty_score = uncertainty
 
-    channel_slots = channel_export_budget(plan_tier)
+    story_banner_slots, marketplace_slots = total_export_channel_budget(plan_tier)
+    export_slots = story_banner_slots + marketplace_slots
     min_scenes = int(getattr(django_settings, "PHOTOROOM_MIN_SCENE_VARIANTS", 3))
-    if credit_pool > min_scenes and channel_slots > 0:
-        channel_budget = min(channel_slots, credit_pool - min_scenes)
-        scene_budget = credit_pool - channel_budget
+    if credit_pool > min_scenes and export_slots > 0:
+        export_budget = min(export_slots, credit_pool - min_scenes)
+        channel_budget = min(story_banner_slots, export_budget)
+        marketplace_budget = min(
+            marketplace_slots,
+            max(0, export_budget - channel_budget),
+        )
+        scene_budget = credit_pool - channel_budget - marketplace_budget
     else:
         channel_budget = 0
+        marketplace_budget = 0
         scene_budget = max(1, credit_pool)
 
     variants = select_plus_variants(
@@ -707,6 +716,9 @@ def _expand_studio_polish(
         plan_tier=plan_tier,
         max_count=scene_budget,
         uncertainty_score=uncertainty,
+        brand_template=brand_template,
+        brand_colors=brand_colors,
+        commerce_source=commerce_source,
     )
 
     new_urls: list[str] = []
@@ -835,21 +847,41 @@ def _expand_studio_polish(
         return _finish(_studio_polish_error("photoroom_failed"))
 
     channel_ids: list[str] = []
-    if channel_budget > 0 and new_urls:
-        hero_url = next(
-            (u for u in new_urls if "studio_white" in u),
-            new_urls[0],
-        )
-        channel_urls, channel_ids = run_channel_exports(
-            hero_url,
-            product,
-            analysis,
-            brand_colors,
-            budget=channel_budget,
-            aspect_ratio=preflight.quality.aspect_ratio,
-            brand_template=brand_template,
-        )
-        new_urls.extend(channel_urls)
+    marketplace_ids: list[str] = []
+    if new_urls:
+        hero_studio_ids = hero_studio_variant_ids(brand_template, brand_colors)
+        hero_url = new_urls[0]
+        for preferred_id in hero_studio_ids:
+            for url, vid in zip(new_urls, variant_ids):
+                if vid == preferred_id:
+                    hero_url = url
+                    break
+            else:
+                continue
+            break
+
+        if channel_budget > 0:
+            channel_urls, channel_ids = run_channel_exports(
+                hero_url,
+                product,
+                analysis,
+                brand_colors,
+                budget=channel_budget,
+                aspect_ratio=preflight.quality.aspect_ratio,
+                brand_template=brand_template,
+            )
+            new_urls.extend(channel_urls)
+
+        if marketplace_budget > 0:
+            marketplace_urls, marketplace_ids = run_marketplace_exports(
+                hero_url,
+                product,
+                analysis,
+                brand_colors,
+                budget=marketplace_budget,
+                brand_template=brand_template,
+            )
+            new_urls.extend(marketplace_urls)
 
     try:
         if first_hero_bytes:
@@ -872,13 +904,14 @@ def _expand_studio_polish(
     product.save(update_fields=["additional_images", "updated_at"])
 
     logger.info(
-        "Plus pack: product=%s variants=%d/%d failed=%s preflight=%s channel=%s",
+        "Plus pack: product=%s variants=%d/%d failed=%s preflight=%s channel=%s marketplace=%s",
         product.pk,
         len(variant_ids),
         len(variants),
         failed_ids,
         preflight.repairs_run,
         channel_ids,
+        marketplace_ids,
     )
     return _finish({
         "variations_created": len(new_urls),
@@ -888,6 +921,7 @@ def _expand_studio_polish(
         "preflight_repairs": preflight.repairs_run,
         "preflight_failed": preflight.repairs_failed,
         "channel_exports": channel_ids,
+        "marketplace_exports": marketplace_ids,
         "photo_quality": {
             "lighting": preflight.quality.lighting,
             "sharpness": preflight.quality.sharpness,

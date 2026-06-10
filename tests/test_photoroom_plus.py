@@ -105,6 +105,96 @@ def test_channel_export_specs_in_catalog():
     assert "channel_story" in ids
     assert "channel_banner" in ids
     assert "channel_story_uncrop" in ids
+    assert "channel_marketplace" in ids
+    assert "channel_marketplace_jpeg" in ids
+
+
+def test_marketplace_variant_google_shopping_params():
+    png = PLUS_VARIANT_CATALOG["channel_marketplace"]
+    jpeg = PLUS_VARIANT_CATALOG["channel_marketplace_jpeg"]
+    assert png.params["background.color"] == "FFFFFF"
+    assert png.params["outputSize"] == "1000x1000"
+    assert png.params["export.format"] == "png"
+    assert float(png.params["padding"]) == 0.075
+    assert jpeg.params["export.format"] == "jpeg"
+    assert png.pack_eligible is False
+
+
+def test_marketplace_slide_role():
+    from apps.products.photoroom_plus import slide_role_for_variant
+
+    assert slide_role_for_variant("channel_marketplace", "product", "general") == "marketplace"
+    assert slide_role_for_variant("channel_marketplace_jpeg", "product", "beauty") == "marketplace"
+
+
+def test_brand_hero_first_when_template_enabled():
+    from apps.products.photoroom_brand_template import PhotoroomBrandTemplate
+    from apps.products.photoroom_plus import order_variants_by_slide_role
+
+    template = PhotoroomBrandTemplate(
+        enabled=True,
+        shadow_mode="ai.soft",
+        padding="0.08",
+        ai_background_seed=117879368,
+        outline_color_hex="000000",
+        studio_color_hex="E8D5B7",
+        style_suffix="warm boutique",
+    )
+    candidates = [
+        PLUS_VARIANT_CATALOG["ai_lifestyle"],
+        PLUS_VARIANT_CATALOG["studio_white"],
+        PLUS_VARIANT_CATALOG["studio_brand"],
+    ]
+    ordered = order_variants_by_slide_role(
+        candidates,
+        offering="product",
+        category="apparel",
+        max_count=3,
+        hero_studio_ids=("studio_brand", "studio_white"),
+    )
+    assert ordered[0].id == "studio_brand"
+
+
+def test_select_variants_brand_hero_with_profile_colors():
+    from apps.products.photoroom_brand_template import PhotoroomBrandTemplate
+
+    p = _Product(name="Kitenge Dress", tags=["fashion"])
+    template = PhotoroomBrandTemplate(
+        enabled=True,
+        shadow_mode="ai.soft",
+        padding="0.08",
+        ai_background_seed=117879368,
+        outline_color_hex="000000",
+        studio_color_hex="C4A882",
+        style_suffix="",
+    )
+    specs = select_plus_variants(
+        p,
+        {},
+        plan_tier="growth",
+        max_count=4,
+        brand_template=template,
+        brand_colors={"primary": "#C4A882"},
+    )
+    assert specs[0].id == "studio_brand"
+
+
+def test_relight_mode_resolved_for_products():
+    from apps.products.photoroom_plus import resolve_variant_params
+
+    p = _Product(name="USB Hub", tags=["electronics"])
+    spec = PLUS_VARIANT_CATALOG["relight"]
+    params = resolve_variant_params(spec, p, {}, {})
+    assert params["lighting.mode"] == "ai.preserve-hue-and-saturation"
+
+
+def test_relight_mode_auto_for_services():
+    from apps.products.photoroom_plus import resolve_variant_params
+
+    p = _Product(name="Home Cleaning", offering_type="service")
+    spec = PLUS_VARIANT_CATALOG["relight"]
+    params = resolve_variant_params(spec, p, {}, {})
+    assert params["lighting.mode"] == "ai.auto"
 
 
 def test_slide_role_order_starts_with_hero():
@@ -152,6 +242,7 @@ def test_filter_carousel_urls_excludes_channel():
     urls = [
         "/media/studio_polish/x/studio_white_abc.jpg",
         "/media/studio_polish/x/channel_story_def.jpg",
+        "/media/studio_polish/x/channel_marketplace_abc.png",
         "/media/studio_polish/x/preflight_relight_ghi.jpg",
     ]
     filtered = filter_carousel_urls(urls)

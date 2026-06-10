@@ -316,6 +316,30 @@ def channel_export_budget(plan_tier: str) -> int:
     return 2
 
 
+def marketplace_export_enabled() -> bool:
+    return getattr(settings, "PHOTOROOM_MARKETPLACE_EXPORT_ENABLED", True)
+
+
+def marketplace_export_budget(plan_tier: str) -> int:
+    """Google Shopping PNG + JPEG (Growth+ only, 1 credit each)."""
+    if not marketplace_export_enabled():
+        return 0
+    if not getattr(settings, "PHOTOROOM_CHANNEL_EXPORTS_ENABLED", True):
+        return 0
+    if (plan_tier or "starter").lower() not in GROWTH_PLUS_TIERS:
+        return 0
+    return 2
+
+
+def total_export_channel_budget(plan_tier: str) -> tuple[int, int]:
+    """Return (story_banner_slots, marketplace_slots)."""
+    return channel_export_budget(plan_tier), marketplace_export_budget(plan_tier)
+
+
+def select_marketplace_variant_ids() -> list[str]:
+    return ["channel_marketplace", "channel_marketplace_jpeg"]
+
+
 def select_channel_variant_ids(aspect_ratio: float) -> list[str]:
     """Story export may use uncrop for portrait heroes."""
     if aspect_ratio < 0.75:
@@ -423,6 +447,87 @@ def run_channel_exports(
                 "label": spec.label,
                 "url": saved_url,
                 "phase": "channel",
+                "api": "v2/edit",
+            },
+        )
+        urls.append(saved_url)
+        ran.append(variant_id)
+
+    return urls, ran
+
+
+def run_marketplace_exports(
+    hero_url: str,
+    product,
+    analysis: dict | None,
+    brand_colors: dict | None,
+    *,
+    budget: int,
+    brand_template=None,
+) -> tuple[list[str], list[str]]:
+    """
+    Export Google Shopping–compliant marketplace images from the scene hero.
+    Returns (urls, variant_ids). Each format = 1 Plus API call = 1 credit.
+    """
+    from apps.billing.visual_credits import check_visual_credit_limit, record_studio_polish
+    from apps.products.photoroom import save_studio_polish_image
+    from apps.products.photoroom_plus import PLUS_VARIANT_CATALOG, run_plus_variant
+
+    if budget <= 0:
+        return [], []
+
+    offering = getattr(product, "offering_type", "product") or "product"
+    if offering != "product":
+        return [], []
+
+    variant_ids = select_marketplace_variant_ids()[:budget]
+    urls: list[str] = []
+    ran: list[str] = []
+
+    for variant_id in variant_ids:
+        ok, _ = check_visual_credit_limit(product.user)
+        if not ok:
+            break
+
+        spec = PLUS_VARIANT_CATALOG.get(variant_id)
+        if not spec:
+            continue
+
+        edit_result = run_plus_variant(
+            hero_url,
+            spec,
+            product,
+            analysis,
+            brand_colors,
+            brand_template=brand_template,
+        )
+        if not edit_result.ok:
+            logger.warning(
+                "Marketplace export skipped [%s] product=%s error=%s",
+                variant_id,
+                product.pk,
+                (edit_result.error or "unknown")[:200],
+            )
+            continue
+
+        try:
+            saved_url = save_studio_polish_image(
+                product.pk, edit_result.content, suffix=variant_id,
+            )
+        except Exception as exc:
+            logger.error("Marketplace export save failed [%s]: %s", variant_id, exc)
+            continue
+
+        record_studio_polish(
+            product.user,
+            product_id=product.pk,
+            provider="photoroom_plus",
+            output_data={
+                "variant": variant_id,
+                "label": spec.label,
+                "url": saved_url,
+                "phase": "channel",
+                "slide_role": "marketplace",
                 "api": "v2/edit",
             },
         )

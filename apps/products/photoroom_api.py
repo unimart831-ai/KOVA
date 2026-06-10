@@ -73,6 +73,21 @@ def merge_uncertainty(current: float | None, new: float | None) -> float | None:
     return max(current, new)
 
 
+def relight_mode_for(offering: str, category: str) -> str:
+    """
+    Product listings use color-safe relight; services/portraits keep ai.auto.
+    See docs/KOVA_PHOTOROOM_STRATEGY.md Phase 1.
+    """
+    offering = (offering or "product").lower()
+    if offering in ("service", "digital"):
+        return "ai.auto"
+    if offering == "product":
+        return str(
+            getattr(settings, "PHOTOROOM_RELIGHT_PRODUCT_MODE", "ai.preserve-hue-and-saturation")
+        )
+    return "ai.auto"
+
+
 def beautify_mode_for_category(category: str) -> str:
     """Map product category to beautify.mode per Photoroom docs."""
     if category == "food":

@@ -6,11 +6,27 @@ from django.urls import reverse
 
 from apps.products.batch_snap_intelligence import (
     build_batch_identification_prompt,
+    build_market_day_composition_prompt,
     is_batch_placeholder_name,
+    is_market_day_mode,
     parse_stall_brief,
     resolve_batch_item_price,
     _heuristic_stall_parse,
 )
+
+
+class TestMarketDayMode:
+    def test_is_market_day_batch_snap(self):
+        assert is_market_day_mode("batch_snap") is True
+        assert is_market_day_mode("snap") is False
+        assert is_market_day_mode(None) is False
+
+    def test_composition_prompt_uses_stall_context(self):
+        prompt = build_market_day_composition_prompt(
+            {"stall_title": "Amara's Table", "market_context": "Kawaida market Saturday"},
+        )
+        assert "Amara's Table" in prompt
+        assert "Kawaida market" in prompt
 
 
 class TestStallBriefParsing:
