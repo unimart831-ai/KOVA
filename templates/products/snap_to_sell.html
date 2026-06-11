@@ -8,7 +8,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-lg mx-auto space-y-5" x-data="snapToSell({{ commerce_autopilot|yesno:'true,false' }}, {{ visual_credits.remaining|default:15 }}, {{ visual_credits.at_limit|yesno:'true,false' }}, {{ studio_polish_notice|yesno:'true,false' }}, {{ credit_estimates_json|safe }}, {{ lite_forced|yesno:'true,false' }}, '{{ default_polish_mode }}')">
+<script type="application/json" id="snap-credit-estimates">{{ credit_estimates_json|safe }}</script>
+<div class="max-w-lg mx-auto space-y-5" x-data="snapToSell({{ commerce_autopilot|yesno:'true,false' }}, {{ visual_credits.remaining|default:15 }}, {{ visual_credits.at_limit|yesno:'true,false' }}, {{ studio_polish_notice|yesno:'true,false' }}, {{ lite_forced|yesno:'true,false' }}, '{{ default_polish_mode }}')">
 
   <div class="rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-xs text-amber-900 dark:text-amber-200">
     Photos must follow Kova's <a href="{% url 'acceptable_use' %}" class="underline font-medium">content policy</a>.
@@ -221,9 +222,13 @@
 </div>
 
 <script>
-function snapToSell(autopilot, creditsRemaining, creditsAtLimit, studioPolishUnavailable, creditEstimates, liteForced, defaultPolishMode) {
+function snapToSell(autopilot, creditsRemaining, creditsAtLimit, studioPolishUnavailable, liteForced, defaultPolishMode) {
   const proSceneDisabled = !!creditsAtLimit || (creditsRemaining !== undefined && creditsRemaining <= 0);
-  const estimates = creditEstimates || {};
+  let estimates = {};
+  try {
+    const el = document.getElementById('snap-credit-estimates');
+    if (el && el.textContent) estimates = JSON.parse(el.textContent);
+  } catch (e) {}
   const forcedLite = !!liteForced;
   const initialPolish = forcedLite || proSceneDisabled ? 'lite' : (defaultPolishMode || 'studio');
   return {
