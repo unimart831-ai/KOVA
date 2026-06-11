@@ -100,7 +100,6 @@ def _polish_composite(composite_bytes: bytes, *, prompt: str, output_size: str) 
     params = {
         "removeBackground": "false",
         "background.prompt": prompt,
-        "background.expandPrompt": "ai.auto",
         "outputSize": output_size,
         "padding": "0.06",
         "shadow.mode": "ai.soft",

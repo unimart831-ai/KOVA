@@ -59,6 +59,30 @@ class TestCommerceReels:
         slugs = {r["commerce_slug"] for r in reels}
         assert slugs == {"lotion", "comb"}
 
+    def test_pending_approval_reels_show_on_shop(self, user):
+        user.profile.page_slug = "reel-shop"
+        user.profile.save()
+        product = Product.objects.create(
+            user=user,
+            name="Pending Reel Item",
+            commerce_slug="pending-reel",
+            price=500,
+            stock_status=Product.StockStatus.IN_STOCK,
+        )
+        Post.objects.create(
+            user=user,
+            product=product,
+            content_text="Pending reel",
+            post_format=Post.PostFormat.REEL,
+            status=Post.Status.PENDING_APPROVAL,
+            visual_metadata={
+                "reel_video_url": "https://cdn.example.com/pending.mp4",
+            },
+        )
+        reels = get_public_shop_reels(user.profile)
+        assert len(reels) == 1
+        assert reels[0]["video_url"] == "https://cdn.example.com/pending.mp4"
+
     def test_get_public_product_reel_returns_latest_ready(self, user):
         product = Product.objects.create(
             user=user,

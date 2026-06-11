@@ -7,6 +7,8 @@ from apps.products.photoroom_api import (
     beautify_mode_for_category,
     check_sandbox_quota,
     merge_uncertainty,
+    normalize_photoroom_edit_params,
+    normalize_shadow_mode,
     parse_uncertainty_score,
     uncertainty_is_high,
 )
@@ -22,6 +24,21 @@ def test_parse_uncertainty_score_valid():
 
 def test_parse_uncertainty_score_unavailable():
     assert parse_uncertainty_score({"x-uncertainty-score": "-1"}) is None
+
+
+def test_normalize_shadow_mode_aliases():
+    assert normalize_shadow_mode("ai.soft") == "ai.preset-soft"
+    assert normalize_shadow_mode("ai.hard") == "ai.preset-hard"
+    assert normalize_shadow_mode("ai.preset-soft") == "ai.preset-soft"
+
+
+def test_normalize_photoroom_edit_params():
+    out = normalize_photoroom_edit_params({
+        "shadow.mode": "ai.soft",
+        "background.expandPrompt": "ai.auto",
+    })
+    assert out["shadow.mode"] == "ai.preset-soft"
+    assert "background.expandPrompt" not in out
 
 
 def test_beautify_mode_by_category():

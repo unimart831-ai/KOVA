@@ -34,7 +34,7 @@ def test_hook_texts_price_only_on_last_frame():
     )
     assert texts[0] == "Amaya Speaker"
     assert texts[1] == ""
-    assert texts[-1] == "KES 1,200"
+    assert texts[-1] == "KES 1,200\nOrder on WhatsApp"
     assert "Shop" not in texts[-1]
 
 
@@ -59,7 +59,8 @@ def test_lifestyle_story_orders_edit_ai_slides():
     assert len(plan.image_urls) == 5
     assert "channel_story" in plan.image_urls[0]
     assert any("edit_ai_staging" in u for u in plan.image_urls)
-    assert plan.hook_texts[-1] == "KES 800"
+    assert plan.hook_texts[-1].startswith("KES 800")
+    assert "Order on WhatsApp" in plan.hook_texts[-1]
     assert plan.template == "story_arc"
 
 

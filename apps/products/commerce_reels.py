@@ -7,6 +7,7 @@ from typing import Any
 from apps.content.models import Post
 
 PUBLIC_REEL_STATUSES = (
+    Post.Status.PENDING_APPROVAL,
     Post.Status.APPROVED,
     Post.Status.SCHEDULED,
     Post.Status.PUBLISHED,

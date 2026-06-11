@@ -19,6 +19,7 @@
                  {% if reel.poster_url %}poster="{{ reel.poster_url }}"{% endif %}
                  muted autoplay loop playsinline preload="metadata"
                  aria-label="{{ reel.product_name }} reel"></video>
+          <button type="button" class="reel-play-btn" aria-label="Play {{ reel.product_name }} reel">▶</button>
         </div>
       </a>
       <div class="reel-bar">

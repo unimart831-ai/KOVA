@@ -468,10 +468,18 @@ def generate(
 
         except Exception as exc:
             duration = int((time.monotonic() - start) * 1000)
-            logger.error(
-                "LLM call failed (%s/%s) after %dms (attempt %d/%d): %s",
-                model_providers.get(try_model, provider), try_model, duration, attempt + 1, len(models_to_try), exc,
-            )
+            err_text = str(exc)
+            if "401" in err_text and "User not found" in err_text:
+                logger.error(
+                    "LLM call failed (%s/%s) after %dms: OpenRouter rejected the API key "
+                    "(401 User not found). Set a valid OPENROUTER_API_KEY in Railway env.",
+                    model_providers.get(try_model, provider), try_model, duration,
+                )
+            else:
+                logger.error(
+                    "LLM call failed (%s/%s) after %dms (attempt %d/%d): %s",
+                    model_providers.get(try_model, provider), try_model, duration, attempt + 1, len(models_to_try), exc,
+                )
             last_exc = exc
             if attempt < len(models_to_try) - 1:
                 time.sleep(min(2 ** attempt, 2))
@@ -769,7 +777,15 @@ def analyze_image(
         return resp
     except Exception as exc:
         duration = int((time.monotonic() - start) * 1000)
-        logger.error("Vision AI failed (%s/%s) after %dms: %s", provider, model, duration, exc)
+        err_text = str(exc)
+        if "401" in err_text and "User not found" in err_text:
+            logger.error(
+                "Vision AI failed (%s/%s) after %dms: OpenRouter rejected the API key "
+                "(401 User not found). Set a valid OPENROUTER_API_KEY in Railway env.",
+                provider, model, duration,
+            )
+        else:
+            logger.error("Vision AI failed (%s/%s) after %dms: %s", provider, model, duration, exc)
         raise
 
 

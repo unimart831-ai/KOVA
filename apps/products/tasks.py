@@ -763,6 +763,9 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
 
     posts_created = 0
     initial_status = initial_commerce_post_status(user)
+    from apps.products.commerce_seo import brand_name as resolve_brand_name
+
+    shop_brand = resolve_brand_name(user.profile, user)
     for account in accounts:
         source_post = None
         if use_carousel:
@@ -792,6 +795,8 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
             "video_compose_status": "pending",
             "prefer_photoroom_video": len(source_images) == 1,
             "reel_director": True,
+            "reel_brand_name": shop_brand,
+            "reel_cta_label": "Order on WhatsApp",
         }
         if source_post:
             visual_metadata["source_carousel_post_id"] = str(source_post.pk)

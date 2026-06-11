@@ -779,14 +779,20 @@ def generate_post_images(post_id: str):
 
 
 def _build_reel_hook_texts(post, meta: dict, slide_count: int) -> list[str]:
-    """Product name on first frame; price on last frame only (no mid-slide copy)."""
+    """Product name on first frame; brand on hero; price + CTA on last frame."""
     from apps.content.reel_director import build_hook_texts
 
     product_name = ""
     price_label = ""
+    brand_name = meta.get("reel_brand_name", "")
     if post.product:
         product_name = post.product.name or ""
         price_label = post.product.display_price or ""
+        if not brand_name:
+            from apps.products.commerce_seo import brand_name as resolve_brand_name
+
+            profile = getattr(post.product.user, "profile", None)
+            brand_name = resolve_brand_name(profile, post.product.user) if profile else ""
 
     return build_hook_texts(
         slide_count=slide_count,
@@ -794,6 +800,8 @@ def _build_reel_hook_texts(post, meta: dict, slide_count: int) -> list[str]:
         product_name=product_name,
         price_label=price_label,
         hook_override=meta.get("reel_hook_text", ""),
+        brand_name=brand_name,
+        cta_label=meta.get("reel_cta_label", "Order on WhatsApp"),
     )
 
 
@@ -815,6 +823,13 @@ def _apply_reel_director(post, image_sources: list[str], meta: dict):
     if post.product:
         category = detect_product_category(post.product, analysis)
 
+    brand_name = meta.get("reel_brand_name", "")
+    if not brand_name and post.product:
+        from apps.products.commerce_seo import brand_name as resolve_brand_name
+
+        profile = getattr(post.product.user, "profile", None)
+        brand_name = resolve_brand_name(profile, post.product.user) if profile else ""
+
     plan = build_reel_plan(
         image_sources,
         seed=str(post.pk),
@@ -822,6 +837,8 @@ def _apply_reel_director(post, image_sources: list[str], meta: dict):
         product_name=(post.product.name if post.product else "") or "",
         price_label=(post.product.display_price if post.product else "") or "",
         hook_override=meta.get("reel_hook_text", ""),
+        brand_name=brand_name,
+        cta_label=meta.get("reel_cta_label", "Order on WhatsApp"),
         recipe_id=meta.get("reel_recipe_id"),
     )
     if not plan:

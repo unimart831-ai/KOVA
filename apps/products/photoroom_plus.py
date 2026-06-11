@@ -265,11 +265,8 @@ def _shadow_studio() -> dict[str, str]:
 
 
 def _ai_scene_studio() -> dict[str, str]:
-    """Cutout + AI background with prompt expansion for fuller scenes."""
-    return {
-        **_shadow_studio(),
-        "background.expandPrompt": "ai.auto",
-    }
+    """Cutout + AI background; prompt auto-expansion is on by default (no legacy key)."""
+    return _shadow_studio()
 
 
 def _edit_with_ai_params(*, seed: int) -> dict[str, str]:
@@ -1841,9 +1838,12 @@ def photoroom_edit(
     from apps.products.photoroom_api import (
         PhotoroomEditResult,
         check_sandbox_quota,
+        normalize_photoroom_edit_params,
         parse_uncertainty_score,
         record_sandbox_call,
     )
+
+    params = normalize_photoroom_edit_params(dict(params))
 
     api_key, headers = _api_key_headers(extra_headers)
     if not api_key:

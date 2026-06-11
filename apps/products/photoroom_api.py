@@ -26,6 +26,40 @@ HIGH_UNCERTAINTY_VARIANT_IDS = frozenset({
     "flat_lay",
 })
 
+# Legacy shadow modes rejected when pr-ai-shadows-model-version is set (2026-04-15+).
+LEGACY_SHADOW_MODE_ALIASES = {
+    "ai.soft": "ai.preset-soft",
+    "ai.hard": "ai.preset-hard",
+}
+
+
+def normalize_shadow_mode(mode: str) -> str:
+    """Map deprecated shadow.mode values to current Photoroom preset names."""
+    cleaned = (mode or "").strip()
+    return LEGACY_SHADOW_MODE_ALIASES.get(cleaned, cleaned)
+
+
+def normalize_photoroom_edit_params(params: dict[str, str]) -> dict[str, str]:
+    """
+    Normalize v2/edit query params for current Photoroom API schema.
+
+    - shadow.mode: ai.soft → ai.preset-soft, ai.hard → ai.preset-hard
+    - background.expandPrompt (legacy string) → background.expandPrompt.mode or omit
+    """
+    out = dict(params)
+    if "shadow.mode" in out:
+        out["shadow.mode"] = normalize_shadow_mode(out["shadow.mode"])
+
+    legacy_expand = out.pop("background.expandPrompt", None)
+    if legacy_expand:
+        if legacy_expand in ("ai.never", "never"):
+            out["background.expandPrompt.mode"] = "ai.never"
+        elif legacy_expand not in ("ai.auto", "auto"):
+            out["background.expandPrompt.mode"] = legacy_expand
+        # ai.auto is the default — omit the key
+
+    return out
+
 
 @dataclass(frozen=True)
 class PhotoroomEditResult:

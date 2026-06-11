@@ -309,11 +309,13 @@ def test_studio_white_layout_rotates():
     assert "padding" not in out
 
 
-def test_ai_scene_variants_include_expand_prompt():
+def test_ai_scene_variants_use_default_prompt_expansion():
     from apps.products.photoroom_plus import PLUS_VARIANT_CATALOG
 
     for vid in ("ai_lifestyle_alt", "ai_scene_table", "ai_creative_marble"):
-        assert PLUS_VARIANT_CATALOG[vid].params.get("background.expandPrompt") == "ai.auto"
+        params = PLUS_VARIANT_CATALOG[vid].params
+        assert "background.expandPrompt" not in params
+        assert params.get("background.expandPrompt.mode") != "ai.never"
 
 
 def test_commerce_table_prompt_for_sneaker():
@@ -419,3 +421,23 @@ def test_strip_conflicting_edit_params():
     }
     stripped = _strip_conflicting_edit_params(raw)
     assert stripped == {"expand.mode": "ai.auto", "outputSize": "1080x1920"}
+
+
+def test_normalize_photoroom_edit_params_shadow_and_expand():
+    from apps.products.photoroom_api import normalize_photoroom_edit_params
+
+    out = normalize_photoroom_edit_params({
+        "shadow.mode": "ai.soft",
+        "background.expandPrompt": "ai.auto",
+        "removeBackground": "true",
+    })
+    assert out["shadow.mode"] == "ai.preset-soft"
+    assert "background.expandPrompt" not in out
+    assert "background.expandPrompt.mode" not in out
+
+    never = normalize_photoroom_edit_params({
+        "background.expandPrompt": "ai.never",
+        "shadow.mode": "ai.hard",
+    })
+    assert never["background.expandPrompt.mode"] == "ai.never"
+    assert never["shadow.mode"] == "ai.preset-hard"

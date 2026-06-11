@@ -399,7 +399,6 @@ def compose_motion_reel(
         for idx, source in enumerate(sources):
             frame_path = workdir / f"frame_{idx:02d}.jpg"
             text = texts[idx] if idx < len(texts) else ""
-            # Hook on first frame (top); price on last frame only (bottom)
             if text:
                 if idx == 0 and idx == len(sources) - 1:
                     pos = "bottom" if texts and texts[-1] == text else "top"
@@ -407,6 +406,8 @@ def compose_motion_reel(
                     pos = "top"
                 elif idx == len(sources) - 1:
                     pos = "bottom"
+                elif idx == 1:
+                    pos = "center"
                 else:
                     text = ""
                     pos = "top"

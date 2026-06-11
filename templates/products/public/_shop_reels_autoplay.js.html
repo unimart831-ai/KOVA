@@ -3,6 +3,40 @@
   var videos = document.querySelectorAll('.reel-video, .product-reel-video');
   if (!videos.length) return;
 
+  function syncPlayState(video) {
+    var frame = video.closest('.reel-frame, .product-reel-frame');
+    if (!frame) return;
+    if (video.paused) {
+      frame.classList.add('is-paused');
+    } else {
+      frame.classList.remove('is-paused');
+    }
+  }
+
+  function togglePlay(video) {
+    if (video.paused) {
+      var playPromise = video.play();
+      if (playPromise && playPromise.catch) playPromise.catch(function () {});
+    } else {
+      video.pause();
+    }
+    syncPlayState(video);
+  }
+
+  videos.forEach(function (video) {
+    syncPlayState(video);
+    video.addEventListener('play', function () { syncPlayState(video); });
+    video.addEventListener('pause', function () { syncPlayState(video); });
+    var playBtn = video.parentElement && video.parentElement.querySelector('.reel-play-btn');
+    if (playBtn) {
+      playBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        togglePlay(video);
+      });
+    }
+  });
+
   if ('IntersectionObserver' in window) {
     var observer = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
@@ -13,6 +47,7 @@
         } else {
           video.pause();
         }
+        syncPlayState(video);
       });
     }, { root: null, threshold: 0.35 });
     videos.forEach(function (video) { observer.observe(video); });
@@ -53,6 +88,14 @@
 
   var productVideo = document.getElementById('product-reel-video');
   var unmuteBtn = document.getElementById('reel-unmute-btn');
+  var productPlayBtn = document.getElementById('product-reel-play-btn');
+  if (productVideo && productPlayBtn) {
+    productPlayBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      togglePlay(productVideo);
+    });
+  }
   if (productVideo && unmuteBtn) {
     unmuteBtn.addEventListener('click', function () {
       productVideo.muted = !productVideo.muted;

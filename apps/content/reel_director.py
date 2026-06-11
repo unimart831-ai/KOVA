@@ -254,26 +254,42 @@ def build_hook_texts(
     product_name: str = "",
     price_label: str = "",
     hook_override: str = "",
+    brand_name: str = "",
+    cta_label: str = "Order on WhatsApp",
 ) -> list[str]:
-    """Product name on hook only; price on last frame only (bottom burn)."""
+    """Product name on hook; brand on hero; price + CTA on last frame."""
     texts = [""] * slide_count
     if slide_count == 0:
         return texts
 
     hook = (hook_override or product_name or "").strip()
     price = price_label.strip()[:40] if price_label else ""
+    brand = (brand_name or "").strip()[:40]
+    cta = (cta_label or "").strip()[:40]
 
     if slide_count == 1:
-        if price:
+        if price and cta:
+            texts[0] = f"{price}\n{cta}"
+        elif price:
             texts[0] = price
+        elif cta:
+            texts[0] = cta
         elif hook:
             texts[0] = hook[:60]
         return texts
 
     if hook:
         texts[0] = hook[:60]
-    if price:
+
+    if brand and slide_count >= 3:
+        texts[1] = brand
+
+    if price and cta:
+        texts[-1] = f"{price}\n{cta}"
+    elif price:
         texts[-1] = price
+    elif cta and slide_count >= 2:
+        texts[-1] = cta
 
     return texts
 
@@ -308,6 +324,8 @@ def build_reel_plan(
     product_name: str = "",
     price_label: str = "",
     hook_override: str = "",
+    brand_name: str = "",
+    cta_label: str = "Order on WhatsApp",
     recipe_id: str | None = None,
     max_slides: int | None = None,
 ) -> ReelComposePlan | None:
@@ -350,6 +368,8 @@ def build_reel_plan(
         product_name=product_name,
         price_label=price_label,
         hook_override=hook_override,
+        brand_name=brand_name,
+        cta_label=cta_label,
     )
     transitions = build_transitions(roles)
     ken = build_ken_burns_variants(roles)

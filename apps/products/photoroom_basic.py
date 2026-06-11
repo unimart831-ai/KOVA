@@ -37,7 +37,11 @@ def is_basic_routable_variant(variant_id: str, params: dict[str, str]) -> bool:
         return False
     if not basic_api_enabled():
         return False
-    if params.get("background.prompt") or params.get("background.expandPrompt"):
+    if (
+        params.get("background.prompt")
+        or params.get("background.expandPrompt")
+        or params.get("background.expandPrompt.mode")
+    ):
         return False
     if params.get("beautify.mode") or params.get("flatLay.mode"):
         return False

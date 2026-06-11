@@ -121,6 +121,27 @@ def test_clean_description_sentence_removes_labels():
     assert description_sentence_count(out) >= 3
 
 
+def test_snap_fallback_avoids_seller_business_profile_in_copy():
+    product = _Product(name="Adjustable Phone Stand", price=1200)
+    product.category = type("Cat", (), {"name": "Phone Accessories"})()
+    product.category_id = True
+    profile = type("Profile", (), {
+        "industry": "education",
+        "industry_other": "",
+        "target_audience": (
+            "Aspiring African developers 18–32 who want a real, sequenced path "
+            "into Django backend work"
+        ),
+        "get_industry_display": lambda self: "Education",
+    })()
+    analysis = build_snap_fallback_analysis(product, profile)
+    joined = " ".join(analysis["description_sentences"]).lower()
+    assert "django" not in joined
+    assert "developer" not in joined
+    assert "phone stand" in joined or "phone accessories" in joined
+    assert "aspiring african" not in joined
+
+
 def test_snap_fallback_avoids_generic_copy():
     product = _Product(name="Moses Chisunka", price=2500)
     profile = type("Profile", (), {

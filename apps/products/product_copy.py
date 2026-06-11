@@ -153,6 +153,79 @@ def _category_context_phrase(category_name: str, offering_type: str = "product")
     return "everyday essential"
 
 
+MAX_PROFILE_AUDIENCE_IN_COPY = 72
+
+# Seller-profile phrases that should not leak into unrelated product listings.
+_BUSINESS_PROFILE_MARKERS = (
+    "developer", "django", "freelanc", "course", "learn", "career",
+    "startup", "saas", "consult", "agency", "backend", "coding",
+    "training", "bootcamp", "mentor", "coaching program",
+)
+
+
+def _product_focused_audience(product, profile, analysis: dict | None = None) -> str:
+    """Short buyer phrase from category and product name — not the seller business profile."""
+    analysis = analysis or {}
+    category_name = product.category.name if getattr(product, "category_id", None) else ""
+    offering = getattr(product, "offering_type", "product") or "product"
+    context = _category_context_phrase(category_name, offering)
+
+    detected = (
+        (analysis.get("detected_name") or analysis.get("improved_name") or "")
+        .strip()
+    )
+    name = detected or (product.name or "").strip()
+    if name and name.lower() not in {"this item", "product", "item", "untitled"}:
+        short_name = name.split("—")[0].split("-")[0].strip()
+        if len(short_name) <= 48:
+            return f"anyone shopping for {short_name.lower()}"
+
+    if category_name:
+        return f"shoppers looking for quality {category_name.lower()}"
+
+    if offering == "service":
+        return f"clients who need reliable {context}"
+    if offering == "digital":
+        return f"buyers interested in {context}"
+
+    return "shoppers who want reliable quality"
+
+
+def _audience_matches_product(audience: str, product) -> bool:
+    """True when a short seller audience line is plausibly about this SKU."""
+    if not audience or len(audience) > MAX_PROFILE_AUDIENCE_IN_COPY:
+        return False
+
+    offering = getattr(product, "offering_type", "product") or "product"
+    if offering != "product":
+        return True
+
+    lower = audience.lower()
+    category_name = product.category.name if getattr(product, "category_id", None) else ""
+    category_words = {w for w in category_name.lower().split() if len(w) > 3}
+
+    if any(marker in lower for marker in _BUSINESS_PROFILE_MARKERS):
+        if not category_words or not any(w in lower for w in category_words):
+            return False
+
+    product_words = {
+        w for w in re.split(r"\s+", (product.name or "").lower()) if len(w) > 3
+    }
+    if product_words and not any(w in lower for w in product_words):
+        if any(marker in lower for marker in _BUSINESS_PROFILE_MARKERS):
+            return False
+
+    return True
+
+
+def _audience_for_product_copy(product, profile, analysis: dict | None = None) -> str:
+    """Audience line safe for product descriptions — never paste full business profiles."""
+    raw = (profile.target_audience or "").strip().rstrip(".") if profile else ""
+    if raw and _audience_matches_product(raw, product):
+        return raw
+    return _product_focused_audience(product, profile, analysis)
+
+
 def _price_tier_hint(price) -> str:
     if price is None:
         return ""
@@ -189,11 +262,7 @@ def build_snap_fallback_analysis(product, profile) -> dict:
     if industry:
         key_features.append(f"From a trusted {industry.lower()} seller")
 
-    audience = (profile.target_audience or "").strip() if profile else ""
-    if not audience and industry:
-        audience = f"customers looking for {context}"
-    elif not audience:
-        audience = "shoppers who want reliable quality"
+    audience = _audience_for_product_copy(product, profile)
 
     sentences: list[str] = []
     if offering == "service":
@@ -215,12 +284,12 @@ def build_snap_fallback_analysis(product, profile) -> dict:
         lead += "."
         sentences = [
             lead,
-            f"Carefully chosen for {audience}.",
+            f"Perfect for {audience}.",
             "Order today and enjoy fast, friendly service from a seller you can trust.",
         ]
         if category_name:
             sentences[1] = (
-                f"Perfect for {audience} who appreciate quality {category_name.lower()}."
+                f"Ideal for {audience} who appreciate quality {category_name.lower()}."
             )
 
     return {
@@ -351,7 +420,8 @@ def expand_to_description_sentences(
 
     audience = (analysis.get("target_audience") or "").strip().rstrip(".")
     if len(out) < MIN_DESCRIPTION_SENTENCES and audience:
-        _add(f"Ideal for {audience}")
+        if len(audience) <= MAX_PROFILE_AUDIENCE_IN_COPY:
+            _add(f"Ideal for {audience}")
 
     angle = (analysis.get("campaign_angle") or "").strip().rstrip(".")
     if len(out) < MIN_DESCRIPTION_SENTENCES and angle:
@@ -520,6 +590,10 @@ def enrich_product_copy(product, analysis: dict, profile) -> list[str]:
         analysis.setdefault("category_name", product.category.name)
     analysis.setdefault("industry_label", _profile_industry_label(profile))
     analysis.setdefault("offering_type", product.offering_type)
+    if not analysis.get("target_audience"):
+        analysis["target_audience"] = _audience_for_product_copy(product, profile, analysis)
+    elif not _audience_matches_product(analysis["target_audience"], product):
+        analysis["target_audience"] = _audience_for_product_copy(product, profile, analysis)
     new_desc = generate_product_description(product, analysis, profile)
     current_count = description_sentence_count(product.description or "")
     new_count = description_sentence_count(new_desc)
