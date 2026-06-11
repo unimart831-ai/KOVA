@@ -134,4 +134,5 @@ def get_commerce_branding(user, profile=None):
         "logo_url": logo_url,
         "custom_domain": custom_domain,
         "custom_domain_verified": custom_domain_verified,
+        "powered_by_kova": brand is None,
     }

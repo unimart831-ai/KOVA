@@ -199,6 +199,37 @@ class TestPublicShopPages:
         response = client.get(reverse("public_shop", kwargs={"page_slug": "local-shop"}))
         assert b'"@type": "LocalBusiness"' in response.content
 
+    def test_public_shop_index_agency_brand_no_powered_by(self, client, user):
+        from apps.teams.branding import get_commerce_branding
+        from apps.teams.models import Brand, Team, TeamMember
+
+        user.profile.page_slug = "agency-shop"
+        user.profile.company_name = "Agency Shop"
+        user.profile.save()
+        team = Team.objects.create(name="Agency Co", slug="agency-co", owner=user)
+        Brand.objects.create(
+            team=team,
+            name="Client Brand",
+            slug="client-brand",
+            theme_primary_color="#0f766e",
+        )
+        TeamMember.objects.create(team=team, user=user, role=TeamMember.Role.OWNER)
+        Product.objects.create(
+            user=user,
+            name="Agency Item",
+            price=500,
+            commerce_slug="agency-item",
+            stock_status=Product.StockStatus.IN_STOCK,
+        )
+
+        branding = get_commerce_branding(user, user.profile)
+        assert branding["powered_by_kova"] is False
+
+        response = client.get(reverse("public_shop", kwargs={"page_slug": "agency-shop"}))
+        assert response.status_code == 200
+        assert b"Agency Item" in response.content
+        assert b"Powered by" not in response.content
+
     def test_public_shop_index_uses_profile_branding(self, client, user):
         user.profile.page_slug = "branded-shop"
         user.profile.company_name = "Branded Co"

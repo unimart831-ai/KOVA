@@ -23,7 +23,7 @@
 {% with raw_archetype=storefront.archetype|default:"catalog" %}
 {% with hero_layout=hero_mode|default:"standard" %}
 {% with blurb=about_blurb|default:"" %}
-{% with show_powered=powered_by_kova|default:commerce_branding.powered_by_kova|default:True %}
+{% with show_powered=powered_by_kova %}
 <body class="shop-site shop-site--{% if raw_archetype == 'market_stall' %}market-stall{% elif raw_archetype == 'reel_shop' %}reel-shop{% elif raw_archetype == 'modern_dark' %}modern-dark{% else %}{{ raw_archetype }}{% endif %}{% if hero_layout == 'reels_first' %} shop-site--reels-first{% endif %}{% if hero_layout == 'featured_carousel' %} shop-site--featured-hero{% endif %}{% if social_links %} shop-site--has-mobile-nav{% endif %}">
 {% include "products/public/_shop_nav.html" %}
 <div class="shop-container">
