@@ -22,7 +22,7 @@ from datetime import datetime, timedelta, timezone
 
 from django.utils import timezone as dj_timezone
 
-from apps.agents.llm import generate, get_model_for_task, LLMResponse, parse_llm_json
+from apps.agents.llm import generate, get_model_for_task, LLMAuthError, LLMResponse, parse_llm_json
 from apps.agents.models import AgentAction, AgentConfig
 from apps.agents.schemas import PostDraft
 from apps.content.models import ContentSeed, Post
@@ -862,6 +862,79 @@ def parse_posts(llm_content: str) -> tuple[str, list[dict]]:
     return batch_strategy, data.get("posts", [])
 
 
+def build_fallback_posts(seed: ContentSeed, platforms: list[dict]) -> tuple[str, list[dict]]:
+    """
+    Simple template posts when the LLM is unavailable (overload, parse failure).
+
+    Not used for auth failures — those require fixing OPENROUTER_API_KEY.
+    """
+    product = getattr(seed, "product", None)
+    name = (product.name if product else "") or "our latest"
+    price_suffix = f" — {product.display_price}" if product and getattr(product, "display_price", "") else ""
+    idea = (seed.idea or "").strip()
+    description = (product.description if product and product.description else "").strip()
+    hook = idea[:220] if idea else f"Introducing {name}{price_suffix}"
+
+    shop_url = ""
+    if product and getattr(product, "product_url", ""):
+        try:
+            from apps.products.product_cta import resolve_product_cta_url
+            shop_url = resolve_product_cta_url(product)
+        except Exception:
+            shop_url = product.product_url or ""
+
+    batch_strategy = "Template drafts — AI was unavailable; review and edit before publishing."
+    posts = []
+
+    for p in platforms:
+        plat = p["platform"]
+        username = p.get("username", "")
+        handle = f"@{username.lstrip('@')}" if username else ""
+
+        if plat == "instagram":
+            body = description[:280] if description else f"Discover {name}{price_suffix}."
+            text = f"✨ {hook}\n\n{body}\n\n💾 Save this · 🔗 Link in bio"
+            post_format = "image"
+        elif plat == "linkedin":
+            body = description[:600] if description else f"We're excited to share {name}{price_suffix}."
+            text = f"{hook}\n\n{body}"
+            if shop_url:
+                text += f"\n\nLearn more: {shop_url}"
+            post_format = "text"
+        elif plat == "facebook":
+            text = hook
+            if description:
+                text += f"\n\n{description[:400]}"
+            if shop_url:
+                text += f"\n\n{shop_url}"
+            post_format = "text"
+        elif plat == "tiktok":
+            text = f"{hook} {'Link in bio!' if shop_url else 'Check it out!'}"
+            post_format = "reel"
+        else:
+            text = hook
+            if shop_url:
+                text += f"\n\n{shop_url}"
+            post_format = "text"
+
+        posts.append({
+            "platform": plat,
+            "username": handle,
+            "content_text": text.strip(),
+            "content_type": "original",
+            "post_format": post_format,
+            "carousel_slides": [],
+            "framework_used": "Template fallback",
+            "angle": "Direct highlight",
+            "reasoning": "Generated without AI — edit before publishing",
+            "predicted_score": 50,
+            "image_prompt": "",
+            "visual_strategy": {"strategy": "none"},
+        })
+
+    return batch_strategy, posts
+
+
 # ─── Per-Platform Regeneration (Truncation Recovery) ─────────────────────────
 
 # Minimum content length (chars) per platform to accept as valid.
@@ -1044,14 +1117,17 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
         was_truncated_at_all = False
 
         for attempt in range(3):
-            llm_response: LLMResponse = generate(
-                prompt=prompt,
-                system=system,
-                model=get_model_for_task("create.generate", user=user),
-                json_mode=True,
-                temperature=0.7 if attempt == 0 else 0.3,  # lower temp on retries for cleaner JSON
-                max_tokens=16384,
-            )
+            try:
+                llm_response: LLMResponse = generate(
+                    prompt=prompt,
+                    system=system,
+                    model=get_model_for_task("create.generate", user=user),
+                    json_mode=True,
+                    temperature=0.7 if attempt == 0 else 0.3,  # lower temp on retries for cleaner JSON
+                    max_tokens=16384,
+                )
+            except LLMAuthError:
+                raise
 
             # Diagnostic logging for truncation investigation
             logger.info(
@@ -1072,7 +1148,10 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
 
             # Guard against empty LLM response
             if not llm_response.content or not llm_response.content.strip():
-                last_error = "LLM returned an empty response — the AI model may be overloaded."
+                last_error = (
+                    "LLM returned an empty response after retries — "
+                    "the AI model may be overloaded or temporarily unavailable."
+                )
                 logger.warning("Create Agent: Empty response on attempt %d", attempt + 1)
                 continue
 
@@ -1096,7 +1175,19 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
                 )
 
         if last_error:
-            raise json.JSONDecodeError(last_error, doc="", pos=0)
+            batch_strategy, post_dicts = build_fallback_posts(seed, platforms)
+            if post_dicts:
+                logger.warning(
+                    "Create Agent: LLM failed (%s) — using %d template fallback post(s)",
+                    last_error, len(post_dicts),
+                )
+                log_gen_step(
+                    seed, "writing",
+                    "AI unavailable — saved template drafts instead.",
+                    "Edit each post before publishing. Retry later for AI-crafted copy.",
+                )
+            else:
+                raise json.JSONDecodeError(last_error, doc="", pos=0)
 
         # ── Content-length validation & per-platform regeneration ─────────
         # When the multi-platform batch was truncated the LLM may have
@@ -1516,10 +1607,30 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
         )
         return created_posts
 
+    except LLMAuthError as exc:
+        seed.status = ContentSeed.SeedStatus.FAILED
+        seed.error_message = str(exc)
+        log_gen_step(
+            seed, "failed",
+            "OpenRouter API key rejected.",
+            "Fix OPENROUTER_API_KEY in Railway (sk-or-v1-… from openrouter.ai/keys), then retry Snap.",
+        )
+        seed.save(update_fields=["status", "error_message", "updated_at"])
+        action.status = AgentAction.ActionStatus.FAILED
+        action.error_message = str(exc)
+        action.completed_at = dj_timezone.now()
+        action.save()
+        logger.error("Create Agent auth error: %s", exc)
+        return []
+
     except json.JSONDecodeError as exc:
         seed.status = ContentSeed.SeedStatus.FAILED
         seed.error_message = f"Failed to parse AI response: {exc}"
-        log_gen_step(seed, "failed", "Could not parse AI response.", "Try submitting again — the model may have been overloaded.")
+        log_gen_step(
+            seed, "failed",
+            "Could not parse AI response.",
+            "Try submitting again — if this persists, check OPENROUTER_API_KEY in Railway.",
+        )
         seed.save(update_fields=["status", "error_message", "updated_at"])
         action.status = AgentAction.ActionStatus.FAILED
         action.error_message = str(exc)

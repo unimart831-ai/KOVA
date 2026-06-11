@@ -15,6 +15,45 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+OPENROUTER_AUTH_USER_MESSAGE = (
+    "OpenRouter rejected the API key (401 User not found). "
+    "Verify OPENROUTER_API_KEY in Railway — it must be a valid sk-or-v1-… key "
+    "from https://openrouter.ai/keys (revoked, truncated, or wrong keys cause this)."
+)
+
+
+class LLMAuthError(Exception):
+    """Raised when the LLM provider rejects the API key or credentials."""
+
+    def __init__(self, message: str, provider: str = "openrouter"):
+        self.provider = provider
+        super().__init__(message)
+
+
+def _is_openrouter_auth_error(exc: Exception) -> bool:
+    err = str(exc)
+    return "401" in err and "User not found" in err
+
+
+def validate_openrouter_key() -> tuple[bool, str]:
+    """
+    Check OPENROUTER_API_KEY is present and well-formed.
+
+    Does not call OpenRouter — format-only validation suitable for startup
+    and fail-fast before the first API request.
+    """
+    key = (getattr(settings, "OPENROUTER_API_KEY", "") or "").strip()
+    if not key:
+        return False, "OPENROUTER_API_KEY is not set. Add a key from https://openrouter.ai/keys in Railway env."
+    if not key.startswith("sk-or-v1-"):
+        return False, (
+            "OPENROUTER_API_KEY must start with sk-or-v1-. "
+            "Copy the full key from https://openrouter.ai/keys — partial or wrong keys return 401."
+        )
+    if len(key) < 24:
+        return False, "OPENROUTER_API_KEY looks truncated — paste the complete sk-or-v1-… key from OpenRouter."
+    return True, ""
+
 
 def _get_llm_config():
     """Load LLMConfig from DB (cached). Returns None if table doesn't exist yet."""
@@ -430,10 +469,15 @@ def generate(
             model_providers[_PAID_FALLBACK] = _PAID_FALLBACK_PROVIDER
 
     last_exc = None
+    auth_failed = False
     for attempt, try_model in enumerate(models_to_try):
         start = time.monotonic()
         try:
             use_provider = model_providers.get(try_model, provider)
+            if use_provider == "openrouter":
+                ok, key_msg = validate_openrouter_key()
+                if not ok:
+                    raise LLMAuthError(key_msg, provider="openrouter")
             if use_provider == "anthropic":
                 resp = _generate_anthropic(prompt, system, try_model, temperature, max_tokens)
             elif use_provider == "openrouter":
@@ -466,10 +510,13 @@ def generate(
             if attempt < len(models_to_try) - 1:
                 time.sleep(min(2 ** attempt, 2))
 
+        except LLMAuthError:
+            raise
         except Exception as exc:
             duration = int((time.monotonic() - start) * 1000)
             err_text = str(exc)
-            if "401" in err_text and "User not found" in err_text:
+            if _is_openrouter_auth_error(exc):
+                auth_failed = True
                 logger.error(
                     "LLM call failed (%s/%s) after %dms: OpenRouter rejected the API key "
                     "(401 User not found). Set a valid OPENROUTER_API_KEY in Railway env.",
@@ -484,9 +531,12 @@ def generate(
             if attempt < len(models_to_try) - 1:
                 time.sleep(min(2 ** attempt, 2))
 
+    # Auth failures must surface clearly — never masquerade as "empty response".
+    if auth_failed:
+        raise LLMAuthError(OPENROUTER_AUTH_USER_MESSAGE, provider="openrouter")
+
     # All attempts exhausted — return empty LLMResponse so the caller's
     # own retry loop can handle it (create_agent checks for empty content).
-    # Raising here would bypass the caller's retry/error-message logic.
     if last_exc:
         logger.error(
             "All %d LLM model attempts failed. Last error: %s",

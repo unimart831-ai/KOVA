@@ -29,14 +29,8 @@ class AgentsConfig(AppConfig):
         if not uses_openrouter:
             return
 
-        if not openrouter_key:
-            logger.warning(
-                "OPENROUTER_API_KEY is not set — vision and LLM calls routed through "
-                "OpenRouter will fail with 401 User not found. Add a valid key in Railway env."
-            )
-            return
+        from apps.agents.llm import validate_openrouter_key
 
-        if openrouter_key.startswith("sk-or-v1-") and len(openrouter_key) < 24:
-            logger.warning(
-                "OPENROUTER_API_KEY looks truncated or invalid — expect 401 errors from OpenRouter."
-            )
+        ok, msg = validate_openrouter_key()
+        if not ok:
+            logger.warning("OpenRouter LLM misconfigured: %s", msg)
