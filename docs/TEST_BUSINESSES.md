@@ -1012,7 +1012,8 @@ any course / cohort / curriculum-based educator.
 
 ### Phase 1: Setup (Day 1)
 
-1. **Bulk-seed accounts (recommended):** run `python manage.py seed_test_businesses`.
+1. **Bulk-seed accounts (recommended):** run `python manage.py seed_test_businesses`.  
+   Check pilot readiness: `python manage.py pilot_status` (all 14 slugs) or `--wave1` for Kawaida, Mara, Nyama. Admin metrics: `/dashboard/pilot/`.
    This creates all 14 users with the right plan, profile (industry, voice,
    audience, pillars, tones, goals, CTA, brand colors), and a starter set of
    products. Pass `--complete-onboarding` to skip the wizard entirely for
