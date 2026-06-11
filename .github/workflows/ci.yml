@@ -125,10 +125,7 @@ jobs:
 
       - name: pip-audit (known vulnerabilities)
         run: |
-          pip-audit -r requirements/production.txt --desc on || {
-            echo "::warning::pip-audit found vulnerabilities — review artifact and fix deps"
-            exit 0
-          }
+          pip-audit -r requirements/production.txt --desc on --severity critical
 
       - name: Bandit (Python security linter)
         run: |
@@ -185,6 +182,7 @@ jobs:
       DATABASE_URL: postgres://kova:kova@localhost:5432/kova_test
       REDIS_URL: redis://localhost:6379/0
       SECRET_KEY: ci-test-secret-key-not-for-production
+      FIELD_ENCRYPTION_KEY: test-key-not-for-production-aaaaaaaaaaaaaa==
       DEBUG: "True"
 
     steps:

@@ -25,8 +25,9 @@ class PlanBasedThrottle(UserRateThrottle):
     DEFAULT_RATE = "30/minute"
 
     def get_rate(self):
-        if self.request and self.request.user and self.request.user.is_authenticated:
-            profile = getattr(self.request.user, "profile", None)
+        request = getattr(self, "request", None)
+        if request and request.user.is_authenticated:
+            profile = getattr(request.user, "profile", None)
             if profile:
                 return self.PLAN_RATES.get(profile.plan, self.DEFAULT_RATE)
         return self.DEFAULT_RATE

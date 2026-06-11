@@ -236,49 +236,43 @@ LOGGING = {
 }
 
 # ─── SENTRY ──────────────────────────────────────────────────────────────────
-# Sentry is mandatory in production. Silent error tracking is worse than no
-# error tracking — the previous try/except ImportError fallback meant a stale
-# venv could silently swallow every exception. If sentry_sdk isn't importable,
-# fix the dep, don't ship blind.
-# ─── SENTRY ──────────────────────────────────────────────────────────────────
+# Mandatory in production — same fail-fast pattern as RESEND_API_KEY. Shipping
+# without error tracking means payment, publish, and webhook failures go unseen.
+SENTRY_DSN = env("SENTRY_DSN", default="")  # noqa: F405
+if not SENTRY_DSN:
+    raise ImproperlyConfigured(
+        "SENTRY_DSN must be set in production. "
+        "Without it, exceptions in billing, publishing, and webhooks go unreported. "
+        "Create a project at https://sentry.io and set SENTRY_DSN in Railway."
+    )
 
-SENTRY_DSN = env("SENTRY_DSN", default=None)  # noqa: F405
+import sentry_sdk
+from sentry_sdk.integrations.celery import CeleryIntegration
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
 
-if SENTRY_DSN:
-    import sentry_sdk
-    from sentry_sdk.integrations.celery import CeleryIntegration
-    from sentry_sdk.integrations.django import DjangoIntegration
-    from sentry_sdk.integrations.logging import LoggingIntegration
-
-    sentry_sdk.init(
-        dsn=SENTRY_DSN,
-        integrations=[
-            DjangoIntegration(
-                transaction_style="url",
-                middleware_spans=True,
-            ),
-            CeleryIntegration(monitor_beat_tasks=True),
-            LoggingIntegration(
-                level=None,
-                event_level="ERROR",
-            ),
-        ],
-        traces_sample_rate=0.1,
-        profiles_sample_rate=0.1,
-        release=env("RAILWAY_GIT_COMMIT_SHA", default=None),  # noqa: F405
-        environment="production",
-        send_default_pii=False,
-        before_send_transaction=lambda event, hint: (
-            None if event.get("transaction") == "/health/" else event
+sentry_sdk.init(
+    dsn=SENTRY_DSN,
+    integrations=[
+        DjangoIntegration(
+            transaction_style="url",
+            middleware_spans=True,
         ),
-    )
-else:
-    import logging as _logging
-    _logging.getLogger("django").warning(
-        "SENTRY_DSN is not set — error tracking is disabled. "
-        "Set SENTRY_DSN in environment variables for production error monitoring. "
-        "Get a DSN from https://sentry.io"
-    )
+        CeleryIntegration(monitor_beat_tasks=True),
+        LoggingIntegration(
+            level=None,
+            event_level="ERROR",
+        ),
+    ],
+    traces_sample_rate=0.1,
+    profiles_sample_rate=0.1,
+    release=env("RAILWAY_GIT_COMMIT_SHA", default=None),  # noqa: F405
+    environment="production",
+    send_default_pii=False,
+    before_send_transaction=lambda event, hint: (
+        None if event.get("transaction") == "/health/" else event
+    ),
+)
 
 # ─── CONTENT SAFETY ──────────────────────────────────────────────────────────
 CONTENT_SAFETY_ENABLED = env.bool("CONTENT_SAFETY_ENABLED", default=True)  # noqa: F405

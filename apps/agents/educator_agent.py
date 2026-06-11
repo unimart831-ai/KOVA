@@ -34,50 +34,12 @@ from apps.help.models import (
     ChangelogEntry,
     WeeklyDigest,
 )
+from apps.utils.html_sanitize import sanitize_html
 
 logger = logging.getLogger(__name__)
 
 
 AUTHOR_AGENT = "educator"
-
-# Restricted tag set the agent is allowed to emit in body_html. Enforced
-# as a lightweight sanity check — the agent is not adversarial but LLM
-# output drifts, and this keeps what lands on public pages predictable.
-_ALLOWED_TAGS = {
-    "p", "h2", "h3", "h4", "ul", "ol", "li", "strong", "em", "a",
-    "blockquote", "code", "pre", "br", "hr",
-}
-_ALLOWED_ATTRS = {"a": {"href", "title", "target", "rel"}}
-
-
-def _sanitize_html(html: str) -> str:
-    """Strip any tag that isn't in _ALLOWED_TAGS. Attribute-level cleaning is
-    best-effort: unknown attributes on allowed tags are stripped. Not a full
-    bleach replacement — founder review is the real gate."""
-    if not html:
-        return ""
-
-    def _clean_tag(match: re.Match) -> str:
-        raw = match.group(0)
-        is_closing = raw.startswith("</")
-        name_match = re.match(r"</?([a-zA-Z0-9]+)", raw)
-        if not name_match:
-            return ""
-        tag = name_match.group(1).lower()
-        if tag not in _ALLOWED_TAGS:
-            return ""
-        if is_closing:
-            return f"</{tag}>"
-        # Strip unknown attributes on allowed tags
-        allowed = _ALLOWED_ATTRS.get(tag, set())
-        attrs = re.findall(r'([a-zA-Z_:][-a-zA-Z0-9_:]*)\s*=\s*"([^"]*)"', raw)
-        kept = [f'{k}="{escape(v, quote=True)}"' for k, v in attrs if k.lower() in allowed]
-        self_closing = "/>" in raw
-        if kept:
-            return f"<{tag} {' '.join(kept)}{'/>' if self_closing else '>'}"
-        return f"<{tag}{'/>' if self_closing else '>'}"
-
-    return re.sub(r"<[^>]+>", _clean_tag, html)
 
 
 def _estimate_reading_minutes(html: str) -> int:
@@ -173,7 +135,7 @@ def draft_article(
         raise
 
     title = (data.get("title") or title_seed).strip()[:200]
-    body_html = _sanitize_html(data.get("body_html") or "")
+    body_html = sanitize_html(data.get("body_html") or "")
     if not body_html.strip():
         raise ValueError("Educator produced an empty article body.")
 

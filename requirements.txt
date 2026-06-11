@@ -35,6 +35,7 @@ daphne>=4.1
 django-fernet-fields-v2>=0.9
 django-ratelimit>=4.1
 django-csp>=4.0
+bleach>=6.1
 
 # Static files + HTTP server
 whitenoise>=6.7

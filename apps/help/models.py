@@ -167,6 +167,13 @@ class Article(models.Model):
             self.reviewed_by = reviewer
         self.save(update_fields=["status", "published_at", "reviewed_by", "updated_at"])
 
+    def save(self, *args, **kwargs):
+        from apps.utils.html_sanitize import sanitize_html
+
+        if self.body_html:
+            self.body_html = sanitize_html(self.body_html)
+        super().save(*args, **kwargs)
+
 
 class ArticleTopic(models.Model):
     """A candidate topic for the Educator agent to draft an article about.
@@ -326,6 +333,15 @@ class WeeklyDigest(models.Model):
         self.approved_by = user
         self.approved_at = timezone.now()
         self.save(update_fields=["status", "approved_by", "approved_at", "updated_at"])
+
+    def save(self, *args, **kwargs):
+        from apps.utils.html_sanitize import sanitize_html
+
+        for field in ("intro_html", "changelog_html", "articles_html", "stats_html"):
+            value = getattr(self, field, "")
+            if value:
+                setattr(self, field, sanitize_html(value))
+        super().save(*args, **kwargs)
 
 
 class NewsletterSubscriber(models.Model):

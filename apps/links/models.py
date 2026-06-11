@@ -70,6 +70,10 @@ class KovaPage(models.Model):
         return f"/k/{self.slug}/"
 
     def save(self, *args, **kwargs):
+        from apps.utils.html_sanitize import sanitize_user_css
+
+        if self.custom_css:
+            self.custom_css = sanitize_user_css(self.custom_css)
         if not self.slug:
             base = slugify(self.title)[:50]
             slug = base
