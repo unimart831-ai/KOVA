@@ -20,10 +20,90 @@
   {% include "products/public/_shop_public_styles.html" %}
   {% include "products/public/_shop_reels_styles.html" %}
 </head>
-<body class="shop-site{% if social_links %} shop-site--has-mobile-nav{% endif %}">
+{% with raw_archetype=storefront.archetype|default:"catalog" %}
+{% with hero_layout=hero_mode|default:"standard" %}
+{% with blurb=about_blurb|default:"" %}
+{% with show_powered=powered_by_kova|default:commerce_branding.powered_by_kova|default:True %}
+<body class="shop-site shop-site--{% if raw_archetype == 'market_stall' %}market-stall{% elif raw_archetype == 'reel_shop' %}reel-shop{% elif raw_archetype == 'modern_dark' %}modern-dark{% else %}{{ raw_archetype }}{% endif %}{% if hero_layout == 'reels_first' %} shop-site--reels-first{% endif %}{% if hero_layout == 'featured_carousel' %} shop-site--featured-hero{% endif %}{% if social_links %} shop-site--has-mobile-nav{% endif %}">
 {% include "products/public/_shop_nav.html" %}
 <div class="shop-container">
-  <header class="shop-hero">
+  <div class="shop-trust-strip" aria-label="Shop info">
+    <span class="shop-trust-strip-stat">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      {{ products|length }} item{{ products|length|pluralize }}
+    </span>
+    <span class="shop-trust-strip-stat">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      Updated {% if shop_updated_at %}{{ shop_updated_at|date:"M j, Y" }}{% else %}{{ profile.updated_at|date:"M j, Y" }}{% endif %}
+    </span>
+    <button type="button" class="shop-share-btn" hidden
+            data-share-url="{{ canonical_url }}"
+            data-share-title="{{ seo_title }}"
+            aria-label="Share this shop">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+      Share shop
+    </button>
+  </div>
+
+  {% if hero_layout == "reels_first" %}
+    {% include "products/public/_shop_reels_strip.html" %}
+  {% endif %}
+
+  {% if hero_layout == "featured_carousel" %}
+  {% if featured_products %}
+  <section class="shop-featured shop-featured--hero" aria-label="Featured picks">
+    <div class="shop-section-head">
+      <h2 class="shop-section-title">Featured picks</h2>
+      <span class="shop-section-meta">{{ featured_products|length }} highlight{{ featured_products|length|pluralize }}</span>
+    </div>
+    <div class="shop-featured-track" role="list">
+      {% for product in featured_products %}
+      <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=product.commerce_slug %}" class="shop-card shop-card--featured" role="listitem">
+        <div class="shop-card-photo">
+          {% with hero=product.shop_hero_image_url %}
+          {% if hero %}<img src="{{ hero }}" alt="{{ product.name }}" loading="lazy">{% else %}
+          <div class="shop-placeholder" aria-hidden="true">{{ product.name|slice:":1"|upper }}</div>{% endif %}
+          {% endwith %}
+        </div>
+        <div class="shop-card-body">
+          <div class="shop-card-name">{{ product.name }}</div>
+          {% if product.shop_teaser %}<p class="shop-card-teaser">{{ product.shop_teaser }}</p>{% endif %}
+          {% if product.display_price %}<div class="shop-card-price">{{ product.display_price }}</div>{% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% else %}
+  {% regroup products by is_featured as hero_featured_groups %}
+  {% for group in hero_featured_groups %}{% if group.grouper %}
+  <section class="shop-featured shop-featured--hero" aria-label="Featured picks">
+    <div class="shop-section-head">
+      <h2 class="shop-section-title">Featured picks</h2>
+      <span class="shop-section-meta">{{ group.list|length }} highlight{{ group.list|length|pluralize }}</span>
+    </div>
+    <div class="shop-featured-track" role="list">
+      {% for product in group.list %}
+      <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=product.commerce_slug %}" class="shop-card shop-card--featured" role="listitem">
+        <div class="shop-card-photo">
+          {% with hero=product.shop_hero_image_url %}
+          {% if hero %}<img src="{{ hero }}" alt="{{ product.name }}" loading="lazy">{% else %}
+          <div class="shop-placeholder" aria-hidden="true">{{ product.name|slice:":1"|upper }}</div>{% endif %}
+          {% endwith %}
+        </div>
+        <div class="shop-card-body">
+          <div class="shop-card-name">{{ product.name }}</div>
+          {% if product.display_price %}<div class="shop-card-price">{{ product.display_price }}</div>{% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}{% endfor %}
+  {% endif %}
+  {% endif %}
+
+  <header class="shop-hero{% if hero_layout == 'featured_carousel' %} shop-hero--compact{% endif %}">
     <div class="shop-hero-inner">
       {% if commerce_branding.logo_url %}
       <img class="shop-logo" src="{{ commerce_branding.logo_url }}" alt="{{ brand_name }}">
@@ -32,7 +112,10 @@
       {% endif %}
       <h1 class="shop-brand-name">{{ brand_name }}</h1>
       {% if profile.page_headline %}
-      <p class="shop-tagline">{{ profile.page_headline }}</p>
+      <p class="shop-tagline{% if hero_layout == 'featured_carousel' %} shop-tagline--compact{% endif %}">{{ profile.page_headline }}</p>
+      {% endif %}
+      {% if blurb and hero_layout != "featured_carousel" %}
+      <p class="shop-about-blurb shop-about-blurb--hero">{{ blurb }}</p>
       {% endif %}
       {% if profile.city %}
       <span class="shop-location">
@@ -46,14 +129,164 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
           Chat on WhatsApp
         </a>
+        {% if hero_layout != "featured_carousel" %}
         <p class="shop-hero-wa-note">Most orders happen via WhatsApp — tap to message {{ brand_name }}.</p>
+        {% endif %}
       </div>
       {% endif %}
     </div>
   </header>
 
-  {% include "products/public/_shop_reels_strip.html" %}
+  {% if hero_layout != "reels_first" %}
+    {% include "products/public/_shop_reels_strip.html" %}
+  {% endif %}
 
+  {% if hero_layout != "featured_carousel" %}
+  {% if featured_products %}
+  <section class="shop-featured" aria-label="Featured picks">
+    <div class="shop-section-head">
+      <h2 class="shop-section-title">Featured picks</h2>
+      <span class="shop-section-meta">{{ featured_products|length }} highlight{{ featured_products|length|pluralize }}</span>
+    </div>
+    <div class="shop-featured-track" role="list">
+      {% for product in featured_products %}
+      <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=product.commerce_slug %}" class="shop-card shop-card--featured" role="listitem">
+        <div class="shop-card-photo">
+          {% with hero=product.shop_hero_image_url %}
+          {% if hero %}<img src="{{ hero }}" alt="{{ product.name }}" loading="lazy">{% else %}
+          <div class="shop-placeholder" aria-hidden="true">{{ product.name|slice:":1"|upper }}</div>{% endif %}
+          {% endwith %}
+        </div>
+        <div class="shop-card-body">
+          <div class="shop-card-name">{{ product.name }}</div>
+          {% if product.shop_teaser %}<p class="shop-card-teaser">{{ product.shop_teaser }}</p>{% endif %}
+          {% if product.display_price %}<div class="shop-card-price">{{ product.display_price }}</div>{% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% else %}
+  {% regroup products by is_featured as featured_groups %}
+  {% for group in featured_groups %}{% if group.grouper %}
+  <section class="shop-featured" aria-label="Featured picks">
+    <div class="shop-section-head">
+      <h2 class="shop-section-title">Featured picks</h2>
+      <span class="shop-section-meta">{{ group.list|length }} highlight{{ group.list|length|pluralize }}</span>
+    </div>
+    <div class="shop-featured-track" role="list">
+      {% for product in group.list %}
+      <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=product.commerce_slug %}" class="shop-card shop-card--featured" role="listitem">
+        <div class="shop-card-photo">
+          {% with hero=product.shop_hero_image_url %}
+          {% if hero %}<img src="{{ hero }}" alt="{{ product.name }}" loading="lazy">{% else %}
+          <div class="shop-placeholder" aria-hidden="true">{{ product.name|slice:":1"|upper }}</div>{% endif %}
+          {% endwith %}
+        </div>
+        <div class="shop-card-body">
+          <div class="shop-card-name">{{ product.name }}</div>
+          {% if product.shop_teaser %}<p class="shop-card-teaser">{{ product.shop_teaser }}</p>{% endif %}
+          {% if product.display_price %}<div class="shop-card-price">{{ product.display_price }}</div>{% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}{% endfor %}
+  {% endif %}
+  {% endif %}
+
+  {% if products_by_category %}
+  <div class="shop-catalog shop-catalog--grouped">
+    {% for group in products_by_category %}
+    <section class="shop-section shop-category-section" aria-label="{{ group.name|default:group.category_name }}">
+      <div class="shop-section-head">
+        <h2 class="shop-section-title">{{ group.name|default:group.category_name }}</h2>
+        <span class="shop-section-meta">{{ group.products|length }} item{{ group.products|length|pluralize }}</span>
+      </div>
+      <div class="shop-grid">
+        {% for product in group.products %}
+        <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=product.commerce_slug %}" class="shop-card">
+          <div class="shop-card-photo">
+            {% with hero=product.shop_hero_image_url %}
+            {% if hero %}<img src="{{ hero }}" alt="{{ product.name }}" loading="lazy">{% else %}
+            <div class="shop-placeholder" aria-hidden="true">{{ product.name|slice:":1"|upper }}</div>{% endif %}
+            {% endwith %}
+          </div>
+          <div class="shop-card-body">
+            <div class="shop-card-name">{{ product.name }}</div>
+            {% if product.shop_teaser %}<p class="shop-card-teaser">{{ product.shop_teaser }}</p>{% endif %}
+            {% if product.display_price %}<div class="shop-card-price">{{ product.display_price }}</div>{% endif %}
+            {% if product.stock_status == 'out_of_stock' %}<span class="shop-badge shop-badge--stock">Out of stock</span>
+            {% elif product.is_featured %}<span class="shop-badge shop-badge--featured">Featured</span>{% endif %}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+  {% else %}
+  {% regroup products by category as category_groups %}
+  {% if category_groups|length > 1 or category_groups.0.grouper %}
+  <div class="shop-catalog shop-catalog--grouped">
+    {% for group in category_groups %}
+    {% if group.grouper %}
+    <section class="shop-section shop-category-section" aria-label="{{ group.grouper.name }}">
+      <div class="shop-section-head">
+        <h2 class="shop-section-title">{{ group.grouper.name }}</h2>
+        <span class="shop-section-meta">{{ group.list|length }} item{{ group.list|length|pluralize }}</span>
+      </div>
+      <div class="shop-grid">
+        {% for product in group.list %}
+        <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=product.commerce_slug %}" class="shop-card">
+          <div class="shop-card-photo">
+            {% with hero=product.shop_hero_image_url %}
+            {% if hero %}<img src="{{ hero }}" alt="{{ product.name }}" loading="lazy">{% else %}
+            <div class="shop-placeholder" aria-hidden="true">{{ product.name|slice:":1"|upper }}</div>{% endif %}
+            {% endwith %}
+          </div>
+          <div class="shop-card-body">
+            <div class="shop-card-name">{{ product.name }}</div>
+            {% if product.shop_teaser %}<p class="shop-card-teaser">{{ product.shop_teaser }}</p>{% endif %}
+            {% if product.display_price %}<div class="shop-card-price">{{ product.display_price }}</div>{% endif %}
+            {% if product.stock_status == 'out_of_stock' %}<span class="shop-badge shop-badge--stock">Out of stock</span>
+            {% elif product.is_featured %}<span class="shop-badge shop-badge--featured">Featured</span>{% endif %}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+    {% else %}
+    <section class="shop-section shop-category-section" aria-label="More items">
+      <div class="shop-section-head">
+        <h2 class="shop-section-title">More items</h2>
+        <span class="shop-section-meta">{{ group.list|length }} item{{ group.list|length|pluralize }}</span>
+      </div>
+      <div class="shop-grid">
+        {% for product in group.list %}
+        <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=product.commerce_slug %}" class="shop-card">
+          <div class="shop-card-photo">
+            {% with hero=product.shop_hero_image_url %}
+            {% if hero %}<img src="{{ hero }}" alt="{{ product.name }}" loading="lazy">{% else %}
+            <div class="shop-placeholder" aria-hidden="true">{{ product.name|slice:":1"|upper }}</div>{% endif %}
+            {% endwith %}
+          </div>
+          <div class="shop-card-body">
+            <div class="shop-card-name">{{ product.name }}</div>
+            {% if product.shop_teaser %}<p class="shop-card-teaser">{{ product.shop_teaser }}</p>{% endif %}
+            {% if product.display_price %}<div class="shop-card-price">{{ product.display_price }}</div>{% endif %}
+            {% if product.stock_status == 'out_of_stock' %}<span class="shop-badge shop-badge--stock">Out of stock</span>
+            {% elif product.is_featured %}<span class="shop-badge shop-badge--featured">Featured</span>{% endif %}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+    {% endfor %}
+  </div>
+  {% else %}
   <section class="shop-section" aria-label="Products">
     <div class="shop-section-head">
       <h2 class="shop-section-title">Shop our collection</h2>
@@ -64,31 +297,59 @@
       <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=product.commerce_slug %}" class="shop-card">
         <div class="shop-card-photo">
           {% with hero=product.shop_hero_image_url %}
-          {% if hero %}
-          <img src="{{ hero }}" alt="{{ product.name }}" loading="lazy">
-          {% else %}
-          <div class="shop-placeholder" aria-hidden="true">{{ product.name|slice:":1"|upper }}</div>
-          {% endif %}
+          {% if hero %}<img src="{{ hero }}" alt="{{ product.name }}" loading="lazy">{% else %}
+          <div class="shop-placeholder" aria-hidden="true">{{ product.name|slice:":1"|upper }}</div>{% endif %}
           {% endwith %}
         </div>
         <div class="shop-card-body">
           <div class="shop-card-name">{{ product.name }}</div>
-          {% if product.shop_teaser %}
-          <p class="shop-card-teaser">{{ product.shop_teaser }}</p>
-          {% endif %}
-          {% if product.display_price %}
-          <div class="shop-card-price">{{ product.display_price }}</div>
-          {% endif %}
-          {% if product.stock_status == 'out_of_stock' %}
-          <span class="shop-badge shop-badge--stock">Out of stock</span>
-          {% elif product.is_featured %}
-          <span class="shop-badge shop-badge--featured">Featured</span>
-          {% endif %}
+          {% if product.shop_teaser %}<p class="shop-card-teaser">{{ product.shop_teaser }}</p>{% endif %}
+          {% if product.display_price %}<div class="shop-card-price">{{ product.display_price }}</div>{% endif %}
+          {% if product.stock_status == 'out_of_stock' %}<span class="shop-badge shop-badge--stock">Out of stock</span>
+          {% elif product.is_featured %}<span class="shop-badge shop-badge--featured">Featured</span>{% endif %}
         </div>
       </a>
       {% endfor %}
     </div>
   </section>
+  {% endif %}
+  {% endif %}
+
+  {% if blurb %}
+    {% if hero_layout == "featured_carousel" or blurb != profile.page_headline %}
+  <section class="shop-about" aria-label="About this shop">
+    <p class="shop-about-blurb">{{ blurb }}</p>
+  </section>
+    {% endif %}
+  {% endif %}
+
+  {% if faq_items %}
+  <section class="shop-faq" aria-label="Frequently asked questions">
+    <h2 class="shop-section-title">Questions &amp; answers</h2>
+    <div class="shop-faq-list">
+      {% for item in faq_items|slice:":3" %}
+      <details class="shop-faq-item">
+        <summary class="shop-faq-question">
+          {% if item.question %}{{ item.question }}{% elif item.keywords %}{{ item.keywords|join:", " }}{% else %}FAQ{% endif %}
+        </summary>
+        <div class="shop-faq-answer">{% if item.answer %}{{ item.answer }}{% else %}{{ item.reply }}{% endif %}</div>
+      </details>
+      {% endfor %}
+    </div>
+  </section>
+  {% elif user.wa_faq_answers %}
+  <section class="shop-faq" aria-label="Frequently asked questions">
+    <h2 class="shop-section-title">Questions &amp; answers</h2>
+    <div class="shop-faq-list">
+      {% for item in user.wa_faq_answers|slice:":3" %}
+      <details class="shop-faq-item">
+        <summary class="shop-faq-question">{{ item.keywords|join:", " }}</summary>
+        <div class="shop-faq-answer">{{ item.reply }}</div>
+      </details>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 
   {% if wa_url or mpesa_shop_enabled %}
   <section class="shop-trust" aria-label="How to buy">
@@ -116,9 +377,33 @@
   </section>
   {% endif %}
 
+  {% if shop_footer.hours or shop_footer.delivery_note %}
+  <section class="shop-section shop-footer-info" aria-label="Shop info">
+    {% if shop_footer.hours %}<p><strong>Hours:</strong> {{ shop_footer.hours }}</p>{% endif %}
+    {% if shop_footer.delivery_note %}<p>{{ shop_footer.delivery_note }}</p>{% endif %}
+    {% if shop_footer.policy_url %}<p><a href="{{ shop_footer.policy_url }}" rel="noopener">Shop policies</a></p>{% endif %}
+  </section>
+  {% endif %}
+
+  {% if show_powered %}
   <p class="shop-powered">Powered by <a href="https://kovaagents.com" rel="noopener">Kova</a></p>
+  {% endif %}
 </div>
 {% include "products/public/_shop_mobile_nav.html" %}
 {% include "products/public/_shop_reels_autoplay.js.html" %}
+<script>
+(function () {
+  var btn = document.querySelector('.shop-share-btn');
+  if (!btn || !navigator.share) return;
+  btn.hidden = false;
+  btn.addEventListener('click', function () {
+    navigator.share({
+      title: btn.dataset.shareTitle || document.title,
+      url: btn.dataset.shareUrl || window.location.href
+    }).catch(function () {});
+  });
+})();
+</script>
 </body>
+{% endwith %}{% endwith %}{% endwith %}{% endwith %}
 </html>

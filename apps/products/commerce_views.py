@@ -23,8 +23,18 @@ from apps.products.commerce_seo import (
     brand_name,
     build_commerce_page_seo,
     build_shop_page_seo,
+    shop_index_url,
 )
 from apps.products.commerce_social import get_public_social_links, resolve_shop_whatsapp
+from apps.products.storefront import (
+    about_blurb,
+    featured_products,
+    products_by_category,
+    resolve_storefront,
+    shop_faq_items,
+    shop_footer_data,
+    storefront_body_classes,
+)
 from apps.products.product_copy import (
     format_product_description,
     get_product_display_highlights,
@@ -106,8 +116,9 @@ def public_shop_index(request, page_slug):
     brand = brand_name(profile, user)
     wa_text = f"Hi! I'd like to browse your offers — {brand}."
     commerce_ctx = _commerce_context(profile, user, wa_text=wa_text)
-    seo = build_shop_page_seo(request, profile, user, products)
     shop_reels = get_public_shop_reels(profile)
+    storefront = resolve_storefront(profile, user, products, shop_reels)
+    seo = build_shop_page_seo(request, profile, user, products, shop_reels=shop_reels)
     from apps.teams.branding import get_commerce_branding
 
     commerce_branding = get_commerce_branding(user, profile)
@@ -122,6 +133,8 @@ def public_shop_index(request, page_slug):
     for p in products:
         p.shop_teaser = get_product_shop_teaser(p)
 
+    body_extra = "shop-site--has-mobile-nav" if commerce_ctx.get("social_links") else ""
+
     return render(request, "products/public/shop_index.html", {
         "profile": profile,
         "products": products,
@@ -129,6 +142,15 @@ def public_shop_index(request, page_slug):
         "shop_slug": resolve_page_slug(profile),
         "brand_name": brand,
         "shop_reels": shop_reels,
+        "storefront": storefront,
+        "storefront_body_class": storefront_body_classes(storefront, extra=body_extra),
+        "hero_mode": storefront["hero_mode"],
+        "powered_by_kova": storefront["powered_by_kova"],
+        "featured_products": featured_products(products),
+        "products_by_category": products_by_category(products),
+        "about_blurb": about_blurb(profile),
+        "faq_items": shop_faq_items(profile),
+        "shop_footer": shop_footer_data(profile),
         "commerce_branding": commerce_branding,
         "mpesa_shop_enabled": mpesa_shop_enabled,
         **commerce_ctx,
@@ -171,6 +193,12 @@ def public_commerce_link(request, page_slug, commerce_slug):
     primary_action_label = primary_action_label_for(product) if primary_action_url else ""
 
     shop_slug = resolve_page_slug(profile)
+    product_reel = get_public_product_reel(product)
+    index_url = shop_index_url(profile, request)
+    breadcrumb_items = [{"label": "Shop", "url": index_url}]
+    if product.category and product.category.name:
+        breadcrumb_items.append({"label": product.category.name, "url": ""})
+    breadcrumb_items.append({"label": product.name, "url": ""})
     seo = build_commerce_page_seo(
         request,
         product,
@@ -178,8 +206,9 @@ def public_commerce_link(request, page_slug, commerce_slug):
         user,
         mpesa_available=mpesa_available,
         whatsapp_available=bool(whatsapp),
+        breadcrumb_items=breadcrumb_items,
+        product_reel=product_reel,
     )
-    product_reel = get_public_product_reel(product)
     product_description, product_description_paragraphs = _product_description_paragraphs(
         product, profile, user,
     )
@@ -195,15 +224,28 @@ def public_commerce_link(request, page_slug, commerce_slug):
         )
 
     _, shop_products = resolve_public_shop(page_slug)
+    storefront = resolve_storefront(profile, user, shop_products, get_public_shop_reels(profile))
     related_products = [
         p for p in shop_products
         if p.pk != product.pk
-    ][:4]
+    ]
+    if product.category_id:
+        same_cat = [p for p in related_products if p.category_id == product.category_id]
+        other = [p for p in related_products if p.category_id != product.category_id]
+        related_products = (same_cat + other)[:4]
+    else:
+        related_products = related_products[:4]
 
     can_purchase = (
         product.offering_type != product.OfferingType.PRODUCT
         or product.stock_status != product.StockStatus.OUT_OF_STOCK
     )
+
+    sticky = can_purchase and (bool(wa_url) or mpesa_available)
+    body_extra = " ".join(filter(None, [
+        "shop-site--has-mobile-nav" if commerce_ctx.get("social_links") else "",
+        "shop-site--has-sticky-cta" if sticky else "",
+    ]))
 
     return render(request, "products/public/commerce_link.html", {
         "profile": profile,
@@ -222,6 +264,14 @@ def public_commerce_link(request, page_slug, commerce_slug):
         "primary_action_label": primary_action_label,
         "primary_action_external": primary_action_url.startswith(("http://", "https://")) if primary_action_url else False,
         "product_reel": product_reel,
+        "storefront": storefront,
+        "storefront_body_class": storefront_body_classes(storefront, extra=body_extra),
+        "hero_mode": storefront["hero_mode"],
+        "powered_by_kova": storefront["powered_by_kova"],
+        "breadcrumb_items": breadcrumb_items,
+        "about_blurb": about_blurb(profile),
+        "faq_items": shop_faq_items(profile),
+        "shop_footer": shop_footer_data(profile),
         "commerce_branding": commerce_branding,
         "related_products": related_products,
         **commerce_ctx,

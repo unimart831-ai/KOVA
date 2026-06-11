@@ -103,12 +103,19 @@
           <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Company info and content language</p>
 
           {% for field in brand_form %}
-            {% if field.name in 'company_name,website_url,industry,industry_other,content_language,key_offerings_text,country,city' %}
+            {% if field.name in 'company_name,website_url,industry,industry_other,content_language,key_offerings_text,country,city,storefront_vibe' %}
               {% if field.name == 'industry_other' %}
               <div class="mb-4" x-show="industry === 'other'" x-cloak>
                 <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
                 {{ field }}
                 {% if field.help_text %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ field.help_text }}</p>{% endif %}
+                {% for error in field.errors %}<p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ error }}</p>{% endfor %}
+              </div>
+              {% elif field.name == 'storefront_vibe' %}
+              <div class="mb-4">
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                {{ field }}
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Controls layout of your public <code>/shop/</code> pages. Auto picks a style from your industry.</p>
                 {% for error in field.errors %}<p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ error }}</p>{% endfor %}
               </div>
               {% elif field.name == 'country' %}

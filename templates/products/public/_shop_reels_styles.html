@@ -252,4 +252,12 @@
     display: block;
     background: var(--commerce-gallery);
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reel-frame.is-paused .reel-play-btn,
+    .product-reel-frame.is-paused .reel-play-btn {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
 </style>

@@ -243,6 +243,7 @@ class BrandProfileForm(forms.ModelForm):
             "content_language",
             "brand_restrictions",
             "visual_style",
+            "storefront_vibe",
             "brand_logo_url",
             # CTA fields
             "default_cta_type",
@@ -281,6 +282,7 @@ class BrandProfileForm(forms.ModelForm):
                 }
             ),
             "visual_style": forms.Select(attrs={"class": "input"}),
+            "storefront_vibe": forms.Select(attrs={"class": "input"}),
             "brand_logo_url": forms.URLInput(
                 attrs={"class": "input", "placeholder": "https://yourcdn.com/logo.png"}
             ),
@@ -308,6 +310,9 @@ class BrandProfileForm(forms.ModelForm):
                 self.fields["goals_selection"].initial = self.instance.goals
             if self.instance.autopilot_platforms:
                 self.fields["autopilot_platforms_selection"].initial = self.instance.autopilot_platforms
+
+        if "storefront_vibe" in self.fields:
+            self.fields["storefront_vibe"].label = "Shop page style"
 
             # ── Plan-tier-gate engage_autonomy_level ─────────────────────
             # Per docs/specs/ENGAGE_AGENT_V2_SPEC.md: Starter caps at

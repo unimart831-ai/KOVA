@@ -19,6 +19,18 @@ from apps.products.product_copy import (
 MIN_SEO_DESCRIPTION_LEN = 40
 
 
+def html_lang(profile) -> str:
+    """Map content_language to HTML lang attribute."""
+    code = (getattr(profile, "content_language", None) or "en").strip().lower()
+    if code.startswith("sw"):
+        return "sw"
+    if code.startswith("fr"):
+        return "fr"
+    if code in ("yo", "zu", "sheng", "pidgin"):
+        return "en"
+    return code.split("_")[0] if code else "en"
+
+
 def brand_name(profile, user) -> str:
     return profile.company_name or user.full_name or user.username or "Shop"
 
@@ -160,6 +172,64 @@ def build_product_schema(
     return schema
 
 
+def build_breadcrumb_schema(
+    breadcrumb_items: list[dict[str, str]],
+    *,
+    request=None,
+) -> dict[str, Any]:
+    elements = []
+    for idx, item in enumerate(breadcrumb_items, start=1):
+        entry: dict[str, Any] = {
+            "@type": "ListItem",
+            "position": idx,
+            "name": item.get("label") or "",
+        }
+        url = (item.get("url") or "").strip()
+        if url:
+            entry["item"] = absolute_media_url(request, url) if request else url
+        elements.append(entry)
+
+    return {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": elements,
+    }
+
+
+def build_local_business_schema(
+    profile,
+    user,
+    canonical_url: str,
+    *,
+    request=None,
+    brand: str | None = None,
+) -> dict[str, Any] | None:
+    city = (profile.city or "").strip()
+    whatsapp = (profile.cta_whatsapp or "").strip()
+    if not city or not whatsapp:
+        return None
+
+    brand = brand or brand_name(profile, user)
+    schema: dict[str, Any] = {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": brand,
+        "url": canonical_url,
+        "address": {
+            "@type": "PostalAddress",
+            "addressLocality": city,
+        },
+        "telephone": whatsapp,
+    }
+    headline = (profile.page_headline or "").strip()
+    if headline:
+        schema["description"] = headline[:500]
+    logo = (profile.brand_logo_url or "").strip()
+    if logo:
+        schema["image"] = absolute_media_url(request, logo)
+    return schema
+
+
 def build_shop_schema(
     profile,
     user,
@@ -216,6 +286,8 @@ def build_commerce_page_seo(
     *,
     mpesa_available: bool = False,
     whatsapp_available: bool = False,
+    breadcrumb_items: list[dict[str, str]] | None = None,
+    product_reel: dict | None = None,
 ) -> dict[str, Any]:
     brand = brand_name(profile, user)
     canonical_url = commerce_link_url(product, request)
@@ -231,21 +303,37 @@ def build_commerce_page_seo(
     og_image = ""
     if product.all_image_urls:
         og_image = absolute_media_url(request, product.all_image_urls[0])
+    elif product_reel and product_reel.get("poster_url"):
+        og_image = absolute_media_url(request, product_reel["poster_url"])
 
     schema = build_product_schema(
         product, profile, user, canonical_url, request, brand=brand,
     )
+    schemas = [schema]
+    if breadcrumb_items:
+        schemas.append(build_breadcrumb_schema(breadcrumb_items, request=request))
+
+    og_price_amount = ""
+    og_price_currency = ""
+    if product.price:
+        og_price_amount = str(product.price)
+        og_price_currency = product.currency or "KES"
+
     return {
         "seo_title": seo_title,
         "seo_description": seo_description,
         "canonical_url": canonical_url,
         "og_image": og_image,
+        "html_lang": html_lang(profile),
+        "og_price_amount": og_price_amount,
+        "og_price_currency": og_price_currency,
         "product_schema_json": json.dumps(schema, ensure_ascii=False),
+        "structured_data_json": json.dumps(schemas, ensure_ascii=False),
         "shop_index_url": shop_index_url(profile, request),
     }
 
 
-def build_shop_page_seo(request, profile, user, products) -> dict[str, Any]:
+def build_shop_page_seo(request, profile, user, products, *, shop_reels=None) -> dict[str, Any]:
     brand = brand_name(profile, user)
     canonical_url = shop_index_url(profile, request)
     city = (profile.city or "").strip()
@@ -270,14 +358,29 @@ def build_shop_page_seo(request, profile, user, products) -> dict[str, Any]:
         if product.all_image_urls:
             og_image = absolute_media_url(request, product.all_image_urls[0])
             break
+    if not og_image and shop_reels:
+        for reel in shop_reels:
+            poster = (reel.get("poster_url") or "").strip()
+            if poster:
+                og_image = absolute_media_url(request, poster)
+                break
 
     schema = build_shop_schema(profile, user, products, canonical_url, request, brand=brand)
+    schemas: list[dict[str, Any]] = [schema]
+    local_business = build_local_business_schema(
+        profile, user, canonical_url, request=request, brand=brand,
+    )
+    if local_business:
+        schemas.append(local_business)
+
     return {
         "seo_title": seo_title,
         "seo_description": seo_description[:160],
         "canonical_url": canonical_url,
         "og_image": og_image,
+        "html_lang": html_lang(profile),
         "shop_schema_json": json.dumps(schema, ensure_ascii=False),
+        "structured_data_json": json.dumps(schemas, ensure_ascii=False),
     }
 
 

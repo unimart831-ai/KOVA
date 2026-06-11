@@ -661,4 +661,346 @@
   .shop-powered a:hover {
     text-decoration: underline;
   }
+
+  /* ── Trust strip (count, updated, share) ── */
+  .shop-trust-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    margin: 14px 0 6px;
+    padding: 10px 14px;
+    border-radius: var(--shop-radius-sm);
+    background: var(--shop-surface);
+    border: 1px solid var(--shop-border);
+  }
+
+  .shop-trust-strip-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--shop-muted);
+  }
+
+  .shop-trust-strip-stat svg {
+    color: var(--kova-teal-bright);
+    flex-shrink: 0;
+  }
+
+  .shop-share-btn {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--shop-border-strong);
+    background: var(--shop-surface-elevated);
+    color: var(--shop-text);
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .shop-share-btn:hover {
+    background: var(--shop-accent-soft);
+    border-color: color-mix(in srgb, var(--shop-accent) 35%, transparent);
+  }
+
+  .shop-share-btn[hidden] {
+    display: none;
+  }
+
+  /* ── Featured horizontal row ── */
+  .shop-featured {
+    margin-top: 20px;
+  }
+
+  .shop-featured-track {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding: 2px 0 8px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--shop-accent-muted) transparent;
+  }
+
+  .shop-featured-track::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .shop-featured-track::-webkit-scrollbar-thumb {
+    background: var(--shop-accent-muted);
+    border-radius: 999px;
+  }
+
+  .shop-card--featured {
+    flex: 0 0 min(72vw, 220px);
+    scroll-snap-align: start;
+  }
+
+  .shop-featured--hero {
+    margin-top: 8px;
+    padding: 18px 16px 16px;
+    border-radius: var(--shop-radius-lg);
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 0%, var(--kova-teal-glow), transparent 60%),
+      var(--shop-surface);
+    border: 1px solid var(--shop-border-strong);
+    box-shadow: var(--shop-shadow-md);
+  }
+
+  .shop-featured--hero .shop-card--featured {
+    flex: 0 0 min(78vw, 260px);
+  }
+
+  .shop-featured--hero .shop-card-photo {
+    aspect-ratio: 4 / 5;
+  }
+
+  /* ── About blurb ── */
+  .shop-about-blurb {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--shop-muted);
+    margin: 0;
+    max-width: 42ch;
+  }
+
+  .shop-about-blurb--hero {
+    text-align: center;
+  }
+
+  .shop-about {
+    margin-top: 28px;
+    padding: 20px 22px;
+    border-radius: var(--shop-radius-md);
+    background: var(--shop-surface);
+    border: 1px solid var(--shop-border);
+  }
+
+  /* ── FAQ accordion ── */
+  .shop-faq {
+    margin-top: 28px;
+  }
+
+  .shop-faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .shop-faq-item {
+    border-radius: var(--shop-radius-sm);
+    background: var(--shop-surface);
+    border: 1px solid var(--shop-border);
+    overflow: hidden;
+  }
+
+  .shop-faq-item[open] {
+    border-color: color-mix(in srgb, var(--shop-accent) 35%, transparent);
+  }
+
+  .shop-faq-question {
+    padding: 14px 16px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--shop-text);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .shop-faq-question::-webkit-details-marker {
+    display: none;
+  }
+
+  .shop-faq-question::after {
+    content: "+";
+    float: right;
+    color: var(--kova-teal-bright);
+    font-weight: 700;
+  }
+
+  .shop-faq-item[open] .shop-faq-question::after {
+    content: "−";
+  }
+
+  .shop-faq-answer {
+    padding: 0 16px 14px;
+    font-size: 0.8125rem;
+    line-height: 1.55;
+    color: var(--shop-muted);
+  }
+
+  /* ── Compact hero (featured_carousel mode) ── */
+  .shop-hero--compact {
+    padding: 20px 20px 18px;
+    margin-bottom: 12px;
+  }
+
+  .shop-hero--compact .shop-logo,
+  .shop-hero--compact .shop-logo-fallback {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    font-size: 20px;
+  }
+
+  .shop-hero--compact .shop-brand-name {
+    font-size: clamp(1.25rem, 4vw, 1.6rem);
+  }
+
+  .shop-tagline--compact {
+    font-size: 0.875rem;
+  }
+
+  .shop-category-section + .shop-category-section {
+    margin-top: 8px;
+  }
+
+  /* ── Archetype: boutique & market-stall (warm light) ── */
+  .shop-site--boutique,
+  .shop-site--market-stall {
+    --shop-bg: #faf7f2;
+    --shop-surface: #ffffff;
+    --shop-surface-elevated: #f5f0e8;
+    --shop-text: #1c1917;
+    --shop-muted: #78716c;
+    --shop-border: rgba(28, 25, 23, 0.08);
+    --shop-border-strong: rgba(28, 25, 23, 0.14);
+    --shop-gallery: #f0ebe3;
+    --shop-gallery-border: #e7e0d5;
+    --shop-accent-soft: color-mix(in srgb, var(--shop-accent) 12%, #faf7f2);
+    --shop-accent-muted: color-mix(in srgb, var(--shop-accent) 22%, #f5f0e8);
+    --shop-shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.06);
+    --shop-shadow-md: 0 8px 24px rgba(28, 25, 23, 0.08);
+    --shop-shadow-lg: 0 16px 40px rgba(28, 25, 23, 0.1);
+  }
+
+  .shop-site--boutique .shop-top-nav,
+  .shop-site--market-stall .shop-top-nav {
+    background: rgba(250, 247, 242, 0.94);
+    border-bottom-color: rgba(28, 25, 23, 0.08);
+  }
+
+  .shop-site--boutique .shop-mobile-nav,
+  .shop-site--market-stall .shop-mobile-nav {
+    background: rgba(250, 247, 242, 0.96);
+    border-top-color: rgba(28, 25, 23, 0.1);
+  }
+
+  .shop-site--boutique .shop-hero,
+  .shop-site--market-stall .shop-hero {
+    background:
+      radial-gradient(ellipse 90% 70% at 50% -10%, color-mix(in srgb, var(--shop-accent) 18%, transparent), transparent 55%),
+      linear-gradient(165deg, #fff 0%, #faf7f2 100%);
+    border-bottom-color: rgba(28, 25, 23, 0.08);
+  }
+
+  .shop-site--boutique .shop-card-price,
+  .shop-site--market-stall .shop-card-price {
+    color: var(--shop-accent);
+  }
+
+  .shop-site--boutique .shop-location {
+    color: var(--shop-accent);
+  }
+
+  /* Boutique: 2-col editorial grid */
+  .shop-site--boutique .shop-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  @media (min-width: 900px) {
+    .shop-site--boutique .shop-grid {
+      grid-template-columns: repeat(2, 1fr);
+      max-width: 720px;
+      margin: 0 auto;
+    }
+  }
+
+  /* Market stall: menu-list rows */
+  .shop-site--market-stall .shop-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .shop-site--market-stall .shop-card {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .shop-site--market-stall .shop-card-photo {
+    width: 96px;
+    min-width: 96px;
+    aspect-ratio: 1;
+    border-bottom: 0;
+    border-right: 1px solid var(--shop-gallery-border);
+  }
+
+  .shop-site--market-stall .shop-card-body {
+    justify-content: center;
+    padding: 12px 14px;
+  }
+
+  .shop-site--market-stall .shop-card-name {
+    -webkit-line-clamp: 3;
+  }
+
+  .shop-site--market-stall .shop-card:hover {
+    transform: none;
+    box-shadow: var(--shop-shadow-sm);
+  }
+
+  /* Reel shop & modern dark: dense 3-col catalog */
+  .shop-site--reel-shop .shop-grid,
+  .shop-site--modern-dark .shop-grid,
+  .shop-site--catalog .shop-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  @media (min-width: 480px) {
+    .shop-site--reel-shop .shop-grid,
+    .shop-site--modern-dark .shop-grid,
+    .shop-site--catalog .shop-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (min-width: 900px) {
+    .shop-site--reel-shop .shop-grid,
+    .shop-site--modern-dark .shop-grid {
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px;
+    }
+  }
+
+  .shop-site--reel-shop .shop-card-photo,
+  .shop-site--modern-dark .shop-card-photo {
+    aspect-ratio: 3 / 4;
+  }
+
+  .shop-site--reel-shop .shop-card-photo img,
+  .shop-site--modern-dark .shop-card-photo img {
+    object-fit: cover;
+  }
+
+  /* reels_first: tighter spacing after strip */
+  .shop-site--reels-first .reels-section {
+    margin-top: 4px;
+  }
+
+  .shop-site--reels-first .shop-hero {
+    margin-top: 4px;
+  }
 </style>

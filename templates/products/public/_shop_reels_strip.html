@@ -13,11 +13,11 @@
     <article class="reel-card" role="listitem">
       <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=reel.commerce_slug %}"
          class="reel-link">
-        <div class="reel-frame">
+        <div class="reel-frame is-paused">
           <video class="reel-video"
                  src="{{ reel.video_url }}"
                  {% if reel.poster_url %}poster="{{ reel.poster_url }}"{% endif %}
-                 muted autoplay loop playsinline preload="metadata"
+                 muted loop playsinline preload="metadata"
                  aria-label="{{ reel.product_name }} reel"></video>
           <button type="button" class="reel-play-btn" aria-label="Play {{ reel.product_name }} reel">▶</button>
         </div>

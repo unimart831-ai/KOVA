@@ -1,18 +1,21 @@
-{# Single featured product reel — muted autoplay, tap to toggle sound. #}
+{# Single featured product reel — muted autoplay unless reduced motion; tap to play. #}
 {% if product_reel %}
-<section class="product-reel-section" aria-label="Product reel">
+<section class="offer-reel-card product-reel-hero" aria-label="Product reel">
   <div class="product-reel-head">
     <h2 class="product-reel-title">See it in action</h2>
-    <button type="button" class="reel-unmute-btn" id="reel-unmute-btn" aria-pressed="false">Tap for sound</button>
+    <div class="product-reel-head-badges">
+      <span class="reel-badge">Reel</span>
+      <button type="button" class="reel-unmute-btn" id="reel-unmute-btn" aria-pressed="false">Tap for sound</button>
+    </div>
   </div>
-  <div class="product-reel-frame">
+  <div class="product-reel-frame is-paused">
     <video id="product-reel-video"
            class="product-reel-video"
            src="{{ product_reel.video_url }}"
            {% if product_reel.poster_url %}poster="{{ product_reel.poster_url }}"{% endif %}
-           muted autoplay loop playsinline preload="metadata"
+           muted loop playsinline preload="metadata"
            aria-label="{{ product.name }} reel"></video>
-    <span class="reel-badge">Reel</span>
+    <button type="button" class="reel-play-btn reel-play-btn--hero" id="product-reel-play-btn" aria-label="Play {{ product.name }} reel">▶</button>
   </div>
 </section>
 {% endif %}

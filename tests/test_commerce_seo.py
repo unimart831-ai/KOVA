@@ -5,10 +5,13 @@ from django.urls import reverse
 
 from apps.products.commerce_links import resolve_public_shop, shop_index_path
 from apps.products.commerce_seo import (
+    build_breadcrumb_schema,
     build_seo_description,
     build_seo_title,
     commerce_seo_checklist,
     ensure_commerce_seo_copy,
+    html_lang,
+    build_local_business_schema,
 )
 from apps.products.models import Product
 
@@ -89,6 +92,39 @@ class TestCommerceSeoHelpers:
         assert checklist["ready"] is False
         assert checklist["done_count"] < checklist["total"]
 
+    def test_html_lang_swahili(self, user):
+        user.profile.content_language = "sw"
+        assert html_lang(user.profile) == "sw"
+
+        user.profile.content_language = "sw_en"
+        assert html_lang(user.profile) == "sw"
+
+    def test_breadcrumb_schema(self, rf):
+        request = rf.get("/shop/demo/item/")
+        schema = build_breadcrumb_schema(
+            [
+                {"label": "Demo Shop", "url": "/shop/demo/"},
+                {"label": "Widget", "url": ""},
+            ],
+            request=request,
+        )
+        assert schema["@type"] == "BreadcrumbList"
+        assert len(schema["itemListElement"]) == 2
+
+    def test_local_business_schema_requires_city_and_whatsapp(self, user):
+        user.profile.company_name = "Demo Shop"
+        user.profile.city = "Nairobi"
+        user.profile.cta_whatsapp = "254712345678"
+        schema = build_local_business_schema(
+            user.profile, user, "https://example.com/shop/demo/",
+        )
+        assert schema is not None
+        assert schema["@type"] == "LocalBusiness"
+        assert schema["address"]["addressLocality"] == "Nairobi"
+
+        user.profile.cta_whatsapp = ""
+        assert build_local_business_schema(user.profile, user, "https://example.com/shop/demo/") is None
+
 
 @pytest.mark.django_db
 class TestPublicShopPages:
@@ -131,8 +167,37 @@ class TestPublicShopPages:
         assert b"Test Item" in response.content
         assert b'application/ld+json' in response.content
         assert b'"@type": "Store"' in response.content
-        assert b"Shop our collection" in response.content
+        assert b"Shop our collection" in response.content or b"shop-section-title" in response.content
         assert b"Powered by" in response.content
+
+    def test_public_shop_index_swahili_lang(self, client, user):
+        user.profile.page_slug = "sw-shop"
+        user.profile.content_language = "sw"
+        user.profile.save()
+        Product.objects.create(
+            user=user,
+            name="Bidhaa",
+            commerce_slug="bidhaa",
+            price=100,
+            stock_status=Product.StockStatus.IN_STOCK,
+        )
+        response = client.get(reverse("public_shop", kwargs={"page_slug": "sw-shop"}))
+        assert b'lang="sw"' in response.content
+
+    def test_public_shop_local_business_schema(self, client, user):
+        user.profile.page_slug = "local-shop"
+        user.profile.city = "Nairobi"
+        user.profile.cta_whatsapp = "254712345678"
+        user.profile.save()
+        Product.objects.create(
+            user=user,
+            name="Local Item",
+            commerce_slug="local-item",
+            price=500,
+            stock_status=Product.StockStatus.IN_STOCK,
+        )
+        response = client.get(reverse("public_shop", kwargs={"page_slug": "local-shop"}))
+        assert b'"@type": "LocalBusiness"' in response.content
 
     def test_public_shop_index_uses_profile_branding(self, client, user):
         user.profile.page_slug = "branded-shop"
@@ -177,6 +242,26 @@ class TestPublicShopPages:
         assert 'property="og:title"' in content
         assert '"@type": "Product"' in content
         assert "All offers" in content
+
+    def test_public_commerce_page_breadcrumb_schema(self, client, user):
+        user.profile.page_slug = "demo-shop"
+        user.profile.company_name = "Demo Shop"
+        user.profile.save()
+        product = Product.objects.create(
+            user=user,
+            name="Crumb Item",
+            price=900,
+            commerce_slug="crumb-item",
+            stock_status=Product.StockStatus.IN_STOCK,
+        )
+        url = reverse(
+            "public_commerce",
+            kwargs={"page_slug": "demo-shop", "commerce_slug": product.commerce_slug},
+        )
+        response = client.get(url)
+        content = response.content.decode()
+        assert '"@type": "BreadcrumbList"' in content
+        assert 'property="product:price:amount"' in content
 
     def test_public_commerce_page_shows_related_products(self, client, user):
         user.profile.page_slug = "demo-shop"

@@ -118,6 +118,14 @@ class UserProfile(models.Model):
         PRO = "pro", "Pro"
         AGENCY = "agency", "Agency"
 
+    class StorefrontVibe(models.TextChoices):
+        AUTO = "", "Auto (match industry)"
+        CLASSIC_SHOP = "classic_shop", "Classic shop"
+        MAGAZINE = "magazine", "Magazine"
+        REELS_FIRST = "reels_first", "Reels first"
+        MINIMAL_CATALOG = "minimal_catalog", "Minimal catalog"
+        LOOKBOOK = "lookbook", "Lookbook"
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     brand_voice = models.TextField(
         blank=True,
@@ -217,6 +225,18 @@ class UserProfile(models.Model):
     brand_logo_url = models.URLField(
         blank=True,
         help_text="Public URL to brand logo for overlay on graphics.",
+    )
+    storefront_vibe = models.CharField(
+        max_length=30,
+        choices=StorefrontVibe.choices,
+        blank=True,
+        default="",
+        help_text="Layout style for your public /shop/ pages. Empty = auto from industry.",
+    )
+    shop_footer = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Optional shop footer: {"hours": "...", "delivery_note": "...", "policy_url": "..."}',
     )
     photoroom_brand_template = models.JSONField(
         default=dict,
