@@ -19,6 +19,7 @@
     <a href="#settings-autopilot" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-kova-100 dark:hover:bg-kova-950/50 font-medium transition-colors">Autopilot</a>
     <a href="#settings-cta" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-kova-100 dark:hover:bg-kova-950/50 font-medium transition-colors">CTA</a>
     <a href="#settings-visual" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-kova-100 dark:hover:bg-kova-950/50 font-medium transition-colors">Visual</a>
+    <a href="#settings-brand-kit" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-kova-100 dark:hover:bg-kova-950/50 font-medium transition-colors">Brand kit</a>
     <a href="#settings-billing" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-kova-100 dark:hover:bg-kova-950/50 font-medium transition-colors">Plan</a>
     <a href="#settings-danger" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 font-medium transition-colors">Danger zone</a>
   </nav>
@@ -586,6 +587,90 @@
           {% endfor %}
         </div>
 
+        {# ═══════ Snap Brand Kit (Photoroom) ═══════ #}
+        <div id="settings-brand-kit" class="pt-6 border-t border-gray-100 dark:border-gray-800 scroll-mt-24"
+             x-data="brandKitPreview({
+               enabled: {{ brand_kit_preview.enabled|yesno:'true,false' }},
+               bg: '{{ brand_kit_preview.bg_color|escapejs }}',
+               shadow: '{{ brand_kit_form.shadow_mode.value|default:'ai.soft'|escapejs }}',
+               padding: '{{ brand_kit_preview.padding|escapejs }}'
+             })">
+          <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1">Snap brand kit</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Locked styling for Snap studio polish — shadow, padding, and studio background follow your brand.
+          </p>
+
+          <div class="grid md:grid-cols-2 gap-5">
+            <div class="space-y-4">
+              <div class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+                {{ brand_kit_form.brand_kit_enabled }}
+                <div>
+                  <label for="id_brand_kit_enabled" class="text-sm font-medium text-gray-900 dark:text-white">{{ brand_kit_form.brand_kit_enabled.label }}</label>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ brand_kit_form.brand_kit_enabled.help_text }}</p>
+                </div>
+              </div>
+
+              <div>
+                <label for="id_shadow_mode" class="label">{{ brand_kit_form.shadow_mode.label }}</label>
+                <select name="shadow_mode" id="id_shadow_mode" class="input" x-model="shadow" @change="updateShadow($event.target.value)">
+                  {% for value, label in brand_kit_form.shadow_mode.field.choices %}
+                  <option value="{{ value }}" {% if brand_kit_form.shadow_mode.value == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div>
+                <label for="id_padding" class="label">{{ brand_kit_form.padding.label }}</label>
+                <select name="padding" id="id_padding" class="input" x-model="padding">
+                  {% for value, label in brand_kit_form.padding.field.choices %}
+                  <option value="{{ value }}" {% if brand_kit_form.padding.value == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div>
+                <label for="id_studio_bg_pref" class="label">{{ brand_kit_form.studio_bg_pref.label }}</label>
+                <select name="studio_bg_pref" id="id_studio_bg_pref" class="input" @change="updateBgPref($event.target.value)">
+                  {% for value, label in brand_kit_form.studio_bg_pref.field.choices %}
+                  <option value="{{ value }}" {% if brand_kit_form.studio_bg_pref.value == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div>
+                <label for="id_outline_color" class="label">{{ brand_kit_form.outline_color.label }}</label>
+                {{ brand_kit_form.outline_color }}
+                {% if brand_kit_form.outline_color.help_text %}
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ brand_kit_form.outline_color.help_text }}</p>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800/40">
+              <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-3">Studio preview</p>
+              <div class="aspect-square rounded-lg overflow-hidden relative mx-auto max-w-[220px]"
+                   :style="'background:' + (enabled ? bg : '#F3F4F6')">
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <div class="relative w-24 h-28 rounded-lg bg-white/90 dark:bg-white/80"
+                       :class="shadowClass"
+                       style="transform: translateY(-4px);">
+                    <div class="absolute inset-2 rounded-md bg-gradient-to-br from-gray-200 to-gray-300"></div>
+                  </div>
+                </div>
+                <div class="absolute bottom-2 left-2 right-2 text-center">
+                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-black/50 text-white" x-text="shadowLabel"></span>
+                </div>
+              </div>
+              <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-3 text-center" x-show="enabled">
+                Padding <span x-text="padding"></span> · applied on every Snap polish
+              </p>
+              <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-3 text-center" x-show="!enabled">
+                Brand kit off — industry defaults apply
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div class="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
           <button type="submit" class="btn-primary">Save settings</button>
         </div>
@@ -661,6 +746,39 @@
 
 {% block extra_js %}
 <script>
+function brandKitPreview(initial) {
+  const shadowLabels = {
+    'ai.soft': 'Soft shadow',
+    'ai.hard': 'Hard shadow',
+    'ai.floating': 'Floating shadow',
+  };
+  const bgByPref = {
+    brand: initial.bg || '#FFFFFF',
+    white: '#FFFFFF',
+    dark: '#1A1A2E',
+  };
+  return {
+    enabled: initial.enabled,
+    bg: initial.bg,
+    shadow: initial.shadow,
+    padding: initial.padding,
+    get shadowLabel() {
+      return shadowLabels[this.shadow] || 'Soft shadow';
+    },
+    get shadowClass() {
+      if (this.shadow === 'ai.hard') return 'shadow-[0_10px_18px_rgba(0,0,0,0.45)]';
+      if (this.shadow === 'ai.floating') return 'shadow-[0_28px_40px_rgba(0,0,0,0.22)]';
+      return 'shadow-[0_16px_28px_rgba(0,0,0,0.28)]';
+    },
+    updateShadow(value) {
+      this.shadow = value;
+    },
+    updateBgPref(pref) {
+      this.bg = bgByPref[pref] || this.bg;
+    },
+  };
+}
+
 function settingsBrandBuilder() {
   return {
     open: false,

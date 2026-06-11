@@ -391,6 +391,110 @@ class BrandProfileForm(forms.ModelForm):
         return instance
 
 
+class PhotoroomBrandKitForm(forms.Form):
+    """Merchant-facing brand kit for Snap studio polish (P1-2)."""
+
+    SHADOW_CHOICES = [
+        ("ai.soft", "Soft shadow"),
+        ("ai.hard", "Hard shadow"),
+        ("ai.floating", "Floating shadow"),
+    ]
+    PADDING_CHOICES = [
+        ("0.06", "Tight (6%)"),
+        ("0.07", "Standard (7%)"),
+        ("0.08", "Balanced (8%)"),
+        ("0.10", "Comfortable (10%)"),
+        ("0.12", "Generous (12%)"),
+    ]
+    STUDIO_BG_CHOICES = [
+        ("brand", "Brand primary color"),
+        ("white", "Clean white"),
+        ("dark", "Dark premium"),
+    ]
+
+    brand_kit_enabled = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="Apply brand kit to Snap polish",
+        help_text="Locks shadow, padding, and studio background across every polished scene.",
+    )
+    shadow_mode = forms.ChoiceField(
+        choices=SHADOW_CHOICES,
+        initial="ai.soft",
+        label="Shadow style",
+        widget=forms.Select(attrs={"class": "input"}),
+    )
+    padding = forms.ChoiceField(
+        choices=PADDING_CHOICES,
+        initial="0.08",
+        label="Product padding",
+        widget=forms.Select(attrs={"class": "input"}),
+    )
+    studio_bg_pref = forms.ChoiceField(
+        choices=STUDIO_BG_CHOICES,
+        initial="brand",
+        label="Studio background",
+        widget=forms.Select(attrs={"class": "input"}),
+    )
+    outline_color = forms.CharField(
+        required=False,
+        label="Outline / accent color",
+        widget=forms.TextInput(attrs={"class": "input", "placeholder": "#FF5733"}),
+        help_text="Optional accent for outline variants. Defaults to your secondary brand color.",
+    )
+
+    def __init__(self, *args, profile=None, **kwargs):
+        self.profile = profile
+        super().__init__(*args, **kwargs)
+        if profile is not None:
+            overrides = getattr(profile, "photoroom_brand_template", None) or {}
+            if isinstance(overrides, dict):
+                if overrides.get("enabled") is False:
+                    self.fields["brand_kit_enabled"].initial = False
+                if overrides.get("shadow_mode"):
+                    self.fields["shadow_mode"].initial = overrides["shadow_mode"]
+                if overrides.get("padding") is not None:
+                    pad = str(overrides["padding"])
+                    if pad in dict(self.PADDING_CHOICES):
+                        self.fields["padding"].initial = pad
+                if overrides.get("studio_bg_pref"):
+                    pref = overrides["studio_bg_pref"]
+                    if pref in dict(self.STUDIO_BG_CHOICES):
+                        self.fields["studio_bg_pref"].initial = pref
+                if overrides.get("outline_color"):
+                    raw = overrides["outline_color"]
+                    self.fields["outline_color"].initial = (
+                        raw if raw.startswith("#") else f"#{raw}"
+                    )
+
+    def clean_outline_color(self):
+        raw = (self.cleaned_data.get("outline_color") or "").strip()
+        if not raw:
+            return ""
+        hex_part = raw.lstrip("#").upper()
+        if len(hex_part) != 6 or any(c not in "0123456789ABCDEF" for c in hex_part):
+            from django.forms import ValidationError
+
+            raise ValidationError("Enter a valid hex color (e.g. #FF5733).")
+        return f"#{hex_part}"
+
+    def save(self, profile):
+        overrides: dict = {}
+        if self.cleaned_data.get("brand_kit_enabled"):
+            overrides["enabled"] = True
+            overrides["shadow_mode"] = self.cleaned_data["shadow_mode"]
+            overrides["padding"] = self.cleaned_data["padding"]
+            overrides["studio_bg_pref"] = self.cleaned_data["studio_bg_pref"]
+            outline = self.cleaned_data.get("outline_color") or ""
+            if outline:
+                overrides["outline_color"] = outline.lstrip("#").upper()
+        else:
+            overrides["enabled"] = False
+        profile.photoroom_brand_template = overrides
+        profile.save(update_fields=["photoroom_brand_template"])
+        return profile
+
+
 class AutopilotSettingsForm(forms.ModelForm):
     """Operations Autopilot toggles — all default off."""
 

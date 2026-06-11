@@ -69,6 +69,7 @@ def review_flags_for_output(
         "needs_review": True,
         "review_reason": reason,
         "review_before_publish": True,
+        "review_status": "pending",
     }
 
 
@@ -79,12 +80,17 @@ def summarize_review_state(actions: list) -> dict:
         out = action.output_data or {}
         if not out.get("needs_review"):
             continue
+        review_status = out.get("review_status") or "pending"
+        if review_status in ("approved", "rejected"):
+            continue
         pending.append({
             "variant": out.get("variant") or "",
             "label": out.get("label") or out.get("variant") or "Scene",
             "url": out.get("url") or "",
             "reason": out.get("review_reason") or "alteration",
             "uncertainty_score": out.get("uncertainty_score"),
+            "review_status": review_status,
+            "action_id": str(action.pk),
         })
     return {
         "alteration_review_required": bool(pending),

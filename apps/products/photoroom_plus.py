@@ -55,10 +55,11 @@ EDIT_WITH_AI_VARIANT_IDS = frozenset({
 # Commerce-first AI scenes — category → grounded scene variant ids (Option A)
 CATEGORY_COMMERCE_SCENES: dict[str, tuple[str, ...]] = {
     "apparel": ("ai_scene_table", "ai_scene_shelf", "ai_scene_retail"),
+    "apparel_mitumba": ("flat_lay", "ai_scene_table", "ai_scene_retail"),
     "food": ("food_surface_marble", "food_surface_rustic", "food_surface_delivery"),
     "beauty": ("ai_scene_table", "ai_creative_marble", "ai_scene_shelf"),
-    "jewelry": ("ai_scene_table", "ai_creative_marble", "ai_scene_wall"),
-    "electronics": ("ai_scene_table", "ai_scene_shelf", "ai_creative_podium"),
+    "jewelry": ("ai_creative_marble", "ai_scene_wall", "ai_lifestyle"),
+    "electronics": ("ai_creative_podium", "ai_scene_table", "ai_scene_shelf"),
     "home": ("ai_scene_shelf", "ai_scene_wall", "ai_scene_table"),
     "general": ("ai_scene_table", "ai_scene_shelf", "ai_scene_retail"),
 }
@@ -201,6 +202,7 @@ SLIDE_ROLE_DIGITAL = (
 )
 CATEGORY_PROOF_VARIANTS: dict[str, tuple[str, ...]] = {
     "apparel": ("ghost_mannequin", "virtual_model"),
+    "apparel_mitumba": ("flat_lay", "ghost_mannequin"),
     "food": ("flat_lay", "text_removal"),
     "beauty": ("flat_lay", "beautify"),
     "jewelry": ("beautify", "studio_dark"),
@@ -222,6 +224,7 @@ SHOP_GALLERY_EXCLUDE_MARKERS = CAROUSEL_EXCLUDE_URL_MARKERS + ("promo_frame",)
 
 PRODUCT_CATEGORIES = (
     "apparel",
+    "apparel_mitumba",
     "food",
     "beauty",
     "jewelry",
@@ -988,7 +991,7 @@ def _product_blob(product, analysis: dict | None) -> str:
 def detect_product_category(product, analysis: dict | None = None) -> str:
     blob = _product_blob(product, analysis)
     rules = (
-        ("apparel", ("shirt", "dress", "shoe", "sneaker", "fashion", "wear", "cloth", "garment", "bag", "handbag", "jacket", "kitenge")),
+        ("apparel", ("shirt", "dress", "shoe", "sneaker", "fashion", "wear", "cloth", "garment", "bag", "handbag", "jacket", "kitenge", "mitumba", "thrift")),
         ("food", ("food", "snack", "spice", "coffee", "tea", "cake", "bread", "honey", "sauce", "drink", "juice", "meal")),
         ("beauty", ("beauty", "skin", "lotion", "cream", "cosmetic", "perfume", "serum", "hair", "makeup", "skincare")),
         ("jewelry", ("jewel", "ring", "necklace", "watch", "gold", "silver", "bracelet", "earring")),
@@ -1452,6 +1455,17 @@ def resolve_variant_params(
             resolved[key] = relight_mode_for(offering, category)
         else:
             resolved[key] = value
+
+    from apps.products.scene_packs import resolve_scene_vertical, vertical_locked_seed
+
+    vertical = resolve_scene_vertical(product, analysis)
+    seed_override = vertical_locked_seed(vertical, spec.id)
+    if seed_override is not None:
+        if "background.seed" in resolved:
+            resolved["background.seed"] = str(seed_override)
+        if "editWithAI.seed" in resolved:
+            resolved["editWithAI.seed"] = str(seed_override)
+
     return apply_brand_template(resolved, brand_template, spec)
 
 
@@ -1459,25 +1473,48 @@ def _slide_roles_for(
     offering: str,
     category: str,
     *,
+    vertical: str | None = None,
     hero_studio_ids: tuple[str, ...] | None = None,
+    scene_context: dict | None = None,
 ) -> tuple[tuple[str, tuple[str, ...]], ...]:
+    from apps.products.scene_packs import (
+        vertical_commerce_scenes,
+        vertical_hero_studio_ids,
+        vertical_proof_variants,
+    )
+
     if offering == "service":
         return SLIDE_ROLE_SERVICE
     if offering == "digital":
         return SLIDE_ROLE_DIGITAL
-    proof_ids = CATEGORY_PROOF_VARIANTS.get(category, CATEGORY_PROOF_VARIANTS["general"])
+
+    pack_vertical = vertical or category
+    proof_ids = vertical_proof_variants(pack_vertical, fallback_category=category)
     commerce_ids: tuple[str, ...] = ()
     if getattr(settings, "PHOTOROOM_CREATIVE_SCENES_ENABLED", True):
-        commerce_ids = CATEGORY_COMMERCE_SCENES.get(
-            category, CATEGORY_COMMERCE_SCENES["general"]
-        )
-    # Lifestyle scenes first, then grounded commerce surfaces
-    desire_ids = (
-        "ai_lifestyle",
-        "ai_lifestyle_alt",
-        "ai_contextual",
-    ) + commerce_ids
-    hero_ids = hero_studio_ids or ("studio_white", "studio_brand")
+        commerce_ids = vertical_commerce_scenes(pack_vertical, fallback_category=category)
+
+    scene_context = scene_context or {}
+    desire_prefix = ("ai_lifestyle", "ai_lifestyle_alt", "ai_contextual")
+    if scene_context.get("prefer_food_surfaces"):
+        desire_prefix = ("food_surface_marble", "food_surface_rustic") + desire_prefix
+    elif scene_context.get("prefer_jewelry_macro"):
+        desire_prefix = ("ai_creative_marble", "ai_lifestyle") + desire_prefix[1:]
+
+    desire_ids = desire_prefix + commerce_ids
+    hero_ids = hero_studio_ids or vertical_hero_studio_ids(pack_vertical) or ("studio_white", "studio_brand")
+
+    proof_boost: tuple[str, ...] = ()
+    if scene_context.get("has_multi_angles"):
+        proof_boost = ("edit_ai_angle",)
+    if scene_context.get("prefer_repair_over_ai"):
+        proof_boost = proof_boost + ("relight", "beautify", "flat_lay")
+    if scene_context.get("prefer_electronics_relight"):
+        proof_boost = ("relight",) + proof_boost
+
+    if proof_boost:
+        proof_ids = proof_boost + tuple(v for v in proof_ids if v not in proof_boost)
+
     roles: list[tuple[str, tuple[str, ...]]] = []
     for role_name, variant_ids in SLIDE_ROLE_PRODUCT:
         if role_name == "hero":
@@ -1543,12 +1580,81 @@ def apply_variant_layout(
     return out
 
 
-def _target_ai_scene_count(max_count: int) -> int:
-    """How many AI background scenes to generate when budget allows."""
+def _scene_intelligence_context(
+    analysis: dict | None,
+    *,
+    offering: str = "product",
+    category: str = "general",
+    vertical: str | None = None,
+    stall_context: dict | None = None,
+) -> dict:
+    """Derive content-aware scene selection signals from vision + stall brief."""
+    from apps.products.scene_packs import stall_brief_scene_signals
+
+    analysis = analysis or {}
+    pq = analysis.get("photo_quality") or {}
+    multi_angles = analysis.get("multi_image_angles") or []
+    if isinstance(multi_angles, str):
+        multi_angles = [multi_angles]
+
+    stall_signals = stall_brief_scene_signals(stall_context) if stall_context else {}
+
+    lighting = (pq.get("lighting") or "good").lower()
+    sharpness = (pq.get("sharpness") or "sharp").lower()
+    crop = (pq.get("crop") or "comfortable").lower()
+    low_quality = (
+        sharpness in ("soft", "blurry")
+        or lighting in ("dark", "uneven")
+        or crop == "very_tight"
+    )
+    wrinkled_or_worn = any(
+        kw in " ".join(
+            part.lower()
+            for part in (
+                analysis.get("visual_style") or "",
+                analysis.get("description") or "",
+                " ".join(analysis.get("key_features") or []),
+            )
+        )
+        for kw in ("wrinkl", "creased", "worn", "folded", "crumpled")
+    )
+
+    return {
+        "offering": offering,
+        "category": category,
+        "vertical": vertical or category,
+        "multi_angle_count": len(multi_angles),
+        "has_multi_angles": len(multi_angles) >= 2,
+        "low_quality": low_quality,
+        "wrinkled_or_worn": wrinkled_or_worn,
+        "lighting": lighting,
+        "sharpness": sharpness,
+        "prefer_repair_over_ai": low_quality or wrinkled_or_worn,
+        "prefer_food_surfaces": category == "food" or vertical == "food",
+        "prefer_jewelry_macro": vertical == "jewelry" or category == "jewelry",
+        "prefer_electronics_relight": vertical == "electronics" or category == "electronics",
+        "prefer_mitumba_apparel": vertical == "apparel_mitumba",
+        "stall_wholesale": stall_signals.get("wholesale_or_clearance", False),
+        "stall_premium": stall_signals.get("premium_boutique", False),
+        "market_day": stall_signals.get("market_day", False),
+    }
+
+
+def _target_ai_scene_count(
+    max_count: int,
+    *,
+    analysis: dict | None = None,
+    offering: str = "product",
+    category: str = "general",
+    vertical: str | None = None,
+    stall_context: dict | None = None,
+) -> int:
+    """How many AI background scenes to generate — content-aware, not budget-only."""
     min_ai = int(getattr(settings, "PHOTOROOM_MIN_AI_SCENES", 2))
     max_ai = int(getattr(settings, "PHOTOROOM_MAX_AI_SCENES", 3))
-    if max_count <= 1:
+    if max_count <= 1 or offering != "product":
         return 0
+
     available = max_count - 1  # reserve hero
     if max_count >= 5:
         target = max_ai
@@ -1556,19 +1662,63 @@ def _target_ai_scene_count(max_count: int) -> int:
         target = min_ai
     else:
         target = 1
+
+    ctx = _scene_intelligence_context(
+        analysis,
+        offering=offering,
+        category=category,
+        vertical=vertical,
+        stall_context=stall_context,
+    )
+
+    if ctx["prefer_repair_over_ai"]:
+        target = min(target, 1)
+    if ctx["has_multi_angles"]:
+        target = max(0, target - 1)
+    if ctx["stall_wholesale"]:
+        target = max(1, target - 1)
+    if ctx["prefer_jewelry_macro"] and max_count >= 4:
+        target = min(max_ai, max(target, min_ai))
+    if ctx["prefer_food_surfaces"] and max_count >= 3:
+        target = min(max_ai, max(target, min_ai))
+
     return min(target, available, max_ai)
 
 
-def _target_edit_with_ai_count(max_count: int) -> int:
-    """How many Edit With AI slides (staging + angle) when budget allows."""
+def _target_edit_with_ai_count(
+    max_count: int,
+    *,
+    analysis: dict | None = None,
+    offering: str = "product",
+    category: str = "general",
+    vertical: str | None = None,
+    stall_context: dict | None = None,
+) -> int:
+    """How many Edit With AI slides when budget allows — boosted for multi-angle uploads."""
     if not getattr(settings, "PHOTOROOM_EDIT_WITH_AI_ENABLED", True):
         return 0
     cap = int(getattr(settings, "PHOTOROOM_EDIT_WITH_AI_MAX_PER_PACK", 2))
-    if max_count < 3:
+    if max_count < 3 or offering != "product":
         return 0
+
+    ctx = _scene_intelligence_context(
+        analysis,
+        offering=offering,
+        category=category,
+        vertical=vertical,
+        stall_context=stall_context,
+    )
+
     if max_count < 5:
-        return min(1, cap)
-    return min(cap, max(0, max_count - 3))
+        base = 1
+    else:
+        base = min(cap, max(0, max_count - 3))
+
+    if ctx["has_multi_angles"]:
+        base = min(cap, base + 1)
+    if ctx["prefer_repair_over_ai"]:
+        base = min(base, 1)
+    return min(base, cap)
 
 
 def order_variants_by_slide_role(
@@ -1579,6 +1729,9 @@ def order_variants_by_slide_role(
     max_count: int,
     uncertainty_score: float | None = None,
     hero_studio_ids: tuple[str, ...] | None = None,
+    analysis: dict | None = None,
+    vertical: str | None = None,
+    stall_context: dict | None = None,
 ) -> list[PlusVariantSpec]:
     """Pick variants to fill hero → desire (2–3 AI) → proof → standout."""
     from apps.products.photoroom_api import (
@@ -1589,12 +1742,37 @@ def order_variants_by_slide_role(
     by_id = {s.id: s for s in candidates}
     picked: list[PlusVariantSpec] = []
     picked_ids: set[str] = set()
-    ai_target = _target_ai_scene_count(max_count)
-    edit_target = _target_edit_with_ai_count(max_count)
+    ai_target = _target_ai_scene_count(
+        max_count,
+        analysis=analysis,
+        offering=offering,
+        category=category,
+        vertical=vertical,
+        stall_context=stall_context,
+    )
+    edit_target = _target_edit_with_ai_count(
+        max_count,
+        analysis=analysis,
+        offering=offering,
+        category=category,
+        vertical=vertical,
+        stall_context=stall_context,
+    )
     skip_risky = uncertainty_is_high(uncertainty_score)
+    scene_ctx = _scene_intelligence_context(
+        analysis,
+        offering=offering,
+        category=category,
+        vertical=vertical,
+        stall_context=stall_context,
+    )
 
     for role_name, preferred_ids in _slide_roles_for(
-        offering, category, hero_studio_ids=hero_studio_ids,
+        offering,
+        category,
+        vertical=vertical,
+        hero_studio_ids=hero_studio_ids,
+        scene_context=scene_ctx,
     ):
         if role_name == "desire":
             picked_desire = 0
@@ -1645,6 +1823,71 @@ def order_variants_by_slide_role(
     return picked[: max(1, max_count)]
 
 
+def _boost_candidates_for_scene_pack(
+    candidates: list[PlusVariantSpec],
+    *,
+    scene_pack: str | None,
+    plan_tier: str,
+) -> list[PlusVariantSpec]:
+    from apps.products.scene_packs import (
+        SCENE_PACK_AUTO,
+        normalize_scene_pack,
+        scene_pack_priority_variant_ids,
+    )
+
+    pack = normalize_scene_pack(scene_pack)
+    if pack == SCENE_PACK_AUTO:
+        return candidates
+
+    priority_ids = scene_pack_priority_variant_ids(pack, plan_tier=plan_tier)
+    if not priority_ids:
+        return candidates
+
+    by_id = {spec.id: spec for spec in candidates}
+    boosted: list[PlusVariantSpec] = []
+    seen: set[str] = set()
+    for vid in priority_ids:
+        spec = by_id.get(vid)
+        if spec and vid not in seen:
+            boosted.append(spec)
+            seen.add(vid)
+    for spec in candidates:
+        if spec.id not in seen:
+            boosted.append(spec)
+            seen.add(spec.id)
+    return boosted
+
+
+def _boost_candidates_for_vertical(
+    candidates: list[PlusVariantSpec],
+    *,
+    vertical: str,
+    plan_tier: str,
+    category: str,
+) -> list[PlusVariantSpec]:
+    from apps.products.scene_packs import vertical_priority_variant_ids
+
+    priority_ids = vertical_priority_variant_ids(
+        vertical, plan_tier=plan_tier, fallback_category=category,
+    )
+    if not priority_ids:
+        return candidates
+
+    by_id = {spec.id: spec for spec in candidates}
+    boosted: list[PlusVariantSpec] = []
+    seen: set[str] = set()
+    for vid in priority_ids:
+        spec = by_id.get(vid)
+        if spec and vid not in seen:
+            boosted.append(spec)
+            seen.add(vid)
+    for spec in candidates:
+        if spec.id not in seen:
+            boosted.append(spec)
+            seen.add(spec.id)
+    return boosted
+
+
 def select_plus_variants(
     product,
     analysis: dict | None,
@@ -1655,6 +1898,8 @@ def select_plus_variants(
     brand_template=None,
     brand_colors: dict | None = None,
     commerce_source: str | None = None,
+    scene_pack: str | None = None,
+    stall_context: dict | None = None,
 ) -> list[PlusVariantSpec]:
     """Pick applicable Plus variants for this product, highest priority first."""
     from apps.products.batch_snap_intelligence import is_market_day_mode
@@ -1663,11 +1908,23 @@ def select_plus_variants(
         uncertainty_is_high,
     )
     from apps.products.photoroom_brand_template import hero_studio_variant_ids
+    from apps.products.scene_packs import resolve_scene_vertical, vertical_hero_studio_ids
+
+    analysis = analysis or {}
+    stall_context = stall_context or analysis.get("_stall_context") or {}
 
     offering = getattr(product, "offering_type", "product") or "product"
     category = detect_product_category(product, analysis)
+    vertical = resolve_scene_vertical(product, analysis, stall_context=stall_context)
     plan_rank = _plan_rank(plan_tier)
     skip_risky = uncertainty_is_high(uncertainty_score)
+    scene_ctx = _scene_intelligence_context(
+        analysis,
+        offering=offering,
+        category=category,
+        vertical=vertical,
+        stall_context=stall_context,
+    )
 
     candidates: list[PlusVariantSpec] = []
     for spec in PLUS_VARIANT_CATALOG.values():
@@ -1681,9 +1938,15 @@ def select_plus_variants(
             continue
         candidates.append(spec)
 
+    from apps.products.scene_packs import normalize_scene_pack, scene_pack_hero_studio_ids
+
     force_brand = is_market_day_mode(commerce_source)
-    hero_studio_ids = hero_studio_variant_ids(
-        brand_template, brand_colors, force_brand=force_brand,
+    pack_hero_ids = scene_pack_hero_studio_ids(normalize_scene_pack(scene_pack))
+    vertical_hero_ids = vertical_hero_studio_ids(vertical)
+    hero_studio_ids = (
+        pack_hero_ids
+        or vertical_hero_ids
+        or hero_studio_variant_ids(brand_template, brand_colors, force_brand=force_brand)
     )
 
     # Always include brand-aware studio hero + lifestyle for physical products
@@ -1703,8 +1966,16 @@ def select_plus_variants(
             if req and req not in candidates:
                 candidates.append(req)
 
-    # Category boosters (skip cutout-sensitive AI when uncertainty is high)
-    if category == "apparel" and not skip_risky:
+    # Category / vertical boosters (skip cutout-sensitive AI when uncertainty is high)
+    if vertical == "apparel_mitumba" or (category == "apparel" and scene_ctx.get("prefer_mitumba_apparel")):
+        flat = PLUS_VARIANT_CATALOG.get("flat_lay")
+        if flat and flat not in candidates:
+            candidates.append(flat)
+        if not skip_risky:
+            ghost = PLUS_VARIANT_CATALOG.get("ghost_mannequin")
+            if ghost and _plan_rank(ghost.min_plan) <= plan_rank and ghost not in candidates:
+                candidates.append(ghost)
+    elif category == "apparel" and not skip_risky:
         ghost = PLUS_VARIANT_CATALOG.get("ghost_mannequin")
         if ghost and _plan_rank(ghost.min_plan) <= plan_rank and ghost not in candidates:
             candidates.append(ghost)
@@ -1712,6 +1983,16 @@ def select_plus_variants(
             vm = PLUS_VARIANT_CATALOG.get("virtual_model")
             if vm and vm not in candidates:
                 candidates.append(vm)
+    elif vertical == "jewelry" or category == "jewelry":
+        for vid in ("studio_dark", "ai_creative_marble", "beautify", "relight"):
+            spec = PLUS_VARIANT_CATALOG.get(vid)
+            if spec and spec not in candidates:
+                candidates.append(spec)
+    elif vertical == "electronics" or category == "electronics":
+        for vid in ("relight", "ai_creative_podium", "background_blur"):
+            spec = PLUS_VARIANT_CATALOG.get(vid)
+            if spec and spec not in candidates:
+                candidates.append(spec)
     elif category == "food":
         from apps.products.photoroom_food import (
             FOOD_SURFACE_VARIANT_IDS,
@@ -1744,7 +2025,10 @@ def select_plus_variants(
         offering == "product"
         and getattr(settings, "PHOTOROOM_CREATIVE_SCENES_ENABLED", True)
     ):
-        for vid in CATEGORY_COMMERCE_SCENES.get(category, CATEGORY_COMMERCE_SCENES["general"]):
+        from apps.products.scene_packs import vertical_commerce_scenes
+
+        commerce_vids = vertical_commerce_scenes(vertical, fallback_category=category)
+        for vid in commerce_vids:
             spec = PLUS_VARIANT_CATALOG.get(vid)
             if spec and spec not in candidates:
                 candidates.append(spec)
@@ -1757,6 +2041,18 @@ def select_plus_variants(
             spec = PLUS_VARIANT_CATALOG.get(vid)
             if spec and _plan_rank(spec.min_plan) <= plan_rank and spec not in candidates:
                 candidates.append(spec)
+
+    candidates = _boost_candidates_for_scene_pack(
+        candidates,
+        scene_pack=scene_pack,
+        plan_tier=plan_tier,
+    )
+    candidates = _boost_candidates_for_vertical(
+        candidates,
+        vertical=vertical,
+        plan_tier=plan_tier,
+        category=category,
+    )
 
     seen: set[str] = set()
     ordered: list[PlusVariantSpec] = []
@@ -1777,6 +2073,9 @@ def select_plus_variants(
             max_count=max_count,
             uncertainty_score=uncertainty_score,
             hero_studio_ids=hero_studio_ids,
+            analysis=analysis,
+            vertical=vertical,
+            stall_context=stall_context,
         )
     return ordered[: max(1, max_count)]
 
@@ -1786,6 +2085,13 @@ def get_max_variants_for_plan(plan_tier: str) -> int:
 
     limits = PLAN_LIMITS.get(plan_tier, PLAN_LIMITS["starter"])
     return int(limits.get("plus_max_variants_per_product", 3))
+
+
+def multi_angle_polish_credit_enabled(plan_tier: str) -> bool:
+    """Growth+ plans may polish one extra uploaded angle (+1 credit)."""
+    from apps.products.scene_packs import multi_angle_polish_enabled
+
+    return multi_angle_polish_enabled(plan_tier)
 
 
 def _api_key_headers(extra: dict | None = None) -> tuple[str | None, dict]:

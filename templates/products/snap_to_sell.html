@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-lg mx-auto space-y-5" x-data="snapToSell({{ commerce_autopilot|yesno:'true,false' }}, {{ visual_credits.remaining|default:15 }}, {{ visual_credits.at_limit|yesno:'true,false' }}, {{ studio_polish_notice|yesno:'true,false' }})">
+<div class="max-w-lg mx-auto space-y-5" x-data="snapToSell({{ commerce_autopilot|yesno:'true,false' }}, {{ visual_credits.remaining|default:15 }}, {{ visual_credits.at_limit|yesno:'true,false' }}, {{ studio_polish_notice|yesno:'true,false' }}, {{ credit_estimates_json|safe }}, {{ lite_forced|yesno:'true,false' }}, '{{ default_polish_mode }}')">
 
   <div class="rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-xs text-amber-900 dark:text-amber-200">
     Photos must follow Kova's <a href="{% url 'acceptable_use' %}" class="underline font-medium">content policy</a>.
@@ -21,8 +21,11 @@
         @submit="prepareSubmit($event)">
     {% csrf_token %}
     <input type="hidden" name="offering_type" :value="offeringType">
+    <input type="hidden" name="scene_pack" :value="scenePack">
+    <input type="hidden" name="polish_mode" :value="polishMode">
     {% if commerce_autopilot %}
-    <input type="hidden" name="visual_mode" :value="proSceneDisabled ? 'as_is' : 'pro_scene'">
+    <input type="hidden" name="visual_mode" value="pro_scene">
+    <input type="hidden" name="polish_mode" :value="polishMode">
     {% endif %}
 
     {# 1. Photos — snap or upload #}
@@ -142,18 +145,63 @@
               <span>Use as-is</span>
             </label>
             <label class="flex cursor-pointer rounded-lg border-2 p-2.5 text-sm"
-                   :class="[visualMode === 'pro_scene' ? 'border-kova-500' : 'border-gray-200 dark:border-gray-700', proSceneDisabled ? 'opacity-50' : '']">
-              <input type="radio" name="visual_mode" value="pro_scene" class="sr-only" x-model="visualMode" :disabled="proSceneDisabled">
-              <span>Studio polish</span>
+                   :class="visualMode === 'pro_scene' ? 'border-kova-500' : 'border-gray-200 dark:border-gray-700'">
+              <input type="radio" name="visual_mode" value="pro_scene" class="sr-only" x-model="visualMode">
+              <span>Polish photos</span>
             </label>
           </div>
+          <div class="grid grid-cols-2 gap-2" x-show="visualMode === 'pro_scene'" x-cloak>
+            <label class="flex cursor-pointer rounded-lg border-2 p-2.5 text-xs"
+                   :class="[polishMode === 'studio' ? 'border-kova-500' : 'border-gray-200 dark:border-gray-700', (liteForced || proSceneDisabled) ? 'opacity-50 pointer-events-none' : '']">
+              <input type="radio" value="studio" class="sr-only" x-model="polishMode" :disabled="liteForced || proSceneDisabled">
+              <span>Studio polish</span>
+            </label>
+            <label class="flex cursor-pointer rounded-lg border-2 p-2.5 text-xs"
+                   :class="polishMode === 'lite' ? 'border-kova-500' : 'border-gray-200 dark:border-gray-700'">
+              <input type="radio" value="lite" class="sr-only" x-model="polishMode">
+              <span>Lite polish</span>
+            </label>
+          </div>
+          <p class="text-[11px] text-gray-500 dark:text-gray-400" x-show="visualMode === 'pro_scene' && polishMode === 'lite'">
+            Lite uses basic cutout — upgrade for full studio scenes.
+          </p>
           {% if studio_polish_notice %}
           <p class="text-[11px] text-amber-700 dark:text-amber-300">{{ studio_polish_notice }}</p>
           {% endif %}
+          {% if lite_polish_notice %}
+          <p class="text-[11px] text-amber-700 dark:text-amber-300">{{ lite_polish_notice }}</p>
+          {% endif %}
         </div>
         {% endif %}
+
       </div>
     </details>
+
+    <div class="card p-4 space-y-3" x-show="offeringType === 'product' && (autopilot || visualMode === 'pro_scene') && polishMode === 'studio'" x-cloak>
+      <p class="text-sm font-semibold text-gray-900 dark:text-white">Scene pack</p>
+      <p class="text-[11px] text-gray-500 dark:text-gray-400">Choose a polish style — Auto picks the best scenes for your product.</p>
+      <div class="flex flex-wrap gap-2">
+        {% for opt in scene_pack_options %}
+        <button type="button" @click="scenePack = '{{ opt.id }}'"
+                class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all text-left"
+                :class="scenePack === '{{ opt.id }}' ? 'border-kova-500 bg-kova-50 dark:bg-kova-950/40 text-kova-700 dark:text-kova-300' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'"
+                title="{{ opt.hint }}">{{ opt.label }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div x-show="(autopilot || visualMode === 'pro_scene') && polishMode === 'studio' && !proSceneDisabled && creditEstimate"
+         class="rounded-lg border px-4 py-3 text-xs"
+         :class="creditEstimate.over_budget ? 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400'">
+      <p class="font-medium text-gray-900 dark:text-white" x-text="creditEstimate.breakdown_label"></p>
+      <p class="mt-1" x-show="!creditEstimate.unlimited && creditEstimate.remaining !== null">
+        <span x-text="creditEstimate.remaining + ' polish credits remaining this month'"></span>
+        <span x-show="creditEstimate.over_budget" class="font-semibold text-amber-800 dark:text-amber-200"> — may exceed your budget</span>
+      </p>
+      <p class="mt-1 text-[10px] text-gray-500 dark:text-gray-400" x-show="creditEstimate.multi_angle">
+        Includes +1 credit if you upload a second angle (Growth+).
+      </p>
+    </div>
 
     <button type="submit"
             :disabled="photos.length === 0 || !price || !name.trim()"
@@ -173,16 +221,47 @@
 </div>
 
 <script>
-function snapToSell(autopilot, creditsRemaining, creditsAtLimit, studioPolishUnavailable) {
+function snapToSell(autopilot, creditsRemaining, creditsAtLimit, studioPolishUnavailable, creditEstimates, liteForced, defaultPolishMode) {
   const proSceneDisabled = !!creditsAtLimit || (creditsRemaining !== undefined && creditsRemaining <= 0);
+  const estimates = creditEstimates || {};
+  const forcedLite = !!liteForced;
+  const initialPolish = forcedLite || proSceneDisabled ? 'lite' : (defaultPolishMode || 'studio');
   return {
     photos: [],
     name: '',
     price: '',
     offeringType: 'product',
     autopilot: !!autopilot,
-    visualMode: proSceneDisabled ? 'as_is' : 'pro_scene',
+    visualMode: 'pro_scene',
+    polishMode: initialPolish,
+    liteForced: forcedLite,
     proSceneDisabled,
+    scenePack: 'auto',
+    creditEstimates: estimates,
+
+    get creditEstimate() {
+      const base = this.creditEstimates[this.scenePack] || this.creditEstimates.auto;
+      if (!base) return null;
+      const photoCount = Math.max(1, this.photos.length);
+      if (photoCount <= 1 || !base.multi_angle) {
+        return base;
+      }
+      const extraAngle = 1;
+      const total = base.total + extraAngle;
+      const parts = [
+        base.repairs ? (base.repairs + ' repair' + (base.repairs !== 1 ? 's' : '')) : null,
+        base.scenes ? (base.scenes + ' scene' + (base.scenes !== 1 ? 's' : '')) : null,
+        base.exports ? (base.exports + ' export' + (base.exports !== 1 ? 's' : '')) : null,
+        '1 extra angle',
+      ].filter(Boolean);
+      return {
+        ...base,
+        total,
+        multi_angle: 1,
+        breakdown_label: '~' + total + ' credits: ' + parts.join(' + '),
+        over_budget: !base.unlimited && base.remaining !== null && total > base.remaining,
+      };
+    },
 
     addFromInput(event) {
       const files = Array.from(event.target.files);

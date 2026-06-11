@@ -43,9 +43,16 @@ STUDIO_POLISH_MODES = frozenset({VISUAL_MODE_PRO_SCENE, VISUAL_MODE_STUDIO_POLIS
 
 
 def is_studio_polish_mode(mode: str | None) -> bool:
+    """True when Snap should run photo expansion (studio or lite polish)."""
     if mode == VISUAL_MODE_QUICK_POLISH:
-        return True  # legacy DB value → Plus studio
+        return True  # legacy DB value → polish path (lite or studio via polish_mode)
     return mode in STUDIO_POLISH_MODES
+
+
+def is_lite_polish_mode(product) -> bool:
+    from apps.products.polish_mode import POLISH_MODE_LITE, resolve_polish_mode
+
+    return resolve_polish_mode(product.user, product=product) == POLISH_MODE_LITE
 
 
 def normalize_visual_mode(mode: str | None) -> str:
@@ -342,6 +349,9 @@ def _paste_product_centered(
     *,
     scale: float = 1.0,
     shadow: bool = True,
+    shadow_blur: int = 16,
+    shadow_opacity: float = 0.32,
+    shadow_offset: int = 12,
 ) -> Image.Image:
     """Composite cutout onto canvas with safe margins and drop shadow."""
     width, height = canvas.size
@@ -357,8 +367,8 @@ def _paste_product_centered(
     y = margin_top + max((height - margin_top - margin_bottom - fg.height) // 2, 0)
 
     if shadow:
-        sh = _make_shadow_layer(fg)
-        base.paste(sh, (x, y + 12), sh)
+        sh = _make_shadow_layer(fg, blur=shadow_blur, opacity=shadow_opacity)
+        base.paste(sh, (x, y + shadow_offset), sh)
 
     base.paste(fg, (x, y), fg)
     return base.convert("RGB")
@@ -426,30 +436,43 @@ def _render_preset(
     shop_hint: str,
     dominant_colors: list[str],
     brand_colors: dict,
+    shadow_blur: int = 16,
+    shadow_opacity: float = 0.32,
+    shadow_offset: int = 12,
+    studio_bg_hex: str | None = None,
 ) -> Image.Image:
     width, height = CANVAS_SIZE
+    shadow_kwargs = {
+        "shadow_blur": shadow_blur,
+        "shadow_opacity": shadow_opacity,
+        "shadow_offset": shadow_offset,
+    }
+    brand_studio = f"#{studio_bg_hex}" if studio_bg_hex else brand_colors.get("primary", "#FFFFFF")
 
     if preset_id == PRESET_WHITE_STUDIO:
-        bg = _solid_background(width, height, "#FFFFFF")
-        return _paste_product_centered(bg, foreground, scale=0.92)
+        bg_hex = brand_studio if studio_bg_hex else "#FFFFFF"
+        bg = _solid_background(width, height, bg_hex)
+        return _paste_product_centered(bg, foreground, scale=0.92, **shadow_kwargs)
 
     if preset_id == PRESET_GRAY_STUDIO:
         bg = _solid_background(width, height, "#E8EAED")
-        return _paste_product_centered(bg, foreground, scale=0.90)
+        return _paste_product_centered(bg, foreground, scale=0.90, **shadow_kwargs)
 
     if preset_id == PRESET_BRAND_GRADIENT:
         top, bottom = dominant_colors[0], dominant_colors[-1] if len(dominant_colors) > 1 else "#1a1a2e"
+        if studio_bg_hex:
+            top = brand_studio
         bg = _gradient_background(width, height, top, bottom)
-        return _paste_product_centered(bg, foreground, scale=0.88)
+        return _paste_product_centered(bg, foreground, scale=0.88, **shadow_kwargs)
 
     if preset_id == PRESET_SOFT_PASTEL:
         top = dominant_colors[0] if dominant_colors else "#dceefb"
         bg = _gradient_background(width, height, top, "#f7f9fc")
-        return _paste_product_centered(bg, foreground, scale=0.90)
+        return _paste_product_centered(bg, foreground, scale=0.90, **shadow_kwargs)
 
     if preset_id == PRESET_DARK_PREMIUM:
         bg = _gradient_background(width, height, "#0f0f14", "#2a2a38")
-        return _paste_product_centered(bg, foreground, scale=0.86)
+        return _paste_product_centered(bg, foreground, scale=0.86, **shadow_kwargs)
 
     if preset_id == PRESET_PROMO_FRAME:
         bg = _solid_background(width, height, brand_colors["primary"])
@@ -463,7 +486,7 @@ def _render_preset(
         )
 
     bg = _solid_background(width, height, "#FFFFFF")
-    return _paste_product_centered(bg, foreground, scale=0.75)
+    return _paste_product_centered(bg, foreground, scale=0.75, **shadow_kwargs)
 
 
 def _save_variation_jpeg(product_id, preset_id: str, image: Image.Image) -> str:
@@ -492,23 +515,41 @@ def expand_product_photos(
     *,
     commerce_source: str | None = None,
     polish_session=None,
+    scene_pack: str | None = None,
+    brand_template=None,
+    polish_mode: str | None = None,
 ) -> dict:
     """
     Generate scene variations from the product's primary photo.
     Appends URLs to product.additional_images (replaces prior auto-variations).
 
-    mode: as_is | pro_scene / studio_polish (quick_polish legacy → studio)
+    mode: as_is | pro_scene / studio_polish (quick_polish legacy → polish path)
+    polish_mode: lite | studio — lite uses Basic API + local presets (no Plus credits)
     """
     mode = normalize_visual_mode(mode or getattr(product, "visual_mode", None))
 
     if mode == VISUAL_MODE_AS_IS:
         return {"skipped": True, "reason": "as_is", "variations_created": 0}
 
+    from apps.products.polish_mode import POLISH_MODE_LITE, resolve_polish_mode
+    from apps.products.scene_packs import get_product_scene_pack, normalize_scene_pack
+
+    resolved_polish = resolve_polish_mode(
+        product.user,
+        polish_mode,
+        product=product,
+    )
+    if resolved_polish == POLISH_MODE_LITE:
+        return _expand_lite_polish(product, analysis)
+
+    pack = normalize_scene_pack(scene_pack or get_product_scene_pack(product))
     return _expand_studio_polish(
         product,
         analysis,
         commerce_source=commerce_source,
         polish_session=polish_session,
+        scene_pack=pack,
+        brand_template=brand_template,
     )
 
 
@@ -559,6 +600,8 @@ def _expand_studio_polish(
     *,
     commerce_source: str | None = None,
     polish_session=None,
+    scene_pack: str | None = None,
+    brand_template=None,
 ) -> dict:
     """Photoroom Plus pack — all applicable v2/edit variants (1 credit each)."""
     from apps.billing.models import get_effective_plan_tier
@@ -572,12 +615,15 @@ def _expand_studio_polish(
     from apps.products.photoroom import photoroom_enabled, save_studio_polish_image
     from apps.products.photoroom_plus import (
         LAYOUT_VARIANT_IDS,
+        PLUS_VARIANT_CATALOG,
         detect_product_category,
         get_max_variants_for_plan,
+        multi_angle_polish_credit_enabled,
         run_plus_variant,
         select_plus_variants,
         slide_role_for_variant,
     )
+    from apps.products.scene_packs import normalize_scene_pack, raw_upload_image_urls
 
     if polish_session is None:
         polish_session = begin_studio_polish_session(
@@ -605,6 +651,9 @@ def _expand_studio_polish(
 
     if not product.image:
         return _finish(_studio_polish_error("no_image"))
+
+    scene_pack = normalize_scene_pack(scene_pack)
+    raw_extra_angles = raw_upload_image_urls(product.additional_images)
 
     allowed, msg = check_visual_credit_limit(product.user)
     if not allowed:
@@ -639,13 +688,14 @@ def _expand_studio_polish(
         run_channel_exports,
         run_marketplace_exports,
         run_preflight_repairs,
-        total_export_channel_budget,
     )
+    from apps.products.scene_packs import scene_pack_export_budget
 
     profile = getattr(product.user, "profile", None)
     plan_tier = get_effective_plan_tier(profile) if profile else "starter"
     brand_colors = _get_brand_palette(profile)
-    brand_template = build_photoroom_brand_template(profile, product.user_id)
+    if brand_template is None:
+        brand_template = build_photoroom_brand_template(profile, product.user_id)
     usage = get_visual_credit_usage(product.user)
     plan_max = get_max_variants_for_plan(plan_tier)
     if usage.get("unlimited"):
@@ -694,7 +744,7 @@ def _expand_studio_polish(
                 uncertainty = merge_uncertainty(uncertainty, score)
                 preflight.quality.uncertainty_score = uncertainty
 
-    story_banner_slots, marketplace_slots = total_export_channel_budget(plan_tier)
+    story_banner_slots, marketplace_slots = scene_pack_export_budget(scene_pack, plan_tier)
     export_slots = story_banner_slots + marketplace_slots
     min_scenes = int(getattr(django_settings, "PHOTOROOM_MIN_SCENE_VARIANTS", 3))
     if credit_pool > min_scenes and export_slots > 0:
@@ -719,6 +769,7 @@ def _expand_studio_polish(
         brand_template=brand_template,
         brand_colors=brand_colors,
         commerce_source=commerce_source,
+        scene_pack=scene_pack,
     )
 
     new_urls: list[str] = []
@@ -852,6 +903,64 @@ def _expand_studio_polish(
             })
         return _finish(_studio_polish_error("photoroom_failed"))
 
+    multi_angle_variant: str | None = None
+    if (
+        multi_angle_polish_credit_enabled(plan_tier)
+        and raw_extra_angles
+        and credit_pool > 0
+    ):
+        ok_angle, _ = check_visual_credit_limit(product.user)
+        if ok_angle:
+            angle_url = raw_extra_angles[0]
+            hero_studio_ids = hero_studio_variant_ids(brand_template, brand_colors)
+            angle_spec = PLUS_VARIANT_CATALOG.get(hero_studio_ids[0])
+            if angle_spec:
+                try:
+                    angle_result = run_plus_variant(
+                        angle_url,
+                        angle_spec,
+                        product,
+                        analysis,
+                        brand_colors,
+                        brand_template=brand_template,
+                    )
+                except Exception as exc:
+                    logger.warning("Multi-angle polish failed for %s: %s", product.pk, exc)
+                    angle_result = None
+                if angle_result and angle_result.ok and angle_result.content:
+                    try:
+                        angle_suffix = f"angle_{angle_spec.id}"
+                        angle_polished_url = save_studio_polish_image(
+                            product.pk,
+                            angle_result.content,
+                            suffix=angle_suffix,
+                        )
+                    except Exception as exc:
+                        logger.warning("Multi-angle save failed for %s: %s", product.pk, exc)
+                    else:
+                        record_studio_polish(
+                            product.user,
+                            product_id=product.pk,
+                            provider="photoroom_plus",
+                            output_data={
+                                "variant": angle_spec.id,
+                                "label": f"{angle_spec.label} (angle 2)",
+                                "url": angle_polished_url,
+                                "phase": "scene",
+                                "slide_role": "proof",
+                                "api": angle_result.api if angle_result else "v2/edit",
+                                "multi_angle": True,
+                                **review_flags_for_output(
+                                    angle_spec.id,
+                                    uncertainty_score=angle_result.uncertainty_score,
+                                ),
+                            },
+                        )
+                        new_urls.append(angle_polished_url)
+                        variant_ids.append(angle_spec.id)
+                        multi_angle_variant = angle_spec.id
+                        credit_pool = max(0, credit_pool - 1)
+
     channel_ids: list[str] = []
     marketplace_ids: list[str] = []
     if new_urls:
@@ -937,6 +1046,9 @@ def _expand_studio_polish(
         "plus_variants": len(variant_ids),
         "variant_ids": variant_ids,
         "failed_variants": failed_ids,
+        "scene_pack": scene_pack,
+        "multi_angle_polished": bool(multi_angle_variant),
+        "multi_angle_variant": multi_angle_variant,
         "preflight_repairs": preflight.repairs_run,
         "preflight_failed": preflight.repairs_failed,
         "channel_exports": channel_ids,
@@ -953,6 +1065,110 @@ def _expand_studio_polish(
         "urls": new_urls,
         **review_state,
     })
+
+
+def _lite_shadow_params(shadow_mode: str | None) -> tuple[int, float, int]:
+    """Map brand shadow_mode to local Pillow shadow (blur, opacity, y-offset)."""
+    mode = (shadow_mode or "ai.soft").lower()
+    if mode == "ai.hard":
+        return 8, 0.42, 6
+    if mode == "ai.floating":
+        return 28, 0.22, 18
+    return 16, 0.32, 12
+
+
+def _expand_lite_polish(product, analysis: dict | None = None) -> dict:
+    """Lite polish — Basic API cutout when available, else rembg + local presets."""
+    from apps.products.photoroom_brand_template import build_photoroom_brand_template
+    from apps.products.photoroom_basic import basic_api_enabled, photoroom_basic_segment
+
+    if not getattr(settings, "PHOTO_VARIATIONS_ENABLED", True):
+        return {"skipped": True, "reason": "disabled", "mode": "lite"}
+
+    if not product.image:
+        return {"error": "no_image", "variations_created": 0, "mode": "lite"}
+
+    source = product.image.url if hasattr(product.image, "url") else str(product.image)
+    rgb = _load_product_image(source)
+    if rgb is None:
+        return {"error": "load_failed", "variations_created": 0, "mode": "lite"}
+
+    profile = getattr(product.user, "profile", None)
+    brand_colors = _get_brand_palette(profile)
+    brand_template = build_photoroom_brand_template(profile, product.user_id)
+    if brand_template.enabled and brand_template.studio_color_hex:
+        primary = f"#{brand_template.studio_color_hex}"
+        brand_colors = {**brand_colors, "primary": primary}
+
+    shadow_blur, shadow_opacity, shadow_offset = _lite_shadow_params(
+        brand_template.shadow_mode if brand_template.enabled else None
+    )
+    dominant = _dominant_hex_colors(rgb)
+    cutout_provider = "local_rembg"
+
+    foreground: Image.Image | None = None
+    if basic_api_enabled():
+        try:
+            buf = BytesIO()
+            rgb.save(buf, format="JPEG", quality=95)
+            cutout_bytes = photoroom_basic_segment(source, file_bytes=buf.getvalue())
+            if cutout_bytes:
+                fg = Image.open(BytesIO(cutout_bytes)).convert("RGBA")
+                if fg.getbbox():
+                    foreground = _trim_transparent(fg)
+                    cutout_provider = "photoroom_basic"
+        except Exception as exc:
+            logger.warning("Lite polish Basic cutout failed: %s", exc)
+
+    if foreground is None:
+        foreground = remove_product_background(rgb)
+
+    presets = select_presets(product, analysis)
+    display_name = sanitize_product_name(product.name) or "Product"
+    shop_hint = "Shop link in bio" if product.product_url else ""
+
+    new_urls: list[str] = []
+    for preset_id in presets:
+        try:
+            rendered = _render_preset(
+                preset_id,
+                foreground,
+                rgb,
+                product_name=display_name,
+                display_price=product.display_price or "",
+                shop_hint=shop_hint,
+                dominant_colors=dominant,
+                brand_colors=brand_colors,
+                shadow_blur=shadow_blur,
+                shadow_opacity=shadow_opacity,
+                shadow_offset=shadow_offset,
+                studio_bg_hex=brand_template.studio_color_hex if brand_template.enabled else None,
+            )
+            url = _save_variation_jpeg(product.pk, preset_id, rendered)
+            new_urls.append(url)
+        except Exception as exc:
+            logger.error("Lite polish preset %s failed for %s: %s", preset_id, product.pk, exc)
+
+    if not new_urls:
+        return {"error": "render_failed", "variations_created": 0, "mode": "lite"}
+
+    kept = _strip_generated_variations(product.additional_images, product.pk)
+    product.additional_images = kept + new_urls
+    product.save(update_fields=["additional_images", "updated_at"])
+
+    logger.info(
+        "expand_lite_polish: product=%s presets=%s urls=%d provider=%s",
+        product.pk, presets, len(new_urls), cutout_provider,
+    )
+    return {
+        "variations_created": len(new_urls),
+        "presets": presets,
+        "urls": new_urls,
+        "mode": "lite",
+        "polish_mode": "lite",
+        "provider": cutout_provider,
+        "brand_template": brand_template.as_log_dict() if brand_template else {},
+    }
 
 
 def _expand_quick_polish(product, analysis: dict | None = None) -> dict:

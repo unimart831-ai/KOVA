@@ -87,6 +87,14 @@ class Product(models.Model):
         default=False,
         help_text="When true, original upload is kept on file but omitted from carousels and posts.",
     )
+    gallery_preferences = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text=(
+            "Merchant gallery choices: hero_image_url override, excluded_urls, "
+            "excluded_variant_ids for carousel/shop visibility."
+        ),
+    )
 
     # External integration (e-commerce platforms)
     product_url = models.URLField(
@@ -249,7 +257,9 @@ class Product(models.Model):
             url = self._coerce_image_url(item)
             if url and url not in urls:
                 urls.append(url)
-        return urls
+        from apps.products.gallery_preferences import filter_gallery_urls
+
+        return filter_gallery_urls(urls, self)
 
     @property
     def carousel_image_urls(self):
@@ -280,7 +290,12 @@ class Product(models.Model):
 
     @property
     def shop_hero_image_url(self):
-        """Best buyer-facing hero — prefer polished Plus/studio scenes over raw Snap."""
+        """Best buyer-facing hero — prefer merchant override, then polished Plus scenes."""
+        from apps.products.gallery_preferences import hero_image_url_override
+
+        override = hero_image_url_override(self)
+        if override and override in self.shop_gallery_urls:
+            return override
         urls = self.shop_gallery_urls
         if not urls:
             return self.cover_image_url

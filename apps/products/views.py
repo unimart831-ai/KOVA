@@ -1,12 +1,14 @@
 import csv
 import io
 import logging
+import zipfile
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.files.storage import default_storage
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
@@ -177,6 +179,18 @@ def product_detail(request, product_id):
 
     import json
 
+    from apps.products.gallery_preferences import build_gallery_scenes, polish_actions_for_product
+    from apps.products.photoroom_review import summarize_review_state
+    from apps.products.scene_packs import marketplace_channel_image_urls
+
+    gallery_scenes = build_gallery_scenes(product)
+    polish_actions = list(polish_actions_for_product(product)[:50])
+    review_state = summarize_review_state(polish_actions)
+    show_gallery_picker = bool(
+        product.additional_images
+        and any(not s.get("is_original") for s in gallery_scenes)
+    )
+
     return render(request, "products/product_detail.html", {
         "product": product,
         "stock_history": stock_history,
@@ -194,6 +208,14 @@ def product_detail(request, product_id):
         "shop_url": shop_url,
         "seo_checklist": seo_checklist,
         "pipeline_initial_json": json.dumps(pipeline),
+        "gallery_scenes": gallery_scenes,
+        "review_pending": review_state.get("review_pending") or [],
+        "review_pending_count": review_state.get("review_pending_count", 0),
+        "alteration_review_required": review_state.get("alteration_review_required", False),
+        "show_gallery_picker": show_gallery_picker,
+        "has_google_shopping_exports": bool(
+            marketplace_channel_image_urls(product.additional_images)
+        ),
     })
 
 
@@ -782,6 +804,59 @@ def expand_product_photos_view(request, product_id):
 
 
 @login_required
+def export_google_shopping(request, product_id):
+    """Download ZIP of Google Shopping PNG + JPEG from polished additional_images."""
+    from apps.products.scene_packs import marketplace_channel_image_urls
+
+    product = get_object_or_404(Product, pk=product_id, user=request.user)
+    export_urls = marketplace_channel_image_urls(product.additional_images)
+    if not export_urls:
+        messages.warning(
+            request,
+            "No Google Shopping exports yet — run Studio polish with the Marketplace white pack "
+            "or refresh studio photos on Growth+.",
+        )
+        return redirect("products:detail", product_id=product.pk)
+
+    buffer = io.BytesIO()
+    added = 0
+    with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for idx, url in enumerate(export_urls):
+            storage_path = url
+            if url.startswith("http"):
+                from urllib.parse import urlparse
+
+                storage_path = urlparse(url).path.lstrip("/")
+            if storage_path.startswith("media/"):
+                storage_path = storage_path[6:]
+            try:
+                if not default_storage.exists(storage_path):
+                    continue
+                with default_storage.open(storage_path, "rb") as fh:
+                    data = fh.read()
+            except Exception as exc:
+                logger.warning("Google Shopping export skip %s: %s", storage_path, exc)
+                continue
+            ext = storage_path.rsplit(".", 1)[-1].lower() if "." in storage_path else "png"
+            if "jpeg" in storage_path or ext == "jpg":
+                filename = f"{product.commerce_slug or product.pk}_google_shopping_{idx + 1}.jpg"
+            else:
+                filename = f"{product.commerce_slug or product.pk}_google_shopping_{idx + 1}.png"
+            zf.writestr(filename, data)
+            added += 1
+
+    if added == 0:
+        messages.error(request, "Could not read marketplace export files from storage.")
+        return redirect("products:detail", product_id=product.pk)
+
+    slug = (product.commerce_slug or str(product.pk))[:40]
+    buffer.seek(0)
+    response = HttpResponse(buffer.getvalue(), content_type="application/zip")
+    response["Content-Disposition"] = f'attachment; filename="{slug}_google_shopping.zip"'
+    return response
+
+
+@login_required
 @require_POST
 def toggle_primary_image_view(request, product_id):
     """Hide or restore the original upload in carousels/posts (requires other photos)."""
@@ -818,15 +893,138 @@ def toggle_primary_image_view(request, product_id):
     return redirect("products:detail", product_id=product.pk)
 
 
+@login_required
+@require_POST
+def set_gallery_hero_view(request, product_id):
+    """Merchant picks which photo is the hero for carousel and shop."""
+    from apps.products.gallery_preferences import set_hero_image
+
+    product = get_object_or_404(Product, pk=product_id, user=request.user)
+    url = (request.POST.get("image_url") or "").strip()
+    wants_json = (
+        request.headers.get("Accept", "").startswith("application/json")
+        or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+    )
+    if not url:
+        if wants_json:
+            return JsonResponse({"ok": False, "error": "Choose a photo to set as hero."}, status=400)
+        messages.error(request, "Choose a photo to set as hero.")
+        return redirect("products:detail", product_id=product.pk)
+
+    known_urls = set()
+    if product.image:
+        try:
+            known_urls.add(product.image.url.strip())
+        except Exception:
+            pass
+    for item in product.additional_images or []:
+        if isinstance(item, str) and item.strip():
+            known_urls.add(item.strip())
+    if url not in known_urls:
+        if wants_json:
+            return JsonResponse({"ok": False, "error": "That photo is not on this product."}, status=400)
+        messages.error(request, "That photo is not on this product.")
+        return redirect("products:detail", product_id=product.pk)
+
+    set_hero_image(product, url)
+    if wants_json:
+        return JsonResponse({"ok": True, "hero_image_url": url, "product_id": str(product.pk)})
+    messages.success(request, "Hero photo updated for carousel and shop.")
+    return redirect("products:detail", product_id=product.pk)
+
+
+@login_required
+@require_POST
+def toggle_gallery_scene_view(request, product_id):
+    """Include or exclude a scene from carousel and shop galleries."""
+    from apps.products.gallery_preferences import set_scene_included
+
+    product = get_object_or_404(Product, pk=product_id, user=request.user)
+    url = (request.POST.get("image_url") or "").strip()
+    included = request.POST.get("included") == "1"
+    if not url:
+        messages.error(request, "Missing photo.")
+        return redirect("products:detail", product_id=product.pk)
+
+    set_scene_included(product, url, included=included)
+    if included:
+        messages.success(request, "Photo included in carousel and shop.")
+    else:
+        messages.success(request, "Photo hidden from carousel and shop.")
+    return redirect("products:detail", product_id=product.pk)
+
+
+@login_required
+@require_POST
+def review_variant_view(request, product_id):
+    """Approve or reject an alteration-prone polish scene."""
+    from apps.products.gallery_preferences import set_variant_review_status
+    from apps.products.photoroom_review import review_alterations_enabled
+
+    product = get_object_or_404(Product, pk=product_id, user=request.user)
+    if not review_alterations_enabled():
+        messages.error(request, "Scene review is not enabled.")
+        return redirect("products:detail", product_id=product.pk)
+
+    url = (request.POST.get("image_url") or "").strip()
+    decision = (request.POST.get("decision") or "").strip().lower()
+    if decision not in ("approve", "reject"):
+        messages.error(request, "Invalid review action.")
+        return redirect("products:detail", product_id=product.pk)
+    if not url:
+        messages.error(request, "Missing scene.")
+        return redirect("products:detail", product_id=product.pk)
+
+    status = "approved" if decision == "approve" else "rejected"
+    if not set_variant_review_status(product, url, status):
+        messages.error(request, "Could not update review — scene not found.")
+        return redirect("products:detail", product_id=product.pk)
+
+    if status == "approved":
+        messages.success(request, "Scene approved — it will appear in carousel and shop.")
+    else:
+        messages.warning(request, "Scene rejected — hidden until you regenerate it.")
+    return redirect("products:detail", product_id=product.pk)
+
+
 # ── Snap to Sell ─────────────────────────────────────────────────────
 
 @login_required
 def snap_to_sell(request):
     """Camera/upload page — user snaps a product photo."""
+    import json
+
+    from apps.billing.visual_credits import get_visual_credit_usage
     from apps.products.commerce_autopilot import commerce_autopilot_active
-    from apps.products.photoroom import studio_polish_unavailable_message
+    from apps.products.photoroom import photoroom_enabled, studio_polish_unavailable_message
+    from apps.products.polish_mode import LITE_POLISH_NOTICE, POLISH_MODE_LITE, studio_polish_unavailable
+    from apps.products.scene_packs import SCENE_PACK_OPTIONS
+    from apps.products.snap_pipeline import estimate_polish_credits
 
     plan_ctx = _plan_ctx(request)
+    plan_tier = plan_ctx.get("plan", "starter")
+    credit_estimates = {
+        opt["id"]: estimate_polish_credits(
+            request.user,
+            scene_pack=opt["id"],
+            plan_tier=plan_tier,
+            photo_count=1,
+        )
+        for opt in SCENE_PACK_OPTIONS
+    }
+    usage = get_visual_credit_usage(request.user)
+    studio_unavailable = studio_polish_unavailable(request.user)
+    lite_forced = studio_unavailable
+    lite_notice = LITE_POLISH_NOTICE if lite_forced else ""
+    if studio_unavailable and not photoroom_enabled():
+        studio_notice = studio_polish_unavailable_message()
+    elif studio_unavailable:
+        studio_notice = (
+            "Studio polish is temporarily unavailable — Lite polish will be used automatically."
+        )
+    else:
+        studio_notice = studio_polish_unavailable_message()
+
     return render(
         request,
         "products/snap_to_sell.html",
@@ -834,7 +1032,13 @@ def snap_to_sell(request):
             "plan_ctx": plan_ctx,
             "commerce_autopilot": commerce_autopilot_active(request.user),
             "visual_credits": plan_ctx.get("visual_credits"),
-            "studio_polish_notice": studio_polish_unavailable_message(),
+            "studio_polish_notice": studio_notice,
+            "lite_polish_notice": lite_notice,
+            "lite_forced": lite_forced,
+            "default_polish_mode": POLISH_MODE_LITE if lite_forced else "studio",
+            "platform_blocked": usage.get("platform_blocked"),
+            "scene_pack_options": SCENE_PACK_OPTIONS,
+            "credit_estimates_json": json.dumps(credit_estimates),
         },
     )
 
@@ -902,20 +1106,35 @@ def snap_launch(request):
         raw_visual = Product.VisualMode.PRO_SCENE
     visual_mode = normalize_visual_mode(raw_visual)
 
-    if visual_mode == Product.VisualMode.PRO_SCENE:
-        from apps.billing.visual_credits import check_visual_credit_limit
-        from apps.products.photoroom import studio_polish_unavailable_message
+    from apps.products.polish_mode import (
+        LITE_POLISH_NOTICE,
+        POLISH_MODE_LITE,
+        POLISH_MODE_STUDIO,
+        resolve_polish_mode_for_snap,
+        store_product_polish_mode,
+    )
 
-        allowed, msg = check_visual_credit_limit(request.user)
-        if not allowed:
-            return plan_limit_redirect(
-                request,
-                msg,
-                "products:snap",
-            )
-        notice = studio_polish_unavailable_message()
-        if notice:
-            messages.warning(request, notice)
+    polish_mode = resolve_polish_mode_for_snap(
+        request.user,
+        request.POST.get("polish_mode"),
+    )
+
+    if visual_mode == Product.VisualMode.PRO_SCENE:
+        if polish_mode == POLISH_MODE_STUDIO:
+            from apps.billing.visual_credits import check_visual_credit_limit
+            from apps.products.photoroom import studio_polish_unavailable_message
+
+            allowed, msg = check_visual_credit_limit(request.user)
+            if not allowed:
+                polish_mode = POLISH_MODE_LITE
+                messages.info(request, f"{msg} Using Lite polish instead.")
+            else:
+                notice = studio_polish_unavailable_message()
+                if notice:
+                    polish_mode = POLISH_MODE_LITE
+                    messages.warning(request, f"{notice} Using Lite polish instead.")
+        if polish_mode == POLISH_MODE_LITE:
+            messages.info(request, LITE_POLISH_NOTICE)
 
     # Validate offering_type
     valid_types = {c[0] for c in Product.OfferingType.choices}
@@ -956,6 +1175,10 @@ def snap_launch(request):
         if offering_type in ("service", "digital")
         else Product.StockStatus.IN_STOCK
     )
+    from apps.products.scene_packs import normalize_scene_pack, store_product_scene_pack
+
+    scene_pack = normalize_scene_pack(request.POST.get("scene_pack"))
+
     product = Product.objects.create(
         user=request.user,
         name=name,
@@ -968,6 +1191,10 @@ def snap_launch(request):
         source=Product.Source.SNAP,
         visual_mode=visual_mode,
     )
+    store_product_scene_pack(product, scene_pack)
+    store_product_polish_mode(product, polish_mode)
+    if scene_pack != "auto" or polish_mode != POLISH_MODE_STUDIO:
+        product.save(update_fields=["marketplace_metadata"])
 
     # Save additional images (2nd onward) to storage, store URLs
     additional_urls = []

@@ -154,7 +154,13 @@ def build_photoroom_brand_template(profile, user_id) -> PhotoroomBrandTemplate:
     ai_seed = int(ai_seed)
 
     brand_colors = getattr(profile, "brand_colors", None) or [] if profile else []
-    studio_color = _hex_no_hash(brand_colors[0] if brand_colors else "FFFFFF")
+    studio_bg_pref = (overrides.get("studio_bg_pref") or "brand").strip().lower()
+    if studio_bg_pref == "white":
+        studio_color = "FFFFFF"
+    elif studio_bg_pref == "dark":
+        studio_color = "1A1A2E"
+    else:
+        studio_color = _hex_no_hash(brand_colors[0] if brand_colors else "FFFFFF")
     outline_color = _hex_no_hash(
         overrides.get("outline_color")
         or (brand_colors[1] if len(brand_colors) > 1 else "000000")

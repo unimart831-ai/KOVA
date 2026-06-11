@@ -1,0 +1,127 @@
+{# P0-1 hero picker + P0-5 review approve/reject — shown after Plus scene pack #}
+{% if show_gallery_picker or review_pending %}
+<div class="card p-5 border border-purple-200 dark:border-purple-800 bg-purple-50/30 dark:bg-purple-950/20">
+  <div class="flex items-start justify-between gap-3 mb-3">
+    <div>
+      <h3 class="text-sm font-semibold text-purple-900 dark:text-purple-100">Studio photo gallery</h3>
+      <p class="text-xs text-purple-700 dark:text-purple-300 mt-0.5">
+        Pick your hero shot and choose which scenes appear in carousels and your shop page.
+      </p>
+    </div>
+    {% if alteration_review_required %}
+    <span class="text-[10px] font-semibold uppercase tracking-wide px-2 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 shrink-0">
+      {{ review_pending_count }} review{{ review_pending_count|pluralize }}
+    </span>
+    {% endif %}
+  </div>
+
+  {% if alteration_review_required %}
+  <div class="mb-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/30 px-3 py-2.5">
+    <p class="text-xs font-medium text-amber-900 dark:text-amber-100">
+      {{ review_pending_count }} AI scene{{ review_pending_count|pluralize }} may alter how your product looks — approve before publishing.
+    </p>
+  </div>
+  {% endif %}
+
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    {% for scene in gallery_scenes %}
+    <div class="relative rounded-xl border overflow-hidden group
+                {% if scene.is_hero %}border-purple-500 dark:border-purple-400 ring-2 ring-purple-400/40{% elif not scene.included %}border-dashed border-gray-300 dark:border-gray-600 opacity-50{% else %}border-gray-200 dark:border-gray-700{% endif %}
+                {% if scene.is_original and scene.primary_hidden %}opacity-40{% endif %}">
+      <img src="{{ scene.url }}" alt="{{ scene.label }}" class="w-full aspect-square object-cover">
+
+      <div class="absolute inset-x-0 top-0 flex flex-wrap gap-1 p-1.5">
+        {% if scene.is_hero %}
+        <span class="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-purple-600 text-white">Hero</span>
+        {% endif %}
+        {% if scene.is_original %}
+        <span class="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-black/60 text-white">Original</span>
+        {% elif scene.slide_role %}
+        <span class="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-purple-600/80 text-white">{{ scene.slide_role }}</span>
+        {% elif scene.variant_id %}
+        <span class="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-purple-600/80 text-white">{{ scene.variant_id }}</span>
+        {% endif %}
+        {% if scene.needs_review and scene.review_status != 'approved' %}
+        <span class="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded
+                     {% if scene.review_status == 'rejected' %}bg-red-600 text-white{% else %}bg-amber-500 text-white{% endif %}">
+          {% if scene.review_status == 'rejected' %}Rejected{% else %}Review{% endif %}
+        </span>
+        {% endif %}
+      </div>
+
+      {% if scene.is_original and product.additional_images %}
+      <form method="post" action="{% url 'products:toggle_primary_image' product_id=product.pk %}" class="absolute top-1.5 right-1.5">
+        {% csrf_token %}
+        {% if scene.primary_hidden %}
+        <button type="submit" name="action" value="include"
+                title="Use original in posts again"
+                class="w-6 h-6 flex items-center justify-center rounded-full bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-md ring-2 ring-white dark:ring-gray-900"
+                aria-label="Restore original photo">+</button>
+        {% else %}
+        <button type="submit" name="action" value="exclude"
+                title="Hide original — use Plus scenes only"
+                class="w-6 h-6 flex items-center justify-center rounded-full bg-red-500 hover:bg-red-600 text-white text-sm font-bold leading-none shadow-md ring-2 ring-white dark:ring-gray-900"
+                aria-label="Hide original photo">&times;</button>
+        {% endif %}
+      </form>
+      {% endif %}
+
+      <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/40 to-transparent p-2 pt-6 space-y-1.5">
+        <p class="text-[10px] font-medium text-white truncate">{{ scene.label }}</p>
+
+        <div class="flex flex-wrap gap-1">
+          {% if not scene.is_hero %}
+          <form method="post" action="{% url 'products:set_gallery_hero' product_id=product.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="image_url" value="{{ scene.url }}">
+            <button type="submit" class="text-[10px] px-2 py-0.5 rounded bg-white/90 text-purple-800 font-semibold hover:bg-white">
+              Set as hero
+            </button>
+          </form>
+          {% endif %}
+
+          {% if scene.needs_review and scene.review_status != 'approved' and scene.review_status != 'rejected' %}
+          <form method="post" action="{% url 'products:review_variant' product_id=product.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="image_url" value="{{ scene.url }}">
+            <input type="hidden" name="decision" value="approve">
+            <button type="submit" class="text-[10px] px-2 py-0.5 rounded bg-emerald-500 text-white font-semibold hover:bg-emerald-600">
+              Approve
+            </button>
+          </form>
+          <form method="post" action="{% url 'products:review_variant' product_id=product.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="image_url" value="{{ scene.url }}">
+            <input type="hidden" name="decision" value="reject">
+            <button type="submit" class="text-[10px] px-2 py-0.5 rounded bg-red-500/90 text-white font-semibold hover:bg-red-600">
+              Reject
+            </button>
+          </form>
+          {% endif %}
+        </div>
+
+        {% if not scene.is_original or not scene.primary_hidden %}
+        <form method="post" action="{% url 'products:toggle_gallery_scene' product_id=product.pk %}" class="flex items-center gap-1.5">
+          {% csrf_token %}
+          <input type="hidden" name="image_url" value="{{ scene.url }}">
+          <input type="hidden" name="included" value="{% if scene.included %}0{% else %}1{% endif %}">
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" class="rounded border-white/50 text-purple-600 focus:ring-purple-500"
+                   {% if scene.included %}checked{% endif %}
+                   onchange="this.form.querySelector('[name=included]').value = this.checked ? '1' : '0'; this.form.submit();">
+            <span class="text-[10px] text-white/90">Carousel &amp; shop</span>
+          </label>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if product.exclude_primary_image %}
+  <p class="text-[10px] text-amber-700 dark:text-amber-300 mt-3">Original hidden from carousel &amp; posts — tap <span class="font-bold">+</span> on it to restore.</p>
+  {% elif product.additional_images %}
+  <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-3">Tap <span class="font-bold">&times;</span> on the original if Plus scenes look better.</p>
+  {% endif %}
+</div>
+{% endif %}

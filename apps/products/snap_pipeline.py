@@ -14,6 +14,130 @@ EXPAND_STALE = timedelta(minutes=6)
 REEL_COMPOSE_STALE = timedelta(minutes=6)
 
 
+def _friendly_writing_error(raw: str) -> str:
+    """Map internal LLM errors to actionable Snap UI copy."""
+    if not raw:
+        return "Post generation failed"
+    lower = raw.lower()
+    if "openrouter" in lower and ("401" in raw or "api key" in lower or "sk-or-v1" in lower):
+        return raw.split("Failed to parse AI response:", 1)[-1].strip() or raw
+    if "openrouter api key rejected" in lower or "authentication failed" in lower:
+        return raw
+    if "failed to parse ai response" in lower and "empty response" in lower:
+        return (
+            "AI returned no content after retries. "
+            "Check OPENROUTER_API_KEY in Railway or try again in a few minutes."
+        )
+    return raw
+
+
+def estimate_polish_credits(
+    user,
+    *,
+    scene_pack: str = "auto",
+    plan_tier: str | None = None,
+    photo_count: int = 1,
+    commerce_source: str = "snap",
+    analysis_preview: dict | None = None,
+) -> dict:
+    """
+    Pre-launch credit estimate: repairs + scenes + exports (+ optional multi-angle).
+
+    Uses typical Snap preflight repair plan and plan-tier variant/export budgets.
+    """
+    from django.conf import settings as django_settings
+
+    from apps.billing.models import get_effective_plan_tier
+    from apps.billing.visual_credits import get_visual_credit_usage
+    from apps.products.photoroom_plus import get_max_variants_for_plan
+    from apps.products.photoroom_preflight import PhotoQualityReport, build_repair_plan
+    from apps.products.scene_packs import (
+        multi_angle_polish_enabled,
+        normalize_scene_pack,
+        scene_pack_export_budget,
+    )
+
+    profile = getattr(user, "profile", None)
+    plan = (plan_tier or get_effective_plan_tier(profile) if profile else "starter").lower()
+    pack = normalize_scene_pack(scene_pack)
+    usage = get_visual_credit_usage(user)
+
+    preview = analysis_preview or {}
+    report = PhotoQualityReport(
+        lighting=preview.get("lighting", "good"),
+        sharpness=preview.get("sharpness", "sharp"),
+        has_distracting_text=bool(preview.get("has_distracting_text")),
+        crop=preview.get("crop", "comfortable"),
+    )
+    repairs = build_repair_plan(
+        report,
+        plan_tier=plan,
+        commerce_source=commerce_source,
+    )
+    preflight_max = int(getattr(django_settings, "PHOTOROOM_PREFLIGHT_MAX_REPAIRS", 2))
+    repair_count = min(len(repairs), preflight_max)
+
+    plan_max = get_max_variants_for_plan(plan)
+    if usage.get("unlimited"):
+        credit_pool = plan_max
+        remaining = None
+    else:
+        remaining = max(0, int(usage.get("remaining", 0)))
+        credit_pool = min(plan_max, remaining)
+
+    story_slots, marketplace_slots = scene_pack_export_budget(pack, plan)
+    export_slots = story_slots + marketplace_slots
+    min_scenes = int(getattr(django_settings, "PHOTOROOM_MIN_SCENE_VARIANTS", 3))
+
+    credit_after_repairs = max(0, credit_pool - repair_count)
+    if credit_after_repairs > min_scenes and export_slots > 0:
+        export_budget = min(export_slots, credit_after_repairs - min_scenes)
+        channel_budget = min(story_slots, export_budget)
+        marketplace_budget = min(
+            marketplace_slots,
+            max(0, export_budget - channel_budget),
+        )
+        scene_budget = max(1, credit_after_repairs - channel_budget - marketplace_budget)
+        export_total = channel_budget + marketplace_budget
+    else:
+        export_total = 0
+        scene_budget = max(1, credit_after_repairs)
+
+    multi_angle = 1 if multi_angle_polish_enabled(plan) and photo_count > 1 else 0
+    total = repair_count + scene_budget + export_total + multi_angle
+    over_budget = (
+        not usage.get("unlimited")
+        and remaining is not None
+        and total > remaining
+    )
+
+    parts = [
+        f"{repair_count} repair" if repair_count == 1 else f"{repair_count} repairs",
+        f"{scene_budget} scene" if scene_budget == 1 else f"{scene_budget} scenes",
+    ]
+    if export_total:
+        parts.append(
+            f"{export_total} export" if export_total == 1 else f"{export_total} exports"
+        )
+    if multi_angle:
+        parts.append("1 extra angle")
+    breakdown_label = f"~{total} credits: " + " + ".join(parts)
+
+    return {
+        "total": total,
+        "repairs": repair_count,
+        "scenes": scene_budget,
+        "exports": export_total,
+        "multi_angle": multi_angle,
+        "remaining": remaining,
+        "unlimited": bool(usage.get("unlimited")),
+        "over_budget": over_budget,
+        "breakdown_label": breakdown_label,
+        "scene_pack": pack,
+        "plan_tier": plan,
+    }
+
+
 def _polish_credit_snapshot(user, product_id: str) -> dict:
     """Monthly polish credits + per-product scene debits for Snap UX."""
     from apps.agents.models import AgentAction
@@ -265,6 +389,15 @@ def build_snap_pipeline_status(product, user):
     )
     enhanced_count = studio_count + variation_count
 
+    from apps.products.photoroom_review import summarize_review_state
+
+    polish_completed_actions = list(
+        polish_actions.filter(status=AgentAction.ActionStatus.COMPLETED)
+        .exclude(input_data__session=True)
+        .order_by("-created_at")[:50]
+    )
+    review_state = summarize_review_state(polish_completed_actions)
+
     studio_polish_notice = ""
     from apps.products.photo_variations import is_studio_polish_mode
 
@@ -373,7 +506,7 @@ def build_snap_pipeline_status(product, user):
         writing_detail = "Waiting for analysis to finish…"
     elif seed.status == "failed":
         writing_status = "failed"
-        writing_detail = seed.error_message or "Post generation failed"
+        writing_detail = _friendly_writing_error(seed.error_message or "Post generation failed")
         error_message = writing_detail
     elif seed.status in ("new", "processing"):
         if seed.updated_at < now - SEED_TIMEOUT:
@@ -405,6 +538,12 @@ def build_snap_pipeline_status(product, user):
     elif analyze_status != "completed":
         carousel_status = "pending"
         carousel_detail = copy["carousel_waiting"]
+    elif review_state.get("alteration_review_required"):
+        carousel_status = "pending"
+        pending_n = review_state.get("review_pending_count", 0)
+        carousel_detail = (
+            f"Approve {pending_n} AI scene{'s' if pending_n != 1 else ''} on the product page before carousel publish"
+        )
     elif carousel_action and carousel_action.status == AgentAction.ActionStatus.FAILED:
         carousel_status = "failed"
         carousel_detail = "Carousel generation failed"
@@ -578,8 +717,8 @@ def build_snap_pipeline_status(product, user):
 
     polish_credits = _polish_credit_snapshot(user, product_id)
     review_notice = ""
-    if studio_polish_action and (studio_polish_action.output_data or {}).get("alteration_review_required"):
-        pending = (studio_polish_action.output_data or {}).get("review_pending_count", 0)
+    if review_state.get("alteration_review_required"):
+        pending = review_state.get("review_pending_count", 0)
         review_notice = (
             f"{pending} AI scene{'s' if pending != 1 else ''} need your review before publishing."
         )
@@ -611,11 +750,33 @@ def build_snap_pipeline_status(product, user):
         if expand_status == "completed" and polish_credits.get("scenes")
         else "",
         "scene_breakdown": polish_credits.get("scenes") or [],
-        "alteration_review_required": bool(
-            (studio_polish_action.output_data or {}).get("alteration_review_required")
-            if studio_polish_action
-            else False
-        ),
+        "alteration_review_required": bool(review_state.get("alteration_review_required")),
         "terminal": terminal,
         "progress_percent": progress_percent,
+    }
+
+
+def build_batch_item_gallery_payload(product, user) -> dict:
+    """Per-item gallery scenes for batch hero picker after polish completes (P1-4)."""
+    from apps.products.gallery_preferences import build_gallery_scenes, hero_image_url_override
+
+    status = build_snap_pipeline_status(product, user)
+    expand_step = next((s for s in status["steps"] if s["id"] == "variations"), None)
+    expand_done = expand_step is not None and expand_step["status"] == "completed"
+
+    if not expand_done:
+        return {
+            "hero_picker_ready": False,
+            "gallery_scenes": [],
+            "hero_image_url": "",
+            "scene_breakdown": [],
+        }
+
+    scenes = build_gallery_scenes(product)
+    polish_scenes = [s for s in scenes if not s["is_original"]]
+    return {
+        "hero_picker_ready": len(polish_scenes) >= 1,
+        "gallery_scenes": scenes,
+        "hero_image_url": hero_image_url_override(product),
+        "scene_breakdown": status.get("scene_breakdown") or [],
     }

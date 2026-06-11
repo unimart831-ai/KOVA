@@ -1261,16 +1261,22 @@ def expand_product_photo_set(
     except Product.DoesNotExist:
         return {"error": "not_found"}
 
-    session = begin_studio_polish_session(
-        product.user,
-        product_id=str(product.pk),
-        source=commerce_source or "manual",
-    )
+    from apps.products.polish_mode import POLISH_MODE_LITE, resolve_polish_mode
+
+    polish_mode = resolve_polish_mode(product.user, product=product)
+    session = None
+    if polish_mode != POLISH_MODE_LITE:
+        session = begin_studio_polish_session(
+            product.user,
+            product_id=str(product.pk),
+            source=commerce_source or "manual",
+        )
     result = expand_product_photos(
         product,
         analysis=analysis,
         commerce_source=commerce_source,
         polish_session=session,
+        polish_mode=polish_mode,
     )
 
     if result.get("variations_created", 0) > 0 and result.get("mode") not in ("pro_scene", "studio_polish"):
@@ -1689,8 +1695,10 @@ def snap_batch_process(session_id: str):
         build_batch_identification_prompt,
         build_batch_seed_idea,
         build_batch_vision_system_prompt,
+        build_stall_brand_lock,
         is_batch_placeholder_name,
         parse_stall_brief,
+        photoroom_template_from_stall_lock,
         resolve_batch_item_price,
     )
     from apps.products.commerce_seo import ensure_commerce_seo_copy
@@ -1741,6 +1749,20 @@ def snap_batch_process(session_id: str):
         session.save(update_fields=["stall_context"])
 
     stall_context = session.stall_context or {}
+    if "brand_lock" not in stall_context:
+        profile = getattr(user, "profile", None)
+        stall_context["brand_lock"] = build_stall_brand_lock(
+            stall_context,
+            profile=profile,
+            user_id=user.pk,
+            session_id=str(session.pk),
+        )
+        session.stall_context = stall_context
+        session.save(update_fields=["stall_context"])
+
+    brand_lock = stall_context.get("brand_lock") or {}
+    stall_brand_template = photoroom_template_from_stall_lock(brand_lock)
+    batch_scene_pack = brand_lock.get("scene_pack")
     offering_type = session.offering_type
     sibling_names: list[str] = []
     results = []
@@ -1899,9 +1921,19 @@ def snap_batch_process(session_id: str):
         ensure_commerce_seo_copy(product, user.profile, analysis)
 
         from apps.products.photo_variations import expand_product_photos
+        from apps.products.scene_packs import store_product_scene_pack
+
+        if batch_scene_pack:
+            store_product_scene_pack(product, batch_scene_pack)
+
+        analysis = {**(analysis or {}), "_stall_context": stall_context}
 
         variation_result = expand_product_photos(
-            product, analysis=analysis, commerce_source="batch_snap",
+            product,
+            analysis=analysis,
+            commerce_source="batch_snap",
+            brand_template=stall_brand_template,
+            scene_pack=batch_scene_pack,
         )
         product.refresh_from_db()
         if variation_result.get("variations_created", 0) > 0:
@@ -2032,6 +2064,7 @@ def finalize_batch_snap_session(session_id: str):
     from apps.products.batch_snap_intelligence import (
         build_market_day_composition_prompt,
         build_stall_launch_campaign,
+        photoroom_template_from_stall_lock,
     )
     from apps.products.photoroom_brand_template import build_photoroom_brand_template
     from apps.products.commerce_autopilot import initial_commerce_post_status
@@ -2062,6 +2095,10 @@ def finalize_batch_snap_session(session_id: str):
     session.shop_url = shop_url
 
     stall_context = session.stall_context or {}
+    brand_lock = stall_context.get("brand_lock") or {}
+    stall_brand_template = photoroom_template_from_stall_lock(brand_lock)
+    if stall_brand_template is None:
+        stall_brand_template = build_photoroom_brand_template(profile, user.pk)
     campaign = build_stall_launch_campaign(
         stall_context=stall_context,
         products=products,
@@ -2093,15 +2130,20 @@ def finalize_batch_snap_session(session_id: str):
         user=user, is_active=True, platform__in=REEL_PLATFORMS,
     )
 
+    from apps.products.gallery_preferences import hero_image_url_override
+
     image_sources = []
     for product in products[:10]:
-        # Prefer Photoroom-polished images over raw stall photos
+        # Prefer merchant hero or Photoroom-polished images over raw stall photos
         polished = [
             u for u in (product.additional_images or [])
             if u and "promo_frame" not in u and "channel_" not in u
         ]
+        hero_override = hero_image_url_override(product)
         best_url = None
-        if polished:
+        if hero_override:
+            best_url = _normalize_reel_image_source(hero_override)
+        elif polished:
             best_url = _normalize_reel_image_source(polished[0])
         if not best_url and product.image:
             best_url = _normalize_reel_image_source(product.image.url)
@@ -2117,7 +2159,7 @@ def finalize_batch_snap_session(session_id: str):
             prompt=campaign.get("composition_prompt", "")
             or build_market_day_composition_prompt(stall_context),
             user=user,
-            brand_template=build_photoroom_brand_template(profile, user.pk),
+            brand_template=stall_brand_template,
         )
         if composition_hero_url:
             image_sources = [composition_hero_url] + [

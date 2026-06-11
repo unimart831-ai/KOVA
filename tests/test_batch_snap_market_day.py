@@ -7,11 +7,14 @@ from django.urls import reverse
 from apps.products.batch_snap_intelligence import (
     build_batch_identification_prompt,
     build_market_day_composition_prompt,
+    build_stall_brand_lock,
     is_batch_placeholder_name,
     is_market_day_mode,
     parse_stall_brief,
+    photoroom_template_from_stall_lock,
     resolve_batch_item_price,
     _heuristic_stall_parse,
+    _heuristic_brand_from_text,
 )
 
 
@@ -168,3 +171,117 @@ class TestBatchSnapLaunchView:
         assert product.name == "Listing 1"
         assert product.batch_snap_session is not None
         assert len(calls) == 1
+
+
+class TestStallBrandLock:
+    def test_heuristic_brand_extracts_coral(self):
+        base = {"campaign_tone": "energetic_market_day"}
+        out = _heuristic_brand_from_text("Coral table at Kawaida market", base)
+        assert out["brand_colors"]["primary"] == "FF6B5B"
+        assert "surface_vibe" in out
+
+    def test_build_stall_brand_lock_stable_seed(self, user):
+        profile = user.profile
+        stall_context = {
+            "stall_title": "Amara's Table",
+            "stall_tagline": "Fresh today",
+            "campaign_tone": "premium_boutique",
+            "brand_colors": {"primary": "FF5733", "secondary": "1A1A1A"},
+            "surface_vibe": "warm boutique marble",
+            "scene_pack": "brand_studio",
+        }
+        lock_a = build_stall_brand_lock(
+            stall_context, profile=profile, user_id=user.pk, session_id="sess-abc",
+        )
+        lock_b = build_stall_brand_lock(
+            stall_context, profile=profile, user_id=user.pk, session_id="sess-abc",
+        )
+        assert lock_a["ai_background_seed"] == lock_b["ai_background_seed"]
+        assert lock_a["studio_color_hex"] == "FF5733"
+        assert lock_a["scene_pack"] == "brand_studio"
+        assert lock_a["enabled"] is True
+
+    def test_photoroom_template_from_stall_lock(self):
+        lock = {
+            "enabled": True,
+            "shadow_mode": "ai.soft",
+            "padding": "0.08",
+            "ai_background_seed": 117879368,
+            "outline_color_hex": "000000",
+            "studio_color_hex": "FFF8F0",
+            "style_suffix": "Market day stall",
+            "source": "stall_brief",
+        }
+        template = photoroom_template_from_stall_lock(lock)
+        assert template is not None
+        assert template.enabled is True
+        assert template.ai_background_seed == 117879368
+
+
+@pytest.mark.django_db
+class TestBatchPipelineGalleryPayload:
+    def test_batch_status_exposes_gallery_scenes(self, user):
+        from apps.products.batch_snap_pipeline import build_batch_snap_pipeline_status
+        from apps.products.models import BatchSnapSession, Product
+        from django.utils import timezone
+        from apps.agents.models import AgentAction
+
+        session = BatchSnapSession.objects.create(
+            user=user,
+            stall_title="Test Stall",
+            stall_context={
+                "brand_lock": {
+                    "enabled": True,
+                    "surface_vibe": "clean studio",
+                    "scene_pack": "brand_studio",
+                },
+            },
+        )
+        pid = "77777777-7777-7777-7777-777777777777"
+        url = f"/media/studio_polish/{pid}/studio_white_abc.jpg"
+        product = Product.objects.create(
+            id=pid,
+            user=user,
+            name="Batch Item",
+            batch_snap_session=session,
+            batch_index=0,
+            additional_images=[url],
+        )
+        product.image = "product_images/orig.jpg"
+        product.save()
+
+        AgentAction.objects.create(
+            user=user,
+            agent_type="create",
+            action_type="snap.vision_batch",
+            description="vision",
+            status=AgentAction.ActionStatus.COMPLETED,
+            input_data={"product_id": str(product.pk), "session_id": str(session.pk)},
+            output_data={},
+            completed_at=timezone.now(),
+        )
+        AgentAction.objects.create(
+            user=user,
+            agent_type="create",
+            action_type="commerce.studio_polish",
+            description="polish",
+            status=AgentAction.ActionStatus.COMPLETED,
+            input_data={"product_id": str(product.pk)},
+            output_data={
+                "variant": "studio_white",
+                "label": "Studio White",
+                "url": url,
+                "phase": "scene",
+                "slide_role": "hero",
+            },
+            completed_at=timezone.now(),
+        )
+
+        data = build_batch_snap_pipeline_status(
+            [str(product.pk)], user, session_id=str(session.pk),
+        )
+        assert data["brand_lock"]["surface_vibe"] == "clean studio"
+        item = data["items"][0]
+        assert item["hero_picker_ready"] is True
+        assert len(item["gallery_scenes"]) >= 1
+        assert any(s["url"] == url for s in item["gallery_scenes"])

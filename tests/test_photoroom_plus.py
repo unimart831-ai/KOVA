@@ -410,6 +410,125 @@ def test_channel_exports_omit_cutout_stack():
         assert params.get("scaling") == "fit"
 
 
+# ── P1-1 vertical packs v2 ───────────────────────────────────────────────────
+
+
+def test_jewelry_vertical_pack_prefers_dark_studio():
+    p = _Product(name="Gold Hoop Earrings", tags=["jewelry", "gold"])
+    specs = select_plus_variants(p, {}, plan_tier="growth", max_count=6)
+    ids = [s.id for s in specs]
+    assert ids[0] == "studio_dark"
+    assert "ai_creative_marble" in ids
+
+
+def test_electronics_vertical_pack_includes_color_safe_relight():
+    p = _Product(name="USB-C Charger", tags=["electronics", "tech"])
+    specs = select_plus_variants(p, {}, plan_tier="growth", max_count=5)
+    ids = [s.id for s in specs]
+    assert "relight" in ids
+    assert "ai_creative_podium" in ids or "ai_scene_table" in ids
+
+
+def test_mitumba_apparel_flat_lay_starter_no_ghost():
+    p = _Product(name="Mitumba Denim Jacket", tags=["mitumba", "fashion"])
+    specs = select_plus_variants(p, {}, plan_tier="starter", max_count=6)
+    ids = [s.id for s in specs]
+    assert "flat_lay" in ids
+    assert "ghost_mannequin" not in ids
+
+
+def test_mitumba_apparel_pro_includes_ghost_with_review():
+    from apps.products.photoroom_review import needs_alteration_review
+
+    p = _Product(name="Preloved Summer Dress", tags=["thrift", "dress"])
+    specs = select_plus_variants(p, {}, plan_tier="pro", max_count=6)
+    ids = [s.id for s in specs]
+    assert "flat_lay" in ids
+    assert "ghost_mannequin" in ids
+    flagged, reason = needs_alteration_review("ghost_mannequin")
+    assert flagged is True
+
+
+def test_vision_product_category_hint_resolves_vertical():
+    from apps.products.scene_packs import resolve_scene_vertical
+
+    p = _Product(name="Item", tags=[])
+    vertical = resolve_scene_vertical(
+        p,
+        {"product_category": "electronics"},
+    )
+    assert vertical == "electronics"
+
+
+def test_jewelry_locked_seed_applied_in_params():
+    from apps.products.photoroom_plus import resolve_variant_params
+
+    p = _Product(name="Silver Ring", tags=["jewelry"])
+    spec = PLUS_VARIANT_CATALOG["ai_creative_marble"]
+    params = resolve_variant_params(spec, p, {}, {})
+    assert params["background.seed"] == "33120477"
+
+
+# ── P1-6 AI scene intelligence ───────────────────────────────────────────────
+
+
+def test_low_quality_photo_reduces_ai_scene_count():
+    from apps.products.photoroom_plus import _target_ai_scene_count
+
+    high = _target_ai_scene_count(6, analysis={}, category="beauty")
+    low = _target_ai_scene_count(
+        6,
+        analysis={"photo_quality": {"sharpness": "blurry", "lighting": "dark"}},
+        category="beauty",
+    )
+    assert low < high
+
+
+def test_multi_angles_boosts_edit_ai_angle_in_proof():
+    from apps.products.photoroom_plus import order_variants_by_slide_role
+
+    candidates = [
+        PLUS_VARIANT_CATALOG["studio_white"],
+        PLUS_VARIANT_CATALOG["ai_lifestyle"],
+        PLUS_VARIANT_CATALOG["edit_ai_angle"],
+        PLUS_VARIANT_CATALOG["relight"],
+    ]
+    ordered = order_variants_by_slide_role(
+        candidates,
+        offering="product",
+        category="electronics",
+        max_count=4,
+        analysis={"multi_image_angles": ["front", "side", "detail"]},
+    )
+    ids = [s.id for s in ordered]
+    assert "edit_ai_angle" in ids
+
+
+def test_stall_wholesale_brief_reduces_ai_scenes():
+    from apps.products.photoroom_plus import _target_ai_scene_count
+
+    normal = _target_ai_scene_count(6, category="apparel")
+    wholesale = _target_ai_scene_count(
+        6,
+        category="apparel",
+        stall_context={"campaign_tone": "wholesale"},
+    )
+    assert wholesale <= normal
+
+
+def test_food_analysis_prefers_food_surfaces():
+    p = _Product(name="Samosas", tags=["food"])
+    specs = select_plus_variants(
+        p,
+        {"photo_quality": {"lighting": "good", "sharpness": "sharp"}},
+        plan_tier="growth",
+        max_count=5,
+        commerce_source="snap",
+    )
+    ids = [s.id for s in specs]
+    assert any(vid.startswith("food_surface_") for vid in ids)
+
+
 def test_strip_conflicting_edit_params():
     from apps.products.photoroom_plus import _strip_conflicting_edit_params
 

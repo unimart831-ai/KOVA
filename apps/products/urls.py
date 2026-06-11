@@ -28,7 +28,15 @@ urlpatterns = [
     path("<uuid:product_id>/reidentify/", views.reidentify_product, name="reidentify"),
     path("<uuid:product_id>/fix-promote/", views.fix_and_promote, name="fix_promote"),
     path("<uuid:product_id>/expand-photos/", views.expand_product_photos_view, name="expand_photos"),
+    path(
+        "<uuid:product_id>/export-google-shopping/",
+        views.export_google_shopping,
+        name="export_google_shopping",
+    ),
     path("<uuid:product_id>/toggle-primary-image/", views.toggle_primary_image_view, name="toggle_primary_image"),
+    path("<uuid:product_id>/gallery-hero/", views.set_gallery_hero_view, name="set_gallery_hero"),
+    path("<uuid:product_id>/gallery-scene/", views.toggle_gallery_scene_view, name="toggle_gallery_scene"),
+    path("<uuid:product_id>/review-variant/", views.review_variant_view, name="review_variant"),
     # Snap to Sell
     path("snap/", views.snap_to_sell, name="snap"),
     path("snap/launch/", views.snap_launch, name="snap_launch"),

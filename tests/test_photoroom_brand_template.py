@@ -80,3 +80,14 @@ def test_outline_uses_brand_accent():
     resolved = {"outline.color": "000000", "padding": "0.12", "shadow.mode": "ai.soft"}
     out = apply_brand_template(resolved, template, spec)
     assert out["outline.color"] == "FF5733"
+
+
+def test_studio_bg_pref_white_and_dark():
+    profile = _Profile(
+        brand_colors=["#3366CC", "#1A1A2E"],
+        photoroom_brand_template={"studio_bg_pref": "white"},
+    )
+    assert build_photoroom_brand_template(profile, "u1").studio_color_hex == "FFFFFF"
+
+    profile.photoroom_brand_template = {"studio_bg_pref": "dark"}
+    assert build_photoroom_brand_template(profile, "u1").studio_color_hex == "1A1A2E"

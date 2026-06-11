@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from apps.products.snap_pipeline import build_snap_pipeline_status
+from apps.products.snap_pipeline import build_batch_item_gallery_payload, build_snap_pipeline_status
 
 
 def build_batch_snap_pipeline_status(product_ids, user, session_id=None):
@@ -67,6 +67,7 @@ def build_batch_snap_pipeline_status(product_ids, user, session_id=None):
             "post_count": snap["post_count"],
             "steps": snap["steps"],
             "seed_id": snap.get("seed_id", ""),
+            **build_batch_item_gallery_payload(product, user),
         })
 
     total = len(items)
@@ -166,6 +167,12 @@ def build_batch_snap_pipeline_status(product_ids, user, session_id=None):
         progress_base = 100
     progress_percent = min(98 if overall == "processing" else 100, round(progress_base))
 
+    brand_lock = {}
+    if session and isinstance(session.stall_context, dict):
+        brand_lock = session.stall_context.get("brand_lock") or {}
+
+    hero_picker_ready = any(item.get("hero_picker_ready") for item in items)
+
     return {
         "status": overall,
         "terminal": terminal,
@@ -182,4 +189,6 @@ def build_batch_snap_pipeline_status(product_ids, user, session_id=None):
         "shop_url": session.shop_url if session else "",
         "stall_title": session.stall_title if session else "",
         "whatsapp_message": session.whatsapp_message if session else "",
+        "brand_lock": brand_lock,
+        "hero_picker_ready": hero_picker_ready,
     }

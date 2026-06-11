@@ -92,6 +92,9 @@ def parse_stall_brief(
         "whatsapp_hook": "",
         "collection_angle": "fresh_stall_drop",
         "item_specific_hints": [],
+        "brand_colors": {"primary": "", "secondary": ""},
+        "surface_vibe": "",
+        "scene_pack": "brand_studio",
     }
 
     combined = " ".join(
@@ -138,9 +141,15 @@ def parse_stall_brief(
             '  "collection_angle": "fresh_stall_drop|market_day_deals|new_arrivals|limited_table",\n'
             '  "item_specific_hints": [\n'
             '    {"hint": "optional per-item note if seller mentioned specific rows", "price": null}\n'
-            "  ]\n"
+            "  ],\n"
+            '  "brand_colors": {"primary": "#hex or empty", "secondary": "#hex or empty"},\n'
+            '  "surface_vibe": "e.g. warm coral market table, cool boutique marble, rustic wood stall",\n'
+            '  "scene_pack": "brand_studio|food_delivery|marketplace_white|fashion_flat|auto"\n'
             "}\n\n"
             "Rules:\n"
+            "- Extract brand_colors from brief if seller mentions colors, stall branding, or surface mood.\n"
+            "- surface_vibe captures the shared table/backdrop feel for all items in this stall session.\n"
+            "- Prefer scene_pack brand_studio for market-day stalls unless food/fashion hints suggest otherwise.\n"
             "- Understand Kenyan/East African market speech: bei, shilingi, bob, nunua, leo, soko.\n"
             "- If seller says one price for everything, set bulk_price AND default_price.\n"
             "- Never invent a market name unless clearly stated.\n"
@@ -217,7 +226,168 @@ def _heuristic_stall_parse(
 
     out["pricing_rules"]["default_currency"] = default_currency
     out["market_context"] = text[:300]
+    out.update(_heuristic_brand_from_text(text, out))
     return out
+
+
+def _heuristic_brand_from_text(text: str, stall_context: dict) -> dict:
+    """Rule-based brand colors / surface vibe when LLM is unavailable."""
+    lower = text.lower()
+    out: dict[str, Any] = {}
+
+    color_map = {
+        "coral": "FF6B5B",
+        "orange": "FF8C42",
+        "navy": "1A2B4A",
+        "marble": "F5F0EB",
+        "wood": "C4A882",
+        "rustic": "D4C4A8",
+        "gold": "D4AF37",
+        "green": "2D6A4F",
+        "mint": "98D8C8",
+        "pink": "FFB6C1",
+        "purple": "7B2CBF",
+        "black": "1A1A1A",
+        "white": "FAFAFA",
+    }
+    primary = ""
+    for word, hex_val in color_map.items():
+        if word in lower:
+            primary = hex_val
+            break
+    if primary:
+        out["brand_colors"] = {"primary": primary, "secondary": "000000"}
+
+    if "boutique" in lower or "premium" in lower:
+        out["surface_vibe"] = "clean boutique marble with soft premium lighting"
+        out["scene_pack"] = "brand_studio"
+        out["campaign_tone"] = stall_context.get("campaign_tone") or "premium_boutique"
+    elif "food" in lower or "produce" in lower or "fresh" in lower:
+        out["surface_vibe"] = "warm food-styling surface with natural daylight"
+        out["scene_pack"] = "food_delivery"
+    elif "fashion" in lower or "dress" in lower or "clothing" in lower:
+        out["surface_vibe"] = "fashion flat-lay table with even studio lighting"
+        out["scene_pack"] = "fashion_flat"
+    elif "clearance" in lower:
+        out["surface_vibe"] = "bright clearance table with energetic market-day feel"
+        out["scene_pack"] = "marketplace_white"
+
+    return out
+
+
+def build_stall_brand_lock(
+    stall_context: dict,
+    *,
+    profile,
+    user_id,
+    session_id: str | None = None,
+) -> dict[str, Any]:
+    """
+    Stall-wide brand template + scene pack — shared across every item in the batch session.
+
+    Parsed from stall brief (colors, surface vibe) and stored on session.stall_context["brand_lock"].
+    """
+    from apps.products.photoroom_brand_template import build_photoroom_brand_template
+    from apps.products.photoroom_plus import AI_BG_SEEDS
+    from apps.products.scene_packs import (
+        SCENE_PACK_AUTO,
+        SCENE_PACK_BRAND_STUDIO,
+        SCENE_PACK_FOOD_DELIVERY,
+        SCENE_PACK_FASHION_FLAT,
+        SCENE_PACK_MARKETPLACE_WHITE,
+        normalize_scene_pack,
+    )
+
+    base_template = build_photoroom_brand_template(profile, user_id)
+    brand_colors = stall_context.get("brand_colors") or {}
+    if not isinstance(brand_colors, dict):
+        brand_colors = {}
+    primary = (brand_colors.get("primary") or "").strip().lstrip("#").upper()[:6]
+    secondary = (brand_colors.get("secondary") or "000000").strip().lstrip("#").upper()[:6]
+
+    if session_id:
+        idx = abs(hash(str(session_id))) % len(AI_BG_SEEDS)
+        ai_seed = AI_BG_SEEDS[idx]
+    else:
+        from apps.products.photoroom_brand_template import stable_ai_seed
+
+        ai_seed = stable_ai_seed(user_id)
+
+    tone = stall_context.get("campaign_tone", "energetic_market_day")
+    tone_studio = {
+        "energetic_market_day": "FFF8F0",
+        "premium_boutique": "F5F0EB",
+        "clearance_urgency": "FFFBF0",
+        "wholesale": "F4F4F4",
+    }
+    studio_color = primary or tone_studio.get(tone, "FFFFFF")
+
+    surface_vibe = (stall_context.get("surface_vibe") or "").strip()
+    if not surface_vibe:
+        surface_vibe = {
+            "premium_boutique": "curated boutique marble with soft premium lighting",
+            "clearance_urgency": "bright clearance table with energetic market-day feel",
+            "wholesale": "clean wholesale display with even studio lighting",
+        }.get(tone, "clean branded studio surface with soft natural lighting")
+
+    stall_title = stall_context.get("stall_title") or "today's stall"
+    tagline = (stall_context.get("stall_tagline") or "").strip()
+    market = (stall_context.get("market_context") or "").strip()
+    style_bits = [f"Cohesive market-day look for {stall_title}"]
+    if surface_vibe:
+        style_bits.append(f"Surface: {surface_vibe[:120]}")
+    if tagline:
+        style_bits.append(tagline[:120])
+    if market:
+        style_bits.append(market[:120])
+    style_suffix = ". ".join(style_bits) + ". Consistent branded lighting across all stall items."
+
+    scene_pack = normalize_scene_pack(stall_context.get("scene_pack") or SCENE_PACK_BRAND_STUDIO)
+    category = (stall_context.get("category_hint") or "").lower()
+    if scene_pack == SCENE_PACK_AUTO:
+        if "food" in category or "produce" in category:
+            scene_pack = SCENE_PACK_FOOD_DELIVERY
+        elif "fashion" in category or "apparel" in category:
+            scene_pack = SCENE_PACK_FASHION_FLAT
+        elif tone == "clearance_urgency":
+            scene_pack = SCENE_PACK_MARKETPLACE_WHITE
+        else:
+            scene_pack = SCENE_PACK_BRAND_STUDIO
+
+    shadow_mode = base_template.shadow_mode if base_template.enabled else "ai.soft"
+    padding = base_template.padding if base_template.enabled else "0.08"
+
+    return {
+        "enabled": True,
+        "shadow_mode": shadow_mode,
+        "padding": padding,
+        "ai_background_seed": ai_seed,
+        "outline_color_hex": secondary or "000000",
+        "studio_color_hex": studio_color,
+        "style_suffix": style_suffix,
+        "scene_pack": scene_pack,
+        "surface_vibe": surface_vibe,
+        "source": "stall_brief",
+    }
+
+
+def photoroom_template_from_stall_lock(brand_lock: dict | None):
+    """Convert session brand_lock JSON into a PhotoroomBrandTemplate."""
+    from apps.products.photoroom_brand_template import PhotoroomBrandTemplate, stable_ai_seed
+
+    if not brand_lock or not brand_lock.get("enabled"):
+        return None
+
+    return PhotoroomBrandTemplate(
+        enabled=True,
+        shadow_mode=str(brand_lock.get("shadow_mode", "ai.soft")),
+        padding=str(brand_lock.get("padding", "0.08")),
+        ai_background_seed=int(brand_lock.get("ai_background_seed", stable_ai_seed("batch"))),
+        outline_color_hex=str(brand_lock.get("outline_color_hex", "000000")),
+        studio_color_hex=str(brand_lock.get("studio_color_hex", "FFFFFF")),
+        style_suffix=str(brand_lock.get("style_suffix", "")),
+        source=str(brand_lock.get("source", "stall_brief")),
+    )
 
 
 def build_batch_vision_system_prompt(*, offering_type: str, stall_context: dict) -> str:

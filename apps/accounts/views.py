@@ -53,28 +53,51 @@ def _onboarding_setup_context(*, step=None, path_choice=False, complete=False):
 @login_required
 def settings_view(request):
     """User settings page with two forms: account info + brand profile."""
+    from apps.accounts.forms import PhotoroomBrandKitForm
+    from apps.products.photoroom_brand_template import build_photoroom_brand_template
+
     profile = request.user.profile
     if request.method == "POST":
         user_form = UserSettingsForm(request.POST, request.FILES, instance=request.user)
         brand_form = BrandProfileForm(request.POST, instance=profile)
+        brand_kit_form = PhotoroomBrandKitForm(request.POST, profile=profile)
         autopilot_form = AutopilotSettingsForm(
             request.POST, instance=profile, user=request.user,
         )
-        if user_form.is_valid() and brand_form.is_valid() and autopilot_form.is_valid():
+        if (
+            user_form.is_valid()
+            and brand_form.is_valid()
+            and brand_kit_form.is_valid()
+            and autopilot_form.is_valid()
+        ):
             user_form.save()
             brand_form.save()
+            brand_kit_form.save(profile)
             autopilot_form.save()
             messages.success(request, "Settings saved.")
             return redirect("accounts:settings")
     else:
         user_form = UserSettingsForm(instance=request.user)
         brand_form = BrandProfileForm(instance=profile)
+        brand_kit_form = PhotoroomBrandKitForm(profile=profile)
         autopilot_form = AutopilotSettingsForm(instance=profile, user=request.user)
+
+    brand_template = build_photoroom_brand_template(profile, request.user.pk)
+    preview_bg = f"#{brand_template.studio_color_hex}"
+    shadow_labels = dict(PhotoroomBrandKitForm.SHADOW_CHOICES)
 
     return render(request, "accounts/settings.html", {
         "user_form": user_form,
         "brand_form": brand_form,
+        "brand_kit_form": brand_kit_form,
         "autopilot_form": autopilot_form,
+        "brand_kit_preview": {
+            "bg_color": preview_bg,
+            "shadow_mode": brand_template.shadow_mode,
+            "shadow_label": shadow_labels.get(brand_template.shadow_mode, "Soft shadow"),
+            "padding": brand_template.padding,
+            "enabled": brand_template.enabled,
+        },
         "plan_limits": get_user_plan_limits(request.user),
         "page_title": "Settings",
     })

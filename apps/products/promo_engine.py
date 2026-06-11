@@ -101,7 +101,6 @@ def generate_promo_image(
     params = {
         "removeBackground": "true",
         "background.prompt": template["bg_prompt"],
-        "background.expandPrompt": "ai.auto",
         "outputSize": size,
         "padding": "0.15",
         "shadow.mode": "ai.soft",
