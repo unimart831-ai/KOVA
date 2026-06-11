@@ -254,6 +254,86 @@ def featured_products(products, *, limit: int = 6) -> list:
     return featured[:limit]
 
 
+def hero_promo_products(products, *, limit: int = 6) -> list:
+    """Side promo cards for marketplace hero — featured first, then catalog fill."""
+    promos = featured_products(products, limit=limit)
+    if len(promos) >= limit:
+        return promos
+
+    seen = {p.pk for p in promos}
+    for product in products:
+        if product.pk in seen:
+            continue
+        promos.append(product)
+        seen.add(product.pk)
+        if len(promos) >= limit:
+            break
+    return promos[:limit]
+
+
+def hero_carousel_slides(
+    shop_reels,
+    products,
+    *,
+    featured: list | None = None,
+    brand_name: str = "",
+    limit: int = 8,
+) -> list[dict[str, Any]]:
+    """Build center hero carousel slides from reels, featured images, or brand fallback."""
+    slides: list[dict[str, Any]] = []
+    featured = featured if featured is not None else featured_products(products)
+
+    for reel in shop_reels or []:
+        slides.append({"kind": "reel", "reel": reel})
+
+    seen_slugs: set[str] = set()
+    for reel in shop_reels or []:
+        seen_slugs.add(reel.get("commerce_slug") or "")
+
+    for product in featured:
+        slug = getattr(product, "commerce_slug", "") or ""
+        if slug and slug in seen_slugs:
+            continue
+        image = getattr(product, "shop_hero_image_url", None) or ""
+        if not image and getattr(product, "all_image_urls", None):
+            image = product.all_image_urls[0]
+        if not image:
+            continue
+        slides.append({
+            "kind": "product",
+            "product": product,
+            "image_url": image,
+            "commerce_slug": slug,
+            "title": product.name,
+            "price": getattr(product, "display_price", "") or "",
+        })
+        if slug:
+            seen_slugs.add(slug)
+
+    if not slides:
+        for product in products or []:
+            image = getattr(product, "shop_hero_image_url", None) or ""
+            if not image and getattr(product, "all_image_urls", None):
+                image = product.all_image_urls[0]
+            if not image:
+                continue
+            slides.append({
+                "kind": "product",
+                "product": product,
+                "image_url": image,
+                "commerce_slug": getattr(product, "commerce_slug", "") or "",
+                "title": product.name,
+                "price": getattr(product, "display_price", "") or "",
+            })
+            if len(slides) >= 3:
+                break
+
+    if not slides and brand_name:
+        slides.append({"kind": "brand", "title": brand_name})
+
+    return slides[:limit]
+
+
 def products_by_category(products) -> list[dict[str, Any]]:
     """Group products by category for shop index sections."""
     groups: OrderedDict[str, dict[str, Any]] = OrderedDict()

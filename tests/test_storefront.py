@@ -7,6 +7,8 @@ from apps.products.models import Product, ProductCategory
 from apps.products.storefront import (
     about_blurb,
     featured_products,
+    hero_carousel_slides,
+    hero_promo_products,
     products_by_category,
     resolve_archetype,
     resolve_hero_mode,
@@ -116,6 +118,28 @@ class TestStorefrontHelpers:
         all_products = list(Product.objects.filter(user=user))
         result = featured_products(all_products)
         assert result[0].pk == featured.pk
+
+    def test_hero_carousel_slides_prefers_reels(self, user):
+        product = Product.objects.create(
+            user=user, name="Reel Item", commerce_slug="reel-item", price=500,
+        )
+        reels = [{
+            "commerce_slug": "reel-item",
+            "video_url": "https://cdn.example.com/reel.mp4",
+            "product_name": "Reel Item",
+            "product_price": "KSh 500",
+        }]
+        slides = hero_carousel_slides(reels, [product], brand_name="Shop")
+        assert slides[0]["kind"] == "reel"
+        assert len(slides) == 1
+
+    def test_hero_promo_products_backfills_catalog(self, user):
+        products = [
+            Product.objects.create(user=user, name=f"Item {i}", commerce_slug=f"item-{i}")
+            for i in range(4)
+        ]
+        promos = hero_promo_products(products, limit=4)
+        assert len(promos) == 4
 
     def test_products_by_category(self, user):
         cat = ProductCategory.objects.create(user=user, name="Skincare")

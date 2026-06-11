@@ -29,6 +29,8 @@ from apps.products.commerce_social import get_public_social_links, resolve_shop_
 from apps.products.storefront import (
     about_blurb,
     featured_products,
+    hero_carousel_slides,
+    hero_promo_products,
     products_by_category,
     resolve_storefront,
     shop_faq_items,
@@ -133,7 +135,16 @@ def public_shop_index(request, page_slug):
     for p in products:
         p.shop_teaser = get_product_shop_teaser(p)
 
-    body_extra = "shop-site--has-mobile-nav" if commerce_ctx.get("social_links") else ""
+    featured = featured_products(products)
+    promos = hero_promo_products(products)
+    carousel_slides = hero_carousel_slides(
+        shop_reels, products, featured=featured, brand_name=brand,
+    )
+
+    body_extra = " ".join(filter(None, [
+        "shop-site--has-mobile-nav" if commerce_ctx.get("social_links") else "",
+        "shop-site--has-wa-fab" if commerce_ctx.get("wa_url") else "",
+    ]))
 
     return render(request, "products/public/shop_index.html", {
         "profile": profile,
@@ -146,7 +157,10 @@ def public_shop_index(request, page_slug):
         "storefront_body_class": storefront_body_classes(storefront, extra=body_extra),
         "hero_mode": storefront["hero_mode"],
         "powered_by_kova": storefront["powered_by_kova"],
-        "featured_products": featured_products(products),
+        "featured_products": featured,
+        "hero_promo_left": promos[:2],
+        "hero_promo_right": promos[2:4],
+        "hero_carousel_slides": carousel_slides,
         "products_by_category": products_by_category(products),
         "about_blurb": about_blurb(profile),
         "faq_items": shop_faq_items(profile),

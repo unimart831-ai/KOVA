@@ -234,25 +234,11 @@
     <div class="shop-section-head">
       <h2 class="shop-section-title">More from {{ brand_name }}</h2>
     </div>
-    <div class="shop-grid">
+    <div class="shop-grid shop-product-grid">
       {% for related in related_products %}
-      <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=related.commerce_slug %}" class="shop-card">
-        <div class="shop-card-photo">
-          {% with hero=related.shop_hero_image_url %}
-          {% if hero %}
-          <img src="{{ hero }}" alt="{{ related.name }}" loading="lazy">
-          {% else %}
-          <div class="shop-placeholder" aria-hidden="true">{{ related.name|slice:":1"|upper }}</div>
-          {% endif %}
-          {% endwith %}
-        </div>
-        <div class="shop-card-body">
-          <div class="shop-card-name">{{ related.name }}</div>
-          {% if related.display_price %}
-          <div class="shop-card-price">{{ related.display_price }}</div>
-          {% endif %}
-        </div>
-      </a>
+      {% with product=related %}
+      {% include "products/public/_shop_product_card.html" %}
+      {% endwith %}
       {% endfor %}
     </div>
   </section>

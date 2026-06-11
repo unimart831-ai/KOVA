@@ -167,7 +167,8 @@ class TestPublicShopPages:
         assert b"Test Item" in response.content
         assert b'application/ld+json' in response.content
         assert b'"@type": "Store"' in response.content
-        assert b"Shop our collection" in response.content or b"shop-section-title" in response.content
+        assert b"Shop our collection" in response.content or b"shop-product-card" in response.content
+        assert b"shop-header-search" in response.content
         assert b"Powered by" in response.content
 
     def test_public_shop_index_swahili_lang(self, client, user):

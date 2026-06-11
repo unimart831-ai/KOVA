@@ -3,6 +3,7 @@
 <nav class="shop-mobile-nav" aria-label="Contact and social">
   <div class="shop-mobile-nav-inner">
     {% for link in social_links %}
+    {% if hide_whatsapp_in_nav and link.icon == 'whatsapp' %}{% else %}
     <a href="{{ link.url }}"
        class="shop-mobile-nav-item shop-mobile-nav-item--{{ link.icon }}{% if link.primary %} shop-mobile-nav-item--primary{% endif %}"
        target="_blank"
@@ -21,6 +22,7 @@
       {% endif %}
       <span>{{ link.label }}</span>
     </a>
+    {% endif %}
     {% endfor %}
   </div>
 </nav>

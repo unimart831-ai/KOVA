@@ -116,10 +116,12 @@ class TestCommerceReels:
         content = response.content.decode()
         assert response.status_code == 200
         assert "Shop reels" in content
-        assert "Shop all" in content
+        assert "shop-hero-carousel" in content
         assert "reel-video" in content
         assert "muted autoplay loop playsinline" in content
+        assert "Explore Now" in content
         assert "https://cdn.example.com/reel.mp4" in content
+        assert "reels-section" not in content
 
     def test_product_page_renders_featured_reel(self, client, user):
         user.profile.page_slug = "reel-shop"

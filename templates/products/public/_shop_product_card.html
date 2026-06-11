@@ -1,0 +1,33 @@
+{# Marketplace product card — square thumb, location pill, truncated title, accent price #}
+<a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=product.commerce_slug %}"
+   class="shop-product-card shop-card"
+   data-product-name="{{ product.name|lower }}"
+   role="listitem">
+  <div class="shop-product-card-media">
+    {% with hero=product.shop_hero_image_url %}
+    {% if hero %}
+    <img src="{{ hero }}" alt="{{ product.name }}" loading="lazy">
+    {% else %}
+    <div class="shop-placeholder" aria-hidden="true">{{ product.name|slice:":1"|upper }}</div>
+    {% endif %}
+    {% endwith %}
+    {% if profile.city or profile.country %}
+    <span class="shop-product-location">
+      {% if profile.country %}{{ profile.country }}{% endif %}{% if profile.country and profile.city %} | {% endif %}{% if profile.city %}{{ profile.city }}{% endif %}
+    </span>
+    {% endif %}
+    {% if product.is_featured %}
+    <span class="shop-product-badge shop-product-badge--featured">Featured</span>
+    {% elif product.stock_status == 'out_of_stock' %}
+    <span class="shop-product-badge shop-product-badge--stock">Out of stock</span>
+    {% else %}
+    <span class="shop-product-badge shop-product-badge--new">New</span>
+    {% endif %}
+  </div>
+  <div class="shop-product-card-body">
+    <h3 class="shop-product-card-title">{{ product.name }}</h3>
+    {% if product.display_price %}
+    <p class="shop-product-card-price">{{ product.display_price }}</p>
+    {% endif %}
+  </div>
+</a>
