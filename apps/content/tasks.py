@@ -779,7 +779,7 @@ def generate_post_images(post_id: str):
 
 
 def _build_reel_hook_texts(post, meta: dict, slide_count: int) -> list[str]:
-    """Product name on first frame; brand on hero; price + CTA on last frame."""
+    """Stagger hooks on slides 1–3: name → price/CTA → brand; hero slides stay clean."""
     from apps.content.reel_director import build_hook_texts
 
     product_name = ""

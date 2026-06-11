@@ -3,8 +3,11 @@
 from apps.content.video_compose import (
     REEL_TRANSITIONS,
     _build_xfade_filter,
+    _ken_burns_ease,
     _ken_burns_filter,
     _slide_durations_for,
+    caption_safe_zones,
+    hook_position_for_slide,
 )
 
 
@@ -13,6 +16,22 @@ def test_ken_burns_varies_by_index():
     b = _ken_burns_filter(90, variant=2)
     assert a != b
     assert "zoompan" in a
+    assert "pow" in a
+
+
+def test_ken_burns_ease_smoothstep():
+    assert "pow" in _ken_burns_ease("on/90")
+
+
+def test_caption_safe_zones():
+    zones = caption_safe_zones()
+    assert zones["caption_top"] > zones["hero_top"]
+    assert zones["caption_bottom"] <= 1920
+
+
+def test_hook_position_lower_third_only():
+    assert hook_position_for_slide(0, "Hook") == "lower_third"
+    assert hook_position_for_slide(1, "") == ""
 
 
 def test_xfade_uses_multiple_transition_types():

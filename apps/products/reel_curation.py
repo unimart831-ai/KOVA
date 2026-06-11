@@ -7,7 +7,16 @@ Ensures reels use distinct scenes with varied pacing, not every export.
 from __future__ import annotations
 
 REEL_EXCLUDE_MARKERS = ("preflight_", "channel_banner")
+REEL_RAW_SNAP_MARKERS = ("product_images/",)
 REEL_MAX_SLIDES = 5
+
+
+def _is_raw_snap_url(url: str) -> bool:
+    """Unpolished camera upload — skip when Plus/studio variants exist."""
+    u = url.lower()
+    if any(m in u for m in REEL_RAW_SNAP_MARKERS) and "studio_polish" not in u:
+        return True
+    return False
 
 
 def _variant_tier(url: str) -> tuple[int, int, str]:
@@ -53,7 +62,10 @@ def curate_reel_image_urls(urls: list[str], *, max_slides: int = REEL_MAX_SLIDES
     if not clean:
         return []
 
-    ordered = sorted(clean, key=_variant_tier)
+    polished = [u for u in clean if not _is_raw_snap_url(u)]
+    pool = polished if polished else clean
+
+    ordered = sorted(pool, key=_variant_tier)
 
     ai_markers = (
         "ai_scene_",

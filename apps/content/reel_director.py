@@ -247,6 +247,25 @@ def _order_urls_for_recipe(urls: list[str], recipe_id: str, *, max_slides: int) 
     return ordered[:max_slides]
 
 
+def _short_hook(text: str, *, max_len: int = 42) -> str:
+    """Punchy on-screen hook — one line, no filler."""
+    cleaned = " ".join((text or "").split())
+    if len(cleaned) <= max_len:
+        return cleaned
+    truncated = cleaned[: max_len - 1].rsplit(" ", 1)[0]
+    return truncated or cleaned[:max_len]
+
+
+def _short_cta(cta_label: str) -> str:
+    label = (cta_label or "Order on WhatsApp").strip()
+    replacements = {
+        "Order on WhatsApp": "Shop on WhatsApp",
+        "Buy on WhatsApp": "Shop on WhatsApp",
+        "Message us on WhatsApp": "Chat on WhatsApp",
+    }
+    return replacements.get(label, label)[:36]
+
+
 def build_hook_texts(
     *,
     slide_count: int,
@@ -257,39 +276,50 @@ def build_hook_texts(
     brand_name: str = "",
     cta_label: str = "Order on WhatsApp",
 ) -> list[str]:
-    """Product name on hook; brand on hero; price + CTA on last frame."""
+    """
+    Stagger one hook per early slide — never stack copy over the hero product.
+
+    Slide 1: product name
+    Slide 2: price + CTA (max 2 lines in lower third)
+    Slide 3: brand tag
+    Middle / hero slides stay text-free for product focus.
+    """
     texts = [""] * slide_count
     if slide_count == 0:
         return texts
 
-    hook = (hook_override or product_name or "").strip()
-    price = price_label.strip()[:40] if price_label else ""
-    brand = (brand_name or "").strip()[:40]
-    cta = (cta_label or "").strip()[:40]
+    hook = _short_hook(hook_override or product_name)
+    price = (price_label or "").strip()[:32]
+    brand = _short_hook(brand_name, max_len=28)
+    cta = _short_cta(cta_label)
 
     if slide_count == 1:
         if price and cta:
             texts[0] = f"{price}\n{cta}"
+        elif hook:
+            texts[0] = hook
         elif price:
             texts[0] = price
         elif cta:
             texts[0] = cta
-        elif hook:
-            texts[0] = hook[:60]
         return texts
 
+    # Slide 1 — product hook
     if hook:
-        texts[0] = hook[:60]
+        texts[0] = hook
 
-    if brand and slide_count >= 3:
-        texts[1] = brand
+    # Slide 2 — price + CTA (two lines max)
+    if slide_count >= 2:
+        if price and cta:
+            texts[1] = f"{price}\n{cta}"
+        elif price:
+            texts[1] = price
+        elif cta:
+            texts[1] = cta
 
-    if price and cta:
-        texts[-1] = f"{price}\n{cta}"
-    elif price:
-        texts[-1] = price
-    elif cta and slide_count >= 2:
-        texts[-1] = cta
+    # Slide 3 — brand tag (single line)
+    if slide_count >= 3 and brand:
+        texts[2] = brand
 
     return texts
 

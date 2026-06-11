@@ -25,17 +25,19 @@ def test_category_bias_electronics_toward_flash():
     assert "flash_drop" in recipes
 
 
-def test_hook_texts_price_only_on_last_frame():
+def test_hook_texts_staggered_on_early_slides():
     texts = build_hook_texts(
         slide_count=5,
         slide_roles=["hook", "hero", "desire", "desire", "cta"],
         product_name="Amaya Speaker",
         price_label="KES 1,200",
+        brand_name="Amaya",
     )
     assert texts[0] == "Amaya Speaker"
-    assert texts[1] == ""
-    assert texts[-1] == "KES 1,200\nOrder on WhatsApp"
-    assert "Shop" not in texts[-1]
+    assert texts[1].startswith("KES 1,200")
+    assert "Shop on WhatsApp" in texts[1]
+    assert texts[2] == "Amaya"
+    assert texts[-1] == ""
 
 
 def test_lifestyle_story_orders_edit_ai_slides():
@@ -59,8 +61,8 @@ def test_lifestyle_story_orders_edit_ai_slides():
     assert len(plan.image_urls) == 5
     assert "channel_story" in plan.image_urls[0]
     assert any("edit_ai_staging" in u for u in plan.image_urls)
-    assert plan.hook_texts[-1].startswith("KES 800")
-    assert "Order on WhatsApp" in plan.hook_texts[-1]
+    assert plan.hook_texts[1].startswith("KES 800")
+    assert "Shop on WhatsApp" in plan.hook_texts[1]
     assert plan.template == "story_arc"
 
 

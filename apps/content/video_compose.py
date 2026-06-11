@@ -29,6 +29,14 @@ DEFAULT_TRANSITION_SEC = 0.55
 MIN_SLIDE_SEC = 2.0
 MAX_SLIDE_SEC = 6.0
 
+# 9:16 platform safe areas (Instagram / TikTok UI chrome).
+SAFE_TOP_MARGIN = 0.10
+SAFE_BOTTOM_MARGIN = 0.15
+HERO_ZONE_HEIGHT = 0.60
+LOWER_THIRD_HEIGHT = 0.22
+CAPTION_MAX_LINES = 2
+CAPTION_FONT_SCALE = 0.072
+
 # Rotating FFmpeg xfade transitions — each slide change gets a distinct motion style.
 REEL_TRANSITIONS = (
     "slideup",
@@ -50,6 +58,33 @@ REEL_TRANSITIONS = (
 
 class VideoComposeError(Exception):
     """Raised when reel composition fails."""
+
+
+def caption_safe_zones(
+    width: int = OUTPUT_WIDTH,
+    height: int = OUTPUT_HEIGHT,
+) -> dict[str, int]:
+    """Hero product zone (top 60%) and lower-third caption bar with platform margins."""
+    hero_top = int(height * SAFE_TOP_MARGIN)
+    hero_bottom = int(height * (SAFE_TOP_MARGIN + HERO_ZONE_HEIGHT))
+    caption_bottom = int(height * (1.0 - SAFE_BOTTOM_MARGIN))
+    caption_top = max(
+        hero_bottom + int(height * 0.02),
+        caption_bottom - int(height * LOWER_THIRD_HEIGHT),
+    )
+    return {
+        "width": width,
+        "height": height,
+        "hero_top": hero_top,
+        "hero_bottom": hero_bottom,
+        "caption_top": caption_top,
+        "caption_bottom": caption_bottom,
+    }
+
+
+def hook_position_for_slide(slide_index: int, text: str) -> str:
+    """All on-screen hooks render in the lower-third bar — never over the hero product."""
+    return "lower_third" if text and text.strip() else ""
 
 
 def ffmpeg_available() -> bool:
@@ -90,25 +125,28 @@ def fit_image_to_story_frame(image_bytes: bytes, *, slide_index: int = 0) -> Ima
     bg = bg.filter(ImageFilter.GaussianBlur(radius=10))
 
     fg = img.copy()
-    max_fg_w = int(target_w * 0.94)
-    max_fg_h = int(target_h * 0.82)
+    zones = caption_safe_zones(target_w, target_h)
+    hero_h = zones["hero_bottom"] - zones["hero_top"]
+    max_fg_w = int(target_w * 0.92)
+    max_fg_h = int(hero_h * 0.92)
     fg.thumbnail((max_fg_w, max_fg_h), Image.LANCZOS)
 
-    # Anchor foreground at varied positions (center-weighted).
+    # Keep product in the hero band (upper ~60%) — captions live in lower third only.
     anchors = (
-        (0.50, 0.50),
-        (0.48, 0.44),
-        (0.52, 0.56),
-        (0.46, 0.52),
-        (0.54, 0.48),
+        (0.50, 0.38),
+        (0.48, 0.35),
+        (0.52, 0.40),
+        (0.46, 0.37),
+        (0.54, 0.39),
+        (0.50, 0.34),
         (0.50, 0.42),
-        (0.50, 0.58),
     )
     ax, ay = anchors[slide_index % len(anchors)]
     x = int((target_w - fg.width) * ax)
-    y = int((target_h - fg.height) * ay)
+    y_range = max(zones["hero_bottom"] - zones["hero_top"] - fg.height, 1)
+    y = zones["hero_top"] + int(y_range * ay)
     x = max(0, min(x, target_w - fg.width))
-    y = max(0, min(y, target_h - fg.height))
+    y = max(zones["hero_top"], min(y, zones["hero_bottom"] - fg.height))
 
     canvas = bg.copy()
     canvas.paste(fg, (x, y))
@@ -120,29 +158,127 @@ def _write_story_frame(image_bytes: bytes, dest: Path, *, slide_index: int = 0) 
     frame.save(dest, format="JPEG", quality=92, optimize=True)
 
 
+def _wrap_caption_lines(text: str, *, max_lines: int, chars_per_line: int) -> str:
+    import textwrap
+
+    lines = [ln.strip() for ln in text.replace("\r", "").split("\n") if ln.strip()]
+    if not lines:
+        return ""
+    if len(lines) > max_lines:
+        lines = lines[:max_lines]
+    wrapped_lines: list[str] = []
+    for line in lines:
+        wrapped_lines.extend(textwrap.wrap(line, width=chars_per_line) or [line[:chars_per_line]])
+    return "\n".join(wrapped_lines[:max_lines])
+
+
+def _draw_lower_third_gradient(img: Image.Image, zones: dict[str, int]) -> None:
+    """Semi-transparent gradient bar — captions never sit directly on product pixels."""
+    w, h = img.size
+    bar_top = zones["caption_top"]
+    bar_bottom = min(zones["caption_bottom"], h)
+    bar_h = max(bar_bottom - bar_top, 1)
+    gradient = Image.new("RGBA", (w, bar_h))
+    pixels = gradient.load()
+    for row in range(bar_h):
+        t = row / max(bar_h - 1, 1)
+        alpha = int(40 + 175 * (t ** 0.85))
+        for col in range(w):
+            pixels[col, row] = (8, 8, 12, alpha)
+    img.paste(gradient, (0, bar_top), gradient)
+
+
+def _draw_stroked_multiline_text(
+    draw,
+    xy: tuple[int, int],
+    text: str,
+    *,
+    font,
+    fill: tuple[int, int, int],
+    spacing: int,
+    stroke_width: int = 2,
+) -> None:
+    stroke_fill = (0, 0, 0)
+    for dx in range(-stroke_width, stroke_width + 1):
+        for dy in range(-stroke_width, stroke_width + 1):
+            if dx == 0 and dy == 0:
+                continue
+            draw.multiline_text(
+                (xy[0] + dx, xy[1] + dy),
+                text,
+                font=font,
+                fill=stroke_fill,
+                spacing=spacing,
+                align="center",
+            )
+    draw.multiline_text(
+        xy, text, font=font, fill=fill, spacing=spacing, align="center",
+    )
+
+
+def render_progress_bar(
+    frame: Image.Image,
+    *,
+    slide_index: int,
+    slide_count: int,
+    zones: dict[str, int] | None = None,
+) -> Image.Image:
+    """Minimal progress indicator above the platform bottom safe margin."""
+    if slide_count <= 1:
+        return frame
+
+    img = frame.copy().convert("RGBA")
+    w, h = img.size
+    zones = zones or caption_safe_zones(w, h)
+    bar_y = min(zones["caption_bottom"] + int(h * 0.012), h - int(h * 0.04))
+    bar_h = max(int(h * 0.006), 4)
+    track_w = int(w * 0.56)
+    track_x = (w - track_w) // 2
+    from PIL import ImageDraw
+
+    draw = ImageDraw.Draw(img)
+    draw.rounded_rectangle(
+        [track_x, bar_y, track_x + track_w, bar_y + bar_h],
+        radius=bar_h // 2,
+        fill=(255, 255, 255, 55),
+    )
+    progress = (slide_index + 1) / slide_count
+    fill_w = max(int(track_w * progress), bar_h)
+    draw.rounded_rectangle(
+        [track_x, bar_y, track_x + fill_w, bar_y + bar_h],
+        radius=bar_h // 2,
+        fill=(255, 255, 255, 210),
+    )
+    return img.convert("RGB")
+
+
 def render_hook_text_on_frame(
     frame: Image.Image,
     text: str,
     *,
-    position: str = "top",
+    position: str = "lower_third",
     font_scale: float = 1.0,
+    slide_index: int = 0,
+    slide_count: int = 1,
+    show_progress: bool = True,
 ) -> Image.Image:
     """
-    Burn a text hook onto a reel frame (product name, price, CTA).
+    Burn a single hook into the lower-third caption bar (never over the hero product).
 
-    position: 'top' (first frame hook), 'center' (reveal), 'bottom' (CTA)
+    position: 'lower_third' (default) — legacy 'top'/'center'/'bottom' map here too.
     """
     from PIL import ImageDraw, ImageFont
-    import textwrap
 
     if not text or not text.strip():
         return frame
 
     img = frame.copy().convert("RGBA")
     w, h = img.size
+    zones = caption_safe_zones(w, h)
+    _draw_lower_third_gradient(img, zones)
     draw = ImageDraw.Draw(img)
 
-    base_size = int(min(w, h) * 0.055 * font_scale)
+    base_size = int(w * CAPTION_FONT_SCALE * font_scale)
     try:
         from apps.agents.graphics import _get_font
         font = _get_font(base_size, bold=True)
@@ -151,41 +287,45 @@ def render_hook_text_on_frame(
 
     padding_x = int(w * 0.08)
     max_text_w = w - padding_x * 2
-    chars_per_line = max(int(max_text_w / (base_size * 0.55)), 8)
-    wrapped = textwrap.fill(text, width=chars_per_line)
+    chars_per_line = max(int(max_text_w / (base_size * 0.52)), 10)
+    wrapped = _wrap_caption_lines(
+        text, max_lines=CAPTION_MAX_LINES, chars_per_line=chars_per_line,
+    )
+    if not wrapped:
+        return frame.convert("RGB")
 
-    bbox = draw.multiline_textbbox((0, 0), wrapped, font=font, spacing=int(base_size * 0.2))
+    line_spacing = int(base_size * 0.22)
+    bbox = draw.multiline_textbbox(
+        (0, 0), wrapped, font=font, spacing=line_spacing,
+    )
     text_w = bbox[2] - bbox[0]
     text_h = bbox[3] - bbox[1]
 
-    # Position
-    if position == "top":
-        x = (w - text_w) // 2
-        y = int(h * 0.08)
-        # Semi-transparent pill behind text
-        pill_pad = int(base_size * 0.4)
-        pill = Image.new("RGBA", (text_w + pill_pad * 2, text_h + pill_pad * 2), (0, 0, 0, 140))
-        img.paste(pill, (x - pill_pad, y - pill_pad), pill)
-    elif position == "center":
-        x = (w - text_w) // 2
-        y = (h - text_h) // 2
-        pill_pad = int(base_size * 0.5)
-        pill = Image.new("RGBA", (text_w + pill_pad * 2, text_h + pill_pad * 2), (0, 0, 0, 100))
-        img.paste(pill, (x - pill_pad, y - pill_pad), pill)
-    else:  # bottom
-        x = (w - text_w) // 2
-        y = h - text_h - int(h * 0.10)
-        pill_pad = int(base_size * 0.4)
-        pill = Image.new("RGBA", (text_w + pill_pad * 2, text_h + pill_pad * 2), (0, 0, 0, 140))
-        img.paste(pill, (x - pill_pad, y - pill_pad), pill)
+    x = (w - text_w) // 2
+    bar_mid = (zones["caption_top"] + zones["caption_bottom"]) // 2
+    y = bar_mid - text_h // 2
+    y = max(zones["caption_top"] + int(base_size * 0.15), y)
+    y = min(y, zones["caption_bottom"] - text_h - int(base_size * 0.12))
 
-    draw = ImageDraw.Draw(img)
-    draw.multiline_text(
-        (x, y), wrapped, font=font, fill=(255, 255, 255),
-        spacing=int(base_size * 0.2), align="center",
+    _draw_stroked_multiline_text(
+        draw,
+        (x, y),
+        wrapped,
+        font=font,
+        fill=(255, 255, 255),
+        spacing=line_spacing,
+        stroke_width=max(2, base_size // 28),
     )
 
-    return img.convert("RGB")
+    out = img.convert("RGB")
+    if show_progress:
+        out = render_progress_bar(
+            out,
+            slide_index=slide_index,
+            slide_count=slide_count,
+            zones=zones,
+        )
+    return out
 
 
 def _write_hook_frame(
@@ -193,63 +333,81 @@ def _write_hook_frame(
     dest: Path,
     *,
     slide_index: int = 0,
+    slide_count: int = 1,
     hook_text: str = "",
-    position: str = "top",
+    position: str = "lower_third",
 ) -> None:
-    """Write a reel frame with optional text hook burned in."""
+    """Write a reel frame with optional lower-third hook burned in."""
     frame = fit_image_to_story_frame(image_bytes, slide_index=slide_index)
     if hook_text:
-        frame = render_hook_text_on_frame(frame, hook_text, position=position)
+        frame = render_hook_text_on_frame(
+            frame,
+            hook_text,
+            position=position or "lower_third",
+            slide_index=slide_index,
+            slide_count=slide_count,
+        )
+    elif slide_count > 1:
+        frame = render_progress_bar(
+            frame, slide_index=slide_index, slide_count=slide_count,
+        )
     frame.save(dest, format="JPEG", quality=92, optimize=True)
 
 
+def _ken_burns_ease(progress_expr: str) -> str:
+    """Smoothstep ease-in-out for Ken Burns (0→1 over slide)."""
+    return f"(3*pow({progress_expr},2)-2*pow({progress_expr},3))"
+
+
 def _ken_burns_filter(slide_frames: int, variant: int = 0) -> str:
-    """zoompan filter — Ken Burns with directional pan, zoom in/out, and drift."""
+    """zoompan filter — eased Ken Burns with directional pan, zoom in/out, and drift."""
     v = variant % 10
     h, w = OUTPUT_HEIGHT, OUTPUT_WIDTH
-    pan_y = int(h * 0.12)
-    pan_x = int(w * 0.10)
+    pan_y = int(h * 0.10)
+    pan_x = int(w * 0.08)
+    d = max(slide_frames, 1)
+    ease = _ken_burns_ease(f"on/{d}")
 
     if v == 0:
-        zoom_expr = "min(zoom+0.0018,1.18)"
+        zoom_expr = f"1+0.18*{ease}"
         x_expr = "iw/2-(iw/zoom/2)"
         y_expr = "ih/2-(ih/zoom/2)"
     elif v == 1:
-        zoom_expr = "if(lte(on,1),1.16,max(1.001,zoom-0.0020))"
+        zoom_expr = f"1.16-0.16*{ease}"
         x_expr = "iw/2-(iw/zoom/2)"
         y_expr = "ih/2-(ih/zoom/2)"
     elif v == 2:
-        zoom_expr = "min(zoom+0.0014,1.14)"
+        zoom_expr = f"1+0.14*{ease}"
         x_expr = "iw/2-(iw/zoom/2)"
-        y_expr = f"ih/2-(ih/zoom/2)+{pan_y}*(1-on/{slide_frames})"
+        y_expr = f"ih/2-(ih/zoom/2)+{pan_y}*(1-{ease})"
     elif v == 3:
-        zoom_expr = "min(zoom+0.0014,1.14)"
+        zoom_expr = f"1+0.14*{ease}"
         x_expr = "iw/2-(iw/zoom/2)"
-        y_expr = f"ih/2-(ih/zoom/2)-{pan_y}*(1-on/{slide_frames})"
+        y_expr = f"ih/2-(ih/zoom/2)-{pan_y}*(1-{ease})"
     elif v == 4:
-        zoom_expr = "min(zoom+0.0014,1.14)"
-        x_expr = f"iw/2-(iw/zoom/2)-{pan_x}*(1-on/{slide_frames})"
+        zoom_expr = f"1+0.14*{ease}"
+        x_expr = f"iw/2-(iw/zoom/2)-{pan_x}*(1-{ease})"
         y_expr = "ih/2-(ih/zoom/2)"
     elif v == 5:
-        zoom_expr = "min(zoom+0.0014,1.14)"
-        x_expr = f"iw/2-(iw/zoom/2)+{pan_x}*(1-on/{slide_frames})"
+        zoom_expr = f"1+0.14*{ease}"
+        x_expr = f"iw/2-(iw/zoom/2)+{pan_x}*(1-{ease})"
         y_expr = "ih/2-(ih/zoom/2)"
     elif v == 6:
-        zoom_expr = "if(lte(on,1),1.12,max(1.001,zoom-0.0016))"
-        x_expr = f"iw/2-(iw/zoom/2)+{pan_x//2}*(on/{slide_frames})"
-        y_expr = f"ih/2-(ih/zoom/2)-{pan_y//2}*(on/{slide_frames})"
+        zoom_expr = f"1.12-0.12*{ease}"
+        x_expr = f"iw/2-(iw/zoom/2)+{pan_x//2}*{ease}"
+        y_expr = f"ih/2-(ih/zoom/2)-{pan_y//2}*{ease}"
     elif v == 7:
-        zoom_expr = "min(zoom+0.0020,1.20)"
-        x_expr = f"iw/2-(iw/zoom/2)-{pan_x//2}*(on/{slide_frames})"
-        y_expr = f"ih/2-(ih/zoom/2)+{pan_y//2}*(on/{slide_frames})"
+        zoom_expr = f"1+0.20*{ease}"
+        x_expr = f"iw/2-(iw/zoom/2)-{pan_x//2}*{ease}"
+        y_expr = f"ih/2-(ih/zoom/2)+{pan_y//2}*{ease}"
     elif v == 8:
-        zoom_expr = "min(zoom+0.0010,1.10)"
-        x_expr = f"iw/2-(iw/zoom/2)+{pan_x}*(on/{slide_frames}-0.5)"
+        zoom_expr = f"1+0.10*{ease}"
+        x_expr = f"iw/2-(iw/zoom/2)+{pan_x}*({ease}-0.5)"
         y_expr = "ih/2-(ih/zoom/2)"
     else:
-        zoom_expr = "if(lte(on,1),1.14,max(1.001,zoom-0.0014))"
-        x_expr = f"iw/2-(iw/zoom/2)+{pan_x//3}*(on/{slide_frames})"
-        y_expr = f"ih/2-(ih/zoom/2)-{pan_y//3}*(on/{slide_frames})"
+        zoom_expr = f"1.14-0.14*{ease}"
+        x_expr = f"iw/2-(iw/zoom/2)+{pan_x//3}*{ease}"
+        y_expr = f"ih/2-(ih/zoom/2)-{pan_y//3}*{ease}"
 
     return (
         f"zoompan=z='{zoom_expr}':"
@@ -396,27 +554,29 @@ def compose_motion_reel(
     try:
         frame_paths: list[Path] = []
         texts = hook_texts or []
+        slide_count = len(sources)
         for idx, source in enumerate(sources):
             frame_path = workdir / f"frame_{idx:02d}.jpg"
             text = texts[idx] if idx < len(texts) else ""
             if text:
-                if idx == 0 and idx == len(sources) - 1:
-                    pos = "bottom" if texts and texts[-1] == text else "top"
-                elif idx == 0:
-                    pos = "top"
-                elif idx == len(sources) - 1:
-                    pos = "bottom"
-                elif idx == 1:
-                    pos = "center"
-                else:
-                    text = ""
-                    pos = "top"
+                pos = hook_position_for_slide(idx, text)
                 _write_hook_frame(
-                    _download_bytes(source), frame_path,
-                    slide_index=idx, hook_text=text, position=pos,
+                    _download_bytes(source),
+                    frame_path,
+                    slide_index=idx,
+                    slide_count=slide_count,
+                    hook_text=text,
+                    position=pos,
                 )
             else:
-                _write_story_frame(_download_bytes(source), frame_path, slide_index=idx)
+                frame = fit_image_to_story_frame(
+                    _download_bytes(source), slide_index=idx,
+                )
+                if slide_count > 1:
+                    frame = render_progress_bar(
+                        frame, slide_index=idx, slide_count=slide_count,
+                    )
+                frame.save(frame_path, format="JPEG", quality=92, optimize=True)
             frame_paths.append(frame_path)
 
         source_list = list(sources)

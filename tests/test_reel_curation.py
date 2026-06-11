@@ -52,3 +52,14 @@ def test_curate_caps_ai_scenes_at_three():
     out = curate_reel_image_urls(urls, max_slides=10)
     ai_count = sum(1 for u in out if "ai_" in u)
     assert ai_count == 3
+
+
+def test_curate_prefers_polished_over_raw_snap():
+    urls = [
+        "/media/product_images/snap_original.jpg",
+        "/media/studio_polish/x/studio_white.jpg",
+        "/media/studio_polish/x/ai_lifestyle.jpg",
+    ]
+    out = curate_reel_image_urls(urls)
+    assert "/media/product_images/snap_original.jpg" not in out
+    assert "/media/studio_polish/x/studio_white.jpg" in out
