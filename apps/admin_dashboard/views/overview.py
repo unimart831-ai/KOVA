@@ -5,6 +5,7 @@ from django.db.models.functions import TruncDate
 from django.shortcuts import render
 from django.utils import timezone
 
+from apps.accounts.pilot_metrics import get_pilot_metrics
 from apps.admin_dashboard.decorators import staff_required
 from apps.admin_dashboard.ops_hub import build_ops_hub_snapshot
 
@@ -442,5 +443,6 @@ def overview(request):
         "voice_launches_7d": voice_launches_7d,
         "moment_packs_ready": moment_packs_ready,
         "ops_hub": build_ops_hub_snapshot(),
+        "pilot_metrics": get_pilot_metrics(),
     }
     return render(request, "admin_dashboard/overview.html", context)

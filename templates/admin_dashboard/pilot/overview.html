@@ -1,0 +1,132 @@
+{% extends "admin_dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+  TEST_BUSINESSES cohort — captured {{ captured_at|slice:":19" }}
+  {% if latest_snapshot %} · last nightly snapshot {{ latest_snapshot.snapshot_date }}{% endif %}
+</p>
+{% endblock %}
+
+{% block content %}
+<!-- Aggregate stat cards -->
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ aggregate.active_test_businesses }}/{{ aggregate.total_test_businesses }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Active pilots</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-2xl font-bold text-kova-600 dark:text-kova-400">{{ aggregate.avg_wedge_percent }}%</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Wedge completion</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ aggregate.leads_week }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Leads this week</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-2xl font-bold text-green-600 dark:text-green-400">
+      {% if aggregate.wa_avg_reply_minutes is not None %}{{ aggregate.wa_avg_reply_minutes }}m{% else %}—{% endif %}
+    </p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">WA reply avg (7d)</p>
+    <p class="text-[9px] text-gray-400 mt-0.5">SLA target ≤{{ aggregate.wa_sla_target_minutes }}m</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ aggregate.polish_credits_used }}</p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Polish credits used</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+      {% if aggregate.publish_success_rate is not None %}{{ aggregate.publish_success_rate }}%{% else %}—{% endif %}
+    </p>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Publish success (30d)</p>
+  </div>
+</div>
+
+<div class="flex items-center justify-between gap-3 mb-4">
+  <div>
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Per-business pilot cards</h3>
+    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+      Wave 1 highlighted · wedge checklist from money-chase onboarding
+    </p>
+  </div>
+  <form method="post" action="{% url 'admin_dashboard:pilot_overview' %}">
+    {% csrf_token %}
+    <button type="submit" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-kova-600 text-white hover:bg-kova-700 transition-colors">
+      Refresh metrics
+    </button>
+  </form>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+  {% for biz in businesses %}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border {% if biz.wave %}border-kova-300 dark:border-kova-700{% else %}border-gray-200 dark:border-gray-800{% endif %} p-4 shadow-sm">
+    <div class="flex items-start justify-between gap-2 mb-2">
+      <div>
+        <h4 class="text-sm font-semibold text-gray-900 dark:text-white">{{ biz.company_name }}</h4>
+        <p class="text-[10px] text-gray-500 dark:text-gray-400">{{ biz.slug }} · {{ biz.plan|title }} plan</p>
+      </div>
+      {% if biz.wave %}
+      <span class="text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-kova-100 dark:bg-kova-950 text-kova-700 dark:text-kova-300">Wave {{ biz.wave }}</span>
+      {% endif %}
+    </div>
+
+    {% if not biz.user_id %}
+    <p class="text-xs text-red-600 dark:text-red-400 mb-2">Not seeded — run <code class="text-[10px]">seed_test_businesses</code></p>
+    {% else %}
+    <dl class="text-[11px] space-y-1 mb-3">
+      <div class="flex justify-between">
+        <dt class="text-gray-500">User</dt>
+        <dd><a href="{% url 'admin_dashboard:user_detail' pk=biz.user_id %}" class="text-kova-600 dark:text-kova-400 hover:underline">{{ biz.email }}</a></dd>
+      </div>
+      <div class="flex justify-between">
+        <dt class="text-gray-500">Last login</dt>
+        <dd class="text-gray-900 dark:text-white">{% if biz.last_login %}{{ biz.last_login|slice:":10" }}{% else %}Never{% endif %}</dd>
+      </div>
+      <div class="flex justify-between">
+        <dt class="text-gray-500">Leads (7d)</dt>
+        <dd class="text-gray-900 dark:text-white">{{ biz.leads_week }}</dd>
+      </div>
+      <div class="flex justify-between">
+        <dt class="text-gray-500">Polish credits</dt>
+        <dd class="text-gray-900 dark:text-white">{{ biz.polish_credits_used }}/{{ biz.polish_credits_limit }}</dd>
+      </div>
+      <div class="flex justify-between">
+        <dt class="text-gray-500">Publish rate</dt>
+        <dd class="text-gray-900 dark:text-white">{% if biz.publish_success_rate is not None %}{{ biz.publish_success_rate }}%{% else %}—{% endif %}</dd>
+      </div>
+      <div class="flex justify-between">
+        <dt class="text-gray-500">WA reply</dt>
+        <dd class="text-gray-900 dark:text-white">
+          {% if biz.wa_avg_reply_minutes is not None %}{{ biz.wa_avg_reply_minutes }}m{% if biz.wa_sla_met %} ✓{% endif %}{% else %}—{% endif %}
+        </dd>
+      </div>
+    </dl>
+    {% endif %}
+
+    <!-- Wedge checklist -->
+    <div class="pt-2 border-t border-gray-100 dark:border-gray-800">
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Wedge checklist</span>
+        <span class="text-[10px] font-medium text-kova-600 dark:text-kova-400">{{ biz.wedge.completed }}/{{ biz.wedge.total }}</span>
+      </div>
+      <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5 mb-2">
+        <div class="bg-kova-500 h-1.5 rounded-full" style="width: {{ biz.wedge.percent }}%"></div>
+      </div>
+      <ul class="space-y-0.5">
+        {% for item in biz.wedge.items %}
+        <li class="text-[10px] flex items-center gap-1.5 {% if item.done %}text-gray-500 line-through{% else %}text-gray-700 dark:text-gray-300{% endif %}">
+          <span>{% if item.done %}✓{% else %}○{% endif %}</span>
+          {{ item.label }}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<p class="text-[10px] text-gray-400 mt-6">
+  CLI: <code>python manage.py pilot_status</code> · Playbook: <code>docs/PILOT_WAVE1_PLAYBOOK.md</code>
+</p>
+{% endblock %}

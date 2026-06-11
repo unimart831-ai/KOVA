@@ -90,6 +90,7 @@ app.conf.task_routes = {
     "profile_audit.run_profile_audits": {"queue": "low"},
     "profile_audit.audit_one_account": {"queue": "low"},
     "profile_audit.apply_one_suggestion": {"queue": "default"},
+    "accounts.snapshot_pilot_metrics": {"queue": "low"},
 }
 
 # NOTE: Beat schedule is defined in CELERY_BEAT_SCHEDULE in config/settings/base.py

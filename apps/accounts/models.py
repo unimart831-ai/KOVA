@@ -541,3 +541,19 @@ class UserProfile(models.Model):
         steps[step_name] = tz.now().isoformat()
         self.onboarding_step_timestamps = steps
         self.save(update_fields=["onboarding_step_timestamps", "updated_at"])
+
+
+class PilotMetricsSnapshot(models.Model):
+    """Nightly aggregate of TEST_BUSINESSES pilot health for admin dashboard."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    snapshot_date = models.DateField(unique=True)
+    captured_at = models.DateTimeField()
+    aggregate = models.JSONField(default=dict)
+    businesses = models.JSONField(default=list)
+
+    class Meta:
+        ordering = ["-snapshot_date"]
+
+    def __str__(self):
+        return f"Pilot metrics {self.snapshot_date}"

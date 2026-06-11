@@ -1,0 +1,41 @@
+{% if pilot_metrics %}
+<div class="mt-6 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
+  <div class="flex items-center justify-between gap-3 mb-3">
+    <div>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Test Business Pilot</h3>
+      <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">14-account cohort from TEST_BUSINESSES.md</p>
+    </div>
+    <a href="{% url 'admin_dashboard:pilot_overview' %}" class="text-[10px] font-medium text-kova-600 dark:text-kova-400 hover:underline shrink-0">Full pilot dashboard →</a>
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    <div class="text-center p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+      <p class="text-lg font-bold text-gray-900 dark:text-white">{{ pilot_metrics.aggregate.active_test_businesses }}/{{ pilot_metrics.aggregate.total_test_businesses }}</p>
+      <p class="text-[9px] text-gray-500 uppercase tracking-wider">Active</p>
+    </div>
+    <div class="text-center p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+      <p class="text-lg font-bold text-kova-600 dark:text-kova-400">{{ pilot_metrics.aggregate.avg_wedge_percent }}%</p>
+      <p class="text-[9px] text-gray-500 uppercase tracking-wider">Wedge</p>
+    </div>
+    <div class="text-center p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+      <p class="text-lg font-bold text-purple-600 dark:text-purple-400">{{ pilot_metrics.aggregate.leads_week }}</p>
+      <p class="text-[9px] text-gray-500 uppercase tracking-wider">Leads/wk</p>
+    </div>
+    <div class="text-center p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+      <p class="text-lg font-bold text-green-600 dark:text-green-400">
+        {% if pilot_metrics.aggregate.wa_avg_reply_minutes is not None %}{{ pilot_metrics.aggregate.wa_avg_reply_minutes }}m{% else %}—{% endif %}
+      </p>
+      <p class="text-[9px] text-gray-500 uppercase tracking-wider">WA reply</p>
+    </div>
+    <div class="text-center p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+      <p class="text-lg font-bold text-indigo-600 dark:text-indigo-400">{{ pilot_metrics.aggregate.polish_credits_used }}</p>
+      <p class="text-[9px] text-gray-500 uppercase tracking-wider">Polish</p>
+    </div>
+    <div class="text-center p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+      <p class="text-lg font-bold text-blue-600 dark:text-blue-400">
+        {% if pilot_metrics.aggregate.publish_success_rate is not None %}{{ pilot_metrics.aggregate.publish_success_rate }}%{% else %}—{% endif %}
+      </p>
+      <p class="text-[9px] text-gray-500 uppercase tracking-wider">Publish</p>
+    </div>
+  </div>
+</div>
+{% endif %}
