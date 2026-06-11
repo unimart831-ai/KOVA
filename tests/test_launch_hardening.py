@@ -71,13 +71,18 @@ class TestKovaPageCssSanitizeOnSave:
 
 
 class TestProductionSentryRequired:
-    def test_production_settings_require_sentry_dsn(self):
-        """Guard must exist — CI deploy check supplies SENTRY_DSN; prod boot fails without it."""
+    def test_production_settings_warn_when_sentry_missing(self):
+        """Boot allowed without SENTRY_DSN; deploy check warns instead of hard fail."""
         from pathlib import Path
 
         source = Path("config/settings/production.py").read_text(encoding="utf-8")
-        assert "if not SENTRY_DSN:" in source
-        assert "SENTRY_DSN must be set in production" in source
+        assert "SENTRY_DSN must be set in production" not in source
+        assert "SENTRY_DSN is not set" in source
+
+    def test_sentry_deploy_check_registered(self):
+        from config.checks import sentry_dsn_deploy_check
+
+        assert sentry_dsn_deploy_check is not None
 
 
 class TestOpenAPISchemaProtection:

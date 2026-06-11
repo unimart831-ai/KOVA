@@ -68,5 +68,10 @@ else:
     print('    WARNING: R2 NOT configured — using local FileSystemStorage')
 " 2>&1
 
+if [ -z "$SENTRY_DSN" ]; then
+    echo "==> WARNING: SENTRY_DSN is not set — errors will NOT be reported to Sentry."
+    echo "    Add SENTRY_DSN in Railway Variables (https://sentry.io) for production monitoring."
+fi
+
 echo "==> Starting Daphne (HTTP + WebSocket) on port ${PORT:-8000}..."
 exec daphne config.asgi:application --bind 0.0.0.0 --port ${PORT:-8000}

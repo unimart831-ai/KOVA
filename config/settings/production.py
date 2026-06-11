@@ -236,43 +236,47 @@ LOGGING = {
 }
 
 # ─── SENTRY ──────────────────────────────────────────────────────────────────
-# Mandatory in production — same fail-fast pattern as RESEND_API_KEY. Shipping
-# without error tracking means payment, publish, and webhook failures go unseen.
+# Strongly recommended in production. Boot is allowed without it so deploys
+# are not blocked while Sentry is being configured — start.sh prints a loud
+# warning and `manage.py check --deploy` flags it (see config/checks.py).
 SENTRY_DSN = env("SENTRY_DSN", default="")  # noqa: F405
-if not SENTRY_DSN:
-    raise ImproperlyConfigured(
-        "SENTRY_DSN must be set in production. "
-        "Without it, exceptions in billing, publishing, and webhooks go unreported. "
-        "Create a project at https://sentry.io and set SENTRY_DSN in Railway."
+
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.celery import CeleryIntegration
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.logging import LoggingIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(
+                transaction_style="url",
+                middleware_spans=True,
+            ),
+            CeleryIntegration(monitor_beat_tasks=True),
+            LoggingIntegration(
+                level=None,
+                event_level="ERROR",
+            ),
+        ],
+        traces_sample_rate=0.1,
+        profiles_sample_rate=0.1,
+        release=env("RAILWAY_GIT_COMMIT_SHA", default=None),  # noqa: F405
+        environment="production",
+        send_default_pii=False,
+        before_send_transaction=lambda event, hint: (
+            None if event.get("transaction") == "/health/" else event
+        ),
     )
+else:
+    import logging as _logging
 
-import sentry_sdk
-from sentry_sdk.integrations.celery import CeleryIntegration
-from sentry_sdk.integrations.django import DjangoIntegration
-from sentry_sdk.integrations.logging import LoggingIntegration
-
-sentry_sdk.init(
-    dsn=SENTRY_DSN,
-    integrations=[
-        DjangoIntegration(
-            transaction_style="url",
-            middleware_spans=True,
-        ),
-        CeleryIntegration(monitor_beat_tasks=True),
-        LoggingIntegration(
-            level=None,
-            event_level="ERROR",
-        ),
-    ],
-    traces_sample_rate=0.1,
-    profiles_sample_rate=0.1,
-    release=env("RAILWAY_GIT_COMMIT_SHA", default=None),  # noqa: F405
-    environment="production",
-    send_default_pii=False,
-    before_send_transaction=lambda event, hint: (
-        None if event.get("transaction") == "/health/" else event
-    ),
-)
+    _logging.getLogger("django").warning(
+        "SENTRY_DSN is not set — error tracking is disabled. "
+        "Set SENTRY_DSN in Railway for production monitoring. "
+        "Get a DSN from https://sentry.io"
+    )
 
 # ─── CONTENT SAFETY ──────────────────────────────────────────────────────────
 CONTENT_SAFETY_ENABLED = env.bool("CONTENT_SAFETY_ENABLED", default=True)  # noqa: F405
