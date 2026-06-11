@@ -62,9 +62,9 @@
     {% if products_by_category %}
     <div class="shop-catalog shop-catalog--grouped">
       {% for group in products_by_category %}
-      <section class="shop-section shop-category-section" aria-label="{{ group.name|default:group.category_name }}">
+      <section class="shop-section shop-category-section" aria-label="{{ group.name }}">
         <div class="shop-section-head shop-category-head">
-          <h3 class="shop-section-title">{{ group.name|default:group.category_name }}</h3>
+          <h3 class="shop-section-title">{{ group.name }}</h3>
           <span class="shop-section-meta">{{ group.products|length }} item{{ group.products|length|pluralize }}</span>
         </div>
         <div class="shop-grid shop-product-grid" role="list">

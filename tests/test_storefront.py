@@ -1,6 +1,7 @@
 """Tests for storefront resolver and shop content helpers."""
 
 import pytest
+from django.urls import reverse
 
 from apps.accounts.models import UserProfile
 from apps.products.models import Product, ProductCategory
@@ -151,3 +152,29 @@ class TestStorefrontHelpers:
         assert len(groups) == 2
         assert groups[0]["name"] == "Skincare"
         assert groups[0]["products"][0].pk == p1.pk
+
+    def test_products_by_category_all_uncategorized(self, user):
+        p1 = Product.objects.create(user=user, name="Alpha", commerce_slug="alpha")
+        p2 = Product.objects.create(user=user, name="Beta", commerce_slug="beta")
+        groups = products_by_category([p1, p2])
+        assert len(groups) == 1
+        assert groups[0]["name"] == "All offers"
+        assert len(groups[0]["products"]) == 2
+
+    def test_shop_index_renders_uncategorized_products_only(self, client, user):
+        user.profile.page_slug = "uncategorized-shop"
+        user.profile.company_name = "Uncategorized Shop"
+        user.profile.save()
+        Product.objects.create(
+            user=user,
+            name="Solo Item",
+            price=900,
+            commerce_slug="solo-item",
+            stock_status=Product.StockStatus.IN_STOCK,
+        )
+        response = client.get(
+            reverse("public_shop", kwargs={"page_slug": "uncategorized-shop"}),
+        )
+        assert response.status_code == 200
+        assert b"All offers" in response.content
+        assert b"Solo Item" in response.content
