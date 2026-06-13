@@ -603,7 +603,28 @@ Close with: **7-day trial → connect wedge platform (IG or WhatsApp) → onboar
 
 ---
 
-## 11. Related documents
+## 11. Cost economics — math at your fingertips
+
+**Live dashboard:** Admin → **Cost Economics** → tabs **Overview · Spend Ledger · Price Catalog · Unit Economics**
+
+**Code registry:** `apps/billing/cost_registry.py` · **Full reference:** `docs/KOVA_COST_LEDGER.md`
+
+| Feature area | What costs money | Typical unit | Where capped |
+|--------------|------------------|--------------|--------------|
+| Social agents | LLM tokens (OpenRouter) | $0–$0.88/user/mo | `daily_llm_tokens` |
+| Snap to Sell | Vision + LLM + **Photoroom** | ~$0.30–1.00/snap | `visual_enhancements_per_month` |
+| Post images | Together FLUX | $0.025–0.04/image | `ai_images_per_month` |
+| Voice Campaign | Whisper + LLM | ~$0.002/min + tokens | Plan voice usage |
+| WhatsApp marketing | Meta per conversation | ~$0.049/convo | `whatsapp_marketing_conversations_per_month` |
+| Email | Resend | Free 100/day; then ~$0.0004/email | Subscriber limits |
+| Research | Tavily search | 1000/mo free | Growth+ only |
+| Hosting | Railway + R2 | $20–80/mo platform | — |
+
+**Dominant variable costs at scale:** Photoroom studio polish, FLUX images, WhatsApp marketing — not LLM tokens (when on free/DeepSeek stack).
+
+---
+
+## 12. Related documents
 
 | Document | Use when |
 |----------|----------|
@@ -613,17 +634,20 @@ Close with: **7-day trial → connect wedge platform (IG or WhatsApp) → onboar
 | `KOVA_PRODUCT_STRUCTURE_AND_PLATFORM_PRIORITY.md` | What to ship first; platform wedge |
 | `META_APP_REVIEW_PACKET.md` | Meta submission |
 | `KOVA_FINANCIAL_AUDIT.md` | Unit economics & metering |
+| `KOVA_COST_LEDGER.md` | **Every cost line — formulas & admin Spend Ledger** |
+| `COST_ANALYSIS.md` | Scenario modeling & break-even |
 | `STRATEGIC_MONOPOLY_PLAN.md` | Long-term moat roadmap |
 | `PILOT_WAVE1_PLAYBOOK.md` | 30-day pilot execution |
 
 ---
 
-## 12. Maintenance
+## 13. Maintenance
 
 When product or pricing changes:
 
 1. Update `PLAN_LIMITS` in `apps/billing/models.py`
-2. Sync this catalog’s **summary tables** if positioning shifts
+2. Sync **`apps/billing/cost_registry.py`** if a new paid API is added
+3. Sync this catalog’s **summary tables** if positioning shifts
 3. Update `KOVA_PLANS_GUIDE.md` for full limit detail
 4. Update landing/pricing templates if customer-facing copy changes
 

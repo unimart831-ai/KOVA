@@ -13,9 +13,20 @@
 {% endblock %}
 
 {% block content %}
-<!-- ══════════════════════════════════════════════════════════════════════
-     SECTION 1 — COST SUMMARY CARDS
-     ══════════════════════════════════════════════════════════════════════ -->
+<!-- Tab navigation -->
+<div class="flex flex-wrap gap-2 mb-6 border-b border-gray-200 dark:border-gray-800 pb-3">
+  {% for key, label in cost_tabs %}
+  <a href="?tab={{ key }}"
+     class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors
+       {% if tab == key %}bg-kova-600 text-white shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800{% endif %}">
+    {{ label }}
+  </a>
+  {% endfor %}
+  <a href="{% url 'admin_dashboard:token_economics' %}" class="ml-auto text-xs text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 self-center">Token economics →</a>
+  <a href="{% url 'admin_dashboard:commerce_photoroom' %}" class="text-xs text-gray-400 hover:text-purple-600 self-center">Photoroom →</a>
+</div>
+
+{% if tab == "overview" %}
 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">AI Cost (24h)</p>
@@ -41,9 +52,9 @@
     <p class="text-[10px] text-gray-400 mt-0.5">Subscription payments only</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
-    <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Total AI Spend (30d)</p>
-    <p class="text-xl font-bold text-amber-600 dark:text-amber-400 mt-1">${{ total_ai_cost_30d|floatformat:4 }}</p>
-    <p class="text-[10px] text-gray-400 mt-0.5">LLM + images + vision</p>
+    <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Platform COGS (30d)</p>
+    <p class="text-xl font-bold text-amber-600 dark:text-amber-400 mt-1">${{ total_platform_cogs_30d|floatformat:4 }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">LLM · images · Photoroom · voice · WA · email</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Est. Unit Cost / MRR</p>
@@ -217,11 +228,115 @@
     <canvas id="dailyCostChart"></canvas>
   </div>
 </div>
+{% endif %}
 
+{% if tab == "ledger" %}
+<!-- SPEND LEDGER — every cost line with 30d actuals -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-amber-200 dark:border-amber-900/40 p-4 shadow-sm">
+    <p class="text-[10px] font-semibold text-amber-600 uppercase">Variable COGS (30d)</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">${{ total_platform_cogs_30d|floatformat:4 }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-[10px] font-semibold text-gray-400 uppercase">LLM tokens</p>
+    <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">${{ cost_30d|floatformat:4 }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/40 p-4 shadow-sm">
+    <p class="text-[10px] font-semibold text-purple-600 uppercase">Photoroom (30d)</p>
+    <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">${{ photoroom_cost_30d|floatformat:4 }}</p>
+    <p class="text-[10px] text-gray-400">{{ photoroom_pool.used|format_number }} this month · {{ photoroom_pool.remaining|format_number }} left</p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
+    <p class="text-[10px] font-semibold text-gray-400 uppercase">Voice + WA + Email</p>
+    <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">${{ voice_cost_30d|floatformat:2 }} + ${{ whatsapp_cost_30d|floatformat:2 }} + ${{ email_cost_30d|floatformat:2 }}</p>
+  </div>
+</div>
 
-<!-- ══════════════════════════════════════════════════════════════════════
-     SECTION 3 — PER-PLAN UNIT ECONOMICS
-     ══════════════════════════════════════════════════════════════════════ -->
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6 overflow-hidden">
+  <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Complete Spend Ledger (30 days)</h2>
+    <p class="text-[10px] text-gray-400 mt-0.5">Every billable API — actual usage where metered · formulas from <code class="text-[10px]">apps/billing/cost_registry.py</code></p>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase">Category</th>
+          <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase">Line item</th>
+          <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase">Product area</th>
+          <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase">Provider</th>
+          <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase text-right">Unit</th>
+          <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase text-right">30d usage</th>
+          <th class="px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase text-right">Cost (USD)</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for row in spend_snapshot.ledger_rows %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-2.5 text-xs capitalize text-gray-500">{{ row.category }}</td>
+          <td class="px-4 py-2.5">
+            <p class="text-xs font-medium text-gray-900 dark:text-white">{{ row.label }}</p>
+            <p class="text-[10px] text-gray-400 font-mono">{{ row.formula }}</p>
+          </td>
+          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">{{ row.feature }}</td>
+          <td class="px-4 py-2.5 text-xs text-gray-600">{{ row.provider }}</td>
+          <td class="px-4 py-2.5 text-right text-xs font-mono text-gray-500">
+            {% if row.unit_cost_usd %}${{ row.unit_cost_usd|floatformat:4 }}/{{ row.unit }}{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-2.5 text-right text-xs text-gray-600">{{ row.usage }}</td>
+          <td class="px-4 py-2.5 text-right font-mono text-xs font-semibold {% if row.cost_usd > 0 %}text-amber-600{% else %}text-emerald-600{% endif %}">
+            {% if row.actual %}${{ row.cost_usd|floatformat:4 }}{% else %}<span class="text-gray-400">est.</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="bg-gray-50 dark:bg-gray-800/50 font-semibold">
+          <td colspan="6" class="px-4 py-3 text-xs text-gray-700 dark:text-gray-300 text-right">Variable COGS total</td>
+          <td class="px-4 py-3 text-right font-mono text-sm text-amber-600">${{ total_platform_cogs_30d|floatformat:4 }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6 overflow-hidden">
+  <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Full price catalog (all line items)</h2>
+    <p class="text-[10px] text-gray-400">Includes zero-cost and fixed infra — for planning even when usage is $0</p>
+  </div>
+  <div class="overflow-x-auto max-h-[480px] overflow-y-auto">
+    <table class="w-full text-sm">
+      <thead class="sticky top-0 bg-white dark:bg-gray-900">
+        <tr class="border-b border-gray-200 dark:border-gray-800 text-left">
+          <th class="px-4 py-2 text-[10px] font-semibold text-gray-500 uppercase">ID</th>
+          <th class="px-4 py-2 text-[10px] font-semibold text-gray-500 uppercase">Item</th>
+          <th class="px-4 py-2 text-[10px] font-semibold text-gray-500 uppercase">Formula</th>
+          <th class="px-4 py-2 text-[10px] font-semibold text-gray-500 uppercase text-right">Unit cost</th>
+          <th class="px-4 py-2 text-[10px] font-semibold text-gray-500 uppercase">Tracking</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for item in cost_catalog %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <td class="px-4 py-2 font-mono text-[10px] text-gray-500">{{ item.id }}</td>
+          <td class="px-4 py-2 text-xs text-gray-900 dark:text-white">{{ item.label }}</td>
+          <td class="px-4 py-2 text-[10px] text-gray-500">{{ item.formula }}</td>
+          <td class="px-4 py-2 text-right font-mono text-xs">
+            {% if item.unit_cost_usd %}${{ item.unit_cost_usd|floatformat:4 }}/{{ item.unit }}{% else %}FREE{% endif %}
+          </td>
+          <td class="px-4 py-2 text-[10px] text-gray-400">{{ item.tracking }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<p class="text-xs text-gray-400 mb-6">Docs: <code>docs/KOVA_COST_LEDGER.md</code> · Source: <code>apps/billing/cost_registry.py</code></p>
+{% endif %}
+
+{% if tab == "economics" %}
+
 <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6 overflow-hidden">
   <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
     <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Per-Plan Unit Economics (30d)</h2>
@@ -273,11 +388,9 @@
     </table>
   </div>
 </div>
+{% endif %}
 
-
-<!-- ══════════════════════════════════════════════════════════════════════
-     SECTION 4 — COST BY MODEL (30d)
-     ══════════════════════════════════════════════════════════════════════ -->
+{% if tab == "overview" %}
 <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6 overflow-hidden">
   <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
     <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Cost by Model (30 days)</h2>
@@ -396,6 +509,9 @@
   </div>
 </div>
 
+{% endif %}
+
+{% if tab == "economics" %}
 <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden mb-6">
   <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
     <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Top Users by LLM Cost (30d)</h2>
@@ -437,10 +553,6 @@
   </div>
 </div>
 
-
-<!-- ══════════════════════════════════════════════════════════════════════
-     SECTION 6 — SCENARIO COST CALCULATOR
-     ══════════════════════════════════════════════════════════════════════ -->
 <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6"
      x-data="costCalculator()">
   <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
@@ -633,8 +745,9 @@
     </div>
   </div>
 </div>
+{% endif %}
 
-
+{% if tab == "catalog" %}
 <!-- ══════════════════════════════════════════════════════════════════════
      SECTION 7 — NON-LLM AI SERVICES PRICING
      ══════════════════════════════════════════════════════════════════════ -->
@@ -788,11 +901,13 @@
     </table>
   </div>
 </div>
+{% endif %}
 
 {% endblock %}
 
 
 {% block extra_js %}
+{% if tab == "overview" %}
 <script>
 // ── Daily Cost Chart ──────────────────────────────────────────────────
 (function() {
@@ -862,7 +977,10 @@
     },
   });
 })();
-
+</script>
+{% endif %}
+{% if tab == "economics" %}
+<script>
 // ── Scenario Calculator ───────────────────────────────────────────────
 function costCalculator() {
   return {
@@ -957,4 +1075,5 @@ function costCalculator() {
   };
 }
 </script>
+{% endif %}
 {% endblock %}

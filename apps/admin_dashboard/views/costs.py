@@ -24,99 +24,19 @@ from apps.admin_dashboard.decorators import superuser_required
 from apps.agents.models import AgentAction, LLMConfig, UserTokenBucket
 from apps.agents.pricing import calculate_token_cost, get_pricing_display_registry
 from apps.billing.models import MpesaPayment, get_all_plan_limits
-from apps.billing.visual_credits import get_platform_photoroom_usage
 from apps.content.models import Post
 from apps.products.models import CommercePayment
 
 
-# ── Non-LLM AI service pricing ──────────────────────────────────────
-# Image costs are now tier-routed: each plan uses a different FLUX model.
-NON_LLM_PRICING = {
-    "whisper-1": {
-        "label": "OpenAI Whisper (Voice Memo)",
-        "cost_per_minute": 0.006,
-        "avg_memo_seconds": 20,
-        "provider": "OpenAI",
-    },
-    "image_together_schnell": {
-        "label": "Together.ai FLUX.1-schnell",
-        "cost_per_image": 0.003,
-        "provider": "Together.ai",
-        "plan": "starter",
-        "note": "Starter fallback only (images disabled for starter)",
-    },
-    "image_together_krea": {
-        "label": "Together.ai FLUX.1-krea-dev",
-        "cost_per_image": 0.025,
-        "provider": "Together.ai",
-        "plan": "growth",
-        "note": "Growth plan — 50 images/month limit",
-    },
-    "image_together_pro": {
-        "label": "Together.ai FLUX.1.1-pro",
-        "cost_per_image": 0.04,
-        "provider": "Together.ai",
-        "plan": "pro / agency",
-        "note": "Pro (100/mo) & Agency (200/mo)",
-    },
-    "image_huggingface": {
-        "label": "HuggingFace FLUX.1-schnell",
-        "cost_per_image": 0.00,
-        "provider": "HuggingFace",
-        "note": "Fallback provider (free tier)",
-    },
-    "image_pollinations": {
-        "label": "Pollinations.ai Flux",
-        "cost_per_image": 0.00,
-        "provider": "Pollinations.ai",
-        "note": "Last-resort fallback (free)",
-    },
-    "graphics_pillow": {
-        "label": "Branded Graphics (Pillow)",
-        "cost_per_image": 0.00,
-        "provider": "On-device (Pillow)",
-        "types": ["Quote Cards", "Tip Graphics", "Stat Highlights", "CTA Banners"],
-    },
-    "visual_photoroom_plus": {
-        "label": "Photoroom Plus (Studio polish)",
-        "cost_per_image": 0.10,
-        "provider": "Photoroom",
-        "note": "1 credit per studio polish — $500/5,000 pool; v2/edit API",
-    },
-    "vision_gpt4o_mini": {
-        "label": "GPT-4o Mini Vision (Snap to Sell)",
-        "cost_per_call": 0.0003,
-        "avg_input_tokens": 1500,
-        "avg_output_tokens": 400,
-        "provider": "OpenAI",
-        "note": "Product/service photo analysis — ~800 input tokens for image + prompt, 400 output",
-    },
-}
-
-# Per-plan image cost (USD per image) — matches tier-routed models
-PLAN_IMAGE_COST = {
-    "starter": 0.00,    # Images disabled for starter
-    "growth": 0.025,    # FLUX.1-krea-dev
-    "pro": 0.04,        # FLUX.1.1-pro
-    "agency": 0.04,     # FLUX.1.1-pro
-}
-
-# Default per-plan token estimates (from cost analysis doc)
-# voice_memos = estimated monthly voice memo recordings per user
-# Plan v2 — aligned with PLAN_LIMITS monthly_llm_tokens (medium ~40% utilization)
-PLAN_TOKEN_ESTIMATES = {
-    "starter": {"input": 400_000, "output": 350_000, "images": 0, "voice_memos": 5},
-    "growth": {"input": 1_600_000, "output": 1_400_000, "images": 50, "voice_memos": 20},
-    "pro": {"input": 4_000_000, "output": 3_500_000, "images": 100, "voice_memos": 50},
-    "agency": {"input": 16_000_000, "output": 14_000_000, "images": 200, "voice_memos": 100},
-}
-
-# Infrastructure base costs (USD/month)
-INFRA_COSTS = {
-    "railway_base": 20.00,
-    "email_free_limit": 100,  # emails/day on Resend free tier
-    "r2_storage_free_gb": 10,
-}
+from apps.billing.cost_registry import (
+    INFRA_COSTS,
+    PLAN_IMAGE_COST,
+    PLAN_TOKEN_ESTIMATES,
+    aggregate_platform_spend,
+    calculate_infra_cost_per_user,
+    get_cost_catalog,
+    get_non_llm_pricing,
+)
 
 
 def _get_model_cost(model_name, input_tokens, output_tokens):
@@ -140,28 +60,16 @@ def _aggregate_actions_cost(qs):
 
 
 def _calculate_infra_cost_per_user(total_users):
-    """Estimate infrastructure cost per user given total user count."""
-    if total_users <= 0:
-        return INFRA_COSTS["railway_base"]
-    # Sub-linear scaling from the cost doc
-    if total_users <= 50:
-        railway = 25.0
-    elif total_users <= 100:
-        railway = 30.0
-    elif total_users <= 500:
-        railway = 50.0
-    elif total_users <= 1000:
-        railway = 80.0
-    elif total_users <= 5000:
-        railway = 200.0
-    else:
-        railway = 400.0
-    return round(railway / total_users, 4)
+    return calculate_infra_cost_per_user(total_users)
 
 
 @superuser_required
 def cost_overview(request):
     """Main cost economics dashboard."""
+    tab = request.GET.get("tab", "overview")
+    if tab not in ("overview", "ledger", "catalog", "economics"):
+        tab = "overview"
+
     now = timezone.now()
     last_24h = now - timedelta(hours=24)
     last_7d = now - timedelta(days=7)
@@ -324,7 +232,8 @@ def cost_overview(request):
         avg_image_cost = (plan_images_30d * per_image_cost / active_count) if active_count else 0
 
         est = PLAN_TOKEN_ESTIMATES.get(plan_code, {})
-        whisper = NON_LLM_PRICING["whisper-1"]
+        non_llm = get_non_llm_pricing()
+        whisper = non_llm["whisper-1"]
         voice_cost = (
             est.get("voice_memos", 0)
             * (whisper["avg_memo_seconds"] / 60)
@@ -563,7 +472,6 @@ def cost_overview(request):
     vision_carousel = vision_actions_30d.filter(action_type="snap.carousel").count()
     vision_reel = vision_actions_30d.filter(action_type="snap.reel").count()
 
-    total_ai_cost_30d = round(total_cost_30d + image_cost_30d + vision_cost_30d, 4)
     cost_per_token = (
         total_cost_30d / token_totals_30d["total"]
         if token_totals_30d["total"] else 0
@@ -572,16 +480,34 @@ def cost_overview(request):
         image_cost_30d / images_generated if images_generated else 0
     )
     bucket_vs_actions_delta = round(total_cost_30d - bucket_cost_30d, 4)
+    unknown_model_names |= set(spend_snapshot.get("unknown_models") or [])
 
-    photoroom_pool = get_platform_photoroom_usage()
+    photoroom_pool = spend_snapshot["photoroom_pool"]
+    photoroom_ledger = {r["id"]: r for r in spend_snapshot["ledger_rows"]}
     photoroom_cost_30d = round(
-        photoroom_pool["used"] * photoroom_pool["cost_per_image"],
+        photoroom_ledger.get("photoroom_plus", {}).get("cost_usd", 0)
+        + photoroom_ledger.get("photoroom_basic", {}).get("cost_usd", 0),
         4,
     )
+    voice_cost_30d = photoroom_ledger.get("voice_whisper", {}).get("cost_usd", 0)
+    whatsapp_cost_30d = round(
+        photoroom_ledger.get("whatsapp_marketing", {}).get("cost_usd", 0)
+        + photoroom_ledger.get("whatsapp_utility", {}).get("cost_usd", 0),
+        4,
+    )
+    email_cost_30d = photoroom_ledger.get("email_resend", {}).get("cost_usd", 0)
+    total_platform_cogs_30d = spend_snapshot["variable_cogs_usd"]
+    total_ai_cost_30d = total_platform_cogs_30d
 
     context = {
         "page_title": "Cost Economics",
-        # Summary cards
+        "tab": tab,
+        "cost_tabs": [
+            ("overview", "Overview"),
+            ("ledger", "Spend Ledger"),
+            ("catalog", "Price Catalog"),
+            ("economics", "Unit Economics"),
+        ],
         "cost_24h": round(cost_24h, 4),
         "cost_7d": round(cost_7d, 4),
         "cost_30d": round(total_cost_30d, 4),
@@ -639,12 +565,18 @@ def cost_overview(request):
         # Config
         "config": config,
         "model_pricing_json": get_pricing_display_registry(),
-        "non_llm_pricing": NON_LLM_PRICING,
         "plan_limits": get_all_plan_limits(),
         "infra_costs": INFRA_COSTS,
         "plan_token_estimates_json": PLAN_TOKEN_ESTIMATES,
         "photoroom_pool": photoroom_pool,
         "photoroom_cost_30d": photoroom_cost_30d,
+        "voice_cost_30d": voice_cost_30d,
+        "whatsapp_cost_30d": whatsapp_cost_30d,
+        "email_cost_30d": email_cost_30d,
+        "total_platform_cogs_30d": total_platform_cogs_30d,
+        "spend_snapshot": spend_snapshot,
+        "cost_catalog": get_cost_catalog(),
+        "non_llm_pricing": get_non_llm_pricing(),
     }
     return render(request, "admin_dashboard/costs/overview.html", context)
 
