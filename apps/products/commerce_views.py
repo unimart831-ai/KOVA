@@ -28,13 +28,16 @@ from apps.products.commerce_seo import (
 from apps.products.commerce_social import get_public_social_links, resolve_shop_whatsapp
 from apps.products.storefront import (
     about_blurb,
+    catalog_section_label,
     featured_products,
     hero_carousel_slides,
     hero_promo_products,
     products_by_category,
+    resolve_hero_layout,
     resolve_storefront,
     shop_faq_items,
     shop_footer_data,
+    split_marketplace_hero_promos,
     storefront_body_classes,
 )
 from apps.products.product_copy import (
@@ -140,6 +143,9 @@ def public_shop_index(request, page_slug):
     carousel_slides = hero_carousel_slides(
         shop_reels, products, featured=featured, brand_name=brand,
     )
+    hero_layout = resolve_hero_layout(products, promos, carousel_slides)
+    promo_left, promo_right = split_marketplace_hero_promos(promos, carousel_slides)
+    category_groups = products_by_category(products)
 
     body_extra = " ".join(filter(None, [
         "shop-site--has-mobile-nav" if commerce_ctx.get("social_links") else "",
@@ -158,10 +164,12 @@ def public_shop_index(request, page_slug):
         "hero_mode": storefront["hero_mode"],
         "powered_by_kova": storefront["powered_by_kova"],
         "featured_products": featured,
-        "hero_promo_left": promos[:2],
-        "hero_promo_right": promos[2:4],
+        "hero_layout": hero_layout,
+        "hero_promo_left": promo_left,
+        "hero_promo_right": promo_right,
         "hero_carousel_slides": carousel_slides,
-        "products_by_category": products_by_category(products),
+        "products_by_category": category_groups,
+        "catalog_section_label": catalog_section_label(category_groups),
         "about_blurb": about_blurb(profile),
         "faq_items": shop_faq_items(profile),
         "shop_footer": shop_footer_data(profile),

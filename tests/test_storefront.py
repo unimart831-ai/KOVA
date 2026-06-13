@@ -7,16 +7,19 @@ from apps.accounts.models import UserProfile
 from apps.products.models import Product, ProductCategory
 from apps.products.storefront import (
     about_blurb,
+    catalog_section_label,
     featured_products,
     hero_carousel_slides,
     hero_promo_products,
     products_by_category,
     resolve_archetype,
+    resolve_hero_layout,
     resolve_hero_mode,
     resolve_storefront,
     resolve_vibe,
     shop_faq_items,
     shop_footer_data,
+    split_marketplace_hero_promos,
 )
 
 
@@ -141,6 +144,26 @@ class TestStorefrontHelpers:
         ]
         promos = hero_promo_products(products, limit=4)
         assert len(promos) == 4
+
+    def test_resolve_hero_layout_spotlight_for_small_shop(self, user):
+        products = [Product.objects.create(user=user, name="Solo", commerce_slug="solo")]
+        promos = hero_promo_products(products)
+        slides = hero_carousel_slides([], products, brand_name="Shop")
+        assert resolve_hero_layout(products, promos, slides) == "spotlight"
+
+    def test_split_marketplace_hero_promos_skips_carousel_slugs(self, user):
+        p1 = Product.objects.create(user=user, name="A", commerce_slug="a")
+        p2 = Product.objects.create(user=user, name="B", commerce_slug="b")
+        p3 = Product.objects.create(user=user, name="C", commerce_slug="c")
+        slides = [{"kind": "product", "commerce_slug": "a"}]
+        left, right = split_marketplace_hero_promos([p1, p2, p3], slides)
+        assert p1 not in left and p1 not in right
+        assert left == [p2]
+        assert right == [p3]
+
+    def test_catalog_section_label_single_all_offers(self, user):
+        groups = [{"name": "All offers", "products": []}]
+        assert catalog_section_label(groups) == "Products"
 
     def test_products_by_category(self, user):
         cat = ProductCategory.objects.create(user=user, name="Skincare")

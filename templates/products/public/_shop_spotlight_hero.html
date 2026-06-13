@@ -1,0 +1,62 @@
+{# Full-width spotlight for small catalogs (1–2 products) — no duplicate side promos #}
+{% if hero_carousel_slides or featured_products %}
+<section class="shop-spotlight" aria-label="Featured">
+  {% with slide=hero_carousel_slides.0 %}
+  {% if slide.kind == 'reel' %}
+  <div class="shop-spotlight-grid">
+    <div class="shop-spotlight-media shop-spotlight-media--reel">
+      <div class="reel-frame shop-spotlight-reel is-paused">
+        <video class="reel-video shop-spotlight-reel-video"
+               src="{{ slide.reel.video_url }}"
+               {% if slide.reel.poster_url %}poster="{{ slide.reel.poster_url }}"{% endif %}
+               muted autoplay loop playsinline preload="metadata"
+               aria-label="{{ slide.reel.product_name }} reel"></video>
+        <button type="button" class="reel-play-btn reel-play-btn--hero" aria-label="Play {{ slide.reel.product_name }} reel">▶</button>
+      </div>
+    </div>
+    <div class="shop-spotlight-copy">
+      <p class="shop-spotlight-eyebrow">{{ brand_name }}</p>
+      <h1 class="shop-spotlight-title">{{ slide.reel.product_name }}</h1>
+      {% if slide.reel.product_price %}
+      <p class="shop-spotlight-price">{{ slide.reel.product_price }}</p>
+      {% endif %}
+      {% if profile.page_headline %}
+      <p class="shop-spotlight-tagline">{{ profile.page_headline }}</p>
+      {% endif %}
+      <div class="shop-spotlight-actions">
+        <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=slide.reel.commerce_slug %}" class="shop-btn shop-btn--accent">View product</a>
+        {% if wa_url %}
+        <a href="{{ wa_url }}" class="shop-btn shop-btn--wa" target="_blank" rel="noopener">WhatsApp</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% elif slide.kind == 'product' %}
+  <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=slide.commerce_slug %}" class="shop-spotlight-banner">
+    <div class="shop-spotlight-banner-media">
+      <img src="{{ slide.image_url }}" alt="{{ slide.title }}" loading="eager">
+    </div>
+    <div class="shop-spotlight-banner-overlay">
+      <p class="shop-spotlight-eyebrow">{{ brand_name }}</p>
+      <h1 class="shop-spotlight-title">{{ slide.title }}</h1>
+      {% if slide.price %}<p class="shop-spotlight-price">{{ slide.price }}</p>{% endif %}
+      <span class="shop-spotlight-cta">Shop now →</span>
+    </div>
+  </a>
+  {% else %}
+  <div class="shop-spotlight-brand">
+    {% if commerce_branding.logo_url %}
+    <img src="{{ commerce_branding.logo_url }}" alt="{{ brand_name }}" class="shop-spotlight-logo">
+    {% else %}
+    <div class="shop-logo-fallback shop-spotlight-logo-fallback" aria-hidden="true">{{ brand_name|slice:":1"|upper }}</div>
+    {% endif %}
+    <h1 class="shop-spotlight-title">{{ brand_name }}</h1>
+    {% if profile.page_headline %}
+    <p class="shop-spotlight-tagline">{{ profile.page_headline }}</p>
+    {% endif %}
+    <a href="#shop-catalog" class="shop-btn shop-btn--accent shop-spotlight-explore">Browse products</a>
+  </div>
+  {% endif %}
+  {% endwith %}
+</section>
+{% endif %}

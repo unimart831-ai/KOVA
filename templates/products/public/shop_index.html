@@ -54,26 +54,28 @@
 
   <section id="shop-catalog" class="shop-catalog-section" aria-label="Product catalog">
     <div class="shop-section-head">
-      <h2 class="shop-section-title">Shop our collection</h2>
+      <h2 class="shop-section-title">{{ catalog_section_label|default:"Shop our collection" }}</h2>
       <span class="shop-section-meta" data-catalog-count>{{ products|length }} item{{ products|length|pluralize }}</span>
     </div>
     <p class="shop-search-empty" id="shop-search-empty" hidden>No products match your search.</p>
 
     {% if not products %}
-    <div style="text-align:center;padding:3rem 1.25rem;max-width:30rem;margin:0 auto;color:#6b7280;">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" style="margin:0 auto .75rem;opacity:.7;"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-      <p style="font-weight:600;font-size:1.0625rem;color:#111827;margin:0 0 .35rem;">New items coming soon</p>
-      <p style="font-size:.9rem;margin:0 0 1rem;">{{ brand_name }} hasn't listed any products yet.{% if wa_url %} Message us to ask what's available.{% else %} Check back shortly.{% endif %}</p>
-      {% if wa_url %}<a href="{{ wa_url }}" rel="noopener" class="shop-trust-badge shop-trust-badge--wa" style="text-decoration:none;">Message on WhatsApp</a>{% endif %}
+    <div class="shop-empty-state">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      <p class="shop-empty-title">New items coming soon</p>
+      <p class="shop-empty-text">{{ brand_name }} hasn't listed any products yet.{% if wa_url %} Message us to ask what's available.{% else %} Check back shortly.{% endif %}</p>
+      {% if wa_url %}<a href="{{ wa_url }}" rel="noopener" class="shop-btn shop-btn--wa">Message on WhatsApp</a>{% endif %}
     </div>
     {% elif products_by_category %}
     <div class="shop-catalog shop-catalog--grouped">
       {% for group in products_by_category %}
       <section class="shop-section shop-category-section" aria-label="{{ group.name }}">
+        {% if products_by_category|length > 1 or group.name != "All offers" %}
         <div class="shop-section-head shop-category-head">
           <h3 class="shop-section-title">{{ group.name }}</h3>
           <span class="shop-section-meta">{{ group.products|length }} item{{ group.products|length|pluralize }}</span>
         </div>
+        {% endif %}
         <div class="shop-grid shop-product-grid" role="list">
           {% for product in group.products %}
           {% include "products/public/_shop_product_card.html" %}
@@ -236,13 +238,12 @@
   }
 
   searchInput.addEventListener('input', filterProducts);
-  var searchBtn = document.querySelector('.shop-header-search-btn');
-  if (searchBtn) {
-    searchBtn.addEventListener('click', function () {
+  searchInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
       filterProducts();
-      searchInput.focus();
-    });
-  }
+    }
+  });
 })();
 </script>
 </body>

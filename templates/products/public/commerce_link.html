@@ -58,7 +58,7 @@
     <div class="offer-visual">
       {% with gallery=product.shop_gallery_urls hero=product.shop_hero_image_url %}
       {% if gallery or hero %}
-      <div class="offer-hero-frame">
+      <div class="offer-hero-frame gallery-card">
         <img id="hero-img" src="{{ hero|default:gallery.0 }}" alt="{{ product.name }}">
       </div>
       {% if gallery|length > 1 %}

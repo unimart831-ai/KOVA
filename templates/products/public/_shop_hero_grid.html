@@ -1,89 +1,21 @@
-{# Layout A — 3-column marketplace hero: side promos + center carousel (reels / featured) #}
-{% if hero_carousel_slides or hero_promo_left or hero_promo_right %}
-<section class="shop-marketplace-hero" aria-label="{% if shop_reels %}Shop reels{% else %}Featured highlights{% endif %}">
+{# Hero layouts: spotlight (small shop) · carousel · full marketplace grid #}
+{% if hero_layout == 'spotlight' %}
+{% include "products/public/_shop_spotlight_hero.html" %}
+{% elif hero_carousel_slides or hero_promo_left or hero_promo_right %}
+<section class="shop-marketplace-hero shop-marketplace-hero--{{ hero_layout|default:'marketplace' }}" aria-label="{% if shop_reels %}Featured{% else %}Highlights{% endif %}">
+  {% if hero_layout == 'marketplace' %}
   <div class="shop-hero-grid">
-    <div class="shop-hero-side shop-hero-side--left" aria-hidden="false">
+    <div class="shop-hero-side shop-hero-side--left">
       {% for product in hero_promo_left %}
       {% include "products/public/_shop_hero_promo_card.html" %}
       {% endfor %}
     </div>
 
     <div class="shop-hero-center">
-      <div class="shop-hero-carousel" data-shop-carousel>
-        <div class="shop-hero-carousel-track">
-          {% for slide in hero_carousel_slides %}
-          <article class="shop-hero-slide{% if forloop.first %} is-active{% endif %}"
-                   data-slide-index="{{ forloop.counter0 }}"
-                   {% if slide.kind == 'product' and slide.commerce_slug %}data-slide-url="{% url 'public_commerce' page_slug=shop_slug commerce_slug=slide.commerce_slug %}"{% elif slide.kind == 'reel' %}data-slide-url="{% url 'public_commerce' page_slug=shop_slug commerce_slug=slide.reel.commerce_slug %}"{% endif %}>
-            {% if slide.kind == 'reel' %}
-            <div class="shop-hero-slide-media shop-hero-slide-media--reel">
-              <div class="reel-frame{% if not forloop.first %} is-paused{% endif %}">
-                <video class="reel-video shop-hero-reel-video"
-                       src="{{ slide.reel.video_url }}"
-                       {% if slide.reel.poster_url %}poster="{{ slide.reel.poster_url }}"{% endif %}
-                       muted autoplay loop playsinline preload="metadata"
-                       aria-label="{{ slide.reel.product_name }} reel"></video>
-                <button type="button" class="reel-play-btn reel-play-btn--hero" aria-label="Play {{ slide.reel.product_name }} reel">▶</button>
-              </div>
-              <div class="shop-hero-slide-caption">
-                <span class="shop-hero-slide-title">{{ slide.reel.product_name }}</span>
-                {% if slide.reel.product_price %}
-                <span class="shop-hero-slide-price">{{ slide.reel.product_price }}</span>
-                {% endif %}
-              </div>
-            </div>
-            {% elif slide.kind == 'product' %}
-            <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=slide.commerce_slug %}" class="shop-hero-slide-link">
-              <div class="shop-hero-slide-media">
-                <img src="{{ slide.image_url }}" alt="{{ slide.title }}" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
-              </div>
-              <div class="shop-hero-slide-caption">
-                <span class="shop-hero-slide-title">{{ slide.title }}</span>
-                {% if slide.price %}<span class="shop-hero-slide-price">{{ slide.price }}</span>{% endif %}
-              </div>
-            </a>
-            {% else %}
-            <div class="shop-hero-slide-media shop-hero-slide-media--brand">
-              {% if commerce_branding.logo_url %}
-              <img src="{{ commerce_branding.logo_url }}" alt="{{ brand_name }}" class="shop-hero-slide-logo">
-              {% else %}
-              <div class="shop-logo-fallback shop-hero-slide-logo-fallback" aria-hidden="true">{{ brand_name|slice:":1"|upper }}</div>
-              {% endif %}
-              <p class="shop-hero-slide-brand">{{ slide.title }}</p>
-              {% if profile.page_headline %}<p class="shop-hero-slide-tagline">{{ profile.page_headline }}</p>{% endif %}
-            </div>
-            {% endif %}
-          </article>
-          {% endfor %}
-        </div>
-
-        {% if hero_carousel_slides|length > 1 %}
-        <button type="button" class="shop-hero-carousel-btn shop-hero-carousel-btn--prev" aria-label="Previous slide" data-carousel-prev>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
-        </button>
-        <button type="button" class="shop-hero-carousel-btn shop-hero-carousel-btn--next" aria-label="Next slide" data-carousel-next>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        {% endif %}
-
-        <div class="shop-hero-carousel-footer">
-          <span class="shop-hero-carousel-counter" data-carousel-counter>1 / {{ hero_carousel_slides|length }}</span>
-          <div class="shop-hero-carousel-dots" role="tablist" aria-label="Carousel slides">
-            {% for slide in hero_carousel_slides %}
-            <button type="button"
-                    class="shop-hero-carousel-dot{% if forloop.first %} is-active{% endif %}"
-                    role="tab"
-                    aria-label="Slide {{ forloop.counter }}"
-                    aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
-                    data-carousel-dot="{{ forloop.counter0 }}"></button>
-            {% endfor %}
-          </div>
-          <a href="#shop-catalog" class="shop-btn shop-btn--accent shop-hero-explore-btn">Explore Now</a>
-        </div>
-      </div>
+      {% include "products/public/_shop_hero_carousel.html" %}
     </div>
 
-    <div class="shop-hero-side shop-hero-side--right" aria-hidden="false">
+    <div class="shop-hero-side shop-hero-side--right">
       {% for product in hero_promo_right %}
       {% include "products/public/_shop_hero_promo_card.html" %}
       {% endfor %}
@@ -98,6 +30,13 @@
     {% for product in hero_promo_right %}
     {% include "products/public/_shop_hero_promo_card.html" %}
     {% endfor %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  {# carousel-only: center hero without side columns #}
+  <div class="shop-hero-carousel-only">
+    {% include "products/public/_shop_hero_carousel.html" %}
   </div>
   {% endif %}
 </section>

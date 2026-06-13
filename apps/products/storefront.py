@@ -334,6 +334,71 @@ def hero_carousel_slides(
     return slides[:limit]
 
 
+def _carousel_commerce_slugs(carousel_slides: list[dict[str, Any]]) -> set[str]:
+    slugs: set[str] = set()
+    for slide in carousel_slides or []:
+        if slide.get("kind") == "reel":
+            slugs.add((slide.get("reel") or {}).get("commerce_slug") or "")
+        elif slide.get("kind") == "product":
+            slugs.add(slide.get("commerce_slug") or "")
+    slugs.discard("")
+    return slugs
+
+
+def resolve_hero_layout(
+    products: list,
+    promos: list,
+    carousel_slides: list[dict[str, Any]],
+) -> str:
+    """
+    Pick hero density so small catalogs are not repeated across side promos + carousel.
+
+    Returns: ``spotlight`` | ``carousel`` | ``marketplace``
+    """
+    count = len(products or [])
+    distinct_promos = len({p.pk for p in (promos or [])})
+    if count <= 2 and distinct_promos <= 2:
+        return "spotlight"
+    carousel_slugs = _carousel_commerce_slugs(carousel_slides)
+    side_candidates = [
+        p for p in (promos or [])
+        if (getattr(p, "commerce_slug", "") or "") not in carousel_slugs
+    ]
+    if count < 6 or len(side_candidates) < 2:
+        return "carousel"
+    return "marketplace"
+
+
+def split_marketplace_hero_promos(
+    promos: list,
+    carousel_slides: list[dict[str, Any]],
+    *,
+    per_side: int = 2,
+) -> tuple[list, list]:
+    """Side promo columns — skip SKUs already featured in the center carousel."""
+    carousel_slugs = _carousel_commerce_slugs(carousel_slides)
+    available: list = []
+    seen_pks: set[int] = set()
+    for product in promos or []:
+        if product.pk in seen_pks:
+            continue
+        slug = getattr(product, "commerce_slug", "") or ""
+        if slug and slug in carousel_slugs:
+            continue
+        available.append(product)
+        seen_pks.add(product.pk)
+    return available[:per_side], available[per_side : per_side * 2]
+
+
+def catalog_section_label(products_by_category: list[dict[str, Any]]) -> str:
+    """Avoid redundant 'Shop our collection' + 'All offers' double headings."""
+    if len(products_by_category) == 1:
+        name = (products_by_category[0].get("name") or "").strip()
+        if name.lower() in {"all offers", "all products"}:
+            return "Products"
+    return "Shop our collection"
+
+
 def products_by_category(products) -> list[dict[str, Any]]:
     """Group products by category for shop index sections."""
     groups: OrderedDict[str, dict[str, Any]] = OrderedDict()

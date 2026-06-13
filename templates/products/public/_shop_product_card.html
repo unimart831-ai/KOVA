@@ -1,6 +1,6 @@
-{# Marketplace product card — square thumb, location pill, truncated title, accent price #}
+{# Product card — portrait image, clean typography, quick-view affordance #}
 <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=product.commerce_slug %}"
-   class="shop-product-card shop-card"
+   class="shop-product-card"
    data-product-name="{{ product.name|lower }}"
    role="listitem">
   <div class="shop-product-card-media">
@@ -11,18 +11,16 @@
     <div class="shop-placeholder" aria-hidden="true">{{ product.name|slice:":1"|upper }}</div>
     {% endif %}
     {% endwith %}
-    {% if profile.city or profile.country %}
-    <span class="shop-product-location">
-      {% if profile.country %}{{ profile.country }}{% endif %}{% if profile.country and profile.city %} | {% endif %}{% if profile.city %}{{ profile.city }}{% endif %}
-    </span>
-    {% endif %}
     {% if product.is_featured %}
     <span class="shop-product-badge shop-product-badge--featured">Featured</span>
     {% elif product.stock_status == 'out_of_stock' %}
-    <span class="shop-product-badge shop-product-badge--stock">Out of stock</span>
-    {% else %}
-    <span class="shop-product-badge shop-product-badge--new">New</span>
+    <span class="shop-product-badge shop-product-badge--stock">Sold out</span>
+    {% elif product.stock_status == 'low_stock' %}
+    <span class="shop-product-badge shop-product-badge--stock">Low stock</span>
     {% endif %}
+    <span class="shop-product-card-arrow" aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+    </span>
   </div>
   <div class="shop-product-card-body">
     <h3 class="shop-product-card-title">{{ product.name }}</h3>
