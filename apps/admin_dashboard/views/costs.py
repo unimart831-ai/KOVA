@@ -480,6 +480,9 @@ def cost_overview(request):
         image_cost_30d / images_generated if images_generated else 0
     )
     bucket_vs_actions_delta = round(total_cost_30d - bucket_cost_30d, 4)
+
+    # ── 9. Non-LLM platform costs (Photoroom, WhatsApp, voice, email) ──
+    spend_snapshot = aggregate_platform_spend()
     unknown_model_names |= set(spend_snapshot.get("unknown_models") or [])
 
     photoroom_pool = spend_snapshot["photoroom_pool"]
