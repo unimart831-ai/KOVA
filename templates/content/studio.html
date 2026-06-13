@@ -37,7 +37,7 @@
         <p class="text-xs text-kova-600 dark:text-kova-400 mt-0.5">Record once — get a full multi-post campaign in minutes. Perfect when you're on the move.</p>
       </div>
     </div>
-    <a href="{% url 'content:voice_campaign' %}" class="inline-flex items-center justify-center gap-1 shrink-0 px-4 py-2 rounded-lg text-xs font-semibold bg-kova-600 text-white hover:bg-kova-700 transition-colors">
+    <a href="{% url 'content:voice_campaign' %}" class="btn-primary btn-sm gap-1 shrink-0 font-semibold">
       Start campaign
       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
     </a>
@@ -168,7 +168,7 @@
           </button>
 
           <button type="submit"
-                  class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kova-600 px-5 text-sm font-semibold text-white shadow-sm shadow-kova-600/25 transition hover:bg-kova-700 focus:outline-none focus:ring-2 focus:ring-kova-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 dark:hover:bg-kova-500 w-full sm:w-auto sm:min-w-[10rem] disabled:opacity-60 disabled:cursor-not-allowed group"
+                  class="btn-primary gap-2 h-10 px-5 font-semibold shadow-sm shadow-kova-600/25 w-full sm:w-auto sm:min-w-[10rem] disabled:opacity-60 disabled:cursor-not-allowed group"
                   {% if at_seed_limit %}disabled aria-disabled="true" title="Monthly seed limit reached — upgrade to continue"{% endif %}
                   :disabled="$el.closest('form')?.classList.contains('htmx-request') || $el.closest('form')?.dataset.seedLimit === '1'"
                   >

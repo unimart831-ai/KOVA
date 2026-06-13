@@ -9,14 +9,14 @@
 <div class="max-w-5xl mx-auto space-y-6">
 
   {# Inbox Navigation #}
-  <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-3">
-    <a href="{% url 'engage:inbox' %}" class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+  <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-3 overflow-x-auto overscroll-x-contain">
+    <a href="{% url 'engage:inbox' %}" class="whitespace-nowrap px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
       Comments & Mentions
     </a>
-    <a href="{% url 'engage:dm_inbox' %}" class="px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 border-kova-600 text-kova-700 dark:text-kova-400">
+    <a href="{% url 'engage:dm_inbox' %}" class="whitespace-nowrap px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 border-kova-600 text-kova-700 dark:text-kova-400">
       Messages
     </a>
-    <a href="{% url 'engage:auto_sent_list' %}" class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+    <a href="{% url 'engage:auto_sent_list' %}" class="whitespace-nowrap px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
       Auto-sent
     </a>
   </div>
@@ -38,24 +38,24 @@
   </div>
 
   {# Platform Filter #}
-  <div class="flex items-center gap-2">
+  <div class="flex items-center gap-2 overflow-x-auto overscroll-x-contain pb-1">
     <a href="{% url 'engage:dm_inbox' %}"
-       class="px-3 py-1.5 rounded-full text-xs font-medium transition
+       class="shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium transition
               {% if not platform_filter %}bg-kova-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}">
       All
     </a>
     <a href="{% url 'engage:dm_inbox' %}?platform=facebook"
-       class="px-3 py-1.5 rounded-full text-xs font-medium transition
+       class="shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium transition
               {% if platform_filter == 'facebook' %}bg-[#1877F2] text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}">
       Facebook
     </a>
     <a href="{% url 'engage:dm_inbox' %}?platform=instagram"
-       class="px-3 py-1.5 rounded-full text-xs font-medium transition
+       class="shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium transition
               {% if platform_filter == 'instagram' %}bg-[#E4405F] text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}">
       Instagram
     </a>
     <a href="{% url 'engage:dm_inbox' %}?platform=whatsapp"
-       class="px-3 py-1.5 rounded-full text-xs font-medium transition
+       class="shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium transition
               {% if platform_filter == 'whatsapp' %}bg-[#25D366] text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}">
       WhatsApp
     </a>

@@ -99,10 +99,8 @@
     {% endif %}
   {% endfor %}{% endfor %}
 
-  {# Empty state for mobile #}
-  {% with has_posts=False %}
-  {% for week in weeks %}{% for day in week %}{% if day.in_month and day.posts %}{% with has_posts=True %}{% endwith %}{% endif %}{% endfor %}{% endfor %}
-  {% if not has_posts %}
+  {# Empty state for mobile — uses the same source of truth as the desktop state #}
+  {% if not total_scheduled %}
   <div class="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 p-8 text-center">
     <div class="w-12 h-12 mx-auto rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
       <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,10 +109,9 @@
     </div>
     <p class="text-sm font-medium text-gray-900 dark:text-white">No posts this month</p>
     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Head to the Studio to create content.</p>
-    <a href="{% url 'content:studio' %}" class="inline-flex items-center mt-3 px-4 py-2 text-xs font-medium rounded-lg bg-kova-600 text-white hover:bg-kova-700 transition-colors">Create content</a>
+    <a href="{% url 'content:studio' %}" class="btn-primary btn-sm mt-3">Create content</a>
   </div>
   {% endif %}
-  {% endwith %}
 </div>
 
 {# ── Desktop empty state ──────────────────────────────────────── #}
@@ -128,7 +125,7 @@
     </div>
     <p class="text-base font-semibold text-gray-900 dark:text-white">No posts scheduled for {{ month_name }}</p>
     <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-md mx-auto">Create content in the Studio and approve it to see posts appear on the calendar.</p>
-    <a href="{% url 'content:studio' %}" class="inline-flex items-center mt-4 px-5 py-2.5 text-sm font-medium rounded-lg bg-kova-600 text-white hover:bg-kova-700 transition-colors shadow-sm">Create content</a>
+    <a href="{% url 'content:studio' %}" class="btn-primary mt-4">Create content</a>
   </div>
 </div>
 {% endif %}

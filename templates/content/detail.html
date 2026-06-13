@@ -394,7 +394,7 @@
 
           {# Approve button #}
           <button @click="showSchedule = true" type="button"
-                  class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl bg-kova-600 text-white hover:bg-kova-700 active:bg-kova-800 transition shadow-sm">
+                  class="btn-primary w-full gap-2 font-semibold shadow-sm">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
             Approve &amp; Schedule
             <svg class="w-3.5 h-3.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
@@ -404,13 +404,13 @@
           <form method="POST" action="{% url 'content:reject' post.id %}">
             {% csrf_token %}
             <button type="submit"
-                    class="w-full px-4 py-2 text-sm font-medium rounded-xl border border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition">
+                    class="w-full px-4 py-2 text-sm font-medium rounded-lg border border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition">
               Reject
             </button>
           </form>
 
           <a href="{% url 'content:edit' post.id %}"
-             class="block w-full text-center px-4 py-2 text-sm font-medium rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+             class="block w-full text-center px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
             Edit Post
           </a>
 
@@ -492,8 +492,7 @@
                   <div class="px-4 pb-4 flex items-center gap-2">
                     <button @click="imgOk = true"
                             {% if post.reel_compose_pending %}disabled{% endif %}
-                            class="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white rounded-xl transition shadow-sm
-                                   {% if post.reel_compose_pending %}bg-gray-300 dark:bg-gray-700 cursor-not-allowed{% else %}bg-kova-600 hover:bg-kova-700{% endif %}">
+                            class="btn-primary flex-1 gap-1.5 font-semibold shadow-sm {% if post.reel_compose_pending %}opacity-50 cursor-not-allowed{% endif %}">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                       Looks Good
                     </button>
@@ -546,7 +545,7 @@
                       <input type="datetime-local" x-ref="detailPicker"
                              class="flex-1 min-w-0 text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-kova-500 focus:border-kova-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
                       <button @click="if($refs.detailPicker.value) submit('exact', $refs.detailPicker.value)"
-                              class="px-4 py-2 text-sm font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors shadow-sm">Set</button>
+                              class="btn-primary shadow-sm">Set</button>
                     </div>
                   </div>
                 </div>
@@ -557,14 +556,14 @@
 
           {% elif post.status == 'rejected' %}
           <a href="{% url 'content:edit' post.id %}"
-             class="block w-full text-center px-4 py-2.5 text-sm font-medium rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+             class="block w-full text-center px-4 py-2.5 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
             Revise Post
           </a>
           {% endif %}
 
           {% if post.status == 'published' and post.platform_post_url %}
           <a href="{{ post.platform_post_url }}" target="_blank" rel="noopener noreferrer"
-             class="block w-full text-center px-4 py-2.5 text-sm font-semibold rounded-xl bg-kova-600 text-white hover:bg-kova-700 transition shadow-sm">
+             class="btn-primary w-full font-semibold shadow-sm">
             View on Platform
           </a>
           {% endif %}
