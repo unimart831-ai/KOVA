@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, bookings, calendar_intel, campaigns, content, content_safety, costs, emails, engage, feature_usage, help, innovations, leads, llm, logs, media_queue, memes, notifications, onboarding, operations, ops, overview, partners, partials, photoroom, pixel, platforms, products, profile_audit, qr, reel_music, revenue, reviews, sales_inquiries, search, seed_quota, system, system_maps, teams, user_health, users, whatsapp
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, bookings, calendar_intel, campaigns, content, content_safety, costs, emails, engage, feature_usage, help, innovations, leads, llm, logs, media_queue, memes, notifications, onboarding, operations, ops, overview, partners, partials, photoroom, pilot, pixel, platforms, products, profile_audit, qr, reel_music, revenue, reviews, sales_inquiries, search, seed_quota, system, system_maps, teams, user_health, users, whatsapp
 
 app_name = "admin_dashboard"
 
@@ -10,6 +10,9 @@ urlpatterns = [
     path("search/", search.global_search, name="global_search"),
     path("search/suggest/", search.search_suggest, name="global_search_suggest"),
     path("feature-usage/", feature_usage.feature_usage, name="feature_usage"),
+
+    # Pilot cohort (TEST_BUSINESSES)
+    path("pilot/", pilot.pilot_overview, name="pilot_overview"),
 
     # Users
     path("users/", users.user_list, name="user_list"),
