@@ -431,11 +431,9 @@ def brief_home(request):
         .values_list("platform", flat=True)
     )
 
-    user_plan = (getattr(getattr(request.user, "profile", None), "plan", None) or "starter").lower()
-
     return render(request, "briefs/home.html", {
         "brief": brief,
-        "today_compact": user_plan == "starter",
+        "today_compact": False,
         "brief_is_stale": brief_is_stale,
         "brief_time_passed": _brief_time_has_passed(request.user),
         "strategist_active": _strategist_is_active(request.user),

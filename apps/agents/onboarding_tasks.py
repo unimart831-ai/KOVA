@@ -548,7 +548,7 @@ def _generate_welcome_brief(user, research, onboarding_result):
             "competitor_update": llm_result.get("competitor_update", ""),
         },
         agent_activity=[],
-        posts_pending=0,
+        posts_pending=posts_created,
     )
 
     # Create notification

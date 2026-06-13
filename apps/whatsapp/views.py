@@ -375,9 +375,10 @@ Respond in JSON:
     response = generate(
         prompt=f"Create a {category} WhatsApp template for: {prompt}",
         system=system,
-        model=get_model_for_task("create"),
+        model=get_model_for_task("create", user=account.user),
         temperature=0.7,
         json_mode=True,
+        user=account.user,
     )
 
     parsed = parse_llm_json(response.content) if response.content else None

@@ -165,6 +165,44 @@
         </div>
       {% endif %}
 
+      {# ── The wow: real posts the AI already wrote ── #}
+      {% if preview_posts %}
+      <div class="card shadow-kova dark:shadow-none border-kova-100 dark:border-kova-900/40">
+        <div class="card-body">
+          <div class="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Your AI already wrote these</h2>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">In your brand voice — ready for you to approve</p>
+            </div>
+            {% if posts_ready > preview_posts|length %}
+            <span class="shrink-0 text-xs font-medium text-kova-600 dark:text-kova-400">+{{ posts_ready|add:"-3" }} more</span>
+            {% endif %}
+          </div>
+          <div class="space-y-3">
+            {% for post in preview_posts %}
+            <div class="rounded-xl border border-gray-100 dark:border-gray-800 p-4 bg-gray-50/60 dark:bg-gray-900/30">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-kova-100 text-kova-700 dark:bg-kova-950 dark:text-kova-300">
+                  {{ post.get_platform_display|default:post.platform|default:"Draft" }}
+                </span>
+                {% if post.post_format %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400">
+                  {{ post.get_post_format_display|default:post.post_format }}
+                </span>
+                {% endif %}
+              </div>
+              <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">{{ post.content_text|truncatechars:240 }}</p>
+            </div>
+            {% endfor %}
+          </div>
+          <a href="{% url 'content:studio' %}" class="inline-flex items-center gap-1 mt-4 text-sm font-semibold text-kova-600 dark:text-kova-400 hover:text-kova-800 dark:hover:text-kova-300">
+            Review &amp; approve all in Studio
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+      {% endif %}
+
       {# Quick stats #}
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {% if brief.trending_topics %}

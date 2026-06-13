@@ -834,10 +834,12 @@ def onboarding_complete(request):
     today = timezone.now().date()
     brief = DailyBrief.objects.filter(user=request.user, date=today).first()
     profile = request.user.profile
-    posts_ready = Post.objects.filter(
+    pending_posts = Post.objects.filter(
         user=request.user,
         status__in=[Post.Status.PENDING_APPROVAL, Post.Status.DRAFT],
-    ).count()
+    ).order_by("-created_at")
+    posts_ready = pending_posts.count()
+    preview_posts = list(pending_posts[:3])
     has_platforms = SocialAccount.objects.filter(
         user=request.user, is_active=True
     ).exists()
@@ -846,6 +848,7 @@ def onboarding_complete(request):
         "progress": progress,
         "brief": brief,
         "posts_ready": posts_ready,
+        "preview_posts": preview_posts,
         "has_platforms": has_platforms,
         "is_commerce": is_commerce_industry(profile.industry),
         "onboarding_intent": get_onboarding_intent(profile),
@@ -906,10 +909,12 @@ def onboarding_progress_api(request):
     progress = get_onboarding_progress(request.user)
     today = timezone.now().date()
     brief = DailyBrief.objects.filter(user=request.user, date=today).first()
-    posts_ready = Post.objects.filter(
+    pending_posts = Post.objects.filter(
         user=request.user,
         status__in=[Post.Status.PENDING_APPROVAL, Post.Status.DRAFT],
-    ).count()
+    ).order_by("-created_at")
+    posts_ready = pending_posts.count()
+    preview_posts = list(pending_posts[:3])
     has_platforms = SocialAccount.objects.filter(
         user=request.user, is_active=True
     ).exists()
@@ -921,6 +926,7 @@ def onboarding_progress_api(request):
         "progress": progress,
         "brief": brief,
         "posts_ready": posts_ready,
+        "preview_posts": preview_posts,
         "has_platforms": has_platforms,
         "is_commerce": is_commerce_industry(profile.industry),
         "onboarding_intent": get_onboarding_intent(profile),

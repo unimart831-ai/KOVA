@@ -12,6 +12,17 @@
     <span class="text-xs font-semibold text-red-600 dark:text-red-400">{{ revenue_stat.delta_pct|floatformat:0 }}% vs last week</span>
     {% endif %}
   </a>
+  {% else %}
+  {# Money Proof empty state — show what's coming so the differentiator is visible from day one #}
+  <div class="p-4 rounded-xl border border-dashed border-emerald-300 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/10">
+    <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Money proof</p>
+    <p class="mt-1 text-sm font-medium text-gray-800 dark:text-gray-200">This is where you'll see which posts brought paying customers.</p>
+    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Add a QR code at your counter or share a tracked link, and Kova attributes the sale back to the post that drove it.</p>
+    <div class="mt-3 flex flex-wrap gap-2">
+      <a href="{% url 'qr_attribution:create' %}" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors">Create a QR code</a>
+      <a href="{% url 'links:list' %}" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors">Share a tracked link</a>
+    </div>
+  </div>
   {% endif %}
 
   <p class="text-sm text-gray-600 dark:text-gray-400">{{ money_board.summary_line }}</p>

@@ -112,6 +112,7 @@
                 <p class="text-[10px] text-gray-500 mt-2 border-t border-gray-700 pt-2">70+ healthy · 40–69 improving · &lt;40 needs attention</p>
               </div>
             </div>
+            {% if brief.kova_score > 0 %}
             <div class="flex items-baseline gap-1.5 mt-0.5">
               <span class="text-3xl font-black text-white tabular-nums leading-none">{{ brief.kova_score }}</span>
               {% if brief.kova_score_delta > 0 %}
@@ -120,15 +121,27 @@
                 <span class="text-sm font-bold text-red-400">{{ brief.kova_score_delta }}</span>
               {% endif %}
             </div>
+            {% else %}
+            <div class="mt-0.5">
+              <span class="text-lg font-black text-white leading-none">Day 1</span>
+              <p class="text-[10px] text-gray-400 mt-0.5">Building your baseline</p>
+            </div>
+            {% endif %}
           </div>
           {# Score ring #}
           <div class="relative w-14 h-14">
             <svg class="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
               <circle cx="28" cy="28" r="24" stroke="currentColor" stroke-width="4" fill="none" class="text-white/10"/>
+              {% if brief.kova_score > 0 %}
               <circle cx="28" cy="28" r="24" stroke="currentColor" stroke-width="4" fill="none"
                       stroke-dasharray="{% widthratio brief.kova_score 100 151 %} 151"
                       stroke-linecap="round"
                       class="{% if brief.kova_score >= 70 %}text-green-400{% elif brief.kova_score >= 40 %}text-amber-400{% else %}text-kova-400{% endif %} transition-all duration-1000"/>
+              {% else %}
+              <circle cx="28" cy="28" r="24" stroke="currentColor" stroke-width="4" fill="none"
+                      stroke-dasharray="38 151" stroke-linecap="round"
+                      class="text-kova-400/60 animate-pulse"/>
+              {% endif %}
             </svg>
           </div>
         </div>
