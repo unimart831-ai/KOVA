@@ -19,8 +19,8 @@
       <a href="{% url 'memes:trend_alerts' %}" class="btn-primary text-xs px-3 py-1.5">
         Trend Alerts{% if value_stats.pending_alerts %} ({{ value_stats.pending_alerts }}){% endif %}
       </a>
-      <a href="{% url 'memes:queue' %}" class="btn-outline text-xs px-3 py-1.5">My Queue ({{ adapted_ids|length }})</a>
-      <a href="{% url 'memes:settings' %}" class="btn-outline text-xs px-3 py-1.5">Settings</a>
+      <a href="{% url 'memes:queue' %}" class="btn-outline btn-sm">My Queue ({{ adapted_ids|length }})</a>
+      <a href="{% url 'memes:settings' %}" class="btn-outline btn-sm">Settings</a>
     </div>
   </div>
 
@@ -57,48 +57,48 @@
     <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
       <div class="flex items-start justify-between mb-2">
         <div>
-          <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">This week</p>
+          <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">This week</p>
           <p class="text-sm font-medium text-gray-900 dark:text-white mt-1">{{ quota.used }} / {{ quota.limit }} adapted</p>
         </div>
-        <span class="text-[10px] px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 font-medium">{{ quota.risk_tolerance }}</span>
+        <span class="text-[10px] px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-medium">{{ quota.risk_tolerance }}</span>
       </div>
       <div class="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
         <div class="h-full rounded-full {% if quota.percent >= 100 %}bg-red-500{% elif quota.percent >= 75 %}bg-amber-500{% else %}bg-kova-500{% endif %}" style="width: {{ quota.percent }}%;"></div>
       </div>
     </div>
     <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-      <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Trend freshness</p>
+      <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trend freshness</p>
       <p class="text-sm font-medium text-gray-900 dark:text-white mt-1">
         {% if last_discovered %}Discovered {{ last_discovered|timesince }} ago{% else %}Scanning soon{% endif %}
       </p>
-      <p class="text-[10px] text-gray-500 mt-1.5">New trends every few hours. Default sort ranks by fit for your business.</p>
+      <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5">New trends every few hours. Default sort ranks by fit for your business.</p>
     </div>
   </div>
   {% endif %}
 
   <div class="flex flex-wrap items-center gap-3">
-    <form method="get" class="flex flex-wrap items-center gap-2">
+    <form method="get" class="filter-row">
       {% if topic_hint %}<input type="hidden" name="topic" value="{{ topic_hint }}">{% endif %}
-      <select name="category" class="input text-xs w-36">
+      <select name="category" class="input text-xs sm:w-36">
         <option value="">All Categories</option>
         {% for val, label in categories %}
         <option value="{{ val }}" {% if current_category == val %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
-      <select name="lifecycle" class="input text-xs w-32">
+      <select name="lifecycle" class="input text-xs sm:w-32">
         <option value="">All Status</option>
         <option value="emerging" {% if current_lifecycle == "emerging" %}selected{% endif %}>Emerging</option>
         <option value="trending" {% if current_lifecycle == "trending" %}selected{% endif %}>Trending</option>
         <option value="peaked" {% if current_lifecycle == "peaked" %}selected{% endif %}>Peaked</option>
       </select>
-      <select name="sort" class="input text-xs w-36">
+      <select name="sort" class="input text-xs sm:w-36">
         <option value="score" {% if current_sort == "score" %}selected{% endif %}>Best for you</option>
         <option value="virality" {% if current_sort == "virality" %}selected{% endif %}>Most Viral</option>
         <option value="safety" {% if current_sort == "safety" %}selected{% endif %}>Brand Safe</option>
         <option value="cultural" {% if current_sort == "cultural" %}selected{% endif %}>Most Kenyan</option>
         <option value="newest" {% if current_sort == "newest" %}selected{% endif %}>Newest</option>
       </select>
-      <button type="submit" class="btn-primary text-xs px-3 py-1.5">Filter</button>
+      <button type="submit" class="btn-primary text-xs px-3 py-1.5 w-full sm:w-auto">Filter</button>
     </form>
   </div>
 
@@ -118,7 +118,7 @@
           <span class="text-[10px] text-gray-400">{{ meme.get_category_display }}</span>
         </div>
         {% if meme.id in adapted_ids %}
-        <span class="text-[10px] text-kova-600 font-medium">✓ Adapted</span>
+        <span class="text-[10px] text-kova-600 dark:text-kova-400 font-medium">✓ Adapted</span>
         {% endif %}
       </div>
 
@@ -127,8 +127,8 @@
       {% endif %}
 
       <a href="{% url 'memes:detail' meme_id=meme.id %}" class="block">
-        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1 hover:text-kova-600">{{ meme.title }}</h3>
-        <p class="text-xs text-gray-500 line-clamp-2 mb-3">{{ meme.description }}</p>
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1 hover:text-kova-600 dark:hover:text-kova-400">{{ meme.title }}</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">{{ meme.description }}</p>
       </a>
 
       {% if meme.format_description %}
@@ -178,7 +178,7 @@
           <button type="submit" class="btn-primary text-xs px-3 py-1">Adapt</button>
         </form>
         {% else %}
-        <a href="{% url 'memes:detail' meme_id=meme.id %}" class="btn-outline text-xs px-3 py-1">View</a>
+        <a href="{% url 'memes:detail' meme_id=meme.id %}" class="btn-outline btn-xs">View</a>
         {% endif %}
       </div>
 
@@ -194,7 +194,7 @@
   {% else %}
   <div class="text-center py-16">
     <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-1">No trending memes yet</h3>
-    <p class="text-xs text-gray-500">Discovery runs every few hours — check back soon, or adjust filters in Settings.</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">Discovery runs every few hours — check back soon, or adjust filters in Settings.</p>
   </div>
   {% endif %}
 </div>

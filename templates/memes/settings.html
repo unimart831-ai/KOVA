@@ -12,39 +12,39 @@
 
   <div class="flex items-center justify-between">
     <h2 class="text-xl font-bold text-gray-900 dark:text-white">Meme Preferences</h2>
-    <a href="{% url 'memes:discover' %}" class="btn-outline text-xs px-3 py-1.5">← Discover</a>
+    <a href="{% url 'memes:discover' %}" class="btn-outline btn-sm">← Discover</a>
   </div>
 
   <form method="post" class="space-y-6">
     {% csrf_token %}
 
-    <div class="bg-white dark:bg-gray-900 rounded-xl border p-5">
+    <div class="card p-5">
       <div class="flex items-center justify-between">
         <div>
           <h3 class="text-sm font-semibold">Meme Intelligence</h3>
-          <p class="text-xs text-gray-500 mt-0.5">Enable weekly trend scans and auto-adaptations</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Enable weekly trend scans and auto-adaptations</p>
         </div>
         <label class="relative inline-flex items-center cursor-pointer">
           <input type="checkbox" name="is_active" {% if form.instance.is_active %}checked{% endif %} class="sr-only peer">
-          <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-kova-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+          <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full peer peer-checked:bg-kova-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
         </label>
       </div>
     </div>
 
-    <div class="bg-white dark:bg-gray-900 rounded-xl border p-5">
+    <div class="card p-5">
       <h3 class="text-sm font-semibold mb-1">Risk Tolerance</h3>
-      <p class="text-xs text-gray-500 mb-3">Conservative hides edgy trends (political excluded by default)</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Conservative hides edgy trends (political excluded by default)</p>
       {{ form.risk_tolerance }}
     </div>
 
-    <div class="bg-white dark:bg-gray-900 rounded-xl border p-5">
+    <div class="card p-5">
       <h3 class="text-sm font-semibold mb-1">Weekly Quota</h3>
       {{ form.max_memes_per_week }}
     </div>
 
-    <div class="bg-white dark:bg-gray-900 rounded-xl border p-5">
+    <div class="card p-5">
       <h3 class="text-sm font-semibold mb-2">Excluded categories</h3>
-      <p class="text-xs text-gray-500 mb-3">Never show these in Discover (political recommended for MSMEs)</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Never show these in Discover (political recommended for MSMEs)</p>
       <div class="grid grid-cols-2 gap-2">
         {% for choice in form.excluded_categories_selection %}
         <label class="flex items-center gap-2 text-sm">{{ choice.tag }} {{ choice.choice_label }}</label>
@@ -52,9 +52,9 @@
       </div>
     </div>
 
-    <div class="bg-white dark:bg-gray-900 rounded-xl border p-5">
+    <div class="card p-5">
       <h3 class="text-sm font-semibold mb-2">Preferred categories</h3>
-      <p class="text-xs text-gray-500 mb-3">Boost these in your feed (optional)</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Boost these in your feed (optional)</p>
       <div class="grid grid-cols-2 gap-2">
         {% for choice in form.preferred_categories_selection %}
         <label class="flex items-center gap-2 text-sm">{{ choice.tag }} {{ choice.choice_label }}</label>
@@ -62,7 +62,7 @@
       </div>
     </div>
 
-    <div class="bg-white dark:bg-gray-900 rounded-xl border p-5">
+    <div class="card p-5">
       <h3 class="text-sm font-semibold mb-2">Preferred humor</h3>
       <div class="grid grid-cols-2 gap-2">
         {% for choice in form.preferred_humor_selection %}
@@ -71,9 +71,9 @@
       </div>
     </div>
 
-    <div class="bg-white dark:bg-gray-900 rounded-xl border p-5">
+    <div class="card p-5">
       <h3 class="text-sm font-semibold mb-2">Preferred platforms</h3>
-      <p class="text-xs text-gray-500 mb-3">Adaptations target these first (WhatsApp = Status format)</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Adaptations target these first (WhatsApp = Status format)</p>
       <div class="grid grid-cols-2 gap-2">
         {% for choice in form.preferred_platforms_selection %}
         <label class="flex items-center gap-2 text-sm">{{ choice.tag }} {{ choice.choice_label }}</label>
@@ -81,15 +81,15 @@
       </div>
     </div>
 
-    <div class="bg-white dark:bg-gray-900 rounded-xl border p-5">
+    <div class="card p-5">
       <div class="flex items-center justify-between">
         <div>
           <h3 class="text-sm font-semibold">Auto-Queue to Studio</h3>
-          <p class="text-xs text-gray-500 mt-0.5">When brand fit ≥65%, approve and send to Studio automatically</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">When brand fit ≥65%, approve and send to Studio automatically</p>
         </div>
         <label class="relative inline-flex items-center cursor-pointer">
           <input type="checkbox" name="auto_queue" {% if form.instance.auto_queue %}checked{% endif %} class="sr-only peer">
-          <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-kova-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+          <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full peer peer-checked:bg-kova-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
         </label>
       </div>
     </div>

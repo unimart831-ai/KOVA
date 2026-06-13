@@ -97,7 +97,7 @@
               </div>
               <span class="badge shrink-0
                 {% if action.status == 'completed' %}badge-success
-                {% elif action.status == 'failed' %}badge-error
+                {% elif action.status == 'failed' %}badge-danger
                 {% elif action.status == 'started' %}badge-info
                 {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300{% endif %}">
                 {{ action.get_status_display }}

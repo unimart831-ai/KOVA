@@ -88,24 +88,24 @@
       <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Conversion Funnel</h3>
     </div>
     <div class="p-5">
-      <div class="flex items-center justify-between gap-2">
-        <div class="text-center flex-1">
+      <div class="flex items-center justify-between gap-2 overflow-x-auto overscroll-x-contain">
+        <div class="text-center flex-1 min-w-[60px]">
           <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ funnel.clicks }}</p>
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Clicks</p>
         </div>
-        <div class="text-center text-gray-300 dark:text-gray-600">
+        <div class="text-center shrink-0 text-gray-300 dark:text-gray-600">
           <svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
           <p class="text-[10px] text-gray-400">{{ funnel.click_to_lead }}%</p>
         </div>
-        <div class="text-center flex-1">
+        <div class="text-center flex-1 min-w-[60px]">
           <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ funnel.leads }}</p>
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Leads</p>
         </div>
-        <div class="text-center text-gray-300 dark:text-gray-600">
+        <div class="text-center shrink-0 text-gray-300 dark:text-gray-600">
           <svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
           <p class="text-[10px] text-gray-400">{{ funnel.lead_to_sale }}%</p>
         </div>
-        <div class="text-center flex-1">
+        <div class="text-center flex-1 min-w-[60px]">
           <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ funnel.sales }}</p>
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Sales</p>
         </div>

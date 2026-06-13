@@ -66,15 +66,15 @@
 
   {# Platform filter #}
   {% if connected_platforms %}
-  <div class="flex items-center gap-2">
-    <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Filter:</span>
+  <div class="flex items-center gap-2 overflow-x-auto overscroll-x-contain pb-1">
+    <span class="shrink-0 text-xs font-medium text-gray-500 dark:text-gray-400">Filter:</span>
     <a href="{% url 'analytics:insights' %}"
-       class="text-xs px-3 py-1.5 rounded-full border font-medium transition-colors {% if not current_platform %}bg-kova-600 text-white border-kova-600{% else %}bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-kova-300{% endif %}">
+       class="shrink-0 whitespace-nowrap text-xs px-3 py-1.5 rounded-full border font-medium transition-colors {% if not current_platform %}bg-kova-600 text-white border-kova-600{% else %}bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-kova-300{% endif %}">
       All
     </a>
     {% for plat in connected_platforms %}
       <a href="{% url 'analytics:insights' %}?platform={{ plat }}"
-         class="text-xs px-3 py-1.5 rounded-full border font-medium transition-colors {% if current_platform == plat %}bg-kova-600 text-white border-kova-600{% else %}bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-kova-300{% endif %}">
+         class="shrink-0 whitespace-nowrap text-xs px-3 py-1.5 rounded-full border font-medium transition-colors {% if current_platform == plat %}bg-kova-600 text-white border-kova-600{% else %}bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-kova-300{% endif %}">
         {% if plat == 'facebook' %}Facebook{% elif plat == 'instagram' %}Instagram{% elif plat == 'twitter' %}X (Twitter){% elif plat == 'linkedin' %}LinkedIn{% elif plat == 'tiktok' %}TikTok{% elif plat == 'youtube' %}YouTube{% elif plat == 'pinterest' %}Pinterest{% elif plat == 'threads' %}Threads{% elif plat == 'bluesky' %}Bluesky{% elif plat == 'whatsapp' %}WhatsApp{% else %}{{ plat|title }}{% endif %}
       </a>
     {% endfor %}

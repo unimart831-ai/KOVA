@@ -50,7 +50,7 @@ after approve/dismiss. Self-contained (includes its own outer <li> with id).
       hx-swap="outerHTML"
       hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
       type="button"
-      class="text-xs font-medium px-3 py-1.5 rounded-md bg-kova-600 hover:bg-kova-700 text-white">
+      class="btn-primary btn-sm">
       {% if s.status == 'failed' %}Retry apply{% else %}Apply to {{ s.social_account.platform|capfirst }}{% endif %}
     </button>
     {% if s.status == 'pending' %}
@@ -60,7 +60,7 @@ after approve/dismiss. Self-contained (includes its own outer <li> with id).
       hx-swap="outerHTML"
       hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
       type="button"
-      class="text-xs font-medium px-3 py-1.5 rounded-md text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30">
+      class="btn-ghost btn-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400">
       Dismiss
     </button>
     {% endif %}

@@ -20,12 +20,12 @@
     {% elif campaign.status == 'pending_approval' %}
     <form method="post" action="{% url 'campaigns:status' pk=campaign.pk %}">{% csrf_token %}<input type="hidden" name="status" value="approved"><button class="btn-primary text-xs px-3 py-1.5">Approve</button></form>
     {% elif campaign.status == 'approved' %}
-    <form method="post" action="{% url 'campaigns:status' pk=campaign.pk %}">{% csrf_token %}<input type="hidden" name="status" value="active"><button class="btn-primary text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700">Launch Campaign</button></form>
+    <form method="post" action="{% url 'campaigns:status' pk=campaign.pk %}">{% csrf_token %}<input type="hidden" name="status" value="active"><button class="btn-primary text-xs px-3 py-1.5">Launch Campaign</button></form>
     {% elif campaign.status == 'active' %}
     <form method="post" action="{% url 'campaigns:status' pk=campaign.pk %}">{% csrf_token %}<input type="hidden" name="status" value="paused"><button class="btn-secondary text-xs px-3 py-1.5">Pause</button></form>
     <form method="post" action="{% url 'campaigns:status' pk=campaign.pk %}">{% csrf_token %}<input type="hidden" name="status" value="completed"><button class="btn-primary text-xs px-3 py-1.5">Complete</button></form>
     {% elif campaign.status == 'paused' %}
-    <form method="post" action="{% url 'campaigns:status' pk=campaign.pk %}">{% csrf_token %}<input type="hidden" name="status" value="active"><button class="btn-primary text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700">Resume</button></form>
+    <form method="post" action="{% url 'campaigns:status' pk=campaign.pk %}">{% csrf_token %}<input type="hidden" name="status" value="active"><button class="btn-primary text-xs px-3 py-1.5">Resume</button></form>
     {% endif %}
   </div>
 </div>
@@ -181,7 +181,7 @@
       {# Add content form #}
       {% if available_seeds %}
       <div class="px-5 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800">
-        <form method="post" action="{% url 'campaigns:add_seed' pk=campaign.pk %}" class="flex items-center gap-2">
+        <form method="post" action="{% url 'campaigns:add_seed' pk=campaign.pk %}" class="flex flex-col sm:flex-row sm:items-center gap-2">
           {% csrf_token %}
           <select name="seed_id" class="input text-xs flex-1">
             <option value="">Add content…</option>
@@ -189,12 +189,12 @@
             <option value="{{ seed.pk }}">{{ seed.idea|truncatechars:60 }} ({{ seed.created_at|date:"M d" }})</option>
             {% endfor %}
           </select>
-          <select name="role" class="input text-xs w-28">
+          <select name="role" class="input text-xs w-full sm:w-28">
             <option value="primary">Primary</option>
             <option value="supporting">Supporting</option>
             <option value="follow_up">Follow-up</option>
           </select>
-          <button type="submit" class="btn-primary text-xs px-3 py-1.5">Add</button>
+          <button type="submit" class="btn-primary text-xs px-3 py-1.5 w-full sm:w-auto">Add</button>
         </form>
       </div>
       {% endif %}
@@ -229,7 +229,7 @@
 
       {% if available_emails %}
       <div class="px-5 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800">
-        <form method="post" action="{% url 'campaigns:add_email' pk=campaign.pk %}" class="flex items-center gap-2">
+        <form method="post" action="{% url 'campaigns:add_email' pk=campaign.pk %}" class="flex flex-col sm:flex-row sm:items-center gap-2">
           {% csrf_token %}
           <select name="email_id" class="input text-xs flex-1">
             <option value="">Link email campaign…</option>
@@ -237,12 +237,12 @@
             <option value="{{ ec.pk }}">{{ ec.name }} ({{ ec.get_status_display }})</option>
             {% endfor %}
           </select>
-          <select name="role" class="input text-xs w-32">
+          <select name="role" class="input text-xs w-full sm:w-32">
             <option value="announcement">Announcement</option>
             <option value="follow_up">Follow-up</option>
             <option value="reminder">Reminder</option>
           </select>
-          <button type="submit" class="btn-primary text-xs px-3 py-1.5">Link</button>
+          <button type="submit" class="btn-primary text-xs px-3 py-1.5 w-full sm:w-auto">Link</button>
         </form>
       </div>
       {% endif %}

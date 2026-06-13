@@ -64,7 +64,7 @@
             <span class="text-green-600 dark:text-green-400 font-medium">All checked fields look good</span>
           {% endif %}
         </div>
-        <a href="{% url 'profile_audit:detail' card.account.id %}" class="text-xs font-medium px-3 py-1.5 rounded-md bg-kova-600 hover:bg-kova-700 text-white shrink-0">
+        <a href="{% url 'profile_audit:detail' card.account.id %}" class="btn-primary btn-sm shrink-0">
           {% if card.pending_count %}Review →{% else %}Details{% endif %}
         </a>
       </div>
@@ -73,7 +73,7 @@
       <div class="px-5 py-3 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800 flex justify-end">
         <form method="post" action="{% url 'profile_audit:reaudit' card.account.id %}">
           {% csrf_token %}
-          <button type="submit" class="text-xs font-medium px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700">Run audit now</button>
+          <button type="submit" class="btn-secondary btn-sm">Run audit now</button>
         </form>
       </div>
     {% endif %}
