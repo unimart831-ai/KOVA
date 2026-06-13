@@ -10,6 +10,7 @@ from django.conf import settings
 
 from apps.products.commerce_autopilot import is_placeholder_product_name
 from apps.products.commerce_links import commerce_link_url, resolve_page_slug
+from apps.products.commerce_social import resolve_shop_whatsapp
 from apps.products.product_copy import (
     MIN_DESCRIPTION_SENTENCES,
     description_sentence_count,
@@ -205,7 +206,7 @@ def build_local_business_schema(
     brand: str | None = None,
 ) -> dict[str, Any] | None:
     city = (profile.city or "").strip()
-    whatsapp = (profile.cta_whatsapp or "").strip()
+    whatsapp = resolve_shop_whatsapp(profile, user)
     if not city or not whatsapp:
         return None
 
@@ -446,7 +447,7 @@ def commerce_seo_checklist(product, profile) -> dict[str, Any]:
     has_photo = bool(product.image or product.additional_images)
     has_price = bool(product.price or (product.price_range_min and product.price_range_max))
     has_city = bool((profile.city or "").strip())
-    has_whatsapp = bool((profile.cta_whatsapp or "").strip())
+    has_whatsapp = bool(resolve_shop_whatsapp(profile, user))
     has_slug = bool(product.commerce_slug)
     has_real_name = not is_placeholder_product_name(product.name)
 

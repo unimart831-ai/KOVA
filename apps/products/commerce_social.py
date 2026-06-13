@@ -51,7 +51,8 @@ def resolve_shop_whatsapp(profile, user=None) -> str:
     """
     WhatsApp number for shop CTAs.
 
-    Priority: profile.cta_whatsapp → active booking link → connected WA platform.
+    Priority: profile.cta_whatsapp → active booking link → connected WA platform
+    → signup phone (user.phone_number) → profile.cta_phone.
     """
     number = normalize_whatsapp_number(profile.cta_whatsapp or "")
     if number:
@@ -79,7 +80,14 @@ def resolve_shop_whatsapp(profile, user=None) -> str:
             if number:
                 return number
 
-    return ""
+        from apps.accounts.phone_utils import phone_to_whatsapp_digits
+
+        number = phone_to_whatsapp_digits(getattr(user, "phone_number", "") or "")
+        if number:
+            return number
+
+    number = normalize_whatsapp_number(getattr(profile, "cta_phone", "") or "")
+    return number
 
 
 def _clean_username(username: str) -> str:

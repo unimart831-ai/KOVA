@@ -17,6 +17,13 @@ class TestCommerceSocialHelpers:
         assert normalize_whatsapp_number("+254 712 345 678") == "254712345678"
         assert normalize_whatsapp_number("0712345678") == "254712345678"
 
+    def test_resolve_shop_whatsapp_falls_back_to_signup_phone(self, user):
+        user.phone_number = "0712345678"
+        user.save(update_fields=["phone_number"])
+        user.profile.cta_whatsapp = ""
+        user.profile.save(update_fields=["cta_whatsapp"])
+        assert resolve_shop_whatsapp(user.profile, user) == "254712345678"
+
     def test_resolve_shop_whatsapp_prefers_profile_cta(self, user):
         user.profile.cta_whatsapp = "254700111222"
         user.profile.save()

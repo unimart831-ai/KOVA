@@ -67,3 +67,9 @@ def apply_phone_to_user(user, phone: str):
             profile.mpesa_phone = phone.lstrip("+")
             profile.save(update_fields=["mpesa_phone"])
     user.save(update_fields=update_fields)
+
+    if profile is not None and not (profile.cta_whatsapp or "").strip():
+        wa_digits = phone_to_whatsapp_digits(phone)
+        if wa_digits:
+            profile.cta_whatsapp = wa_digits
+            profile.save(update_fields=["cta_whatsapp"])

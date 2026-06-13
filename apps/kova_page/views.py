@@ -16,6 +16,7 @@ from django.views.decorators.http import require_GET, require_POST
 from django_ratelimit.decorators import ratelimit
 
 from apps.accounts.models import UserProfile
+from apps.products.commerce_social import resolve_shop_whatsapp
 
 
 @require_GET
@@ -26,11 +27,8 @@ def page_view(request, slug):
 
     user = profile.user
 
-    # Resolve WhatsApp: prefer profile CTA, fall back to booking link
-    whatsapp = profile.cta_whatsapp or ""
-    if not whatsapp:
-        bl = user.booking_links.filter(is_active=True).first()
-        whatsapp = (bl.owner_whatsapp if bl else "") or ""
+    # Resolve WhatsApp: profile CTA, booking link, connected account, signup phone
+    whatsapp = resolve_shop_whatsapp(profile, user)
 
     # Pre-filled WhatsApp message
     business_name = profile.company_name or user.full_name or "your business"
