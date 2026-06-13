@@ -33,7 +33,7 @@
       <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">Image</span>
     {% endif %}
     {% if post.predicted_engagement_score %}
-      <span class="text-xs font-medium {% if post.predicted_engagement_score >= 70 %}text-green-600{% elif post.predicted_engagement_score >= 40 %}text-yellow-600{% else %}text-gray-500{% endif %}">
+      <span class="text-xs font-medium {% if post.predicted_engagement_score >= 70 %}text-green-600 dark:text-green-400{% elif post.predicted_engagement_score >= 40 %}text-yellow-600 dark:text-yellow-400{% else %}text-gray-500 dark:text-gray-400{% endif %}">
         Score: {{ post.predicted_engagement_score|floatformat:0 }}/100
       </span>
     {% endif %}
@@ -304,12 +304,12 @@
               hx-target="#media-list"
               hx-swap="beforeend"
               hx-encoding="multipart/form-data"
-              class="flex items-center space-x-3">
+              class="flex flex-col sm:flex-row sm:items-center gap-3">
           {% csrf_token %}
           <input type="file" name="file" accept="image/*" required
-                 class="text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
+                 class="w-full sm:w-auto text-sm text-gray-500 dark:text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 dark:file:bg-gray-800 dark:file:text-gray-200 hover:file:bg-gray-200 dark:hover:file:bg-gray-700">
           <input type="text" name="alt_text" placeholder="Alt text (optional)" class="input text-sm flex-1">
-          <button type="submit" class="btn-secondary btn-sm">Upload</button>
+          <button type="submit" class="btn-secondary btn-sm w-full sm:w-auto">Upload</button>
         </form>
       {% endif %}
     </div>
