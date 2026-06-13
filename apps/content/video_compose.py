@@ -17,7 +17,7 @@ from typing import Iterable, Optional
 from urllib.parse import urlparse
 
 import httpx
-from PIL import Image, ImageFilter, ImageOps
+from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
 logger = logging.getLogger(__name__)
 
@@ -109,20 +109,50 @@ def _download_bytes(source: str, timeout: float = 45.0) -> bytes:
     return path.read_bytes()
 
 
+def _is_light_studio_background(img: Image.Image) -> bool:
+    """Detect white/near-white product shots (Photoroom studio) for reel framing."""
+    sample = img.convert("RGB")
+    sample.thumbnail((120, 120), Image.LANCZOS)
+    pixels = list(sample.getdata())
+    if not pixels:
+        return False
+    light = sum(1 for r, g, b in pixels if r > 230 and g > 230 and b > 230)
+    return (light / len(pixels)) >= 0.55
+
+
+def _branded_story_background(target_w: int, target_h: int) -> Image.Image:
+    """Dark branded canvas for studio product shots — avoids muddy white blur."""
+    top = (12, 18, 34)
+    bottom = (26, 35, 58)
+    bg = Image.new("RGB", (target_w, target_h))
+    draw = ImageDraw.Draw(bg)
+    for y in range(target_h):
+        t = y / max(target_h - 1, 1)
+        r = int(top[0] + (bottom[0] - top[0]) * t)
+        g = int(top[1] + (bottom[1] - top[1]) * t)
+        b = int(top[2] + (bottom[2] - top[2]) * t)
+        draw.line([(0, y), (target_w, y)], fill=(r, g, b))
+    return bg
+
+
 def fit_image_to_story_frame(image_bytes: bytes, *, slide_index: int = 0) -> Image.Image:
     """
-    Fit any aspect ratio into 9:16 with blurred background + foreground.
-    Foreground position shifts per slide so consecutive scenes feel distinct.
+    Fit any aspect ratio into 9:16 with background + foreground.
+    Studio white-bg products get a dark branded canvas instead of blurred white.
     """
     img = Image.open(BytesIO(image_bytes)).convert("RGB")
     target_w, target_h = OUTPUT_WIDTH, OUTPUT_HEIGHT
 
     cover = ImageOps.fit(img, (target_w, target_h), method=Image.LANCZOS)
     if abs((img.width / img.height) - (target_w / target_h)) < 0.05:
-        return cover
+        if not _is_light_studio_background(img):
+            return cover
 
-    bg = ImageOps.fit(img, (target_w, target_h), method=Image.LANCZOS)
-    bg = bg.filter(ImageFilter.GaussianBlur(radius=10))
+    if _is_light_studio_background(img):
+        bg = _branded_story_background(target_w, target_h)
+    else:
+        bg = ImageOps.fit(img, (target_w, target_h), method=Image.LANCZOS)
+        bg = bg.filter(ImageFilter.GaussianBlur(radius=10))
 
     fg = img.copy()
     zones = caption_safe_zones(target_w, target_h)

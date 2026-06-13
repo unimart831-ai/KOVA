@@ -381,6 +381,39 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         categories=("jewelry", "electronics", "general"),
         priority=70,
     ),
+    "studio_safe": PlusVariantSpec(
+        id="studio_safe",
+        label="Safe studio (preserve product)",
+        params={
+            "removeBackground": "false",
+            "background.blur.mode": str(
+                getattr(settings, "PHOTOROOM_DEFAULT_BLUR_MODE", "bokeh")
+            ),
+            "background.blur.radius": str(
+                getattr(settings, "PHOTOROOM_DEFAULT_BLUR_RADIUS", 0.012)
+            ),
+            "lighting.mode": "ai.preserve-hue-and-saturation",
+            "referenceBox": "originalImage",
+            **_export_defaults(),
+        },
+        headers=_studio_variant_headers("studio_safe"),
+        categories=("jewelry", "beauty", "watches", "accessories", "general"),
+        priority=99,
+    ),
+    "relight_nocutout": PlusVariantSpec(
+        id="relight_nocutout",
+        label="Relight (no cutout)",
+        params={
+            "removeBackground": "false",
+            "lighting.mode": "{relight_mode}",
+            "referenceBox": "originalImage",
+            **_export_defaults(),
+        },
+        headers=_studio_variant_headers("relight_nocutout"),
+        categories=("jewelry", "beauty", "watches", "accessories", "general"),
+        min_plan="growth",
+        priority=78,
+    ),
     # ── AI backgrounds ───────────────────────────────────────────────────
     "ai_lifestyle": PlusVariantSpec(
         id="ai_lifestyle",
@@ -1734,9 +1767,10 @@ def order_variants_by_slide_role(
     stall_context: dict | None = None,
 ) -> list[PlusVariantSpec]:
     """Pick variants to fill hero → desire (2–3 AI) → proof → standout."""
-    from apps.products.photoroom_api import (
-        HIGH_UNCERTAINTY_VARIANT_IDS,
-        uncertainty_is_high,
+    from apps.products.photoroom_api import HIGH_UNCERTAINTY_VARIANT_IDS
+    from apps.products.photoroom_guard import (
+        hero_variant_ids_for_context,
+        uncertainty_is_high_for_category,
     )
 
     by_id = {s.id: s for s in candidates}
@@ -1758,7 +1792,12 @@ def order_variants_by_slide_role(
         vertical=vertical,
         stall_context=stall_context,
     )
-    skip_risky = uncertainty_is_high(uncertainty_score)
+    skip_risky = uncertainty_is_high_for_category(uncertainty_score, category)
+    if hero_studio_ids is None:
+        hero_studio_ids = hero_variant_ids_for_context(
+            category=category,
+            uncertainty_score=uncertainty_score,
+        )
     scene_ctx = _scene_intelligence_context(
         analysis,
         offering=offering,
@@ -1917,7 +1956,9 @@ def select_plus_variants(
     category = detect_product_category(product, analysis)
     vertical = resolve_scene_vertical(product, analysis, stall_context=stall_context)
     plan_rank = _plan_rank(plan_tier)
-    skip_risky = uncertainty_is_high(uncertainty_score)
+    from apps.products.photoroom_guard import uncertainty_is_high_for_category
+
+    skip_risky = uncertainty_is_high_for_category(uncertainty_score, category)
     scene_ctx = _scene_intelligence_context(
         analysis,
         offering=offering,
@@ -1984,10 +2025,16 @@ def select_plus_variants(
             if vm and vm not in candidates:
                 candidates.append(vm)
     elif vertical == "jewelry" or category == "jewelry":
-        for vid in ("studio_dark", "ai_creative_marble", "beautify", "relight"):
+        from apps.products.photoroom_guard import should_block_beautify
+
+        for vid in ("studio_safe", "studio_dark", "relight_nocutout", "ai_creative_marble", "background_blur"):
             spec = PLUS_VARIANT_CATALOG.get(vid)
             if spec and spec not in candidates:
                 candidates.append(spec)
+        if not skip_risky and not should_block_beautify(category):
+            beautify = PLUS_VARIANT_CATALOG.get("beautify")
+            if beautify and beautify not in candidates:
+                candidates.append(beautify)
     elif vertical == "electronics" or category == "electronics":
         for vid in ("relight", "ai_creative_podium", "background_blur"):
             spec = PLUS_VARIANT_CATALOG.get(vid)

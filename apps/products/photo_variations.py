@@ -723,6 +723,13 @@ def _expand_studio_polish(
     credit_pool -= len(preflight.repairs_run)
     source = preflight.master_url
 
+    from apps.products.photoroom import _load_image_bytes
+
+    master_bytes: bytes | None = None
+    loaded = _load_image_bytes(source)
+    if loaded:
+        master_bytes, _ = loaded
+
     uncertainty = preflight.quality.uncertainty_score
     if (
         uncertainty is None
@@ -829,6 +836,13 @@ def _expand_studio_polish(
     from apps.products.photoroom_api import merge_uncertainty
 
     from apps.products.photoroom_review import review_flags_for_output
+    from apps.products.photoroom_guard import (
+        SAFE_HERO_VARIANT_ID,
+        is_cutout_variant,
+        validate_cutout_output,
+    )
+
+    product_category = detect_product_category(product, analysis)
 
     # Process results in order
     for spec, edit_result in results_ordered:
@@ -838,6 +852,39 @@ def _expand_studio_polish(
                 edit_result.uncertainty_score,
             )
         image_bytes = edit_result.content if edit_result and edit_result.ok else None
+
+        if image_bytes and master_bytes and is_cutout_variant(spec.id):
+            ok_cutout, reject_reason = validate_cutout_output(
+                master_bytes,
+                image_bytes,
+                category=product_category,
+            )
+            if not ok_cutout:
+                logger.warning(
+                    "Cutout rejected for %s on product %s (%s) — studio_safe fallback",
+                    spec.id,
+                    product.pk,
+                    reject_reason,
+                )
+                safe_spec = PLUS_VARIANT_CATALOG.get(SAFE_HERO_VARIANT_ID)
+                if safe_spec and credit_pool > 0:
+                    safe_result = run_plus_variant(
+                        source,
+                        safe_spec,
+                        product,
+                        analysis,
+                        brand_colors,
+                        brand_template=brand_template,
+                    )
+                    if safe_result.ok and safe_result.content:
+                        image_bytes = safe_result.content
+                        edit_result = safe_result
+                        spec = safe_spec
+                    else:
+                        image_bytes = None
+                else:
+                    image_bytes = None
+
         if spec.id in LAYOUT_VARIANT_IDS and image_bytes:
             pass  # layout_index already incremented above
         if not image_bytes:
