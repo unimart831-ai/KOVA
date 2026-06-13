@@ -143,7 +143,7 @@ textarea {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
   .badge-success {
-    @apply badge bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200;
+    @apply badge bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200;
   }
   .badge-warning {
     @apply badge bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-200;
