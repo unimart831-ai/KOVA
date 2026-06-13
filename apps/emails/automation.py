@@ -41,7 +41,7 @@ def auto_email_enabled(user) -> bool:
 
 def bootstrap_email_automation(user):
     """Full setup: list, lead sync, welcome sequence, pending campaign retry."""
-    from apps.emails.subscriber_sync import bootstrap_email_marketing, ensure_default_list
+    from apps.emails.subscriber_sync import bootstrap_email_marketing
 
     result = bootstrap_email_marketing(user)
     ensure_welcome_sequence(user)

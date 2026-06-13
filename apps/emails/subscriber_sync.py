@@ -210,7 +210,6 @@ def enroll_subscriber_in_sequences(subscriber):
 
 
 def bootstrap_email_marketing(user):
-    """One-call setup: default list + lead sync + welcome sequence + pending sends."""
-    from apps.emails.automation import bootstrap_email_automation
-
-    return bootstrap_email_automation(user)
+    """One-call setup: default list + lead sync from leads and forms."""
+    ensure_default_list(user)
+    return sync_leads_for_user(user)

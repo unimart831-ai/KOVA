@@ -903,3 +903,18 @@ class TestEmailSubscriberModel:
             user=user, email="show@example.com", name="Shown",
         )
         assert "Shown" in str(sub)
+
+
+@pytest.mark.django_db
+class TestEmailBootstrap:
+    def test_bootstrap_email_marketing_does_not_recurse(self, user):
+        from apps.emails.automation import bootstrap_email_automation
+        from apps.emails.subscriber_sync import bootstrap_email_marketing
+
+        marketing = bootstrap_email_marketing(user)
+        assert "synced" in marketing
+        assert "list_count" in marketing
+
+        automation = bootstrap_email_automation(user)
+        assert "synced" in automation
+        assert "pending_sent" in automation
