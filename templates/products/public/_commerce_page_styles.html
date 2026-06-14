@@ -3,7 +3,7 @@
   .offer-page {
     max-width: var(--shop-max, 1120px);
     margin: 0 auto;
-    padding: 0 0 calc(100px + env(safe-area-inset-bottom, 0px));
+    padding: 0 0 calc(24px + env(safe-area-inset-bottom, 0px));
     min-height: 100vh;
   }
 
@@ -612,6 +612,10 @@
     bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   }
 
+  .shop-site--has-sticky-cta:not(.shop-site--has-mobile-nav) .offer-page {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+
   .shop-site--has-mobile-nav.shop-site--has-sticky-cta .offer-page {
     padding-bottom: calc(168px + env(safe-area-inset-bottom, 0px));
   }
@@ -623,12 +627,13 @@
     bottom: 0;
     z-index: 54;
     display: flex;
-    gap: 10px;
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
-    background: rgba(12, 18, 34, 0.96);
-    backdrop-filter: blur(12px);
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: rgba(12, 18, 34, 0.98);
+    backdrop-filter: blur(16px);
     border-top: 1px solid var(--shop-border-strong, rgba(255, 255, 255, 0.14));
-    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.45);
   }
 
   @media (min-width: 768px) {
@@ -654,10 +659,11 @@
   }
 
   .offer-sticky-price-value {
-    font-size: 1rem;
+    font-size: 1.0625rem;
     font-weight: 800;
     color: var(--kova-teal-bright, #14b8a6);
     white-space: nowrap;
+    letter-spacing: -0.02em;
   }
 
   .offer-sticky-actions {
@@ -665,18 +671,98 @@
     gap: 8px;
     flex: 1;
     min-width: 0;
+    justify-content: flex-end;
   }
 
   .offer-sticky-actions .shop-btn {
     flex: 1;
-    padding: 12px 14px;
+    padding: 13px 16px;
     font-size: 0.875rem;
     min-width: 0;
+    max-width: none;
   }
 
-  .offer-sticky-actions .shop-btn--wa {
-    flex: 1.4;
+  .offer-sticky-actions .shop-btn--wa-primary {
+    flex: 2;
     font-weight: 700;
+    justify-content: center;
+  }
+
+  @media (max-width: 767px) {
+    .shop-site--product-page .offer-hero-band {
+      display: none;
+    }
+
+    .shop-site--product-page .offer-eyebrow {
+      display: none;
+    }
+
+    .shop-site--has-sticky-cta .offer-actions-card .shop-btn--wa,
+    .shop-site--has-sticky-cta .offer-actions-card .offer-actions-title {
+      display: none;
+    }
+
+    .shop-site--has-sticky-cta .offer-actions-card:not(:has(.offer-field, .shop-btn--accent, .shop-btn--outline)) {
+      display: none;
+    }
+
+    .shop-site--has-sticky-cta .offer-actions-card {
+      padding: 16px;
+      border-radius: var(--shop-radius-md, 14px);
+      box-shadow: none;
+      background: var(--shop-surface, #151b2e);
+    }
+
+    .shop-site--product-page .offer-seller-card {
+      margin-top: 4px;
+      padding: 12px 14px;
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .shop-site--product-page .offer-seller-link {
+      flex: 1;
+    }
+
+    .shop-site--product-page .offer-highlights {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .shop-site--product-page .offer-highlights li {
+      padding: 6px 10px;
+      padding-left: 10px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--shop-accent, #0d8474) 14%, transparent);
+      border: 1px solid color-mix(in srgb, var(--shop-accent, #0d8474) 22%, transparent);
+      font-size: 0.75rem;
+    }
+
+    .shop-site--product-page .offer-highlights li::before {
+      display: none;
+    }
+
+    .shop-site--product-page .offer-page-body {
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+
+    .shop-site--product-page .offer-magazine {
+      gap: 20px;
+    }
+
+    .shop-site--product-page .offer-title {
+      font-size: 1.375rem;
+    }
+
+    .shop-site--product-page .offer-price {
+      font-size: 1.375rem;
+    }
+
+    .shop-site--has-sticky-cta .offer-price-row {
+      display: none;
+    }
   }
 
   /* ── M-Pesa payment states ── */

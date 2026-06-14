@@ -264,9 +264,15 @@ def public_commerce_link(request, page_slug, commerce_slug):
     )
 
     sticky = can_purchase and (bool(wa_url) or mpesa_available)
+    non_wa_social = [
+        link for link in commerce_ctx.get("social_links", [])
+        if link.get("platform") != "whatsapp"
+    ]
+    show_mobile_nav = bool(non_wa_social) and not sticky
     body_extra = " ".join(filter(None, [
-        "shop-site--has-mobile-nav" if commerce_ctx.get("social_links") else "",
+        "shop-site--has-mobile-nav" if show_mobile_nav else "",
         "shop-site--has-sticky-cta" if sticky else "",
+        "shop-site--product-page",
     ]))
 
     return render(request, "products/public/commerce_link.html", {
@@ -296,6 +302,7 @@ def public_commerce_link(request, page_slug, commerce_slug):
         "shop_footer": shop_footer_data(profile),
         "commerce_branding": commerce_branding,
         "related_products": related_products,
+        "show_mobile_nav": show_mobile_nav,
         **commerce_ctx,
         **seo,
     })
