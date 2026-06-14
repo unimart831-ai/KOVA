@@ -346,6 +346,21 @@ def build_ken_burns_variants(slide_roles: list[str]) -> list[int]:
     return variants
 
 
+def _sources_have_baked_captions(urls: list[str]) -> bool:
+    """Carousel / promo JPEGs already include headlines — skip reel lower-third hooks."""
+    markers = (
+        "/carousels/",
+        "product_carousel",
+        "promo_frame",
+        "catalog_carousel",
+    )
+    for url in urls:
+        lowered = (url or "").lower()
+        if any(marker in lowered for marker in markers):
+            return True
+    return False
+
+
 def build_reel_plan(
     image_urls: list[str],
     *,
@@ -392,15 +407,18 @@ def build_reel_plan(
 
     template = RECIPE_TEMPLATES.get(recipe, "story_arc")
     mood = RECIPE_MOODS.get(recipe, "upbeat")
-    hooks = build_hook_texts(
-        slide_count=len(ordered),
-        slide_roles=roles,
-        product_name=product_name,
-        price_label=price_label,
-        hook_override=hook_override,
-        brand_name=brand_name,
-        cta_label=cta_label,
-    )
+    if _sources_have_baked_captions(ordered):
+        hooks = [""] * len(ordered)
+    else:
+        hooks = build_hook_texts(
+            slide_count=len(ordered),
+            slide_roles=roles,
+            product_name=product_name,
+            price_label=price_label,
+            hook_override=hook_override,
+            brand_name=brand_name,
+            cta_label=cta_label,
+        )
     transitions = build_transitions(roles)
     ken = build_ken_burns_variants(roles)
 

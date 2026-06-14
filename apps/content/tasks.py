@@ -815,8 +815,11 @@ def _apply_reel_director(post, image_sources: list[str], meta: dict):
     if not getattr(settings, "REEL_DIRECTOR_ENABLED", True):
         return image_sources, None
 
-    from apps.content.reel_director import build_reel_plan
+    from apps.content.reel_director import _sources_have_baked_captions, build_reel_plan
     from apps.products.photoroom_plus import detect_product_category
+
+    if meta.get("reel_template") == "carousel_to_video" or _sources_have_baked_captions(image_sources):
+        return image_sources, None
 
     category = "general"
     analysis = meta.get("analysis") or {}
@@ -950,6 +953,8 @@ def compose_reel_video(post_id: str):
         if reel_plan
         else _build_reel_hook_texts(post, meta, len(image_sources))
     )
+    if meta.get("reel_template") == "carousel_to_video" or post.carousel_slides:
+        hook_texts = [""] * len(image_sources)
 
     # Photoroom animate: single-hero only; multi-slide director plans use FFmpeg.
     use_photoroom = (
@@ -1908,6 +1913,77 @@ def recover_stuck_media_generation():
     if recovered:
         logger.warning("recover_stuck_media_generation: marked %d post(s) as media_failed", recovered)
     return {"recovered": recovered}
+
+
+@shared_task(name="content.recover_stuck_reel_compose")
+def recover_stuck_reel_compose():
+    """
+    Re-queue reel MP4 composition when stuck in pending, or fail after retries.
+
+    Covers worker crashes between setting video_compose_status=pending and finishing
+    compose_reel_video. Runs every 10 minutes via Celery Beat.
+    """
+    from datetime import timedelta
+
+    from apps.content.models import Post
+    from apps.notifications.models import Notification
+    from apps.utils import fire_task
+
+    retry_cutoff = timezone.now() - timedelta(minutes=15)
+    fail_cutoff = timezone.now() - timedelta(minutes=45)
+
+    stuck = Post.objects.filter(
+        post_format=Post.PostFormat.REEL,
+        visual_metadata__video_compose_status="pending",
+    ).exclude(
+        status__in=[Post.Status.PUBLISHED, Post.Status.FAILED],
+    ).select_related("user")[:50]
+
+    requeued = 0
+    failed = 0
+    for post in stuck:
+        if _post_has_reel_video(post):
+            meta = dict(post.visual_metadata or {})
+            meta["video_compose_status"] = "done"
+            post.visual_metadata = meta
+            post.save(update_fields=["visual_metadata", "updated_at"])
+            continue
+
+        meta = dict(post.visual_metadata or {})
+        retries = int(meta.get("video_compose_retries") or 0)
+        updated = post.updated_at
+
+        if updated < fail_cutoff and retries >= 2:
+            meta["video_compose_status"] = "failed"
+            meta["video_compose_error"] = (
+                "Reel video composition timed out — open the post in Studio and retry."
+            )
+            post.visual_metadata = meta
+            post.media_status = Post.MediaStatus.FAILED
+            post.save(update_fields=["visual_metadata", "media_status", "updated_at"])
+            Notification.create_for_user(
+                post.user,
+                "publish_failed",
+                "Your Reel video could not be composed. Open the post in Studio and tap Retry.",
+                related_post=post,
+            )
+            failed += 1
+            continue
+
+        if updated < retry_cutoff:
+            meta["video_compose_retries"] = retries + 1
+            post.visual_metadata = meta
+            post.save(update_fields=["visual_metadata", "updated_at"])
+            fire_task(compose_reel_video, str(post.pk))
+            requeued += 1
+
+    if requeued or failed:
+        logger.warning(
+            "recover_stuck_reel_compose: requeued=%d failed=%d",
+            requeued,
+            failed,
+        )
+    return {"requeued": requeued, "failed": failed}
 
 
 @shared_task(

@@ -228,6 +228,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "content.recover_stuck_media_generation",
         "schedule": 600.0,  # every 10 minutes — mark stuck media gen as failed
     },
+    "recover-stuck-reel-compose": {
+        "task": "content.recover_stuck_reel_compose",
+        "schedule": 600.0,  # every 10 minutes — re-queue stuck reel MP4 jobs
+    },
     "fetch-all-recent-metrics": {
         "task": "content.fetch_all_recent_metrics",
         "schedule": 6 * 3600.0,  # every 6 hours

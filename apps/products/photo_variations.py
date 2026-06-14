@@ -15,7 +15,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from PIL import Image, ImageDraw, ImageFilter
 
-from apps.agents.carousel import _load_product_image
+from apps.agents.carousel import _fit_font_size, _load_product_image
 from apps.agents.graphics import _draw_gradient, _get_brand_palette, _get_font, _hex_to_rgb
 from apps.products.commerce_autopilot import sanitize_product_name
 from apps.products.image_utils import apply_exif_orientation
@@ -281,51 +281,76 @@ def _draw_promo_text(
     width, height = img.size
     text_w = text_right - text_x
     draw = ImageDraw.Draw(img)
-    title_y = int(height * 0.16)
+    title_y = int(height * 0.14)
+    text_block_h = int(height * 0.72)
 
-    title_size = int(height * 0.052)
-    font_title = _get_font(title_size, bold=True)
-    wrapped_name = _wrap_text_to_width(draw, product_name[:80], font_title, text_w)
+    title_font, wrapped_name, title_spacing = _fit_font_size(
+        draw,
+        product_name[:80],
+        max_width=text_w,
+        max_height=int(text_block_h * 0.42),
+        start_size=int(height * 0.048),
+        min_size=18,
+        bold=True,
+        max_lines=4,
+        line_spacing_ratio=0.22,
+    )
     draw.multiline_text(
         (text_x, title_y),
         wrapped_name,
-        font=font_title,
+        font=title_font,
         fill=_hex_to_rgb(colors["text"]),
-        spacing=int(title_size * 0.22),
+        spacing=title_spacing,
     )
 
     name_bbox = draw.multiline_textbbox(
         (text_x, title_y),
         wrapped_name,
-        font=font_title,
-        spacing=int(title_size * 0.22),
+        font=title_font,
+        spacing=title_spacing,
     )
-    price_y = name_bbox[3] + int(height * 0.05)
+    price_y = name_bbox[3] + int(height * 0.04)
 
     if display_price:
-        price_size = int(height * 0.072)
-        font_price = _get_font(price_size, bold=True)
+        price_font, price_text, _ = _fit_font_size(
+            draw,
+            display_price,
+            max_width=text_w,
+            max_height=int(height * 0.12),
+            start_size=int(height * 0.065),
+            min_size=22,
+            bold=True,
+            max_lines=1,
+        )
         draw.text(
             (text_x, price_y),
-            display_price,
-            font=font_price,
+            price_text,
+            font=price_font,
             fill=_hex_to_rgb(colors["accent"]),
         )
-        price_bbox = draw.textbbox((text_x, price_y), display_price, font=font_price)
-        hint_y = price_bbox[3] + int(height * 0.05)
+        price_bbox = draw.textbbox((text_x, price_y), price_text, font=price_font)
+        hint_y = price_bbox[3] + int(height * 0.04)
     else:
         hint_y = price_y
 
     if shop_hint:
-        hint_size = int(height * 0.026)
-        font_hint = _get_font(hint_size)
-        wrapped_hint = _wrap_text_to_width(draw, shop_hint[:120], font_hint, text_w)
+        hint_max_h = (title_y + text_block_h) - hint_y
+        hint_font, wrapped_hint, hint_spacing = _fit_font_size(
+            draw,
+            shop_hint[:120],
+            max_width=text_w,
+            max_height=max(hint_max_h, 24),
+            start_size=int(height * 0.024),
+            min_size=13,
+            max_lines=2,
+            line_spacing_ratio=0.35,
+        )
         draw.multiline_text(
             (text_x, hint_y),
             wrapped_hint,
-            font=font_hint,
+            font=hint_font,
             fill=_hex_to_rgb(colors.get("text_muted", "#B0B0B0")),
-            spacing=int(hint_size * 0.35),
+            spacing=hint_spacing,
         )
 
     return img
@@ -951,17 +976,20 @@ def _expand_studio_polish(
         return _finish(_studio_polish_error("photoroom_failed"))
 
     multi_angle_variant: str | None = None
+    multi_angle_count = 0
     if (
         multi_angle_polish_credit_enabled(plan_tier)
         and raw_extra_angles
         and credit_pool > 0
     ):
-        ok_angle, _ = check_visual_credit_limit(product.user)
-        if ok_angle:
-            angle_url = raw_extra_angles[0]
-            hero_studio_ids = hero_studio_variant_ids(brand_template, brand_colors)
-            angle_spec = PLUS_VARIANT_CATALOG.get(hero_studio_ids[0])
-            if angle_spec:
+        angle_spec = PLUS_VARIANT_CATALOG.get("edit_ai_angle")
+        if angle_spec:
+            for angle_idx, angle_url in enumerate(raw_extra_angles):
+                if credit_pool <= 0:
+                    break
+                ok_angle, _ = check_visual_credit_limit(product.user)
+                if not ok_angle:
+                    break
                 try:
                     angle_result = run_plus_variant(
                         angle_url,
@@ -972,41 +1000,53 @@ def _expand_studio_polish(
                         brand_template=brand_template,
                     )
                 except Exception as exc:
-                    logger.warning("Multi-angle polish failed for %s: %s", product.pk, exc)
-                    angle_result = None
-                if angle_result and angle_result.ok and angle_result.content:
-                    try:
-                        angle_suffix = f"angle_{angle_spec.id}"
-                        angle_polished_url = save_studio_polish_image(
-                            product.pk,
-                            angle_result.content,
-                            suffix=angle_suffix,
-                        )
-                    except Exception as exc:
-                        logger.warning("Multi-angle save failed for %s: %s", product.pk, exc)
-                    else:
-                        record_studio_polish(
-                            product.user,
-                            product_id=product.pk,
-                            provider="photoroom_plus",
-                            output_data={
-                                "variant": angle_spec.id,
-                                "label": f"{angle_spec.label} (angle 2)",
-                                "url": angle_polished_url,
-                                "phase": "scene",
-                                "slide_role": "proof",
-                                "api": angle_result.api if angle_result else "v2/edit",
-                                "multi_angle": True,
-                                **review_flags_for_output(
-                                    angle_spec.id,
-                                    uncertainty_score=angle_result.uncertainty_score,
-                                ),
-                            },
-                        )
-                        new_urls.append(angle_polished_url)
-                        variant_ids.append(angle_spec.id)
-                        multi_angle_variant = angle_spec.id
-                        credit_pool = max(0, credit_pool - 1)
+                    logger.warning(
+                        "Multi-angle polish failed for %s (angle %d): %s",
+                        product.pk,
+                        angle_idx + 1,
+                        exc,
+                    )
+                    continue
+                if not angle_result or not angle_result.ok or not angle_result.content:
+                    continue
+                try:
+                    angle_suffix = f"edit_ai_angle_{angle_idx + 1}"
+                    angle_polished_url = save_studio_polish_image(
+                        product.pk,
+                        angle_result.content,
+                        suffix=angle_suffix,
+                    )
+                except Exception as exc:
+                    logger.warning(
+                        "Multi-angle save failed for %s (angle %d): %s",
+                        product.pk,
+                        angle_idx + 1,
+                        exc,
+                    )
+                    continue
+                record_studio_polish(
+                    product.user,
+                    product_id=product.pk,
+                    provider="photoroom_plus",
+                    output_data={
+                        "variant": angle_spec.id,
+                        "label": f"{angle_spec.label} ({angle_idx + 2})",
+                        "url": angle_polished_url,
+                        "phase": "scene",
+                        "slide_role": "proof",
+                        "api": angle_result.api if angle_result else "v2/edit",
+                        "multi_angle": True,
+                        **review_flags_for_output(
+                            angle_spec.id,
+                            uncertainty_score=angle_result.uncertainty_score,
+                        ),
+                    },
+                )
+                new_urls.append(angle_polished_url)
+                variant_ids.append(angle_spec.id)
+                multi_angle_variant = angle_spec.id
+                multi_angle_count += 1
+                credit_pool = max(0, credit_pool - 1)
 
     channel_ids: list[str] = []
     marketplace_ids: list[str] = []
@@ -1095,6 +1135,7 @@ def _expand_studio_polish(
         "failed_variants": failed_ids,
         "scene_pack": scene_pack,
         "multi_angle_polished": bool(multi_angle_variant),
+        "multi_angle_count": multi_angle_count,
         "multi_angle_variant": multi_angle_variant,
         "preflight_repairs": preflight.repairs_run,
         "preflight_failed": preflight.repairs_failed,

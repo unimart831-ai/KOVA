@@ -794,7 +794,7 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
             "music_mood": "upbeat",
             "video_compose_status": "pending",
             "prefer_photoroom_video": len(source_images) == 1,
-            "reel_director": True,
+            "reel_director": not use_carousel,
             "reel_brand_name": shop_brand,
             "reel_cta_label": "Order on WhatsApp",
         }

@@ -213,7 +213,7 @@ def attach_photoroom_video_to_post(post, video_storage_path: str, *, thumbnail_u
     from apps.content.models import MediaAttachment, Post
     from apps.content.tasks import _public_url_for_file
 
-    public_url = _public_url_for_file(video_storage_path)
+    public_url = _public_url_for_file(video_storage_path, for_platform_api=True)
     if not public_url:
         return None
 

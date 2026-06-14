@@ -61,8 +61,8 @@ def test_lifestyle_story_orders_edit_ai_slides():
     assert len(plan.image_urls) == 5
     assert "channel_story" in plan.image_urls[0]
     assert any("edit_ai_staging" in u for u in plan.image_urls)
-    assert plan.hook_texts[1].startswith("KES 800")
-    assert "Shop on WhatsApp" in plan.hook_texts[1]
+    # promo_frame URLs are carousel slides — hooks are baked in, no FFmpeg overlay
+    assert all(h == "" for h in plan.hook_texts)
     assert plan.template == "story_arc"
 
 
@@ -85,3 +85,20 @@ def test_flash_drop_uses_flash_template_and_boost():
     assert plan.template == "flash_commerce"
     assert plan.cta_audio_boost is True
     assert plan.transition_sec == 0.35
+    assert all(h == "" for h in plan.hook_texts)
+
+
+def test_baked_carousel_urls_skip_hook_overlay():
+    urls = [
+        "/media/carousels/abc/slide_1.jpg",
+        "/media/carousels/abc/slide_2.jpg",
+        "/media/studio_white.jpg",
+    ]
+    plan = build_reel_plan(
+        urls,
+        seed="carousel-reel",
+        product_name="Phone Holder",
+        price_label="KES 850",
+    )
+    assert plan is not None
+    assert all(h == "" for h in plan.hook_texts)

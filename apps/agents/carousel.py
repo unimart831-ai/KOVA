@@ -412,6 +412,57 @@ def _wrap_text(draw, text: str, font, max_width: int) -> str:
     return "\n".join(lines)
 
 
+def _truncate_lines(lines: list[str], max_lines: int) -> str:
+    if max_lines <= 0:
+        return ""
+    trimmed = lines[:max_lines]
+    if len(lines) > max_lines and trimmed:
+        last = trimmed[-1]
+        trimmed[-1] = (last[: max(0, len(last) - 1)] + "…") if len(last) > 3 else last
+    return "\n".join(trimmed)
+
+
+def _wrap_text_limited(
+    draw,
+    text: str,
+    font,
+    max_width: int,
+    *,
+    max_lines: int,
+) -> str:
+    wrapped = _wrap_text(draw, text, font, max_width)
+    if not wrapped:
+        return ""
+    return _truncate_lines(wrapped.split("\n"), max_lines)
+
+
+def _fit_font_size(
+    draw,
+    text: str,
+    *,
+    max_width: int,
+    max_height: int,
+    start_size: int,
+    min_size: int,
+    bold: bool = False,
+    max_lines: int = 4,
+    line_spacing_ratio: float = 0.25,
+):
+    """Return (font, wrapped_text) that fits inside a box, shrinking if needed."""
+    size = start_size
+    while size >= min_size:
+        font = _get_font(size, bold=bold)
+        wrapped = _wrap_text_limited(draw, text, font, max_width, max_lines=max_lines)
+        spacing = int(size * line_spacing_ratio)
+        bbox = draw.multiline_textbbox((0, 0), wrapped, font=font, spacing=spacing)
+        if (bbox[2] - bbox[0]) <= max_width and (bbox[3] - bbox[1]) <= max_height:
+            return font, wrapped, spacing
+        size -= 2
+    font = _get_font(min_size, bold=bold)
+    wrapped = _wrap_text_limited(draw, text, font, max_width, max_lines=max_lines)
+    return font, wrapped, int(min_size * line_spacing_ratio)
+
+
 def _render_product_hero_hook_slide(
     width: int,
     height: int,
@@ -458,30 +509,47 @@ def _render_product_hero_hook_slide(
         draw.text((bx, by), badge_text, font=font_badge, fill=(255, 255, 255))
 
     title_size = int(min(width, height) * 0.058)
-    font_title = _get_font(title_size, bold=True)
-    wrapped_title = _wrap_text(draw, headline, font_title, width - padding_x * 2)
+    strip_inner_h = strip_h - int(height * 0.08)
+    title_font, wrapped_title, title_spacing = _fit_font_size(
+        draw,
+        headline,
+        max_width=width - padding_x * 2,
+        max_height=int(strip_inner_h * 0.55),
+        start_size=title_size,
+        min_size=18,
+        bold=True,
+        max_lines=2,
+    )
     draw.multiline_text(
         (padding_x, text_y_base),
         wrapped_title,
-        font=font_title,
+        font=title_font,
         fill=(255, 255, 255),
-        spacing=int(title_size * 0.2),
+        spacing=title_spacing,
     )
 
     if subtext:
-        sub_size = int(min(width, height) * 0.032)
-        font_sub = _get_font(sub_size)
-        wrapped_sub = _wrap_text(draw, subtext, font_sub, width - padding_x * 2)
         title_bbox = draw.multiline_textbbox(
-            (padding_x, text_y_base), wrapped_title, font=font_title,
-            spacing=int(title_size * 0.2),
+            (padding_x, text_y_base), wrapped_title, font=title_font,
+            spacing=title_spacing,
+        )
+        sub_max_h = (height - int(height * 0.08)) - title_bbox[3]
+        sub_font, wrapped_sub, sub_spacing = _fit_font_size(
+            draw,
+            subtext,
+            max_width=width - padding_x * 2,
+            max_height=max(sub_max_h, 28),
+            start_size=int(min(width, height) * 0.032),
+            min_size=14,
+            max_lines=2,
+            line_spacing_ratio=0.25,
         )
         draw.multiline_text(
-            (padding_x, title_bbox[3] + int(height * 0.015)),
+            (padding_x, title_bbox[3] + int(height * 0.012)),
             wrapped_sub,
-            font=font_sub,
+            font=sub_font,
             fill=(220, 220, 230),
-            spacing=int(sub_size * 0.25),
+            spacing=sub_spacing,
         )
 
     draw.text(
@@ -518,23 +586,46 @@ def _render_product_story_slide(
     card_top = height - card_h + int(height * 0.04)
 
     font_label = _get_font(int(min(width, height) * 0.028), bold=True)
-    draw.text(
+    headline_text = headline.upper()
+    headline_font, headline_wrapped, headline_spacing = _fit_font_size(
+        draw,
+        headline_text,
+        max_width=width - padding_x * 2,
+        max_height=int(card_h * 0.28),
+        start_size=int(min(width, height) * 0.028),
+        min_size=16,
+        bold=True,
+        max_lines=2,
+    )
+    draw.multiline_text(
         (padding_x, card_top),
-        headline.upper(),
-        font=font_label,
+        headline_wrapped,
+        font=headline_font,
         fill=_hex_to_rgb(colors["accent"]),
+        spacing=headline_spacing,
     )
 
-    body_size = int(min(width, height) * 0.036)
-    font_body = _get_font(body_size)
-    wrapped = _wrap_text(draw, body, font_body, width - padding_x * 2)
-    label_bbox = draw.textbbox((padding_x, card_top), headline.upper(), font=font_label)
+    label_bbox = draw.multiline_textbbox(
+        (padding_x, card_top), headline_wrapped, font=headline_font, spacing=headline_spacing,
+    )
+    body_top = label_bbox[3] + int(height * 0.015)
+    body_max_h = (height - int(height * 0.06)) - body_top
+    body_font, body_wrapped, body_spacing = _fit_font_size(
+        draw,
+        body,
+        max_width=width - padding_x * 2,
+        max_height=max(body_max_h, 40),
+        start_size=int(min(width, height) * 0.036),
+        min_size=14,
+        max_lines=4,
+        line_spacing_ratio=0.35,
+    )
     draw.multiline_text(
-        (padding_x, label_bbox[3] + int(height * 0.02)),
-        wrapped,
-        font=font_body,
+        (padding_x, body_top),
+        body_wrapped,
+        font=body_font,
         fill=(255, 255, 255),
-        spacing=int(body_size * 0.35),
+        spacing=body_spacing,
     )
 
     draw.text(
@@ -592,24 +683,45 @@ def _render_product_benefit_slide(
     img = img.convert("RGB")
     draw = ImageDraw.Draw(img)
     title_size = int(min(width, height) * 0.048)
-    font_title = _get_font(title_size, bold=True)
-    wrapped = _wrap_text(draw, headline, font_title, text_max_w)
+    counter_reserve = int(height * 0.08)
+    text_block_h = height - text_y - counter_reserve
+    title_font, wrapped, title_spacing = _fit_font_size(
+        draw,
+        headline,
+        max_width=text_max_w,
+        max_height=int(text_block_h * 0.55),
+        start_size=title_size,
+        min_size=15,
+        bold=True,
+        max_lines=3,
+    )
     draw.multiline_text(
-        (text_x, text_y), wrapped, font=font_title, fill=(255, 255, 255),
-        spacing=int(title_size * 0.25),
+        (text_x, text_y), wrapped, font=title_font, fill=(255, 255, 255),
+        spacing=title_spacing,
     )
 
     if body:
-        body_size = int(min(width, height) * 0.030)
-        font_body = _get_font(body_size)
-        title_bbox = draw.multiline_textbbox((text_x, text_y), wrapped, font=font_title)
-        wrapped_body = _wrap_text(draw, body, font_body, text_max_w)
+        title_bbox = draw.multiline_textbbox(
+            (text_x, text_y), wrapped, font=title_font, spacing=title_spacing,
+        )
+        body_top = title_bbox[3] + int(height * 0.015)
+        body_max_h = (height - counter_reserve) - body_top
+        body_font, wrapped_body, body_spacing = _fit_font_size(
+            draw,
+            body,
+            max_width=text_max_w,
+            max_height=max(body_max_h, 24),
+            start_size=int(min(width, height) * 0.030),
+            min_size=12,
+            max_lines=4,
+            line_spacing_ratio=0.3,
+        )
         draw.multiline_text(
-            (text_x, title_bbox[3] + int(height * 0.02)),
+            (text_x, body_top),
             wrapped_body,
-            font=font_body,
+            font=body_font,
             fill=_hex_to_rgb(colors["text_muted"]),
-            spacing=int(body_size * 0.3),
+            spacing=body_spacing,
         )
 
     draw.text(
@@ -807,26 +919,43 @@ def _render_clean_split_slide(
     draw = ImageDraw.Draw(canvas)
     padding_x = int(width * 0.07)
 
-    title_size = int(min(width, height) * 0.046)
-    font_title = _get_font(title_size, bold=True)
-    title_y = img_zone_h + int(bar_h * 0.18)
-    wrapped_title = _wrap_text(draw, headline, font_title, width - padding_x * 2)
+    title_y = img_zone_h + int(bar_h * 0.12)
+    counter_reserve = int(bar_h * 0.22)
+    text_block_h = bar_h - int(bar_h * 0.12) - counter_reserve
+    title_font, wrapped_title, title_spacing = _fit_font_size(
+        draw,
+        headline,
+        max_width=width - padding_x * 2,
+        max_height=int(text_block_h * 0.55),
+        start_size=int(min(width, height) * 0.046),
+        min_size=16,
+        bold=True,
+        max_lines=3,
+    )
     draw.multiline_text(
-        (padding_x, title_y), wrapped_title, font=font_title,
-        fill=(255, 255, 255), spacing=int(title_size * 0.2),
+        (padding_x, title_y), wrapped_title, font=title_font,
+        fill=(255, 255, 255), spacing=title_spacing,
     )
 
     if body:
-        body_size = int(min(width, height) * 0.030)
-        font_body = _get_font(body_size)
         title_bbox = draw.multiline_textbbox(
-            (padding_x, title_y), wrapped_title, font=font_title, spacing=int(title_size * 0.2),
+            (padding_x, title_y), wrapped_title, font=title_font, spacing=title_spacing,
         )
-        body_y = title_bbox[3] + int(bar_h * 0.08)
-        wrapped_body = _wrap_text(draw, body, font_body, width - padding_x * 2)
+        body_top = title_bbox[3] + int(bar_h * 0.06)
+        body_max_h = (img_zone_h + bar_h - counter_reserve) - body_top
+        body_font, wrapped_body, body_spacing = _fit_font_size(
+            draw,
+            body,
+            max_width=width - padding_x * 2,
+            max_height=max(body_max_h, 28),
+            start_size=int(min(width, height) * 0.030),
+            min_size=13,
+            max_lines=4,
+            line_spacing_ratio=0.25,
+        )
         draw.multiline_text(
-            (padding_x, body_y), wrapped_body, font=font_body,
-            fill=_hex_to_rgb(colors["text_muted"]), spacing=int(body_size * 0.25),
+            (padding_x, body_top), wrapped_body, font=body_font,
+            fill=_hex_to_rgb(colors["text_muted"]), spacing=body_spacing,
         )
 
     counter_size = int(min(width, height) * 0.024)
@@ -877,26 +1006,43 @@ def _render_side_panel_slide(
     )
 
     title_size = int(min(width, height) * 0.042)
-    font_title = _get_font(title_size, bold=True)
-    title_y = int(height * 0.22)
-    wrapped_title = _wrap_text(draw, headline, font_title, text_max_w)
+    title_y = int(height * 0.18)
+    counter_reserve = int(height * 0.10)
+    text_block_h = height - title_y - counter_reserve
+    title_font, wrapped_title, title_spacing = _fit_font_size(
+        draw,
+        headline,
+        max_width=text_max_w,
+        max_height=int(text_block_h * 0.45),
+        start_size=title_size,
+        min_size=16,
+        bold=True,
+        max_lines=3,
+    )
     draw.multiline_text(
-        (panel_x + padding, title_y), wrapped_title, font=font_title,
-        fill=(255, 255, 255), spacing=int(title_size * 0.25),
+        (panel_x + padding, title_y), wrapped_title, font=title_font,
+        fill=(255, 255, 255), spacing=title_spacing,
     )
 
     if body:
-        body_size = int(min(width, height) * 0.028)
-        font_body = _get_font(body_size)
         title_bbox = draw.multiline_textbbox(
-            (panel_x + padding, title_y), wrapped_title, font=font_title,
-            spacing=int(title_size * 0.25),
+            (panel_x + padding, title_y), wrapped_title, font=title_font, spacing=title_spacing,
         )
-        body_y = title_bbox[3] + int(height * 0.03)
-        wrapped_body = _wrap_text(draw, body, font_body, text_max_w)
+        body_top = title_bbox[3] + int(height * 0.02)
+        body_max_h = (height - counter_reserve) - body_top
+        body_font, wrapped_body, body_spacing = _fit_font_size(
+            draw,
+            body,
+            max_width=text_max_w,
+            max_height=max(body_max_h, 36),
+            start_size=int(min(width, height) * 0.028),
+            min_size=13,
+            max_lines=5,
+            line_spacing_ratio=0.3,
+        )
         draw.multiline_text(
-            (panel_x + padding, body_y), wrapped_body, font=font_body,
-            fill=_hex_to_rgb(colors["text_muted"]), spacing=int(body_size * 0.3),
+            (panel_x + padding, body_top), wrapped_body, font=body_font,
+            fill=_hex_to_rgb(colors["text_muted"]), spacing=body_spacing,
         )
 
     counter_size = int(min(width, height) * 0.024)
