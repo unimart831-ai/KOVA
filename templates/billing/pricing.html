@@ -104,6 +104,8 @@
         {% endif %}
         {% if plan.engagement_agent %}
           <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> Engagement inbox</li>
+        {% elif plan.engage_trial_enabled %}
+          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> Engage trial — {{ plan.engage_trial_auto_replies_per_week }} AI replies/week</li>
         {% else %}
           <li class="flex items-center"><span class="text-gray-300 dark:text-gray-600 mr-2">✗</span> <span class="text-gray-400 dark:text-gray-500">Engagement inbox</span></li>
         {% endif %}
@@ -119,7 +121,11 @@
           <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> Shopify integration</li>
         {% endif %}
         {% if plan.whatsapp_enabled %}
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> WhatsApp Business</li>
+          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> WhatsApp Business (full)</li>
+        {% elif plan.whatsapp_inbox_enabled %}
+          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> WhatsApp inbox · {{ plan.whatsapp_marketing_conversations_per_month }} marketing convos/mo</li>
+        {% else %}
+          <li class="flex items-center"><span class="text-gray-300 dark:text-gray-600 mr-2">✗</span> <span class="text-gray-400 dark:text-gray-500">WhatsApp inbox (Growth+)</span></li>
         {% endif %}
         {% if plan.auto_approve %}
           <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> Auto-approve publishing</li>

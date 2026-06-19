@@ -18,12 +18,19 @@
     {% elif product.stock_status == 'low_stock' %}
     <span class="shop-product-badge shop-product-badge--stock">Low stock</span>
     {% endif %}
+    <span class="shop-product-card-overlay">View product</span>
     <span class="shop-product-card-arrow" aria-hidden="true">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
     </span>
   </div>
   <div class="shop-product-card-body">
+    {% if product.category and product.category.name %}
+    <p class="shop-product-card-category">{{ product.category.name }}</p>
+    {% endif %}
     <h3 class="shop-product-card-title">{{ product.name }}</h3>
+    {% if product.shop_teaser %}
+    <p class="shop-product-card-teaser">{{ product.shop_teaser }}</p>
+    {% endif %}
     {% if product.display_price %}
     <p class="shop-product-card-price">{{ product.display_price }}</p>
     {% endif %}

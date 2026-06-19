@@ -258,6 +258,9 @@ def public_commerce_link(request, page_slug, commerce_slug):
     else:
         related_products = related_products[:4]
 
+    for p in related_products:
+        p.shop_teaser = get_product_shop_teaser(p)
+
     can_purchase = (
         product.offering_type != product.OfferingType.PRODUCT
         or product.stock_status != product.StockStatus.OUT_OF_STOCK
@@ -270,6 +273,8 @@ def public_commerce_link(request, page_slug, commerce_slug):
     ]
     show_mobile_nav = bool(non_wa_social) and not sticky
     body_extra = " ".join(filter(None, [
+        "shop-site--marketplace",
+        "shop-site--pdp",
         "shop-site--has-mobile-nav" if show_mobile_nav else "",
         "shop-site--has-sticky-cta" if sticky else "",
         "shop-site--product-page",

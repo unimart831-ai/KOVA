@@ -25,6 +25,12 @@ from apps.analytics.models import (
 @login_required
 def insights(request):
     """Analytics dashboard with real metrics."""
+    from apps.billing.models import get_effective_plan_tier
+
+    profile = getattr(request.user, "profile", None)
+    if get_effective_plan_tier(profile) == "starter":
+        return redirect("analytics:revenue")
+
     platform = request.GET.get("platform", "")
     cache_key = f"insights:{request.user.id}:{platform}"
     cached = cache.get(cache_key)

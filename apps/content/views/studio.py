@@ -19,14 +19,37 @@ from apps.utils import fire_task
 @login_required
 def content_studio(request):
     """Content creation studio — compose seeds and review AI-generated posts."""
+    from apps.billing.models import get_effective_plan_tier, get_user_plan_limits
+
+    profile = getattr(request.user, "profile", None)
+    plan_tier = get_effective_plan_tier(profile)
+    plan_limits = get_user_plan_limits(request.user)
+    is_starter_plan = plan_tier == "starter"
+
+    visible_user_ids = get_teammate_ids(request.user)
+    pending_approve_count = Post.objects.filter(
+        user_id__in=visible_user_ids,
+        status__in=["draft", "pending_approval"],
+    ).count()
+
+    status_filter = request.GET.get("status")
+    if (
+        status_filter is None
+        and pending_approve_count > 0
+        and not request.GET.get("q")
+        and request.GET.get("source") != "holiday"
+    ):
+        status_filter = "pending_approval"
+
     seed_groups, ungrouped, total_pending = _get_studio_posts(
         request.user,
-        status_filter=request.GET.get("status"),
+        status_filter=status_filter,
         platform_filter=request.GET.get("platform"),
         format_filter=request.GET.get("post_format"),
         search_query=request.GET.get("q"),
         source_filter=request.GET.get("source"),
     )
+    approve_first = pending_approve_count > 0
 
     # Recent seeds for processing status — auto-fail any stuck longer than 5 min
     from datetime import timedelta
@@ -55,9 +78,7 @@ def content_studio(request):
 
     # Check if user's plan supports AI image generation
     from apps.billing.enforcement import get_seed_usage
-    from apps.billing.models import get_user_plan_limits
 
-    plan_limits = get_user_plan_limits(request.user)
     can_generate_images = plan_limits.get("ai_image_generation", False)
 
     all_posts = [p for g in seed_groups for p in g["posts"]] + list(ungrouped)
@@ -88,7 +109,10 @@ def content_studio(request):
         "at_seed_limit": at_seed_limit,
         "plan_limit_notice": plan_limit_notice,
         "studio_value": _build_studio_value_stats(request.user),
-        "current_status": request.GET.get("status", ""),
+        "approve_first": approve_first,
+        "is_starter_plan": is_starter_plan,
+        "pending_approve_count": pending_approve_count,
+        "current_status": status_filter or "",
         "current_platform": request.GET.get("platform", ""),
         "current_format": request.GET.get("post_format", ""),
         "current_search": request.GET.get("q", ""),

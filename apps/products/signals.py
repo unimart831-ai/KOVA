@@ -1,11 +1,11 @@
 """
-Product signals — cache invalidation on save.
+Product signals — cache invalidation on save; commerce → lead loop.
 Stock transition automation lives in stock_actions.log_stock_change().
 """
 
 import logging
 
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
 logger = logging.getLogger(__name__)
@@ -38,3 +38,35 @@ def on_product_save(sender, instance, created, **kwargs):
             logger.exception(
                 "Failed to assign commerce slug/link for product %s", instance.pk,
             )
+
+
+@receiver(pre_save, sender="products.CommercePayment")
+def _track_commerce_payment_status(sender, instance, **kwargs):
+    from apps.products.models import CommercePayment
+
+    if instance.pk:
+        try:
+            previous = CommercePayment.objects.get(pk=instance.pk)
+            instance._was_completed = previous.status == CommercePayment.Status.COMPLETED
+        except CommercePayment.DoesNotExist:
+            instance._was_completed = False
+    else:
+        instance._was_completed = False
+
+
+@receiver(post_save, sender="products.CommercePayment")
+def on_commerce_payment_completed(sender, instance, **kwargs):
+    """Every buyer becomes a lead — belt-and-suspenders with M-Pesa webhook."""
+    from apps.products.models import CommercePayment
+
+    if instance.status != CommercePayment.Status.COMPLETED:
+        return
+    if getattr(instance, "_was_completed", False):
+        return
+    try:
+        from apps.leads.bridges import create_lead_from_commerce_payment
+        create_lead_from_commerce_payment(instance)
+    except Exception:
+        logger.exception(
+            "Failed to create lead from commerce payment %s", instance.pk,
+        )

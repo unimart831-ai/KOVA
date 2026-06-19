@@ -50,9 +50,9 @@
 
 **CTA primary:** Start free — 14 days  
 **CTA secondary:** See how it works  
-**Trust line:** No credit card required · 6 AI agents · 9+ platforms
+**Trust line:** No credit card required · 6 AI agents · 7 platforms live (+3 coming)
 
-**Stats strip:** 5 min daily · 6 agents · 9+ platforms · KES pricing
+**Stats strip:** 5 min daily · 6 agents · 7+3 platforms · KES pricing
 
 ---
 

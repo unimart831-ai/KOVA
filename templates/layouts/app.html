@@ -109,7 +109,7 @@
       </div>
       {% endif %}
 
-      <a href="{% if request.plan_limits.engagement_agent or request.plan_limits.engage_trial_enabled %}{% url 'engage:inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}" data-nav-group="catch"
+      <a href="{% if request.plan_limits.engagement_agent or request.plan_limits.engage_trial_enabled %}{% url 'engage:unified_inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}" data-nav-group="catch"
          {% if '/engage/' in request.path %}aria-current="page"{% endif %}
          class="{% if '/engage/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if '/engage/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

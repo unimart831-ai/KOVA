@@ -2,7 +2,13 @@
 
 {% block page_title %}Studio{% endblock %}
 {% block page_subtitle %}
-<p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">One idea → every platform. See your time saved and output below.</p>
+<p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+  {% if approve_first %}
+    {{ pending_approve_count }} post{{ pending_approve_count|pluralize }} ready — approve in one tap, then you're done.
+  {% else %}
+    One idea → every platform. Approve what Kova prepared overnight.
+  {% endif %}
+</p>
 {% endblock %}
 
 {% block content %}
@@ -11,7 +17,19 @@
   {% include "content/_create_tabs.html" %}
   {% include "content/_studio_subnav.html" %}
 
+  {% if approve_first %}
+  <div class="p-4 rounded-xl bg-kova-50 dark:bg-kova-950/40 border border-kova-200 dark:border-kova-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <p class="text-sm font-semibold text-kova-900 dark:text-kova-100">Approve first — your 5-minute ritual</p>
+      <p class="text-xs text-kova-700 dark:text-kova-300 mt-0.5">Kova wrote these posts. Review, edit if needed, approve — then create more below.</p>
+    </div>
+    <a href="#studio-posts-section" class="btn-primary btn-sm shrink-0">Jump to posts ↓</a>
+  </div>
+  {% endif %}
+
+  {% if not approve_first %}
   {% include "content/_studio_value_strip.html" %}
+  {% endif %}
 
   {% if connected_platform_count == 0 %}
   <div class="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl flex items-start gap-3">
@@ -26,7 +44,8 @@
   </div>
   {% endif %}
 
-  {# ━━━ Voice to Campaign — value-first CTA ━━━ #}
+  {# ━━━ Voice to Campaign — Pro/Growth power feature (hidden when posts need approval) ━━━ #}
+  {% if not approve_first and not is_starter_plan %}
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 bg-kova-50 dark:bg-kova-900/20 border border-kova-200 dark:border-kova-800 rounded-xl">
     <div class="flex items-start gap-3 min-w-0">
       <div class="w-8 h-8 rounded-lg bg-kova-100 dark:bg-kova-900/40 flex items-center justify-center shrink-0">
@@ -42,6 +61,30 @@
       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
     </a>
   </div>
+  {% endif %}
+
+  {% if approve_first %}
+  {# ── Posts first when approvals are waiting ── #}
+  {% if current_source == 'holiday' %}
+  <div class="px-1">
+    <div class="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-lg bg-kova-50 dark:bg-kova-950/40 border border-kova-200 dark:border-kova-800">
+      <div class="flex items-center gap-2 min-w-0">
+        <svg class="w-4 h-4 text-kova-600 dark:text-kova-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        <p class="text-xs font-medium text-kova-900 dark:text-kova-100 truncate">Showing holiday drafts only.</p>
+      </div>
+      <a href="{% url 'content:studio' %}" class="text-xs font-medium text-kova-700 dark:text-kova-300 hover:text-kova-900 whitespace-nowrap">Clear ✕</a>
+    </div>
+  </div>
+  {% endif %}
+  {% include "content/_studio_filter_posts.html" %}
+
+  <div x-data="{ showCreate: false }" class="border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+    <button type="button" @click="showCreate = !showCreate"
+            class="w-full flex items-center justify-between px-4 py-3 text-left bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition">
+      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Create a new post</span>
+      <span class="text-xs text-gray-500 dark:text-gray-400" x-text="showCreate ? 'Collapse ↑' : 'Expand ↓'"></span>
+    </button>
+    <div x-show="showCreate" x-cloak class="p-4 space-y-6 border-t border-gray-100 dark:border-gray-800">
 
   {# ━━━ Composer ━━━ #}
   <div class="card border-kova-100 dark:border-kova-900/50 shadow-kova dark:shadow-none overflow-hidden">
@@ -250,7 +293,7 @@
   {% endif %}
 
   {# ━━━ Holiday-source filter banner (active only when ?source=holiday) ━━━ #}
-  {% if current_source == 'holiday' %}
+  {% if not approve_first and current_source == 'holiday' %}
   <div class="px-1">
     <div class="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-lg bg-kova-50 dark:bg-kova-950/40 border border-kova-200 dark:border-kova-800">
       <div class="flex items-center gap-2 min-w-0">
@@ -266,77 +309,12 @@
   </div>
   {% endif %}
 
-  {# ━━━ Filter bar ━━━ #}
-  <div class="flex flex-wrap items-center gap-3 px-1">
-    <form method="get" action="{% url 'content:studio' %}" class="flex flex-wrap items-center gap-2 w-full sm:w-auto" id="studio-filter-form">
-      {# Preserve source filter across HTMX status/platform/search swaps #}
-      <input type="hidden" name="source" value="{{ current_source }}">
-      <div class="relative flex-1 sm:flex-initial sm:w-56">
-        <input type="text" name="q" value="{{ current_search }}" placeholder="Search posts…"
-               class="input text-xs pl-8 h-8 w-full"
-               hx-get="{% url 'content:studio_posts' %}" hx-trigger="keyup changed delay:300ms"
-               hx-target="#studio-posts-section" hx-swap="innerHTML"
-               hx-include="#studio-filter-form">
-        <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-      </div>
-      <select name="status" class="input text-xs h-8 w-auto"
-              hx-get="{% url 'content:studio_posts' %}" hx-trigger="change"
-              hx-target="#studio-posts-section" hx-swap="innerHTML"
-              hx-include="#studio-filter-form">
-        <option value="">All statuses</option>
-        <option value="draft" {% if current_status == 'draft' %}selected{% endif %}>Draft</option>
-        <option value="pending_approval" {% if current_status == 'pending_approval' %}selected{% endif %}>Pending</option>
-        <option value="approved" {% if current_status == 'approved' %}selected{% endif %}>Approved</option>
-        <option value="scheduled" {% if current_status == 'scheduled' %}selected{% endif %}>Scheduled</option>
-        <option value="published" {% if current_status == 'published' %}selected{% endif %}>Published</option>
-        <option value="rejected" {% if current_status == 'rejected' %}selected{% endif %}>Rejected</option>
-        <option value="failed" {% if current_status == 'failed' %}selected{% endif %}>Failed</option>
-      </select>
-      <select name="platform" class="input text-xs h-8 w-auto"
-              hx-get="{% url 'content:studio_posts' %}" hx-trigger="change"
-              hx-target="#studio-posts-section" hx-swap="innerHTML"
-              hx-include="#studio-filter-form">
-        <option value="">All platforms</option>
-        <option value="instagram" {% if current_platform == 'instagram' %}selected{% endif %}>Instagram</option>
-        <option value="facebook" {% if current_platform == 'facebook' %}selected{% endif %}>Facebook</option>
-        <option value="tiktok" {% if current_platform == 'tiktok' %}selected{% endif %}>TikTok</option>
-        <option value="linkedin" {% if current_platform == 'linkedin' %}selected{% endif %}>LinkedIn</option>
-        <option value="whatsapp" {% if current_platform == 'whatsapp' %}selected{% endif %}>WhatsApp</option>
-      </select>
-      <select name="post_format" class="input text-xs h-8 w-auto"
-              hx-get="{% url 'content:studio_posts' %}" hx-trigger="change"
-              hx-target="#studio-posts-section" hx-swap="innerHTML"
-              hx-include="#studio-filter-form">
-        <option value="">All formats</option>
-        <option value="text" {% if current_format == 'text' %}selected{% endif %}>Text</option>
-        <option value="image" {% if current_format == 'image' %}selected{% endif %}>Image</option>
-        <option value="carousel" {% if current_format == 'carousel' %}selected{% endif %}>Carousel</option>
-        <option value="story" {% if current_format == 'story' %}selected{% endif %}>Story</option>
-        <option value="reel" {% if current_format == 'reel' %}selected{% endif %}>Reel</option>
-        <option value="video" {% if current_format == 'video' %}selected{% endif %}>Video</option>
-      </select>
-    </form>
-
-    {# Holiday drafts quick toggle — outside the form so it navigates instead of HTMX-swapping #}
-    <a href="{% if current_source == 'holiday' %}{% url 'content:studio' %}{% else %}{% url 'content:studio' %}?source=holiday{% endif %}"
-       class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-md border transition-colors
-         {% if current_source == 'holiday' %}
-           bg-kova-600 text-white border-kova-600 hover:bg-kova-700
-         {% else %}
-           bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-kova-50 dark:hover:bg-kova-950/40 hover:text-kova-700 dark:hover:text-kova-300 hover:border-kova-300 dark:hover:border-kova-700
-         {% endif %}">
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-      Holiday drafts
-    </a>
+  {% if approve_first %}
+    </div>
   </div>
-
-  {# ━━━ Seed-Grouped Posts (auto-refreshes when generation completes) ━━━ #}
-  <div id="studio-posts-section"
-       hx-get="{% url 'content:studio_posts' %}"
-       hx-trigger="refreshStudioPosts from:body"
-       hx-swap="innerHTML">
-    {% include "content/_studio_posts.html" %}
-  </div>
+  {% else %}
+  {% include "content/_studio_filter_posts.html" %}
+  {% endif %}
 </div>
 
 {% include "content/_studio_generation_modal.html" %}

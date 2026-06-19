@@ -424,16 +424,20 @@ def brief_home(request):
     operations_update = performance.get("operations_update", "")
     standup_context = build_standup_context(request.user, brief) if brief else None
 
+    from apps.billing.models import get_effective_plan_tier
     from apps.briefs.dashboard import get_cached_home_extras
+
     home_extras = get_cached_home_extras(request.user, brief)
     connected_platforms = list(
         SocialAccount.objects.filter(user=request.user, is_active=True)
         .values_list("platform", flat=True)
     )
+    profile = getattr(request.user, "profile", None)
+    today_compact = get_effective_plan_tier(profile) == "starter"
 
     return render(request, "briefs/home.html", {
         "brief": brief,
-        "today_compact": False,
+        "today_compact": today_compact,
         "brief_is_stale": brief_is_stale,
         "brief_time_passed": _brief_time_has_passed(request.user),
         "strategist_active": _strategist_is_active(request.user),
