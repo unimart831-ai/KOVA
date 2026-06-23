@@ -23,7 +23,8 @@ ENV/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-media/
+# Django user uploads at project root only (not apps/media Python package)
+/media/
 staticfiles/
 
 # Environment
