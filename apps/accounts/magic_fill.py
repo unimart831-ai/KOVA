@@ -64,77 +64,47 @@ def _infer_industry(category: str) -> Optional[str]:
 
 
 def apply_magic_fill(user, account) -> list[str]:
-    """Run a profile audit on `account` and copy useful fields onto the user.
-
-    Args:
-        user: the User whose profile we are filling.
-        account: a SocialAccount (already created by the OAuth callback) that
-            belongs to `user`. Should be `is_active=True` with a valid token.
-
-    Returns the list of `UserProfile` fields that were populated.
-    """
-    from apps.profile_audit.auditor import audit_social_account
-
-    audit = audit_social_account(account, generate_suggestions=False)
-    if audit is None or audit.error:
-        logger.info(
-            "Magic Fill: audit failed for %s/%s — error=%r",
-            user.email, account.platform, getattr(audit, "error", "no audit"),
-        )
-        return []
-
-    fields_present = audit.fields_present or {}
+    """Copy useful fields from a connected social account onto the user profile."""
     profile = user.profile
     applied: list[str] = []
+    meta = account.metadata if isinstance(account.metadata, dict) else {}
 
     def _maybe_set(field: str, value, *, treat_as_empty=("",)):
-        """Only fill a field if the current value is empty / default."""
         current = getattr(profile, field, None)
-        if current in treat_as_empty or current is None:
+        if value and (current in treat_as_empty or current is None):
             setattr(profile, field, value)
             applied.append(field)
 
-    # ── Direct mappings (platform → UserProfile) ─────────────────────
-    # Many providers expose: bio, description, website, phone, email,
-    # address, category, profile_picture_url, page_button. See
-    # apps/platforms/providers/base.py:ProfileSnapshot.
-
-    bio = (fields_present.get("bio") or "").strip()
-    description = (fields_present.get("description") or "").strip()
-    # Prefer the longer of the two as a brand_voice starter — both often
-    # contain the same content but description tends to be richer on FB/IG.
+    bio = (meta.get("bio") or "").strip()
+    description = (meta.get("description") or "").strip()
     voice_seed = description if len(description) > len(bio) else bio
     if voice_seed:
         _maybe_set("brand_voice", voice_seed)
 
-    website = (fields_present.get("website") or "").strip()
+    website = (meta.get("website") or "").strip()
     if website:
         _maybe_set("website_url", website)
 
-    phone = (fields_present.get("phone") or "").strip()
+    phone = (meta.get("phone") or "").strip()
     if phone:
         _maybe_set("cta_phone", phone)
 
-    email = (fields_present.get("email") or "").strip()
+    email = (meta.get("email") or "").strip()
     if email:
         _maybe_set("cta_email", email)
 
-    logo_url = (fields_present.get("profile_picture_url") or "").strip()
+    logo_url = (meta.get("profile_picture_url") or account.avatar_url or "").strip()
     if logo_url:
         _maybe_set("brand_logo_url", logo_url)
 
-    # company_name often lives on SocialAccount.display_name (the Page/Profile
-    # display name), not in fields_present. Use that as a fallback.
     display_name = (account.display_name or account.username or "").strip()
     if display_name:
         _maybe_set("company_name", display_name)
 
-    # ── Industry inference from platform category ────────────────────
-    category = (fields_present.get("category") or "").strip()
+    category = (meta.get("category") or "").strip()
     if category:
         inferred = _infer_industry(category)
         if inferred:
-            # industry is a CharField with choices; "" means not set.
             _maybe_set("industry", inferred)
 
     if applied:
@@ -143,14 +113,8 @@ def apply_magic_fill(user, account) -> list[str]:
             "Magic Fill applied %d fields for %s from %s: %s",
             len(applied), user.email, account.platform, applied,
         )
-        # Funnel marker: lets the admin dashboard count Magic Fill successes
-        # and break them down by source platform.
-        profile.record_onboarding_step(
-            f"magic_fill_applied:{account.platform}"
-        )
+        profile.record_onboarding_step(f"magic_fill_applied:{account.platform}")
 
-    # ── Apply the industry starter pack now that we (maybe) have one ─
-    # apply_pack is idempotent — only fills fields still empty.
     if profile.industry:
         from apps.accounts.industry_packs import apply_pack
         applied += apply_pack(profile, profile.industry)

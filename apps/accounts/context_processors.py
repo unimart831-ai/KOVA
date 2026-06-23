@@ -66,3 +66,12 @@ def _count_unread_whatsapp(user):
         ).count()
     except Exception:
         return 0
+
+
+def kova_voice(request):
+    """Product voice + north-star loop copy for authenticated app templates."""
+    if not request.user.is_authenticated:
+        return {}
+    from apps.accounts.product_voice import kova_voice_for_user
+
+    return kova_voice_for_user(request.user)

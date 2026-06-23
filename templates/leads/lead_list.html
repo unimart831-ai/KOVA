@@ -1,13 +1,15 @@
 {% extends "layouts/app.html" %}
+{% load lead_extras %}
 
 {% block page_title %}Leads{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">{{ stats.new }} new · {{ stats.total }} total</p>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">{{ kova_catch_subtitle }} · {{ stats.new }} new · {{ stats.total }} total</p>
 {% endblock %}
 
 {% block content %}
 {% include "leads/_leads_tabs.html" %}
-<div class="space-y-6">
+<div class="max-w-6xl mx-auto space-y-6">
+  {% include "components/_kova_loop_strip.html" %}
 
   {# Stats bar #}
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -85,6 +87,13 @@
               </div>
             </div>
             <div class="flex items-center gap-2 flex-shrink-0 ml-4">
+              {% if business_model == 'professional' %}
+                {% with stage=lead|consult_funnel_label %}
+                {% if stage %}
+                <span class="text-[10px] px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300" title="Consultation pipeline">{{ stage }}</span>
+                {% endif %}
+                {% endwith %}
+              {% endif %}
               <span class="text-[10px] px-2 py-0.5 rounded-full font-medium
                 {% if lead.status == 'new' %}bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300
                 {% elif lead.status == 'contacted' %}bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300
@@ -116,7 +125,7 @@
         <svg class="w-7 h-7 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
       </div>
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">No leads yet</h3>
-      <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">Leads are captured automatically when people interact with your Kova Links, submit forms, or DM your social accounts.</p>
+      <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">{{ kova_catch_subtitle }} Leads appear when people DM you, submit a form, or scan your QR.</p>
       <div class="flex flex-col sm:flex-row gap-3 justify-center mt-6">
         <a href="{% url 'links:list' %}" class="btn-primary text-sm px-4 py-2">Set up Kova Links</a>
         <a href="{% url 'leads:create' %}" class="btn-secondary text-sm px-4 py-2">Add a lead manually</a>

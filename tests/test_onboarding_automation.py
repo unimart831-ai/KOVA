@@ -399,20 +399,11 @@ class TestInstrumentation:
             user=u, platform="instagram", platform_user_id="123",
             username="testbiz", display_name="Test Biz",
             access_token="dummy", is_active=True,
-        )
-
-        # Stub the audit to return a real-looking ProfileSnapshot.
-        class FakeAudit:
-            error = ""
-            fields_present = {
+            metadata={
                 "bio": "We make great coffee in Nairobi.",
                 "website": "https://testbiz.co.ke",
                 "category": "Coffee Shop",
-            }
-
-        monkeypatch.setattr(
-            "apps.profile_audit.auditor.audit_social_account",
-            lambda *args, **kwargs: FakeAudit(),
+            },
         )
 
         applied = apply_magic_fill(u, account)

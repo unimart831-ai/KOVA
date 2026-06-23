@@ -29,7 +29,7 @@ class TestSegmentSpecificSurfaces:
             overnight_work={"summary": "1 post drafted overnight"},
         )
 
-    def test_command_home_adapts_for_expert_mode(self, client, user):
+    def test_brief_home_adapts_for_expert_mode(self, client, user):
         self._activate_user(user)
         profile = user.profile
         profile.industry = "creator"
@@ -37,12 +37,12 @@ class TestSegmentSpecificSurfaces:
         self._seed_brief(user)
 
         client.force_login(user)
-        resp = client.get(reverse("command:home"))
+        resp = client.get(reverse("brief:home"))
 
         assert resp.status_code == 200
         assert b"Expert mode" in resp.content
-        assert b"Operate your growth engine from one workspace" in resp.content
-        assert b"visibility sprint" in resp.content
+        assert b"Build authority and pipeline today" in resp.content
+        assert b"Open Studio" in resp.content
 
     def test_brief_home_adapts_for_digital_mode(self, client, user):
         self._activate_user(user)
@@ -58,7 +58,7 @@ class TestSegmentSpecificSurfaces:
         assert resp.status_code == 200
         assert b"Digital mode" in resp.content
         assert b"Turn content into access and signups" in resp.content
-        assert b"Launch from Workspace" in resp.content
+        assert b"Open Studio" in resp.content
 
     def test_offer_surface_adapts_for_service_mode(self, client, user):
         self._activate_user(user)

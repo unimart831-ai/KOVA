@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, bookings, calendar_intel, campaigns, content, content_safety, costs, emails, engage, feature_usage, help, innovations, leads, llm, logs, media_queue, memes, notifications, onboarding, operations, ops, overview, partners, partials, photoroom, pilot, pixel, platforms, products, profile_audit, qr, reel_music, revenue, reviews, sales_inquiries, search, seed_quota, system, system_maps, teams, user_health, users, whatsapp
+from apps.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, bookings, content, content_safety, costs, emails, engage, feature_usage, help, innovations, leads, llm, logs, notifications, onboarding, operations, ops, overview, partners, partials, photoroom, pilot, pixel, platforms, products, qr, reel_music, revenue, reviews, sales_inquiries, search, seed_quota, system, system_maps, teams, user_health, users, whatsapp
 
 app_name = "admin_dashboard"
 
@@ -207,12 +207,6 @@ urlpatterns = [
     path("blog/topics/<uuid:pk>/draft/", blog.blog_draft_topic, name="blog_draft_topic"),
     path("blog/topics/<uuid:pk>/skip/", blog.blog_skip_topic, name="blog_skip_topic"),
 
-    # Media Queue
-    path("media-queue/", media_queue.media_queue_overview, name="media_queue_overview"),
-    path("media-queue/<uuid:pk>/", media_queue.media_queue_detail, name="media_queue_detail"),
-    path("media-queue/<uuid:pk>/toggle/", media_queue.media_queue_toggle, name="media_queue_toggle"),
-    path("media-queue/process-now/", media_queue.media_queue_process_now, name="media_queue_process_now"),
-
     # Commerce (catalog, shops, payments, integrations)
     path("commerce/", products.commerce_overview, name="commerce_overview"),
     path("commerce/catalog/", products.commerce_catalog, name="commerce_catalog"),
@@ -228,23 +222,6 @@ urlpatterns = [
     path("products/list/", products.commerce_catalog, name="admin_product_list"),
     path("products/alerts/", products.commerce_stock_alerts, name="admin_stock_alerts"),
     path("products/updates/", products.commerce_stock_updates, name="admin_stock_updates"),
-
-    # Campaigns
-    path("campaigns/", campaigns.campaigns_overview, name="campaigns_overview"),
-    path("campaigns/list/", campaigns.campaign_list_admin, name="admin_campaign_list"),
-
-    # Meme Intelligence
-    path("memes/", memes.memes_overview, name="memes_overview"),
-    path("memes/list/", memes.meme_list_admin, name="meme_list_admin"),
-    path("memes/adaptations/", memes.adaptation_list_admin, name="adaptation_list_admin"),
-
-    # Calendar Intelligence (holiday awareness)
-    path("calendar/", calendar_intel.calendar_overview, name="calendar_overview"),
-    path("calendar/drafts/", calendar_intel.draft_list_admin, name="calendar_drafts"),
-    path("calendar/drafts/<int:pk>/retry/", calendar_intel.draft_retry, name="calendar_draft_retry"),
-
-    # Profile Audits (connected-account health)
-    path("profile-audits/", profile_audit.profile_audit_overview, name="profile_audit_overview"),
 
     # Notifications
     path("notifications/", notifications.notifications_overview, name="notifications_overview"),

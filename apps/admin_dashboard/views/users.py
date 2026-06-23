@@ -160,7 +160,6 @@ def user_detail(request, pk):
     from apps.analytics.models import PostMetric
     from apps.billing.models import MpesaPayment
     from apps.briefs.models import DailyBrief
-    from apps.calendar_intel.models import HolidayDraft
     from apps.campaigns.models import Campaign
     from apps.content.models import ContentSeed, Post
     from apps.content.models import VoiceBrief
@@ -198,10 +197,7 @@ def user_detail(request, pk):
     command_counts = {
         "briefs": DailyBrief.objects.filter(user=user).count(),
         "voice_briefs": VoiceBrief.objects.filter(user=user).count(),
-        "ready_moments": HolidayDraft.objects.filter(
-            user=user,
-            status=HolidayDraft.Status.DRAFTS_READY,
-        ).count(),
+        "ready_moments": 0,
         "campaigns": Campaign.objects.filter(user=user).count(),
     }
 

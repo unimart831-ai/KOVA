@@ -288,6 +288,10 @@ def enroll_lead_in_sequences(lead):
         elif seq.trigger == NurtureSequence.Trigger.FROM_BOOKING:
             if lead.source_type != "booking":
                 continue
+        elif seq.trigger == NurtureSequence.Trigger.FROM_BOOKING_INTENT:
+            meta = lead.metadata or {}
+            if meta.get("engage_intent") != "booking":
+                continue
         elif seq.trigger == NurtureSequence.Trigger.FROM_WALK_IN:
             if lead.source_type != "walk_in":
                 continue

@@ -528,6 +528,18 @@ class UserProfile(models.Model):
         help_text="Additional ISO 3166-1 alpha-2 codes the business serves. "
                   "E.g., ['UG', 'TZ']. Phase 4 multi-market feature.",
     )
+    class BusinessModel(models.TextChoices):
+        PRODUCT = "product", "Product business"
+        SERVICE = "service", "Service business"
+        PROFESSIONAL = "professional", "Professional / agency"
+
+    business_model = models.CharField(
+        max_length=20,
+        choices=BusinessModel.choices,
+        blank=True,
+        default="",
+        help_text="Primary business type — drives onboarding and default workflows.",
+    )
     # ── Onboarding funnel telemetry ──
     onboarding_step_timestamps = models.JSONField(
         default=dict, blank=True,

@@ -91,7 +91,13 @@
             <div>
               <label for="id_money_board_digest_enabled" class="text-sm font-medium text-gray-900 dark:text-white">Money board digest</label>
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {% if business_model == 'professional' %}
+                Daily email + in-app ping when consultation leads, authority posts, or replies need you. Off by default.
+                {% elif business_model == 'service' %}
+                Daily email + in-app ping when booking leads, replies, or posts to approve need you. Off by default.
+                {% else %}
                 Daily email + in-app ping when you have replies waiting, hot leads, or posts to approve. Off by default.
+                {% endif %}
               </p>
             </div>
           </div>
@@ -318,7 +324,7 @@
                   <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Or trigger anytime from
                     <a href="{% url 'products:list' %}" class="text-emerald-600 dark:text-emerald-400 underline font-medium">My offers</a>
-                    with <strong>Catalog showcase</strong> — carousel + reel, name &amp; price per item, out-of-stock skipped.
+                    with <strong>Catalog showcase</strong> — branded carousel per item + showcase reel, out-of-stock skipped.
                   </p>
                 </div>
               </div>
@@ -332,8 +338,7 @@
                   <label for="id_brand_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">{{ field.label }}</label>
                   {% if field.help_text %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ field.help_text }}</p>{% endif %}
                   <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Manage plans in <a href="{% url 'content:autopilot' %}" class="text-kova-600 dark:text-kova-400 underline font-medium">Content Autopilot</a>.
-                    You always review the strategy before posts are generated.
+                    When enabled, Kova prepares weekly content for your approval in Studio.
                   </p>
                 </div>
               </div>
@@ -545,8 +550,8 @@
 
         {# ═══════ Visual Identity ═══════ #}
         <div id="settings-visual" class="pt-6 border-t border-gray-100 dark:border-gray-800 scroll-mt-24">
-          <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1">Visual identity</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Controls how AI generates images, graphics, and carousels</p>
+          <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1">Visual identity &amp; brand DNA</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Colors, logo, and style — powers AI graphics, carousels, reels, and your shop look</p>
 
           {% for field in brand_form %}
             {% if field.name == 'visual_style' %}
@@ -602,9 +607,9 @@
                shadow: '{{ brand_kit_form.shadow_mode.value|default:'ai.soft'|escapejs }}',
                padding: '{{ brand_kit_preview.padding|escapejs }}'
              })">
-          <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1">Snap brand kit</h3>
+          <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1">Photo polish kit</h3>
           <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Locked styling for Snap studio polish — shadow, padding, and studio background follow your brand.
+            Studio polish settings for Snap photos — shadow, padding, and background. Separate from brand DNA above; both apply to your campaign assets.
           </p>
 
           <div class="grid md:grid-cols-2 gap-5">

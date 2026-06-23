@@ -16,6 +16,14 @@ PLATFORM_DOT_COLORS = {
 }
 
 
+@register.simple_tag
+def post_showcase_badge(post):
+    """Return showcase label dict for post cards, or empty dict."""
+    from apps.content.post_labels import post_showcase_label
+
+    return post_showcase_label(post) or {}
+
+
 @register.filter
 def platform_dot_color(post):
     """Return Tailwind bg class for a post's platform dot."""

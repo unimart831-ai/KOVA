@@ -20,7 +20,11 @@ def is_commerce_industry(industry: str) -> bool:
 
 
 def get_onboarding_intent(profile) -> str:
-    """Return sell | grow | both | empty from recorded timestamps."""
+    """Return sell | grow | both | empty from business_model or recorded timestamps."""
+    if profile.business_model in ("product", "service"):
+        return "sell"
+    if profile.business_model == "professional":
+        return "grow"
     steps = profile.onboarding_step_timestamps or {}
     if steps.get("intent_sell"):
         return "sell"
@@ -48,7 +52,8 @@ def build_setup_mission(user, stats: dict | None = None) -> dict | None:
         return None
 
     profile = user.profile
-    commerce = is_commerce_industry(profile.industry)
+    commerce = is_commerce_industry(profile.industry) or profile.business_model in ("product", "service")
+    is_service = profile.business_model == "service"
     has_brand = bool(user.onboarding_completed or (profile.brand_voice or "").strip())
 
     from apps.products.models import Product
@@ -74,16 +79,27 @@ def build_setup_mission(user, stats: dict | None = None) -> dict | None:
     if commerce:
         items.append({
             "key": "snap",
-            "label": "Add your first product",
+            "label": "Add your first product" if not is_service else "Add your first service",
             "done": has_product or stats.get("product_tasks_week", 0) > 0,
             "url_name": "products:snap",
         })
-        items.append({
-            "key": "shop",
-            "label": "Share your shop link",
-            "done": shop_ready,
-            "url_name": "products:list",
-        })
+        if is_service:
+            from apps.bookings.models import BookingLink
+
+            has_booking = BookingLink.objects.filter(user=user, is_active=True).exists()
+            items.append({
+                "key": "booking",
+                "label": "Set up your booking page",
+                "done": has_booking,
+                "url_name": "bookings:list",
+            })
+        else:
+            items.append({
+                "key": "shop",
+                "label": "Share your shop link",
+                "done": shop_ready,
+                "url_name": "products:list",
+            })
 
     items.extend([
         {

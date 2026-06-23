@@ -119,6 +119,7 @@ def content_studio(request):
         "current_source": request.GET.get("source", ""),
         "page_title": "Studio",
         "generating_seed_id": request.GET.get("generating", ""),
+        "business_model": getattr(profile, "business_model", ""),
     })
 
 
@@ -132,7 +133,7 @@ def _get_studio_posts(user, status_filter=None, platform_filter=None, format_fil
     posts = Post.objects.filter(
         user_id__in=visible_user_ids,
         status__in=filter_statuses,
-    ).select_related("social_account", "seed", "user").order_by("-created_at")
+    ).select_related("social_account", "seed", "seed__product", "user").order_by("-created_at")
 
     if platform_filter:
         posts = posts.filter(platform=platform_filter)
@@ -167,6 +168,8 @@ def _get_studio_posts(user, status_filter=None, platform_filter=None, format_fil
 
 def _enrich_seed_group(seed_obj, seed_posts):
     """Attach batch-approve metadata and value hints to a seed group."""
+    from apps.content.post_labels import summarize_showcase_types
+
     pending_statuses = ("pending_approval", "draft")
     approvable = [
         p for p in seed_posts
@@ -187,6 +190,7 @@ def _enrich_seed_group(seed_obj, seed_posts):
         "approvable_count": len(approvable),
         "media_blocked_count": len(media_blocked),
         "minutes_saved_estimate": minutes_saved,
+        "showcase_summary": summarize_showcase_types(seed_posts),
     }
 
 

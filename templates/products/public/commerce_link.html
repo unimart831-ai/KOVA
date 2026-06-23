@@ -22,6 +22,7 @@
   {% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}
   <script type="application/ld+json">{{ structured_data_json|default:product_schema_json|safe }}</script>
   {% include "products/public/_shop_public_styles.html" %}
+  {% include "products/public/_shop_public_revamp.html" %}
   {% include "products/public/_shop_reels_styles.html" %}
   {% include "products/public/_commerce_page_styles.html" %}
 </head>

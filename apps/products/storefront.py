@@ -175,6 +175,7 @@ def storefront_body_classes(storefront: dict[str, Any], *, extra: str = "") -> s
     """CSS hook classes for shop templates."""
     parts = [
         "shop-site",
+        "shop-site--v2",
         f"shop-site--{storefront.get('archetype', 'catalog')}",
         f"shop-site--vibe-{storefront.get('vibe', 'classic_shop')}",
         f"shop-site--surface-{storefront.get('surface_mode', 'dark')}",
@@ -365,6 +366,8 @@ def resolve_hero_layout(
         if (getattr(p, "commerce_slug", "") or "") not in carousel_slugs
     ]
     if count < 6 or len(side_candidates) < 2:
+        return "carousel"
+    if count < 12:
         return "carousel"
     return "marketplace"
 

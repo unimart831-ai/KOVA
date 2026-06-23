@@ -12,6 +12,30 @@ logger = logging.getLogger(__name__)
 PURCHASE_INTENT_SIGNALS = frozenset({"pricing", "booking", "purchase", "buy", "order"})
 
 
+def _engage_lead_metadata(interaction) -> dict:
+    """Build lead metadata including booking link when intent is booking."""
+    meta = {
+        "engage_intent": interaction.ai_intent,
+        "platform": interaction.platform or "",
+        "author_username": interaction.author_username,
+        "first_message": (interaction.content or "")[:200],
+    }
+    if interaction.ai_intent == "booking":
+        try:
+            from apps.bookings.models import BookingLink
+            from apps.bookings.service_setup import booking_public_url
+
+            link = BookingLink.objects.filter(
+                user=interaction.user, is_active=True,
+            ).first()
+            if link:
+                meta["booking_url"] = booking_public_url(link)
+                meta["suggested_owner_action"] = "Reply with booking link or let WhatsApp bot handle BOOK"
+        except Exception:
+            pass
+    return meta
+
+
 def _whatsapp_lead_email(wa_id: str) -> str:
     return f"wa_{wa_id}@kova.page"
 
@@ -279,6 +303,13 @@ def create_lead_from_booking(booking):
             except Exception:
                 logger.exception("Failed to enroll booking lead %s", lead.pk)
 
+    try:
+        from apps.leads.professional_funnel import process_professional_consult_lead
+
+        process_professional_consult_lead(lead, user, booking=booking)
+    except Exception:
+        logger.exception("Professional consult funnel failed for booking lead %s", lead.pk)
+
     return lead
 
 
@@ -461,21 +492,27 @@ def create_lead_from_engage_intent(interaction):
             "source_type": Lead.Source.SOCIAL_DM if interaction.interaction_type == "dm" else Lead.Source.SOCIAL_COMMENT,
             "source_platform": platform,
             "source_post": interaction.post,
-            "temperature": Lead.Temperature.WARM,
-            "metadata": {
-                "engage_intent": interaction.ai_intent,
-                "platform": platform,
-                "author_username": interaction.author_username,
-                "first_message": (interaction.content or "")[:200],
-            },
+            "temperature": (
+                Lead.Temperature.HOT
+                if interaction.ai_intent == "booking"
+                else Lead.Temperature.WARM
+            ),
+            "metadata": _engage_lead_metadata(interaction),
         },
     )
 
     if not created:
-        # Bump temperature if they showed intent again
-        if lead.temperature == Lead.Temperature.COLD:
+        meta = dict(lead.metadata or {})
+        meta.update(_engage_lead_metadata(interaction))
+        lead.metadata = meta
+        if interaction.ai_intent == "booking" and lead.temperature != Lead.Temperature.HOT:
+            lead.temperature = Lead.Temperature.HOT
+            lead.save(update_fields=["metadata", "temperature", "last_activity_at"])
+        elif lead.temperature == Lead.Temperature.COLD:
             lead.temperature = Lead.Temperature.WARM
-            lead.save(update_fields=["temperature", "last_activity_at"])
+            lead.save(update_fields=["metadata", "temperature", "last_activity_at"])
+        else:
+            lead.save(update_fields=["metadata", "last_activity_at"])
 
     LeadActivity.objects.create(
         lead=lead,
@@ -493,13 +530,29 @@ def create_lead_from_engage_intent(interaction):
     if created:
         lead.compute_priority()
         lead.save(update_fields=["priority"])
-        from apps.accounts.autopilot_helpers import should_auto_enroll_leads
-        from apps.leads.tasks import enroll_lead_in_sequences
 
-        if should_auto_enroll_leads(user):
-            try:
-                enroll_lead_in_sequences(lead)
-            except Exception:
-                logger.exception("Failed to enroll engage-intent lead %s", lead.pk)
+    _maybe_enroll_engage_lead(lead, user, interaction, created=created)
+
+    if interaction.ai_intent == "booking":
+        try:
+            from apps.leads.professional_funnel import process_professional_consult_lead
+
+            process_professional_consult_lead(lead, user, interaction=interaction)
+        except Exception:
+            logger.exception("Professional consult funnel failed for lead %s", lead.pk)
 
     return lead
+
+
+def _maybe_enroll_engage_lead(lead, user, interaction, *, created: bool):
+    """Auto-enroll engage leads; booking intent always re-checks nurture sequences."""
+    from apps.accounts.autopilot_helpers import should_auto_enroll_leads
+    from apps.leads.tasks import enroll_lead_in_sequences
+
+    if not should_auto_enroll_leads(user):
+        return
+    if interaction.ai_intent == "booking" or created:
+        try:
+            enroll_lead_in_sequences(lead)
+        except Exception:
+            logger.exception("Failed to enroll engage-intent lead %s", lead.pk)

@@ -13,16 +13,38 @@ subtly different env resolution. To handle tokens encrypted by any process,
 we collect all plausible keys and try each during decryption.
 """
 
+from __future__ import annotations
+
+import base64
 import hashlib
 import logging
 import os
 
 from cryptography.fernet import Fernet, InvalidToken
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from django.conf import settings
 from django.db import models
-from fernet_fields.hkdf import derive_fernet_key
+from django.utils.encoding import force_bytes
 
 logger = logging.getLogger(__name__)
+
+# Same HKDF params as django-fernet-fields-v2 (inlined to avoid legacy fernet_fields import).
+_FERNET_HKDF_SALT = b"django-fernet-fields-hkdf-salt"
+_FERNET_HKDF_INFO = b"django-fernet-fields"
+
+
+def derive_fernet_key(input_key: str | bytes) -> bytes:
+    """Derive a url-safe base64 Fernet key from an arbitrary secret."""
+    hkdf = HKDF(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=_FERNET_HKDF_SALT,
+        info=_FERNET_HKDF_INFO,
+        backend=default_backend(),
+    )
+    return base64.urlsafe_b64encode(hkdf.derive(force_bytes(input_key)))
 
 _primary_fernet = None
 _all_fernets = None  # list of (Fernet, key_hash) tuples

@@ -17,6 +17,7 @@ urlpatterns = [
     path("categories/add/", views.category_add, name="category_add"),
     path("categories/<uuid:category_id>/edit/", views.category_edit, name="category_edit"),
     path("categories/<uuid:category_id>/delete/", views.category_delete, name="category_delete"),
+    path("showcase/", views.showcase_assets, name="showcase"),
     path("<uuid:product_id>/", views.product_detail, name="detail"),
     path("<uuid:product_id>/snap-status/", views.snap_pipeline_status, name="snap_status"),
     path("<uuid:product_id>/edit/", views.product_edit, name="edit"),

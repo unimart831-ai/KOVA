@@ -18,15 +18,15 @@
   {% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}
   <script type="application/ld+json">{{ shop_schema_json|safe }}</script>
   {% include "products/public/_shop_public_styles.html" %}
+  {% include "products/public/_shop_public_revamp.html" %}
   {% include "products/public/_shop_reels_styles.html" %}
 </head>
-{% with raw_archetype=storefront.archetype|default:"catalog" %}
 {% with blurb=about_blurb|default:"" %}
 {% with show_powered=powered_by_kova %}
-<body class="shop-site shop-site--marketplace shop-site--{% if raw_archetype == 'market_stall' %}market-stall{% elif raw_archetype == 'reel_shop' %}reel-shop{% elif raw_archetype == 'modern_dark' %}modern-dark{% else %}{{ raw_archetype }}{% endif %}{% if social_links %} shop-site--has-mobile-nav{% endif %}{% if wa_url %} shop-site--has-wa-fab{% endif %}">
+<body class="{{ storefront_body_class|default:'shop-site shop-site--surface-light' }}{% if hero_layout == 'marketplace' %} shop-site--marketplace{% endif %}">
 {% include "products/public/_shop_nav.html" %}
-<div class="shop-container">
-  <div class="shop-trust-strip" aria-label="Shop info">
+<div class="shop-container shop-shell">
+  <div class="shop-trust-strip shop-meta-bar" aria-label="Shop info">
     <span class="shop-trust-strip-stat">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
       {{ products|length }} item{{ products|length|pluralize }}
@@ -52,10 +52,19 @@
 
   {% include "products/public/_shop_hero_grid.html" %}
 
+  {% if profile.page_headline and hero_layout != 'spotlight' %}
+  <p class="shop-page-tagline">{{ profile.page_headline }}</p>
+  {% endif %}
+
   <section id="shop-catalog" class="shop-catalog-section" aria-label="Product catalog">
-    <div class="shop-section-head">
-      <h2 class="shop-section-title">{{ catalog_section_label|default:"Shop our collection" }}</h2>
-      <span class="shop-section-meta" data-catalog-count>{{ products|length }} item{{ products|length|pluralize }}</span>
+    <div class="shop-section-head shop-catalog-head">
+      <div class="shop-section-head-copy">
+        <h2 class="shop-section-title">{{ catalog_section_label|default:"Shop our collection" }}</h2>
+        {% if wa_url or mpesa_shop_enabled %}
+        <p class="shop-section-sub">{% if mpesa_shop_enabled %}Pay with M-Pesa{% if wa_url %} or {% endif %}{% endif %}{% if wa_url %}message on WhatsApp{% endif %} to order.</p>
+        {% endif %}
+      </div>
+      <span class="shop-section-meta shop-section-count" data-catalog-count>{{ products|length }} item{{ products|length|pluralize }}</span>
     </div>
     <p class="shop-search-empty" id="shop-search-empty" hidden>No products match your search.</p>
 
@@ -247,5 +256,5 @@
 })();
 </script>
 </body>
-{% endwith %}{% endwith %}{% endwith %}
+{% endwith %}{% endwith %}
 </html>

@@ -163,6 +163,14 @@ def infer_business_mode(profile, connected_platforms=None) -> str:
     if not profile:
         return "merchant"
 
+    business_model = (getattr(profile, "business_model", "") or "").strip()
+    if business_model == "product":
+        return "merchant"
+    if business_model == "service":
+        return "service"
+    if business_model == "professional":
+        return "expert"
+
     industry = (getattr(profile, "industry", "") or "").strip()
     text = _profile_text(profile)
     platforms = _platform_set(profile, connected_platforms)
@@ -268,8 +276,8 @@ def build_surface_experience(*, profile=None, connected_platforms=None) -> dict:
             "workspace_description": "Use Standup for selling priorities, Moments for timely campaigns, and Listen to launch offers fast across your channels.",
             "workspace_focus": ["Offers", "Approvals", "Revenue"],
             "workspace_actions": [
-                {"label": "Open Listen", "url_name": "command:listen"},
-                {"label": "Open Standup", "url_name": "command:standup"},
+                {"label": "Open Studio", "url_name": "content:studio"},
+                {"label": "Today board", "url_name": "brief:home"},
             ],
             "catalog_kicker": "Fastest way to sell",
             "catalog_title": "Turn products into sellable campaigns fast",
@@ -288,14 +296,14 @@ def build_surface_experience(*, profile=None, connected_platforms=None) -> dict:
             "today_actions": [
                 {"label": "Open Bookings", "url_name": "bookings:list"},
                 {"label": "Reply in Inbox", "url_name": "engage:inbox"},
-                {"label": "Launch a service brief", "url_name": "command:listen"},
+                {"label": "Create in Studio", "url_name": "content:studio"},
             ],
             "workspace_title": "Run your service pipeline from one workspace",
             "workspace_description": "Standup keeps client work and approvals clear, Moments finds relevant angles, and Listen turns one brief into booking-ready campaigns.",
             "workspace_focus": ["Bookings", "Credibility", "Client flow"],
             "workspace_actions": [
                 {"label": "Create Booking Page", "url_name": "bookings:link_create"},
-                {"label": "Open Listen", "url_name": "command:listen"},
+                {"label": "Create in Studio", "url_name": "content:studio"},
             ],
             "catalog_kicker": "Bookable offers",
             "catalog_title": "Turn services into bookable offers",
@@ -312,7 +320,7 @@ def build_surface_experience(*, profile=None, connected_platforms=None) -> dict:
             "today_description": "Focus on launches, lead capture, and conversion paths that move people into your digital offers, memberships, or learning products.",
             "today_focus": ["Launches", "Access paths", "Signups"],
             "today_actions": [
-                {"label": "Launch from Workspace", "url_name": "command:listen"},
+                {"label": "Open Studio", "url_name": "content:studio"},
                 {"label": "Review Queue", "url_name": "content:queue"},
                 {"label": "Open Revenue", "url_name": "analytics:revenue"},
             ],
@@ -320,14 +328,14 @@ def build_surface_experience(*, profile=None, connected_platforms=None) -> dict:
             "workspace_description": "Standup keeps launches on track, Moments finds timely hooks, and Listen turns one idea into multi-touch campaigns for digital offers.",
             "workspace_focus": ["Launches", "Access", "Conversion"],
             "workspace_actions": [
-                {"label": "Open Listen", "url_name": "command:listen"},
-                {"label": "Open Standup", "url_name": "command:standup"},
+                {"label": "Open Studio", "url_name": "content:studio"},
+                {"label": "Today board", "url_name": "brief:home"},
             ],
             "catalog_kicker": "Digital launches",
             "catalog_title": "Launch digital offers with clearer access paths",
             "catalog_description": "Create digital offers with access links, delivery notes, and campaign-ready language that highlights instant value.",
             "catalog_primary": {"label": "Add a digital offer", "url_name": "products:add"},
-            "catalog_secondary": {"label": "Launch from Workspace", "url_name": "command:listen"},
+            "catalog_secondary": {"label": "Open Studio", "url_name": "content:studio"},
             "catalog_empty_title": "No digital offers yet",
             "catalog_empty_description": "Add a template, course, toolkit, or subscription so Kova can promote it with instant-access language.",
             "nudge_title": "Connect a channel to turn attention into signups",
@@ -339,21 +347,21 @@ def build_surface_experience(*, profile=None, connected_platforms=None) -> dict:
             "today_focus": ["Authority", "Visibility", "Pipeline"],
             "today_actions": [
                 {"label": "Open Studio", "url_name": "content:studio"},
-                {"label": "Launch a visibility sprint", "url_name": "command:listen"},
+                {"label": "Open Studio", "url_name": "content:studio"},
                 {"label": "Open Leads", "url_name": "leads:list"},
             ],
             "workspace_title": "Operate your growth engine from one workspace",
             "workspace_description": "Standup keeps signals clear, Moments finds timely angles, and Listen turns one point of view into a multi-channel visibility sprint.",
             "workspace_focus": ["Authority", "Momentum", "Opportunities"],
             "workspace_actions": [
-                {"label": "Open Listen", "url_name": "command:listen"},
+                {"label": "Create in Studio", "url_name": "content:studio"},
                 {"label": "Open Studio", "url_name": "content:studio"},
             ],
             "catalog_kicker": "Optional offers",
             "catalog_title": "Offers are optional — credibility is not",
             "catalog_description": "Use Kova to grow authority first, then add services or digital offers when you are ready to convert that attention.",
             "catalog_primary": {"label": "Open Studio", "url_name": "content:studio"},
-            "catalog_secondary": {"label": "Open Workspace", "url_name": "command:home"},
+            "catalog_secondary": {"label": "Open Leads", "url_name": "leads:list"},
             "catalog_empty_title": "No offers yet — your growth engine still works",
             "catalog_empty_description": "Use Studio and Workspace to grow authority now, then add services or digital offers when the time is right.",
             "nudge_title": "Connect your core channel to activate growth mode",
@@ -361,6 +369,19 @@ def build_surface_experience(*, profile=None, connected_platforms=None) -> dict:
         },
     }
     config = surfaces.get(mode, surfaces["expert"]).copy()
+    if getattr(profile, "business_model", "") == "professional":
+        config.update({
+            "today_title": "Build authority and book consultations",
+            "today_description": "Approve portfolio and case-study posts, reply to consultation leads, and share your booking link.",
+            "today_focus": ["Authority posts", "Consultation leads", "Booking pipeline"],
+            "catalog_kicker": "Professional showcase",
+            "catalog_title": "Portfolio, case studies, and offers",
+            "catalog_description": "Showcase client work and outcomes so Kova drives consultation CTAs on LinkedIn and Facebook.",
+            "catalog_primary": {"label": "Snap portfolio work", "url_name": "products:snap"},
+            "catalog_secondary": {"label": "Open Studio", "url_name": "content:studio"},
+            "nudge_title": "Connect LinkedIn or Facebook for authority posts",
+            "nudge_body": "Professional businesses convert best when Kova can post thought leadership with consultation links in comments.",
+        })
     config.update({
         "mode": mode,
         "mode_label": get_mode_label(mode),

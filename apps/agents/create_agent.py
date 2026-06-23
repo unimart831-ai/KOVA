@@ -707,6 +707,14 @@ Transform this raw idea into high-performing, platform-native content.
         if get_product_context(seed.user):
             prompt += get_catalog_sampling_hint()
 
+    blueprint = getattr(seed, "blueprint", None) or {}
+    if blueprint:
+        from apps.content.blueprint_pipeline import blueprint_prompt_section
+
+        section = blueprint_prompt_section(blueprint)
+        if section:
+            prompt += section + "\n\n"
+
     prompt += f"""### STRATEGIC THINKING (do this before writing)
 For each platform, consider:
 1. What's the most compelling ANGLE for THIS audience on THIS platform?
@@ -971,7 +979,17 @@ Transform this idea into ONE high-performing post for {guide.get('name', platfor
 ### THE IDEA
 {seed.idea}
 {f"### ADDITIONAL CONTEXT" + chr(10) + seed.notes if seed.notes else ""}
+"""
 
+    blueprint = getattr(seed, "blueprint", None) or {}
+    if blueprint:
+        from apps.content.blueprint_pipeline import blueprint_prompt_section
+
+        section = blueprint_prompt_section(blueprint)
+        if section:
+            prompt += f"\n\n{section}\n"
+
+    prompt += f"""
 ### PLATFORM: {guide.get('name', platform_info['platform'].title())} (@{platform_info['username']})
 - **Character limit**: {guide.get('max_chars', 'N/A')}
 - **Psychology**: {guide.get('psychology', 'Adapt to norms')}
@@ -1269,6 +1287,14 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
                 if not replaced:
                     post_dicts.append(new_pd)
 
+        blueprint = getattr(seed, "blueprint", None) or {}
+        if blueprint:
+            from apps.content.blueprint_retry import improve_low_blueprint_posts
+
+            post_dicts = improve_low_blueprint_posts(
+                post_dicts, seed, user, system, platform_map,
+            )
+
         # Save batch strategy on the seed
         seed.batch_strategy = batch_strategy
         seed.save(update_fields=["batch_strategy", "updated_at"])
@@ -1303,11 +1329,31 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
         for pd in post_dicts:
             raw_platform = pd.get("platform", "")
             platform = platform_aliases.get(raw_platform.lower().strip(), raw_platform.lower().strip())
+
+            blueprint = getattr(seed, "blueprint", None) or {}
+            if blueprint:
+                from apps.content.renderers import (
+                    apply_blueprint_renderer,
+                    blueprint_quality_score,
+                    should_retry_low_quality,
+                )
+
+                pd = apply_blueprint_renderer(pd, blueprint, user)
+                quality = blueprint_quality_score(pd, blueprint)
+                if should_retry_low_quality(quality):
+                    logger.info(
+                        "Create Agent: blueprint alignment score %d for %s (seed %s)",
+                        quality, platform, seed.id,
+                    )
+                pd["_blueprint_quality"] = quality
+
             account = account_map.get(platform)
             if not account:
                 logger.warning("LLM generated for platform '%s' but no account connected", platform)
                 continue
 
+            blueprint_slots = pd.pop("_blueprint_slots", None)
+            blueprint_quality = pd.pop("_blueprint_quality", None)
             draft = PostDraft.from_llm_dict(pd)
             # Strip invisible Unicode characters + markdown syntax at creation time.
             # Both are safety nets: the prompt says no markdown, but LLMs still slip.
@@ -1358,6 +1404,15 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
                 ai_original_text=content_text,
             )
 
+            if blueprint_slots or blueprint_quality is not None:
+                dna = dict(post.content_dna or {})
+                if blueprint_slots:
+                    dna["blueprint_slots"] = blueprint_slots
+                if blueprint_quality is not None:
+                    dna["blueprint_quality"] = blueprint_quality
+                post.content_dna = dna
+                post.save(update_fields=["content_dna", "updated_at"])
+
             # Smart auto-approval: only runs when user has explicitly enabled it
             # and we're not in a forced-pending context (e.g. onboarding)
             if post.status == Post.Status.PENDING_APPROVAL and not force_pending:
@@ -1368,6 +1423,10 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
 
             # Auto-populate UTM fields for revenue attribution
             post.populate_utm()
+
+            from apps.content.professional_cta import apply_professional_cta_to_post
+
+            apply_professional_cta_to_post(post, user, seed)
 
             # ── Attach product image if available (Snap to Sell) ─────
             # If the seed's product has photos, use them directly instead
@@ -1438,7 +1497,7 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
             # Facebook reduces organic reach 50-70% for posts with outbound links
             # in the body. We store the CTA link in first_comment so the
             # publishing task can post it as a comment immediately after going live.
-            if platform == "facebook":
+            if platform == "facebook" and not (post.first_comment or "").strip():
                 from apps.utils.first_comments import compose_first_comment
                 fc_text = compose_first_comment(
                     platform="facebook",

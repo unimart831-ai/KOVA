@@ -6,6 +6,7 @@ python_functions = ["test_*"]
 addopts = "--tb=short --strict-markers -q --cov=apps --cov-report=term-missing"
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "smoke: fast core-loop checks for CI smoke job",
 ]
 
 [tool.coverage.run]

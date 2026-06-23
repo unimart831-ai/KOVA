@@ -82,6 +82,13 @@
         </div>
         {% endif %}
 
+        {% if show_asset_picker %}
+        <div class="p-4 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-xl">
+          <p class="text-xs font-semibold text-purple-800 dark:text-purple-200 mb-3">Linked offer — showcase type</p>
+          {% include "products/_professional_asset_fields.html" %}
+        </div>
+        {% endif %}
+
         {# ── Smart CTA Section ── #}
         <div class="border-t border-gray-100 dark:border-gray-800 pt-4" x-data="{ ctaType: '{{ post.cta_type|default:"none" }}' }">
           <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Call to Action</p>
@@ -176,7 +183,7 @@
           {% elif post.media_status == 'uploaded' %}bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400
           {% elif post.media_status == 'failed' %}bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400
           {% elif post.media_status == 'pending' %}bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400 animate-pulse{% endif %}">
-          {% if post.reel_has_video %}Motion reel ready
+          {% if post.reel_has_video %}{{ post.reel_compose_backend_label }} ready
           {% elif post.reel_compose_pending %}Composing reel…
           {% elif post.reel_compose_status == 'failed' %}Reel failed
           {% elif post.media_status == 'generated' %}AI-generated

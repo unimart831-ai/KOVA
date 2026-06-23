@@ -27,22 +27,18 @@ def innovations_overview(request):
     from apps.content.models import VoiceBrief
     from apps.analytics.models import CompetitorScreenshot, PerformanceRecycle
     from apps.products.models import RestockScan
-    from apps.memes.models import TrendAlert
 
     now = timezone.now()
     week_ago = now - timedelta(days=7)
 
-    # Voice to Campaign stats
     voice_total = VoiceBrief.objects.count()
     voice_completed = VoiceBrief.objects.filter(status="completed").count()
     voice_7d = VoiceBrief.objects.filter(created_at__gte=week_ago).count()
 
-    # Screenshot to Compete stats
     screenshot_total = CompetitorScreenshot.objects.count()
     screenshot_completed = CompetitorScreenshot.objects.filter(status="completed").count()
     screenshot_7d = CompetitorScreenshot.objects.filter(created_at__gte=week_ago).count()
 
-    # Receipt to Restock stats
     restock_total = RestockScan.objects.count()
     restock_completed = RestockScan.objects.filter(status="completed").count()
     restock_7d = RestockScan.objects.filter(created_at__gte=week_ago).count()
@@ -50,13 +46,11 @@ def innovations_overview(request):
         status="completed"
     ).aggregate(total=Count("products_updated"))["total"] or 0
 
-    # Trend Ride stats
-    trend_total = TrendAlert.objects.count()
-    trend_ready = TrendAlert.objects.filter(status="ready").count()
-    trend_approved = TrendAlert.objects.filter(status="approved").count()
-    trend_7d = TrendAlert.objects.filter(detected_at__gte=week_ago).count()
+    trend_total = 0
+    trend_ready = 0
+    trend_approved = 0
+    trend_7d = 0
 
-    # Performance to Email stats
     recycle_total = PerformanceRecycle.objects.count()
     recycle_ready = PerformanceRecycle.objects.filter(status="ready").count()
     recycle_sent = PerformanceRecycle.objects.filter(status="sent").count()
@@ -65,11 +59,10 @@ def innovations_overview(request):
         avg=Avg("performance_multiplier")
     )["avg"]
 
-    # Recent activity across all features
     recent_voice = VoiceBrief.objects.select_related("user").order_by("-created_at")[:5]
     recent_screenshots = CompetitorScreenshot.objects.select_related("user").order_by("-created_at")[:5]
     recent_restocks = RestockScan.objects.select_related("user").order_by("-created_at")[:5]
-    recent_trends = TrendAlert.objects.select_related("user").order_by("-detected_at")[:5]
+    recent_trends = []
     recent_recycles = PerformanceRecycle.objects.select_related("user", "source_post").order_by("-detected_at")[:5]
 
     return render(request, "admin_dashboard/innovations/overview.html", {
@@ -225,34 +218,14 @@ def restock_scan_detail(request, pk):
 
 @staff_required
 def trend_alert_list(request):
-    """List all trend alerts."""
-    from apps.memes.models import TrendAlert
-
-    status_filter = request.GET.get("status", "")
-    qs = TrendAlert.objects.select_related("user", "trending_meme").order_by("-detected_at")
-
-    if status_filter:
-        qs = qs.filter(status=status_filter)
-
-    paginator = Paginator(qs, 30)
-    page = paginator.get_page(request.GET.get("page"))
-
-    return render(request, "admin_dashboard/innovations/trend_list.html", {
-        "page": page,
-        "status_filter": status_filter,
-        "status_choices": TrendAlert.Status.choices,
-    })
+    """Trend Ride removed — redirect to innovations overview."""
+    return redirect("admin_dashboard:innovations_overview")
 
 
 @staff_required
 def trend_alert_detail(request, pk):
-    """Detail view for a trend alert."""
-    from apps.memes.models import TrendAlert
-    alert = get_object_or_404(TrendAlert.objects.select_related(
-        "user", "trending_meme", "kenyan_event", "content_seed",
-    ), pk=pk)
-
-    return render(request, "admin_dashboard/innovations/trend_detail.html", {"alert": alert})
+    """Trend Ride removed — redirect to innovations overview."""
+    return redirect("admin_dashboard:innovations_overview")
 
 
 # ══════════════════════════════════════════════════════════════════════════════

@@ -399,25 +399,7 @@ def brief_home(request):
     upcoming_moments = []
     holiday_drafts_ready = 0
     ready_moment_packs = []
-    moment_pack_id = request.GET.get("moment_pack", "").strip()
-    try:
-        from apps.calendar_intel.selectors import top_upcoming_for_brief
-        from apps.calendar_intel.models import HolidayDraft
-        upcoming_moments = top_upcoming_for_brief(request.user, count=3)
-        ready_moment_packs = list(
-            HolidayDraft.objects.filter(
-                user=request.user,
-                status=HolidayDraft.Status.DRAFTS_READY,
-            ).select_related(
-                "holiday_occurrence__holiday",
-                "custom_event",
-            ).order_by("target_date")[:5]
-        )
-        holiday_drafts_ready = len(ready_moment_packs)
-        if not moment_pack_id and ready_moment_packs:
-            moment_pack_id = str(ready_moment_packs[0].pk)
-    except Exception:
-        pass
+    moment_pack_id = ""
 
     performance = brief.performance_summary if brief else {}
     decisions_needed = enrich_decisions(performance.get("decisions_needed", []))
@@ -535,43 +517,9 @@ def brief_detail(request, date):
     # Upcoming holidays / cultural moments — same forward-looking widget as the home brief
     upcoming_moments = []
     holiday_drafts_ready = 0
-    try:
-        from apps.calendar_intel.selectors import top_upcoming_for_brief
-        from apps.calendar_intel.models import HolidayDraft
-        upcoming_moments = top_upcoming_for_brief(request.user, count=3)
-        holiday_drafts_ready = HolidayDraft.objects.filter(
-            user=request.user,
-            status=HolidayDraft.Status.DRAFTS_READY,
-        ).count()
-    except Exception:
-        pass
-
-    # Profile health alerts — same as home brief
+    upcoming_moments = []
+    holiday_drafts_ready = 0
     profile_health_alerts = []
-    try:
-        from apps.profile_audit.models import ProfileAudit, ProfileUpdateSuggestion
-        from django.db.models import Max
-        latest_ids = list(
-            ProfileAudit.objects.filter(user=request.user)
-            .values("social_account_id")
-            .annotate(latest_id=Max("id"))
-            .values_list("latest_id", flat=True)
-        )
-        for audit in (
-            ProfileAudit.objects
-            .filter(id__in=latest_ids, completeness_score__lt=70, error="")
-            .select_related("social_account")[:3]
-        ):
-            profile_health_alerts.append({
-                "platform": audit.social_account.platform,
-                "score": audit.completeness_score,
-                "pending": audit.suggestions.filter(
-                    status=ProfileUpdateSuggestion.Status.PENDING,
-                ).count(),
-                "account_id": audit.social_account_id,
-            })
-    except Exception:
-        pass
 
     performance = brief.performance_summary or {}
     operations_report = performance.get("operations_report") or {}

@@ -26,11 +26,21 @@
       {% if post.generated_by_agent %}
         <span class="text-[9px] bg-kova-50 text-kova-600 dark:bg-kova-950 dark:text-kova-300 px-1.5 py-0.5 rounded-md font-semibold tracking-wide">AI</span>
       {% endif %}
+      {% load content_tags %}
+      {% post_showcase_badge post as showcase %}
+      {% if showcase.text %}
+        <span class="text-[9px] px-1.5 py-0.5 rounded-md font-semibold
+          {% if showcase.tone == 'purple' %}bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300
+          {% elif showcase.tone == 'indigo' %}bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300
+          {% elif showcase.tone == 'sky' %}bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300
+          {% elif showcase.tone == 'emerald' %}bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300
+          {% else %}bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-300{% endif %}">{{ showcase.text }}</span>
+      {% endif %}
       {# ── Post format badge — Carousel / Story / Reel / Image ── #}
-      {% if post.post_format == 'carousel' %}
+      {% if post.post_format == 'carousel' or post.visual_strategy == 'carousel' and post.post_format != 'reel' %}
         <span class="inline-flex items-center gap-0.5 text-[9px] bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 px-1.5 py-0.5 rounded-md font-semibold">
           <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-          Carousel{% if post.carousel_slides %} · {{ post.carousel_slides|length }}{% endif %}
+          {{ post.carousel_backend_label }}{% if post.carousel_slides %} · {{ post.carousel_slides|length }}{% endif %}
         </span>
       {% elif post.post_format == 'story' %}
         <span class="inline-flex items-center gap-0.5 text-[9px] bg-pink-50 text-pink-700 dark:bg-pink-950/60 dark:text-pink-300 px-1.5 py-0.5 rounded-md font-semibold">
@@ -48,7 +58,7 @@
         {% if post.reel_compose_pending %}
         <span class="text-[9px] bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400 px-1.5 py-0.5 rounded-md font-medium animate-pulse">Composing…</span>
         {% elif post.reel_has_video %}
-        <span class="text-[9px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 px-1.5 py-0.5 rounded-md font-medium">Video ready</span>
+        <span class="text-[9px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 px-1.5 py-0.5 rounded-md font-medium">{{ post.reel_compose_backend_label }}</span>
         {% elif post.reel_compose_status == 'failed' %}
         <span class="text-[9px] bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400 px-1.5 py-0.5 rounded-md font-medium">Reel failed</span>
         {% endif %}

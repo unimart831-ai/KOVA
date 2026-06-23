@@ -53,6 +53,11 @@ class ContentSeed(models.Model):
         help_text="Live Create Agent steps shown during post generation.",
     )
     batch_strategy = models.TextField(blank=True, help_text="AI-generated content strategy for this batch of posts.")
+    blueprint = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="ContentBlueprint spec — platform slots and objective from BusinessAsset.",
+    )
     weekly_plan = models.ForeignKey(
         "WeeklyContentPlan",
         on_delete=models.SET_NULL,
@@ -316,6 +321,39 @@ class Post(SoftDeleteMixin, models.Model):
         if self.post_format != self.PostFormat.REEL:
             return ""
         return self.reel_meta.get("video_compose_status", "")
+
+    @property
+    def reel_compose_backend(self):
+        """Resolved reel production backend for UI labels."""
+        if self.post_format != self.PostFormat.REEL:
+            return ""
+        backend = self.reel_meta.get("reel_compose_backend")
+        if backend:
+            return backend
+        if self.reel_meta.get("prefer_kling_video"):
+            return "kling"
+        if self.reel_meta.get("prefer_photoroom_video"):
+            return "photoroom"
+        return "ffmpeg"
+
+    @property
+    def reel_compose_backend_label(self):
+        from apps.media.labels import reel_backend_label
+
+        return reel_backend_label(self.reel_compose_backend or "ffmpeg")
+
+    @property
+    def reel_compose_hint(self):
+        from apps.media.labels import reel_compose_hint
+
+        return reel_compose_hint(self.reel_compose_backend or "ffmpeg")
+
+    @property
+    def carousel_backend_label(self):
+        from apps.media.labels import carousel_backend_label
+
+        meta = self.visual_metadata or {}
+        return carousel_backend_label(meta.get("carousel_backend", "local"))
 
     @property
     def reel_has_video(self):

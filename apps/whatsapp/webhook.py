@@ -137,8 +137,8 @@ def _handle_event(request):
             if master_phone_id and phone_number_id == master_phone_id:
                 for msg_data in messages:
                     try:
-                        from apps.briefs.whatsapp_commands import handle_owner_brief_command
-                        handle_owner_brief_command(msg_data, contacts)
+                        from apps.briefs.whatsapp_commands import handle_owner_whatsapp_message
+                        handle_owner_whatsapp_message(msg_data, contacts)
                     except Exception:
                         logger.exception("Brief WhatsApp command handler failed")
                 for status_data in statuses:

@@ -83,8 +83,7 @@
         {% endif %}
         <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> Daily brief</li>
         {% if plan.visual_enhancements_per_month %}
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> {{ plan.visual_enhancements_per_month }} studio polish credits/mo (Plus pack · up to {{ plan.plus_max_variants_per_product|default:3 }} scenes/product)</li>
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> Unlimited carousels &amp; motion reels</li>
+          {% include "components/_billing_media_features.html" with plan=plan %}
         {% endif %}
         {% if plan.ai_image_generation %}
           <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> AI images (Instagram, TikTok, Pinterest)</li>

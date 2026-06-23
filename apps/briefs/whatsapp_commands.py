@@ -15,6 +15,12 @@ Commands:
   posts         — pending approval count
   standup       — full morning standup digest
   morning       — alias for standup
+  reject        — reject first pending post
+  reject all    — reject all pending posts
+  leads         — hot leads + need reply summary
+  book          — booking page link + services
+  money         — revenue + leads summary this week
+  snap          — send a product photo to list + create content
 """
 
 from __future__ import annotations
@@ -28,24 +34,71 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 HELP_TEXT = (
-    "Kova Daily Brief commands:\n"
+    "Kova commands:\n"
+    "• Send a product photo to Snap to Sell\n"
     "• STANDUP — morning standup digest\n"
+    "• MONEY — revenue + leads this week\n"
     "• SCORE — your Kova score\n"
     "• BRIEF — today's summary\n"
     "• POSTS — pending approvals\n"
     "• APPROVE — approve next post\n"
     "• APPROVE ALL — approve all pending\n"
     "• APPROVE 2 — approve post #2\n"
+    "• REJECT — reject next post\n"
+    "• REJECT ALL — reject all pending\n"
+    "• LEADS — hot leads + need reply\n"
+    "• BOOK — your booking page + services\n"
     "• IDEA 1 — queue idea #1 for creation\n"
     "• HELP — this list"
 )
 
 
-def handle_owner_brief_command(msg_data: dict, contacts: dict | None = None) -> bool:
-    """Process an inbound message on Kova's master WhatsApp number.
+def handle_owner_whatsapp_message(msg_data: dict, contacts: dict | None = None) -> bool:
+    """Process owner messages on Kova's master WhatsApp number."""
+    wa_id = msg_data.get("from", "")
+    if not wa_id:
+        return False
 
-    Returns True when the sender matches a Kova user (handled or not).
-    """
+    user = find_user_by_whatsapp_id(wa_id)
+    if not user:
+        return False
+
+    msg_type = msg_data.get("type", "text")
+
+    if msg_type == "image":
+        from apps.products.owner_snap_whatsapp import handle_owner_snap_image
+
+        response, command_key, success, metadata = handle_owner_snap_image(user, msg_data)
+        _send_owner_reply(wa_id, response, user=user, brief=_get_today_brief(user))
+        _log_command(user, wa_id, "[image]", command_key, response, success=success, metadata=metadata)
+        return True
+
+    if msg_type not in ("text", "interactive"):
+        return True
+
+    text = _extract_command_text(msg_data, msg_type)
+    if not text:
+        return True
+
+    from apps.products.owner_snap_whatsapp import try_complete_pending_snap
+
+    pending_result = try_complete_pending_snap(user, text)
+    if pending_result:
+        response, command_key, success, metadata = pending_result
+        _send_owner_reply(wa_id, response, user=user, brief=_get_today_brief(user))
+        _log_command(user, wa_id, text, command_key, response, success=success, metadata=metadata)
+        return True
+
+    return handle_owner_brief_command(msg_data, contacts, _prechecked_user=user)
+
+
+def handle_owner_brief_command(
+    msg_data: dict,
+    contacts: dict | None = None,
+    *,
+    _prechecked_user=None,
+) -> bool:
+    """Process text/interactive brief commands on Kova's master WhatsApp number."""
     wa_id = msg_data.get("from", "")
     if not wa_id:
         return False
@@ -58,7 +111,7 @@ def handle_owner_brief_command(msg_data: dict, contacts: dict | None = None) -> 
     if not text:
         return False
 
-    user = find_user_by_whatsapp_id(wa_id)
+    user = _prechecked_user or find_user_by_whatsapp_id(wa_id)
     if not user:
         return False
 
@@ -193,8 +246,23 @@ def _dispatch_command(user, raw_text: str) -> tuple[str, str, bool, dict]:
     if text.startswith("approve"):
         return _handle_approve(user, text)
 
+    if text.startswith("reject"):
+        parts = text.split()
+        if len(parts) == 1:
+            return _handle_reject(user, "reject 1")
+        return _handle_reject(user, text)
+
+    if text in {"leads", "inbox", "hot leads"}:
+        return _handle_leads(user)
+
+    if text in {"book", "booking", "bookings", "calendar"}:
+        return _handle_book(user)
+
     if text.startswith("idea"):
         return _handle_idea(user, text)
+
+    if text in {"money", "revenue", "sales"}:
+        return _handle_money(user)
 
     return (
         f"Didn't recognize \"{raw_text[:40]}\".\n\n{HELP_TEXT}",
@@ -247,6 +315,170 @@ def _handle_approve(user, text: str) -> tuple[str, str, bool, dict]:
         command_key,
         True,
         result,
+    )
+
+
+def _handle_reject(user, text: str) -> tuple[str, str, bool, dict]:
+    from apps.content.approval import get_pending_posts, reject_pending_posts
+
+    pending = get_pending_posts(user)
+    if not pending:
+        return "Nothing to reject — no pending posts.", "reject", True, {}
+
+    parts = text.split()
+    if len(parts) >= 2 and parts[1] == "all":
+        result = reject_pending_posts(user, indices=None)
+        command_key = "reject_all"
+    elif len(parts) >= 2 and parts[1].isdigit():
+        result = reject_pending_posts(user, indices=[int(parts[1])])
+        command_key = f"reject_{parts[1]}"
+    else:
+        result = reject_pending_posts(user, indices=[1])
+        command_key = "reject"
+
+    rejected = result["rejected"]
+    if rejected == 0:
+        msg = "Couldn't reject — no matching pending posts."
+        if result["errors"]:
+            msg += " " + result["errors"][0]
+        return msg, command_key, False, result
+
+    if rejected == 1 and result["posts"]:
+        p = result["posts"][0]
+        return (
+            f"Rejected 1 post: \"{p.get('preview', 'Removed')}\".",
+            command_key,
+            True,
+            result,
+        )
+
+    return (
+        f"Rejected {rejected} post(s).",
+        command_key,
+        True,
+        result,
+    )
+
+
+def _handle_leads(user) -> tuple[str, str, bool, dict]:
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from apps.briefs.dashboard import get_money_board_stats
+    from apps.leads.models import Lead
+
+    stats = get_money_board_stats(user)
+    week_ago = timezone.now() - timedelta(days=7)
+
+    recent = list(
+        Lead.objects.filter(user=user, first_seen_at__gte=week_ago)
+        .order_by("-first_seen_at")[:5]
+    )
+    hot = list(
+        Lead.objects.filter(user=user, temperature=Lead.Temperature.HOT)
+        .order_by("-first_seen_at")[:3]
+    )
+
+    lines = []
+    if hot:
+        lines.append("Hot leads:")
+        for lead in hot:
+            label = lead.name or lead.email or lead.phone or "Unknown"
+            lines.append(f"• {label[:40]}")
+    elif recent:
+        lines.append("Recent leads:")
+        for lead in recent:
+            label = lead.name or lead.email or lead.phone or "Unknown"
+            lines.append(f"• {label[:40]}")
+    else:
+        lines.append("No new leads this week yet.")
+
+    site = getattr(settings, "SITE_URL", "").rstrip("/")
+    return (
+        f"Leads:\n"
+        f"• This week: {stats['leads_week']}\n"
+        f"• Hot: {stats['hot_leads']}\n"
+        f"• Need reply: {stats['needs_reply']}\n\n"
+        + "\n".join(lines)
+        + f"\n\nOpen inbox: {site}/engage/",
+        "leads",
+        True,
+        {
+            "leads_week": stats["leads_week"],
+            "hot_leads": stats["hot_leads"],
+            "needs_reply": stats["needs_reply"],
+        },
+    )
+
+
+def _handle_book(user) -> tuple[str, str, bool, dict]:
+    from apps.bookings.models import Booking, BookingLink
+    from apps.bookings.service_setup import booking_public_url, ensure_primary_booking_link
+
+    link = BookingLink.objects.filter(user=user, is_active=True).order_by("created_at").first()
+    profile = getattr(user, "profile", None)
+    if not link and profile and getattr(profile, "business_model", "") == "service":
+        link = ensure_primary_booking_link(user)
+
+    if not link:
+        site = getattr(settings, "SITE_URL", "").rstrip("/")
+        return (
+            f"No booking page yet.\n\nSet one up: {site}/bookings/links/new/",
+            "book",
+            True,
+            {"has_booking_link": False},
+        )
+
+    url = booking_public_url(link)
+    services = link.services or []
+    service_lines = []
+    for svc in services[:5]:
+        name = svc.get("name", "Service")
+        price = svc.get("price_kes", 0)
+        duration = svc.get("duration_minutes", 60)
+        service_lines.append(f"• {name} — KES {price:,.0f} ({duration} min)")
+
+    upcoming = Booking.objects.filter(
+        booking_link=link,
+        status__in=[Booking.Status.CONFIRMED, Booking.Status.PENDING],
+        scheduled_at__gte=timezone.now(),
+    ).count()
+
+    body = (
+        f"Booking page: {link.label}\n"
+        f"Link: {url}\n"
+        f"Upcoming: {upcoming} appointment(s)"
+    )
+    if service_lines:
+        body += "\n\nServices:\n" + "\n".join(service_lines)
+    else:
+        body += "\n\nAdd services in the app to show them here."
+
+    site = getattr(settings, "SITE_URL", "").rstrip("/")
+    body += f"\n\nManage: {site}/bookings/"
+    return (
+        body,
+        "book",
+        True,
+        {"has_booking_link": True, "booking_url": url, "upcoming": upcoming},
+    )
+
+
+def _handle_money(user) -> tuple[str, str, bool, dict]:
+    from apps.briefs.revenue_summary import format_money_whatsapp_message, get_unified_revenue_summary
+
+    summary = get_unified_revenue_summary(user)
+    return (
+        format_money_whatsapp_message(summary),
+        "money",
+        True,
+        {
+            "total_kes": summary["total_kes"],
+            "mpesa_kes": summary["mpesa_kes"],
+            "revenue_week": summary["total_kes"],
+            "leads_week": summary["leads_week"],
+        },
     )
 
 

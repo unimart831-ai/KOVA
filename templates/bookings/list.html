@@ -2,9 +2,13 @@
 
 {% block title %}Bookings{% endblock %}
 {% block page_title %}Bookings{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">{{ kova_copy.close }} — booking pages let clients self-serve.</p>
+{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto py-6 space-y-6">
+  {% include "components/_kova_loop_strip.html" %}
 
   <div class="flex items-center justify-between flex-wrap gap-2">
     <p class="text-sm text-gray-500 dark:text-gray-400">

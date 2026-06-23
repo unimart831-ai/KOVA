@@ -174,3 +174,52 @@ def approve_pending_posts(
         "posts": approved_posts,
         "total_pending": len(posts),
     }
+
+
+def reject_pending_posts(
+    user,
+    *,
+    indices: list[int] | None = None,
+) -> dict:
+    """Reject pending posts by 1-based index, or all when indices is None."""
+    posts = get_pending_posts(user)
+    if not posts:
+        return {"rejected": 0, "skipped": 0, "errors": [], "posts": []}
+
+    if indices is None:
+        targets = posts
+    else:
+        targets = []
+        for idx in indices:
+            if 1 <= idx <= len(posts):
+                targets.append(posts[idx - 1])
+
+    rejected = 0
+    skipped = 0
+    errors = []
+    rejected_posts = []
+
+    for post in targets:
+        if post.user_id != user.pk:
+            skipped += 1
+            continue
+        if post.status not in (Post.Status.DRAFT, Post.Status.PENDING_APPROVAL):
+            skipped += 1
+            errors.append("Post is not pending approval.")
+            continue
+        post.status = Post.Status.REJECTED
+        post.save(update_fields=["status", "updated_at"])
+        rejected += 1
+        rejected_posts.append({
+            "post_id": str(post.id),
+            "preview": (post.content_text or "")[:60].strip(),
+            "platform": post.social_account.platform if post.social_account else "",
+        })
+
+    return {
+        "rejected": rejected,
+        "skipped": skipped,
+        "errors": errors,
+        "posts": rejected_posts,
+        "total_pending": len(posts),
+    }

@@ -100,6 +100,7 @@ def settings_view(request):
         },
         "plan_limits": get_user_plan_limits(request.user),
         "page_title": "Settings",
+        "business_model": getattr(profile, "business_model", ""),
     })
 
 
@@ -206,12 +207,27 @@ def onboarding_choose_path(request):
         return redirect("accounts:onboarding_magic_connect")
 
     if request.method == "POST":
-        from apps.accounts.onboarding_express import VALID_INTENTS, record_intent
+        from apps.accounts.onboarding_express import (
+            VALID_BUSINESS_MODELS,
+            VALID_INTENTS,
+            BUSINESS_MODEL_PRODUCT,
+            BUSINESS_MODEL_SERVICE,
+            BUSINESS_MODEL_PROFESSIONAL,
+            apply_business_model_defaults,
+            record_business_model,
+            record_intent,
+        )
 
+        business_model = (request.POST.get("business_model") or "").strip()
         intent = (request.POST.get("intent") or "").strip()
         link = (request.POST.get("link") or "").strip()
-        if intent in VALID_INTENTS:
+
+        if business_model in VALID_BUSINESS_MODELS:
+            record_business_model(profile, business_model)
+            apply_business_model_defaults(profile, request.user)
+        elif intent in VALID_INTENTS:
             record_intent(profile, intent)
+
         if link:
             if _looks_like_social_profile_url(link):
                 messages.info(
@@ -221,6 +237,13 @@ def onboarding_choose_path(request):
                 return redirect("accounts:onboarding_magic_connect")
             request.session["onboarding_express_link"] = link
             return redirect("/accounts/onboarding/?step=1&via=url")
+
+        if business_model == BUSINESS_MODEL_PRODUCT:
+            return redirect("/accounts/onboarding/?step=1&via=sell")
+        if business_model == BUSINESS_MODEL_SERVICE:
+            return redirect("/accounts/onboarding/?step=1&via=service")
+        if business_model == BUSINESS_MODEL_PROFESSIONAL:
+            return redirect("accounts:onboarding_magic_connect")
         if intent == "sell":
             return redirect("/accounts/onboarding/?step=1&via=sell")
         if intent in ("grow", "both"):

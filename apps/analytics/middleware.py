@@ -18,12 +18,10 @@ _SECTION_MAP = [
     # Sub-sections that must match BEFORE their parent prefix
     (re.compile(r"^/analytics/attribution"), "attribution"),
     (re.compile(r"^/analytics/intelligence"), "intelligence"),
-    (re.compile(r"^/analytics/competitors"), "competitors"),
     (re.compile(r"^/leads/nurture"), "nurture"),
     (re.compile(r"^/accounts/settings"), "settings"),
     # Main sections
     (re.compile(r"^/brief/"), "brief"),
-    (re.compile(r"^/command/"), "command"),
     (re.compile(r"^/content/"), "content"),
     (re.compile(r"^/engage/"), "engage"),
     (re.compile(r"^/whatsapp/"), "whatsapp"),
@@ -32,9 +30,6 @@ _SECTION_MAP = [
     (re.compile(r"^/leads/"), "leads"),
     (re.compile(r"^/links/"), "links"),
     (re.compile(r"^/products/"), "products"),
-    (re.compile(r"^/campaigns/"), "campaigns"),
-    (re.compile(r"^/memes/"), "memes"),
-    (re.compile(r"^/media-queue/"), "media_queue"),
     (re.compile(r"^/billing/"), "billing"),
     (re.compile(r"^/teams/"), "teams"),
     (re.compile(r"^/emails/"), "emails"),

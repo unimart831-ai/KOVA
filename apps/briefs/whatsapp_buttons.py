@@ -18,6 +18,8 @@ BUTTON_ID_TO_COMMAND = {
     "brief_decide": "standup",
     "brief_idea_1": "idea 1",
     "brief_idea_2": "idea 2",
+    "brief_book": "book",
+    "brief_money": "money",
 }
 
 # Title fallbacks (case-insensitive match)
@@ -28,6 +30,8 @@ TITLE_TO_COMMAND = {
     "brief": "brief",
     "posts": "posts",
     "open brief": "brief",
+    "book": "book",
+    "money": "money",
 }
 
 
@@ -86,8 +90,37 @@ def action_buttons_for_user(
     """Up to 3 session buttons shown after each command reply (24h window)."""
     from apps.briefs.standup import get_top_decision
 
+    profile = getattr(user, "profile", None)
+    is_service = profile and getattr(profile, "business_model", "") == "service"
+    is_commerce = profile and getattr(profile, "business_model", "") in ("product", "service")
+
     top = get_top_decision(brief) if brief else None
     urgent_decision = top and top.get("urgency") == "now"
+
+    if is_service and posts_pending > 0:
+        return [
+            {"id": "brief_approve", "title": "Approve"},
+            {"id": "brief_book", "title": "Book"},
+            {"id": "brief_standup", "title": "Standup"},
+        ]
+    if is_service:
+        return [
+            {"id": "brief_book", "title": "Book"},
+            {"id": "brief_money", "title": "Money"},
+            {"id": "brief_standup", "title": "Standup"},
+        ]
+    if is_commerce and posts_pending > 0:
+        return [
+            {"id": "brief_approve", "title": "Approve"},
+            {"id": "brief_money", "title": "Money"},
+            {"id": "brief_standup", "title": "Standup"},
+        ]
+    if is_commerce:
+        return [
+            {"id": "brief_money", "title": "Money"},
+            {"id": "brief_standup", "title": "Standup"},
+            {"id": "brief_brief", "title": "Brief"},
+        ]
 
     if urgent_decision and posts_pending > 0:
         return [

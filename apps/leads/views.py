@@ -49,6 +49,7 @@ def lead_list(request):
         "current_source": source,
         "current_q": q,
         "page_title": "Lead Inbox",
+        "business_model": getattr(getattr(request.user, "profile", None), "business_model", ""),
     })
 
 

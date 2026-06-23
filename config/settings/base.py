@@ -77,12 +77,13 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "apps.accounts",
-    "apps.command",
     "apps.platforms",
     "apps.content",
     "apps.agents",
     "apps.analytics",
     "apps.briefs",
+    "apps.calendar_intel",
+    "apps.media",
     "apps.engage",
     "apps.billing",
     "apps.notifications",
@@ -91,15 +92,11 @@ LOCAL_APPS = [
     "apps.help",
     "apps.teams",
     "apps.partners",
-    "apps.media_queue",
     "apps.links",
     "apps.leads",
     "apps.products",
     "apps.campaigns",
     "apps.whatsapp",
-    "apps.memes",
-    "apps.calendar_intel",
-    "apps.profile_audit",
     "apps.qr_attribution",
     "apps.bookings",
     "apps.reviews",
@@ -149,8 +146,10 @@ TEMPLATES = [
                 "apps.billing.context_processors.plan_limit_notice",
                 "apps.billing.context_processors.user_plan_sidebar",
                 "apps.accounts.context_processors.nav_badges",
+                "apps.accounts.context_processors.kova_voice",
                 "apps.teams.context_processors.agency_theme",
                 "apps.admin_dashboard.context_processors.admin_nav",
+                "apps.media.context_processors.media_capabilities",
             ],
         },
     },
@@ -276,29 +275,9 @@ CELERY_BEAT_SCHEDULE = {
         "task": "partners.check_partner_milestones",
         "schedule": 24 * 3600.0,  # daily — award milestone bonuses when thresholds hit
     },
-    "calendar-intel-holiday-watcher": {
-        "task": "calendar_intel.run_holiday_watcher",
-        "schedule": 24 * 3600.0,  # daily — find upcoming holidays + queue drafts
-    },
-    "profile-audit-nightly": {
-        "task": "profile_audit.run_profile_audits",
-        "schedule": 24 * 3600.0,  # daily — audit FB/IG/LinkedIn profile completeness
-    },
-    "analyze-all-competitors": {
-        "task": "analyze-all-competitors",
-        "schedule": 7 * 24 * 3600.0,  # weekly — AI competitive analysis
-    },
-    "evaluate-ab-tests": {
-        "task": "content.evaluate_ab_tests",
-        "schedule": 3600.0,  # every hour — check running A/B tests
-    },
     "measure-agent-outcomes": {
         "task": "agents.measure_agent_outcomes",
         "schedule": 12 * 3600.0,  # every 12 hours — score past agent actions against outcomes
-    },
-    "process-media-queues-every-5-min": {
-        "task": "media_queue.process_queues",
-        "schedule": 300.0,  # every 5 minutes — publish queued media
     },
     "flush-pageview-buffer": {
         "task": "analytics.flush_pageview_buffer",
@@ -319,14 +298,6 @@ CELERY_BEAT_SCHEDULE = {
     "weekly-catalog-showcase": {
         "task": "products.weekly_catalog_showcase",
         "schedule": 24 * 3600.0,  # daily check — each user at most once per 7 days
-    },
-    "autopilot-plan-weekly": {
-        "task": "content.plan_weekly_autopilot",
-        "schedule": 7 * 24 * 3600.0,  # weekly — plan next week's content (Sunday)
-    },
-    "autopilot-review-emails": {
-        "task": "content.send_autopilot_review_emails",
-        "schedule": 24 * 3600.0,  # daily — check if any plans finished, send review emails
     },
     "recycle-top-content": {
         "task": "content.recycle_top_content",
@@ -370,22 +341,6 @@ CELERY_BEAT_SCHEDULE = {
     "process-scheduled-email-campaigns": {
         "task": "emails.process_scheduled_campaigns",
         "schedule": 15 * 60.0,  # every 15 min — dispatch scheduled campaigns
-    },
-    "discover-trending-memes": {
-        "task": "memes.discover_trending_memes",
-        "schedule": 3 * 3600.0,  # every 3 hours — AI meme trend discovery
-    },
-    "adapt-memes-for-users": {
-        "task": "memes.adapt_memes_for_users",
-        "schedule": 4 * 3600.0,  # every 4 hours — create brand-adapted memes for users
-    },
-    "update-meme-lifecycle": {
-        "task": "memes.update_meme_lifecycle",
-        "schedule": 24 * 3600.0,  # daily — age out stale memes
-    },
-    "scan-trends-for-users": {
-        "task": "memes.scan_trends_for_users",
-        "schedule": 2 * 3600.0,  # every 2 hours — personalized trend alerts
     },
     # WhatsApp Sprint 5C — Status Studio
     "generate-status-queue": {
@@ -789,8 +744,25 @@ EDIT_WITH_AI_SEED_DEFAULT = 2016886668
 ENGAGE_DM_INBOX_ENABLED = env.bool("ENGAGE_DM_INBOX_ENABLED", default=True)
 TIKTOK_RESEARCH_API_ENABLED = env.bool("TIKTOK_RESEARCH_API_ENABLED", default=False)
 
-# Legacy — unused; kept so existing .env files do not break
+# Legacy — also used by media orchestration (Fal.ai Flux + Kling)
 FAL_KEY = env("FAL_KEY", default="")
+FAL_API_KEY = env("FAL_API_KEY", default="")  # preferred alias
+FAL_KLING_MODEL = env(
+    "FAL_KLING_MODEL",
+    default="fal-ai/kling-video/v2.1/master/image-to-video",
+)
+FAL_FLUX_EDIT_MODEL = env("FAL_FLUX_EDIT_MODEL", default="fal-ai/flux-pro/kontext")
+
+# Bannerbear — branded carousel templates
+BANNERBEAR_API_KEY = env("BANNERBEAR_API_KEY", default="")
+BANNERBEAR_TEMPLATES = {
+    "product_carousel_cover": env("BANNERBEAR_TEMPLATE_COVER", default=""),
+    "product_carousel_slide": env("BANNERBEAR_TEMPLATE_SLIDE", default=""),
+    "product_carousel_cta": env("BANNERBEAR_TEMPLATE_CTA", default=""),
+}
+
+# Media orchestration master switch
+MEDIA_ORCHESTRATION_ENABLED = env.bool("MEDIA_ORCHESTRATION_ENABLED", default=True)
 
 HF_TOKEN = env("HF_TOKEN", default="")                        # https://huggingface.co/settings/tokens — FLUX.1-schnell (free)
 TOGETHER_API_KEY = env("TOGETHER_API_KEY", default="")        # https://api.together.xyz — sign up, add $5 credit

@@ -2,11 +2,12 @@
 
 {% block page_title %}Needs reply{% endblock %}
 {% block page_subtitle %}
-<p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">WhatsApp escalations and social inbox — one queue</p>
+<p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ kova_catch_subtitle }} — one queue for WhatsApp and social</p>
 {% endblock %}
 
 {% block content %}
 <div class="max-w-5xl mx-auto space-y-6">
+  {% include "components/_kova_loop_strip.html" %}
   <div class="flex flex-wrap items-center gap-3 text-sm">
     <span class="font-semibold text-gray-900 dark:text-white">{{ stats.total }} waiting</span>
     {% if stats.wa_count %}

@@ -593,27 +593,8 @@ def _gather_brief_data(user):
         "failed_posts": failed_posts,
     }
 
-    # Holiday awareness — upcoming moments + drafts already prepared
+    # Holiday awareness removed — focus on money-chase wedge
     holiday_context = {"upcoming": [], "drafts_ready": 0}
-    try:
-        from apps.calendar_intel.models import HolidayDraft
-        from apps.calendar_intel.selectors import top_upcoming_for_brief
-        upcoming = top_upcoming_for_brief(user, count=3)
-        holiday_context["upcoming"] = [
-            {
-                "name": m.name,
-                "date": m.date.isoformat(),
-                "days_until": m.days_until,
-                "score": m.score,
-            }
-            for m in upcoming
-        ]
-        holiday_context["drafts_ready"] = HolidayDraft.objects.filter(
-            user=user,
-            status=HolidayDraft.Status.DRAFTS_READY,
-        ).count()
-    except Exception as e:
-        logger.warning("Holiday context for brief failed: %s", e)
 
     data = {
         "today": today.isoformat(),
@@ -1131,6 +1112,7 @@ def generate_all_daily_briefs():
 def send_money_board_digests():
     """Daily digest: needs reply, hot leads, posts to approve (opt-in, default off)."""
     from apps.briefs.dashboard import get_money_board_stats
+    from apps.briefs.revenue_summary import format_money_board_digest
 
     sent = 0
     users = User.objects.filter(
@@ -1147,14 +1129,7 @@ def send_money_board_digests():
             if needs == 0 and hot == 0 and approve == 0:
                 continue
 
-            parts = []
-            if needs:
-                parts.append(f"{needs} need reply")
-            if hot:
-                parts.append(f"{hot} hot lead{'s' if hot != 1 else ''}")
-            if approve:
-                parts.append(f"{approve} to approve")
-            message = "Money board: " + ", ".join(parts) + "."
+            subject, message = format_money_board_digest(user, stats)
 
             Notification.create_for_user(
                 user=user,
@@ -1165,7 +1140,7 @@ def send_money_board_digests():
             if user.email and getattr(user, "brief_email_enabled", True):
                 site_url = getattr(settings, "SITE_URL", "https://app.kova.ai").rstrip("/")
                 send_mail(
-                    subject="Kova — money needs your attention",
+                    subject=subject,
                     message=f"{message}\n\nOpen Today: {site_url}/brief/\n",
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[user.email],

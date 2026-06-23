@@ -212,6 +212,7 @@ class NurtureSequence(models.Model):
         FROM_PLATFORM = "from_platform", "From specific platform"
         FROM_COMMERCE = "from_commerce", "From commerce purchases"
         FROM_BOOKING = "from_booking", "From bookings"
+        FROM_BOOKING_INTENT = "from_booking_intent", "Booking intent (social)"
         FROM_WALK_IN = "from_walk_in", "From walk-ins"
         FROM_QR_SCAN = "from_qr_scan", "From QR scans"
         STALE_WINBACK = "stale_winback", "Stale leads (7+ days inactive)"

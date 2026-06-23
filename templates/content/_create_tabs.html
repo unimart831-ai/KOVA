@@ -1,7 +1,7 @@
 {# Top-level Create section tabs — Studio vs Queue #}
 <div class="subnav-tabs mb-4">
   <a href="{% url 'content:studio' %}"
-     class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors {% if '/content/studio' in request.path or '/content/voice-campaign' in request.path or '/content/autopilot' in request.path or '/content/edit/' in request.path or '/memes/' in request.path or '/media-queue/' in request.path %}border-kova-600 text-kova-600 dark:border-kova-400 dark:text-kova-400{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600{% endif %}">
+     class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors {% if '/content/studio' in request.path or '/content/edit/' in request.path %}border-kova-600 text-kova-600 dark:border-kova-400 dark:text-kova-400{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600{% endif %}">
     Studio
   </a>
   <a href="{% url 'content:queue' %}"

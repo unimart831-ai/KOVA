@@ -234,6 +234,11 @@ def get_revenue_summary(user, days=30):
         reverse=True,
     )
 
+    from apps.briefs.asset_attribution import asset_type_breakdown, attribution_confidence_score
+
+    asset_type_breakdown_rows = asset_type_breakdown(user, cutoff)
+    attribution_confidence = attribution_confidence_score(user, cutoff)
+
     return {
         "totals": totals,
         "platform_revenue": platform_revenue,
@@ -252,6 +257,12 @@ def get_revenue_summary(user, days=30):
         },
         "funnel": funnel,
         "days": days,
+        "asset_type_breakdown": asset_type_breakdown_rows,
+        "max_asset_breakdown_revenue": max(
+            (r["revenue"] for r in asset_type_breakdown_rows),
+            default=0,
+        ),
+        "attribution_confidence": attribution_confidence,
     }
 
 

@@ -18,6 +18,7 @@ from .serializers import (
     ProductCategorySerializer,
     ProductSerializer,
     SocialAccountSerializer,
+    BusinessAssetSerializer,
 )
 
 
@@ -373,3 +374,64 @@ class ProductCategoryListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+
+# ─── Business Assets ─────────────────────────────────────────────────────────
+
+@extend_schema(tags=["Assets"])
+class BusinessAssetListCreateView(generics.ListCreateAPIView):
+    """
+    List or create unified business assets.
+
+    GET params:
+      - asset_type: filter by type (product, service, portfolio, etc.)
+      - status: filter by lifecycle status
+      - q: search title/description
+    """
+    serializer_class = BusinessAssetSerializer
+    permission_classes = [IsAuthenticated, HasAPIAccess]
+    ordering = "-created_at"
+
+    def get_queryset(self):
+        from apps.products.models import BusinessAsset
+
+        qs = BusinessAsset.objects.filter(user=self.request.user).select_related("product")
+
+        asset_type = self.request.query_params.get("asset_type")
+        if asset_type:
+            qs = qs.filter(asset_type=asset_type)
+
+        status_filter = self.request.query_params.get("status")
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+
+        q = self.request.query_params.get("q", "").strip()
+        if q:
+            from apps.utils.search import full_text_search
+            qs = full_text_search(qs, q, ["title", "description"], {"title": "A", "description": "B"})
+
+        return qs
+
+    def perform_create(self, serializer):
+        from apps.products.business_assets import sync_asset_from_product
+
+        asset = serializer.save(user=self.request.user)
+        if asset.product_id:
+            sync_asset_from_product(asset.product)
+
+
+@extend_schema(tags=["Assets"])
+class BusinessAssetDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, update, or archive a business asset."""
+    serializer_class = BusinessAssetSerializer
+    permission_classes = [IsAuthenticated, HasAPIAccess]
+
+    def get_queryset(self):
+        from apps.products.models import BusinessAsset
+        return BusinessAsset.objects.filter(user=self.request.user).select_related("product")
+
+    def perform_destroy(self, instance):
+        from apps.products.models import BusinessAsset
+
+        instance.status = BusinessAsset.Status.ARCHIVED
+        instance.save(update_fields=["status", "updated_at"])

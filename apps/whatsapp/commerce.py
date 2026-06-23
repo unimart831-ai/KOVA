@@ -739,6 +739,13 @@ def _confirm_booking(conversation, social_account, provider, token, to, ctx, use
                     "scheduled_at": scheduled_dt.isoformat(),
                 })
 
+    try:
+        from apps.leads.bridges import create_lead_from_booking
+
+        create_lead_from_booking(booking)
+    except Exception as exc:
+        logger.warning("Lead bridge from WA booking failed: %s", exc)
+
     if price > 0:
         ctx["payment_amount"] = str(price)
         ctx["payment_description"] = f"Booking: {name}"

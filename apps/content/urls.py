@@ -21,13 +21,6 @@ urlpatterns = [
     path("queue/clear-failed/", views.clear_failed_posts, name="clear_failed_posts"),
     path("calendar/", views.calendar_view, name="calendar"),
     path("calendar/grid/", views.content_calendar_grid, name="calendar_grid"),
-    # A/B Testing
-    path("ab-tests/", views.ab_test_list, name="ab_test_list"),
-    path("ab-tests/create/", views.ab_test_create, name="ab_test_create"),
-    path("ab-tests/<uuid:test_id>/", views.ab_test_detail, name="ab_test_detail"),
-    path("ab-tests/<uuid:test_id>/start/", views.ab_test_start, name="ab_test_start"),
-    path("ab-tests/<uuid:test_id>/conclude/", views.ab_test_conclude, name="ab_test_conclude"),
-    path("ab-tests/<uuid:test_id>/cancel/", views.ab_test_cancel, name="ab_test_cancel"),
     # Post actions
     path("<uuid:post_id>/edit/", views.edit_post, name="edit"),
     path("<uuid:post_id>/reschedule/", views.reschedule_post, name="reschedule"),
@@ -51,13 +44,4 @@ urlpatterns = [
     path("<uuid:post_id>/media/<uuid:attachment_id>/delete/", views.delete_media, name="delete_media"),
     path("<uuid:post_id>/card/", views.post_card, name="post_card"),
     path("<uuid:post_id>/", views.post_detail, name="post_detail"),
-    # Listen & Launch (voice campaign)
-    path("voice-campaign/", views.voice_campaign, name="voice_campaign"),
-    path("voice-campaign/transcribe/", views.voice_campaign_transcribe, name="voice_campaign_transcribe"),
-    # Autopilot
-    path("autopilot/", views.autopilot_dashboard, name="autopilot"),
-    path("autopilot/<uuid:plan_id>/status/", views.autopilot_plan_status, name="autopilot_status"),
-    path("autopilot/<uuid:plan_id>/", views.autopilot_plan_detail, name="autopilot_detail"),
-    path("autopilot/<uuid:plan_id>/approve/", views.autopilot_approve, name="autopilot_approve"),
-    path("autopilot/<uuid:plan_id>/cancel/", views.autopilot_cancel, name="autopilot_cancel"),
 ]

@@ -3,13 +3,18 @@
 {% block page_title %}Snap to Sell{% endblock %}
 {% block page_subtitle %}
 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
-  Photo + price → AI posts, polished images, and your shop link
+  {% if business_model == 'professional' %}
+  {{ kova_copy.sell }}
+  {% else %}
+  {{ kova_sell_subtitle }}
+  {% endif %}
 </p>
 {% endblock %}
 
 {% block content %}
 <script type="application/json" id="snap-credit-estimates">{{ credit_estimates_json|safe }}</script>
 <div class="max-w-lg mx-auto space-y-5" x-data="snapToSell({{ commerce_autopilot|yesno:'true,false' }}, {{ visual_credits.remaining|default:15 }}, {{ visual_credits.at_limit|yesno:'true,false' }}, {{ studio_polish_notice|yesno:'true,false' }}, {{ lite_forced|yesno:'true,false' }}, '{{ default_polish_mode }}')">
+  {% include "components/_kova_loop_strip.html" %}
 
   <div class="rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-xs text-amber-900 dark:text-amber-200">
     Photos must follow Kova's <a href="{% url 'acceptable_use' %}" class="underline font-medium">content policy</a>.
@@ -18,10 +23,13 @@
 
   {% include "products/_products_subnav.html" %}
 
+  {% include "components/_media_pipeline_explainer.html" with compact=True %}
+
   <form method="post" action="{% url 'products:snap_launch' %}" enctype="multipart/form-data" class="space-y-4"
         @submit="prepareSubmit($event)">
     {% csrf_token %}
     <input type="hidden" name="offering_type" :value="offeringType">
+    <input type="hidden" name="snap_mode" :value="snapMode">
     <input type="hidden" name="scene_pack" :value="scenePack">
     <input type="hidden" name="polish_mode" :value="polishMode">
     {% if commerce_autopilot %}
@@ -83,8 +91,11 @@
       </div>
       <div class="grid grid-cols-3 gap-3">
         <div class="col-span-2">
-          <label for="snap-price" class="label text-sm font-semibold">Price</label>
-          <input type="number" id="snap-price" name="price" step="0.01" min="0.01" required
+          <label for="snap-price" class="label text-sm font-semibold">
+            <span x-text="isProfessionalAsset ? 'Price (optional)' : 'Price'"></span>
+          </label>
+          <input type="number" id="snap-price" name="price" step="0.01" min="0"
+                 :required="!isProfessionalAsset"
                  class="input mt-1" placeholder="2500" x-model="price">
         </div>
         <div>
@@ -104,12 +115,33 @@
     </div>
 
     {# Advanced — collapsed by default #}
-    <details class="group">
+      <details class="group">
       <summary class="text-sm text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 list-none flex items-center gap-1">
         <span class="group-open:rotate-90 transition-transform inline-block">›</span>
         Options (service, digital, photo polish…)
       </summary>
       <div class="mt-3 space-y-4">
+        {% if business_model == 'professional' %}
+        <div class="card p-4">
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">What are you showcasing?</p>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" @click="snapMode = 'product'; offeringType = 'product'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
+                    :class="snapMode === 'product' ? 'border-kova-500 bg-kova-50 dark:bg-kova-950/40' : 'border-gray-200 dark:border-gray-700 text-gray-600'">Product</button>
+            <button type="button" @click="snapMode = 'portfolio'; offeringType = 'product'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
+                    :class="snapMode === 'portfolio' ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/40' : 'border-gray-200 dark:border-gray-700 text-gray-600'">Portfolio</button>
+            <button type="button" @click="snapMode = 'case_study'; offeringType = 'product'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
+                    :class="snapMode === 'case_study' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/40' : 'border-gray-200 dark:border-gray-700 text-gray-600'">Case study</button>
+          </div>
+        </div>
+        <div class="card p-4 space-y-3" x-show="snapMode === 'portfolio' || snapMode === 'case_study'" x-cloak>
+          <input type="text" name="client" class="input text-sm" placeholder="Client name (optional)">
+          <input type="text" name="outcome" class="input text-sm" placeholder="Result achieved (optional)">
+          <input type="text" name="pain" class="input text-sm" placeholder="Challenge solved (case study)" x-show="snapMode === 'case_study'">
+        </div>
+        {% endif %}
         <div class="card p-4">
           <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">What are you selling?</p>
           <div class="flex flex-wrap gap-2">
@@ -212,7 +244,7 @@
 
     <p class="text-xs text-center text-gray-500 dark:text-gray-400">
       {% if commerce_autopilot %}
-      We polish photos, write posts, and queue carousel + reel for your connected channels.
+      We polish photos, build brand-matched posts, carousel, story, reel &amp; WhatsApp offer — review in Studio before publishing.
       {% else %}
       Saves your offer and opens posts for review before publishing.
       {% endif %}
@@ -236,6 +268,10 @@ function snapToSell(autopilot, creditsRemaining, creditsAtLimit, studioPolishUna
     name: '',
     price: '',
     offeringType: 'product',
+    snapMode: 'product',
+    get isProfessionalAsset() {
+      return this.snapMode === 'portfolio' || this.snapMode === 'case_study';
+    },
     autopilot: !!autopilot,
     visualMode: 'pro_scene',
     polishMode: initialPolish,

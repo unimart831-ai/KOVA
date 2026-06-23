@@ -7,17 +7,10 @@ app_name = "analytics"
 
 urlpatterns = [
     path("", views.insights, name="insights"),
-    # Competitor Intelligence
-    path("competitors/", views.competitor_dashboard, name="competitors"),
-    path("competitors/add/", views.competitor_add, name="competitor_add"),
-    path("competitors/landscape/", views.competitor_landscape, name="competitor_landscape"),
-    path("competitors/<uuid:pk>/", views.competitor_detail, name="competitor_detail"),
-    path("competitors/<uuid:pk>/edit/", views.competitor_edit, name="competitor_edit"),
-    path("competitors/<uuid:pk>/analyze/", views.competitor_analyze, name="competitor_analyze"),
-    path("competitors/<uuid:pk>/delete/", views.competitor_delete, name="competitor_delete"),
     path("insights/<uuid:pk>/action/", views.insight_action, name="insight_action"),
     # Revenue Attribution
     path("revenue/", views.revenue_dashboard, name="revenue"),
+    path("revenue/export/assets/", views.export_asset_breakdown_csv, name="export_asset_breakdown"),
     path("revenue/shopify/connect/", views.shopify_connect, name="shopify_connect"),
     path("revenue/shopify/oauth/begin/", views.shopify_oauth_begin, name="shopify_oauth_begin"),
     path("revenue/shopify/oauth/callback/", views.shopify_oauth_callback, name="shopify_oauth_callback"),
@@ -35,8 +28,6 @@ urlpatterns = [
     path("pixel/events/", pixel_events, name="pixel_events"),
     path("pixel/test/", pixel_test, name="pixel_test"),
     path("pixel/kova-pixel.js", views.serve_pixel_js, name="pixel_js"),
-    # Screenshot to Compete
-    path("screenshot-compete/", views.screenshot_compete, name="screenshot_compete"),
     # Performance to Email
     path("recycle/", views.performance_recycle, name="performance_recycle"),
     path("recycle/<uuid:pk>/action/", views.recycle_action, name="recycle_action"),

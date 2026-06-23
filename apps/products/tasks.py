@@ -587,6 +587,7 @@ def create_product_carousel_posts(product_id: str, seed_id: str, key_features: l
     from apps.agents.carousel import generate_product_carousel
     from apps.agents.models import AgentAction
     from apps.content.models import ContentSeed, Post
+    from apps.media.carousel_bridge import generate_branded_carousel_urls
     from apps.platforms.models import SocialAccount
     from apps.products.commerce_autopilot import initial_commerce_post_status
     from apps.products.models import Product
@@ -653,11 +654,10 @@ def create_product_carousel_posts(product_id: str, seed_id: str, key_features: l
             generated_by_agent="create",
         )
 
-        media_urls = generate_product_carousel(
+        media_urls = generate_branded_carousel_urls(
             post, product,
             key_features=key_features,
             analysis=analysis or {},
-            closing_cta="Shop Now",
         )
 
         if media_urls:
@@ -798,6 +798,15 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
             "reel_brand_name": shop_brand,
             "reel_cta_label": "Order on WhatsApp",
         }
+        try:
+            from apps.media.content_types import MediaPlan
+            from apps.media.orchestrator import media_hints_for_reel_post
+
+            asset = product.business_asset
+            plan = MediaPlan.from_metadata((asset.metadata or {}).get("media_plan"))
+            visual_metadata.update(media_hints_for_reel_post(plan))
+        except Exception:
+            pass
         if source_post:
             visual_metadata["source_carousel_post_id"] = str(source_post.pk)
 
@@ -1306,6 +1315,9 @@ def expand_product_photo_set(
 def _fire_snap_carousel_reel_after_expand(product, *, seed_id, key_features, analysis, fire_task):
     """Carousel/reel need polished images — run after expand finishes."""
     from apps.platforms.models import SocialAccount
+    from apps.media.orchestrator import plan_media_for_product
+
+    plan_media_for_product(product, analysis=analysis)
 
     platforms = list(
         SocialAccount.objects.filter(user=product.user, is_active=True).values_list(
@@ -1622,6 +1634,10 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
         ),
         target_platforms=platforms[:3] if platforms else [],
     )
+
+    from apps.content.blueprint_pipeline import attach_blueprint_to_seed
+
+    attach_blueprint_to_seed(seed, product=product, platforms=platforms[:3] if platforms else None)
 
     fire_task(generate_from_seed, str(seed.id))
 

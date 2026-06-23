@@ -470,6 +470,30 @@ class WhatsAppProvider(BaseProvider):
         }
         return self._send_api_message(token, phone_id, payload)
 
+    def download_media_bytes(self, access_token: str, media_id: str) -> tuple[bytes, str]:
+        """Fetch inbound media from WhatsApp Cloud API. Returns (bytes, mime_type)."""
+        token = self._get_token(access_token)
+        if not media_id:
+            raise ValueError("media_id is required")
+
+        meta_resp = self.client.get(
+            f"{WA_API_BASE}/{media_id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        meta_resp.raise_for_status()
+        meta = meta_resp.json()
+        download_url = meta.get("url", "")
+        mime_type = meta.get("mime_type", "image/jpeg")
+        if not download_url:
+            raise ValueError("WhatsApp media URL missing from metadata response")
+
+        file_resp = self.client.get(
+            download_url,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        file_resp.raise_for_status()
+        return file_resp.content, mime_type
+
     def mark_as_read(self, access_token: str, wamid: str, **kwargs) -> bool:
         """Mark an inbound message as read (shows blue checkmarks to sender)."""
         token = self._get_token(access_token)

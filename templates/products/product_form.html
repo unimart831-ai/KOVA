@@ -8,6 +8,8 @@
     <form method="post" enctype="multipart/form-data" class="space-y-5">
       {% csrf_token %}
 
+      {% include "products/_professional_asset_fields.html" %}
+
       <div class="rounded-xl border border-kova-200 dark:border-kova-800/60 bg-kova-50/60 dark:bg-kova-950/20 px-4 py-3">
         <p class="text-sm font-semibold text-gray-900 dark:text-white">Build an offer Kova can actually convert</p>
         <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">

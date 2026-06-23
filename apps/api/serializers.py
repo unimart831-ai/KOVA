@@ -4,7 +4,7 @@ from apps.agents.models import AgentAction, AgentConfig
 from apps.analytics.models import Conversion, PostMetric
 from apps.content.models import ContentSeed, Post
 from apps.platforms.models import SocialAccount
-from apps.products.models import Product, ProductCategory
+from apps.products.models import Product, ProductCategory, BusinessAsset
 
 
 class SocialAccountSerializer(serializers.ModelSerializer):
@@ -144,3 +144,20 @@ class ProductSerializer(serializers.ModelSerializer):
             if qs.exists():
                 raise serializers.ValidationError(f"A product with external_id '{value}' already exists.")
         return value
+
+
+class BusinessAssetSerializer(serializers.ModelSerializer):
+    product_id = serializers.UUIDField(source="product.id", read_only=True, allow_null=True)
+    asset_type_display = serializers.CharField(source="get_asset_type_display", read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+
+    class Meta:
+        model = BusinessAsset
+        fields = [
+            "id", "asset_type", "asset_type_display",
+            "title", "description", "metadata",
+            "product", "product_id",
+            "status", "status_display", "source",
+            "created_at", "updated_at",
+        ]
+        read_only_fields = ["id", "product_id", "created_at", "updated_at"]

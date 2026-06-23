@@ -207,14 +207,12 @@ def qr_create(request):
         return redirect("qr_attribution:detail", pk=qr.pk)
 
     # GET
-    from apps.campaigns.models import Campaign
     from apps.content.models import Post
-    campaigns = Campaign.objects.filter(user=request.user).order_by("-created_at")[:25]
     posts = Post.objects.filter(
         user=request.user, status="published",
     ).order_by("-published_at")[:25]
     return render(request, "qr_attribution/create.html", {
-        "campaigns": campaigns,
+        "campaigns": [],
         "posts": posts,
         "templates": QRCode.LandingTemplate.choices,
         "page_title": "Create QR Code",

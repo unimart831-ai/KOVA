@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.db.models import Sum
@@ -22,7 +23,14 @@ _PIPELINE_ORDER = (
 
 @login_required
 def agent_control(request):
-    """Agent control center — toggle and configure agents."""
+    """Agent control center — staff-only; SMB users manage autonomy in Settings."""
+    if not request.user.is_staff:
+        messages.info(
+            request,
+            "Kova runs automatically. Adjust approval and reply settings in Settings.",
+        )
+        return redirect("accounts:settings")
+
     agents = request.user.agent_configs.all()
 
     # Auto-create default agent configs if none exist

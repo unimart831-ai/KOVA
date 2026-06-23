@@ -27,7 +27,15 @@ logger = logging.getLogger(__name__)
 # Platforms active for new connections. Providers, model choices, and DB records
 # for other platforms are preserved — they are simply not exposed in the UI yet.
 # Add a platform here when its OAuth app is approved and tested end-to-end.
+# Kova supports Facebook, Instagram, TikTok, LinkedIn + WhatsApp to close.
 ACTIVE_PLATFORMS = [
+    {
+        "key": "whatsapp",
+        "label": "WhatsApp",
+        "icon": '<svg class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>',
+        "color": "text-[#25D366]",
+        "description": "Close deals — inbox, templates, M-Pesa in chat",
+    },
     {
         "key": "facebook",
         "label": "Facebook",
@@ -56,38 +64,10 @@ ACTIVE_PLATFORMS = [
         "color": "text-[#0A66C2]",
         "description": "B2B content, thought leadership & company pages",
     },
-    {
-        "key": "whatsapp",
-        "label": "WhatsApp",
-        "icon": '<svg class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>',
-        "color": "text-[#25D366]",
-        "description": "AI auto-replies, broadcasts & customer chat",
-    },
-    {
-        "key": "pinterest",
-        "label": "Pinterest",
-        "icon": '<svg class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor"><path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 01.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12.017 24c6.624 0 11.99-5.367 11.99-11.988C24.007 5.367 18.641 0 12.017 0z"/></svg>',
-        "color": "text-[#BD081C]",
-        "description": "Visual pins, saves & product discovery",
-    },
-    {
-        "key": "bluesky",
-        "label": "Bluesky",
-        "icon": '<svg class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor"><path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.785 2.627 3.6 3.476 6.178 3.103-4.413.659-7.26 2.674-3.96 7.658C6.376 25.376 9.585 20.088 12 15.87c2.415 4.218 5.417 9.25 9.158 5.138 3.3-4.984.453-6.999-3.96-7.658 2.578.373 5.393-.476 6.178-3.103C23.622 9.418 24 4.458 24 3.768c0-.688-.139-1.86-.902-2.203-.659-.299-1.664-.621-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8z"/></svg>',
-        "color": "text-[#0085FF]",
-        "description": "Decentralized social, replies & mentions",
-    },
 ]
 
-# Coming soon — providers are built, OAuth apps pending approval.
-COMING_SOON_PLATFORMS = [
-    {"key": "youtube", "label": "YouTube", "color": "text-[#FF0000]",
-     "icon": '<svg class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>'},
-    {"key": "twitter", "label": "X (Twitter)", "color": "text-gray-900 dark:text-white",
-     "icon": '<svg class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>'},
-    {"key": "threads", "label": "Threads", "color": "text-gray-900 dark:text-white",
-     "icon": '<svg class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.96-.065-1.185.408-2.285 1.33-3.096.88-.775 2.121-1.263 3.493-1.378 1.018-.085 2-.014 2.941.175l.016-.001c-.04-.555-.207-1.004-.504-1.342-.378-.43-.996-.66-1.838-.687l-.035-.001c-.734 0-1.656.192-2.22.773l-1.454-1.452c1.012-1.043 2.454-1.442 3.674-1.442l.066.001c1.39.034 2.53.478 3.394 1.318.868.845 1.335 2.013 1.388 3.473a7.95 7.95 0 011.665 1.082c1.09.876 1.876 2.03 2.272 3.34.508 1.682.345 3.654-.46 5.554-.876 2.072-2.462 3.62-4.728 4.606-1.827.795-3.987 1.206-6.424 1.222zm1.476-7.092c.863-.047 1.502-.336 1.901-.858.358-.468.59-1.098.692-1.876-.51-.11-1.056-.17-1.623-.17-.082 0-.164.002-.244.005-.927.041-1.725.333-2.246.82-.429.401-.628.895-.591 1.467.027.424.226.797.578 1.081.425.343 1.012.54 1.656.54l-.123-.009z"/></svg>'},
-]
+# Kova supports 4 social platforms + WhatsApp to close.
+COMING_SOON_PLATFORMS = []
 
 # Flat set used for filtering throughout the app (Create Agent, content forms, etc.)
 ACTIVE_PLATFORM_KEYS = {p["key"] for p in ACTIVE_PLATFORMS}
@@ -127,34 +107,9 @@ def platform_list(request):
             "provider_available": get_provider(p["key"]) is not None,
         })
 
-    # Latest profile audit per account — attached directly so the template
-    # can do `account.profile_audit`. Failures here must never break the
-    # platforms page; wrap in try.
-    try:
-        from django.db.models import Max
-        from apps.profile_audit.models import ProfileAudit
-        latest_ids = list(
-            ProfileAudit.objects
-            .filter(user=request.user)
-            .values("social_account_id")
-            .annotate(latest_id=Max("id"))
-            .values_list("latest_id", flat=True)
-        )
-        audit_map = {
-            a.social_account_id: a
-            for a in ProfileAudit.objects.filter(id__in=latest_ids)
-        }
-        for acc in accounts:
-            acc.profile_audit = audit_map.get(acc.id)
-            acc.profile_audit_gap_count = (
-                len(acc.profile_audit.fields_missing or []) +
-                len(acc.profile_audit.fields_thin or [])
-                if acc.profile_audit else 0
-            )
-    except Exception:
-        for acc in accounts:
-            acc.profile_audit = None
-            acc.profile_audit_gap_count = 0
+    for acc in accounts:
+        acc.profile_audit = None
+        acc.profile_audit_gap_count = 0
 
     from apps.platforms.outage import get_outages
     platform_outages = {p: v for p, v in get_outages().items() if v}
@@ -225,41 +180,6 @@ def connect_platform(request, platform):
                 and getattr(settings, "FB_WA_CONFIG_ID", "")
             ),
         })
-
-    # Bluesky uses app password, not OAuth
-    if platform == "bluesky":
-        if request.method == "POST":
-            handle = request.POST.get("handle", "").strip()
-            app_password = request.POST.get("app_password", "").strip()
-            if not handle or not app_password:
-                messages.error(request, "Both handle and app password are required.")
-                return redirect("platforms:list")
-            try:
-                result = provider.handle_app_password(handle, app_password)
-                SocialAccount.objects.update_or_create(
-                    user=request.user,
-                    platform="bluesky",
-                    platform_user_id=result.platform_user_id,
-                    defaults={
-                        "username": result.username,
-                        "display_name": result.display_name,
-                        "avatar_url": result.avatar_url,
-                        "access_token": result.access_token,
-                        "refresh_token": result.refresh_token,
-                        "token_expires_at": result.token_expires_at,
-                        "token_scope": result.token_scope,
-                        "is_active": True,
-                        "last_error": "",
-                        "metadata": result.metadata,
-                    },
-                )
-                messages.success(request, f"Connected Bluesky — @{result.username}")
-            except Exception as exc:
-                logger.error("Bluesky connect failed: %s", exc, exc_info=True)
-                messages.error(request, f"Failed to connect Bluesky: {exc}")
-            return redirect("platforms:list")
-        # GET — show form
-        return render(request, "platforms/bluesky_connect.html", {"page_title": "Connect Bluesky"})
 
     # Generate and store a CSRF-like state token
     state = secrets.token_urlsafe(32)

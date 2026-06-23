@@ -1,32 +1,13 @@
-{# In-page Create tools — Starter sees Studio only; Growth+ gets full toolkit #}
+{# Studio-only — wedge focus: approve posts, not feature sprawl #}
 <nav class="subnav-pills" aria-label="Create tools">
   <a href="{% url 'content:studio' %}"
-     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
-       {% if request.resolver_match.url_name == 'studio' %}bg-kova-600 text-white shadow-sm{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-kova-50 dark:hover:bg-kova-950/40{% endif %}">
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors bg-kova-600 text-white shadow-sm">
     Studio
   </a>
-  {% if not is_starter_plan|default:False %}
-  <a href="{% url 'content:voice_campaign' %}"
-     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
-       {% if request.resolver_match.url_name == 'voice_campaign' %}bg-kova-600 text-white shadow-sm{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-kova-50 dark:hover:bg-kova-950/40{% endif %}">
-    Campaigns
+  {% if business_model == 'professional' %}
+  <a href="{% url 'products:showcase' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+    Showcase
   </a>
-  <a href="{% url 'media_queue:list' %}"
-     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
-       {% if '/media-queue/' in request.path %}bg-kova-600 text-white shadow-sm{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-kova-50 dark:hover:bg-kova-950/40{% endif %}">
-    Visual Publisher
-  </a>
-  <a href="{% url 'content:autopilot' %}"
-     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
-       {% if request.resolver_match.url_name == 'autopilot' or request.resolver_match.url_name == 'autopilot_detail' %}bg-kova-600 text-white shadow-sm{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-kova-50 dark:hover:bg-kova-950/40{% endif %}">
-    Autopilot
-  </a>
-  {% if request.plan_limits.memes_enabled %}
-  <a href="{% url 'memes:discover' %}"
-     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
-       {% if '/memes/' in request.path %}bg-kova-600 text-white shadow-sm{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-kova-50 dark:hover:bg-kova-950/40{% endif %}">
-    Memes &amp; Trends
-  </a>
-  {% endif %}
   {% endif %}
 </nav>

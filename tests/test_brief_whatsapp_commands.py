@@ -76,6 +76,67 @@ class TestDispatchCommand:
         text, cmd, ok, _ = _dispatch_command(pro_user, "approve")
         assert "Nothing to approve" in text
 
+    def test_money_command(self, pro_user, today_brief):
+        text, cmd, ok, meta = _dispatch_command(pro_user, "money")
+        assert cmd == "money"
+        assert ok is True
+        assert "Money this week" in text
+        assert "revenue_week" in meta
+        assert "total_kes" in meta or "mpesa_kes" in meta
+
+    def test_leads_command(self, pro_user, today_brief):
+        text, cmd, ok, meta = _dispatch_command(pro_user, "leads")
+        assert cmd == "leads"
+        assert ok is True
+        assert "Leads:" in text
+        assert "leads_week" in meta
+
+    def test_reject_no_pending(self, pro_user, today_brief):
+        text, cmd, ok, _ = _dispatch_command(pro_user, "reject")
+        assert cmd == "reject"
+        assert "Nothing to reject" in text
+
+    def test_reject_first_post(self, pro_user, today_brief):
+        sa = SocialAccount.objects.create(
+            user=pro_user, platform="instagram", username="test",
+            platform_user_id="ig2", is_active=True,
+        )
+        post = Post.objects.create(
+            user=pro_user,
+            social_account=sa,
+            content_text="Reject me",
+            status=Post.Status.PENDING_APPROVAL,
+        )
+        text, cmd, ok, result = _dispatch_command(pro_user, "reject")
+        assert ok is True
+        assert result["rejected"] == 1
+        post.refresh_from_db()
+        assert post.status == Post.Status.REJECTED
+
+    def test_book_command_no_link(self, pro_user, today_brief):
+        text, cmd, ok, meta = _dispatch_command(pro_user, "book")
+        assert cmd == "book"
+        assert ok is True
+        assert meta["has_booking_link"] is False
+        assert "booking page" in text.lower()
+
+    def test_book_command_with_link(self, pro_user, today_brief):
+        from apps.bookings.models import BookingLink
+
+        BookingLink.objects.create(
+            user=pro_user,
+            slug="pro-salon",
+            label="Pro Salon",
+            services=[{"name": "Cut", "duration_minutes": 30, "price_kes": 1000}],
+            working_hours={"mon": [{"start": "09:00", "end": "17:00"}]},
+        )
+        text, cmd, ok, meta = _dispatch_command(pro_user, "book")
+        assert cmd == "book"
+        assert ok is True
+        assert meta["has_booking_link"] is True
+        assert "Pro Salon" in text
+        assert "Cut" in text
+
     def test_idea_out_of_range(self, pro_user, today_brief):
         text, cmd, ok, _ = _dispatch_command(pro_user, "idea 9")
         assert ok is False

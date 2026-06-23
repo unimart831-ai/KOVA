@@ -268,11 +268,35 @@ def _collect_money_board_stats(user, week_ago):
 def get_money_board_stats(user):
     """Public helper for tests and Today view."""
     week_ago = timezone.now() - timedelta(days=7)
-    return _collect_money_board_stats(user, week_ago)
+    stats = _collect_money_board_stats(user, week_ago)
+    profile = getattr(user, "profile", None)
+    stats["business_model"] = getattr(profile, "business_model", "") if profile else ""
+    try:
+        from apps.briefs.revenue_summary import get_unified_revenue_summary
+
+        rev = get_unified_revenue_summary(user)
+        stats["revenue_total_kes"] = rev["total_kes"]
+        parts = []
+        if rev["mpesa_kes"]:
+            parts.append("M-Pesa")
+        if rev["booking_kes"]:
+            parts.append("bookings")
+        if rev["digital_kes"]:
+            parts.append("digital")
+        stats["revenue_detail"] = " + ".join(parts) if parts else "No sales yet"
+        stats["next_action"] = rev.get("next_action")
+        stats["top_asset_title"] = rev.get("top_asset_title", "")
+        stats["top_asset_revenue"] = rev.get("top_asset_revenue", 0)
+        stats["top_asset_type_label"] = rev.get("top_asset_type_label", "")
+        stats["top_asset_source"] = rev.get("top_asset_source", "")
+    except Exception:
+        pass
+    return stats
 
 
 def _money_board_from_stats(stats):
-    return {
+    is_pro = stats.get("business_model") == "professional"
+    board = {
         "summary_line": (
             f"This week: {stats['leads_week']} lead{'s' if stats['leads_week'] != 1 else ''}"
             f" · {stats['needs_reply']} need reply"
@@ -281,7 +305,11 @@ def _money_board_from_stats(stats):
         "needs_reply": {
             "count": stats["needs_reply"],
             "label": "Needs reply",
-            "detail": "WhatsApp + social inbox waiting on you",
+            "detail": (
+                "Consultation DMs and comments waiting on you"
+                if is_pro
+                else "WhatsApp + social inbox waiting on you"
+            ),
             "url_name": (
                 "engage:unified_inbox"
                 if stats["needs_reply_wa"] and stats["needs_reply_engage"]
@@ -306,19 +334,78 @@ def _money_board_from_stats(stats):
         },
         "hot_leads": {
             "count": stats["hot_leads"],
-            "label": "Hot leads",
-            "detail": "New + contacted in the last 7 days",
+            "label": "Hot consultation leads" if is_pro else "Hot leads",
+            "detail": (
+                "Booking requests + new inquiries this week"
+                if is_pro
+                else "New + contacted in the last 7 days"
+            ),
             "url_name": "leads:list",
             "tone": "purple",
         },
         "ready_to_approve": {
             "count": stats["ready_to_approve"],
-            "label": "Ready to approve",
-            "detail": "Posts waiting for your OK",
+            "label": "Authority posts to approve" if is_pro else "Ready to approve",
+            "detail": (
+                "Portfolio and thought-leadership posts waiting"
+                if is_pro
+                else "Posts waiting for your OK"
+            ),
             "url_name": "content:studio",
             "tone": "kova",
         },
     }
+    if stats.get("revenue_total_kes"):
+        board["revenue_week"] = {
+            "count": stats["revenue_total_kes"],
+            "label": "Revenue this week",
+            "detail": stats.get("revenue_detail", "M-Pesa + bookings + digital"),
+            "url_name": "analytics:revenue",
+            "tone": "green",
+        }
+        board["summary_line"] = (
+            f"KES {stats['revenue_total_kes']:,.0f} this week"
+            f" · {stats['leads_week']} lead{'s' if stats['leads_week'] != 1 else ''}"
+            f" · {stats['needs_reply']} need reply"
+        )
+    if stats.get("top_asset_title"):
+        type_lbl = stats.get("top_asset_type_label") or ("Showcase" if is_pro else "Top asset")
+        rev = stats.get("top_asset_revenue") or 0
+        detail = (
+            f"{stats['top_asset_title']} — KES {rev:,.0f}"
+            if rev > 0
+            else f"{stats['top_asset_title']} — most active this week"
+        )
+        board["top_asset"] = {
+            "title": stats["top_asset_title"],
+            "type_label": type_lbl,
+            "revenue": rev,
+            "detail": detail,
+            "url_name": "analytics:revenue",
+            "tone": "emerald" if rev > 0 else "purple",
+        }
+    nba = stats.get("next_action")
+    if nba:
+        board["next_action"] = {
+            "label": nba.get("label", ""),
+            "key": nba.get("key", ""),
+            "priority": nba.get("priority", "medium"),
+            "whatsapp_command": nba.get("whatsapp_command", ""),
+            "url_name": _nba_url_name(nba.get("key", "")),
+        }
+    return board
+
+
+def _nba_url_name(key: str) -> str:
+    mapping = {
+        "reply": "engage:unified_inbox",
+        "approve": "content:studio",
+        "hot_leads": "leads:list",
+        "book": "bookings:list",
+        "snap": "products:snap",
+        "money": "analytics:revenue",
+    }
+    return mapping.get(key, "brief:home")
 
 
 def _value_summary_from_stats(stats):
@@ -339,34 +426,7 @@ def _value_summary_from_stats(stats):
 
 
 def _profile_health_alerts(user):
-    try:
-        from apps.profile_audit.models import ProfileAudit, ProfileUpdateSuggestion
-        latest_ids = list(
-            ProfileAudit.objects.filter(user=user)
-            .values("social_account_id")
-            .annotate(latest_id=Max("id"))
-            .values_list("latest_id", flat=True)
-        )
-        audits = (
-            ProfileAudit.objects
-            .filter(id__in=latest_ids, completeness_score__lt=70, error="")
-            .select_related("social_account")
-            .annotate(pending=Count(
-                "suggestions",
-                filter=Q(suggestions__status=ProfileUpdateSuggestion.Status.PENDING),
-            ))[:3]
-        )
-        return [
-            {
-                "platform": a.social_account.platform,
-                "score": a.completeness_score,
-                "pending": a.pending,
-                "account_id": a.social_account_id,
-            }
-            for a in audits
-        ]
-    except Exception:
-        return []
+    return []
 
 
 def get_cached_revenue_stat(user):
@@ -408,7 +468,7 @@ def get_cached_home_extras(user, brief):
 
     week_ago = timezone.now() - timedelta(days=7)
     stats = _collect_home_stats(user, today, week_ago)
-    money_stats = _collect_money_board_stats(user, week_ago)
+    money_stats = get_money_board_stats(user)
 
     from apps.briefs.views import (
         _build_brief_streak,

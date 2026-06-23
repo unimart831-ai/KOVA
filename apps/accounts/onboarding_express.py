@@ -7,11 +7,69 @@ INTENT_GROW = "grow"
 INTENT_BOTH = "both"
 VALID_INTENTS = frozenset({INTENT_SELL, INTENT_GROW, INTENT_BOTH})
 
+BUSINESS_MODEL_PRODUCT = "product"
+BUSINESS_MODEL_SERVICE = "service"
+BUSINESS_MODEL_PROFESSIONAL = "professional"
+VALID_BUSINESS_MODELS = frozenset({
+    BUSINESS_MODEL_PRODUCT,
+    BUSINESS_MODEL_SERVICE,
+    BUSINESS_MODEL_PROFESSIONAL,
+})
+
 
 def record_intent(profile, intent: str) -> None:
     if intent not in VALID_INTENTS:
         return
     profile.record_onboarding_step(f"intent_{intent}")
+
+
+def record_business_model(profile, business_model: str) -> None:
+    if business_model not in VALID_BUSINESS_MODELS:
+        return
+    profile.business_model = business_model
+    profile.save(update_fields=["business_model"])
+    profile.record_onboarding_step(f"business_model_{business_model}")
+    if business_model == BUSINESS_MODEL_PRODUCT:
+        record_intent(profile, INTENT_SELL)
+    elif business_model == BUSINESS_MODEL_SERVICE:
+        record_intent(profile, INTENT_SELL)
+    elif business_model == BUSINESS_MODEL_PROFESSIONAL:
+        record_intent(profile, INTENT_GROW)
+
+
+def apply_business_model_defaults(profile, user) -> None:
+    """Set sensible defaults after business model selection."""
+    if profile.business_model == BUSINESS_MODEL_SERVICE:
+        profile.default_cta_type = profile.default_cta_type or "whatsapp"
+        if not profile.goals:
+            profile.goals = ["generate_leads", "book_appointments"]
+    elif profile.business_model == BUSINESS_MODEL_PROFESSIONAL:
+        profile.platform_priority = profile.platform_priority or {"linkedin": 1, "instagram": 2}
+        if not profile.goals:
+            profile.goals = ["generate_leads", "brand_awareness"]
+        try:
+            from apps.leads.defaults import ensure_professional_nurture_sequences
+
+            ensure_professional_nurture_sequences(user)
+        except Exception:
+            pass
+    elif profile.business_model == BUSINESS_MODEL_PRODUCT:
+        profile.default_cta_type = profile.default_cta_type or "whatsapp"
+        if not profile.goals:
+            profile.goals = ["generate_leads", "drive_sales"]
+    profile.save()
+
+    if profile.business_model == BUSINESS_MODEL_SERVICE:
+        try:
+            from apps.bookings.service_setup import ensure_primary_booking_link
+
+            ensure_primary_booking_link(
+                user,
+                label=profile.company_name or "Book an appointment",
+                industry=profile.industry or "generic",
+            )
+        except Exception:
+            pass
 
 
 def ensure_brand_defaults(profile, user) -> None:

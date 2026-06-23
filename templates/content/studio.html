@@ -4,15 +4,18 @@
 {% block page_subtitle %}
 <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
   {% if approve_first %}
-    {{ pending_approve_count }} post{{ pending_approve_count|pluralize }} ready — approve in one tap, then you're done.
+    {{ pending_approve_count }} post{{ pending_approve_count|pluralize }} ready — {{ kova_subhead }}
+  {% elif business_model == 'professional' %}
+    {{ kova_copy.sell }} Approve in Studio.
   {% else %}
-    One idea → every platform. Approve what Kova prepared overnight.
+    One idea → every platform. {{ kova_subhead }}
   {% endif %}
 </p>
 {% endblock %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto space-y-6">
+  {% include "components/_kova_loop_strip.html" %}
 
   {% include "content/_create_tabs.html" %}
   {% include "content/_studio_subnav.html" %}
@@ -44,7 +47,6 @@
   </div>
   {% endif %}
 
-  {# ━━━ Voice to Campaign — Pro/Growth power feature (hidden when posts need approval) ━━━ #}
   {% if not approve_first and not is_starter_plan %}
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 bg-kova-50 dark:bg-kova-900/20 border border-kova-200 dark:border-kova-800 rounded-xl">
     <div class="flex items-start gap-3 min-w-0">
@@ -52,14 +54,13 @@
         <svg class="w-4 h-4 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
       </div>
       <div class="min-w-0">
-        <p class="text-sm font-medium text-kova-900 dark:text-kova-200">Voice to Campaign</p>
-        <p class="text-xs text-kova-600 dark:text-kova-400 mt-0.5">Record once — get a full multi-post campaign in minutes. Perfect when you're on the move.</p>
+        <p class="text-sm font-medium text-kova-900 dark:text-kova-200">Voice to post idea</p>
+        <p class="text-xs text-kova-600 dark:text-kova-400 mt-0.5">Record a quick memo — Kova turns it into posts in Studio.</p>
       </div>
     </div>
-    <a href="{% url 'content:voice_campaign' %}" class="btn-primary btn-sm gap-1 shrink-0 font-semibold">
-      Start campaign
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-    </a>
+    <button type="button" onclick="document.getElementById('voice-seed-trigger')?.click()" class="btn-primary btn-sm gap-1 shrink-0 font-semibold">
+      Record idea
+    </button>
   </div>
   {% endif %}
 
@@ -85,6 +86,7 @@
       <span class="text-xs text-gray-500 dark:text-gray-400" x-text="showCreate ? 'Collapse ↑' : 'Expand ↓'"></span>
     </button>
     <div x-show="showCreate" x-cloak class="p-4 space-y-6 border-t border-gray-100 dark:border-gray-800">
+  {% endif %}
 
   {# ━━━ Composer ━━━ #}
   <div class="card border-kova-100 dark:border-kova-900/50 shadow-kova dark:shadow-none overflow-hidden">
@@ -129,6 +131,7 @@
               {# Idle state — mic button #}
               <button type="button"
                       x-show="state === 'idle'"
+                      id="voice-seed-trigger"
                       @click="startRecording()"
                       class="group/mic flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-kova-50 dark:hover:bg-kova-950 border border-gray-200 dark:border-gray-700 hover:border-kova-300 dark:hover:border-kova-700 transition-all"
                       title="Record a voice memo">
@@ -199,7 +202,7 @@
                  class="mt-0.5 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-kova-600 focus:ring-kova-500 dark:bg-gray-800 dark:checked:bg-kova-600 cursor-pointer">
           <label for="generate-images" class="cursor-pointer select-none">
             <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Generate AI images for all platforms</span>
-            <span class="block text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Instagram, TikTok &amp; Pinterest always get images. Check this to also generate for Facebook, LinkedIn &amp; others.</span>
+            <span class="block text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Instagram &amp; TikTok always get images. Check this to also generate for Facebook, LinkedIn &amp; WhatsApp.</span>
           </label>
         </div>
         {% endif %}
@@ -292,8 +295,12 @@
   </div>
   {% endif %}
 
+  {% if approve_first %}
+    </div>
+  </div>
+  {% else %}
   {# ━━━ Holiday-source filter banner (active only when ?source=holiday) ━━━ #}
-  {% if not approve_first and current_source == 'holiday' %}
+  {% if current_source == 'holiday' %}
   <div class="px-1">
     <div class="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-lg bg-kova-50 dark:bg-kova-950/40 border border-kova-200 dark:border-kova-800">
       <div class="flex items-center gap-2 min-w-0">
@@ -308,11 +315,6 @@
     </div>
   </div>
   {% endif %}
-
-  {% if approve_first %}
-    </div>
-  </div>
-  {% else %}
   {% include "content/_studio_filter_posts.html" %}
   {% endif %}
 </div>

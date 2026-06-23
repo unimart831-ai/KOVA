@@ -36,7 +36,7 @@ def guess_decision_url(decision) -> str | None:
     if any(w in text for w in ("revenue", "sale", "money", "pixel")):
         return reverse("analytics:revenue")
     if any(w in text for w in ("competitor", "intel")):
-        return reverse("analytics:competitors")
+        return reverse("content:studio")
     return None
 
 
@@ -105,6 +105,8 @@ def build_standup_context(user, brief) -> dict:
 
 def format_standup_whatsapp_message(user, brief) -> str:
     """Compact standup message for WhatsApp STANDUP command."""
+    from apps.briefs.revenue_summary import format_standup_money_line, get_unified_revenue_summary
+
     ctx = build_standup_context(user, brief)
     lines = ["☀️ Morning Standup", ""]
 
@@ -112,6 +114,9 @@ def format_standup_whatsapp_message(user, brief) -> str:
         delta = ctx["kova_score_delta"] or 0
         delta_txt = f" ({'+' if delta > 0 else ''}{delta})" if delta else ""
         lines.append(f"Score: {ctx['kova_score']}/100{delta_txt} · {ctx['posts_pending']} post(s) to approve")
+        money_line = format_standup_money_line(get_unified_revenue_summary(user))
+        if money_line:
+            lines.append(f"Revenue: {money_line}")
     else:
         lines.append("Your brief isn't ready yet — check back after your brief time.")
 
@@ -134,6 +139,12 @@ def format_standup_whatsapp_message(user, brief) -> str:
         lines.append(f"\nReply APPROVE ALL to schedule {ctx['posts_pending']} post(s).")
     elif not top:
         lines.append(f"\nFull brief: {ctx['brief_url']}")
+
+    profile = getattr(user, "profile", None)
+    if profile and getattr(profile, "business_model", "") == "service":
+        lines.append("\nReply BOOK for your booking page + services.")
+    elif profile and getattr(profile, "business_model", "") == "professional":
+        lines.append("\nReply BOOK for your consultation link.")
 
     return "\n".join(lines)[:4090]
 

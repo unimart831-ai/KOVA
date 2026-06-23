@@ -32,4 +32,8 @@ urlpatterns = [
     path("products/<uuid:pk>/", views.ProductDetailView.as_view(), name="product-detail"),
     path("products/bulk-import/", views.ProductBulkImportView.as_view(), name="product-bulk-import"),
     path("products/categories/", views.ProductCategoryListCreateView.as_view(), name="product-category-list"),
+
+    # Business assets (unified catalog)
+    path("assets/", views.BusinessAssetListCreateView.as_view(), name="asset-list"),
+    path("assets/<uuid:pk>/", views.BusinessAssetDetailView.as_view(), name="asset-detail"),
 ]

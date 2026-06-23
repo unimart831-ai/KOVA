@@ -956,6 +956,28 @@ def compose_reel_video(post_id: str):
     if meta.get("reel_template") == "carousel_to_video" or post.carousel_slides:
         hook_texts = [""] * len(image_sources)
 
+    # Kling (Fal): cinematic motion when media plan requests it.
+    from apps.media.content_types import ReelBackend
+    from apps.media.router import reel_backend_for_post
+
+    if reel_backend_for_post(post) == ReelBackend.KLING:
+        try:
+            from apps.media.reel_bridge import try_kling_reel_for_post
+
+            video_url = try_kling_reel_for_post(post, image_sources)
+            if video_url:
+                _notify_post_status(post)
+                logger.info(
+                    "compose_reel_video: post %s via Kling (%s)",
+                    post_id, video_url[:80],
+                )
+                return {"post_id": post_id, "video_url": video_url, "status": "done", "backend": "kling"}
+        except Exception as exc:
+            logger.warning(
+                "compose_reel_video: Kling failed for %s, trying Photoroom/FFmpeg: %s",
+                post_id, exc,
+            )
+
     # Photoroom animate: single-hero only; multi-slide director plans use FFmpeg.
     use_photoroom = (
         not reel_plan
@@ -2510,10 +2532,6 @@ def process_voice_brief(voice_brief_id: str):
 
         vb.save(update_fields=["ai_extraction"])
 
-        # ── Step 3: Generate Campaign + Seeds via shared builder ──
-        vb.status = VoiceBrief.Status.GENERATING
-        vb.save(update_fields=["status"])
-
         extraction = vb.ai_extraction
         key_message = extraction.get("key_message", vb.transcript[:200])
         campaign_prompt = (
@@ -2525,33 +2543,19 @@ def process_voice_brief(voice_brief_id: str):
             f"Platforms to prioritize: {', '.join(extraction.get('platforms', []))}."
         )
 
-        urgency = extraction.get("urgency", "this_week")
-        duration_days = {"today": 3, "this_week": 7, "this_month": 14}.get(urgency, 7)
+        # ── Step 3: Create content seed → Studio (no cross-channel campaign builder) ──
+        vb.status = VoiceBrief.Status.GENERATING
+        vb.save(update_fields=["status"])
 
-        transcript_lower = vb.transcript.lower()
-        include_status = bool(extraction.get("include_whatsapp_status")) or any(
-            phrase in transcript_lower
-            for phrase in ("whatsapp status", "wa status", "status update", "post to status")
+        from apps.content.models import ContentSeed
+
+        seed = ContentSeed.objects.create(
+            user=user,
+            idea=(key_message or vb.transcript)[:2000],
+            notes=campaign_prompt,
         )
-
-        from apps.campaigns.tasks import build_campaign_from_prompt
-
-        result = build_campaign_from_prompt(
-            user,
-            campaign_prompt,
-            duration_days=duration_days,
-            voice_brief=vb,
-            include_email=bool(extraction.get("include_email")),
-            include_status=include_status,
-            auto_generate=True,
-        )
-
-        if result.get("error"):
-            raise ValueError(result["error"])
-
-        if result.get("email_campaign_id"):
-            from apps.emails.models import EmailCampaign
-            vb.email_campaign = EmailCampaign.objects.filter(pk=result["email_campaign_id"]).first()
+        vb.seeds_created = 1
+        generate_from_seed.delay(str(seed.id))
 
         # ── Complete ──
         vb.status = VoiceBrief.Status.COMPLETED
@@ -2563,24 +2567,20 @@ def process_voice_brief(voice_brief_id: str):
         AgentAction.objects.create(
             user=user,
             agent_type="create",
-            action_type="voice_to_campaign",
+            action_type="voice_to_seed",
             input_data={"transcript": vb.transcript[:500]},
             output_data={
-                "campaign_id": result.get("campaign_id"),
+                "seed_id": str(seed.id),
                 "seeds": vb.seeds_created,
-                "email_created": vb.email_campaign is not None,
             },
             tokens_used=extraction_response.get("tokens_used", 0),
             model_used=extraction_response.get("model", ""),
         )
 
-        logger.info(
-            "Voice brief %s completed: campaign=%s, seeds=%d, email=%s",
-            voice_brief_id, result.get("campaign_id"), vb.seeds_created, bool(vb.email_campaign),
-        )
+        logger.info("Voice brief %s completed: seed=%s", voice_brief_id, seed.id)
         return {
             "status": "completed",
-            "campaign_id": result.get("campaign_id"),
+            "seed_id": str(seed.id),
             "seeds_created": vb.seeds_created,
         }
 
@@ -2650,11 +2650,3 @@ def verify_tiktok_post(post_id: str, tiktok_post_id: str, access_token: str):
         logger.warning("TikTok verification error for post %s: %s", post_id, exc)
         return {"error": str(exc)}
 
-
-# Autopilot tasks live in autopilot.py — import so Celery workers register them.
-from apps.content.autopilot import (  # noqa: F401, E402
-    execute_autopilot_plan,
-    plan_user_week,
-    plan_weekly_autopilot,
-    send_autopilot_review_emails,
-)

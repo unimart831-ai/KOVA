@@ -3,11 +3,18 @@
 
 {% block page_title %}Today{% endblock %}
 {% block page_subtitle %}
-<p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">What needs your attention — leads, replies, and approvals in 5 minutes</p>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
+  {% if segment_surface.today_description %}
+  {{ segment_surface.today_description }}
+  {% else %}
+  {{ kova_today_subtitle }}
+  {% endif %}
+</p>
 {% endblock %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto space-y-6">
+  {% include "components/_kova_loop_strip.html" %}
 
   {# ── Platform connection nudge (show if no social accounts connected) ── #}
   {% if not has_connected_platform %}
@@ -487,12 +494,6 @@
                           Create content
                         </button>
                       </form>
-                      {% if request.plan_limits.memes_enabled %}
-                      <a href="{% url 'memes:discover' %}?topic={{ topic.topic|default:topic|urlencode }}"
-                         class="inline-flex items-center gap-1 text-xs font-medium text-rose-600 dark:text-rose-400 hover:underline">
-                        Adapt as meme →
-                      </a>
-                      {% endif %}
                       </div>
                     </div>
                   </li>

@@ -11,6 +11,23 @@ class AgentsConfig(AppConfig):
     verbose_name = "AI Agents"
 
     def ready(self):
+        import sys
+
+        # Avoid DB queries during schema management (Django 5+ startup warning).
+        if len(sys.argv) > 1 and sys.argv[1] in {
+            "migrate",
+            "makemigrations",
+            "flush",
+            "test",
+            "collectstatic",
+            "createsuperuser",
+            "shell",
+            "check",
+            "showmigrations",
+            "loaddata",
+        }:
+            return
+
         from django.conf import settings
 
         openrouter_key = (getattr(settings, "OPENROUTER_API_KEY", "") or "").strip()

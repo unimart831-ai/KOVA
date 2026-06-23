@@ -29,11 +29,13 @@ admin.site.index_title = "Administration"
 def landing_page(request):
     if request.user.is_authenticated:
         return redirect("brief:home")
+    from apps.accounts.product_voice import marketing_voice_context
     from apps.billing.models import get_plan_limits, get_public_plan_limits
     return render(request, "pages/landing.html", {
         "all_plans": get_public_plan_limits(),
         "agency_plan": get_plan_limits("agency"),
         "trial_days": get_plan_limits("starter")["trial_days"],
+        **marketing_voice_context(),
     })
 
 
@@ -138,8 +140,8 @@ urlpatterns = [
     path("accounts/", include("apps.accounts.urls")),
     # Auth (allauth) — legacy social callbacks; after apps.accounts for path precedence
     path("accounts/", include("allauth.urls")),
-    path("command/", include("apps.command.urls")),
     path("brief/", include("apps.briefs.urls")),
+    path("calendar/", include("apps.calendar_intel.urls")),
     path("content/", include("apps.content.urls")),
     path("platforms/", include("apps.platforms.urls")),
     path("agents/", include("apps.agents.urls")),
@@ -150,7 +152,6 @@ urlpatterns = [
     path("emails/", include("apps.emails.urls")),
     path("help/", include("apps.help.urls")),
     path("teams/", include("apps.teams.urls")),
-    path("media-queue/", include("apps.media_queue.urls")),
     path("links/", include("apps.links.urls")),
     path("leads/", include("apps.leads.urls")),
     path("products/", include("apps.products.urls")),
@@ -176,11 +177,7 @@ urlpatterns = [
         commerce_payment_status,
         name="commerce_payment_status",
     ),
-    path("campaigns/", include("apps.campaigns.urls")),
     path("whatsapp/", include("apps.whatsapp.urls")),
-    path("memes/", include("apps.memes.urls")),
-    path("calendar/", include("apps.calendar_intel.urls")),
-    path("profile-health/", include("apps.profile_audit.urls")),
     # QR codes + walk-in attribution (Phase 2 W5-6). Mounted at root
     # because it owns both /qr/ and /walkin/ namespaces.
     path("", include("apps.qr_attribution.urls")),

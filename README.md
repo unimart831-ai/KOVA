@@ -17,9 +17,11 @@ Kova Agent is an autonomous social media intelligence platform for African SMEs,
 
 ### 1. Clone & setup environment
 
+**Requires Python 3.12** (see `.python-version`). On Windows, use the launcher if `python` points to an older version:
+
 ```bash
 cd kova_agent
-python -m venv venv
+py -3.12 -m venv venv
 venv\Scripts\activate       # Windows
 # source venv/bin/activate  # Mac/Linux
 pip install -r requirements/development.txt
@@ -56,8 +58,8 @@ python manage.py createsuperuser
 Open two terminals:
 
 ```bash
-# Terminal 1 — Django
-python manage.py runserver
+# Terminal 1 — Django (Python 3.12)
+py -3.12 manage.py runserver
 
 # Terminal 2 — Tailwind CSS watcher
 npm run dev:css

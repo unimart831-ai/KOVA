@@ -71,7 +71,10 @@ def regenerate_status(request, post_id):
 @login_required
 def edit_post(request, post_id):
     """Edit a post's content."""
-    post = get_object_or_404(Post.objects.select_related("social_account", "seed", "user"), id=post_id)
+    post = get_object_or_404(
+        Post.objects.select_related("social_account", "seed", "seed__product", "user"),
+        id=post_id,
+    )
     if not can_edit_post(request.user, post):
         raise Http404
     if request.method == "POST":
@@ -100,6 +103,12 @@ def edit_post(request, post_id):
                 update_fields.extend(["utm_source", "utm_medium", "utm_campaign", "utm_content"])
             post.save(update_fields=update_fields)
 
+            product = post.seed.product if post.seed_id and post.seed.product_id else None
+            if product and getattr(request.user.profile, "business_model", "") == "professional":
+                from apps.products.professional_assets import apply_professional_asset_from_post
+
+                apply_professional_asset_from_post(product, request.POST)
+
             if content_changed:
                 from apps.agents.memory import record_edit_feedback
                 from apps.content.models import PostVersion
@@ -118,11 +127,21 @@ def edit_post(request, post_id):
     else:
         form = PostEditForm(instance=post)
 
+    asset_ctx = {"show_asset_picker": False}
+    profile = getattr(request.user, "profile", None)
+    product = post.seed.product if post.seed_id and post.seed.product_id else None
+    if product and profile and getattr(profile, "business_model", "") == "professional":
+        from apps.products.professional_assets import asset_context_for_product
+
+        asset_ctx = {"show_asset_picker": True, **asset_context_for_product(product)}
+
     return render(request, "content/edit.html", {
         "post": post,
         "form": form,
         "page_title": "Edit Post",
         "user_kova_pages": request.user.kova_pages.filter(is_published=True).only("slug", "title")[:10],
+        "business_model": getattr(profile, "business_model", ""),
+        **asset_ctx,
     })
 
 

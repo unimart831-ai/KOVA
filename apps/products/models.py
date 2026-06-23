@@ -560,6 +560,69 @@ class BatchSnapSession(models.Model):
         return f"BatchSnapSession {title} ({self.get_status_display()})"
 
 
+class BusinessAsset(models.Model):
+    """Unified sellable/marketable business asset (product, service, portfolio, etc.)."""
+
+    class AssetType(models.TextChoices):
+        PRODUCT = "product", "Product"
+        SERVICE = "service", "Service"
+        DIGITAL = "digital", "Digital Product"
+        PORTFOLIO = "portfolio", "Portfolio Project"
+        CASE_STUDY = "case_study", "Case Study"
+        TESTIMONIAL = "testimonial", "Testimonial"
+        OFFER = "offer", "Offer"
+        EVENT = "event", "Event"
+        PROMOTION = "promotion", "Promotion"
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        PENDING_APPROVAL = "pending_approval", "Pending Approval"
+        PUBLISHED = "published", "Published"
+        ARCHIVED = "archived", "Archived"
+
+    class Source(models.TextChoices):
+        MANUAL = "manual", "Manual"
+        SNAP = "snap", "Snap to Sell"
+        WHATSAPP = "whatsapp", "WhatsApp"
+        IMPORT = "import", "Import"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="business_assets",
+    )
+    asset_type = models.CharField(max_length=20, choices=AssetType.choices, default=AssetType.PRODUCT)
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    metadata = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Type-specific fields (portfolio client, offer expiry, etc.).",
+    )
+    product = models.OneToOneField(
+        "products.Product",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="business_asset",
+    )
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    source = models.CharField(max_length=15, choices=Source.choices, default=Source.MANUAL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "asset_type", "-created_at"]),
+            models.Index(fields=["user", "status"]),
+        ]
+
+    def __str__(self):
+        return f"{self.title} ({self.get_asset_type_display()})"
+
+
 class CommercePayment(models.Model):
     """Tracks M-Pesa STK payments for product sales via Commerce Links / WhatsApp."""
 

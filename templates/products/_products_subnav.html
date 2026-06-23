@@ -30,6 +30,7 @@
       </summary>
       <div class="absolute right-0 top-full z-20 mt-1 min-w-[10rem] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg py-1 text-sm">
         <a href="{% url 'products:restock' %}" class="block px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">Receipt restock</a>
+        <a href="{% url 'products:showcase' %}" class="block px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">Showcase (portfolio)</a>
         <a href="{% url 'products:categories' %}" class="block px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">Categories</a>
         {% if plan_ctx.csv_import %}
         <a href="{% url 'products:import' %}" class="block px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">Import CSV</a>

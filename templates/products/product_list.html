@@ -3,12 +3,13 @@
 {% block page_title %}My offers{% endblock %}
 {% block page_subtitle %}
 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
-  {{ stats.total }} live · {{ stats.in_stock }} in stock{% if stats.low_stock or stats.out_of_stock %} · {% if stats.out_of_stock %}{{ stats.out_of_stock }} out{% endif %}{% if stats.low_stock %}{% if stats.out_of_stock %}, {% endif %}{{ stats.low_stock }} low{% endif %}{% endif %}
+  {{ kova_sell_subtitle }} · {{ stats.total }} live · {{ stats.in_stock }} in stock{% if stats.low_stock or stats.out_of_stock %} · {% if stats.out_of_stock %}{{ stats.out_of_stock }} out{% endif %}{% if stats.low_stock %}{% if stats.out_of_stock %}, {% endif %}{{ stats.low_stock }} low{% endif %}{% endif %}
 </p>
 {% endblock %}
 
 {% block content %}
 <div class="space-y-6">
+  {% include "components/_kova_loop_strip.html" %}
 
   {% include "products/_products_subnav.html" %}
   {% include "products/_batch_snap_pipeline_modal.html" %}

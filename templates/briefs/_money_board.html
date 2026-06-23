@@ -17,7 +17,7 @@
   <div class="p-4 rounded-xl border border-dashed border-emerald-300 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/10">
     <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Money proof</p>
     <p class="mt-1 text-sm font-medium text-gray-800 dark:text-gray-200">This is where you'll see which posts brought paying customers.</p>
-    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Add a QR code at your counter or share a tracked link, and Kova attributes the sale back to the post that drove it.</p>
+    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ kova_money_subtitle }}. Add a QR at your counter or share a tracked link.</p>
     <div class="mt-3 flex flex-wrap gap-2">
       <a href="{% url 'qr_attribution:create' %}" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors">Create a QR code</a>
       <a href="{% url 'links:list' %}" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors">Share a tracked link</a>
@@ -26,6 +26,36 @@
   {% endif %}
 
   <p class="text-sm text-gray-600 dark:text-gray-400">{{ money_board.summary_line }}</p>
+
+  {% if money_board.top_asset %}
+  {% with ta=money_board.top_asset %}
+  <a href="{% url ta.url_name %}"
+     class="flex items-start gap-3 p-4 rounded-xl border border-purple-200 dark:border-purple-900/50 bg-purple-50/60 dark:bg-purple-950/20 hover:border-purple-300 transition-colors">
+    <span class="text-lg" aria-hidden="true">🏆</span>
+    <div class="min-w-0">
+      <p class="text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300">Top {{ ta.type_label|lower }} this week</p>
+      <p class="mt-0.5 text-sm font-semibold text-gray-900 dark:text-white">{{ ta.title }}</p>
+      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ ta.detail }}</p>
+    </div>
+  </a>
+  {% endwith %}
+  {% endif %}
+
+  {% if money_board.next_action %}
+  {% with nba=money_board.next_action %}
+  <a href="{% url nba.url_name %}"
+     class="flex items-start gap-3 p-4 rounded-xl border-2 border-kova-300 dark:border-kova-700 bg-kova-50/80 dark:bg-kova-950/30 hover:border-kova-400 transition-colors">
+    <span class="text-lg" aria-hidden="true">⚡</span>
+    <div class="min-w-0">
+      <p class="text-[10px] font-bold uppercase tracking-wider text-kova-700 dark:text-kova-300">Your move</p>
+      <p class="mt-0.5 text-sm font-semibold text-gray-900 dark:text-white">{{ nba.label }}</p>
+      {% if nba.whatsapp_command %}
+      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Or text <span class="font-mono font-semibold">{{ nba.whatsapp_command|upper }}</span> on WhatsApp</p>
+      {% endif %}
+    </div>
+  </a>
+  {% endwith %}
+  {% endif %}
 
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
     {% with card=money_board.needs_reply %}

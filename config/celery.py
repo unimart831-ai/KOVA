@@ -40,7 +40,6 @@ app.conf.task_routes = {
     "platforms.refresh_expiring_tokens": {"queue": "critical"},
     # Default — content generation, AI agents
     "content.generate_from_seed": {"queue": "default"},
-    "content.generate_ab_test_variants": {"queue": "default"},
     "agents.run_daily_research": {"queue": "default"},
     "agents.refresh_seed_suggestions": {"queue": "low"},
     "agents.run_engage_cycle": {"queue": "default"},
@@ -53,12 +52,8 @@ app.conf.task_routes = {
     # Low — analytics, metrics, background intelligence
     "content.fetch_post_metrics": {"queue": "low"},
     "content.fetch_all_recent_metrics": {"queue": "low"},
-    "content.evaluate_ab_tests": {"queue": "low"},
     "agents.measure_agent_outcomes": {"queue": "low"},
-    "analyze-all-competitors": {"queue": "low"},
     "billing.check_mpesa_subscriptions": {"queue": "low"},
-    # Media Queue — publish user photos on schedule
-    "media_queue.process_queues": {"queue": "critical"},
     # WhatsApp — AI auto-reply must be fast
     "whatsapp.handle_incoming_message": {"queue": "critical"},
     "whatsapp.execute_broadcast": {"queue": "critical"},
@@ -74,22 +69,11 @@ app.conf.task_routes = {
     "products.expire_stale_commerce_payments": {"queue": "low"},
     "products.auto_promote_products": {"queue": "default"},
     "content.recycle_top_content": {"queue": "low"},
-    "content.plan_weekly_autopilot": {"queue": "default"},
-    "content.plan_user_week": {"queue": "default"},
-    "content.send_autopilot_review_emails": {"queue": "low"},
-    "campaigns.ai_build_campaign": {"queue": "default"},
     # Lead nurture + scoring + monthly reports
     "leads.process_nurture_steps": {"queue": "default"},
     "leads.score_all_leads": {"queue": "low"},
     "leads.reengage_stale_leads": {"queue": "low"},
     "emails.send_monthly_reports_all": {"queue": "low"},
-    # Calendar Intelligence — holiday awareness
-    "calendar_intel.run_holiday_watcher": {"queue": "low"},
-    "calendar_intel.generate_drafts_for_moment": {"queue": "default"},
-    # Profile Audit
-    "profile_audit.run_profile_audits": {"queue": "low"},
-    "profile_audit.audit_one_account": {"queue": "low"},
-    "profile_audit.apply_one_suggestion": {"queue": "default"},
     "accounts.snapshot_pilot_metrics": {"queue": "low"},
 }
 
@@ -100,7 +84,6 @@ app.conf.task_routes = {
 app.autodiscover_tasks()
 
 # Tasks defined outside tasks.py must be imported on worker boot.
-import apps.content.autopilot  # noqa: F401, E402
 
 
 # ── Startup diagnostics ─────────────────────────────────────────────────────

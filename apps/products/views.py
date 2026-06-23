@@ -120,6 +120,10 @@ def product_add(request):
                 product.quantity = None
             product.check_low_stock()
             product.save()
+            if getattr(request.user.profile, "business_model", "") == "professional":
+                from apps.products.professional_assets import apply_professional_asset_from_post
+
+                apply_professional_asset_from_post(product, request.POST)
             messages.success(request, f"'{product.name}' added to your catalog.")
             return redirect("products:list")
     else:
@@ -130,6 +134,11 @@ def product_add(request):
         "title": "Add Offer",
         "submit_label": "Save Offer",
         "plan_ctx": _plan_ctx(request),
+        "business_model": getattr(request.user.profile, "business_model", ""),
+        "asset_type": "product",
+        "asset_client": "",
+        "asset_outcome": "",
+        "asset_pain": "",
     })
 
 
@@ -183,9 +192,15 @@ def product_detail(request, product_id):
     from apps.products.photoroom_review import summarize_review_state
     from apps.products.scene_packs import marketplace_channel_image_urls
 
+    from apps.media.content_types import MediaPlan
+
     gallery_scenes = build_gallery_scenes(product)
     polish_actions = list(polish_actions_for_product(product)[:50])
     review_state = summarize_review_state(polish_actions)
+    media_plan = None
+    asset = getattr(product, "business_asset", None)
+    if asset and isinstance(asset.metadata, dict):
+        media_plan = MediaPlan.from_metadata(asset.metadata.get("media_plan"))
     show_gallery_picker = bool(
         product.additional_images
         and any(not s.get("is_original") for s in gallery_scenes)
@@ -213,6 +228,7 @@ def product_detail(request, product_id):
         "review_pending_count": review_state.get("review_pending_count", 0),
         "alteration_review_required": review_state.get("alteration_review_required", False),
         "show_gallery_picker": show_gallery_picker,
+        "media_plan": media_plan,
         "has_google_shopping_exports": bool(
             marketplace_channel_image_urls(product.additional_images)
         ),
@@ -284,10 +300,21 @@ def product_edit(request, product_id):
                 reason=StockUpdate.Reason.MANUAL,
             )
 
+            if getattr(request.user.profile, "business_model", "") == "professional":
+                from apps.products.professional_assets import apply_professional_asset_from_post
+
+                apply_professional_asset_from_post(product, request.POST)
+
             messages.success(request, f"'{product.name}' updated.")
             return redirect("products:detail", product_id=product.pk)
     else:
         form = ProductForm(instance=product, user=request.user, plan_ctx=_plan_ctx(request))
+
+    asset_ctx = {}
+    if getattr(request.user.profile, "business_model", "") == "professional":
+        from apps.products.professional_assets import asset_context_for_product
+
+        asset_ctx = asset_context_for_product(product)
 
     return render(request, "products/product_form.html", {
         "form": form,
@@ -295,6 +322,8 @@ def product_edit(request, product_id):
         "title": f"Edit Offer · {product.name}",
         "submit_label": "Save Changes",
         "plan_ctx": _plan_ctx(request),
+        "business_model": getattr(request.user.profile, "business_model", ""),
+        **asset_ctx,
     })
 
 
@@ -1039,6 +1068,7 @@ def snap_to_sell(request):
             "platform_blocked": usage.get("platform_blocked"),
             "scene_pack_options": SCENE_PACK_OPTIONS,
             "credit_estimates_json": json.dumps(credit_estimates),
+            "business_model": getattr(request.user.profile, "business_model", ""),
         },
     )
 
@@ -1075,6 +1105,10 @@ def snap_launch(request):
     photos = request.FILES.getlist("photos")
 
     offering_type = request.POST.get("offering_type", "product").strip() or "product"
+    snap_mode = (request.POST.get("snap_mode") or "product").strip() or "product"
+    if snap_mode in ("portfolio", "case_study"):
+        offering_type = "product"
+
     if not name:
         messages.error(request, "Please enter a product name.")
         return redirect("products:snap")
@@ -1085,18 +1119,22 @@ def snap_launch(request):
     # Cap at 6 images
     photos = photos[:6]
 
-    # Parse required price
+    # Parse price (optional for portfolio / case study snaps)
     price_raw = request.POST.get("price", "").strip()
-    if not price_raw:
+    price_optional = snap_mode in ("portfolio", "case_study")
+    if not price_raw and not price_optional:
         messages.error(request, "Please enter a price.")
         return redirect("products:snap")
-    try:
-        price = float(price_raw)
-        if price <= 0:
-            raise ValueError("non-positive")
-    except ValueError:
-        messages.error(request, "Please enter a valid price greater than zero.")
-        return redirect("products:snap")
+    if price_raw:
+        try:
+            price = float(price_raw)
+            if price <= 0 and not price_optional:
+                raise ValueError("non-positive")
+        except ValueError:
+            messages.error(request, "Please enter a valid price greater than zero.")
+            return redirect("products:snap")
+    else:
+        price = 0.0
 
     currency = request.POST.get("currency", "KES").strip() or "KES"
     description = request.POST.get("description", "").strip()
@@ -1211,10 +1249,41 @@ def snap_launch(request):
     # Fire background task: vision AI → content generation
     fire_task(snap_to_sell_analyze, str(product.pk), photo_context)
 
+    from apps.products.business_assets import sync_asset_from_product
+    from apps.products.models import BusinessAsset
+
+    asset = sync_asset_from_product(
+        product,
+        source=BusinessAsset.Source.SNAP,
+        status=BusinessAsset.Status.PENDING_APPROVAL,
+    )
+    if asset and snap_mode == "portfolio":
+        asset.asset_type = BusinessAsset.AssetType.PORTFOLIO
+        asset.metadata = {
+            **(asset.metadata or {}),
+            "client": request.POST.get("client", "").strip()[:120],
+            "outcome": request.POST.get("outcome", "").strip()[:200],
+            "snap_mode": snap_mode,
+        }
+        asset.save(update_fields=["asset_type", "metadata", "updated_at"])
+    elif asset and snap_mode == "case_study":
+        asset.asset_type = BusinessAsset.AssetType.CASE_STUDY
+        asset.metadata = {
+            **(asset.metadata or {}),
+            "client": request.POST.get("client", "").strip()[:120],
+            "pain": request.POST.get("pain", "").strip()[:200],
+            "outcome": request.POST.get("outcome", "").strip()[:200],
+            "snap_mode": snap_mode,
+        }
+        asset.save(update_fields=["asset_type", "metadata", "updated_at"])
+
     photo_count = len(photos)
+    launch_label = "portfolio piece" if snap_mode == "portfolio" else (
+        "case study" if snap_mode == "case_study" else "product"
+    )
     messages.success(
         request,
-        f"📸 '{product.name}' added with {photo_count} photo{'s' if photo_count != 1 else ''}! "
+        f"📸 '{product.name}' added as a {launch_label} with {photo_count} photo{'s' if photo_count != 1 else ''}! "
         f"AI is analyzing and creating content — watch the progress popup."
     )
     url = reverse("products:detail", kwargs={"product_id": product.pk})
@@ -1622,3 +1691,102 @@ def generate_seasonal_variant(request, product_id):
         messages.error(request, "Seasonal variant generation failed. Try again later.")
 
     return redirect("products:detail", product_id=product.pk)
+
+
+@login_required
+def showcase_assets(request):
+    """Professional showcase manager — portfolio, case studies, testimonials."""
+    from apps.briefs.asset_attribution import PROFESSIONAL_ASSET_TYPES
+    from apps.products.models import BusinessAsset
+    from apps.products.professional_assets import (
+        create_case_study,
+        create_portfolio_item,
+        create_professional_asset,
+    )
+
+    profile = getattr(request.user, "profile", None)
+    business_model = getattr(profile, "business_model", "") if profile else ""
+
+    if request.method == "POST":
+        action = (request.POST.get("action") or "create").strip()
+        if action == "create_post":
+            asset = get_object_or_404(
+                BusinessAsset,
+                pk=request.POST.get("asset_id"),
+                user=request.user,
+            )
+            from apps.products.professional_assets import create_authority_post_from_asset
+
+            seed = create_authority_post_from_asset(request.user, asset)
+            messages.success(
+                request,
+                f"Creating authority posts for '{asset.title}' — check Studio in a minute.",
+            )
+            return redirect(f"{reverse('content:studio')}?seed={seed.pk}")
+
+        if action == "archive":
+            asset = get_object_or_404(
+                BusinessAsset,
+                pk=request.POST.get("asset_id"),
+                user=request.user,
+            )
+            asset.status = BusinessAsset.Status.ARCHIVED
+            asset.save(update_fields=["status", "updated_at"])
+            messages.success(request, f"'{asset.title}' archived.")
+            return redirect("products:showcase")
+
+        asset_type = (request.POST.get("asset_type") or "portfolio").strip()
+        title = (request.POST.get("title") or "").strip()
+        if not title:
+            messages.error(request, "Title is required.")
+            return redirect("products:showcase")
+
+        client = (request.POST.get("client") or "").strip()
+        outcome = (request.POST.get("outcome") or "").strip()
+        pain = (request.POST.get("pain") or "").strip()
+        description = (request.POST.get("description") or "").strip()
+
+        if asset_type == "case_study":
+            create_case_study(
+                request.user,
+                title=title,
+                client=client,
+                pain=pain,
+                outcome=outcome,
+                description=description,
+            )
+        elif asset_type == "testimonial":
+            create_professional_asset(
+                request.user,
+                asset_type=BusinessAsset.AssetType.TESTIMONIAL,
+                title=title,
+                description=description,
+                metadata={"client": client, "outcome": outcome},
+            )
+        else:
+            create_portfolio_item(
+                request.user,
+                title=title,
+                client=client,
+                outcome=outcome,
+                description=description,
+            )
+        messages.success(request, f"'{title}' added to your showcase.")
+        return redirect("products:showcase")
+
+    assets = (
+        BusinessAsset.objects.filter(
+            user=request.user,
+            asset_type__in=PROFESSIONAL_ASSET_TYPES,
+        )
+        .exclude(status=BusinessAsset.Status.ARCHIVED)
+        .select_related("product")
+        .order_by("-updated_at")
+    )
+
+    return render(request, "products/showcase_assets.html", {
+        "assets": assets,
+        "business_model": business_model,
+        "page_title": "Showcase",
+        "plan_ctx": _plan_ctx(request),
+    })

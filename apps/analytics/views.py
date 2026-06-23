@@ -452,7 +452,44 @@ def revenue_dashboard(request):
         "shopify_oauth_available": shopify_configured(),
         "days": days,
         "insight": insight,
+        "asset_type_breakdown": summary.get("asset_type_breakdown", []),
+        "max_asset_breakdown_revenue": summary.get("max_asset_breakdown_revenue", 0),
+        "attribution_confidence": summary.get("attribution_confidence", {}),
     })
+
+
+@login_required
+def export_asset_breakdown_csv(request):
+    """Download asset-type revenue breakdown as CSV."""
+    import csv
+    from datetime import timedelta
+
+    from django.http import HttpResponse
+
+    from apps.briefs.asset_attribution import asset_type_breakdown
+
+    days = int(request.GET.get("days", 30))
+    if days not in (7, 14, 30, 90):
+        days = 30
+
+    cutoff = timezone.now() - timedelta(days=days)
+    rows = asset_type_breakdown(request.user, cutoff)
+
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = (
+        f'attachment; filename="kova-asset-breakdown-{days}d-{timezone.now().strftime("%Y%m%d")}.csv"'
+    )
+    writer = csv.writer(response)
+    writer.writerow(["Asset type", "Label", "Revenue (KES)", "Sales count", "Activity signals"])
+    for row in rows:
+        writer.writerow([
+            row.get("asset_type", ""),
+            row.get("type_label", ""),
+            f"{row.get('revenue', 0):.2f}",
+            row.get("sales", 0),
+            row.get("activity", 0),
+        ])
+    return response
 
 
 @login_required

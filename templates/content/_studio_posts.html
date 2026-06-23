@@ -1,4 +1,5 @@
 {# Partial: Posts to review section — used inline and via HTMX refresh #}
+{% load content_tags %}
 <section>
 
   {# ── Live AI activity bar — visible when images are generating ── #}
@@ -56,6 +57,11 @@
                 {% if group.seed.batch_strategy %}
                   <p class="text-xs text-gray-500 dark:text-gray-400 ml-8 line-clamp-2">
                     <span class="font-medium text-kova-600 dark:text-kova-400">Strategy:</span> {{ group.seed.batch_strategy }}
+                  </p>
+                {% endif %}
+                {% if group.showcase_summary %}
+                  <p class="text-[11px] text-purple-600 dark:text-purple-400 ml-8 mt-1 font-medium">
+                    {{ group.showcase_summary }}
                   </p>
                 {% endif %}
                 {% if group.minutes_saved_estimate %}
@@ -128,6 +134,7 @@
                       <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
                         Schedule across platforms at once
                         {% if group.media_blocked_count %} · {{ group.media_blocked_count }} skipped (need images){% endif %}
+                        {% if group.showcase_summary %} · {{ group.showcase_summary }}{% endif %}
                       </p>
                     </div>
                     <button type="button" @click="showBatchSchedule = false"
@@ -179,6 +186,21 @@
                   </div>
 
                   <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/50">
+                    {% if group.showcase_summary %}
+                    <p class="text-[11px] text-purple-700 dark:text-purple-300 mb-2 font-medium">{{ group.showcase_summary }}</p>
+                    {% endif %}
+                    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Posts in this batch</p>
+                    <ul class="space-y-1 mb-3 max-h-28 overflow-y-auto">
+                      {% for post in group.posts %}
+                      {% post_showcase_badge post as showcase %}
+                      <li class="text-[11px] text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                        <span class="font-medium">{{ post.social_account.get_platform_display|default:post.platform }}</span>
+                        {% if showcase.text %}
+                        <span class="px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 text-[10px] font-semibold">{{ showcase.text }}</span>
+                        {% endif %}
+                      </li>
+                      {% endfor %}
+                    </ul>
                     <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Pick exact time</p>
                     <div class="flex items-center gap-2">
                       <input type="datetime-local" name="exact_datetime"

@@ -2,11 +2,12 @@
 
 {% block page_title %}Kova Links{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Your link-in-bio pages — form submissions flow into <a href="{% url 'leads:list' %}?source=form_submission" class="text-kova-600 dark:text-kova-400 hover:underline">Leads</a></p>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">{{ kova_catch_subtitle }} — form submissions flow into <a href="{% url 'leads:list' %}?source=form_submission" class="text-kova-600 dark:text-kova-400 hover:underline">Leads</a></p>
 {% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-6">
+  {% include "components/_kova_loop_strip.html" %}
 
   {# ── Stats bar ── #}
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">

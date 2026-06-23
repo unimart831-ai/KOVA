@@ -38,6 +38,7 @@
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300">
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 Carousel{% if post.carousel_slides %} · {{ post.carousel_slides|length }} slides{% endif %}
+                {% if post.visual_metadata.carousel_backend %} · {{ post.carousel_backend_label }}{% endif %}
               </span>
             {% elif post.post_format == 'story' %}
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-pink-100 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300">Story · 9:16</span>
@@ -50,7 +51,7 @@
               {% if post.reel_compose_pending %}
               <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400 animate-pulse">Composing…</span>
               {% elif post.reel_has_video %}
-              <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">Video ready</span>
+              <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">{{ post.reel_compose_backend_label }}</span>
               {% endif %}
             {% elif post.post_format == 'image' %}
               <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">Image</span>
