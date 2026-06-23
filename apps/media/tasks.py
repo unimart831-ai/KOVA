@@ -26,3 +26,13 @@ def plan_asset_media_task(product_id: str, analysis: dict | None = None):
     "plan": plan.to_metadata(),
     "flux_edit_url": flux_url,
   }
+
+
+@shared_task(name="media_queue.process_queues")
+def legacy_process_media_queues():
+  """
+  No-op for django-celery-beat rows left from the removed media_queue app.
+  Disable the PeriodicTask in admin when convenient; this prevents worker errors.
+  """
+  logger.debug("media_queue.process_queues is deprecated — no-op")
+  return {"deprecated": True, "processed": 0}

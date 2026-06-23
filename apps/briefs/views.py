@@ -388,7 +388,7 @@ def brief_home(request):
         brief_is_stale = brief is not None
 
     if not request.user.onboarding_completed:
-        return redirect("accounts:onboarding")
+        return redirect("accounts:onboarding_choose_path")
 
     recent_briefs = DailyBrief.objects.filter(user=request.user).exclude(
         date=brief.date if brief else today,

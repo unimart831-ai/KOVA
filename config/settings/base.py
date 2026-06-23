@@ -109,6 +109,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 # ─── MIDDLEWARE ───────────────────────────────────────────────────────────────
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "apps.accounts.middleware.HealthCheckMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -168,10 +169,17 @@ DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 REDIS_URL = env("REDIS_URL", default="")
 
 if REDIS_URL:
+    _REDIS_CACHE_OPTIONS = {
+        "socket_connect_timeout": env.float("REDIS_SOCKET_CONNECT_TIMEOUT", default=5.0),
+        "socket_timeout": env.float("REDIS_SOCKET_TIMEOUT", default=5.0),
+        "retry_on_timeout": True,
+        "health_check_interval": 30,
+    }
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
             "LOCATION": REDIS_URL,
+            "OPTIONS": _REDIS_CACHE_OPTIONS,
         }
     }
     SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"

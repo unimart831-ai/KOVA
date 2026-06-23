@@ -1,9 +1,22 @@
 """Middleware for accounts app."""
 
 from django.contrib.auth import get_user_model
+from django.http import HttpResponse
 from django.shortcuts import redirect
 
 from apps.accounts.phone_utils import user_needs_phone
+
+
+class HealthCheckMiddleware:
+    """Answer /health/ before sessions, Redis, or auth — keeps Railway probes fast."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.path.rstrip("/") == "/health":
+            return HttpResponse("ok", content_type="text/plain")
+        return self.get_response(request)
 
 
 class RequirePhoneMiddleware:
