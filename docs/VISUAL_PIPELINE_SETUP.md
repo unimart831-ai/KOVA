@@ -2,6 +2,8 @@
 
 > **What this covers:** Everything added in the Visual Intelligence Pipeline (R1–R9) that needs manual setup, configuration, or awareness. Follow this step by step before/after deploying.
 
+> **Media APIs (Photoroom, Fal, Bannerbear):** See **[MEDIA_API_SETUP.md](MEDIA_API_SETUP.md)** for API keys, env vars, endpoints, and plan gates.
+
 ---
 
 ## Table of Contents

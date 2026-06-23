@@ -127,7 +127,7 @@
         {% if post.visual_strategy and post.visual_strategy != 'none' %}
         <div class="flex justify-between">
           <dt class="text-xs text-gray-500 dark:text-gray-400">Visual Strategy</dt>
-          <dd class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+          <dd class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-kova-50 text-kova-700 dark:bg-kova-950 dark:text-kova-300">
             {% if post.visual_strategy == 'carousel' %}Carousel{% elif post.visual_strategy == 'quote_card' %}Quote{% elif post.visual_strategy == 'tip_graphic' %}Tips{% elif post.visual_strategy == 'stat_highlight' %}Stat{% elif post.visual_strategy == 'cta_banner' %}CTA{% elif post.visual_strategy == 'ai_photo' %}AI Photo{% elif post.visual_strategy == 'story_graphic' %}Story{% else %}{{ post.get_visual_strategy_display }}{% endif %}
           </dd>
         </div>
@@ -135,7 +135,7 @@
         {% if post.media_status and post.media_status != 'none' %}
         <div class="flex justify-between">
           <dt class="text-xs text-gray-500 dark:text-gray-400">Media Status</dt>
-          <dd class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded-full {% if post.media_status == 'generated' %}bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300{% elif post.media_status == 'uploaded' %}bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300{% elif post.media_status == 'pending' %}bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300{% elif post.media_status == 'failed' %}bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300{% endif %}">{{ post.get_media_status_display }}</dd>
+          <dd class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded-full {% if post.media_status == 'generated' %}bg-growth-50 text-growth-700 dark:bg-growth-950 dark:text-growth-300{% elif post.media_status == 'uploaded' %}bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300{% elif post.media_status == 'pending' %}bg-gold-50 text-gold-700 dark:bg-gold-950 dark:text-gold-300{% elif post.media_status == 'failed' %}bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300{% endif %}">{{ post.get_media_status_display }}</dd>
         </div>
         {% endif %}
       </dl>

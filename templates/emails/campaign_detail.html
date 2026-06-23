@@ -10,7 +10,7 @@
   <div class="flex items-center gap-3">
     {% if campaign.status == 'draft' or campaign.status == 'scheduled' %}
       {% if campaign.ai_generated %}
-      <span class="text-sm text-amber-600 dark:text-amber-400">
+      <span class="text-sm text-gold-600 dark:text-gold-400">
         {% if campaign.target_list and campaign.target_list.subscriber_count %}Queued — sends automatically{% else %}Waiting for subscribers — sends when contacts sync{% endif %}
       </span>
       {% else %}
@@ -22,7 +22,7 @@
       </form>
     {% endif %}
     {% if campaign.status == 'sending' %}
-    <span class="text-sm text-amber-600 dark:text-amber-400 font-medium">Sending in progress…</span>
+    <span class="text-sm text-gold-600 dark:text-gold-400 font-medium">Sending in progress…</span>
     {% endif %}
     <a href="{% url 'emails:campaigns' %}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">← Back to campaigns</a>
   </div>
@@ -39,7 +39,7 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">Opened ({{ campaign.open_rate }}%)</p>
     </div>
     <div class="card px-4 py-3 text-center">
-      <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ campaign.total_clicked }}</p>
+      <p class="text-2xl font-bold text-kova-600 dark:text-kova-400">{{ campaign.total_clicked }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">Clicked ({{ campaign.click_rate }}%)</p>
     </div>
     <div class="card px-4 py-3 text-center">
@@ -47,7 +47,7 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">Bounced</p>
     </div>
     <div class="card px-4 py-3 text-center">
-      <p class="text-2xl font-bold text-amber-600">{{ campaign.total_unsubscribed }}</p>
+      <p class="text-2xl font-bold text-gold-600">{{ campaign.total_unsubscribed }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">Unsubs</p>
     </div>
   </div>

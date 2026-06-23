@@ -51,8 +51,8 @@
             {% elif d.status == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
             {% elif d.status == 'approved' %}bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-300
             {% elif d.status == 'dismissed' %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400
-            {% elif d.status == 'expired' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300
-            {% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300{% endif %}">
+            {% elif d.status == 'expired' %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300
+            {% else %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300{% endif %}">
             {{ d.get_status_display }}
           </span>
           {% if d.generation_error %}

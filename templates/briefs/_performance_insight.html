@@ -85,8 +85,8 @@
         {% if ps.product_alerts %}
         <div class="mt-2 space-y-1">
           {% for alert in ps.product_alerts %}
-          <div class="flex items-start gap-2 text-sm {% if alert.severity == 'critical' %}text-red-600 dark:text-red-400{% elif alert.severity == 'warning' %}text-amber-600 dark:text-amber-400{% else %}text-blue-600 dark:text-blue-400{% endif %}">
-            <span class="mt-0.5">{% if alert.severity == 'critical' %}<span class="inline-block w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span>{% elif alert.severity == 'warning' %}<span class="inline-block w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></span>{% else %}<span class="inline-block w-2 h-2 rounded-full bg-gray-400 flex-shrink-0"></span>{% endif %}</span>
+          <div class="flex items-start gap-2 text-sm {% if alert.severity == 'critical' %}text-red-600 dark:text-red-400{% elif alert.severity == 'warning' %}text-gold-600 dark:text-gold-400{% else %}text-blue-600 dark:text-blue-400{% endif %}">
+            <span class="mt-0.5">{% if alert.severity == 'critical' %}<span class="inline-block w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span>{% elif alert.severity == 'warning' %}<span class="inline-block w-2 h-2 rounded-full bg-gold-500 flex-shrink-0"></span>{% else %}<span class="inline-block w-2 h-2 rounded-full bg-gray-400 flex-shrink-0"></span>{% endif %}</span>
             <span>{{ alert.item }}{% if alert.action %} — <strong>{{ alert.action }}</strong>{% endif %}</span>
           </div>
           {% endfor %}
@@ -118,7 +118,7 @@
 
     {% if ps.escalations %}
     <details class="group border-t border-gray-100 dark:border-gray-800 py-3" open>
-      <summary class="flex items-center justify-between cursor-pointer list-none text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+      <summary class="flex items-center justify-between cursor-pointer list-none text-xs font-semibold uppercase tracking-wide text-gold-700 dark:text-gold-300">
         <span>Needs your attention</span>
         <svg class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
       </summary>

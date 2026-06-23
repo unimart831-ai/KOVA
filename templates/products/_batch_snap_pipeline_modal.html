@@ -47,7 +47,7 @@
                     <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                   </template>
                   <template x-if="step.status === 'running'">
-                    <span class="block w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></span>
+                    <span class="block w-4 h-4 border-2 border-kova-500 border-t-transparent rounded-full animate-spin"></span>
                   </template>
                   <template x-if="step.status === 'pending'">
                     <span class="block w-4 h-4 rounded-full border-2 border-gray-300"></span>
@@ -73,12 +73,12 @@
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-2 flex-wrap">
                     <p class="text-sm font-medium text-gray-900 dark:text-white truncate" x-text="item.product_name"></p>
-                    <span x-show="item.status === 'processing'" class="text-[9px] text-amber-600 animate-pulse">Working…</span>
-                    <span x-show="item.status === 'completed'" class="text-[9px] text-emerald-600">Ready</span>
+                    <span x-show="item.status === 'processing'" class="text-[9px] text-gold-600 animate-pulse">Working…</span>
+                    <span x-show="item.status === 'completed'" class="text-[9px] text-growth-600">Ready</span>
                     <span x-show="item.status === 'failed'" class="text-[9px] text-red-600">Failed</span>
                   </div>
                   <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2" x-text="item.current_detail || item.current_step"></p>
-                  <p x-show="item.post_count" class="text-[10px] text-purple-600 dark:text-purple-400 mt-1" x-text="item.post_count + ' post(s)'"></p>
+                  <p x-show="item.post_count" class="text-[10px] text-kova-600 dark:text-kova-400 mt-1" x-text="item.post_count + ' post(s)'"></p>
                 </div>
               </li>
             </template>
@@ -92,30 +92,30 @@
         </template>
 
         <template x-if="heroPickerItems.length">
-          <div class="rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50/40 dark:bg-purple-950/20 p-4">
+          <div class="rounded-xl border border-kova-200 dark:border-kova-800 bg-kova-50/40 dark:bg-kova-950/20 p-4">
             <div class="flex items-start justify-between gap-2 mb-3">
               <div>
-                <h3 class="text-xs font-semibold text-purple-900 dark:text-purple-100 uppercase tracking-wider">Pick hero shots</h3>
-                <p class="text-xs text-purple-700 dark:text-purple-300 mt-0.5">
+                <h3 class="text-xs font-semibold text-kova-900 dark:text-kova-100 uppercase tracking-wider">Pick hero shots</h3>
+                <p class="text-xs text-kova-700 dark:text-kova-300 mt-0.5">
                   Choose the best scene for each product — used in your shop and carousel posts.
                 </p>
-                <p x-show="brandLock.surface_vibe" class="text-[10px] text-purple-600/80 dark:text-purple-400/80 mt-1" x-text="'Stall look: ' + (brandLock.surface_vibe || '')"></p>
+                <p x-show="brandLock.surface_vibe" class="text-[10px] text-kova-600/80 dark:text-kova-400/80 mt-1" x-text="'Stall look: ' + (brandLock.surface_vibe || '')"></p>
                 <p x-show="brandLock.scene_pack" class="text-[10px] text-kova-600/90 dark:text-kova-400/90 mt-0.5" x-text="'Scene pack: ' + (brandLock.scene_pack || '').replace(/_/g, ' ')"></p>
               </div>
-              <span x-show="heroSaving" class="text-[10px] text-purple-600 animate-pulse shrink-0">Saving…</span>
+              <span x-show="heroSaving" class="text-[10px] text-kova-600 animate-pulse shrink-0">Saving…</span>
             </div>
 
             <div class="space-y-4 max-h-72 overflow-y-auto">
               <template x-for="item in heroPickerItems" :key="item.product_id">
-                <div class="rounded-lg border border-purple-100 dark:border-purple-900 bg-white/70 dark:bg-gray-900/40 p-3">
+                <div class="rounded-lg border border-kova-100 dark:border-kova-900 bg-white/70 dark:bg-gray-900/40 p-3">
                   <p class="text-sm font-medium text-gray-900 dark:text-white mb-2 truncate" x-text="item.product_name"></p>
                   <div class="grid grid-cols-3 sm:grid-cols-4 gap-2">
                     <template x-for="scene in item.gallery_scenes" :key="scene.url">
                       <div class="relative rounded-lg overflow-hidden border aspect-square"
-                           :class="scene.is_hero ? 'border-purple-500 ring-2 ring-purple-400/50' : 'border-gray-200 dark:border-gray-700'">
+                           :class="scene.is_hero ? 'border-kova-500 ring-2 ring-kova-400/50' : 'border-gray-200 dark:border-gray-700'">
                         <img :src="scene.url" :alt="scene.label" class="w-full h-full object-cover">
                         <div class="absolute inset-x-0 top-0 flex flex-wrap gap-0.5 p-1">
-                          <span x-show="scene.is_hero" class="text-[8px] font-bold uppercase px-1 py-0.5 rounded bg-purple-600 text-white">Hero</span>
+                          <span x-show="scene.is_hero" class="text-[8px] font-bold uppercase px-1 py-0.5 rounded bg-kova-600 text-white">Hero</span>
                           <span x-show="scene.is_original" class="text-[8px] font-bold uppercase px-1 py-0.5 rounded bg-black/60 text-white">Original</span>
                         </div>
                         <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 pt-4">
@@ -124,7 +124,7 @@
                                   x-show="!scene.is_hero"
                                   @click="setHero(item.product_id, scene.url)"
                                   :disabled="heroSaving"
-                                  class="text-[9px] px-1.5 py-0.5 rounded bg-white/90 text-purple-800 font-semibold hover:bg-white disabled:opacity-50">
+                                  class="text-[9px] px-1.5 py-0.5 rounded bg-white/90 text-kova-800 font-semibold hover:bg-white disabled:opacity-50">
                             Set hero
                           </button>
                         </div>

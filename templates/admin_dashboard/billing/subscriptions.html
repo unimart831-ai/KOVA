@@ -11,7 +11,7 @@
 {% if messages %}
 <div class="mb-4 space-y-2">
   {% for message in messages %}
-  <div class="px-4 py-3 rounded-lg text-sm {% if message.tags == 'success' %}bg-emerald-50 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800{% elif message.tags == 'error' %}bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800{% else %}bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800{% endif %}">
+  <div class="px-4 py-3 rounded-lg text-sm {% if message.tags == 'success' %}bg-growth-50 text-growth-800 dark:bg-growth-900/20 dark:text-growth-400 border border-growth-200 dark:border-growth-800{% elif message.tags == 'error' %}bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800{% else %}bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800{% endif %}">
     {{ message }}
   </div>
   {% endfor %}
@@ -22,7 +22,7 @@
 <div class="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Active</p>
-    <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{{ total_active }}</p>
+    <p class="text-2xl font-bold text-growth-600 dark:text-growth-400 mt-1">{{ total_active }}</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Trialing</p>
@@ -30,15 +30,15 @@
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Past Due</p>
-    <p class="text-2xl font-bold text-amber-600 mt-1">{{ total_past_due }}</p>
+    <p class="text-2xl font-bold text-gold-600 mt-1">{{ total_past_due }}</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Expiring (3d)</p>
-    <p class="text-2xl font-bold text-amber-600 mt-1">{{ expiring_soon }}</p>
+    <p class="text-2xl font-bold text-gold-600 mt-1">{{ expiring_soon }}</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Active Comps</p>
-    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">{{ total_comps }}</p>
+    <p class="text-2xl font-bold text-kova-600 dark:text-kova-400 mt-1">{{ total_comps }}</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Overrides (30d)</p>
@@ -47,16 +47,16 @@
 </div>
 
 <div class="flex flex-wrap gap-2 mb-6">
-  <a href="{% url 'admin_dashboard:subscription_management' %}?preset=expiring" class="px-3 py-1.5 rounded-lg text-xs font-medium {% if current_preset == 'expiring' %}bg-amber-100 text-amber-800{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600{% endif %}">Expiring soon</a>
-  <a href="{% url 'admin_dashboard:subscription_management' %}?preset=past_due" class="px-3 py-1.5 rounded-lg text-xs font-medium {% if current_preset == 'past_due' %}bg-amber-100 text-amber-800{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600{% endif %}">Past due</a>
+  <a href="{% url 'admin_dashboard:subscription_management' %}?preset=expiring" class="px-3 py-1.5 rounded-lg text-xs font-medium {% if current_preset == 'expiring' %}bg-gold-100 text-gold-800{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600{% endif %}">Expiring soon</a>
+  <a href="{% url 'admin_dashboard:subscription_management' %}?preset=past_due" class="px-3 py-1.5 rounded-lg text-xs font-medium {% if current_preset == 'past_due' %}bg-gold-100 text-gold-800{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600{% endif %}">Past due</a>
   <a href="{% url 'admin_dashboard:subscription_management' %}?preset=expired_trials" class="px-3 py-1.5 rounded-lg text-xs font-medium {% if current_preset == 'expired_trials' %}bg-red-100 text-red-800{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600{% endif %}">Expired trials</a>
 </div>
 
 <!-- ── Quick Actions ──────────────────────────────────────────────────── -->
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
   <a href="{% url 'admin_dashboard:bulk_grant' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-kova-400 dark:hover:border-kova-500 transition-all">
-    <div class="w-9 h-9 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-      <svg class="w-4.5 h-4.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+    <div class="w-9 h-9 bg-kova-100 dark:bg-kova-900/30 rounded-lg flex items-center justify-center">
+      <svg class="w-4.5 h-4.5 text-kova-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
     </div>
     <div>
       <p class="text-sm font-medium text-gray-900 dark:text-white">Bulk Grant Access</p>
@@ -172,7 +172,7 @@
                 <button @click="menu = false; open = 'plan'" class="w-full px-3 py-2 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Change Plan</button>
                 <button @click="menu = false; open = 'trial'" class="w-full px-3 py-2 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Extend Trial</button>
                 <button @click="menu = false; open = 'status'" class="w-full px-3 py-2 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Change Status</button>
-                <button @click="menu = false; open = 'comp'" class="w-full px-3 py-2 text-left text-xs text-purple-600 dark:text-purple-400 hover:bg-gray-50 dark:hover:bg-gray-700">Grant Comp Access</button>
+                <button @click="menu = false; open = 'comp'" class="w-full px-3 py-2 text-left text-xs text-kova-600 dark:text-kova-400 hover:bg-gray-50 dark:hover:bg-gray-700">Grant Comp Access</button>
               </div>
             </div>
           </td>
@@ -235,7 +235,7 @@
                 <label class="block text-xs font-medium text-gray-500 mb-1">Reason *</label>
                 <input type="text" name="reason" required placeholder="e.g. Reactivated after payment issue" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
               </div>
-              <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg">Update</button>
+              <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-gold-600 hover:bg-gold-700 rounded-lg">Update</button>
               <button type="button" @click="open = ''" class="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white">Cancel</button>
             </form>
 
@@ -260,7 +260,7 @@
                 <label class="block text-xs font-medium text-gray-500 mb-1">Reason *</label>
                 <input type="text" name="reason" required placeholder="e.g. Partner comp — Safaricom deal" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
               </div>
-              <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg">Grant</button>
+              <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg">Grant</button>
               <button type="button" @click="open = ''" class="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white">Cancel</button>
             </form>
           </td>

@@ -19,7 +19,7 @@
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Unread (all-time)</p>
-    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{{ unread|format_number }}</p>
+    <p class="text-2xl font-bold text-gold-600 dark:text-gold-400 mt-1">{{ unread|format_number }}</p>
     <p class="text-xs text-gray-400 mt-0.5">{{ unread_7d }} from last 7 days</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
@@ -50,7 +50,7 @@
             <code class="text-[11px]">{{ row.notification_type }}</code>
           </td>
           <td class="px-3 py-2 text-right tabular-nums">{{ row.total }}</td>
-          <td class="px-3 py-2 text-right tabular-nums {% if row.unread > 0 %}text-amber-600 dark:text-amber-400{% else %}text-gray-400{% endif %}">{{ row.unread }}</td>
+          <td class="px-3 py-2 text-right tabular-nums {% if row.unread > 0 %}text-gold-600 dark:text-gold-400{% else %}text-gray-400{% endif %}">{{ row.unread }}</td>
         </tr>
         {% empty %}
         <tr><td colspan="3" class="px-5 py-6 text-center text-gray-400 italic">No notifications in the last 30 days.</td></tr>
@@ -79,7 +79,7 @@
             <a href="{% url 'admin_dashboard:user_detail' u.user__id %}" class="hover:text-kova-600 dark:hover:text-kova-400">{{ u.user__full_name|default:u.user__email }}</a>
           </td>
           <td class="px-3 py-2 text-right tabular-nums">{{ u.total }}</td>
-          <td class="px-3 py-2 text-right tabular-nums {% if u.unread > 0 %}text-amber-600{% else %}text-gray-400{% endif %}">{{ u.unread }}</td>
+          <td class="px-3 py-2 text-right tabular-nums {% if u.unread > 0 %}text-gold-600{% else %}text-gray-400{% endif %}">{{ u.unread }}</td>
         </tr>
         {% empty %}
         <tr><td colspan="3" class="px-5 py-6 text-center text-gray-400 italic">No recipients yet.</td></tr>

@@ -1,4 +1,4 @@
-﻿{% extends "admin_dashboard/base.html" %}
+{% extends "admin_dashboard/base.html" %}
 {% load dashboard_tags %}
 
 {% block page_title %}{{ page_title }}{% endblock %}
@@ -85,14 +85,14 @@
             {% if conv.status == 'active' %}
             <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">Active</span>
             {% elif conv.status == 'escalated' %}
-            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">Escalated</span>
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gold-100 dark:bg-gold-900/30 text-gold-700 dark:text-gold-400">Escalated</span>
             {% else %}
             <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500">Closed</span>
             {% endif %}
           </td>
           <td class="px-4 py-3">
             {% if conv.ai_handling %}
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-kova-100 dark:bg-kova-900/30 text-kova-700 dark:text-kova-400">
               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
               AI
             </span>

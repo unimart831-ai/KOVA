@@ -18,7 +18,7 @@
         <div>
           <h2 class="text-lg font-semibold text-gray-900 dark:text-white">AI Learning is
             {% if profile.adapt_paused %}
-              <span class="text-amber-600 dark:text-amber-400">paused</span>
+              <span class="text-gold-600 dark:text-gold-400">paused</span>
             {% else %}
               <span class="text-green-600 dark:text-green-400">active</span>
             {% endif %}
@@ -58,7 +58,7 @@
             {% for pillar, weight in profile.pillar_weights.items %}
               <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
                 {% if weight > 1.0 %}bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300
-                {% elif weight < 1.0 %}bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300
+                {% elif weight < 1.0 %}bg-gold-100 text-gold-700 dark:bg-gold-900/40 dark:text-gold-300
                 {% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300{% endif %}">
                 {{ pillar }} · {{ weight }}
               </span>
@@ -81,7 +81,7 @@
         {% if profile.dna_preferences.retired %}
         <div>
           <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Retired patterns ({{ profile.dna_preferences.retired|length }})</p>
-          <ul class="text-xs text-amber-700 dark:text-amber-400 space-y-0.5">
+          <ul class="text-xs text-gold-700 dark:text-gold-400 space-y-0.5">
             {% for r in profile.dna_preferences.retired %}
               <li>· {% for k, v in r.combo.items %}{% if v %}{{ k }}={{ v }} {% endif %}{% endfor %}</li>
             {% endfor %}
@@ -120,7 +120,7 @@
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                 {{ row.obj.created_at|date:"M j · H:i" }}
                 {% if row.evidence %} · {{ row.evidence }}{% endif %}
-                {% if row.is_reverted %} · <span class="text-amber-600 dark:text-amber-400">reverted</span>{% endif %}
+                {% if row.is_reverted %} · <span class="text-gold-600 dark:text-gold-400">reverted</span>{% endif %}
               </p>
             </div>
             {% if not row.is_reverted %}

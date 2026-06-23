@@ -40,7 +40,7 @@
       <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
         <td class="px-4 py-2.5 text-xs text-gray-400">{{ log.created_at|timesince }} ago</td>
         <td class="px-4 py-2.5">
-          <a href="{% url 'admin_dashboard:marketplace_detail' pk=log.marketplace.pk %}" class="text-xs text-emerald-600 hover:underline">{{ log.marketplace.name }}</a>
+          <a href="{% url 'admin_dashboard:marketplace_detail' pk=log.marketplace.pk %}" class="text-xs text-growth-600 hover:underline">{{ log.marketplace.name }}</a>
         </td>
         <td class="px-4 py-2.5 text-xs font-mono">{{ log.event }}</td>
         <td class="px-4 py-2.5 text-xs capitalize {% if log.status == 'failed' %}text-red-600{% elif log.status == 'success' %}text-green-600{% endif %}">{{ log.status }}</td>

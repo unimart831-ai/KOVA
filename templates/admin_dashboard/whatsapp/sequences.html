@@ -53,7 +53,7 @@
         <td class="px-4 py-2.5 text-xs capitalize">{{ seq.get_status_display }}</td>
         <td class="px-4 py-2.5 text-center">{{ seq.step_count }}</td>
         <td class="px-4 py-2.5 text-center">{{ seq.active_enrollments }}</td>
-        <td class="px-4 py-2.5 text-center {% if seq.due_enrollments %}text-amber-600 font-semibold{% endif %}">{{ seq.due_enrollments }}</td>
+        <td class="px-4 py-2.5 text-center {% if seq.due_enrollments %}text-gold-600 font-semibold{% endif %}">{{ seq.due_enrollments }}</td>
       </tr>
       {% empty %}
       <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">No broadcast sequences</td></tr>

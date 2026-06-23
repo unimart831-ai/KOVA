@@ -59,19 +59,19 @@
               {% if meme.lifecycle == 'emerging' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
               {% elif meme.lifecycle == 'trending' %}bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300
               {% elif meme.lifecycle == 'peaked' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
-              {% elif meme.lifecycle == 'fading' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300
+              {% elif meme.lifecycle == 'fading' %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300
               {% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300{% endif %}">
               {{ meme.get_lifecycle_display }}
             </span>
           </td>
           <td class="px-4 py-2.5 text-right">
-            <span class="text-xs font-bold {% if meme.virality_score >= 70 %}text-orange-600{% elif meme.virality_score >= 40 %}text-yellow-600{% else %}text-gray-400{% endif %}">{{ meme.virality_score }}</span>
+            <span class="text-xs font-bold {% if meme.virality_score >= 70 %}text-orange-600{% elif meme.virality_score >= 40 %}text-gold-600{% else %}text-gray-400{% endif %}">{{ meme.virality_score }}</span>
           </td>
           <td class="px-4 py-2.5 text-right">
-            <span class="text-xs font-bold {% if meme.brand_safety_score >= 70 %}text-green-600{% elif meme.brand_safety_score >= 40 %}text-yellow-600{% else %}text-red-500{% endif %}">{{ meme.brand_safety_score }}</span>
+            <span class="text-xs font-bold {% if meme.brand_safety_score >= 70 %}text-green-600{% elif meme.brand_safety_score >= 40 %}text-gold-600{% else %}text-red-500{% endif %}">{{ meme.brand_safety_score }}</span>
           </td>
           <td class="px-4 py-2.5 text-right">
-            <span class="text-xs font-bold text-purple-600 dark:text-purple-400">{{ meme.cultural_relevance_score }}</span>
+            <span class="text-xs font-bold text-kova-600 dark:text-kova-400">{{ meme.cultural_relevance_score }}</span>
           </td>
           <td class="px-4 py-2.5 text-right text-xs font-bold text-gray-900 dark:text-white">{{ meme.adaptation_count }}</td>
           <td class="px-4 py-2.5 text-right text-xs text-gray-400">{{ meme.detected_at|timesince }} ago</td>

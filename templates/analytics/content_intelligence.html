@@ -15,10 +15,10 @@
   {# Period selector #}
   <div class="flex items-center justify-end">
     <div class="flex items-center gap-2">
-      <a href="?days=7" class="px-3 py-1 text-xs rounded-full {% if days == 7 %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">7d</a>
-      <a href="?days=14" class="px-3 py-1 text-xs rounded-full {% if days == 14 %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">14d</a>
-      <a href="?days=30" class="px-3 py-1 text-xs rounded-full {% if days == 30 %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">30d</a>
-      <a href="?days=90" class="px-3 py-1 text-xs rounded-full {% if days == 90 %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">90d</a>
+      <a href="?days=7" class="px-3 py-1 text-xs rounded-full {% if days == 7 %}bg-growth-500 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">7d</a>
+      <a href="?days=14" class="px-3 py-1 text-xs rounded-full {% if days == 14 %}bg-growth-500 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">14d</a>
+      <a href="?days=30" class="px-3 py-1 text-xs rounded-full {% if days == 30 %}bg-growth-500 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">30d</a>
+      <a href="?days=90" class="px-3 py-1 text-xs rounded-full {% if days == 90 %}bg-growth-500 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">90d</a>
     </div>
   </div>
 
@@ -126,10 +126,10 @@
     <div class="p-5">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {% for attr in attribute_impact %}
-        <div class="p-4 rounded-lg {% if attr.positive and attr.multiplier >= 1.3 %}bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800{% elif not attr.positive and attr.multiplier < 0.8 %}bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800{% else %}bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700{% endif %}">
+        <div class="p-4 rounded-lg {% if attr.positive and attr.multiplier >= 1.3 %}bg-growth-50 dark:bg-growth-900/20 border border-growth-200 dark:border-growth-800{% elif not attr.positive and attr.multiplier < 0.8 %}bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800{% else %}bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700{% endif %}">
           <div class="flex items-center justify-between mb-1">
             <span class="text-sm font-medium text-gray-900 dark:text-white">{{ attr.attribute }}</span>
-            <span class="text-sm font-bold {% if attr.positive and attr.multiplier >= 1.3 %}text-emerald-600 dark:text-emerald-400{% elif not attr.positive %}text-red-600 dark:text-red-400{% else %}text-gray-600 dark:text-gray-400{% endif %}">
+            <span class="text-sm font-bold {% if attr.positive and attr.multiplier >= 1.3 %}text-growth-600 dark:text-growth-400{% elif not attr.positive %}text-red-600 dark:text-red-400{% else %}text-gray-600 dark:text-gray-400{% endif %}">
               {{ attr.multiplier }}x
             </span>
           </div>

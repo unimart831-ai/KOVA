@@ -43,14 +43,14 @@
           </td>
           <td class="px-4 py-2.5">
             <span class="text-[10px] px-1.5 py-0.5 rounded
-              {% if profile.admin_business_mode.key == 'service' %}bg-emerald-100 text-emerald-700{% elif profile.admin_business_mode.key == 'digital' %}bg-violet-100 text-violet-700{% elif profile.admin_business_mode.key == 'expert' %}bg-amber-100 text-amber-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+              {% if profile.admin_business_mode.key == 'service' %}bg-growth-100 text-growth-700{% elif profile.admin_business_mode.key == 'digital' %}bg-violet-100 text-violet-700{% elif profile.admin_business_mode.key == 'expert' %}bg-gold-100 text-gold-700{% else %}bg-blue-100 text-blue-700{% endif %}">
               {{ profile.admin_business_mode.label }}
             </span>
           </td>
           <td class="px-4 py-2.5">
             <div class="flex flex-wrap gap-1">
               <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">{{ profile.product_offers }} physical</span>
-              <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">{{ profile.service_offers }} service</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-growth-100 text-growth-700">{{ profile.service_offers }} service</span>
               <span class="text-[10px] px-1.5 py-0.5 rounded bg-violet-100 text-violet-700">{{ profile.digital_offers }} digital</span>
             </div>
             {% if profile.service_offers or profile.digital_offers %}
@@ -62,14 +62,14 @@
           <td class="px-4 py-2.5 text-right text-xs">{{ profile.commerce_links }}</td>
           <td class="px-4 py-2.5 text-center">
             {% if profile.commerce_autopilot %}
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">ON</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-kova-100 text-kova-700">ON</span>
             {% else %}
             <span class="text-[10px] text-gray-400">Off</span>
             {% endif %}
           </td>
           <td class="px-4 py-2.5">
             {% if profile.page_slug %}
-            <a href="{{ site_url }}/shop/{{ profile.page_slug }}/" target="_blank" rel="noopener" class="text-[10px] text-emerald-600 hover:underline font-mono">/shop/{{ profile.page_slug }}/ ↗</a>
+            <a href="{{ site_url }}/shop/{{ profile.page_slug }}/" target="_blank" rel="noopener" class="text-[10px] text-growth-600 hover:underline font-mono">/shop/{{ profile.page_slug }}/ ↗</a>
             {% else %}
             <span class="text-[10px] text-gray-400">No slug</span>
             {% endif %}

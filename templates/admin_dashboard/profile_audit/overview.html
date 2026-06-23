@@ -14,7 +14,7 @@
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Avg score</p>
-    <p class="text-2xl font-bold {% if avg_score >= 70 %}text-green-600 dark:text-green-400{% elif avg_score >= 40 %}text-amber-600 dark:text-amber-400{% else %}text-red-600 dark:text-red-400{% endif %} mt-1">{{ avg_score }}/100</p>
+    <p class="text-2xl font-bold {% if avg_score >= 70 %}text-green-600 dark:text-green-400{% elif avg_score >= 40 %}text-gold-600 dark:text-gold-400{% else %}text-red-600 dark:text-red-400{% endif %} mt-1">{{ avg_score }}/100</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Applied (7d)</p>
@@ -23,7 +23,7 @@
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Pending review</p>
-    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{{ sugg_pending|format_number }}</p>
+    <p class="text-2xl font-bold text-gold-600 dark:text-gold-400 mt-1">{{ sugg_pending|format_number }}</p>
     {% if suggestions_failed_7d %}<p class="text-xs text-red-600 dark:text-red-400 mt-0.5">{{ suggestions_failed_7d }} failed apply attempt(s) this week</p>{% endif %}
   </div>
 </div>
@@ -32,12 +32,12 @@
 {% if last_audit_at %}
 <div class="mb-6 p-3 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-xs text-gray-600 dark:text-gray-300">
   Last audit ran <span class="font-medium text-gray-900 dark:text-white">{{ last_audit_at|timesince }} ago</span>
-  {% if audits_with_errors %} · <span class="text-amber-600 dark:text-amber-400">{{ audits_with_errors }} audit(s) errored this week</span>{% endif %}
+  {% if audits_with_errors %} · <span class="text-gold-600 dark:text-gold-400">{{ audits_with_errors }} audit(s) errored this week</span>{% endif %}
   {% if audits_7d == 0 %} · <span class="text-red-600 dark:text-red-400 font-medium">No audits in last 7 days — check Celery beat schedule</span>{% endif %}
 </div>
 {% else %}
-<div class="mb-6 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-  <p class="text-xs text-amber-700 dark:text-amber-400">No audits run yet. Beat task <code>profile_audit.run_profile_audits</code> runs daily at 02:00 UTC.</p>
+<div class="mb-6 p-3 rounded-lg bg-gold-50 dark:bg-gold-950/30 border border-gold-200 dark:border-gold-800">
+  <p class="text-xs text-gold-700 dark:text-gold-400">No audits run yet. Beat task <code>profile_audit.run_profile_audits</code> runs daily at 02:00 UTC.</p>
 </div>
 {% endif %}
 
@@ -52,7 +52,7 @@
         <span class="font-medium tabular-nums">{{ score_buckets.good }}</span>
       </div>
       <div class="flex items-center justify-between">
-        <span class="text-amber-700 dark:text-amber-400">OK (60-84)</span>
+        <span class="text-gold-700 dark:text-gold-400">OK (60-84)</span>
         <span class="font-medium tabular-nums">{{ score_buckets.ok }}</span>
       </div>
       <div class="flex items-center justify-between">
@@ -78,7 +78,7 @@
         <tr>
           <td class="py-2 capitalize text-gray-900 dark:text-white">{{ row.social_account__platform }}</td>
           <td class="py-2 text-right tabular-nums">{{ row.count }}</td>
-          <td class="py-2 text-right tabular-nums {% if row.avg_score >= 70 %}text-green-600{% elif row.avg_score >= 40 %}text-amber-600{% else %}text-red-600{% endif %}">{{ row.avg_score|floatformat:0 }}</td>
+          <td class="py-2 text-right tabular-nums {% if row.avg_score >= 70 %}text-green-600{% elif row.avg_score >= 40 %}text-gold-600{% else %}text-red-600{% endif %}">{{ row.avg_score|floatformat:0 }}</td>
         </tr>
         {% empty %}
         <tr><td colspan="3" class="py-6 text-center text-gray-400 italic">No audits yet.</td></tr>
@@ -118,7 +118,7 @@
             <span class="text-gray-400"> · {{ a.social_account.platform }}</span>
           </p>
         </div>
-        <span class="font-bold tabular-nums shrink-0 {% if a.completeness_score < 30 %}text-red-600{% elif a.completeness_score < 60 %}text-orange-600{% else %}text-amber-600{% endif %}">{{ a.completeness_score }}</span>
+        <span class="font-bold tabular-nums shrink-0 {% if a.completeness_score < 30 %}text-red-600{% elif a.completeness_score < 60 %}text-orange-600{% else %}text-gold-600{% endif %}">{{ a.completeness_score }}</span>
       </li>
       {% empty %}
       <li class="text-gray-400 italic">No low-scoring accounts.</li>

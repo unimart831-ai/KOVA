@@ -3,73 +3,119 @@
 {% block title %}Welcome — Step {{ setup_step }} of {{ setup_total }}{% endblock %}
 {% block page_title %}Welcome to Kova{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">{{ kova_subhead }} — choose how you sell.</p>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Hire your AI marketing employee — takes about 2 minutes.</p>
 {% endblock %}
 
 {% block content %}
-<div class="brand-atmosphere relative">
-  {% include "components/brand/_atmosphere_orbs.html" %}
-  <div class="relative max-w-2xl mx-auto py-8">
+<div class="relative max-w-2xl mx-auto py-6 sm:py-8">
   {% include "accounts/_onboarding_setup_progress.html" %}
-  {% include "components/brand/_onboarding_mission.html" %}
-  {% include "accounts/_onboarding_social_proof.html" %}
 
-  <div class="mb-8 text-center">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">What type of business are you?</h1>
-    <p class="text-gray-600 dark:text-gray-400">We'll tailor Snap, content, and WhatsApp to how you sell.</p>
+  <div class="text-center mb-8 reveal">
+    <p class="text-sm font-medium text-growth-600 dark:text-growth-400 mb-2">You're hiring Kova</p>
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">What kind of business do you run?</h1>
+    <p class="mt-2 text-gray-600 dark:text-gray-400 text-sm sm:text-base">Pick one — we'll tailor content, WhatsApp, and your shop automatically.</p>
     {% if business_hint %}
-    <p class="mt-3 text-sm text-kova-700 dark:text-kova-300 bg-kova-50 dark:bg-kova-950/40 border border-kova-200 dark:border-kova-800 rounded-lg px-4 py-2.5 max-w-lg mx-auto">
-      We'll use this to shape your brand: <span class="font-medium">"{{ business_hint }}"</span>
+    <p class="mt-3 text-sm text-kova-800 dark:text-kova-300 bg-kova-50 dark:bg-kova-950/40 border border-kova-200 dark:border-kova-800 rounded-lg px-4 py-2.5 max-w-lg mx-auto">
+      From your signup: <span class="font-medium">"{{ business_hint }}"</span>
     </p>
     {% endif %}
   </div>
 
-  <form method="post" class="space-y-6">
+  <form method="post" class="space-y-8 reveal reveal-delay-1"
+        x-data="{ businessType: 'salon', goal: 'leads', showOtherIndustry: false }"
+        x-init="showOtherIndustry = businessType === 'other'">
     {% csrf_token %}
 
-    <div class="grid gap-3 sm:grid-cols-3">
-      <label class="cursor-pointer">
-        <input type="radio" name="business_model" value="product" class="peer sr-only" checked>
-        <div class="h-full p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 peer-checked:border-kova-500 peer-checked:bg-kova-50 dark:peer-checked:bg-kova-950/30 hover:border-kova-400 transition-all">
-          <p class="font-semibold text-gray-900 dark:text-white">Products</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Shop, Snap-to-Sell, M-Pesa — get commerce live fast.</p>
+    {# Business type chips #}
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">Your business</p>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+        {% for bt in business_types %}
+        <label class="cursor-pointer">
+          <input type="radio" name="business_type" value="{{ bt.id }}" class="peer sr-only"
+                 x-model="businessType"
+                 @change="showOtherIndustry = businessType === 'other'"
+                 {% if forloop.first %}checked{% endif %}>
+          <div class="h-full p-3 sm:p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700
+                      peer-checked:border-growth-500 peer-checked:bg-growth-50 dark:peer-checked:bg-growth-950/30
+                      hover:border-growth-300 dark:hover:border-growth-700 transition-all text-center">
+            <span class="text-2xl block mb-1" aria-hidden="true">{{ bt.emoji }}</span>
+            <p class="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white leading-tight">{{ bt.label }}</p>
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+
+      <div x-show="showOtherIndustry" x-cloak class="mt-4 space-y-3">
+        <div>
+          <label for="industry" class="label">Industry</label>
+          <select name="industry" id="industry" class="input w-full">
+            <option value="">Select industry…</option>
+            {% for value, label in industry_choices %}
+              {% if value != "other" %}
+              <option value="{{ value }}">{{ label }}</option>
+              {% endif %}
+            {% endfor %}
+            <option value="other">Other</option>
+          </select>
         </div>
-      </label>
-      <label class="cursor-pointer">
-        <input type="radio" name="business_model" value="service" class="peer sr-only">
-        <div class="h-full p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 peer-checked:border-kova-500 peer-checked:bg-kova-50 dark:peer-checked:bg-kova-950/30 hover:border-kova-400 transition-all">
-          <p class="font-semibold text-gray-900 dark:text-white">Services</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Bookings, inquiries, WhatsApp close — salons, clinics, trades.</p>
+        <div>
+          <label for="industry_other" class="label">Describe your business <span class="text-gray-400 font-normal">(optional)</span></label>
+          <input type="text" name="industry_other" id="industry_other" class="input w-full" placeholder="e.g. Mobile money agent">
         </div>
-      </label>
-      <label class="cursor-pointer">
-        <input type="radio" name="business_model" value="professional" class="peer sr-only">
-        <div class="h-full p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 peer-checked:border-kova-500 peer-checked:bg-kova-50 dark:peer-checked:bg-kova-950/30 hover:border-kova-400 transition-all">
-          <p class="font-semibold text-gray-900 dark:text-white">Professional</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Portfolio, authority content — agencies, lawyers, consultants.</p>
-        </div>
-      </label>
+      </div>
     </div>
 
+    {# Goal chips #}
     <div>
-      <label for="onboarding-link" class="label">Website or profile link <span class="text-gray-400 font-normal">(optional)</span></label>
+      <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">What do you want more of?</p>
+      <div class="flex flex-wrap gap-2">
+        {% for g in goal_options %}
+        <label class="cursor-pointer">
+          <input type="radio" name="goal" value="{{ g.id }}" class="peer sr-only" x-model="goal"
+                 {% if g.id == "leads" %}checked{% endif %}>
+          <span class="inline-flex px-4 py-2 rounded-full text-sm font-medium border-2 border-gray-200 dark:border-gray-700
+                       peer-checked:border-growth-500 peer-checked:bg-growth-500 peer-checked:text-white
+                       text-gray-700 dark:text-gray-300 hover:border-growth-300 transition-all">
+            {{ g.label }}
+          </span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# Business name — only required field besides chips #}
+    <div>
+      <label for="company_name" class="label">What should we call your business?</label>
+      <input type="text" name="company_name" id="company_name" class="input w-full text-base"
+             placeholder="e.g. Glow Salon, Mama Njeri's Kitchen" required autofocus
+             maxlength="255">
+    </div>
+
+    {# Optional link — accelerates brand DNA, not required #}
+    <div>
+      <label for="onboarding-link" class="label">Website or Instagram <span class="text-gray-400 font-normal">(optional — helps us learn faster)</span></label>
       <input type="url" name="link" id="onboarding-link" class="input w-full"
              placeholder="https://yoursite.com or instagram.com/yourbrand">
-      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Websites work best for instant brand reading. For social-first brands, continue and connect the profile directly in the next step.</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">We'll read your brand voice automatically. Skip if you don't have one yet.</p>
     </div>
 
-    <button type="submit" class="btn-primary w-full py-3">
-      Continue
-      <svg class="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-      </svg>
-    </button>
+    <div class="flex flex-col sm:flex-row gap-3 pt-2">
+      <button type="submit" class="btn-primary w-full py-3.5 text-base shadow-growth">
+        Start my AI marketer
+        <svg class="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+      </button>
+      <a href="{% url 'accounts:onboarding_magic_connect' %}" class="btn-secondary w-full py-3 text-center text-sm">
+        Connect Instagram instead
+      </a>
+    </div>
   </form>
 
   <p class="text-center text-xs text-gray-500 dark:text-gray-400 mt-6">
-    You can edit everything later in Settings. Platform connect is optional until you're ready to publish.
+    No long forms. No brand worksheets. Platform connect is optional until you're ready to publish.
   </p>
-</div>
 </div>
 {% include "components/brand/_reveal_script.html" %}
 {% endblock %}

@@ -34,16 +34,16 @@
           </td>
           <td class="px-4 py-3 whitespace-nowrap">
             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
-              {% if profile.plan == 'agency' %}bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300
+              {% if profile.plan == 'agency' %}bg-kova-100 text-kova-800 dark:bg-kova-900/30 dark:text-kova-300
               {% elif profile.plan == 'pro' %}bg-kova-100 text-kova-800 dark:bg-kova-900/30 dark:text-kova-300
               {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
               {{ profile.plan|title }}
             </span>
           </td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-right text-purple-600 dark:text-purple-400">
+          <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-right text-kova-600 dark:text-kova-400">
             {{ profile.event_count|format_number }}
           </td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm text-right {% if profile.total_revenue %}text-emerald-600 dark:text-emerald-400 font-medium{% else %}text-gray-400{% endif %}">
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-right {% if profile.total_revenue %}text-growth-600 dark:text-growth-400 font-medium{% else %}text-gray-400{% endif %}">
             {% if profile.total_revenue %}${{ profile.total_revenue|floatformat:2 }}{% else %}$0{% endif %}
           </td>
           <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400 text-right">

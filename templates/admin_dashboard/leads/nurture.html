@@ -20,8 +20,8 @@
     <p class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ enrollment_totals.active }}</p>
     <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Enrollments</p>
   </div>
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-amber-200 dark:border-amber-900/50 p-4 text-center shadow-sm">
-    <p class="text-xl font-bold text-amber-600 dark:text-amber-400">{{ enrollment_totals.due }}</p>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gold-200 dark:border-gold-900/50 p-4 text-center shadow-sm">
+    <p class="text-xl font-bold text-gold-600 dark:text-gold-400">{{ enrollment_totals.due }}</p>
     <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Due now</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 text-center shadow-sm">
@@ -69,7 +69,7 @@
         <td class="px-4 py-2.5 text-xs text-gray-500">{{ seq.get_trigger_display }}</td>
         <td class="px-4 py-2.5 text-center text-xs">{{ seq.step_count }}</td>
         <td class="px-4 py-2.5 text-center font-semibold">{{ seq.active_enrollments }}</td>
-        <td class="px-4 py-2.5 text-center {% if seq.due_now %}text-amber-600 font-semibold{% else %}text-gray-400{% endif %}">{{ seq.due_now }}</td>
+        <td class="px-4 py-2.5 text-center {% if seq.due_now %}text-gold-600 font-semibold{% else %}text-gray-400{% endif %}">{{ seq.due_now }}</td>
         <td class="px-4 py-2.5 text-center">
           {% if seq.is_active %}
           <span class="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Active</span>

@@ -11,7 +11,7 @@
 {% if messages %}
 <div class="mb-4 space-y-2">
   {% for message in messages %}
-  <div class="px-4 py-3 rounded-lg text-sm {% if message.tags == 'success' %}bg-emerald-50 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800{% elif message.tags == 'error' %}bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800{% else %}bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800{% endif %}">
+  <div class="px-4 py-3 rounded-lg text-sm {% if message.tags == 'success' %}bg-growth-50 text-growth-800 dark:bg-growth-900/20 dark:text-growth-400 border border-growth-200 dark:border-growth-800{% elif message.tags == 'error' %}bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800{% else %}bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800{% endif %}">
     {{ message }}
   </div>
   {% endfor %}
@@ -41,7 +41,7 @@
       </div>
       <div>
         <span class="text-xs text-gray-500 dark:text-gray-400">Users Found</span>
-        <p class="font-semibold text-emerald-600 dark:text-emerald-400">{{ total_found }}</p>
+        <p class="font-semibold text-growth-600 dark:text-growth-400">{{ total_found }}</p>
       </div>
       <div>
         <span class="text-xs text-gray-500 dark:text-gray-400">Not Found</span>
@@ -78,7 +78,7 @@
             <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {{ u.profile.subscription_status|status_color }}">{{ u.profile.subscription_status }}</span>
           </td>
           <td class="px-4 py-3">
-            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">{{ plan_label }} · Active · {{ days }}d</span>
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-400">{{ plan_label }} · Active · {{ days }}d</span>
           </td>
         </tr>
         {% endfor %}
@@ -106,7 +106,7 @@
       <input type="hidden" name="days" value="{{ days }}">
       <input type="hidden" name="reason" value="{{ reason }}">
       <input type="hidden" name="emails" value="{{ emails_raw }}">
-      <button type="submit" class="px-5 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
+      <button type="submit" class="px-5 py-2 text-sm font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors"
               onclick="return confirm('Grant {{ plan_label }} access to {{ total_found }} user{{ total_found|pluralize }} for {{ days }} days?')">
         Confirm &amp; Apply to {{ total_found }} User{{ total_found|pluralize }}
       </button>

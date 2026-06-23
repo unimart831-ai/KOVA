@@ -27,7 +27,7 @@
     <p class="text-[10px] text-gray-500 uppercase">Total</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 text-center">
-    <p class="text-xl font-bold text-emerald-600">{{ active_marketplaces }}</p>
+    <p class="text-xl font-bold text-growth-600">{{ active_marketplaces }}</p>
     <p class="text-[10px] text-gray-500 uppercase">Active</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 text-center">
@@ -55,7 +55,7 @@
         {% if mp.logo_url %}
         <img src="{{ mp.logo_url }}" alt="{{ mp.name }}" class="w-8 h-8 rounded-lg object-cover">
         {% else %}
-        <div class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 text-xs font-bold">
+        <div class="w-8 h-8 rounded-lg bg-kova-100 dark:bg-kova-900/30 flex items-center justify-center text-kova-600 text-xs font-bold">
           {{ mp.name|first }}
         </div>
         {% endif %}
@@ -65,7 +65,7 @@
         </div>
       </div>
       <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
-        {% if mp.is_active %}bg-emerald-100 text-emerald-700{% else %}bg-red-100 text-red-700{% endif %}">
+        {% if mp.is_active %}bg-growth-100 text-growth-700{% else %}bg-red-100 text-red-700{% endif %}">
         {% if mp.is_active %}Active{% else %}Inactive{% endif %}
       </span>
     </div>
@@ -76,7 +76,7 @@
         <p class="text-[10px] text-gray-400">Sellers</p>
       </div>
       <div>
-        <p class="text-lg font-bold text-purple-600">{{ mp.products_count }}</p>
+        <p class="text-lg font-bold text-kova-600">{{ mp.products_count }}</p>
         <p class="text-[10px] text-gray-400">Products</p>
       </div>
       <div>
@@ -84,7 +84,7 @@
         <p class="text-[10px] text-gray-400">Content</p>
       </div>
       <div>
-        <p class="text-lg font-bold {% if mp.webhook_url %}text-emerald-600{% else %}text-gray-300{% endif %}">{% if mp.webhook_url %}✓{% else %}—{% endif %}</p>
+        <p class="text-lg font-bold {% if mp.webhook_url %}text-growth-600{% else %}text-gray-300{% endif %}">{% if mp.webhook_url %}✓{% else %}—{% endif %}</p>
         <p class="text-[10px] text-gray-400">Webhook</p>
       </div>
       <div>
@@ -96,20 +96,20 @@
       {% if mp.enforce_marketplace_cta %}
       <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600">Marketplace CTA</span>
       {% else %}
-      <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">Kova shop CTA</span>
+      <span class="text-[10px] px-1.5 py-0.5 rounded bg-growth-100 dark:bg-growth-900/30 text-growth-600">Kova shop CTA</span>
       {% endif %}
       {% if mp.auto_snap_on_sync %}
-      <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-600">Auto Autopilot</span>
+      <span class="text-[10px] px-1.5 py-0.5 rounded bg-kova-100 dark:bg-kova-900/30 text-kova-600">Auto Autopilot</span>
       {% endif %}
       {% if mp.enrich_descriptions %}
-      <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-600">Enrich copy</span>
+      <span class="text-[10px] px-1.5 py-0.5 rounded bg-gold-100 dark:bg-gold-900/30 text-gold-600">Enrich copy</span>
       {% endif %}
       <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500">{{ mp.get_seller_identity_field_display }}</span>
     </div>
     </a>
     <div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
       <a href="{% url 'admin_dashboard:marketplace_import' mp.pk %}"
-         class="text-[10px] font-medium text-emerald-700 dark:text-emerald-400 hover:underline">Import vendors (CSV)</a>
+         class="text-[10px] font-medium text-growth-700 dark:text-growth-400 hover:underline">Import vendors (CSV)</a>
       <span class="text-gray-300">·</span>
       <a href="{% url 'admin_dashboard:marketplace_detail' mp.pk %}"
          class="text-[10px] text-gray-500 hover:text-kova-600">Settings &amp; sellers</a>

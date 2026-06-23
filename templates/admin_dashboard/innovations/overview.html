@@ -32,7 +32,7 @@
         <p class="text-[10px] text-gray-400">Total</p>
       </div>
       <div>
-        <p class="text-lg font-bold text-emerald-600">{{ voice_completed }}</p>
+        <p class="text-lg font-bold text-growth-600">{{ voice_completed }}</p>
         <p class="text-[10px] text-gray-400">Completed</p>
       </div>
       <div>
@@ -69,7 +69,7 @@
         <p class="text-[10px] text-gray-400">Total</p>
       </div>
       <div>
-        <p class="text-lg font-bold text-emerald-600">{{ screenshot_completed }}</p>
+        <p class="text-lg font-bold text-growth-600">{{ screenshot_completed }}</p>
         <p class="text-[10px] text-gray-400">Analyzed</p>
       </div>
       <div>
@@ -83,8 +83,8 @@
   <a href="{% url 'admin_dashboard:restock_scan_list' %}"
      class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5 hover:border-kova-300 dark:hover:border-kova-700 transition-colors block">
     <div class="flex items-center gap-3 mb-4">
-      <div class="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-        <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="w-10 h-10 rounded-lg bg-growth-100 dark:bg-growth-900/30 flex items-center justify-center">
+        <svg class="w-5 h-5 text-growth-600 dark:text-growth-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
         </svg>
       </div>
@@ -99,11 +99,11 @@
         <p class="text-[10px] text-gray-400">Total Scans</p>
       </div>
       <div>
-        <p class="text-lg font-bold text-emerald-600">{{ restock_completed }}</p>
+        <p class="text-lg font-bold text-growth-600">{{ restock_completed }}</p>
         <p class="text-[10px] text-gray-400">Completed</p>
       </div>
       <div>
-        <p class="text-lg font-bold text-amber-600">{{ restock_products_updated }}</p>
+        <p class="text-lg font-bold text-gold-600">{{ restock_products_updated }}</p>
         <p class="text-[10px] text-gray-400">Products Updated</p>
       </div>
     </div>
@@ -129,11 +129,11 @@
         <p class="text-[10px] text-gray-400">Detected</p>
       </div>
       <div>
-        <p class="text-lg font-bold text-amber-600">{{ trend_ready }}</p>
+        <p class="text-lg font-bold text-gold-600">{{ trend_ready }}</p>
         <p class="text-[10px] text-gray-400">Ready</p>
       </div>
       <div>
-        <p class="text-lg font-bold text-emerald-600">{{ trend_approved }}</p>
+        <p class="text-lg font-bold text-growth-600">{{ trend_approved }}</p>
         <p class="text-[10px] text-gray-400">Approved</p>
       </div>
       <div>
@@ -163,11 +163,11 @@
         <p class="text-[10px] text-gray-400">Detected</p>
       </div>
       <div>
-        <p class="text-lg font-bold text-amber-600">{{ recycle_ready }}</p>
+        <p class="text-lg font-bold text-gold-600">{{ recycle_ready }}</p>
         <p class="text-[10px] text-gray-400">Ready</p>
       </div>
       <div>
-        <p class="text-lg font-bold text-emerald-600">{{ recycle_sent }}</p>
+        <p class="text-lg font-bold text-growth-600">{{ recycle_sent }}</p>
         <p class="text-[10px] text-gray-400">Sent</p>
       </div>
       <div>
@@ -192,9 +192,9 @@
         <p class="text-[10px] text-gray-400">{{ vb.created_at|timesince }} ago</p>
       </div>
       <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
-        {% if vb.status == 'completed' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+        {% if vb.status == 'completed' %}bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-300
         {% elif vb.status == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
-        {% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300{% endif %}">
+        {% else %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300{% endif %}">
         {{ vb.get_status_display }}
       </span>
     </div>
@@ -213,8 +213,8 @@
         <p class="text-[10px] text-gray-400">{{ alert.user.email|truncatechars:20 }} · {{ alert.detected_at|timesince }} ago</p>
       </div>
       <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
-        {% if alert.status == 'ready' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300
-        {% elif alert.status == 'approved' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+        {% if alert.status == 'ready' %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300
+        {% elif alert.status == 'approved' %}bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-300
         {% elif alert.status == 'expired' %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400
         {% else %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300{% endif %}">
         {{ alert.get_status_display }}
@@ -235,9 +235,9 @@
         <p class="text-[10px] text-gray-400">{{ scan.products_updated }} updated · {{ scan.created_at|timesince }} ago</p>
       </div>
       <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
-        {% if scan.status == 'completed' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+        {% if scan.status == 'completed' %}bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-300
         {% elif scan.status == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
-        {% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300{% endif %}">
+        {% else %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300{% endif %}">
         {{ scan.get_status_display }}
       </span>
     </div>

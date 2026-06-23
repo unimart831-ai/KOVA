@@ -11,9 +11,9 @@
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <div class="flex items-center justify-between">
       <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Web Server</p>
-      <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+      <span class="w-2.5 h-2.5 rounded-full bg-growth-500"></span>
     </div>
-    <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-1">Online</p>
+    <p class="text-lg font-bold text-growth-600 dark:text-growth-400 mt-1">Online</p>
     <p class="text-[10px] text-gray-400 mt-0.5">Django {{ django_version|default:"5.x" }}</p>
   </div>
 
@@ -21,9 +21,9 @@
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <div class="flex items-center justify-between">
       <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Database</p>
-      <span class="w-2.5 h-2.5 rounded-full {% if db_status.status == 'online' %}bg-emerald-500{% else %}bg-red-500 animate-pulse{% endif %}"></span>
+      <span class="w-2.5 h-2.5 rounded-full {% if db_status.status == 'online' %}bg-growth-500{% else %}bg-red-500 animate-pulse{% endif %}"></span>
     </div>
-    <p class="text-lg font-bold {% if db_status.status == 'online' %}text-emerald-600 dark:text-emerald-400{% else %}text-red-600 dark:text-red-400{% endif %} mt-1">{{ db_status.status|title }}</p>
+    <p class="text-lg font-bold {% if db_status.status == 'online' %}text-growth-600 dark:text-growth-400{% else %}text-red-600 dark:text-red-400{% endif %} mt-1">{{ db_status.status|title }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">{{ db_status.engine|default:"—" }}</p>
   </div>
 
@@ -31,9 +31,9 @@
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <div class="flex items-center justify-between">
       <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Redis / Cache</p>
-      <span class="w-2.5 h-2.5 rounded-full {% if redis_status.status == 'online' %}bg-emerald-500{% elif redis_status.status == 'degraded' %}bg-amber-500{% else %}bg-red-500 animate-pulse{% endif %}"></span>
+      <span class="w-2.5 h-2.5 rounded-full {% if redis_status.status == 'online' %}bg-growth-500{% elif redis_status.status == 'degraded' %}bg-gold-500{% else %}bg-red-500 animate-pulse{% endif %}"></span>
     </div>
-    <p class="text-lg font-bold {% if redis_status.status == 'online' %}text-emerald-600 dark:text-emerald-400{% elif redis_status.status == 'degraded' %}text-amber-600 dark:text-amber-400{% else %}text-red-600 dark:text-red-400{% endif %} mt-1">{{ redis_status.status|title }}</p>
+    <p class="text-lg font-bold {% if redis_status.status == 'online' %}text-growth-600 dark:text-growth-400{% elif redis_status.status == 'degraded' %}text-gold-600 dark:text-gold-400{% else %}text-red-600 dark:text-red-400{% endif %} mt-1">{{ redis_status.status|title }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">{% if redis_status.error %}{{ redis_status.error|truncatechars:40 }}{% else %}Cache operational{% endif %}</p>
   </div>
 
@@ -41,9 +41,9 @@
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <div class="flex items-center justify-between">
       <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Celery Worker</p>
-      <span class="w-2.5 h-2.5 rounded-full {% if celery_status.status == 'online' %}bg-emerald-500{% else %}bg-red-500 animate-pulse{% endif %}"></span>
+      <span class="w-2.5 h-2.5 rounded-full {% if celery_status.status == 'online' %}bg-growth-500{% else %}bg-red-500 animate-pulse{% endif %}"></span>
     </div>
-    <p class="text-lg font-bold {% if celery_status.status == 'online' %}text-emerald-600 dark:text-emerald-400{% else %}text-red-600 dark:text-red-400{% endif %} mt-1">{{ celery_status.status|title }}</p>
+    <p class="text-lg font-bold {% if celery_status.status == 'online' %}text-growth-600 dark:text-growth-400{% else %}text-red-600 dark:text-red-400{% endif %} mt-1">{{ celery_status.status|title }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">{{ celery_status.workers }} worker{{ celery_status.workers|pluralize }}, {{ celery_status.active_tasks|default:0 }} active</p>
   </div>
 
@@ -51,9 +51,9 @@
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <div class="flex items-center justify-between">
       <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Celery Beat</p>
-      <span class="w-2.5 h-2.5 rounded-full {% if beat_status.status == 'online' %}bg-emerald-500{% elif beat_status.status == 'stale' %}bg-amber-500{% else %}bg-gray-400{% endif %}"></span>
+      <span class="w-2.5 h-2.5 rounded-full {% if beat_status.status == 'online' %}bg-growth-500{% elif beat_status.status == 'stale' %}bg-gold-500{% else %}bg-gray-400{% endif %}"></span>
     </div>
-    <p class="text-lg font-bold {% if beat_status.status == 'online' %}text-emerald-600 dark:text-emerald-400{% elif beat_status.status == 'stale' %}text-amber-600 dark:text-amber-400{% else %}text-gray-500{% endif %} mt-1">{{ beat_status.status|title }}</p>
+    <p class="text-lg font-bold {% if beat_status.status == 'online' %}text-growth-600 dark:text-growth-400{% elif beat_status.status == 'stale' %}text-gold-600 dark:text-gold-400{% else %}text-gray-500{% endif %} mt-1">{{ beat_status.status|title }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">{{ beat_status.enabled_tasks }} scheduled task{{ beat_status.enabled_tasks|pluralize }}</p>
   </div>
 
@@ -61,7 +61,7 @@
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <div class="flex items-center justify-between">
       <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Public API</p>
-      <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+      <span class="w-2.5 h-2.5 rounded-full bg-growth-500"></span>
     </div>
     <p class="text-lg font-bold text-orange-600 dark:text-orange-400 mt-1">{{ total_api_tokens }} token{{ total_api_tokens|pluralize }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">REST API v1</p>
@@ -80,7 +80,7 @@
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Platform Errors</p>
-    <p class="text-2xl font-bold {% if platform_errors %}text-amber-600 dark:text-amber-400{% else %}text-gray-900 dark:text-white{% endif %} mt-1">{{ platform_errors }}</p>
+    <p class="text-2xl font-bold {% if platform_errors %}text-gold-600 dark:text-gold-400{% else %}text-gray-900 dark:text-white{% endif %} mt-1">{{ platform_errors }}</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Expiring Tokens (&lt;24h)</p>
@@ -136,7 +136,7 @@
         <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Error Trend (48h)</h2>
         <p class="text-xs text-gray-400 mt-0.5">Agent failures per hour</p>
       </div>
-      <span class="text-xs font-medium {% if total_errors_24h %}text-red-500{% else %}text-emerald-500{% endif %}">
+      <span class="text-xs font-medium {% if total_errors_24h %}text-red-500{% else %}text-growth-500{% endif %}">
         {{ total_errors_24h }} errors (24h)
       </span>
     </div>
@@ -170,12 +170,12 @@
           </td>
           <td class="px-4 py-3">
             {% if p.status == 'online' %}
-            <span class="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online
+            <span class="inline-flex items-center gap-1 text-xs font-medium text-growth-600 dark:text-growth-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-growth-500"></span> Online
             </span>
             {% elif p.status == 'degraded' %}
-            <span class="inline-flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400">
-              <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Degraded
+            <span class="inline-flex items-center gap-1 text-xs font-medium text-gold-600 dark:text-gold-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-gold-500"></span> Degraded
             </span>
             {% else %}
             <span class="inline-flex items-center gap-1 text-xs font-medium text-gray-400">
@@ -185,7 +185,7 @@
           </td>
           <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">{{ p.total_24h }}</td>
           <td class="px-4 py-3 text-right text-sm {% if p.failed_24h %}text-red-500{% else %}text-gray-600 dark:text-gray-400{% endif %}">{{ p.failed_24h }}</td>
-          <td class="px-4 py-3 text-right text-sm {% if p.success_rate >= 95 %}text-emerald-600{% elif p.success_rate >= 80 %}text-amber-600{% else %}text-red-500{% endif %}">
+          <td class="px-4 py-3 text-right text-sm {% if p.success_rate >= 95 %}text-growth-600{% elif p.success_rate >= 80 %}text-gold-600{% else %}text-red-500{% endif %}">
             {% if p.total_24h %}{{ p.success_rate }}%{% else %}—{% endif %}
           </td>
           <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">

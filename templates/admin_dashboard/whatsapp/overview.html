@@ -23,12 +23,12 @@
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">AI Auto-Replies (7d)</p>
-    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">{{ ai_replies_7d|format_number }}</p>
+    <p class="text-2xl font-bold text-kova-600 dark:text-kova-400 mt-1">{{ ai_replies_7d|format_number }}</p>
     <p class="text-[10px] text-gray-400 mt-1">{% if avg_confidence %}{{ avg_confidence|floatformat:0 }}% avg confidence{% else %}No data yet{% endif %}</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Escalated</p>
-    <p class="text-2xl font-bold {% if escalated %}text-amber-600 dark:text-amber-400{% else %}text-gray-400{% endif %} mt-1">{{ escalated }}</p>
+    <p class="text-2xl font-bold {% if escalated %}text-gold-600 dark:text-gold-400{% else %}text-gray-400{% endif %} mt-1">{{ escalated }}</p>
     <p class="text-[10px] text-gray-400 mt-1">Routed to human agents</p>
   </div>
 </div>
@@ -37,7 +37,7 @@
 <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Delivery Rate</p>
-    <p class="text-xl font-bold {% if delivery_rate >= 95 %}text-emerald-600{% elif delivery_rate >= 80 %}text-amber-500{% else %}text-red-500{% endif %} mt-1">{{ delivery_rate }}%</p>
+    <p class="text-xl font-bold {% if delivery_rate >= 95 %}text-growth-600{% elif delivery_rate >= 80 %}text-gold-500{% else %}text-red-500{% endif %} mt-1">{{ delivery_rate }}%</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Read Rate</p>
@@ -59,8 +59,8 @@
 
 <!-- ── Sequences & Commerce ──────────────────────────────────────────── -->
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 p-4 shadow-sm text-center">
-    <p class="text-xl font-bold text-purple-600 dark:text-purple-400">{{ active_sequences }}</p>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-kova-200 dark:border-kova-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-kova-600 dark:text-kova-400">{{ active_sequences }}</p>
     <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Active sequences</p>
     <a href="{% url 'admin_dashboard:whatsapp_sequences' %}" class="text-[10px] text-kova-600 hover:underline">View →</a>
   </div>
@@ -68,12 +68,12 @@
     <p class="text-xl font-bold text-gray-900 dark:text-white">{{ sequence_enrollments_active }}</p>
     <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Sequence enrollments</p>
   </div>
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-amber-200 dark:border-amber-900/50 p-4 shadow-sm text-center">
-    <p class="text-xl font-bold text-amber-600 dark:text-amber-400">{{ sequence_due }}</p>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gold-200 dark:border-gold-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-gold-600 dark:text-gold-400">{{ sequence_due }}</p>
     <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Due to send</p>
   </div>
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-emerald-200 dark:border-emerald-900/50 p-4 shadow-sm text-center">
-    <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400">{{ commerce_receipts_7d }}</p>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-growth-200 dark:border-growth-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-growth-600 dark:text-growth-400">{{ commerce_receipts_7d }}</p>
     <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Commerce receipts (7d)</p>
     <a href="{% url 'admin_dashboard:whatsapp_commerce_receipts' %}" class="text-[10px] text-kova-600 hover:underline">Log →</a>
   </div>
@@ -102,7 +102,7 @@
         <tr>
           <td class="px-3 py-2 font-medium text-gray-900 dark:text-white">{{ row.label }}</td>
           <td class="px-3 py-2 text-right text-gray-700 dark:text-gray-300">{% if row.cap %}{{ row.cap }}{% else %}—{% endif %}</td>
-          <td class="px-3 py-2 text-center">{% if row.whatsapp_business %}<span class="text-emerald-600">Yes</span>{% else %}<span class="text-gray-400">No</span>{% endif %}</td>
+          <td class="px-3 py-2 text-center">{% if row.whatsapp_business %}<span class="text-growth-600">Yes</span>{% else %}<span class="text-gray-400">No</span>{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -111,10 +111,10 @@
 </div>
 
 {% if escalated %}
-<div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-xl p-5 mb-6">
+<div class="bg-gold-50 dark:bg-gold-950/30 border border-gold-200 dark:border-gold-900/50 rounded-xl p-5 mb-6">
   <div class="flex items-center justify-between mb-3">
-    <h2 class="text-sm font-semibold text-amber-800 dark:text-amber-300">Escalated conversations ({{ escalated }})</h2>
-    <a href="{% url 'admin_dashboard:whatsapp_conversations' %}?status=escalated" class="text-xs text-amber-700 dark:text-amber-400 hover:underline">View all →</a>
+    <h2 class="text-sm font-semibold text-gold-800 dark:text-gold-300">Escalated conversations ({{ escalated }})</h2>
+    <a href="{% url 'admin_dashboard:whatsapp_conversations' %}?status=escalated" class="text-xs text-gold-700 dark:text-gold-400 hover:underline">View all →</a>
   </div>
   <div class="space-y-2">
     {% for conv in escalated_conversations %}
@@ -147,11 +147,11 @@
       </div>
       <div>
         <p class="text-gray-400 text-xs">Submitted</p>
-        <p class="font-bold {% if pending_templates %}text-amber-500{% else %}text-gray-500{% endif %}">{{ pending_templates }}</p>
+        <p class="font-bold {% if pending_templates %}text-gold-500{% else %}text-gray-500{% endif %}">{{ pending_templates }}</p>
       </div>
       <div>
         <p class="text-gray-400 text-xs">Approved</p>
-        <p class="font-bold text-emerald-600 dark:text-emerald-400">{{ approved_templates }}</p>
+        <p class="font-bold text-growth-600 dark:text-growth-400">{{ approved_templates }}</p>
       </div>
       <div>
         <p class="text-gray-400 text-xs">Rejected</p>
@@ -177,7 +177,7 @@
       </div>
       <div>
         <p class="text-gray-400 text-xs">Delivered</p>
-        <p class="font-bold text-emerald-600 dark:text-emerald-400">{{ broadcast_stats.total_delivered|default:0|format_number }}</p>
+        <p class="font-bold text-growth-600 dark:text-growth-400">{{ broadcast_stats.total_delivered|default:0|format_number }}</p>
       </div>
       <div>
         <p class="text-gray-400 text-xs">Replies</p>
@@ -212,12 +212,12 @@
           <div class="flex items-center gap-2">
             <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ conv.contact_name|default:conv.contact_wa_id }}</p>
             {% if conv.status == 'escalated' %}
-            <span class="inline-flex px-1.5 py-0.5 text-[9px] font-medium rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">Escalated</span>
+            <span class="inline-flex px-1.5 py-0.5 text-[9px] font-medium rounded-full bg-gold-100 dark:bg-gold-900/30 text-gold-700 dark:text-gold-400">Escalated</span>
             {% elif conv.status == 'active' %}
             <span class="inline-flex px-1.5 py-0.5 text-[9px] font-medium rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">Active</span>
             {% endif %}
             {% if conv.ai_handling %}
-            <span class="inline-flex px-1.5 py-0.5 text-[9px] font-medium rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">AI</span>
+            <span class="inline-flex px-1.5 py-0.5 text-[9px] font-medium rounded-full bg-kova-100 dark:bg-kova-900/30 text-kova-700 dark:text-kova-400">AI</span>
             {% endif %}
           </div>
           <div class="flex items-center gap-2 mt-0.5">
@@ -271,27 +271,27 @@
         <p class="text-xs text-gray-400">{{ approved_templates }} approved templates</p>
       </div>
     </a>
-    <a href="{% url 'admin_dashboard:whatsapp_conversations' %}?status=escalated" class="flex items-center gap-3 p-3 rounded-lg border border-amber-200 dark:border-amber-800 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all">
-      <div class="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
-        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+    <a href="{% url 'admin_dashboard:whatsapp_conversations' %}?status=escalated" class="flex items-center gap-3 p-3 rounded-lg border border-gold-200 dark:border-gold-800 hover:border-gold-400 hover:bg-gold-50 dark:hover:bg-gold-900/20 transition-all">
+      <div class="w-8 h-8 bg-gold-100 dark:bg-gold-900/30 rounded-lg flex items-center justify-center">
+        <svg class="w-4 h-4 text-gold-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
       </div>
       <div>
         <p class="text-sm font-medium text-gray-900 dark:text-white">Escalated</p>
         <p class="text-xs text-gray-400">{{ escalated }} need human handoff</p>
       </div>
     </a>
-    <a href="{% url 'admin_dashboard:whatsapp_sequences' %}" class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all">
-      <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+    <a href="{% url 'admin_dashboard:whatsapp_sequences' %}" class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-kova-400 dark:hover:border-kova-500 hover:bg-kova-50 dark:hover:bg-kova-900/20 transition-all">
+      <div class="w-8 h-8 bg-kova-100 dark:bg-kova-900/30 rounded-lg flex items-center justify-center">
+        <svg class="w-4 h-4 text-kova-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
       </div>
       <div>
         <p class="text-sm font-medium text-gray-900 dark:text-white">Drip sequences</p>
         <p class="text-xs text-gray-400">{{ active_sequences }} active · {{ sequence_due }} due</p>
       </div>
     </a>
-    <a href="{% url 'admin_dashboard:whatsapp_broadcasts' %}" class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all">
-      <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
+    <a href="{% url 'admin_dashboard:whatsapp_broadcasts' %}" class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-kova-400 dark:hover:border-kova-500 hover:bg-kova-50 dark:hover:bg-kova-900/20 transition-all">
+      <div class="w-8 h-8 bg-kova-100 dark:bg-kova-900/30 rounded-lg flex items-center justify-center">
+        <svg class="w-4 h-4 text-kova-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
       </div>
       <div>
         <p class="text-sm font-medium text-gray-900 dark:text-white">Broadcasts</p>

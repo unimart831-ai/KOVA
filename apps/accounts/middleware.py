@@ -75,7 +75,7 @@ class OnboardingMiddleware:
             and not request.user.is_staff
             and not any(request.path.startswith(p) for p in self.ALLOWED_PREFIXES)
         ):
-            return redirect("accounts:onboarding")
+            return redirect("accounts:onboarding_choose_path")
         return self.get_response(request)
 
 

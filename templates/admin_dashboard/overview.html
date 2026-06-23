@@ -71,8 +71,8 @@
   <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">AI Automation Intelligence (7d)</h3>
   <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
 
-    <div class="bg-white dark:bg-gray-900 rounded-xl border border-indigo-200 dark:border-indigo-900/50 p-4 shadow-sm text-center">
-      <p class="text-xl font-bold text-indigo-600 dark:text-indigo-400">{{ auto_seeds_7d }}</p>
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-kova-200 dark:border-kova-900/50 p-4 shadow-sm text-center">
+      <p class="text-xl font-bold text-kova-600 dark:text-kova-400">{{ auto_seeds_7d }}</p>
       <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Auto-Seeds</p>
       <p class="text-[10px] text-gray-400 mt-0.5">of {{ total_seeds_7d }} total</p>
     </div>
@@ -83,8 +83,8 @@
       <p class="text-[10px] text-gray-400 mt-0.5">smart approval</p>
     </div>
 
-    <div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 p-4 shadow-sm text-center">
-      <p class="text-xl font-bold text-purple-600 dark:text-purple-400">{{ recycled_seeds }}</p>
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-kova-200 dark:border-kova-900/50 p-4 shadow-sm text-center">
+      <p class="text-xl font-bold text-kova-600 dark:text-kova-400">{{ recycled_seeds }}</p>
       <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Recycled</p>
       <p class="text-[10px] text-gray-400 mt-0.5">top content</p>
     </div>
@@ -107,10 +107,10 @@
       <p class="text-[10px] text-gray-400 mt-0.5">{% if wa_escalated %}{{ wa_escalated }} escalated{% else %}<a href="{% url 'admin_dashboard:whatsapp_overview' %}" class="text-kova-600 hover:underline">WhatsApp →</a>{% endif %}</p>
     </div>
 
-    <div class="bg-white dark:bg-gray-900 rounded-xl border border-amber-200 dark:border-amber-900/50 p-4 shadow-sm text-center">
-      <p class="text-xl font-bold text-amber-600 dark:text-amber-400">{{ scored_leads }}</p>
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gold-200 dark:border-gold-900/50 p-4 shadow-sm text-center">
+      <p class="text-xl font-bold text-gold-600 dark:text-gold-400">{{ scored_leads }}</p>
       <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Scored Leads</p>
-      <p class="text-[10px] text-gray-400 mt-0.5">{{ high_priority_leads }} high · <a href="{% url 'admin_dashboard:lead_list' %}?stale=1" class="text-amber-600 hover:underline">{{ stale_leads_count }} stale</a></p>
+      <p class="text-[10px] text-gray-400 mt-0.5">{{ high_priority_leads }} high · <a href="{% url 'admin_dashboard:lead_list' %}?stale=1" class="text-gold-600 hover:underline">{{ stale_leads_count }} stale</a></p>
     </div>
 
     <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center col-span-2">
@@ -134,16 +134,16 @@
       <p class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ today_briefs_7d }}</p>
       <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Today Briefs (7d)</p>
     </div>
-    <div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 p-4 shadow-sm text-center">
-      <p class="text-xl font-bold text-purple-600 dark:text-purple-400">{{ workspace_views_7d }}</p>
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-kova-200 dark:border-kova-900/50 p-4 shadow-sm text-center">
+      <p class="text-xl font-bold text-kova-600 dark:text-kova-400">{{ workspace_views_7d }}</p>
       <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Workspace Views (7d)</p>
     </div>
-    <div class="bg-white dark:bg-gray-900 rounded-xl border border-amber-200 dark:border-amber-900/50 p-4 shadow-sm text-center">
-      <p class="text-xl font-bold text-amber-600 dark:text-amber-400">{{ moment_packs_ready }}</p>
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gold-200 dark:border-gold-900/50 p-4 shadow-sm text-center">
+      <p class="text-xl font-bold text-gold-600 dark:text-gold-400">{{ moment_packs_ready }}</p>
       <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Moment Packs Ready</p>
     </div>
-    <div class="bg-white dark:bg-gray-900 rounded-xl border border-emerald-200 dark:border-emerald-900/50 p-4 shadow-sm text-center">
-      <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400">{{ voice_launches_7d }}</p>
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-growth-200 dark:border-growth-900/50 p-4 shadow-sm text-center">
+      <p class="text-xl font-bold text-growth-600 dark:text-growth-400">{{ voice_launches_7d }}</p>
       <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Voice Launches (7d)</p>
     </div>
   </div>
@@ -182,9 +182,9 @@
         </div>
 
         {% if expiring_tokens > 0 %}
-        <div class="flex items-center gap-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-          <div class="w-2 h-2 bg-yellow-500 rounded-full animate-pulse-dot"></div>
-          <span class="text-xs text-yellow-700 dark:text-yellow-400">{{ expiring_tokens }} token{{ expiring_tokens|pluralize }} expiring in 24h</span>
+        <div class="flex items-center gap-2 px-3 py-2 bg-gold-50 dark:bg-gold-900/20 rounded-lg">
+          <div class="w-2 h-2 bg-gold-500 rounded-full animate-pulse-dot"></div>
+          <span class="text-xs text-gold-700 dark:text-gold-400">{{ expiring_tokens }} token{{ expiring_tokens|pluralize }} expiring in 24h</span>
         </div>
         {% endif %}
 
@@ -226,7 +226,7 @@
         </div>
         <div class="flex items-center justify-between">
           <dt class="text-xs text-gray-500 dark:text-gray-400">Superfans</dt>
-          <dd class="text-sm font-semibold text-purple-600 dark:text-purple-400">{{ total_superfans }}</dd>
+          <dd class="text-sm font-semibold text-kova-600 dark:text-kova-400">{{ total_superfans }}</dd>
         </div>
         <div class="flex items-center justify-between">
           <dt class="text-xs text-gray-500 dark:text-gray-400">Teams</dt>
@@ -245,19 +245,19 @@
 
         <div class="flex items-center justify-between">
           <dt class="text-xs text-gray-500 dark:text-gray-400">Brands</dt>
-          <dd class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">{{ total_brands }} <span class="text-xs text-gray-400 font-normal">{{ active_brands }} active</span></dd>
+          <dd class="text-sm font-semibold text-kova-600 dark:text-kova-400">{{ total_brands }} <span class="text-xs text-gray-400 font-normal">{{ active_brands }} active</span></dd>
         </div>
         <div class="flex items-center justify-between">
           <dt class="text-xs text-gray-500 dark:text-gray-400">Conversions (30d)</dt>
-          <dd class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{{ conversions_30d }}</dd>
+          <dd class="text-sm font-semibold text-growth-600 dark:text-growth-400">{{ conversions_30d }}</dd>
         </div>
         <div class="flex items-center justify-between">
           <dt class="text-xs text-gray-500 dark:text-gray-400">Conv. Revenue (30d)</dt>
-          <dd class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">KES {{ conversion_revenue|format_number }}</dd>
+          <dd class="text-sm font-semibold text-growth-600 dark:text-growth-400">KES {{ conversion_revenue|format_number }}</dd>
         </div>
         <div class="flex items-center justify-between">
           <dt class="text-xs text-gray-500 dark:text-gray-400">Pixel Events (30d)</dt>
-          <dd class="text-sm font-semibold text-purple-600 dark:text-purple-400">{{ pixel_events_30d|format_number }} <span class="text-xs text-gray-400 font-normal">{{ active_pixels }} pixels</span></dd>
+          <dd class="text-sm font-semibold text-kova-600 dark:text-kova-400">{{ pixel_events_30d|format_number }} <span class="text-xs text-gray-400 font-normal">{{ active_pixels }} pixels</span></dd>
         </div>
         <div class="flex items-center justify-between">
           <dt class="text-xs text-gray-500 dark:text-gray-400">API Tokens</dt>
@@ -268,29 +268,29 @@
 
         <div class="flex items-center justify-between">
           <dt class="text-xs text-gray-500 dark:text-gray-400">Partners</dt>
-          <dd class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{{ total_partners }}</dd>
+          <dd class="text-sm font-semibold text-growth-600 dark:text-growth-400">{{ total_partners }}</dd>
         </div>
         {% if pending_partner_apps %}
         <div class="flex items-center justify-between">
           <dt class="text-xs text-gray-500 dark:text-gray-400">Pending Apps</dt>
-          <dd class="text-sm font-semibold text-amber-600 dark:text-amber-400">{{ pending_partner_apps }}</dd>
+          <dd class="text-sm font-semibold text-gold-600 dark:text-gold-400">{{ pending_partner_apps }}</dd>
         </div>
         {% endif %}
         <div class="flex items-center justify-between">
           <dt class="text-xs text-gray-500 dark:text-gray-400">Referrals</dt>
-          <dd class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{{ total_referrals }} <span class="text-xs text-gray-400 font-normal">{{ active_referrals }} active</span></dd>
+          <dd class="text-sm font-semibold text-growth-600 dark:text-growth-400">{{ total_referrals }} <span class="text-xs text-gray-400 font-normal">{{ active_referrals }} active</span></dd>
         </div>
 
         <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
 
         <div class="flex items-center justify-between">
           <dt class="text-xs text-gray-500 dark:text-gray-400">Nurture due</dt>
-          <dd class="text-sm font-semibold text-amber-600 dark:text-amber-400"><a href="{% url 'admin_dashboard:leads_nurture' %}" class="hover:underline">{{ nurture_due_now }}</a></dd>
+          <dd class="text-sm font-semibold text-gold-600 dark:text-gold-400"><a href="{% url 'admin_dashboard:leads_nurture' %}" class="hover:underline">{{ nurture_due_now }}</a></dd>
         </div>
         {% if wa_templates_pending %}
         <div class="flex items-center justify-between">
           <dt class="text-xs text-gray-500 dark:text-gray-400">WA templates pending</dt>
-          <dd class="text-sm font-semibold text-amber-600 dark:text-amber-400"><a href="{% url 'admin_dashboard:whatsapp_templates' %}?status=submitted" class="hover:underline">{{ wa_templates_pending }}</a></dd>
+          <dd class="text-sm font-semibold text-gold-600 dark:text-gold-400"><a href="{% url 'admin_dashboard:whatsapp_templates' %}?status=submitted" class="hover:underline">{{ wa_templates_pending }}</a></dd>
         </div>
         {% endif %}
         {% if wa_escalated %}
@@ -330,7 +330,7 @@
           <div class="flex items-center gap-1.5">
             <span class="font-medium text-gray-900 dark:text-white">{{ activity.actor.email|default:"System"|truncatechars:20 }}</span>
             <span class="text-gray-400">·</span>
-            <span class="text-indigo-600 dark:text-indigo-400">{{ activity.team.name|truncatechars:15 }}</span>
+            <span class="text-kova-600 dark:text-kova-400">{{ activity.team.name|truncatechars:15 }}</span>
           </div>
           <p class="text-gray-500 dark:text-gray-400 mt-0.5 truncate">{{ activity.description }}</p>
           <p class="text-gray-300 dark:text-gray-600 mt-0.5">{{ activity.created_at|timesince }} ago</p>
@@ -416,7 +416,7 @@
         {
           label: 'Published',
           data: pipelineData.map(d => d.published),
-          backgroundColor: '#22c55e',
+          backgroundColor: '#10B981',
           borderRadius: 3,
         },
         {
@@ -453,7 +453,7 @@
       datasets: [{
         label: 'Revenue (KES)',
         data: revenueData.map(d => d.mpesa),
-        borderColor: '#22c55e',
+        borderColor: '#10B981',
         backgroundColor: 'rgba(34, 197, 94, 0.1)',
         fill: true,
         borderWidth: 2,

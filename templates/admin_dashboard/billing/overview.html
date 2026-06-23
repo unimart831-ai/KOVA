@@ -28,12 +28,12 @@
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">M-Pesa Collected (30d)</p>
-    <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">KES {{ revenue_30d|format_number }}</p>
+    <p class="text-2xl font-bold text-growth-600 dark:text-growth-400 mt-1">KES {{ revenue_30d|format_number }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">Actual cash · delta vs MRR KES {{ mrr_vs_cash_delta|floatformat:0 }}</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Trial pipeline (MRR if convert)</p>
-    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">KES {{ est_mrr_if_trials_convert_kes|format_number }}</p>
+    <p class="text-2xl font-bold text-gold-600 dark:text-gold-400 mt-1">KES {{ est_mrr_if_trials_convert_kes|format_number }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">{{ trialing }} user{{ trialing|pluralize }} trialing</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
@@ -43,7 +43,7 @@
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Total Revenue (All Time)</p>
-    <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">KES {{ total_revenue|format_number }}</p>
+    <p class="text-2xl font-bold text-growth-600 dark:text-growth-400 mt-1">KES {{ total_revenue|format_number }}</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Revenue This Month</p>
@@ -56,12 +56,12 @@
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Commerce Checkout (30d)</p>
-    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">KES {{ commerce_revenue_30d|format_number }}</p>
+    <p class="text-2xl font-bold text-kova-600 dark:text-kova-400 mt-1">KES {{ commerce_revenue_30d|format_number }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">KES {{ commerce_revenue_all_time|format_number }} all time</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">M-Pesa Success Rate (30d)</p>
-    <p class="text-2xl font-bold {% if mpesa_success_rate >= 80 %}text-emerald-600{% elif mpesa_success_rate >= 60 %}text-amber-500{% else %}text-red-500{% endif %} mt-1">{{ mpesa_success_rate }}%</p>
+    <p class="text-2xl font-bold {% if mpesa_success_rate >= 80 %}text-growth-600{% elif mpesa_success_rate >= 60 %}text-gold-500{% else %}text-red-500{% endif %} mt-1">{{ mpesa_success_rate }}%</p>
     <p class="text-[10px] text-gray-400 mt-0.5">{{ mpesa_new_30d }} new · {{ mpesa_renewals_30d }} renewals</p>
   </div>
 </div>
@@ -69,9 +69,9 @@
 {% if expiring_soon or expired_trials_live %}
 <div class="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
   {% if expiring_soon %}
-  <a href="{% url 'admin_dashboard:subscription_management' %}?preset=expiring" class="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 px-5 py-4 hover:border-amber-400 transition-colors">
-    <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">{{ expiring_soon }} subscription{{ expiring_soon|pluralize }} expiring in 3 days</p>
-    <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">Review and send renewal reminders →</p>
+  <a href="{% url 'admin_dashboard:subscription_management' %}?preset=expiring" class="rounded-xl border border-gold-200 dark:border-gold-900/50 bg-gold-50 dark:bg-gold-950/20 px-5 py-4 hover:border-gold-400 transition-colors">
+    <p class="text-sm font-semibold text-gold-800 dark:text-gold-200">{{ expiring_soon }} subscription{{ expiring_soon|pluralize }} expiring in 3 days</p>
+    <p class="text-xs text-gold-700 dark:text-gold-300 mt-1">Review and send renewal reminders →</p>
   </a>
   {% endif %}
   {% if expired_trials_live %}
@@ -86,7 +86,7 @@
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Trial Conversion (30d)</p>
-    <p class="text-2xl font-bold {% if trial_conversion >= 50 %}text-emerald-600{% elif trial_conversion >= 25 %}text-amber-500{% else %}text-red-500{% endif %} mt-1">{{ trial_conversion }}%</p>
+    <p class="text-2xl font-bold {% if trial_conversion >= 50 %}text-growth-600{% elif trial_conversion >= 25 %}text-gold-500{% else %}text-red-500{% endif %} mt-1">{{ trial_conversion }}%</p>
     <p class="text-[10px] text-gray-400 mt-0.5">{{ converted_trials }} of {{ expired_trials }} trials</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
@@ -133,7 +133,7 @@
               <span class="text-[10px] text-gray-400 ml-1">KES {{ p.price_kes }}/mo</span>
             </td>
             <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">{{ p.count }}</td>
-            <td class="px-4 py-3 text-right text-sm text-amber-600 dark:text-amber-400">{{ p.trialing_count }}</td>
+            <td class="px-4 py-3 text-right text-sm text-gold-600 dark:text-gold-400">{{ p.trialing_count }}</td>
             <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">{{ p.rev_kes|format_number }}</td>
             <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">${{ p.rev_usd|floatformat:0 }}</td>
             <td class="px-4 py-3 w-28">
@@ -167,7 +167,7 @@
     <div class="p-5 space-y-3">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span class="w-2 h-2 rounded-full bg-growth-500"></span>
           <span class="text-sm text-gray-700 dark:text-gray-300">Active</span>
         </div>
         <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ active_subs }}</span>
@@ -181,7 +181,7 @@
       </div>
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span class="w-2 h-2 rounded-full bg-gold-500"></span>
           <span class="text-sm text-gray-700 dark:text-gray-300">Past Due</span>
         </div>
         <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ past_due }}</span>
@@ -201,9 +201,9 @@
     <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">M-Pesa Payment Health (30d)</h2>
     <canvas id="paymentChart" height="200"></canvas>
     <div class="mt-3 grid grid-cols-2 sm:grid-cols-4 text-center text-xs text-gray-500">
-      <div><span class="font-semibold text-emerald-600">{{ mpesa_completed }}</span><br>Completed</div>
+      <div><span class="font-semibold text-growth-600">{{ mpesa_completed }}</span><br>Completed</div>
       <div><span class="font-semibold text-red-500">{{ mpesa_failed }}</span><br>Failed</div>
-      <div><span class="font-semibold text-amber-500">{{ mpesa_expired }}</span><br>Expired</div>
+      <div><span class="font-semibold text-gold-500">{{ mpesa_expired }}</span><br>Expired</div>
       <div><span class="font-semibold text-gray-400">{{ mpesa_pending }}</span><br>Pending</div>
     </div>
   </div>
@@ -220,8 +220,8 @@
 
 <!-- ── Quick admin actions ───────────────────────────────────────────── -->
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-  <a href="{% url 'admin_dashboard:bulk_grant' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-indigo-400 transition-all">
-    <div class="w-9 h-9 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center text-indigo-600 font-bold text-xs">BG</div>
+  <a href="{% url 'admin_dashboard:bulk_grant' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-kova-400 transition-all">
+    <div class="w-9 h-9 bg-kova-100 dark:bg-kova-900/30 rounded-lg flex items-center justify-center text-kova-600 font-bold text-xs">BG</div>
     <div><p class="text-sm font-medium text-gray-900 dark:text-white">Bulk Grant Access</p><p class="text-xs text-gray-400">Partnerships &amp; promos</p></div>
   </a>
   <a href="{% url 'admin_dashboard:payment_list' %}?status=failed" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-red-400 transition-all">
@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', function() {
     type: 'bar',
     data: {
       labels: ['Completed', 'Failed', 'Expired', 'Pending'],
-      datasets: [{ data: [{{ mpesa_completed }}, {{ mpesa_failed }}, {{ mpesa_expired }}, {{ mpesa_pending }}], backgroundColor: ['#10b981','#ef4444','#f59e0b','#9ca3af'], borderRadius: 6 }]
+      datasets: [{ data: [{{ mpesa_completed }}, {{ mpesa_failed }}, {{ mpesa_expired }}, {{ mpesa_pending }}], backgroundColor: ['#10B981','#ef4444','#f59e0b','#9ca3af'], borderRadius: 6 }]
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#9ca3af' } }, y: { beginAtZero: true, grid: { color: 'rgba(156,163,175,0.1)' }, ticks: { font: { size: 10 }, color: '#9ca3af' } } } }
   });
@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
     type: 'line',
     data: {
       labels: revData.map(d => d.month),
-      datasets: [{ label: 'Revenue (KES)', data: revData.map(d => d.revenue), borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', fill: true, tension: 0.3, pointRadius: 3, pointBackgroundColor: '#6366f1' }]
+      datasets: [{ label: 'Revenue (KES)', data: revData.map(d => d.revenue), borderColor: '#1E3A8A', backgroundColor: 'rgba(30,58,138,0.1)', fill: true, tension: 0.3, pointRadius: 3, pointBackgroundColor: '#1E3A8A' }]
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#9ca3af' } }, y: { beginAtZero: true, grid: { color: 'rgba(156,163,175,0.1)' }, ticks: { font: { size: 10 }, color: '#9ca3af' } } } }
   });

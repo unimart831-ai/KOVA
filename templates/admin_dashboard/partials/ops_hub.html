@@ -11,7 +11,7 @@
       <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Starter</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.plan_counts.starter|default:0 }}</dd></div>
       <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Growth</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.plan_counts.growth|default:0 }}</dd></div>
       <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Pro</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.plan_counts.pro|default:0 }}</dd></div>
-      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Agency</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.plan_counts.agency|default:0 }}{% if ops_hub.agency_pending %} <span class="text-amber-600 dark:text-amber-400 font-normal">({{ ops_hub.agency_pending }} pending)</span>{% endif %}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Agency</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.plan_counts.agency|default:0 }}{% if ops_hub.agency_pending %} <span class="text-gold-600 dark:text-gold-400 font-normal">({{ ops_hub.agency_pending }} pending)</span>{% endif %}</dd></div>
       <div class="border-t border-gray-100 dark:border-gray-800 my-2"></div>
       <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Trialing</dt><dd class="font-semibold text-kova-600 dark:text-kova-400">{{ ops_hub.trialing_users }}</dd></div>
       <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Active paid</dt><dd class="font-semibold text-green-600 dark:text-green-400">{{ ops_hub.active_paid_users }}</dd></div>
@@ -20,7 +20,7 @@
       <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">M-Pesa users</dt><dd class="font-semibold text-gray-900 dark:text-white"><a href="{% url 'admin_dashboard:payment_list' %}" class="hover:underline">{{ ops_hub.mpesa_users }}</a></dd></div>
     </dl>
     {% if ops_hub.agency_sales_new %}
-    <a href="{% url 'admin_dashboard:sales_inquiry_list' %}?status=new" class="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">
+    <a href="{% url 'admin_dashboard:sales_inquiry_list' %}?status=new" class="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold bg-gold-50 dark:bg-gold-950/30 text-gold-700 dark:text-gold-300 border border-gold-200 dark:border-gold-800/50">
       {{ ops_hub.agency_sales_new }} agency sales inquir{{ ops_hub.agency_sales_new|pluralize:"y,ies" }}
     </a>
     {% else %}
@@ -43,7 +43,7 @@
         </dd>
       </div>
       <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-1">
-        <div class="h-1.5 rounded-full {% if ops_hub.photoroom.pool_pct >= 0.8 %}bg-amber-500{% else %}bg-kova-500{% endif %}" style="width: {% if ops_hub.photoroom.pool_pct_display > 100 %}100{% else %}{{ ops_hub.photoroom.pool_pct_display }}{% endif %}%"></div>
+        <div class="h-1.5 rounded-full {% if ops_hub.photoroom.pool_pct >= 0.8 %}bg-gold-500{% else %}bg-kova-500{% endif %}" style="width: {% if ops_hub.photoroom.pool_pct_display > 100 %}100{% else %}{{ ops_hub.photoroom.pool_pct_display }}{% endif %}%"></div>
       </div>
       <div class="flex justify-between pt-2"><dt class="text-gray-500 dark:text-gray-400">Per-user usage</dt><dd><a href="{% url 'admin_dashboard:user_list' %}" class="text-kova-600 dark:text-kova-400 hover:underline font-medium">User list → usage tab</a></dd></div>
       <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">LLM config</dt><dd><a href="{% url 'admin_dashboard:llm_overview' %}" class="text-kova-600 dark:text-kova-400 hover:underline font-medium">Models & rate limits</a></dd></div>
@@ -54,7 +54,7 @@
   </div>
 
   <!-- Content safety -->
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm {% if ops_hub.auto_publish_paused or ops_hub.safety_pending or ops_hub.content_safety_staff_paused %}ring-1 ring-amber-300 dark:ring-amber-800/60{% endif %}">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm {% if ops_hub.auto_publish_paused or ops_hub.safety_pending or ops_hub.content_safety_staff_paused %}ring-1 ring-gold-300 dark:ring-gold-800/60{% endif %}">
     <div class="flex items-start justify-between gap-2 mb-3">
       <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Content Safety</h3>
       <a href="{% url 'admin_dashboard:content_safety_overview' %}" class="text-[10px] font-medium text-kova-600 dark:text-kova-400 hover:underline shrink-0">Full safety hub →</a>
@@ -68,9 +68,9 @@
     {% endif %}
     <dl class="space-y-1.5 text-xs">
       {% if ops_hub.content_safety_env_enabled %}
-      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Safety checks</dt><dd class="font-semibold {% if ops_hub.content_safety_checks_running %}text-emerald-600 dark:text-emerald-400{% else %}text-amber-600 dark:text-amber-400{% endif %}">{% if ops_hub.content_safety_checks_running %}RUNNING{% else %}PAUSED{% endif %}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Safety checks</dt><dd class="font-semibold {% if ops_hub.content_safety_checks_running %}text-growth-600 dark:text-growth-400{% else %}text-gold-600 dark:text-gold-400{% endif %}">{% if ops_hub.content_safety_checks_running %}RUNNING{% else %}PAUSED{% endif %}</dd></div>
       {% endif %}
-      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Pending review</dt><dd class="font-semibold {% if ops_hub.safety_pending %}text-amber-600 dark:text-amber-400{% else %}text-gray-900 dark:text-white{% endif %}"><a href="{% url 'admin_dashboard:content_safety_review' %}" class="hover:underline">{{ ops_hub.safety_pending }}</a></dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Pending review</dt><dd class="font-semibold {% if ops_hub.safety_pending %}text-gold-600 dark:text-gold-400{% else %}text-gray-900 dark:text-white{% endif %}"><a href="{% url 'admin_dashboard:content_safety_review' %}" class="hover:underline">{{ ops_hub.safety_pending }}</a></dd></div>
       <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Incidents today</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.safety_today }}</dd></div>
       <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Snap blocks / paused publish</dt><dd class="font-semibold {% if ops_hub.snap_blocked_users %}text-red-600 dark:text-red-400{% else %}text-gray-900 dark:text-white{% endif %}">{{ ops_hub.snap_blocked_users }}</dd></div>
       <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Global auto-publish</dt><dd class="font-semibold {% if ops_hub.auto_publish_paused %}text-red-600 dark:text-red-400{% else %}text-green-600 dark:text-green-400{% endif %}">{% if ops_hub.auto_publish_paused %}PAUSED{% else %}Active{% endif %}</dd></div>

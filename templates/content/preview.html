@@ -103,7 +103,7 @@ Usage: {% url 'content:preview' post.id %}
       <div class="bg-white dark:bg-black rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden max-w-sm mx-auto">
         {# Header #}
         <div class="flex items-center gap-2.5 px-3 py-2.5">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500 p-[2px]">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-gold-400 via-pink-500 to-kova-500 p-[2px]">
             <div class="w-full h-full rounded-full bg-white dark:bg-black flex items-center justify-center text-[10px] font-bold text-gray-600 dark:text-gray-300">
               {{ post.social_account.username|truncatechars:1 }}
             </div>
@@ -361,9 +361,9 @@ Usage: {% url 'content:preview' post.id %}
       <div class="flex items-center gap-2 mb-2">
         <span class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Predicted Engagement</span>
         <div class="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div class="h-full rounded-full {% if post.predicted_engagement_score >= 75 %}bg-green-500{% elif post.predicted_engagement_score >= 50 %}bg-yellow-500{% else %}bg-red-400{% endif %}" style="width: {{ post.predicted_engagement_score }}%"></div>
+          <div class="h-full rounded-full {% if post.predicted_engagement_score >= 75 %}bg-green-500{% elif post.predicted_engagement_score >= 50 %}bg-gold-500{% else %}bg-red-400{% endif %}" style="width: {{ post.predicted_engagement_score }}%"></div>
         </div>
-        <span class="text-xs font-bold {% if post.predicted_engagement_score >= 75 %}text-green-600 dark:text-green-400{% elif post.predicted_engagement_score >= 50 %}text-yellow-600 dark:text-yellow-400{% else %}text-red-500{% endif %}">{{ post.predicted_engagement_score|floatformat:0 }}/100</span>
+        <span class="text-xs font-bold {% if post.predicted_engagement_score >= 75 %}text-green-600 dark:text-green-400{% elif post.predicted_engagement_score >= 50 %}text-gold-600 dark:text-gold-400{% else %}text-red-500{% endif %}">{{ post.predicted_engagement_score|floatformat:0 }}/100</span>
       </div>
       {% endif %}
 

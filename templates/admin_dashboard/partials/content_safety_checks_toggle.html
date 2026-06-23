@@ -1,13 +1,13 @@
 {# Master pause/resume for content moderation. Requires: content_safety_env_enabled, content_safety_staff_paused, content_safety_checks_running, next_url #}
 {% if content_safety_env_enabled %}
-<div class="{% if compact %}mt-3 pt-3 border-t border-gray-100 dark:border-gray-800{% else %}mb-6{% endif %} rounded-xl border-2 px-5 py-4 {% if content_safety_staff_paused %}bg-amber-50 border-amber-400 dark:bg-amber-950/40 dark:border-amber-700{% else %}bg-emerald-50 border-emerald-400 dark:bg-emerald-950/40 dark:border-emerald-700{% endif %}">
+<div class="{% if compact %}mt-3 pt-3 border-t border-gray-100 dark:border-gray-800{% else %}mb-6{% endif %} rounded-xl border-2 px-5 py-4 {% if content_safety_staff_paused %}bg-gold-50 border-gold-400 dark:bg-gold-950/40 dark:border-gold-700{% else %}bg-growth-50 border-growth-400 dark:bg-growth-950/40 dark:border-growth-700{% endif %}">
   <div class="flex flex-wrap items-center justify-between gap-4">
     <div class="min-w-0 flex-1">
-      <p class="{% if compact %}text-xs{% else %}text-base{% endif %} font-bold tracking-wide uppercase {% if content_safety_staff_paused %}text-amber-900 dark:text-amber-100{% else %}text-emerald-900 dark:text-emerald-100{% endif %}">
+      <p class="{% if compact %}text-xs{% else %}text-base{% endif %} font-bold tracking-wide uppercase {% if content_safety_staff_paused %}text-gold-900 dark:text-gold-100{% else %}text-growth-900 dark:text-growth-100{% endif %}">
         Safety checks: {% if content_safety_checks_running %}RUNNING{% else %}PAUSED{% endif %}
       </p>
       {% if not compact %}
-      <p class="text-sm mt-1 {% if content_safety_staff_paused %}text-amber-800 dark:text-amber-200{% else %}text-emerald-800 dark:text-emerald-200{% endif %}">
+      <p class="text-sm mt-1 {% if content_safety_staff_paused %}text-gold-800 dark:text-gold-200{% else %}text-growth-800 dark:text-growth-200{% endif %}">
         {% if content_safety_staff_paused %}
         Vision, API text, and local blocklist are bypassed — content publishes without moderation.
         {% else %}
@@ -15,12 +15,12 @@
         {% endif %}
       </p>
       {% else %}
-      <p class="text-[10px] mt-0.5 {% if content_safety_staff_paused %}text-amber-800 dark:text-amber-300{% else %}text-emerald-800 dark:text-emerald-300{% endif %}">
+      <p class="text-[10px] mt-0.5 {% if content_safety_staff_paused %}text-gold-800 dark:text-gold-300{% else %}text-growth-800 dark:text-growth-300{% endif %}">
         {% if content_safety_staff_paused %}Moderation bypassed{% else %}Moderation active{% endif %}
       </p>
       {% endif %}
       {% if content_safety_staff_paused and content_safety_paused_by %}
-      <p class="text-[10px] mt-1 text-amber-700 dark:text-amber-400">
+      <p class="text-[10px] mt-1 text-gold-700 dark:text-gold-400">
         Paused by {{ content_safety_paused_by.email }}{% if content_safety_paused_at %} · {{ content_safety_paused_at|date:"M j, H:i" }}{% endif %}
       </p>
       {% endif %}
@@ -30,7 +30,7 @@
       {% csrf_token %}
       <input type="hidden" name="next" value="{{ next_url }}">
       <button type="submit"
-              class="{% if compact %}px-3 py-1.5 text-xs{% else %}px-5 py-2.5 text-sm{% endif %} font-semibold rounded-lg whitespace-nowrap {% if content_safety_staff_paused %}bg-emerald-600 text-white hover:bg-emerald-700{% else %}bg-amber-600 text-white hover:bg-amber-700{% endif %}">
+              class="{% if compact %}px-3 py-1.5 text-xs{% else %}px-5 py-2.5 text-sm{% endif %} font-semibold rounded-lg whitespace-nowrap {% if content_safety_staff_paused %}bg-growth-600 text-white hover:bg-growth-700{% else %}bg-gold-600 text-white hover:bg-gold-700{% endif %}">
         {% if content_safety_staff_paused %}Resume all safety checks{% else %}Pause all safety checks{% endif %}
       </button>
     </form>

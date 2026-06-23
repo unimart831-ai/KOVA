@@ -4,7 +4,7 @@
 {% block page_subtitle %}
 <div class="flex items-center gap-2 mt-0.5">
   <span id="stock-badge">{% include "products/partials/stock_badge.html" %}</span>
-  {% if product.is_featured %}<span class="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 font-medium">Featured</span>{% endif %}
+  {% if product.is_featured %}<span class="text-xs px-1.5 py-0.5 rounded bg-kova-100 text-kova-700 dark:bg-kova-950 dark:text-kova-300 font-medium">Featured</span>{% endif %}
   {% if product.sync_source_label %}<span class="text-xs px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 font-medium">{{ product.sync_source_label }}</span>{% endif %}
   {% if product.last_synced_at %}<span class="text-xs text-gray-400 dark:text-gray-500">Synced {{ product.last_synced_at|timesince }} ago</span>{% endif %}
 </div>
@@ -38,7 +38,7 @@
             {% if product.image %}
             <div class="relative w-16 h-16 flex-shrink-0 group">
               <img src="{{ product.image.url }}" alt="{{ product.name }} original"
-                   class="w-full h-full rounded-lg object-cover border-2 {% if product.exclude_primary_image %}border-dashed border-gray-300 dark:border-gray-600 opacity-40{% else %}border-purple-300 dark:border-purple-700{% endif %}">
+                   class="w-full h-full rounded-lg object-cover border-2 {% if product.exclude_primary_image %}border-dashed border-gray-300 dark:border-gray-600 opacity-40{% else %}border-kova-300 dark:border-kova-700{% endif %}">
               <span class="absolute bottom-0 left-0 right-0 text-[8px] font-semibold text-center text-white bg-black/55 rounded-b-lg py-0.5 leading-none">Original</span>
               {% if product.additional_images %}
               <form method="post" action="{% url 'products:toggle_primary_image' product_id=product.pk %}" class="absolute -top-1.5 -right-1.5">
@@ -46,7 +46,7 @@
                 {% if product.exclude_primary_image %}
                 <button type="submit" name="action" value="include"
                         title="Use original in posts again"
-                        class="w-5 h-5 flex items-center justify-center rounded-full bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-md ring-2 ring-white dark:ring-gray-900"
+                        class="w-5 h-5 flex items-center justify-center rounded-full bg-growth-500 hover:bg-growth-600 text-white text-xs font-bold shadow-md ring-2 ring-white dark:ring-gray-900"
                         aria-label="Restore original photo">+</button>
                 {% else %}
                 <button type="submit" name="action" value="exclude"
@@ -60,15 +60,15 @@
             {% endif %}
             {% for img_url in product.additional_images %}
             <div class="relative w-16 h-16 flex-shrink-0">
-              <img src="{{ img_url }}" alt="{{ product.name }} scene" class="w-full h-full rounded-lg object-cover border border-purple-200 dark:border-purple-800">
+              <img src="{{ img_url }}" alt="{{ product.name }} scene" class="w-full h-full rounded-lg object-cover border border-kova-200 dark:border-kova-800">
               {% if 'studio_polish/' in img_url %}
-              <span class="absolute bottom-0 left-0 right-0 text-[8px] font-semibold text-center text-white bg-purple-600/80 rounded-b-lg py-0.5 leading-none">Plus</span>
+              <span class="absolute bottom-0 left-0 right-0 text-[8px] font-semibold text-center text-white bg-kova-600/80 rounded-b-lg py-0.5 leading-none">Plus</span>
               {% endif %}
             </div>
             {% endfor %}
           </div>
           {% if product.exclude_primary_image %}
-          <p class="text-[10px] text-amber-700 dark:text-amber-300 mt-1.5">Original hidden from carousel &amp; posts — tap <span class="font-bold">+</span> on it to restore.</p>
+          <p class="text-[10px] text-gold-700 dark:text-gold-300 mt-1.5">Original hidden from carousel &amp; posts — tap <span class="font-bold">+</span> on it to restore.</p>
           {% elif product.additional_images %}
           <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5">Tap <span class="font-bold">&times;</span> on the original if Plus scenes look better.</p>
           {% endif %}
@@ -119,7 +119,7 @@
         {% if product.tracks_stock and product.quantity is not None %}
         <p class="text-sm text-gray-600 dark:text-gray-300">
           <span class="font-medium">{{ product.quantity }}</span> unit{{ product.quantity|pluralize }} in stock
-          {% if product.stock_status == 'low_stock' %}<span class="text-amber-600 dark:text-amber-400 ml-1">(below threshold of {{ product.low_stock_threshold }})</span>{% endif %}
+          {% if product.stock_status == 'low_stock' %}<span class="text-gold-600 dark:text-gold-400 ml-1">(below threshold of {{ product.low_stock_threshold }})</span>{% endif %}
         </p>
         {% endif %}
         {% if product.tags %}
@@ -221,9 +221,9 @@
 
   {# Commerce Link — public sell page #}
   {% if commerce_url %}
-  <div class="card p-5 border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20">
-    <h3 class="text-sm font-semibold text-emerald-900 dark:text-emerald-100 mb-1">Public Offer Page</h3>
-    <p class="text-xs text-emerald-700 dark:text-emerald-300 mb-3">
+  <div class="card p-5 border border-growth-200 dark:border-growth-800 bg-growth-50/50 dark:bg-growth-950/20">
+    <h3 class="text-sm font-semibold text-growth-900 dark:text-growth-100 mb-1">Public Offer Page</h3>
+    <p class="text-xs text-growth-700 dark:text-growth-300 mb-3">
       Share this page so customers can view the offer, chat with you, and follow the right conversion path.
       {% if product.offering_type == 'product' %}
       M-Pesa stays available for physical products.
@@ -243,8 +243,8 @@
          class="btn-primary text-sm px-3 py-1.5 shrink-0">Open</a>
     </div>
     {% if shop_url %}
-    <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-emerald-200/60 dark:border-emerald-800/60">
-      <span class="text-xs font-medium text-emerald-800 dark:text-emerald-200 w-full mb-1">Offers page (all offers)</span>
+    <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-growth-200/60 dark:border-growth-800/60">
+      <span class="text-xs font-medium text-growth-800 dark:text-growth-200 w-full mb-1">Offers page (all offers)</span>
       <input type="text" readonly value="{{ shop_url }}" id="shop-url"
              class="input text-xs flex-1 min-w-0 font-mono bg-white dark:bg-gray-900">
       <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('shop-url').value); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1500)"
@@ -261,7 +261,7 @@
   <div class="card p-5 border border-sky-200 dark:border-sky-800 bg-sky-50/40 dark:bg-sky-950/20">
     <div class="flex items-center justify-between gap-2 mb-3">
       <h3 class="text-sm font-semibold text-sky-900 dark:text-sky-100">Offer SEO</h3>
-      <span class="text-xs font-semibold px-2 py-0.5 rounded-full {% if seo_checklist.ready %}bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300{% else %}bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300{% endif %}">
+      <span class="text-xs font-semibold px-2 py-0.5 rounded-full {% if seo_checklist.ready %}bg-growth-100 text-growth-800 dark:bg-growth-950 dark:text-growth-300{% else %}bg-gold-100 text-gold-800 dark:bg-gold-950 dark:text-gold-300{% endif %}">
         {{ seo_checklist.done_count }}/{{ seo_checklist.total }}
       </span>
     </div>
@@ -270,10 +270,10 @@
       {% for item in seo_checklist.items %}
       <li class="flex items-start gap-2 text-sm">
         {% if item.done %}
-        <span class="text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true">✓</span>
+        <span class="text-growth-600 dark:text-growth-400 shrink-0" aria-hidden="true">✓</span>
         <span class="text-gray-700 dark:text-gray-300">{{ item.label }}</span>
         {% else %}
-        <span class="text-amber-500 shrink-0" aria-hidden="true">○</span>
+        <span class="text-gold-500 shrink-0" aria-hidden="true">○</span>
         <span>
           <span class="text-gray-900 dark:text-white font-medium">{{ item.label }}</span>
           <span class="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ item.tip }}</span>
@@ -296,8 +296,8 @@
 
   {# Stock alerts #}
   {% if alerts %}
-  <div class="card border-l-4 border-amber-500 p-4">
-    <h3 class="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-2">Stock Alerts</h3>
+  <div class="card border-l-4 border-gold-500 p-4">
+    <h3 class="text-sm font-semibold text-gold-800 dark:text-gold-200 mb-2">Stock Alerts</h3>
     <ul class="space-y-1">
       {% for alert in alerts %}
       <li class="text-sm text-gray-600 dark:text-gray-400">{{ alert.message }}</li>
@@ -336,9 +336,9 @@
         {% for post in carousel_posts %}
         <li class="flex items-center justify-between gap-2 text-sm">
           <span class="truncate flex-1">
-            <span class="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">{{ post.get_status_display }}</span>
+            <span class="text-xs px-1.5 py-0.5 rounded bg-kova-100 text-kova-700 dark:bg-kova-950 dark:text-kova-300">{{ post.get_status_display }}</span>
             {{ post.social_account.get_platform_display|default:post.platform }}
-            {% if post.media_status == 'pending' %}<span class="text-xs text-amber-500 dark:text-amber-400">building slides…</span>{% endif %}
+            {% if post.media_status == 'pending' %}<span class="text-xs text-gold-500 dark:text-gold-400">building slides…</span>{% endif %}
             — <a href="{% url 'content:post_detail' post.id %}" class="hover:text-kova-600 dark:hover:text-kova-400">{{ post.content_text|truncatewords:8 }}</a>
           </span>
           <span class="text-xs text-gray-400 shrink-0">{{ post.created_at|timesince }} ago</span>
@@ -358,7 +358,7 @@
             <span class="text-xs px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300">{{ post.get_status_display }}</span>
             {{ post.social_account.get_platform_display|default:post.platform }}
             {% if post.reel_compose_pending %}<span class="text-xs text-orange-500 dark:text-orange-400 animate-pulse">composing video…</span>
-            {% elif post.reel_has_video %}<span class="text-xs text-emerald-600 dark:text-emerald-400">ready</span>{% endif %}
+            {% elif post.reel_has_video %}<span class="text-xs text-growth-600 dark:text-growth-400">ready</span>{% endif %}
             — <a href="{% url 'content:post_detail' post.id %}" class="hover:text-kova-600 dark:hover:text-kova-400">{{ post.content_text|truncatewords:8 }}</a>
           </span>
           <span class="text-xs text-gray-400 shrink-0">{{ post.created_at|timesince }} ago</span>
@@ -369,8 +369,8 @@
     {% endif %}
   </div>
   {% elif product.stock_status != 'out_of_stock' and show_autopilot_panel %}
-  <div class="card border-l-4 border-purple-400 p-4">
-    <p class="text-sm text-purple-700 dark:text-purple-300">
+  <div class="card border-l-4 border-kova-400 p-4">
+    <p class="text-sm text-kova-700 dark:text-kova-300">
       Agents are creating content — watch the Autopilot panel above. Or tap
       <form method="post" action="{% url 'products:fix_promote' product_id=product.pk %}" class="inline">{% csrf_token %}
         <button type="submit" class="underline font-medium">Fix &amp; Promote →</button>

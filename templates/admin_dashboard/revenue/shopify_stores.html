@@ -39,7 +39,7 @@
             {% endif %}
           </td>
           <td class="px-4 py-2.5 text-right text-xs text-gray-600 dark:text-gray-400">{{ store.orders_tracked }}</td>
-          <td class="px-4 py-2.5 text-right text-xs font-semibold text-emerald-600 dark:text-emerald-400">KES {{ store.total_revenue|floatformat:0 }}</td>
+          <td class="px-4 py-2.5 text-right text-xs font-semibold text-growth-600 dark:text-growth-400">KES {{ store.total_revenue|floatformat:0 }}</td>
           <td class="px-4 py-2.5 text-right text-xs text-gray-400">{% if store.last_order_at %}{{ store.last_order_at|timesince }} ago{% else %}—{% endif %}</td>
           <td class="px-4 py-2.5 text-right text-xs text-gray-400">{{ store.created_at|date:"M d, Y" }}</td>
           <td class="px-4 py-2.5 text-center">

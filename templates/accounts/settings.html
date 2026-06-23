@@ -298,32 +298,32 @@
               </div>
 
             {% elif field.name == 'commerce_autopilot' %}
-              <div class="flex items-start space-x-3 mb-4 p-4 bg-purple-50 dark:bg-purple-950/30 rounded-xl border border-purple-200 dark:border-purple-800">
+              <div class="flex items-start space-x-3 mb-4 p-4 bg-kova-50 dark:bg-kova-950/30 rounded-xl border border-kova-200 dark:border-kova-800">
                 <input type="checkbox" name="{{ field.html_name }}" id="id_brand_{{ field.name }}"
                        {% if field.value %}checked{% endif %}
-                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-purple-600 focus:ring-purple-500 dark:bg-gray-900">
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-kova-600 focus:ring-kova-500 dark:bg-gray-900">
                 <div>
                   <label for="id_brand_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">{{ field.label }}</label>
                   {% if field.help_text %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ field.help_text }}</p>{% endif %}
                   <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Turn on for true one-tap selling: snap a photo at
-                    <a href="{% url 'products:snap' %}" class="text-purple-600 dark:text-purple-400 underline font-medium">Snap to Sell</a>
+                    <a href="{% url 'products:snap' %}" class="text-kova-600 dark:text-kova-400 underline font-medium">Snap to Sell</a>
                     and agents handle naming, listing, content, and publishing.
                   </p>
                 </div>
               </div>
 
             {% elif field.name == 'catalog_showcase_weekly' %}
-              <div class="flex items-start space-x-3 mb-4 p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800">
+              <div class="flex items-start space-x-3 mb-4 p-4 bg-growth-50 dark:bg-growth-950/30 rounded-xl border border-growth-200 dark:border-growth-800">
                 <input type="checkbox" name="{{ field.html_name }}" id="id_brand_{{ field.name }}"
                        {% if field.value %}checked{% endif %}
-                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-emerald-600 focus:ring-emerald-500 dark:bg-gray-900">
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-growth-600 focus:ring-growth-500 dark:bg-gray-900">
                 <div>
                   <label for="id_brand_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">{{ field.label }}</label>
                   {% if field.help_text %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ field.help_text }}</p>{% endif %}
                   <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Or trigger anytime from
-                    <a href="{% url 'products:list' %}" class="text-emerald-600 dark:text-emerald-400 underline font-medium">My offers</a>
+                    <a href="{% url 'products:list' %}" class="text-growth-600 dark:text-growth-400 underline font-medium">My offers</a>
                     with <strong>Catalog showcase</strong> — branded carousel per item + showcase reel, out-of-stock skipped.
                   </p>
                 </div>
@@ -411,7 +411,7 @@
           <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
             <strong>Content autopilot</strong> (weekly post plans) lives in <a href="{% url 'content:studio' %}" class="text-kova-600 dark:text-kova-400 underline">Studio → Autopilot</a>.
             {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}
-              <span class="block mt-1 text-amber-700 dark:text-amber-400">WhatsApp follow-ups require <a href="{% url 'billing:pricing' %}" class="underline font-medium">Kazi (Growth)</a> or above.</span>
+              <span class="block mt-1 text-gold-700 dark:text-gold-400">WhatsApp follow-ups require <a href="{% url 'billing:pricing' %}" class="underline font-medium">Kazi (Growth)</a> or above.</span>
             {% elif not plan_limits.whatsapp_enabled %}
               <span class="block mt-1 text-teal-700 dark:text-teal-400">Your plan includes WhatsApp inbox — broadcasts need <a href="{% url 'billing:pricing' %}" class="underline font-medium">Biashara (Pro)</a>.</span>
             {% endif %}
@@ -419,10 +419,10 @@
 
           {% for field in autopilot_form %}
             {% if field.name == 'autopilot_auto_publish_approved' %}
-              <div class="flex items-start space-x-3 mb-4 p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800">
+              <div class="flex items-start space-x-3 mb-4 p-4 bg-growth-50 dark:bg-growth-950/30 rounded-xl border border-growth-200 dark:border-growth-800">
                 <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
                        {% if field.value %}checked{% endif %}
-                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-emerald-600 focus:ring-emerald-500 dark:bg-gray-900">
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-growth-600 focus:ring-growth-500 dark:bg-gray-900">
                 <div>
                   <label for="id_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">Auto-publish approved posts</label>
                   <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">When a post is approved and its schedule time arrives, publish without an extra click. Respects emergency pause and content safety.</p>
@@ -450,11 +450,11 @@
                 </div>
               </div>
             {% elif field.name == 'autopilot_wa_followup_24h' %}
-              <div class="flex items-start space-x-3 mb-4 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800 {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}opacity-60{% endif %}">
+              <div class="flex items-start space-x-3 mb-4 p-4 bg-gold-50 dark:bg-gold-950/30 rounded-xl border border-gold-200 dark:border-gold-800 {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}opacity-60{% endif %}">
                 <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
                        {% if field.value %}checked{% endif %}
                        {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}disabled{% endif %}
-                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-amber-600 focus:ring-amber-500 dark:bg-gray-900">
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-gold-600 focus:ring-gold-500 dark:bg-gray-900">
                 <div>
                   <label for="id_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">24h WhatsApp follow-up</label>
                   <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">If a customer messaged and you have not replied in 24 hours, send a gentle nudge (max once per week per chat, within the 24h window).</p>
@@ -582,7 +582,7 @@
                       <span class="text-[9px] text-gray-300 dark:text-gray-600 font-mono" x-text="color"></span>
                     </div>
                   </template>
-                  <button type="button" @click="colors.push('#6366F1')" x-show="colors.length < 5"
+                  <button type="button" @click="colors.push('#1E3A8A')" x-show="colors.length < 5"
                           class="w-12 h-12 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-kova-400 hover:text-kova-500 dark:hover:border-kova-400 dark:hover:text-kova-400 transition-colors text-xl flex items-center justify-center mb-6">+</button>
                 </div>
                 <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-1" x-show="colors.length === 0">No colors set — AI will use elegant defaults.</p>
@@ -708,10 +708,10 @@
     <div class="card-body space-y-6">
 
       {# ═══════ Emergency Pause ═══════ #}
-      <div class="p-4 rounded-xl border-2 {% if request.user.profile.emergency_pause %}border-red-500 bg-red-50 dark:bg-red-950/30{% else %}border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20{% endif %}">
+      <div class="p-4 rounded-xl border-2 {% if request.user.profile.emergency_pause %}border-red-500 bg-red-50 dark:bg-red-950/30{% else %}border-gold-300 dark:border-gold-700 bg-gold-50/50 dark:bg-gold-950/20{% endif %}">
         <div class="flex items-start gap-3">
-          <div class="w-10 h-10 rounded-lg {% if request.user.profile.emergency_pause %}bg-red-100 dark:bg-red-900/50{% else %}bg-amber-100 dark:bg-amber-900/40{% endif %} flex items-center justify-center flex-shrink-0">
-            <svg class="w-5 h-5 {% if request.user.profile.emergency_pause %}text-red-600 dark:text-red-400{% else %}text-amber-600 dark:text-amber-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-10 h-10 rounded-lg {% if request.user.profile.emergency_pause %}bg-red-100 dark:bg-red-900/50{% else %}bg-gold-100 dark:bg-gold-900/40{% endif %} flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 {% if request.user.profile.emergency_pause %}text-red-600 dark:text-red-400{% else %}text-gold-600 dark:text-gold-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
             </svg>
           </div>

@@ -1,4 +1,4 @@
-﻿{% extends "admin_dashboard/base.html" %}
+{% extends "admin_dashboard/base.html" %}
 {% load dashboard_tags %}
 
 {% block page_title %}{{ page_title }}{% endblock %}
@@ -24,23 +24,23 @@
     <p class="text-xs text-gray-500 dark:text-gray-400">Tokens (24h)</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
-    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">${{ cost_7d|floatformat:4 }}</p>
+    <p class="text-2xl font-bold text-gold-600 dark:text-gold-400">${{ cost_7d|floatformat:4 }}</p>
     <p class="text-xs text-gray-500 dark:text-gray-400">LLM Cost (7d)</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
-    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">${{ cost_30d|floatformat:4 }}</p>
+    <p class="text-2xl font-bold text-gold-600 dark:text-gold-400">${{ cost_30d|floatformat:4 }}</p>
     <p class="text-xs text-gray-500 dark:text-gray-400">LLM Cost (30d)</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
-    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ paid_fallback_count_7d }}</p>
+    <p class="text-2xl font-bold text-gold-600 dark:text-gold-400">{{ paid_fallback_count_7d }}</p>
     <p class="text-xs text-gray-500 dark:text-gray-400">Paid Fallbacks (7d)</p>
   </div>
 </div>
 
 {% if unknown_models %}
-<div class="mb-6 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 px-5 py-4">
-  <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">Unknown model IDs in usage logs</p>
-  <p class="text-xs font-mono text-amber-900 dark:text-amber-100 mt-1">{{ unknown_models|join:", " }}</p>
+<div class="mb-6 rounded-xl border border-gold-200 dark:border-gold-900/50 bg-gold-50 dark:bg-gold-950/20 px-5 py-4">
+  <p class="text-sm font-semibold text-gold-800 dark:text-gold-200">Unknown model IDs in usage logs</p>
+  <p class="text-xs font-mono text-gold-900 dark:text-gold-100 mt-1">{{ unknown_models|join:", " }}</p>
 </div>
 {% endif %}
 
@@ -86,9 +86,9 @@
             <div class="flex items-center gap-2">
               <span class="text-gray-500">${{ data.ai }}/mo</span>
               <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold
-                {% if data.margin >= 90 %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400
+                {% if data.margin >= 90 %}bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400
                 {% elif data.margin >= 70 %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
-                {% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400{% endif %}">
+                {% else %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400{% endif %}">
                 {{ data.margin }}%
               </span>
             </div>
@@ -124,12 +124,12 @@
             {% for m in model_benchmark %}
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50
               {% if m.verdict == 'rejected' %}bg-red-50/30 dark:bg-red-950/10
-              {% elif m.verdict == 'recommended' %}bg-emerald-50/30 dark:bg-emerald-950/10
+              {% elif m.verdict == 'recommended' %}bg-growth-50/30 dark:bg-growth-950/10
               {% elif m.verdict == 'current-primary' %}bg-kova-50/30 dark:bg-kova-950/10
               {% elif m.verdict == 'replaced' %}bg-gray-100/50 dark:bg-gray-800/30{% endif %}">
               <td class="px-3 py-2 font-medium text-gray-900 dark:text-white whitespace-nowrap">{{ m.model }}</td>
-              <td class="px-3 py-2 text-right font-mono {% if m.input == 0 %}text-emerald-600{% else %}text-gray-600 dark:text-gray-400{% endif %}">${{ m.input }}</td>
-              <td class="px-3 py-2 text-right font-mono {% if m.output == 0 %}text-emerald-600{% else %}text-gray-600 dark:text-gray-400{% endif %}">${{ m.output }}</td>
+              <td class="px-3 py-2 text-right font-mono {% if m.input == 0 %}text-growth-600{% else %}text-gray-600 dark:text-gray-400{% endif %}">${{ m.input }}</td>
+              <td class="px-3 py-2 text-right font-mono {% if m.output == 0 %}text-growth-600{% else %}text-gray-600 dark:text-gray-400{% endif %}">${{ m.output }}</td>
               <td class="px-3 py-2 text-center text-gray-500">{{ m.context }}</td>
               <td class="px-3 py-2 text-center text-gray-500">{{ m.speed }}</td>
               <td class="px-3 py-2 text-center text-gray-500">{{ m.uptime }}</td>
@@ -138,7 +138,7 @@
               <td class="px-3 py-2 text-center {% if m.hallucination == '65.6%' %}text-red-600 font-bold{% else %}text-gray-500{% endif %}">{{ m.hallucination }}</td>
               <td class="px-3 py-2">
                 {% if m.verdict == 'recommended' %}
-                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">USE</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400">USE</span>
                 {% elif m.verdict == 'current-primary' %}
                 <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-400">CURRENT</span>
                 {% elif m.verdict == 'rejected' %}
@@ -199,7 +199,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              <span class="inline-block w-2 h-2 rounded-full bg-purple-500 mr-1"></span>Premium
+              <span class="inline-block w-2 h-2 rounded-full bg-kova-500 mr-1"></span>Premium
               <span class="text-[10px] text-gray-400">(creative, user-facing)</span>
             </label>
             <input type="text" name="model_premium" value="{{ config.model_premium }}"
@@ -300,7 +300,7 @@
             <tr class="border-b border-gray-200 dark:border-gray-800">
               <th class="text-left px-3 py-2 text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-36">Plan</th>
               <th class="text-left px-3 py-2 text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                <span class="inline-block w-2 h-2 rounded-full bg-purple-500 mr-1"></span>Premium (Creative)
+                <span class="inline-block w-2 h-2 rounded-full bg-kova-500 mr-1"></span>Premium (Creative)
               </th>
               <th class="text-left px-3 py-2 text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 <span class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span>Workhorse (Reasoning)
@@ -323,7 +323,7 @@
               <td class="px-3 py-3">
                 <input type="text" name="{{ plan.code }}_premium" value="{{ plan.premium }}"
                        placeholder="{{ config.model_premium }}"
-                       class="w-full text-xs font-mono rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500 {% if plan.premium %}ring-1 ring-purple-400 dark:ring-purple-600{% endif %}">
+                       class="w-full text-xs font-mono rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500 {% if plan.premium %}ring-1 ring-kova-400 dark:ring-kova-600{% endif %}">
               </td>
               <td class="px-3 py-3">
                 <input type="text" name="{{ plan.code }}_workhorse" value="{{ plan.workhorse }}"
@@ -401,8 +401,8 @@
               <input type="number" name="{{ rl.code }}_max_tokens" value="{{ rl.max_tokens_per_day }}" min="1000" step="10000"
                      class="w-40 text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500">
             </td>
-            <td class="px-5 py-3 text-sm font-mono text-emerald-600">{{ rl.enforced_daily_tokens|format_number }}</td>
-            <td class="px-5 py-3 text-sm font-mono text-indigo-600 dark:text-indigo-400">{{ rl.enforced_monthly_tokens|format_number }}</td>
+            <td class="px-5 py-3 text-sm font-mono text-growth-600">{{ rl.enforced_daily_tokens|format_number }}</td>
+            <td class="px-5 py-3 text-sm font-mono text-kova-600 dark:text-kova-400">{{ rl.enforced_monthly_tokens|format_number }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -427,7 +427,7 @@
     {% for task in task_config %}
     <div class="px-5 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
       <div class="flex items-center space-x-3">
-        <span class="w-2 h-2 rounded-full {% if task.tier == 'premium' %}bg-purple-500{% elif task.tier == 'workhorse' %}bg-blue-500{% else %}bg-green-500{% endif %}"></span>
+        <span class="w-2 h-2 rounded-full {% if task.tier == 'premium' %}bg-kova-500{% elif task.tier == 'workhorse' %}bg-blue-500{% else %}bg-green-500{% endif %}"></span>
         <div>
           <p class="text-sm font-medium text-gray-900 dark:text-white">{{ task.label }}</p>
           <p class="text-[10px] text-gray-400 font-mono">{{ task.key }} &middot; tier: {{ task.tier }}</p>
@@ -440,7 +440,7 @@
           <input type="hidden" name="action" value="set">
           <input type="text" name="model_value" value="{% if task.is_override %}{{ task.current_model }}{% endif %}"
                  placeholder="{{ task.current_model }}"
-                 class="w-64 text-xs rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500 font-mono {% if task.is_override %}ring-1 ring-amber-400 dark:ring-amber-600{% endif %}">
+                 class="w-64 text-xs rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500 font-mono {% if task.is_override %}ring-1 ring-gold-400 dark:ring-gold-600{% endif %}">
           <button type="submit" class="px-2.5 py-1.5 text-xs font-medium text-kova-700 dark:text-kova-400 bg-kova-50 dark:bg-kova-950 hover:bg-kova-100 dark:hover:bg-kova-900 rounded-md transition">Set</button>
         </form>
         {% if task.is_override %}
@@ -472,7 +472,7 @@
       {% for mh in model_health %}
       <div class="px-5 py-3 flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <span class="w-2.5 h-2.5 rounded-full {% if mh.critical %}bg-red-500 animate-pulse{% elif mh.warning %}bg-amber-500{% else %}bg-emerald-500{% endif %}"></span>
+          <span class="w-2.5 h-2.5 rounded-full {% if mh.critical %}bg-red-500 animate-pulse{% elif mh.warning %}bg-gold-500{% else %}bg-growth-500{% endif %}"></span>
           <div>
             <p class="text-xs font-mono text-gray-900 dark:text-white truncate max-w-[200px]">{{ mh.model }}</p>
             <p class="text-[10px] text-gray-400">{{ mh.calls }} calls &middot; {{ mh.avg_ms }}ms avg</p>
@@ -481,8 +481,8 @@
         <div class="text-right">
           <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold
             {% if mh.critical %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
-            {% elif mh.warning %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
-            {% else %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400{% endif %}">
+            {% elif mh.warning %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400
+            {% else %}bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400{% endif %}">
             {{ mh.failure_rate }}% fail
           </span>
         </div>
@@ -518,12 +518,12 @@
             <td class="px-4 py-2.5 font-mono text-gray-900 dark:text-white">{{ row.model_used|truncatechars:40 }}</td>
             <td class="px-3 py-2.5 text-right text-gray-700 dark:text-gray-300">{{ row.calls }}</td>
             <td class="px-3 py-2.5 text-right">
-              <span class="{% if row.failures == 0 %}text-green-600 dark:text-green-400{% elif row.failures > row.successes %}text-red-600 dark:text-red-400{% else %}text-yellow-600 dark:text-yellow-400{% endif %}">
+              <span class="{% if row.failures == 0 %}text-green-600 dark:text-green-400{% elif row.failures > row.successes %}text-red-600 dark:text-red-400{% else %}text-gold-600 dark:text-gold-400{% endif %}">
                 {{ row.successes }}/{{ row.calls }}
               </span>
             </td>
             <td class="px-3 py-2.5 text-right text-gray-700 dark:text-gray-300">{{ row.total_tokens|format_number }}</td>
-            <td class="px-3 py-2.5 text-right font-mono {% if row.is_unknown %}text-amber-600{% elif row.cost_usd > 0 %}text-amber-600{% else %}text-emerald-600{% endif %}">${{ row.cost_usd|floatformat:4 }}</td>
+            <td class="px-3 py-2.5 text-right font-mono {% if row.is_unknown %}text-gold-600{% elif row.cost_usd > 0 %}text-gold-600{% else %}text-growth-600{% endif %}">${{ row.cost_usd|floatformat:4 }}</td>
             <td class="px-3 py-2.5 text-right text-gray-700 dark:text-gray-300">{{ row.avg_duration|floatformat:0 }}</td>
           </tr>
           {% endfor %}
@@ -614,7 +614,7 @@
             </tr>
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
               <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">Cost</td>
-              <td class="px-4 py-2.5 text-xs font-mono text-amber-600 dark:text-amber-400">$0.006 / minute</td>
+              <td class="px-4 py-2.5 text-xs font-mono text-gold-600 dark:text-gold-400">$0.006 / minute</td>
               <td class="px-4 py-2.5 text-[10px] text-gray-400">~$0.002 per 15-second voice memo</td>
             </tr>
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
@@ -641,7 +641,7 @@
               <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">API Key Status</td>
               <td class="px-4 py-2.5">
                 {% if config.default_provider == "openai" or True %}
-                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Configured</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400">Configured</span>
                 {% else %}
                 <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Not Set</span>
                 {% endif %}
@@ -656,7 +656,7 @@
     {# ── Image Generation ── #}
     <div>
       <h3 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
-        <svg class="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <svg class="w-4 h-4 text-kova-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
         </svg>
         Image Generation
@@ -677,7 +677,7 @@
               <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">Together.ai</td>
               <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">FLUX.1-schnell-Free</td>
               <td class="px-4 py-2.5 text-right">
-                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400">FREE</span>
               </td>
               <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">1st (Primary)</td>
               <td class="px-4 py-2.5 text-[10px] text-gray-400">Fast, 90s timeout</td>
@@ -686,7 +686,7 @@
               <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">HuggingFace</td>
               <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">FLUX.1-schnell</td>
               <td class="px-4 py-2.5 text-right">
-                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400">FREE</span>
               </td>
               <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">2nd (Fallback)</td>
               <td class="px-4 py-2.5 text-[10px] text-gray-400">120s timeout, no billing needed</td>
@@ -695,7 +695,7 @@
               <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">Pollinations.ai</td>
               <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">flux (configurable)</td>
               <td class="px-4 py-2.5 text-right">
-                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">~$0.005/img</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400">~$0.005/img</span>
               </td>
               <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">3rd (Last resort)</td>
               <td class="px-4 py-2.5 text-[10px] text-gray-400">60s timeout, paid fallback</td>
@@ -713,7 +713,7 @@
     {# ── Branded Graphics (Pillow) ── #}
     <div>
       <h3 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
-        <svg class="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <svg class="w-4 h-4 text-kova-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
         </svg>
         Branded Graphics (Pillow — On-Device)
@@ -730,22 +730,22 @@
           <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
               <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">Quote Cards</td>
-              <td class="px-4 py-2.5 text-right"><span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span></td>
+              <td class="px-4 py-2.5 text-right"><span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400">FREE</span></td>
               <td class="px-4 py-2.5 text-[10px] text-gray-400">Large quote + attribution, gradient bg, accent bars</td>
             </tr>
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
               <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">Tip Graphics</td>
-              <td class="px-4 py-2.5 text-right"><span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span></td>
+              <td class="px-4 py-2.5 text-right"><span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400">FREE</span></td>
               <td class="px-4 py-2.5 text-[10px] text-gray-400">Numbered tips with title, circle icons</td>
             </tr>
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
               <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">Stat Highlights</td>
-              <td class="px-4 py-2.5 text-right"><span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span></td>
+              <td class="px-4 py-2.5 text-right"><span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400">FREE</span></td>
               <td class="px-4 py-2.5 text-[10px] text-gray-400">Big number + label + context line</td>
             </tr>
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
               <td class="px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300">CTA Banners</td>
-              <td class="px-4 py-2.5 text-right"><span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span></td>
+              <td class="px-4 py-2.5 text-right"><span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400">FREE</span></td>
               <td class="px-4 py-2.5 text-[10px] text-gray-400">Headline + subtext + CTA button, brand colors</td>
             </tr>
           </tbody>
@@ -767,14 +767,14 @@
   <h3 class="text-xs font-semibold text-kova-700 dark:text-kova-300 uppercase tracking-wider mb-3">How Model Resolution Works</h3>
   <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 text-[11px] text-gray-600 dark:text-gray-400">
     <div class="flex items-start gap-2">
-      <span class="flex-shrink-0 w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center mt-0.5">1</span>
+      <span class="flex-shrink-0 w-5 h-5 rounded-full bg-gold-500 text-white text-[10px] font-bold flex items-center justify-center mt-0.5">1</span>
       <div>
         <p class="font-semibold text-gray-900 dark:text-gray-200">Per-Task Override</p>
         <p>If a specific task (e.g. "create.generate") has a model override set, that model is used regardless of plan.</p>
       </div>
     </div>
     <div class="flex items-start gap-2">
-      <span class="flex-shrink-0 w-5 h-5 rounded-full bg-purple-500 text-white text-[10px] font-bold flex items-center justify-center mt-0.5">2</span>
+      <span class="flex-shrink-0 w-5 h-5 rounded-full bg-kova-500 text-white text-[10px] font-bold flex items-center justify-center mt-0.5">2</span>
       <div>
         <p class="font-semibold text-gray-900 dark:text-gray-200">Plan-Specific Tier</p>
         <p>If the user's plan (e.g. "agency") has models configured, use that plan's tier (premium/workhorse/fast).</p>
@@ -977,7 +977,7 @@
           label: 'Calls',
           data: data.map(function(d) { return d.calls; }),
           type: 'line',
-          borderColor: 'rgb(99, 102, 241)',
+          borderColor: 'rgb(15, 76, 129)',
           backgroundColor: 'transparent',
           borderWidth: 2,
           pointRadius: 2,

@@ -44,7 +44,7 @@
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 {% if not alert.is_read %}bg-kova-50/30{% endif %}">
           <td class="px-4 py-2.5">
             <span class="text-[10px] px-1.5 py-0.5 rounded font-medium
-              {% if alert.alert_type == 'out_of_stock' %}bg-red-100 text-red-700{% elif alert.alert_type == 'low_stock' %}bg-yellow-100 text-yellow-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+              {% if alert.alert_type == 'out_of_stock' %}bg-red-100 text-red-700{% elif alert.alert_type == 'low_stock' %}bg-gold-100 text-gold-700{% else %}bg-blue-100 text-blue-700{% endif %}">
               {{ alert.get_alert_type_display }}
             </span>
           </td>

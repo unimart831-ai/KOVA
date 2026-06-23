@@ -63,17 +63,17 @@
           <td class="px-4 py-2.5 text-center">
             <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
               {% if p.stock_status == 'in_stock' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
-              {% elif p.stock_status == 'low_stock' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300
+              {% elif p.stock_status == 'low_stock' %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300
               {% elif p.stock_status == 'out_of_stock' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
               {% elif p.stock_status == 'made_to_order' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300
-              {% else %}bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300{% endif %}">
+              {% else %}bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-300{% endif %}">
               {{ p.get_stock_status_display }}
             </span>
           </td>
           <td class="px-4 py-2.5 text-right text-xs text-gray-600 dark:text-gray-400">{% if p.quantity is not None %}{{ p.quantity }}{% else %}—{% endif %}</td>
           <td class="px-4 py-2.5 text-right text-xs text-gray-600 dark:text-gray-400">{% if p.price %}{{ p.currency }} {{ p.price|floatformat:0 }}{% else %}—{% endif %}</td>
           <td class="px-4 py-2.5 text-center">
-            {% if p.is_featured %}<span class="text-amber-500">Featured</span>{% else %}<span class="text-gray-300 dark:text-gray-600">—</span>{% endif %}
+            {% if p.is_featured %}<span class="text-gold-500">Featured</span>{% else %}<span class="text-gray-300 dark:text-gray-600">—</span>{% endif %}
           </td>
           <td class="px-4 py-2.5 text-right text-xs text-gray-400">{{ p.created_at|date:"M d" }}</td>
         </tr>

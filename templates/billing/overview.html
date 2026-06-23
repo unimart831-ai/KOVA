@@ -10,13 +10,13 @@
 
   {# ── Current Plan Hero ── #}
   <div class="card overflow-hidden">
-    <div class="px-6 py-5 bg-gradient-to-br from-kova-50 via-white to-indigo-50/40 dark:from-kova-950/40 dark:via-gray-900 dark:to-indigo-950/20 border-b border-gray-100 dark:border-gray-800">
+    <div class="px-6 py-5 bg-gradient-to-br from-kova-50 via-white to-kova-50/40 dark:from-kova-950/40 dark:via-gray-900 dark:to-kova-950/20 border-b border-gray-100 dark:border-gray-800">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <p class="text-xs font-semibold uppercase tracking-wider text-kova-600 dark:text-kova-400">Current plan</p>
           <h2 class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ profile.get_plan_display }}</h2>
           {% if profile.subscription_status == 'trialing' %}
-            <p class="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
+            <p class="text-xs text-gold-600 dark:text-gold-400 mt-1 font-medium">
               Starter trial — ends {{ profile.trial_ends_at|date:"M d, Y" }}
             </p>
           {% elif profile.subscription_status == 'active' and profile.current_period_end %}
@@ -82,7 +82,7 @@
           <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div class="h-full rounded-full transition-all
                         {% if tokens_pct >= 90 %}bg-red-500
-                        {% elif tokens_pct >= 70 %}bg-amber-500
+                        {% elif tokens_pct >= 70 %}bg-gold-500
                         {% else %}bg-kova-500{% endif %}"
                  style="width: {{ tokens_pct }}%"
                  role="progressbar" aria-valuenow="{{ tokens_pct }}" aria-valuemin="0" aria-valuemax="100"></div>

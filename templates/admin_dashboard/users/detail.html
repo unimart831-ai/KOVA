@@ -6,8 +6,8 @@
 <div class="flex items-center gap-2 mt-0.5">
   <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {{ profile.plan|status_color }}">{{ profile.get_plan_display }}</span>
   <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {{ profile.subscription_status|status_color }}">{{ profile.subscription_status|default:"none" }}</span>
-  <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {% if business_mode.key == 'service' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300{% elif business_mode.key == 'digital' %}bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300{% elif business_mode.key == 'expert' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300{% else %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300{% endif %}">{{ business_mode.label }}</span>
-  {% if target_user.is_staff %}<span class="px-1.5 py-0.5 text-[10px] font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded">STAFF</span>{% endif %}
+  <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {% if business_mode.key == 'service' %}bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-300{% elif business_mode.key == 'digital' %}bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300{% elif business_mode.key == 'expert' %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300{% else %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300{% endif %}">{{ business_mode.label }}</span>
+  {% if target_user.is_staff %}<span class="px-1.5 py-0.5 text-[10px] font-medium bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-400 rounded">STAFF</span>{% endif %}
   {% if not target_user.is_active %}<span class="px-1.5 py-0.5 text-[10px] font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded">INACTIVE</span>{% endif %}
 </div>
 {% endblock %}
@@ -30,7 +30,7 @@
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ target_user.full_name|default:"No name" }}</h2>
         <p class="text-sm text-gray-500 dark:text-gray-400">{{ target_user.email }}</p>
         <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-          {% if target_user.phone_number %}{{ target_user.phone_number }} · {% else %}<span class="text-amber-600 dark:text-amber-400">No phone — cannot WhatsApp</span> · {% endif %}
+          {% if target_user.phone_number %}{{ target_user.phone_number }} · {% else %}<span class="text-gold-600 dark:text-gold-400">No phone — cannot WhatsApp</span> · {% endif %}
           Joined {{ target_user.date_joined|date:"M j, Y" }} · TZ: {{ target_user.timezone }} · Brief at {{ target_user.daily_brief_time|time:"H:i" }}
         </p>
       </div>
@@ -50,7 +50,7 @@
       <!-- Toggle Staff -->
       <form method="post" action="{% url 'admin_dashboard:user_toggle_staff' pk=target_user.pk %}">
         {% csrf_token %}
-        <button type="submit" class="px-2 py-1 text-xs font-medium rounded transition-colors {% if target_user.is_staff %}bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-400{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400{% endif %}"
+        <button type="submit" class="px-2 py-1 text-xs font-medium rounded transition-colors {% if target_user.is_staff %}bg-kova-100 text-kova-700 hover:bg-kova-200 dark:bg-kova-900/30 dark:text-kova-400{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400{% endif %}"
                 {% if target_user == request.user %}disabled title="Cannot toggle your own staff status"{% endif %}>
           {% if target_user.is_staff %}Remove Staff{% else %}Make Staff{% endif %}
         </button>
@@ -58,7 +58,7 @@
       <!-- Toggle Active -->
       <form method="post" action="{% url 'admin_dashboard:user_toggle_active' pk=target_user.pk %}">
         {% csrf_token %}
-        <button type="submit" class="px-2 py-1 text-xs font-medium rounded transition-colors {% if target_user.is_active %}bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400{% else %}bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400{% endif %}"
+        <button type="submit" class="px-2 py-1 text-xs font-medium rounded transition-colors {% if target_user.is_active %}bg-gold-100 text-gold-700 hover:bg-gold-200 dark:bg-gold-900/30 dark:text-gold-400{% else %}bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400{% endif %}"
                 {% if target_user == request.user %}disabled title="Cannot deactivate yourself"{% endif %}>
           {% if target_user.is_active %}Deactivate{% else %}Activate{% endif %}
         </button>
@@ -113,7 +113,7 @@
           {% if target_user.phone_number %}
             {{ target_user.phone_number }}
           {% else %}
-            <span class="text-amber-600 dark:text-amber-400">Missing</span>
+            <span class="text-gold-600 dark:text-gold-400">Missing</span>
           {% endif %}
         </dd>
       </div>
@@ -214,7 +214,7 @@
         <p class="text-[10px] text-gray-500 mt-0.5">Physical</p>
       </div>
       <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3">
-        <p class="text-xl font-bold text-emerald-600">{{ offer_counts.service }}</p>
+        <p class="text-xl font-bold text-growth-600">{{ offer_counts.service }}</p>
         <p class="text-[10px] text-gray-500 mt-0.5">Service</p>
       </div>
       <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3">
@@ -237,7 +237,7 @@
         <span class="font-semibold text-gray-900 dark:text-white">{{ fulfillment_counts.digital_ready }}/{{ offer_counts.digital }}</span>
       </div>
       <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
-        <div class="bg-emerald-500 h-2 rounded-full" style="width: {% if offer_counts.service %}{% widthratio fulfillment_counts.service_ready offer_counts.service 100 %}{% else %}0{% endif %}%"></div>
+        <div class="bg-growth-500 h-2 rounded-full" style="width: {% if offer_counts.service %}{% widthratio fulfillment_counts.service_ready offer_counts.service 100 %}{% else %}0{% endif %}%"></div>
       </div>
       <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
         <div class="bg-violet-500 h-2 rounded-full" style="width: {% if offer_counts.digital %}{% widthratio fulfillment_counts.digital_ready offer_counts.digital 100 %}{% else %}0{% endif %}%"></div>
@@ -507,11 +507,11 @@
     <p class="text-xs text-gray-500 dark:text-gray-400">Completed</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
-    <p class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ interaction_stats.pending|default:0 }}</p>
+    <p class="text-2xl font-bold text-gold-600 dark:text-gold-400">{{ interaction_stats.pending|default:0 }}</p>
     <p class="text-xs text-gray-500 dark:text-gray-400">Pending</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
-    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ superfans|length }}</p>
+    <p class="text-2xl font-bold text-kova-600 dark:text-kova-400">{{ superfans|length }}</p>
     <p class="text-xs text-gray-500 dark:text-gray-400">Superfans</p>
   </div>
 </div>
@@ -529,7 +529,7 @@
         <p class="text-sm font-medium text-gray-900 dark:text-white">{{ fan.platform_username }}</p>
         <p class="text-xs text-gray-500 dark:text-gray-400">{{ fan.platform }} · {{ fan.interaction_count }} interactions</p>
       </div>
-      <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {% if fan.tier == 'gold' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400{% elif fan.tier == 'silver' %}bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300{% else %}bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400{% endif %}">
+      <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {% if fan.tier == 'gold' %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400{% elif fan.tier == 'silver' %}bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300{% else %}bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400{% endif %}">
         {{ fan.tier|title }}
       </span>
     </div>

@@ -19,7 +19,7 @@
           {% if channel.status == 'active' %}
             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Active</span>
           {% elif channel.status == 'paused' %}
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">Paused</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gold-100 text-gold-800 dark:bg-gold-900 dark:text-gold-200">Paused</span>
           {% else %}
             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Disconnected</span>
           {% endif %}
@@ -52,7 +52,7 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">Published</p>
     </div>
     <div class="card px-4 py-3 text-center">
-      <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ stats.drafts }}</p>
+      <p class="text-2xl font-bold text-gold-600 dark:text-gold-400">{{ stats.drafts }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">Drafts</p>
     </div>
     <div class="card px-4 py-3 text-center">
@@ -101,7 +101,7 @@
               {% if post.status == 'published' %}
                 <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Published</span>
               {% elif post.status == 'scheduled' %}
-                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">Scheduled</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gold-100 text-gold-800 dark:bg-gold-900 dark:text-gold-200">Scheduled</span>
               {% elif post.status == 'failed' %}
                 <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Failed</span>
               {% else %}

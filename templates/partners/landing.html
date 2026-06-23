@@ -11,7 +11,7 @@
     {% include "components/brand/_partner_badge.html" %}
 
     <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-[1.1] reveal reveal-delay-1">
-      Earn up to <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-kova-600 dark:from-emerald-400 dark:to-kova-400">30% recurring</span><br>
+      Earn up to <span class="text-transparent bg-clip-text bg-gradient-to-r from-growth-600 to-kova-600 dark:from-growth-400 dark:to-kova-400">30% recurring</span><br>
       <span class="marketing-hero-tagline !text-2xl sm:!text-3xl lg:!text-4xl">commission for 24 months per client.</span>
     </h1>
     <p class="mt-6 max-w-2xl mx-auto text-lg text-gray-600 dark:text-gray-300 leading-relaxed reveal reveal-delay-2">
@@ -19,7 +19,7 @@
     </p>
 
     <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 reveal reveal-delay-3">
-      <a href="{% url 'partners:apply' %}" class="group inline-flex items-center px-8 py-3.5 text-lg font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-lg shadow-emerald-200 dark:shadow-none transition-all">
+      <a href="{% url 'partners:apply' %}" class="group inline-flex items-center px-8 py-3.5 text-lg font-semibold text-white bg-growth-600 hover:bg-growth-700 rounded-xl shadow-lg shadow-growth-200 dark:shadow-none transition-all">
         Apply to become a partner
         <svg class="inline w-5 h-5 ml-1 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
@@ -31,14 +31,14 @@
     <!-- Partner login / dashboard link -->
     <div class="mt-6 reveal reveal-delay-3">
       {% if user.is_authenticated and user.partner_profile %}
-        <a href="{% url 'partners:dashboard' %}" class="inline-flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium transition-colors">
+        <a href="{% url 'partners:dashboard' %}" class="inline-flex items-center gap-2 text-sm text-growth-600 dark:text-growth-400 hover:text-growth-700 dark:hover:text-growth-300 font-medium transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           Go to my Partner Dashboard →
         </a>
       {% else %}
         <p class="text-sm text-gray-500 dark:text-gray-400">
           Already a partner?
-          <a href="{% url 'account_login' %}?next={% url 'partners:dashboard' %}" class="text-emerald-600 dark:text-emerald-400 hover:underline font-medium">Log in to your dashboard</a>
+          <a href="{% url 'account_login' %}?next={% url 'partners:dashboard' %}" class="text-growth-600 dark:text-growth-400 hover:underline font-medium">Log in to your dashboard</a>
         </p>
       {% endif %}
     </div>
@@ -50,7 +50,7 @@
   <div class="max-w-5xl mx-auto px-4">
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
       <div class="reveal">
-        <p class="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">30%</p>
+        <p class="text-2xl sm:text-3xl font-extrabold text-growth-600 dark:text-growth-400">30%</p>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Max commission rate</p>
       </div>
       <div class="reveal reveal-delay-1">
@@ -62,7 +62,7 @@
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Commission + Bonuses + Profit Share</p>
       </div>
       <div class="reveal reveal-delay-3">
-        <p class="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">KES 500K+</p>
+        <p class="text-2xl sm:text-3xl font-extrabold text-growth-600 dark:text-growth-400">KES 500K+</p>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Milestone bonuses available</p>
       </div>
     </div>
@@ -77,8 +77,8 @@
 
     <div class="mt-14 grid grid-cols-1 md:grid-cols-3 gap-10">
       <div class="text-center reveal reveal-delay-1">
-        <div class="w-14 h-14 mx-auto bg-emerald-100 dark:bg-emerald-950/40 rounded-2xl flex items-center justify-center mb-4">
-          <span class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">1</span>
+        <div class="w-14 h-14 mx-auto bg-growth-100 dark:bg-growth-950/40 rounded-2xl flex items-center justify-center mb-4">
+          <span class="text-2xl font-bold text-growth-600 dark:text-growth-400">1</span>
         </div>
         <h3 class="font-semibold text-lg text-gray-900 dark:text-white">Apply & Get Your Code</h3>
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Fill out a short application. Once approved, you get a unique referral code and personalized link.</p>
@@ -111,9 +111,9 @@
 
     <div class="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       {% for tier in commission_tiers %}
-      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 border {% if forloop.last %}border-emerald-300 dark:border-emerald-700 ring-2 ring-emerald-100 dark:ring-emerald-900/40{% else %}border-gray-200 dark:border-gray-800{% endif %} reveal reveal-delay-{{ forloop.counter }}">
-        {% if forloop.last %}<div class="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2">Top tier</div>{% endif %}
-        <p class="text-3xl font-extrabold {% if forloop.last %}text-emerald-600 dark:text-emerald-400{% else %}text-gray-900 dark:text-white{% endif %}">{{ tier.rate }}</p>
+      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 border {% if forloop.last %}border-growth-300 dark:border-growth-700 ring-2 ring-growth-100 dark:ring-growth-900/40{% else %}border-gray-200 dark:border-gray-800{% endif %} reveal reveal-delay-{{ forloop.counter }}">
+        {% if forloop.last %}<div class="text-[10px] font-semibold text-growth-600 dark:text-growth-400 uppercase tracking-wider mb-2">Top tier</div>{% endif %}
+        <p class="text-3xl font-extrabold {% if forloop.last %}text-growth-600 dark:text-growth-400{% else %}text-gray-900 dark:text-white{% endif %}">{{ tier.rate }}</p>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ tier.range }}</p>
         <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
           <p class="text-xs text-gray-400 dark:text-gray-500">Example on Growth plan</p>
@@ -136,13 +136,13 @@
     <div class="mt-12 space-y-4 max-w-3xl mx-auto">
       {% for m in milestones %}
       <div class="flex items-center gap-4 bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 reveal reveal-delay-{{ forloop.counter }}">
-        <div class="w-12 h-12 flex-shrink-0 bg-amber-100 dark:bg-amber-950/40 rounded-xl flex items-center justify-center">
-          <span class="text-sm font-bold text-amber-700 dark:text-amber-400">{{ m.clients }}</span>
+        <div class="w-12 h-12 flex-shrink-0 bg-gold-100 dark:bg-gold-950/40 rounded-xl flex items-center justify-center">
+          <span class="text-sm font-bold text-gold-700 dark:text-gold-400">{{ m.clients }}</span>
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
             <h3 class="font-semibold text-gray-900 dark:text-white">{{ m.label }}</h3>
-            <span class="text-xs bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full">{{ m.clients }} clients</span>
+            <span class="text-xs bg-gold-100 dark:bg-gold-950/40 text-gold-700 dark:text-gold-300 px-2 py-0.5 rounded-full">{{ m.clients }} clients</span>
           </div>
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ m.extras }}</p>
         </div>
@@ -159,7 +159,7 @@
 <!-- Profit Share -->
 <section class="py-20 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900/50 dark:to-gray-950">
   <div class="max-w-4xl mx-auto px-4 text-center">
-    <div class="inline-flex items-center space-x-2 bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 text-sm font-medium px-4 py-1.5 rounded-full mb-6 reveal">
+    <div class="inline-flex items-center space-x-2 bg-kova-100 dark:bg-kova-950/40 text-kova-700 dark:text-kova-300 text-sm font-medium px-4 py-1.5 rounded-full mb-6 reveal">
       <span>Elite Partners Only</span>
     </div>
     <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white reveal reveal-delay-1">Profit sharing</h2>
@@ -169,17 +169,17 @@
 
     <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
       <div class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800 reveal reveal-delay-1">
-        <p class="text-3xl font-extrabold text-purple-600 dark:text-purple-400">1%</p>
+        <p class="text-3xl font-extrabold text-kova-600 dark:text-kova-400">1%</p>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Quarterly net profit</p>
         <p class="text-xs text-gray-400 dark:text-gray-500 mt-3">100+ active clients<br>6-month avg retention</p>
       </div>
-      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-purple-200 dark:border-purple-800 ring-1 ring-purple-100 dark:ring-purple-900/40 reveal reveal-delay-2">
-        <p class="text-3xl font-extrabold text-purple-600 dark:text-purple-400">2%</p>
+      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-kova-200 dark:border-kova-800 ring-1 ring-kova-100 dark:ring-kova-900/40 reveal reveal-delay-2">
+        <p class="text-3xl font-extrabold text-kova-600 dark:text-kova-400">2%</p>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Quarterly net profit</p>
         <p class="text-xs text-gray-400 dark:text-gray-500 mt-3">200+ active clients<br>Priority support line</p>
       </div>
-      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-purple-300 dark:border-purple-700 ring-2 ring-purple-100 dark:ring-purple-900/40 reveal reveal-delay-3">
-        <p class="text-3xl font-extrabold text-purple-600 dark:text-purple-400">3%</p>
+      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-kova-300 dark:border-kova-700 ring-2 ring-kova-100 dark:ring-kova-900/40 reveal reveal-delay-3">
+        <p class="text-3xl font-extrabold text-kova-600 dark:text-kova-400">3%</p>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Quarterly net profit</p>
         <p class="text-xs text-gray-400 dark:text-gray-500 mt-3">500+ active clients<br>Advisory Board seat</p>
       </div>
@@ -256,7 +256,7 @@
       Apply today. Start earning within weeks. No cap on what you can make.
     </p>
     <div class="mt-8 reveal reveal-delay-2">
-      <a href="{% url 'partners:apply' %}" class="group inline-flex items-center px-8 py-3.5 text-lg font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-lg shadow-emerald-200 dark:shadow-none transition-all">
+      <a href="{% url 'partners:apply' %}" class="group inline-flex items-center px-8 py-3.5 text-lg font-semibold text-white bg-growth-600 hover:bg-growth-700 rounded-xl shadow-lg shadow-growth-200 dark:shadow-none transition-all">
         Apply to become a partner
         <svg class="inline w-5 h-5 ml-1 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>

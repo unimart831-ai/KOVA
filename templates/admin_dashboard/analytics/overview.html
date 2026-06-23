@@ -25,7 +25,7 @@
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Avg Engagement</p>
-    <p class="text-2xl font-bold {% if avg_engagement >= 3 %}text-emerald-600 dark:text-emerald-400{% else %}text-gray-900 dark:text-white{% endif %} mt-1">{{ avg_engagement }}%</p>
+    <p class="text-2xl font-bold {% if avg_engagement >= 3 %}text-growth-600 dark:text-growth-400{% else %}text-gray-900 dark:text-white{% endif %} mt-1">{{ avg_engagement }}%</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Posts Tracked</p>
@@ -81,7 +81,7 @@
               <span class="text-xs font-medium text-gray-900 dark:text-white">{{ d.combo }}</span>
             </td>
             <td class="px-4 py-2.5 text-right text-xs text-gray-600 dark:text-gray-400">{{ d.count }}</td>
-            <td class="px-4 py-2.5 text-right text-xs font-semibold {% if d.avg_rate >= 5 %}text-emerald-600 dark:text-emerald-400{% else %}text-gray-900 dark:text-white{% endif %}">{{ d.avg_rate }}%</td>
+            <td class="px-4 py-2.5 text-right text-xs font-semibold {% if d.avg_rate >= 5 %}text-growth-600 dark:text-growth-400{% else %}text-gray-900 dark:text-white{% endif %}">{{ d.avg_rate }}%</td>
             <td class="px-4 py-2.5 text-right text-xs text-gray-500 dark:text-gray-400">{{ d.best }}%</td>
           </tr>
           {% empty %}
@@ -135,7 +135,7 @@
       </div>
       <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
         <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Pending Insights</p>
-        <p class="text-lg font-bold {% if unacted_insights %}text-amber-600 dark:text-amber-400{% else %}text-gray-900 dark:text-white{% endif %} mt-0.5">{{ unacted_insights }}</p>
+        <p class="text-lg font-bold {% if unacted_insights %}text-gold-600 dark:text-gold-400{% else %}text-gray-900 dark:text-white{% endif %} mt-0.5">{{ unacted_insights }}</p>
       </div>
       <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
         <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Insight Types</p>
@@ -170,12 +170,12 @@
     <p class="text-xl font-bold text-gray-900 dark:text-white">{{ total_conversions }}</p>
     <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Total Conversions</p>
   </div>
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-emerald-200 dark:border-emerald-900/50 p-4 shadow-sm text-center">
-    <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400">{{ conversions_30d_count }}</p>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-growth-200 dark:border-growth-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-growth-600 dark:text-growth-400">{{ conversions_30d_count }}</p>
     <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Conversions (30d)</p>
   </div>
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-emerald-200 dark:border-emerald-900/50 p-4 shadow-sm text-center">
-    <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400"><span class="text-sm text-gray-400">KES</span> {{ conversion_revenue_30d|floatformat:0 }}</p>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-growth-200 dark:border-growth-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-growth-600 dark:text-growth-400"><span class="text-sm text-gray-400">KES</span> {{ conversion_revenue_30d|floatformat:0 }}</p>
     <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Revenue (30d)</p>
   </div>
 </div>
@@ -193,7 +193,7 @@
         <div class="text-right">
           <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.count }}</span>
           {% if item.revenue %}
-          <span class="text-xs text-emerald-600 dark:text-emerald-400 ml-1">KES {{ item.revenue|floatformat:0 }}</span>
+          <span class="text-xs text-growth-600 dark:text-growth-400 ml-1">KES {{ item.revenue|floatformat:0 }}</span>
           {% endif %}
         </div>
       </div>
@@ -213,7 +213,7 @@
         <div class="text-right">
           <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.count }}</span>
           {% if item.revenue %}
-          <span class="text-xs text-emerald-600 dark:text-emerald-400 ml-1">KES {{ item.revenue|floatformat:0 }}</span>
+          <span class="text-xs text-growth-600 dark:text-growth-400 ml-1">KES {{ item.revenue|floatformat:0 }}</span>
           {% endif %}
         </div>
       </div>
@@ -231,7 +231,7 @@
       <div class="text-xs">
         <div class="flex items-center justify-between">
           <span class="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[60%]">{{ item.post__content_text|truncatechars:40 }}</span>
-          <span class="text-emerald-600 dark:text-emerald-400 font-semibold">KES {{ item.total_revenue|floatformat:0 }}</span>
+          <span class="text-growth-600 dark:text-growth-400 font-semibold">KES {{ item.total_revenue|floatformat:0 }}</span>
         </div>
         <p class="text-gray-400 dark:text-gray-500 mt-0.5">{{ item.conv_count }} conversion{{ item.conv_count|pluralize }}</p>
       </div>
@@ -244,18 +244,18 @@
 
 <!-- ── Quick Links ───────────────────────────────────────────────────── -->
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-  <a href="{% url 'admin_dashboard:content_dna_analysis' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-purple-400 dark:hover:border-purple-500 transition-all">
-    <div class="w-9 h-9 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-      <svg class="w-4.5 h-4.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+  <a href="{% url 'admin_dashboard:content_dna_analysis' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-kova-400 dark:hover:border-kova-500 transition-all">
+    <div class="w-9 h-9 bg-kova-100 dark:bg-kova-900/30 rounded-lg flex items-center justify-center">
+      <svg class="w-4.5 h-4.5 text-kova-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
     </div>
     <div>
       <p class="text-sm font-medium text-gray-900 dark:text-white">Content DNA Deep Dive</p>
       <p class="text-xs text-gray-400">Format × tone heatmap &amp; patterns</p>
     </div>
   </a>
-  <a href="{% url 'admin_dashboard:competitor_overview' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-amber-400 dark:hover:border-amber-500 transition-all">
-    <div class="w-9 h-9 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
-      <svg class="w-4.5 h-4.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+  <a href="{% url 'admin_dashboard:competitor_overview' %}" class="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:border-gold-400 dark:hover:border-gold-500 transition-all">
+    <div class="w-9 h-9 bg-gold-100 dark:bg-gold-900/30 rounded-lg flex items-center justify-center">
+      <svg class="w-4.5 h-4.5 text-gold-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
     </div>
     <div>
       <p class="text-sm font-medium text-gray-900 dark:text-white">Competitor Intelligence</p>
@@ -280,10 +280,10 @@ document.addEventListener('DOMContentLoaded', function() {
       data: {
         labels: trend.map(d => d.date.slice(5)),
         datasets: [
-          { label: 'Impressions', data: trend.map(d => d.impressions), borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 0 },
+          { label: 'Impressions', data: trend.map(d => d.impressions), borderColor: '#1E3A8A', backgroundColor: 'rgba(30,58,138,0.1)', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 0 },
           { label: 'Likes', data: trend.map(d => d.likes), borderColor: '#ef4444', tension: 0.3, borderWidth: 2, pointRadius: 0 },
           { label: 'Comments', data: trend.map(d => d.comments), borderColor: '#f59e0b', tension: 0.3, borderWidth: 2, pointRadius: 0 },
-          { label: 'Shares', data: trend.map(d => d.shares), borderColor: '#10b981', tension: 0.3, borderWidth: 2, pointRadius: 0 },
+          { label: 'Shares', data: trend.map(d => d.shares), borderColor: '#10B981', tension: 0.3, borderWidth: 2, pointRadius: 0 },
         ]
       },
       options: {
@@ -336,8 +336,8 @@ document.addEventListener('DOMContentLoaded', function() {
         datasets: [{
           label: 'Posts',
           data: scatter,
-          backgroundColor: 'rgba(99, 102, 241, 0.5)',
-          borderColor: '#6366f1',
+          backgroundColor: 'rgba(15, 76, 129, 0.5)',
+          borderColor: '#1E3A8A',
           borderWidth: 1,
           pointRadius: 4,
         }]
@@ -367,7 +367,7 @@ document.addEventListener('DOMContentLoaded', function() {
         datasets: [{
           label: 'Posts',
           data: hist.map(h => h.count),
-          backgroundColor: '#6366f1',
+          backgroundColor: '#1E3A8A',
           borderWidth: 0,
           borderRadius: 4,
         }]

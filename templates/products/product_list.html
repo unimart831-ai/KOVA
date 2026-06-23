@@ -16,8 +16,8 @@
   {% include "products/_catalog_showcase_modal.html" %}
 
   {% if unread_alerts %}
-  <a href="{% url 'products:alerts' %}" class="card border-l-4 border-amber-500 px-4 py-3 block hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors">
-    <p class="text-sm font-medium text-amber-800 dark:text-amber-200">
+  <a href="{% url 'products:alerts' %}" class="card border-l-4 border-gold-500 px-4 py-3 block hover:bg-gold-50/50 dark:hover:bg-gold-900/10 transition-colors">
+    <p class="text-sm font-medium text-gold-800 dark:text-gold-200">
       {{ unread_alerts }} stock alert{{ unread_alerts|pluralize }} — tap to review
     </p>
   </a>

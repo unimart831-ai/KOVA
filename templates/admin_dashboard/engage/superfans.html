@@ -69,11 +69,11 @@
           </td>
           <td class="px-4 py-3">
             {% if fan.tier == "superfan" %}
-            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">Superfan</span>
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gold-100 dark:bg-gold-900/30 text-gold-700 dark:text-gold-400">Superfan</span>
             {% elif fan.tier == "loyal" %}
             <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">Loyal</span>
             {% else %}
-            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">Rising</span>
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-growth-100 dark:bg-growth-900/30 text-growth-700 dark:text-growth-400">Rising</span>
             {% endif %}
           </td>
           <td class="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-white">{{ fan.interaction_count }}</td>
@@ -88,7 +88,7 @@
           </td>
           <td class="px-4 py-3">
             {% if fan.last_sentiment == "positive" %}
-            <span class="text-emerald-500 text-xs font-medium">Positive</span>
+            <span class="text-growth-500 text-xs font-medium">Positive</span>
             {% elif fan.last_sentiment == "negative" %}
             <span class="text-red-500 text-xs font-medium">Negative</span>
             {% elif fan.last_sentiment == "neutral" %}

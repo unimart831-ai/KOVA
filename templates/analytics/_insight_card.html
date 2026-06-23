@@ -13,7 +13,7 @@
       {% if insight.priority == 'high' %}
         <span class="text-xs text-red-500 font-medium">High</span>
       {% elif insight.priority == 'medium' %}
-        <span class="text-xs text-amber-500 font-medium">Medium</span>
+        <span class="text-xs text-gold-500 font-medium">Medium</span>
       {% endif %}
     </div>
 
@@ -51,7 +51,7 @@
         hx-vals='{"action": "create_seed"}'
         hx-target="#insight-{{ insight.pk }}"
         hx-swap="outerHTML"
-        class="text-xs px-2.5 py-1 rounded bg-kova-500 text-white hover:bg-kova-600 transition-colors">
+        class="text-xs px-2.5 py-1 rounded bg-growth-500 text-white hover:bg-growth-600 transition-colors">
         Create Content
       </button>
       {% endif %}

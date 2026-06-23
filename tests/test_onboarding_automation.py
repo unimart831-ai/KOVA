@@ -549,6 +549,27 @@ class TestExpressOnboardingViews:
         u.save(update_fields=["phone_number"])
         return u
 
+    def test_discovery_fast_path_skips_step_one_form(self, client):
+        u = self._user_with_phone(username="fast", email="fast@b.com")
+        self._login_client(client, u)
+        resp = client.post(
+            "/accounts/onboarding/start/",
+            {
+                "business_type": "salon",
+                "goal": "bookings",
+                "company_name": "Glow Salon",
+            },
+            follow=False,
+        )
+        assert resp.status_code == 302
+        assert "step=2" in resp.url
+        u.refresh_from_db()
+        p = u.profile
+        assert p.company_name == "Glow Salon"
+        assert p.industry == "salon_beauty"
+        assert p.business_model == "service"
+        assert (p.onboarding_step_timestamps or {}).get("discovery_completed")
+
     def test_choose_path_records_intent_and_routes_sell(self, client):
         u = self._user_with_phone(username="route", email="r@b.com")
         self._login_client(client, u)

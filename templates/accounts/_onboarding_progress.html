@@ -33,8 +33,8 @@
               </svg>
             </div>
           {% elif step.status == "failed" %}
-            <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950 flex items-center justify-center shrink-0">
-              <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-10 h-10 rounded-xl bg-gold-100 dark:bg-gold-950 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5 text-gold-600 dark:text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
               </svg>
             </div>
@@ -98,7 +98,7 @@
             {% elif step.status == "running" %}
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-kova-100 text-kova-700 dark:bg-kova-950 dark:text-kova-300">Working</span>
             {% elif step.status == "failed" %}
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">Partial</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gold-100 text-gold-700 dark:bg-gold-950 dark:text-gold-300">Partial</span>
             {% else %}
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500">Queued</span>
             {% endif %}
@@ -110,15 +110,15 @@
 
   {# ── Stuck: Celery dropped the chain or it wedged. Give the user an exit. ── #}
   {% if progress.stuck and not progress.all_done %}
-    <div class="card border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
+    <div class="card border-gold-200 dark:border-gold-800 bg-gold-50 dark:bg-gold-950/30">
       <div class="card-body space-y-3">
         <div class="flex items-start gap-3">
-          <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <svg class="w-5 h-5 text-gold-600 dark:text-gold-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
           <div class="flex-1">
-            <p class="text-sm font-semibold text-amber-900 dark:text-amber-200">This is taking longer than expected</p>
-            <p class="text-xs text-amber-800 dark:text-amber-300 mt-1">
+            <p class="text-sm font-semibold text-gold-900 dark:text-gold-200">This is taking longer than expected</p>
+            <p class="text-xs text-gold-800 dark:text-gold-300 mt-1">
               Setup normally finishes in 1–3 minutes. It may still complete in the background — or the
               job may have been dropped. Retry below, or head straight to the Studio.
             </p>
@@ -127,7 +127,7 @@
         <div class="flex flex-col sm:flex-row gap-2">
           <form method="post" action="{% url 'accounts:onboarding_retry' %}" class="flex-1">
             {% csrf_token %}
-            <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-amber-600 text-white font-semibold hover:bg-amber-700 transition-colors text-sm">
+            <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gold-600 text-white font-semibold hover:bg-gold-700 transition-colors text-sm">
               Retry agency setup
             </button>
           </form>
@@ -231,13 +231,13 @@
 
       {# Action buttons — industry-aware CTAs #}
       {% if not has_platforms %}
-      <div class="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl flex items-start gap-3">
-        <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <div class="p-4 bg-gold-50 dark:bg-gold-950/30 border border-gold-200 dark:border-gold-800 rounded-xl flex items-start gap-3">
+        <svg class="w-5 h-5 text-gold-600 dark:text-gold-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
         </svg>
         <div class="flex-1">
-          <p class="text-sm font-medium text-amber-800 dark:text-amber-300">Connect a platform to start publishing</p>
-          <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">Your starter posts are saved as drafts. Connect a social account to assign and schedule them.</p>
+          <p class="text-sm font-medium text-gold-800 dark:text-gold-300">Connect a platform to start publishing</p>
+          <p class="text-xs text-gold-700 dark:text-gold-400 mt-1">Your starter posts are saved as drafts. Connect a social account to assign and schedule them.</p>
           <a href="{% url 'platforms:list' %}" class="inline-flex items-center gap-1 mt-2 text-sm font-medium text-kova-600 dark:text-kova-400 hover:text-kova-800 dark:hover:text-kova-300">
             Connect now
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
@@ -247,14 +247,14 @@
       {% endif %}
 
       {% if is_commerce or onboarding_intent == "sell" or onboarding_intent == "both" %}
-      <div class="p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl">
-        <p class="text-sm font-medium text-emerald-800 dark:text-emerald-300">Next: your shop</p>
-        <p class="text-xs text-emerald-700 dark:text-emerald-400 mt-1">Snap your first product and share your shop link when you're ready.</p>
+      <div class="p-4 bg-growth-50 dark:bg-growth-950/30 border border-growth-200 dark:border-growth-800 rounded-xl">
+        <p class="text-sm font-medium text-growth-800 dark:text-growth-300">Next: your shop</p>
+        <p class="text-xs text-growth-700 dark:text-growth-400 mt-1">Snap your first product and share your shop link when you're ready.</p>
         <div class="flex flex-wrap gap-2 mt-3">
-          <a href="{% url 'products:snap' %}" class="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors">
+          <a href="{% url 'products:snap' %}" class="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-growth-600 text-white text-sm font-semibold hover:bg-growth-700 transition-colors">
             Add a product
           </a>
-          <a href="{% url 'products:list' %}" class="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 text-emerald-800 dark:text-emerald-300 text-sm font-semibold border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-colors">
+          <a href="{% url 'products:list' %}" class="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 text-growth-800 dark:text-growth-300 text-sm font-semibold border border-growth-200 dark:border-growth-800 hover:bg-growth-50 dark:hover:bg-growth-950/50 transition-colors">
             View shop
           </a>
         </div>
@@ -263,7 +263,7 @@
 
       <div class="flex flex-col sm:flex-row gap-3">
         {% if is_commerce or onboarding_intent == "sell" or onboarding_intent == "both" %}
-        <a href="{% url 'products:snap' %}" class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-colors">
+        <a href="{% url 'products:snap' %}" class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-growth-600 text-white font-semibold hover:bg-growth-700 transition-colors">
           Snap your first product
         </a>
         {% endif %}

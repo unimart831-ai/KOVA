@@ -7,12 +7,12 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-SETUP_TOTAL_STEPS = 3
+SETUP_TOTAL_STEPS = 2
 
 
 def setup_step_for_wizard(step: int) -> int:
-    """Map wizard step (1–2) to global setup progress (2–3)."""
-    return step + 1
+    """Map confirm screen (step 2) to global setup progress."""
+    return 2 if step >= 2 else step
 
 
 def apply_url_inference_to_profile(profile, data: dict) -> list[str]:

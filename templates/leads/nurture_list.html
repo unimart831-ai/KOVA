@@ -39,7 +39,7 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">Sequences</p>
     </div>
     <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-center">
-      <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ active_count }}</p>
+      <p class="text-2xl font-bold text-growth-600 dark:text-growth-400">{{ active_count }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">Active</p>
     </div>
     <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-center">
@@ -47,7 +47,7 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">Leads Enrolled</p>
     </div>
     <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-center">
-      <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ total_completed }}</p>
+      <p class="text-2xl font-bold text-gold-600 dark:text-gold-400">{{ total_completed }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">Completed</p>
     </div>
   </div>
@@ -61,7 +61,7 @@
           <div class="flex items-center gap-2">
             <h3 class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ seq.name }}</h3>
             {% if seq.is_active %}
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Active</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400">Active</span>
             {% else %}
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500">Paused</span>
             {% endif %}
@@ -76,7 +76,7 @@
         <div class="flex items-center gap-2 ml-4">
           <form method="post" action="{% url 'leads:nurture_toggle' seq.pk %}">
             {% csrf_token %}
-            <button type="submit" class="text-xs px-3 py-1.5 rounded-lg border {% if seq.is_active %}border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800{% else %}border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20{% endif %}">
+            <button type="submit" class="text-xs px-3 py-1.5 rounded-lg border {% if seq.is_active %}border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800{% else %}border-growth-300 dark:border-growth-700 text-growth-600 dark:text-growth-400 hover:bg-growth-50 dark:hover:bg-growth-900/20{% endif %}">
               {% if seq.is_active %}Pause{% else %}Activate{% endif %}
             </button>
           </form>
@@ -93,8 +93,8 @@
         <div class="flex items-center gap-1 flex-shrink-0">
           <span class="inline-flex items-center px-2 py-1 rounded text-[10px] font-medium
             {% if step.action_type == 'send_email' %}bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400
-            {% elif step.action_type == 'add_tag' %}bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400
-            {% else %}bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400{% endif %}">
+            {% elif step.action_type == 'add_tag' %}bg-kova-50 text-kova-700 dark:bg-kova-900/20 dark:text-kova-400
+            {% else %}bg-gold-50 text-gold-700 dark:bg-gold-900/20 dark:text-gold-400{% endif %}">
             {{ step.delay_display }} →
             {% if step.action_type == 'send_email' %}Email{% elif step.action_type == 'add_tag' %}Tag{% else %}Status{% endif %}
           </span>

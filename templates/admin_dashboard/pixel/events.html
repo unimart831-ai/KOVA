@@ -68,9 +68,9 @@
           <td class="px-4 py-3 whitespace-nowrap">
             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
               {% if event.event_type == 'page_view' %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300
-              {% elif event.event_type == 'form_submit' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300
-              {% elif event.event_type == 'purchase' %}bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300
-              {% elif event.event_type == 'sign_up' %}bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300
+              {% elif event.event_type == 'form_submit' %}bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-300
+              {% elif event.event_type == 'purchase' %}bg-growth-100 text-growth-800 dark:bg-growth-900/30 dark:text-growth-300
+              {% elif event.event_type == 'sign_up' %}bg-kova-100 text-kova-800 dark:bg-kova-900/30 dark:text-kova-300
               {% elif event.event_type == 'button_click' %}bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300
               {% elif event.event_type == 'add_to_cart' %}bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300
               {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
@@ -90,7 +90,7 @@
           <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 capitalize">
             {{ event.device_type|default:"—" }}
           </td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm text-right {% if event.revenue %}text-emerald-600 dark:text-emerald-400 font-medium{% else %}text-gray-400{% endif %}">
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-right {% if event.revenue %}text-growth-600 dark:text-growth-400 font-medium{% else %}text-gray-400{% endif %}">
             {% if event.revenue %}${{ event.revenue|floatformat:2 }}{% else %}—{% endif %}
           </td>
           <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400 text-right">

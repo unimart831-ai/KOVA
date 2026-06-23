@@ -43,20 +43,20 @@ Shows batch context when generation finishes.
                   {% if post.reel_compose_pending %}
                   <span class="text-[9px] bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400 px-1.5 py-0.5 rounded font-medium animate-pulse">Composing…</span>
                   {% elif post.reel_has_video %}
-                  <span class="text-[9px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 px-1.5 py-0.5 rounded font-medium">Video ready</span>
+                  <span class="text-[9px] bg-growth-50 text-growth-600 dark:bg-growth-950 dark:text-growth-400 px-1.5 py-0.5 rounded font-medium">Video ready</span>
                   {% elif post.reel_compose_status == 'failed' %}
                   <span class="text-[9px] bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400 px-1.5 py-0.5 rounded font-medium">Reel failed</span>
                   {% endif %}
                 {% elif post.post_format == 'carousel' %}
-                  <span class="text-[9px] bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400 px-1.5 py-0.5 rounded font-medium">Carousel</span>
+                  <span class="text-[9px] bg-kova-50 text-kova-600 dark:bg-kova-950 dark:text-kova-400 px-1.5 py-0.5 rounded font-medium">Carousel</span>
                 {% elif post.media_status == 'generated' %}
-                  <span class="text-[9px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 px-1.5 py-0.5 rounded font-medium">AI image</span>
+                  <span class="text-[9px] bg-growth-50 text-growth-600 dark:bg-growth-950 dark:text-growth-400 px-1.5 py-0.5 rounded font-medium">AI image</span>
                 {% elif post.media_status == 'uploaded' %}
                   <span class="text-[9px] bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 px-1.5 py-0.5 rounded font-medium">Uploaded</span>
                 {% elif post.media_status == 'failed' %}
                   <span class="text-[9px] bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400 px-1.5 py-0.5 rounded font-medium">No image</span>
                 {% elif post.media_urls %}
-                  <span class="text-[9px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 px-1.5 py-0.5 rounded font-medium">Image</span>
+                  <span class="text-[9px] bg-growth-50 text-growth-600 dark:bg-growth-950 dark:text-growth-400 px-1.5 py-0.5 rounded font-medium">Image</span>
                 {% endif %}
                 {% if post.ai_angle %}
                   <span class="text-[10px] text-kova-500 dark:text-kova-400 truncate">{{ post.ai_angle|truncatewords:8 }}</span>

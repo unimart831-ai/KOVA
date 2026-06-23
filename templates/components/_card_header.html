@@ -30,15 +30,15 @@
       {% post_showcase_badge post as showcase %}
       {% if showcase.text %}
         <span class="text-[9px] px-1.5 py-0.5 rounded-md font-semibold
-          {% if showcase.tone == 'purple' %}bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300
-          {% elif showcase.tone == 'indigo' %}bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300
+          {% if showcase.tone == 'purple' %}bg-kova-50 text-kova-700 dark:bg-kova-950/60 dark:text-kova-300
+          {% elif showcase.tone == 'indigo' %}bg-kova-50 text-kova-700 dark:bg-kova-950/60 dark:text-kova-300
           {% elif showcase.tone == 'sky' %}bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300
-          {% elif showcase.tone == 'emerald' %}bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300
+          {% elif showcase.tone == 'emerald' %}bg-growth-50 text-growth-700 dark:bg-growth-950/60 dark:text-growth-300
           {% else %}bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-300{% endif %}">{{ showcase.text }}</span>
       {% endif %}
       {# ── Post format badge — Carousel / Story / Reel / Image ── #}
       {% if post.post_format == 'carousel' or post.visual_strategy == 'carousel' and post.post_format != 'reel' %}
-        <span class="inline-flex items-center gap-0.5 text-[9px] bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 px-1.5 py-0.5 rounded-md font-semibold">
+        <span class="inline-flex items-center gap-0.5 text-[9px] bg-kova-50 text-kova-700 dark:bg-kova-950/60 dark:text-kova-300 px-1.5 py-0.5 rounded-md font-semibold">
           <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
           {{ post.carousel_backend_label }}{% if post.carousel_slides %} · {{ post.carousel_slides|length }}{% endif %}
         </span>
@@ -48,17 +48,17 @@
           Story
         </span>
       {% elif post.post_format == 'reel' %}
-        <span class="inline-flex items-center gap-0.5 text-[9px] bg-orange-50 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300 px-1.5 py-0.5 rounded-md font-semibold">
+        <span class="inline-flex items-center gap-0.5 text-[9px] bg-gold-50 text-gold-700 dark:bg-gold-950/60 dark:text-gold-300 px-1.5 py-0.5 rounded-md font-semibold">
           <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           Reel
         </span>
         {% if post.reel_is_carousel_variant %}
-        <span class="text-[9px] bg-orange-100/80 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200 px-1.5 py-0.5 rounded-md font-medium">→ Reel</span>
+        <span class="text-[9px] bg-gold-100/80 text-gold-800 dark:bg-gold-900/40 dark:text-gold-200 px-1.5 py-0.5 rounded-md font-medium">→ Reel</span>
         {% endif %}
         {% if post.reel_compose_pending %}
-        <span class="text-[9px] bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400 px-1.5 py-0.5 rounded-md font-medium animate-pulse">Composing…</span>
+        <span class="text-[9px] bg-gold-50 text-gold-600 dark:bg-gold-950 dark:text-gold-400 px-1.5 py-0.5 rounded-md font-medium animate-pulse">Composing…</span>
         {% elif post.reel_has_video %}
-        <span class="text-[9px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 px-1.5 py-0.5 rounded-md font-medium">{{ post.reel_compose_backend_label }}</span>
+        <span class="text-[9px] bg-growth-50 text-growth-600 dark:bg-growth-950 dark:text-growth-400 px-1.5 py-0.5 rounded-md font-medium">{{ post.reel_compose_backend_label }}</span>
         {% elif post.reel_compose_status == 'failed' %}
         <span class="text-[9px] bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400 px-1.5 py-0.5 rounded-md font-medium">Reel failed</span>
         {% endif %}
@@ -66,34 +66,34 @@
         <span class="text-[9px] bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 px-1.5 py-0.5 rounded-md font-semibold">{{ post.post_format|title }}</span>
       {% elif post.visual_strategy and post.visual_strategy != 'none' and post.post_format == 'text' %}
         {# Fallback: show visual_strategy for text posts with a visual element #}
-        <span class="text-[9px] bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400 px-1.5 py-0.5 rounded-md font-medium">
+        <span class="text-[9px] bg-kova-50 text-kova-600 dark:bg-kova-950 dark:text-kova-400 px-1.5 py-0.5 rounded-md font-medium">
           {% if post.visual_strategy == 'carousel' %}Carousel{% elif post.visual_strategy == 'quote_card' %}Quote{% elif post.visual_strategy == 'tip_graphic' %}Tips{% elif post.visual_strategy == 'stat_highlight' %}Stat{% elif post.visual_strategy == 'cta_banner' %}CTA{% elif post.visual_strategy == 'ai_photo' %}AI Photo{% elif post.visual_strategy == 'story_graphic' %}Story{% else %}{{ post.visual_strategy }}{% endif %}
         </span>
       {% endif %}
       {# ── Media status badge (non-reel) ── #}
       {% if post.post_format != 'reel' %}
       {% if post.media_status == 'generated' %}
-        <span class="text-[9px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 px-1.5 py-0.5 rounded-md font-medium">AI image</span>
+        <span class="text-[9px] bg-growth-50 text-growth-600 dark:bg-growth-950 dark:text-growth-400 px-1.5 py-0.5 rounded-md font-medium">AI image</span>
       {% elif post.media_status == 'uploaded' %}
-        <span class="text-[9px] bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 px-1.5 py-0.5 rounded-md font-medium">Uploaded</span>
+        <span class="text-[9px] bg-kova-50 text-kova-600 dark:bg-kova-950 dark:text-kova-400 px-1.5 py-0.5 rounded-md font-medium">Uploaded</span>
       {% elif post.media_status == 'pending' %}
-        <span class="text-[9px] bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400 px-1.5 py-0.5 rounded-md font-medium animate-pulse">Generating…</span>
+        <span class="text-[9px] bg-gold-50 text-gold-600 dark:bg-gold-950 dark:text-gold-400 px-1.5 py-0.5 rounded-md font-medium animate-pulse">Generating…</span>
       {% elif post.media_status == 'failed' %}
         <span class="text-[9px] bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400 px-1.5 py-0.5 rounded-md font-medium">Image failed</span>
       {% endif %}
       {% elif post.media_status == 'pending' %}
-        <span class="text-[9px] bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400 px-1.5 py-0.5 rounded-md font-medium animate-pulse">Frame…</span>
+        <span class="text-[9px] bg-gold-50 text-gold-600 dark:bg-gold-950 dark:text-gold-400 px-1.5 py-0.5 rounded-md font-medium animate-pulse">Frame…</span>
       {% endif %}
     </div>
   </div>
   <div class="flex items-center gap-2">
     {% if post.predicted_engagement_score %}
-      <div class="flex items-center gap-1 px-2 py-0.5 rounded-md {% if post.predicted_engagement_score >= 70 %}bg-green-50 dark:bg-green-950/50{% elif post.predicted_engagement_score >= 40 %}bg-yellow-50 dark:bg-yellow-950/50{% else %}bg-gray-50 dark:bg-gray-800{% endif %}">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="{% if post.predicted_engagement_score >= 70 %}text-green-500{% elif post.predicted_engagement_score >= 40 %}text-yellow-500{% else %}text-gray-400{% endif %}"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-        <span class="text-[11px] font-bold tabular-nums {% if post.predicted_engagement_score >= 70 %}text-green-600{% elif post.predicted_engagement_score >= 40 %}text-yellow-600{% else %}text-gray-400{% endif %}">{{ post.predicted_engagement_score|floatformat:0 }}</span>
+      <div class="flex items-center gap-1 px-2 py-0.5 rounded-md {% if post.predicted_engagement_score >= 70 %}bg-growth-50 dark:bg-growth-950/50{% elif post.predicted_engagement_score >= 40 %}bg-gold-50 dark:bg-gold-950/50{% else %}bg-gray-50 dark:bg-gray-800{% endif %}">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="{% if post.predicted_engagement_score >= 70 %}text-growth-500{% elif post.predicted_engagement_score >= 40 %}text-gold-500{% else %}text-gray-400{% endif %}"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        <span class="text-[11px] font-bold tabular-nums {% if post.predicted_engagement_score >= 70 %}text-growth-600{% elif post.predicted_engagement_score >= 40 %}text-gold-600{% else %}text-gray-400{% endif %}">{{ post.predicted_engagement_score|floatformat:0 }}</span>
       </div>
     {% endif %}
-    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold {% if post.status == 'published' %}bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300{% elif post.status == 'scheduled' or post.status == 'approved' %}bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300{% elif post.status == 'pending_approval' %}bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300{% elif post.status == 'blocked' %}bg-red-50 text-red-800 dark:bg-red-950/50 dark:text-red-300{% elif post.status == 'failed' %}bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300{% elif post.status == 'rejected' %}bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-300{% else %}bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-300{% endif %}">
+    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold {% if post.status == 'published' %}bg-growth-50 text-growth-700 dark:bg-growth-950/50 dark:text-growth-300{% elif post.status == 'scheduled' or post.status == 'approved' %}bg-kova-50 text-kova-700 dark:bg-kova-950/50 dark:text-kova-300{% elif post.status == 'pending_approval' %}bg-gold-50 text-gold-700 dark:bg-gold-950/50 dark:text-gold-300{% elif post.status == 'blocked' %}bg-red-50 text-red-800 dark:bg-red-950/50 dark:text-red-300{% elif post.status == 'failed' %}bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300{% elif post.status == 'rejected' %}bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-300{% else %}bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-300{% endif %}">
       {{ post.get_status_display }}
     </span>
   </div>

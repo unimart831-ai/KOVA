@@ -20,7 +20,7 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">New</p>
     </div>
     <div class="card px-4 py-3 text-center">
-      <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ stats.flagged }}</p>
+      <p class="text-2xl font-bold text-gold-600 dark:text-gold-400">{{ stats.flagged }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">Flagged</p>
     </div>
     <div class="card px-4 py-3 text-center">
@@ -106,14 +106,14 @@
     <div class="flex items-center gap-2 mb-4">
       
       <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Your Superfans</h2>
-      <span class="badge bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200 text-[10px]">{{ superfans|length }}</span>
+      <span class="badge bg-gold-100 text-gold-800 dark:bg-gold-950 dark:text-gold-200 text-[10px]">{{ superfans|length }}</span>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {% for fan in superfans %}
       <div class="card px-4 py-3">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold
-            {% if fan.tier == 'superfan' %}bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300
+            {% if fan.tier == 'superfan' %}bg-gold-100 text-gold-700 dark:bg-gold-950 dark:text-gold-300
             {% elif fan.tier == 'loyal' %}bg-kova-100 text-kova-700 dark:bg-kova-950 dark:text-kova-300
             {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
             

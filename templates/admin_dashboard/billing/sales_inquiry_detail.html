@@ -14,7 +14,7 @@
           <p class="text-sm text-gray-500 dark:text-gray-400">{{ inquiry.email }}{% if inquiry.phone %} · {{ inquiry.phone }}{% endif %}</p>
         </div>
         <span class="inline-block px-2 py-0.5 text-xs font-medium rounded-full
-          {% if inquiry.status == 'new' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
+          {% if inquiry.status == 'new' %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400
           {% elif inquiry.status == 'contacted' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
           {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
           {{ inquiry.get_status_display }}

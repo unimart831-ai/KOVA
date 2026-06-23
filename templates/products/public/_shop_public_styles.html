@@ -1,18 +1,18 @@
-{# Shared design system for public shop storefront pages — Kova dark/teal palette #}
+{# Shared design system for public shop storefront pages — Kova blue palette #}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
     /* Kova brand foundation */
-    --kova-navy: #0c1222;
-    --kova-navy-soft: #151b2e;
-    --kova-navy-elevated: #1a2235;
-    --kova-teal: #0d8474;
-    --kova-teal-bright: #14b8a6;
-    --kova-teal-glow: rgba(13, 132, 116, 0.35);
+    --kova-navy: #0F172A;
+    --kova-navy-soft: #1E293B;
+    --kova-navy-elevated: #334155;
+    --kova-blue: #1E3A8A;
+    --kova-blue-bright: #3B82F6;
+    --kova-blue-glow: rgba(30, 58, 138, 0.35);
 
-    --shop-accent: {{ commerce_branding.theme_primary_color|default:"#0d8474" }};
+    --shop-accent: {{ commerce_branding.theme_primary_color|default:"#10B981" }};
     --shop-accent-hover: color-mix(in srgb, var(--shop-accent) 82%, #fff);
     --shop-accent-soft: color-mix(in srgb, var(--shop-accent) 10%, #fff);
     --shop-accent-muted: color-mix(in srgb, var(--shop-accent) 16%, #f8fafc);
@@ -224,7 +224,7 @@
 
   .shop-social-link--whatsapp,
   .shop-social-link--primary {
-    color: #4ade80;
+    color: #34D399;
     background: rgba(37, 211, 102, 0.12);
     border-color: rgba(37, 211, 102, 0.28);
   }
@@ -626,7 +626,7 @@
   .shop-trust-badge--wa {
     background: rgba(37, 211, 102, 0.12);
     border-color: rgba(37, 211, 102, 0.28);
-    color: #4ade80;
+    color: #34D399;
   }
 
   .shop-trust-badge--mpesa {

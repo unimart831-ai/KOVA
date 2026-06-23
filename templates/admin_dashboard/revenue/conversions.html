@@ -52,7 +52,7 @@
               {% if c.conversion_type == 'sale' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
               {% elif c.conversion_type == 'lead' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300
               {% elif c.conversion_type == 'click' %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400
-              {% else %}bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300{% endif %}">
+              {% else %}bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-300{% endif %}">
               {{ c.get_conversion_type_display }}
             </span>
           </td>
@@ -64,7 +64,7 @@
           </td>
           <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">{{ c.product.name|default:"—" }}</td>
           <td class="px-4 py-2.5 text-xs text-gray-400">{{ c.utm_campaign|default:"—" }}</td>
-          <td class="px-4 py-2.5 text-right text-xs font-semibold {% if c.revenue %}text-emerald-600 dark:text-emerald-400{% else %}text-gray-400{% endif %}">
+          <td class="px-4 py-2.5 text-right text-xs font-semibold {% if c.revenue %}text-growth-600 dark:text-growth-400{% else %}text-gray-400{% endif %}">
             {% if c.revenue %}KES {{ c.revenue|floatformat:0 }}{% else %}—{% endif %}
           </td>
           <td class="px-4 py-2.5 text-right text-xs text-gray-400">{{ c.created_at|date:"M d, H:i" }}</td>

@@ -3,13 +3,13 @@
   <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {{ profile.plan|status_color }}">{{ profile.get_plan_display }}</span>
   <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {{ profile.subscription_status|status_color }}">{{ profile.subscription_status|default:"none" }}</span>
   {% if usage.is_trialing %}
-  <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">Starter trial{% if usage.trial_ends_at %} · ends {{ usage.trial_ends_at|date:"M j, Y" }}{% endif %}</span>
+  <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-300">Starter trial{% if usage.trial_ends_at %} · ends {{ usage.trial_ends_at|date:"M j, Y" }}{% endif %}</span>
   {% endif %}
   {% if usage.effective_tier != profile.plan %}
   <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">Effective: {{ usage.effective_label }}</span>
   {% endif %}
   {% if usage.is_agency_approved %}
-  <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">Agency approved</span>
+  <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-kova-100 text-kova-800 dark:bg-kova-900/30 dark:text-kova-300">Agency approved</span>
   {% endif %}
 </div>
 
@@ -27,14 +27,14 @@
     <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">LLM tokens (month)</p>
     <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ usage.llm_monthly.used|format_number }} <span class="text-sm font-normal text-gray-400">/ {{ usage.llm_monthly.cap|format_number }}</span></p>
     <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 mt-3">
-      <div class="bg-indigo-500 h-2 rounded-full" style="width: {% if usage.llm_monthly.cap %}{% widthratio usage.llm_monthly.used usage.llm_monthly.cap 100 %}{% else %}0{% endif %}%"></div>
+      <div class="bg-kova-500 h-2 rounded-full" style="width: {% if usage.llm_monthly.cap %}{% widthratio usage.llm_monthly.used usage.llm_monthly.cap 100 %}{% else %}0{% endif %}%"></div>
     </div>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
     <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Posts</p>
     <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ usage.posts.used }} <span class="text-sm font-normal text-gray-400">/ {{ usage.posts.cap }}</span></p>
     <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 mt-3">
-      <div class="bg-emerald-500 h-2 rounded-full" style="width: {% if usage.posts.cap %}{% widthratio usage.posts.used usage.posts.cap 100 %}{% else %}0{% endif %}%"></div>
+      <div class="bg-growth-500 h-2 rounded-full" style="width: {% if usage.posts.cap %}{% widthratio usage.posts.used usage.posts.cap 100 %}{% else %}0{% endif %}%"></div>
     </div>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
@@ -48,9 +48,9 @@
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
     <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Studio polish credits</p>
-    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">{{ usage.studio_polish.used }} <span class="text-sm font-normal text-gray-400">/ {{ usage.studio_polish.max }}</span></p>
+    <p class="text-2xl font-bold text-kova-600 dark:text-kova-400 mt-1">{{ usage.studio_polish.used }} <span class="text-sm font-normal text-gray-400">/ {{ usage.studio_polish.max }}</span></p>
     {% if usage.studio_polish.growth_throttled %}
-    <p class="text-[10px] text-amber-600 dark:text-amber-400 mt-2">Growth throttled — platform pool &gt;80%</p>
+    <p class="text-[10px] text-gold-600 dark:text-gold-400 mt-2">Growth throttled — platform pool &gt;80%</p>
     {% elif usage.studio_polish.platform_blocked %}
     <p class="text-[10px] text-red-600 dark:text-red-400 mt-2">Platform pool exhausted</p>
     {% endif %}
@@ -89,7 +89,7 @@
   </div>
   <div class="p-4 flex flex-wrap gap-2">
     {% for flag in usage.feature_flags %}
-    <span class="inline-flex px-2 py-1 text-xs rounded-lg {% if flag.enabled %}bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300{% else %}bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500{% endif %}">
+    <span class="inline-flex px-2 py-1 text-xs rounded-lg {% if flag.enabled %}bg-growth-50 text-growth-700 dark:bg-growth-900/30 dark:text-growth-300{% else %}bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500{% endif %}">
       {% if flag.enabled %}✓{% else %}✗{% endif %} {{ flag.label }}
     </span>
     {% endfor %}

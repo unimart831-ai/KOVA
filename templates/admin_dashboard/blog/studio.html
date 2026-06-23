@@ -24,7 +24,7 @@
     <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Published (Blog)</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
-    <p class="text-2xl font-bold {% if counts.draft > 0 %}text-amber-600 dark:text-amber-400{% else %}text-gray-400{% endif %}">{{ counts.draft }}</p>
+    <p class="text-2xl font-bold {% if counts.draft > 0 %}text-gold-600 dark:text-gold-400{% else %}text-gray-400{% endif %}">{{ counts.draft }}</p>
     <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Awaiting Review</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
@@ -92,7 +92,7 @@
           <!-- Status badges -->
           <div class="flex items-center gap-2 mb-2">
             {% if a.status == 'draft' %}
-              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300">DRAFT</span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gold-100 dark:bg-gold-950/40 text-gold-700 dark:text-gold-300">DRAFT</span>
             {% else %}
               <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">IN REVIEW</span>
             {% endif %}
@@ -190,7 +190,7 @@
         <div class="px-4 py-3 flex items-start gap-2" id="topic-{{ topic.pk }}">
           <!-- Priority bar -->
           <div class="shrink-0 mt-1 w-1 h-8 rounded-full
-            {% if topic.priority >= 80 %}bg-kova-500{% elif topic.priority >= 60 %}bg-amber-400{% else %}bg-gray-200 dark:bg-gray-700{% endif %}">
+            {% if topic.priority >= 80 %}bg-kova-500{% elif topic.priority >= 60 %}bg-gold-400{% else %}bg-gray-200 dark:bg-gray-700{% endif %}">
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-xs font-medium text-gray-900 dark:text-white leading-tight">{{ topic.title }}</p>

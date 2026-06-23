@@ -32,28 +32,28 @@ def status_color(status):
     colors = {
         # Post statuses
         "draft": "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-        "pending_approval": "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-        "approved": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-        "scheduled": "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
-        "publishing": "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-        "published": "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+        "pending_approval": "bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400",
+        "approved": "bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-400",
+        "scheduled": "bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-400",
+        "publishing": "bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400",
+        "published": "bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400",
         "failed": "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
         "rejected": "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
         # Agent action statuses
-        "started": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-        "completed": "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-        "needs_approval": "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+        "started": "bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-400",
+        "completed": "bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400",
+        "needs_approval": "bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400",
         # Seed statuses
         "new": "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-        "processing": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+        "processing": "bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-400",
         # Subscription
-        "active": "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-        "trialing": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-        "past_due": "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+        "active": "bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400",
+        "trialing": "bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-400",
+        "past_due": "bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400",
         "canceled": "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
         "none": "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
         # M-Pesa
-        "pending": "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+        "pending": "bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400",
         "expired": "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
     }
     return colors.get(status, "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300")

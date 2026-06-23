@@ -13,7 +13,7 @@
   <div class="flex items-center justify-between gap-3">
     <div class="flex items-center gap-2">
       <a href="{% url 'products:alerts' %}?show=unread"
-         class="text-sm px-3 py-1.5 rounded-lg {% if show != 'all' %}bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 font-medium{% else %}text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800{% endif %}">
+         class="text-sm px-3 py-1.5 rounded-lg {% if show != 'all' %}bg-gold-100 text-gold-800 dark:bg-gold-900/40 dark:text-gold-200 font-medium{% else %}text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800{% endif %}">
         Unread{% if unread_count %} ({{ unread_count }}){% endif %}
       </a>
       <a href="{% url 'products:alerts' %}?show=all"
@@ -38,7 +38,7 @@
   {% else %}
   <div class="card px-6 py-14 text-center">
     <div class="flex justify-center mb-3">
-      <svg class="w-10 h-10 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg class="w-10 h-10 text-growth-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
       </svg>
     </div>

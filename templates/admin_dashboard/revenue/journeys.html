@@ -46,11 +46,11 @@
             {% if j.is_converted %}
             <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Converted</span>
             {% else %}
-            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">In Progress</span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300">In Progress</span>
             {% endif %}
           </td>
           <td class="px-4 py-2.5 text-right text-xs text-gray-600 dark:text-gray-400">{{ j.touchpoint_count }}</td>
-          <td class="px-4 py-2.5 text-right text-xs font-semibold {% if j.total_revenue %}text-emerald-600 dark:text-emerald-400{% else %}text-gray-400{% endif %}">
+          <td class="px-4 py-2.5 text-right text-xs font-semibold {% if j.total_revenue %}text-growth-600 dark:text-growth-400{% else %}text-gray-400{% endif %}">
             {% if j.total_revenue %}KES {{ j.total_revenue|floatformat:0 }}{% else %}—{% endif %}
           </td>
           <td class="px-4 py-2.5 text-right text-xs text-gray-400">{% if j.first_touch_at %}{{ j.first_touch_at|date:"M d, H:i" }}{% else %}—{% endif %}</td>

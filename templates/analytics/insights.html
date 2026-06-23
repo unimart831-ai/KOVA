@@ -11,8 +11,8 @@
 
   {# ── Proof Banner — "Kova got you X leads and Y bookings this month" ── #}
   {% if leads_this_month or bookings_this_month %}
-  <div class="rounded-2xl bg-gradient-to-r from-kova-600 to-purple-700 p-5 text-white shadow-lg">
-    <p class="text-xs font-semibold uppercase tracking-wider text-purple-200 mb-1">This month</p>
+  <div class="rounded-2xl bg-gradient-to-r from-kova-600 to-kova-700 p-5 text-white shadow-lg">
+    <p class="text-xs font-semibold uppercase tracking-wider text-kova-200 mb-1">This month</p>
     <p class="text-lg font-bold leading-snug">
       Kova got you
       {% if leads_this_month %}
@@ -24,7 +24,7 @@
       automatically.
     </p>
     {% if hot_leads %}
-    <p class="text-sm text-purple-200 mt-1">{{ hot_leads }} lead{{ hot_leads|pluralize }} ready to buy now.</p>
+    <p class="text-sm text-kova-200 mt-1">{{ hot_leads }} lead{{ hot_leads|pluralize }} ready to buy now.</p>
     {% endif %}
     <div class="flex items-center gap-3 mt-3">
       <a href="{% url 'leads:list' %}"
@@ -98,8 +98,8 @@
       <div class="stat-card">
         <div class="card-body p-4">
           <div class="flex items-center gap-2 mb-2">
-            <div class="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/50 flex items-center justify-center">
-              <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <div class="w-8 h-8 rounded-lg bg-kova-50 dark:bg-kova-950/50 flex items-center justify-center">
+              <svg class="w-4 h-4 text-kova-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             </div>
             <p class="text-xs text-gray-500 dark:text-gray-400">Reach</p>
           </div>
@@ -220,15 +220,15 @@
     <div class="space-y-3">
       {% for rec in recommendations %}
       <div class="flex items-start gap-3 p-4 rounded-xl border
-        {% if rec.type == 'warning' %}bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800{% elif rec.type == 'success' %}bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800{% else %}bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800{% endif %}">
+        {% if rec.type == 'warning' %}bg-gold-50 dark:bg-gold-950/20 border-gold-200 dark:border-gold-800{% elif rec.type == 'success' %}bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800{% else %}bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800{% endif %}">
         {% if rec.type == "warning" %}
-          <svg class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+          <svg class="w-5 h-5 text-gold-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
         {% elif rec.type == "success" %}
           <svg class="w-5 h-5 text-green-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         {% else %}
           <svg class="w-5 h-5 text-blue-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         {% endif %}
-        <p class="text-sm font-medium {% if rec.type == 'warning' %}text-amber-800 dark:text-amber-200{% elif rec.type == 'success' %}text-green-800 dark:text-green-200{% else %}text-blue-800 dark:text-blue-200{% endif %}">{{ rec.text }}</p>
+        <p class="text-sm font-medium {% if rec.type == 'warning' %}text-gold-800 dark:text-gold-200{% elif rec.type == 'success' %}text-green-800 dark:text-green-200{% else %}text-blue-800 dark:text-blue-200{% endif %}">{{ rec.text }}</p>
       </div>
       {% endfor %}
     </div>

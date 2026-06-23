@@ -70,10 +70,10 @@
           <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ item.timestamp|timesince }} ago</td>
           <td class="px-4 py-3">
             <span class="inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-full
-              {% if item.category_color == 'indigo' %}bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400
+              {% if item.category_color == 'indigo' %}bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-400
               {% elif item.category_color == 'blue' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
-              {% elif item.category_color == 'emerald' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400
-              {% elif item.category_color == 'amber' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
+              {% elif item.category_color == 'emerald' %}bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400
+              {% elif item.category_color == 'amber' %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400
               {% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400{% endif %}">
               {{ item.category }}
             </span>

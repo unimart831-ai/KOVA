@@ -23,14 +23,14 @@
   </a>
   {% endfor %}
   <a href="{% url 'admin_dashboard:token_economics' %}" class="ml-auto text-xs text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 self-center">Token economics →</a>
-  <a href="{% url 'admin_dashboard:commerce_photoroom' %}" class="text-xs text-gray-400 hover:text-purple-600 self-center">Photoroom →</a>
+  <a href="{% url 'admin_dashboard:commerce_photoroom' %}" class="text-xs text-gray-400 hover:text-kova-600 self-center">Photoroom →</a>
 </div>
 
 {% if tab == "overview" %}
 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">AI Cost (24h)</p>
-    <p class="text-xl font-bold {% if cost_24h > 0 %}text-amber-600 dark:text-amber-400{% else %}text-emerald-600 dark:text-emerald-400{% endif %} mt-1">${{ cost_24h|floatformat:4 }}</p>
+    <p class="text-xl font-bold {% if cost_24h > 0 %}text-gold-600 dark:text-gold-400{% else %}text-growth-600 dark:text-growth-400{% endif %} mt-1">${{ cost_24h|floatformat:4 }}</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">AI Cost (7d)</p>
@@ -43,7 +43,7 @@
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Est. MRR (USD)</p>
-    <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">${{ estimated_mrr_usd|floatformat:2 }}</p>
+    <p class="text-xl font-bold text-growth-600 dark:text-growth-400 mt-1">${{ estimated_mrr_usd|floatformat:2 }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">{{ total_active_users }} active subscriber{{ total_active_users|pluralize }}</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
@@ -53,25 +53,25 @@
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Platform COGS (30d)</p>
-    <p class="text-xl font-bold text-amber-600 dark:text-amber-400 mt-1">${{ total_platform_cogs_30d|floatformat:4 }}</p>
+    <p class="text-xl font-bold text-gold-600 dark:text-gold-400 mt-1">${{ total_platform_cogs_30d|floatformat:4 }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">LLM · images · Photoroom · voice · WA · email</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Est. Unit Cost / MRR</p>
     <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">${{ total_monthly_cost|floatformat:2 }}</p>
-    <p class="text-[10px] mt-0.5 {% if gross_margin >= 50 %}text-emerald-600{% elif gross_margin >= 20 %}text-amber-600{% else %}text-red-600{% endif %}">
+    <p class="text-[10px] mt-0.5 {% if gross_margin >= 50 %}text-growth-600{% elif gross_margin >= 20 %}text-gold-600{% else %}text-red-600{% endif %}">
       {{ gross_margin }}% gross margin (est.)
     </p>
   </div>
-  <a href="{% url 'admin_dashboard:commerce_photoroom' %}" class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 p-4 shadow-sm hover:border-purple-400 transition-colors block">
-    <p class="text-[10px] font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Photoroom Pool (month)</p>
+  <a href="{% url 'admin_dashboard:commerce_photoroom' %}" class="bg-white dark:bg-gray-900 rounded-xl border border-kova-200 dark:border-kova-900/50 p-4 shadow-sm hover:border-kova-400 transition-colors block">
+    <p class="text-[10px] font-semibold text-kova-600 dark:text-kova-400 uppercase tracking-wider">Photoroom Pool (month)</p>
     <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">{{ photoroom_pool.used|format_number }} / {{ photoroom_pool.usable|format_number }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">${{ photoroom_cost_30d|floatformat:2 }} est. · {{ photoroom_pool.remaining|format_number }} left · Manage →</p>
   </a>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Free vs Paid Calls</p>
     <p class="text-sm font-bold text-gray-900 dark:text-white mt-1">{{ free_calls_30d|format_number }} <span class="text-xs text-gray-400 font-normal">free</span></p>
-    <p class="text-sm font-bold text-amber-600 dark:text-amber-400">{{ paid_calls_30d|format_number }} <span class="text-xs text-gray-400 font-normal">paid</span></p>
+    <p class="text-sm font-bold text-gold-600 dark:text-gold-400">{{ paid_calls_30d|format_number }} <span class="text-xs text-gray-400 font-normal">paid</span></p>
   </div>
 </div>
 
@@ -94,7 +94,7 @@
   <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
   <div>
     <span class="text-[10px] font-semibold text-gray-400 uppercase">Output</span>
-    <p class="text-lg font-bold text-purple-600 dark:text-purple-400">{{ total_output_30d|format_number }}</p>
+    <p class="text-lg font-bold text-kova-600 dark:text-kova-400">{{ total_output_30d|format_number }}</p>
   </div>
   <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
   <div>
@@ -108,8 +108,8 @@
 <!-- Image generation stats bar -->
 <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm mb-6 flex flex-wrap items-center gap-6">
   <div>
-    <span class="text-[10px] font-semibold text-purple-400 uppercase">Images Generated (30d)</span>
-    <p class="text-lg font-bold text-purple-600 dark:text-purple-400">{{ images_generated_30d|format_number }}</p>
+    <span class="text-[10px] font-semibold text-kova-400 uppercase">Images Generated (30d)</span>
+    <p class="text-lg font-bold text-kova-600 dark:text-kova-400">{{ images_generated_30d|format_number }}</p>
   </div>
   <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
   <div>
@@ -119,12 +119,12 @@
   <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
   <div>
     <span class="text-[10px] font-semibold text-gray-400 uppercase">Pending</span>
-    <p class="text-lg font-bold text-amber-500">{{ images_pending_30d|format_number }}</p>
+    <p class="text-lg font-bold text-gold-500">{{ images_pending_30d|format_number }}</p>
   </div>
   <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
   <div>
     <span class="text-[10px] font-semibold text-gray-400 uppercase">Image Cost (30d)</span>
-    <p class="text-lg font-bold {% if image_cost_30d > 0 %}text-amber-600 dark:text-amber-400{% else %}text-emerald-600 dark:text-emerald-400{% endif %}">${{ image_cost_30d|floatformat:4 }}</p>
+    <p class="text-lg font-bold {% if image_cost_30d > 0 %}text-gold-600 dark:text-gold-400{% else %}text-growth-600 dark:text-growth-400{% endif %}">${{ image_cost_30d|floatformat:4 }}</p>
   </div>
   <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
   <div>
@@ -136,10 +136,10 @@
 </div>
 
 {% if unknown_models %}
-<div class="mb-6 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 px-5 py-4">
-  <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">Unknown model IDs detected</p>
-  <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">These models are priced using a conservative DeepSeek estimate ($0.26/$0.38 per 1M). Add them to <code class="text-[10px]">settings.MODEL_TOKEN_COSTS</code> for exact costs:</p>
-  <p class="text-xs font-mono text-amber-900 dark:text-amber-100 mt-2">{{ unknown_models|join:", " }}</p>
+<div class="mb-6 rounded-xl border border-gold-200 dark:border-gold-900/50 bg-gold-50 dark:bg-gold-950/20 px-5 py-4">
+  <p class="text-sm font-semibold text-gold-800 dark:text-gold-200">Unknown model IDs detected</p>
+  <p class="text-xs text-gold-700 dark:text-gold-300 mt-1">These models are priced using a conservative DeepSeek estimate ($0.26/$0.38 per 1M). Add them to <code class="text-[10px]">settings.MODEL_TOKEN_COSTS</code> for exact costs:</p>
+  <p class="text-xs font-mono text-gold-900 dark:text-gold-100 mt-2">{{ unknown_models|join:", " }}</p>
 </div>
 {% endif %}
 
@@ -157,31 +157,31 @@
   <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
   <div>
     <span class="text-[10px] font-semibold text-gray-400 uppercase">Delta</span>
-    <p class="text-lg font-bold {% if bucket_vs_actions_delta|floatformat:2 != '0.00' %}text-amber-600{% else %}text-emerald-600{% endif %}">${{ bucket_vs_actions_delta|floatformat:4 }}</p>
+    <p class="text-lg font-bold {% if bucket_vs_actions_delta|floatformat:2 != '0.00' %}text-gold-600{% else %}text-growth-600{% endif %}">${{ bucket_vs_actions_delta|floatformat:4 }}</p>
   </div>
   <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
   <div>
     <span class="text-[10px] font-semibold text-gray-400 uppercase">Commerce checkout (30d)</span>
-    <p class="text-lg font-bold text-emerald-600">KES {{ commerce_checkout_revenue_30d|floatformat:0 }}</p>
+    <p class="text-lg font-bold text-growth-600">KES {{ commerce_checkout_revenue_30d|floatformat:0 }}</p>
   </div>
   <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
   <div>
     <span class="text-[10px] font-semibold text-gray-400 uppercase">Commerce LLM cost</span>
-    <p class="text-lg font-bold text-amber-600">${{ commerce_cost_30d|floatformat:4 }}</p>
+    <p class="text-lg font-bold text-gold-600">${{ commerce_cost_30d|floatformat:4 }}</p>
   </div>
   <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
   <div>
     <span class="text-[10px] font-semibold text-gray-400 uppercase">Snap LLM cost</span>
-    <p class="text-lg font-bold text-purple-600">${{ snap_cost_30d|floatformat:4 }}</p>
+    <p class="text-lg font-bold text-kova-600">${{ snap_cost_30d|floatformat:4 }}</p>
   </div>
 </div>
 
 
 <!-- Vision AI (Snap to Sell) stats bar -->
-<div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 p-4 shadow-sm mb-6 flex flex-wrap items-center gap-6">
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-kova-200 dark:border-kova-900/50 p-4 shadow-sm mb-6 flex flex-wrap items-center gap-6">
   <div>
-    <span class="text-[10px] font-semibold text-purple-400 uppercase">Vision Calls (30d)</span>
-    <p class="text-lg font-bold text-purple-600 dark:text-purple-400">{{ vision_calls_30d|format_number }}</p>
+    <span class="text-[10px] font-semibold text-kova-400 uppercase">Vision Calls (30d)</span>
+    <p class="text-lg font-bold text-kova-600 dark:text-kova-400">{{ vision_calls_30d|format_number }}</p>
   </div>
   <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
   <div>
@@ -211,7 +211,7 @@
   <div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
   <div>
     <span class="text-[10px] font-semibold text-gray-400 uppercase">Vision Cost (30d)</span>
-    <p class="text-lg font-bold {% if vision_cost_30d > 0 %}text-amber-600 dark:text-amber-400{% else %}text-emerald-600 dark:text-emerald-400{% endif %}">${{ vision_cost_30d|floatformat:4 }}</p>
+    <p class="text-lg font-bold {% if vision_cost_30d > 0 %}text-gold-600 dark:text-gold-400{% else %}text-growth-600 dark:text-growth-400{% endif %}">${{ vision_cost_30d|floatformat:4 }}</p>
   </div>
 </div>
 
@@ -233,16 +233,16 @@
 {% if tab == "ledger" %}
 <!-- SPEND LEDGER — every cost line with 30d actuals -->
 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-amber-200 dark:border-amber-900/40 p-4 shadow-sm">
-    <p class="text-[10px] font-semibold text-amber-600 uppercase">Variable COGS (30d)</p>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gold-200 dark:border-gold-900/40 p-4 shadow-sm">
+    <p class="text-[10px] font-semibold text-gold-600 uppercase">Variable COGS (30d)</p>
     <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">${{ total_platform_cogs_30d|floatformat:4 }}</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-[10px] font-semibold text-gray-400 uppercase">LLM tokens</p>
     <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">${{ cost_30d|floatformat:4 }}</p>
   </div>
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/40 p-4 shadow-sm">
-    <p class="text-[10px] font-semibold text-purple-600 uppercase">Photoroom (30d)</p>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-kova-200 dark:border-kova-900/40 p-4 shadow-sm">
+    <p class="text-[10px] font-semibold text-kova-600 uppercase">Photoroom (30d)</p>
     <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">${{ photoroom_cost_30d|floatformat:4 }}</p>
     <p class="text-[10px] text-gray-400">{{ photoroom_pool.used|format_number }} this month · {{ photoroom_pool.remaining|format_number }} left</p>
   </div>
@@ -284,7 +284,7 @@
             {% if row.unit_cost_usd %}${{ row.unit_cost_usd|floatformat:4 }}/{{ row.unit }}{% else %}—{% endif %}
           </td>
           <td class="px-4 py-2.5 text-right text-xs text-gray-600">{{ row.usage }}</td>
-          <td class="px-4 py-2.5 text-right font-mono text-xs font-semibold {% if row.cost_usd > 0 %}text-amber-600{% else %}text-emerald-600{% endif %}">
+          <td class="px-4 py-2.5 text-right font-mono text-xs font-semibold {% if row.cost_usd > 0 %}text-gold-600{% else %}text-growth-600{% endif %}">
             {% if row.actual %}${{ row.cost_usd|floatformat:4 }}{% else %}<span class="text-gray-400">est.</span>{% endif %}
           </td>
         </tr>
@@ -293,7 +293,7 @@
       <tfoot>
         <tr class="bg-gray-50 dark:bg-gray-800/50 font-semibold">
           <td colspan="6" class="px-4 py-3 text-xs text-gray-700 dark:text-gray-300 text-right">Variable COGS total</td>
-          <td class="px-4 py-3 text-right font-mono text-sm text-amber-600">${{ total_platform_cogs_30d|floatformat:4 }}</td>
+          <td class="px-4 py-3 text-right font-mono text-sm text-gold-600">${{ total_platform_cogs_30d|floatformat:4 }}</td>
         </tr>
       </tfoot>
     </table>
@@ -373,11 +373,11 @@
           <td class="px-4 py-3 text-right font-mono text-gray-600 dark:text-gray-400">${{ p.voice_cost|floatformat:4 }}</td>
           <td class="px-4 py-3 text-right font-mono text-gray-600 dark:text-gray-400">${{ p.infra_cost|floatformat:4 }}</td>
           <td class="px-4 py-3 text-right font-mono font-semibold text-gray-900 dark:text-white">${{ p.total_cost|floatformat:4 }}</td>
-          <td class="px-4 py-3 text-right font-mono font-semibold {% if p.profit >= 0 %}text-emerald-600 dark:text-emerald-400{% else %}text-red-600 dark:text-red-400{% endif %}">${{ p.profit|floatformat:4 }}</td>
+          <td class="px-4 py-3 text-right font-mono font-semibold {% if p.profit >= 0 %}text-growth-600 dark:text-growth-400{% else %}text-red-600 dark:text-red-400{% endif %}">${{ p.profit|floatformat:4 }}</td>
           <td class="px-4 py-3 text-right">
             <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold
-              {% if p.margin >= 50 %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400
-              {% elif p.margin >= 20 %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
+              {% if p.margin >= 50 %}bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400
+              {% elif p.margin >= 20 %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400
               {% else %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400{% endif %}">
               {{ p.margin }}%
             </span>
@@ -413,10 +413,10 @@
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
           <td class="px-4 py-3">
             <div class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full {% if m.is_free %}bg-emerald-500{% else %}bg-amber-500{% endif %}"></span>
+              <span class="w-2 h-2 rounded-full {% if m.is_free %}bg-growth-500{% else %}bg-gold-500{% endif %}"></span>
               <span class="text-sm font-mono text-gray-900 dark:text-white">{{ m.model }}</span>
-              {% if m.is_free %}<span class="text-[9px] text-emerald-600 dark:text-emerald-400 font-semibold">FREE</span>{% endif %}
-              {% if m.is_unknown %}<span class="text-[9px] text-amber-600 font-semibold">EST.</span>{% endif %}
+              {% if m.is_free %}<span class="text-[9px] text-growth-600 dark:text-growth-400 font-semibold">FREE</span>{% endif %}
+              {% if m.is_unknown %}<span class="text-[9px] text-gold-600 font-semibold">EST.</span>{% endif %}
             </div>
           </td>
           <td class="px-4 py-3 text-right text-gray-600 dark:text-gray-400">{{ m.calls|format_number }}</td>
@@ -424,12 +424,12 @@
           <td class="px-4 py-3 text-right font-mono text-gray-600 dark:text-gray-400">{{ m.output_tokens|format_number }}</td>
           <td class="px-4 py-3 text-right">
             {% if m.calls > 0 %}
-            <span class="{% if m.successes == m.calls %}text-emerald-600{% elif m.failures > 0 %}text-amber-600{% endif %}">
+            <span class="{% if m.successes == m.calls %}text-growth-600{% elif m.failures > 0 %}text-gold-600{% endif %}">
               {{ m.successes }}/{{ m.calls }}
             </span>
             {% endif %}
           </td>
-          <td class="px-4 py-3 text-right font-mono font-semibold {% if m.cost_usd > 0 %}text-amber-600 dark:text-amber-400{% else %}text-emerald-600 dark:text-emerald-400{% endif %}">
+          <td class="px-4 py-3 text-right font-mono font-semibold {% if m.cost_usd > 0 %}text-gold-600 dark:text-gold-400{% else %}text-growth-600 dark:text-growth-400{% endif %}">
             ${{ m.cost_usd|floatformat:4 }}
           </td>
           <td class="px-4 py-3 text-right text-gray-500">{{ m.avg_duration_ms|duration_display }}</td>
@@ -467,7 +467,7 @@
             <td class="px-4 py-3 font-medium text-gray-900 dark:text-white capitalize">{{ a.agent }}</td>
             <td class="px-4 py-3 text-right text-gray-600 dark:text-gray-400">{{ a.calls|format_number }}</td>
             <td class="px-4 py-3 text-right font-mono text-gray-600 dark:text-gray-400">{{ a.tokens|format_number }}</td>
-            <td class="px-4 py-3 text-right font-mono font-semibold {% if a.cost > 0 %}text-amber-600{% else %}text-emerald-600{% endif %}">${{ a.cost|floatformat:4 }}</td>
+            <td class="px-4 py-3 text-right font-mono font-semibold {% if a.cost > 0 %}text-gold-600{% else %}text-growth-600{% endif %}">${{ a.cost|floatformat:4 }}</td>
           </tr>
           {% empty %}
           <tr><td colspan="4" class="px-4 py-6 text-center text-sm text-gray-400">No agent data yet</td></tr>
@@ -498,7 +498,7 @@
             <td class="px-4 py-3 font-mono text-xs text-gray-900 dark:text-white">{{ a.action_type }}</td>
             <td class="px-4 py-3 text-right text-gray-600">{{ a.calls|format_number }}</td>
             <td class="px-4 py-3 text-right font-mono text-gray-600">{{ a.tokens|format_number }}</td>
-            <td class="px-4 py-3 text-right font-mono font-semibold {% if a.cost > 0 %}text-amber-600{% else %}text-emerald-600{% endif %}">${{ a.cost|floatformat:4 }}</td>
+            <td class="px-4 py-3 text-right font-mono font-semibold {% if a.cost > 0 %}text-gold-600{% else %}text-growth-600{% endif %}">${{ a.cost|floatformat:4 }}</td>
           </tr>
           {% empty %}
           <tr><td colspan="4" class="px-4 py-6 text-center text-sm text-gray-400">No action data yet</td></tr>
@@ -538,9 +538,9 @@
             </td>
             <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400 capitalize">{{ u.plan }}</td>
             <td class="px-4 py-2.5 text-right font-mono text-xs text-gray-600 dark:text-gray-400">{{ u.tokens|format_number }}</td>
-            <td class="px-4 py-2.5 text-right font-mono text-xs {% if u.cost > 0 %}text-amber-600{% else %}text-emerald-600{% endif %}">${{ u.cost|floatformat:4 }}</td>
+            <td class="px-4 py-2.5 text-right font-mono text-xs {% if u.cost > 0 %}text-gold-600{% else %}text-growth-600{% endif %}">${{ u.cost|floatformat:4 }}</td>
             <td class="px-4 py-2.5 text-right font-mono text-xs text-gray-600 dark:text-gray-400">${{ u.revenue|floatformat:2 }}</td>
-            <td class="px-4 py-2.5 text-right font-mono text-xs font-semibold {% if u.profitable %}text-emerald-600{% else %}text-red-600{% endif %}">
+            <td class="px-4 py-2.5 text-right font-mono text-xs font-semibold {% if u.profitable %}text-growth-600{% else %}text-red-600{% endif %}">
               {{ u.profit|floatformat:4 }}
             </td>
           </tr>
@@ -668,19 +668,19 @@
         </div>
         <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 text-center">
           <p class="text-[10px] text-gray-400 uppercase font-semibold">Monthly Revenue</p>
-          <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400" x-text="'$' + summary.total_revenue"></p>
+          <p class="text-lg font-bold text-growth-600 dark:text-growth-400" x-text="'$' + summary.total_revenue"></p>
         </div>
         <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 text-center">
           <p class="text-[10px] text-gray-400 uppercase font-semibold">Monthly Cost</p>
-          <p class="text-lg font-bold text-amber-600 dark:text-amber-400" x-text="'$' + summary.total_cost"></p>
+          <p class="text-lg font-bold text-gold-600 dark:text-gold-400" x-text="'$' + summary.total_cost"></p>
         </div>
         <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 text-center">
           <p class="text-[10px] text-gray-400 uppercase font-semibold">Gross Profit</p>
-          <p class="text-lg font-bold" :class="summary.gross_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'" x-text="'$' + summary.gross_profit"></p>
+          <p class="text-lg font-bold" :class="summary.gross_profit >= 0 ? 'text-growth-600 dark:text-growth-400' : 'text-red-600 dark:text-red-400'" x-text="'$' + summary.gross_profit"></p>
         </div>
         <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 text-center">
           <p class="text-[10px] text-gray-400 uppercase font-semibold">Gross Margin</p>
-          <p class="text-lg font-bold" :class="summary.overall_margin >= 50 ? 'text-emerald-600' : summary.overall_margin >= 20 ? 'text-amber-500' : 'text-red-500'" x-text="summary.overall_margin + '%'"></p>
+          <p class="text-lg font-bold" :class="summary.overall_margin >= 50 ? 'text-growth-600' : summary.overall_margin >= 20 ? 'text-gold-500' : 'text-red-500'" x-text="summary.overall_margin + '%'"></p>
         </div>
       </div>
 
@@ -712,10 +712,10 @@
                 <td class="px-4 py-2.5 text-right font-mono text-gray-600 dark:text-gray-400" x-text="'$' + (r.voice_cost || '0.00')"></td>
                 <td class="px-4 py-2.5 text-right font-mono text-gray-600 dark:text-gray-400" x-text="'$' + r.infra_cost"></td>
                 <td class="px-4 py-2.5 text-right font-mono font-semibold text-gray-900 dark:text-white" x-text="'$' + r.total_cost"></td>
-                <td class="px-4 py-2.5 text-right font-mono font-semibold" :class="r.profit_per_user >= 0 ? 'text-emerald-600' : 'text-red-600'" x-text="'$' + r.profit_per_user"></td>
+                <td class="px-4 py-2.5 text-right font-mono font-semibold" :class="r.profit_per_user >= 0 ? 'text-growth-600' : 'text-red-600'" x-text="'$' + r.profit_per_user"></td>
                 <td class="px-4 py-2.5 text-right">
                   <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold"
-                        :class="r.margin >= 50 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : r.margin >= 20 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'"
+                        :class="r.margin >= 50 ? 'bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400' : r.margin >= 20 ? 'bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'"
                         x-text="r.margin + '%'"></span>
                 </td>
               </tr>
@@ -738,7 +738,7 @@
           </div>
           <div>
             <p class="text-xs text-gray-500">Annual Profit</p>
-            <p class="font-bold" :class="summary.gross_profit >= 0 ? 'text-emerald-600' : 'text-red-600'" x-text="'$' + (summary.gross_profit * 12).toFixed(0)"></p>
+            <p class="font-bold" :class="summary.gross_profit >= 0 ? 'text-growth-600' : 'text-red-600'" x-text="'$' + (summary.gross_profit * 12).toFixed(0)"></p>
           </div>
         </div>
       </div>
@@ -782,20 +782,20 @@
           <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">OpenAI</td>
           <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">whisper-1</td>
           <td class="px-4 py-2.5 text-right">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">$0.006/min</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400">$0.006/min</span>
           </td>
           <td class="px-4 py-2.5 text-right font-mono text-xs text-gray-600 dark:text-gray-400">~$3.00</td>
           <td class="px-4 py-2.5 text-[10px] text-gray-400">~20s avg memo × 25 memos/user/mo</td>
         </tr>
         {# Images - Together Tier-Routed #}
-        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 bg-purple-50/30 dark:bg-purple-950/10">
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 bg-kova-50/30 dark:bg-kova-950/10">
           <td class="px-4 py-2.5" rowspan="5">
             <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <svg class="w-4 h-4 text-kova-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
               </svg>
               <span class="text-xs font-medium text-gray-700 dark:text-gray-300">AI Image Gen</span>
-              <span class="text-[9px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 font-semibold">TIER-ROUTED</span>
+              <span class="text-[9px] px-1.5 py-0.5 rounded bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-400 font-semibold">TIER-ROUTED</span>
             </div>
           </td>
           <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Together.ai <span class="text-[9px] text-gray-400">Starter</span></td>
@@ -810,25 +810,25 @@
           <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Together.ai <span class="text-[9px] text-kova-500 font-semibold">Growth</span></td>
           <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">FLUX.1-krea-dev</td>
           <td class="px-4 py-2.5 text-right">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">$0.025/img</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400">$0.025/img</span>
           </td>
           <td class="px-4 py-2.5 text-right font-mono text-xs text-gray-600 dark:text-gray-400">50 × $0.025 = $1.25</td>
           <td class="px-4 py-2.5 text-[10px] text-gray-400">Growth: 50 images/mo limit</td>
         </tr>
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Together.ai <span class="text-[9px] text-indigo-500 font-semibold">Pro</span></td>
+          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Together.ai <span class="text-[9px] text-kova-500 font-semibold">Pro</span></td>
           <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">FLUX.1.1-pro</td>
           <td class="px-4 py-2.5 text-right">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">$0.040/img</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400">$0.040/img</span>
           </td>
           <td class="px-4 py-2.5 text-right font-mono text-xs text-gray-600 dark:text-gray-400">100 × $0.04 = $4.00</td>
           <td class="px-4 py-2.5 text-[10px] text-gray-400">Pro: 100 images/mo limit</td>
         </tr>
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Together.ai <span class="text-[9px] text-amber-600 font-semibold">Agency</span></td>
+          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Together.ai <span class="text-[9px] text-gold-600 font-semibold">Agency</span></td>
           <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">FLUX.1.1-pro</td>
           <td class="px-4 py-2.5 text-right">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">$0.040/img</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400">$0.040/img</span>
           </td>
           <td class="px-4 py-2.5 text-right font-mono text-xs text-gray-600 dark:text-gray-400">200 × $0.04 = $8.00</td>
           <td class="px-4 py-2.5 text-[10px] text-gray-400">Agency: 200 images/mo limit</td>
@@ -841,16 +841,16 @@
           </td>
           <td class="px-4 py-2.5 text-xs font-mono text-gray-500 dark:text-gray-500">FLUX.1-schnell / flux</td>
           <td class="px-4 py-2.5 text-right">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400">FREE</span>
           </td>
-          <td class="px-4 py-2.5 text-right font-mono text-xs text-emerald-600 dark:text-emerald-400">$0.00</td>
+          <td class="px-4 py-2.5 text-right font-mono text-xs text-growth-600 dark:text-growth-400">$0.00</td>
           <td class="px-4 py-2.5 text-[10px] text-gray-400">Fallback chain: HF → Pollinations (both free)</td>
         </tr>
         {# Graphics - Pillow #}
-        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 bg-emerald-50/30 dark:bg-emerald-950/10">
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 bg-growth-50/30 dark:bg-growth-950/10">
           <td class="px-4 py-2.5">
             <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <svg class="w-4 h-4 text-kova-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
               </svg>
               <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Branded Graphics</span>
@@ -859,9 +859,9 @@
           <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">On-device (Pillow)</td>
           <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Quote · Tip · Stat · CTA</td>
           <td class="px-4 py-2.5 text-right">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400">FREE</span>
           </td>
-          <td class="px-4 py-2.5 text-right font-mono text-xs text-emerald-600 dark:text-emerald-400">$0.00</td>
+          <td class="px-4 py-2.5 text-right font-mono text-xs text-growth-600 dark:text-growth-400">$0.00</td>
           <td class="px-4 py-2.5 text-[10px] text-gray-400">Python Pillow — no API, no cost</td>
         </tr>
       </tbody>
@@ -893,8 +893,8 @@
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
           <td class="px-4 py-2.5 font-mono text-xs text-gray-700 dark:text-gray-300">{{ key }}</td>
           <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">{{ info.label }}</td>
-          <td class="px-4 py-2.5 text-right font-mono text-xs {% if info.input == 0 %}text-emerald-600{% else %}text-gray-700 dark:text-gray-300{% endif %}">${{ info.input }}</td>
-          <td class="px-4 py-2.5 text-right font-mono text-xs {% if info.output == 0 %}text-emerald-600{% else %}text-gray-700 dark:text-gray-300{% endif %}">${{ info.output }}</td>
+          <td class="px-4 py-2.5 text-right font-mono text-xs {% if info.input == 0 %}text-growth-600{% else %}text-gray-700 dark:text-gray-300{% endif %}">${{ info.input }}</td>
+          <td class="px-4 py-2.5 text-right font-mono text-xs {% if info.output == 0 %}text-growth-600{% else %}text-gray-700 dark:text-gray-300{% endif %}">${{ info.output }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -934,8 +934,8 @@
           label: 'Calls',
           data: raw.map(function(d) { return d.calls; }),
           type: 'line',
-          borderColor: 'rgb(139, 92, 246)',
-          backgroundColor: 'rgba(139, 92, 246, 0.1)',
+          borderColor: 'rgb(43, 111, 158)',
+          backgroundColor: 'rgba(43, 111, 158, 0.1)',
           yAxisID: 'y1',
           tension: 0.3,
           pointRadius: 2,

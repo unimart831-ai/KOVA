@@ -23,8 +23,8 @@
     <p class="text-xl font-bold text-green-600 dark:text-green-400">{{ tests_by_status.running|default:0 }}</p>
     <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Running</p>
   </div>
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 p-4 shadow-sm text-center">
-    <p class="text-xl font-bold text-purple-600 dark:text-purple-400">{{ tests_by_status.concluded|default:0 }}</p>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-kova-200 dark:border-kova-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-kova-600 dark:text-kova-400">{{ tests_by_status.concluded|default:0 }}</p>
     <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Concluded</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-red-200 dark:border-red-900/50 p-4 shadow-sm text-center">
@@ -62,7 +62,7 @@
       </div>
       <div class="flex items-center justify-between">
         <dt class="text-xs text-gray-500 dark:text-gray-400">Concluded This Week</dt>
-        <dd class="text-sm font-semibold text-purple-600 dark:text-purple-400">{{ concluded_7d }}</dd>
+        <dd class="text-sm font-semibold text-kova-600 dark:text-kova-400">{{ concluded_7d }}</dd>
       </div>
     </dl>
   </div>
@@ -106,8 +106,8 @@
 
 <!-- ── Overdue Tests ─────────────────────────────────────────────────── -->
 {% if overdue_tests %}
-<div class="bg-white dark:bg-gray-900 rounded-xl border border-yellow-200 dark:border-yellow-900/50 p-4 sm:p-5 shadow-sm mb-6">
-  <h3 class="text-sm font-semibold text-yellow-700 dark:text-yellow-400 mb-3">Overdue Tests ({{ overdue_tests|length }})</h3>
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gold-200 dark:border-gold-900/50 p-4 sm:p-5 shadow-sm mb-6">
+  <h3 class="text-sm font-semibold text-gold-700 dark:text-gold-400 mb-3">Overdue Tests ({{ overdue_tests|length }})</h3>
   <div class="space-y-2">
     {% for test in overdue_tests %}
     <div class="flex items-center justify-between">
@@ -115,7 +115,7 @@
         <a href="{% url 'admin_dashboard:ab_test_detail_admin' pk=test.pk %}" class="text-sm text-kova-600 dark:text-kova-400 hover:underline">{{ test.name|truncatechars:40 }}</a>
         <p class="text-xs text-gray-400 dark:text-gray-500">{{ test.user.email }} · Started {{ test.started_at|timesince }} ago</p>
       </div>
-      <span class="text-xs text-yellow-600 dark:text-yellow-400">{{ test.test_duration_hours }}h test</span>
+      <span class="text-xs text-gold-600 dark:text-gold-400">{{ test.test_duration_hours }}h test</span>
     </div>
     {% endfor %}
   </div>
@@ -149,8 +149,8 @@
         return dt.toLocaleDateString('en', {month: 'short', day: 'numeric'});
       }),
       datasets: [
-        { label: 'Created', data: data.map(d => d.created), backgroundColor: isDark ? '#6366f1' : '#818cf8', borderRadius: 4 },
-        { label: 'Concluded', data: data.map(d => d.concluded), backgroundColor: isDark ? '#22c55e' : '#4ade80', borderRadius: 4 },
+        { label: 'Created', data: data.map(d => d.created), backgroundColor: isDark ? '#1E3A8A' : '#60A5FA', borderRadius: 4 },
+        { label: 'Concluded', data: data.map(d => d.concluded), backgroundColor: isDark ? '#10B981' : '#34D399', borderRadius: 4 },
       ]
     },
     options: {

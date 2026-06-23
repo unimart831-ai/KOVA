@@ -20,7 +20,7 @@
       {% if profile.brand_logo_url %}
         <img src="{{ profile.brand_logo_url }}" alt="{{ page_title }}" class="h-14 w-14 rounded-full object-cover">
       {% else %}
-        <div class="h-14 w-14 rounded-full bg-purple-600 flex items-center justify-center text-white text-xl font-bold">
+        <div class="h-14 w-14 rounded-full bg-kova-600 flex items-center justify-center text-white text-xl font-bold">
           {{ page_title|slice:":1"|upper }}
         </div>
       {% endif %}
@@ -71,7 +71,7 @@
     <!-- Book appointment -->
     {% if booking_link %}
     <a href="{% url 'bookings:public_book' slug=booking_link.slug %}"
-       class="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border-2 border-purple-600 text-purple-600 font-semibold text-base hover:bg-purple-50 transition-colors">
+       class="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border-2 border-kova-600 text-kova-600 font-semibold text-base hover:bg-kova-50 transition-colors">
       📅 Book an appointment
     </a>
     {% endif %}
@@ -83,15 +83,15 @@
         {% csrf_token %}
         <div class="space-y-3">
           <input type="text" name="name" placeholder="Your name *" required
-            class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
+            class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-kova-400">
           <input type="tel" name="phone" placeholder="WhatsApp / phone number"
-            class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
+            class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-kova-400">
           <input type="email" name="email" placeholder="Email (optional)"
-            class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
+            class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-kova-400">
           <textarea name="message" placeholder="What are you looking for?" rows="3"
-            class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none"></textarea>
+            class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-kova-400 resize-none"></textarea>
           <button type="submit"
-            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-xl transition-colors">
+            class="w-full bg-kova-600 hover:bg-kova-700 text-white font-semibold py-3 rounded-xl transition-colors">
             Send enquiry
           </button>
         </div>
@@ -103,7 +103,7 @@
 
     <!-- Footer -->
     <p class="text-center text-xs text-gray-400 pb-4">
-      Powered by <a href="/" class="text-purple-500 hover:underline">Kova</a>
+      Powered by <a href="/" class="text-kova-500 hover:underline">Kova</a>
     </p>
   </div>
 

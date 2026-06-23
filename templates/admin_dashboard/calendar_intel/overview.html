@@ -32,8 +32,8 @@
 
 {# ── Draft status breakdown (clickable to filtered list) ──────────── #}
 <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
-  <a href="{% url 'admin_dashboard:calendar_drafts' %}?status=queued" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-amber-300 dark:hover:border-amber-700 transition-colors">
-    <p class="text-lg font-bold text-amber-600 dark:text-amber-400">{{ draft_queued }}</p>
+  <a href="{% url 'admin_dashboard:calendar_drafts' %}?status=queued" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-gold-300 dark:hover:border-gold-700 transition-colors">
+    <p class="text-lg font-bold text-gold-600 dark:text-gold-400">{{ draft_queued }}</p>
     <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Queued</p>
   </a>
   <a href="{% url 'admin_dashboard:calendar_drafts' %}?status=generating" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
@@ -56,8 +56,8 @@
     <p class="text-lg font-bold text-red-600 dark:text-red-400">{{ draft_failed }}</p>
     <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Failed</p>
   </a>
-  <a href="{% url 'admin_dashboard:calendar_drafts' %}?status=expired" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-yellow-300 dark:hover:border-yellow-700 transition-colors">
-    <p class="text-lg font-bold text-yellow-600 dark:text-yellow-400">{{ draft_expired }}</p>
+  <a href="{% url 'admin_dashboard:calendar_drafts' %}?status=expired" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-gold-300 dark:hover:border-gold-700 transition-colors">
+    <p class="text-lg font-bold text-gold-600 dark:text-gold-400">{{ draft_expired }}</p>
     <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Expired</p>
   </a>
 </div>
@@ -72,8 +72,8 @@
   </p>
 </div>
 {% else %}
-<div class="mb-6 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-  <p class="text-xs text-amber-700 dark:text-amber-400">
+<div class="mb-6 p-3 rounded-lg bg-gold-50 dark:bg-gold-950/30 border border-gold-200 dark:border-gold-800">
+  <p class="text-xs text-gold-700 dark:text-gold-400">
     <span class="font-medium">No drafts have ever been created.</span> The Holiday Watcher Celery task (<code>calendar_intel.run_holiday_watcher</code>) runs daily at 02:00 UTC — verify Celery beat is running and users have <code>country</code> set.
   </p>
 </div>
@@ -253,7 +253,7 @@
             {% elif d.status == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
             {% elif d.status == 'approved' %}bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-300
             {% elif d.status == 'dismissed' %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400
-            {% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300{% endif %}">
+            {% else %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300{% endif %}">
             {{ d.get_status_display }}
           </span>
         </td>

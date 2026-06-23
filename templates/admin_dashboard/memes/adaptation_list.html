@@ -59,10 +59,10 @@
             <p class="text-xs text-gray-600 dark:text-gray-300 truncate max-w-[250px]">{{ a.adapted_text|truncatechars:80 }}</p>
           </td>
           <td class="px-4 py-2.5 text-right">
-            <span class="text-xs font-bold {% if a.brand_relevance_score >= 70 %}text-green-600{% elif a.brand_relevance_score >= 40 %}text-yellow-600{% else %}text-red-500{% endif %}">{{ a.brand_relevance_score }}%</span>
+            <span class="text-xs font-bold {% if a.brand_relevance_score >= 70 %}text-green-600{% elif a.brand_relevance_score >= 40 %}text-gold-600{% else %}text-red-500{% endif %}">{{ a.brand_relevance_score }}%</span>
           </td>
           <td class="px-4 py-2.5 text-right">
-            <span class="text-xs font-bold {% if a.humor_preserved_score >= 70 %}text-green-600{% elif a.humor_preserved_score >= 40 %}text-yellow-600{% else %}text-red-500{% endif %}">{{ a.humor_preserved_score }}%</span>
+            <span class="text-xs font-bold {% if a.humor_preserved_score >= 70 %}text-green-600{% elif a.humor_preserved_score >= 40 %}text-gold-600{% else %}text-red-500{% endif %}">{{ a.humor_preserved_score }}%</span>
           </td>
           <td class="px-4 py-2.5 text-right text-xs text-gray-400">{{ a.created_at|timesince }} ago</td>
         </tr>

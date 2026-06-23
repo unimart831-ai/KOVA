@@ -31,7 +31,7 @@
       <div class="flex flex-wrap items-center gap-2 mb-1">
         <a href="{% url 'admin_dashboard:content_safety_incident_detail' incident.pk %}" class="text-sm font-semibold text-gray-900 dark:text-white hover:text-kova-600">{{ incident.user.email }}</a>
         <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">{{ incident.get_source_display }}</span>
-        <span class="text-[10px] px-1.5 py-0.5 rounded font-semibold {% if incident.severity >= 70 %}bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300{% else %}bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200{% endif %}">Severity {{ incident.severity }}</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded font-semibold {% if incident.severity >= 70 %}bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300{% else %}bg-gold-100 text-gold-800 dark:bg-gold-950 dark:text-gold-200{% endif %}">Severity {{ incident.severity }}</span>
       </div>
       {% if incident.categories %}
       <p class="text-xs text-gray-500 dark:text-gray-400">Categories: {{ incident.categories|join:", " }}</p>

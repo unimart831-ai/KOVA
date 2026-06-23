@@ -44,8 +44,8 @@
     <p class="text-lg font-bold text-red-600 dark:text-red-400">{{ peaked }}</p>
     <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Peaked</p>
   </a>
-  <a href="{% url 'admin_dashboard:meme_list_admin' %}?lifecycle=fading" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-yellow-300 dark:hover:border-yellow-700 transition-colors">
-    <p class="text-lg font-bold text-yellow-600 dark:text-yellow-400">{{ fading }}</p>
+  <a href="{% url 'admin_dashboard:meme_list_admin' %}?lifecycle=fading" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-gold-300 dark:hover:border-gold-700 transition-colors">
+    <p class="text-lg font-bold text-gold-600 dark:text-gold-400">{{ fading }}</p>
     <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Fading</p>
   </a>
   <a href="{% url 'admin_dashboard:meme_list_admin' %}?lifecycle=dead" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-gray-300 dark:hover:border-gray-700 transition-colors">
@@ -85,7 +85,7 @@
           <span class="font-bold text-gray-900 dark:text-white">{{ avg_scores.avg_cultural|floatformat:0|default:"—" }}</span>
         </div>
         <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
-          <div class="bg-purple-500 h-2 rounded-full" style="width: {{ avg_scores.avg_cultural|floatformat:0|default:0 }}%"></div>
+          <div class="bg-kova-500 h-2 rounded-full" style="width: {{ avg_scores.avg_cultural|floatformat:0|default:0 }}%"></div>
         </div>
       </div>
       <div>
@@ -109,7 +109,7 @@
         <p class="text-xs text-gray-400 mt-1">Avg Brand Fit</p>
       </div>
       <div class="text-center">
-        <p class="text-3xl font-bold text-amber-600 dark:text-amber-400">{{ avg_quality.avg_humor|floatformat:0|default:"—" }}</p>
+        <p class="text-3xl font-bold text-gold-600 dark:text-gold-400">{{ avg_quality.avg_humor|floatformat:0|default:"—" }}</p>
         <p class="text-xs text-gray-400 mt-1">Avg Humor Preserved</p>
       </div>
     </div>
@@ -141,7 +141,7 @@
         <p class="text-[10px] text-gray-400">Conservative</p>
       </div>
       <div class="text-center">
-        <p class="text-lg font-bold text-yellow-600 dark:text-yellow-400">{{ risk_distribution.moderate|default:0 }}</p>
+        <p class="text-lg font-bold text-gold-600 dark:text-gold-400">{{ risk_distribution.moderate|default:0 }}</p>
         <p class="text-[10px] text-gray-400">Moderate</p>
       </div>
       <div class="text-center">
@@ -190,10 +190,10 @@
               </span>
             </td>
             <td class="px-4 py-2.5 text-right">
-              <span class="text-xs font-bold {% if meme.virality_score >= 70 %}text-orange-600{% elif meme.virality_score >= 40 %}text-yellow-600{% else %}text-gray-400{% endif %}">{{ meme.virality_score }}</span>
+              <span class="text-xs font-bold {% if meme.virality_score >= 70 %}text-orange-600{% elif meme.virality_score >= 40 %}text-gold-600{% else %}text-gray-400{% endif %}">{{ meme.virality_score }}</span>
             </td>
             <td class="px-4 py-2.5 text-right">
-              <span class="text-xs font-bold {% if meme.brand_safety_score >= 70 %}text-green-600{% elif meme.brand_safety_score >= 40 %}text-yellow-600{% else %}text-red-500{% endif %}">{{ meme.brand_safety_score }}</span>
+              <span class="text-xs font-bold {% if meme.brand_safety_score >= 70 %}text-green-600{% elif meme.brand_safety_score >= 40 %}text-gold-600{% else %}text-red-500{% endif %}">{{ meme.brand_safety_score }}</span>
             </td>
             <td class="px-4 py-2.5 text-right">
               <span class="text-xs font-bold text-gray-900 dark:text-white">{{ meme.adaptation_count }}</span>
@@ -287,7 +287,7 @@
             <span class="text-[10px] text-gray-400 capitalize">{{ event.get_event_type_display }}</span>
             <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
               {% if event.meme_potential == 'high' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
-              {% elif event.meme_potential == 'medium' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300
+              {% elif event.meme_potential == 'medium' %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300
               {% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300{% endif %}">
               {{ event.get_meme_potential_display }}
             </span>
@@ -356,7 +356,7 @@
               {% if meme.lifecycle == 'emerging' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
               {% elif meme.lifecycle == 'trending' %}bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300
               {% elif meme.lifecycle == 'peaked' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
-              {% elif meme.lifecycle == 'fading' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300
+              {% elif meme.lifecycle == 'fading' %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300
               {% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300{% endif %}">
               {{ meme.get_lifecycle_display }}
             </span>

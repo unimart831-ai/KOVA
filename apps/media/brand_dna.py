@@ -15,8 +15,8 @@ from apps.accounts.models import UserProfile
 @dataclass(frozen=True)
 class BrandDNA:
   brand_name: str = ""
-  primary_color: str = "#0d8474"
-  accent_color: str = "#14b8a6"
+  primary_color: str = "#10B981"
+  accent_color: str = "#1E3A8A"
   secondary_color: str = "#0f172a"
   logo_url: str = ""
   visual_style: str = "photography"
@@ -115,7 +115,7 @@ def resolve_brand_dna(user, profile=None) -> BrandDNA:
     except Exception:
       name = (profile.company_name or "").strip()
 
-  primary = commerce.get("theme_primary_color") or "#0d8474"
+  primary = commerce.get("theme_primary_color") or "#10B981"
   accent = primary
   secondary = "#0f172a"
   logo = commerce.get("logo_url") or ""

@@ -28,7 +28,7 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">Total Views</p>
     </div>
     <div class="card px-4 py-3 text-center">
-      <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+      <p class="text-2xl font-bold text-growth-600 dark:text-growth-400">
         {% for p in pages %}{% if forloop.first %}{{ p.form_count }}{% endif %}{% empty %}0{% endfor %}
       </p>
       <p class="text-xs text-gray-500 dark:text-gray-400">Forms</p>
@@ -53,7 +53,7 @@
         New Page
       </a>
       {% else %}
-      <a href="{% url 'billing:pricing' %}" class="btn-secondary text-sm px-4 py-2 text-amber-600">
+      <a href="{% url 'billing:pricing' %}" class="btn-secondary text-sm px-4 py-2 text-gold-600">
         Upgrade for more pages →
       </a>
       {% endif %}
@@ -75,7 +75,7 @@
             {% endif %}
           </div>
           {% if page.is_published %}
-          <span class="ml-2 mt-0.5 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">Live</span>
+          <span class="ml-2 mt-0.5 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-growth-100 text-growth-800 dark:bg-growth-900/30 dark:text-growth-400">Live</span>
           {% else %}
           <span class="ml-2 mt-0.5 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">Draft</span>
           {% endif %}

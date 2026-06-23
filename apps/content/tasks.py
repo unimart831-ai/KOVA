@@ -5,6 +5,8 @@ Handles async content generation via the Create Agent,
 auto-publishing at scheduled times, and metrics fetching.
 """
 
+from __future__ import annotations
+
 import logging
 import re
 from urllib.parse import urlencode, urlparse, urlunparse, parse_qs

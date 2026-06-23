@@ -3,9 +3,9 @@
 <div class="space-y-3">
   {% if revenue_stat and revenue_stat.has_data %}
   <a href="{% url 'analytics:revenue' %}"
-     class="flex flex-wrap items-baseline gap-x-3 gap-y-1 p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/80 dark:bg-emerald-950/20 hover:border-emerald-300 dark:hover:border-emerald-800 transition-colors group">
-    <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Money proved this week</span>
-    <span class="text-2xl font-black tabular-nums text-gray-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300">KES {{ revenue_stat.current_kes|floatformat:0 }}</span>
+     class="flex flex-wrap items-baseline gap-x-3 gap-y-1 p-4 rounded-xl border border-growth-200 dark:border-growth-900/50 bg-growth-50/80 dark:bg-growth-950/20 hover:border-growth-300 dark:hover:border-growth-800 transition-colors group">
+    <span class="text-[10px] font-bold uppercase tracking-wider text-growth-700 dark:text-growth-400">Money proved this week</span>
+    <span class="text-2xl font-black tabular-nums text-gray-900 dark:text-white group-hover:text-growth-700 dark:group-hover:text-growth-300">KES {{ revenue_stat.current_kes|floatformat:0 }}</span>
     {% if revenue_stat.direction == 'up' %}
     <span class="text-xs font-semibold text-green-600 dark:text-green-400">+{{ revenue_stat.delta_pct|floatformat:0 }}% vs last week</span>
     {% elif revenue_stat.direction == 'down' %}
@@ -14,13 +14,13 @@
   </a>
   {% else %}
   {# Money Proof empty state — show what's coming so the differentiator is visible from day one #}
-  <div class="p-4 rounded-xl border border-dashed border-emerald-300 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/10">
-    <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Money proof</p>
+  <div class="p-4 rounded-xl border border-dashed border-growth-300 dark:border-growth-900/60 bg-growth-50/50 dark:bg-growth-950/10">
+    <p class="text-[10px] font-bold uppercase tracking-wider text-growth-700 dark:text-growth-400">Money proof</p>
     <p class="mt-1 text-sm font-medium text-gray-800 dark:text-gray-200">This is where you'll see which posts brought paying customers.</p>
     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ kova_money_subtitle }}. Add a QR at your counter or share a tracked link.</p>
     <div class="mt-3 flex flex-wrap gap-2">
-      <a href="{% url 'qr_attribution:create' %}" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors">Create a QR code</a>
-      <a href="{% url 'links:list' %}" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors">Share a tracked link</a>
+      <a href="{% url 'qr_attribution:create' %}" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-growth-600 text-white text-xs font-semibold hover:bg-growth-700 transition-colors">Create a QR code</a>
+      <a href="{% url 'links:list' %}" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 text-growth-800 dark:text-growth-300 text-xs font-semibold border border-growth-200 dark:border-growth-800 hover:bg-growth-50 dark:hover:bg-growth-950/40 transition-colors">Share a tracked link</a>
     </div>
   </div>
   {% endif %}
@@ -30,10 +30,10 @@
   {% if money_board.top_asset %}
   {% with ta=money_board.top_asset %}
   <a href="{% url ta.url_name %}"
-     class="flex items-start gap-3 p-4 rounded-xl border border-purple-200 dark:border-purple-900/50 bg-purple-50/60 dark:bg-purple-950/20 hover:border-purple-300 transition-colors">
+     class="flex items-start gap-3 p-4 rounded-xl border border-kova-200 dark:border-kova-900/50 bg-kova-50/60 dark:bg-kova-950/20 hover:border-kova-300 transition-colors">
     <span class="text-lg" aria-hidden="true">🏆</span>
     <div class="min-w-0">
-      <p class="text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300">Top {{ ta.type_label|lower }} this week</p>
+      <p class="text-[10px] font-bold uppercase tracking-wider text-kova-700 dark:text-kova-300">Top {{ ta.type_label|lower }} this week</p>
       <p class="mt-0.5 text-sm font-semibold text-gray-900 dark:text-white">{{ ta.title }}</p>
       <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ ta.detail }}</p>
     </div>
@@ -87,11 +87,11 @@
 
     {% with card=money_board.hot_leads %}
     <a href="{% url card.url_name %}?status=new"
-       class="group card hover:border-purple-300 dark:hover:border-purple-800 transition-colors">
+       class="group card hover:border-kova-300 dark:hover:border-kova-800 transition-colors">
       <div class="px-5 py-4">
         <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ card.label }}</p>
         <p class="mt-1 text-3xl font-black tabular-nums text-gray-900 dark:text-white">{{ card.count }}</p>
-        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-400">{{ card.detail }}</p>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 group-hover:text-kova-600 dark:group-hover:text-kova-400">{{ card.detail }}</p>
       </div>
     </a>
     {% endwith %}

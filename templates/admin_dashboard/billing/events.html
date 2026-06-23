@@ -55,7 +55,7 @@
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
           <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{{ event.created_at|timesince }} ago</td>
           <td class="px-4 py-3">
-            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {% if event.provider == 'mpesa' %}bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400{% else %}bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400{% endif %}">{{ event.get_provider_display }}</span>
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {% if event.provider == 'mpesa' %}bg-growth-100 dark:bg-growth-900/30 text-growth-700 dark:text-growth-400{% else %}bg-kova-100 dark:bg-kova-900/30 text-kova-700 dark:text-kova-400{% endif %}">{{ event.get_provider_display }}</span>
           </td>
           <td class="px-4 py-3 text-xs text-gray-900 dark:text-white font-mono">{{ event.event_type }}</td>
           <td class="px-4 py-3">
@@ -67,7 +67,7 @@
           </td>
           <td class="px-4 py-3">
             {% if event.processed %}
-            <span class="text-emerald-500">✓</span>
+            <span class="text-growth-500">✓</span>
             {% else %}
             <span class="text-red-500">✗</span>
             {% endif %}

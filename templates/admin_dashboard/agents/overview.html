@@ -12,7 +12,7 @@
     <p class="text-xs text-gray-500 dark:text-gray-400">Actions (24h)</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
-    <p class="text-2xl font-bold {% if global_success >= 95 %}text-green-600 dark:text-green-400{% elif global_success >= 80 %}text-yellow-600 dark:text-yellow-400{% else %}text-red-600 dark:text-red-400{% endif %}">{{ global_success }}%</p>
+    <p class="text-2xl font-bold {% if global_success >= 95 %}text-green-600 dark:text-green-400{% elif global_success >= 80 %}text-gold-600 dark:text-gold-400{% else %}text-red-600 dark:text-red-400{% endif %}">{{ global_success }}%</p>
     <p class="text-xs text-gray-500 dark:text-gray-400">Success Rate</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
@@ -28,15 +28,15 @@
 <!-- ── Agent Health Grid ─────────────────────────────────────────────── -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
   {% for agent in agents %}
-  <div class="bg-white dark:bg-gray-900 rounded-xl border {% if agent.health == 'green' %}border-green-200 dark:border-green-900/50{% elif agent.health == 'yellow' %}border-yellow-200 dark:border-yellow-900/50{% else %}border-red-200 dark:border-red-900/50{% endif %} p-5 shadow-sm">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border {% if agent.health == 'green' %}border-green-200 dark:border-green-900/50{% elif agent.health == 'yellow' %}border-gold-200 dark:border-gold-900/50{% else %}border-red-200 dark:border-red-900/50{% endif %} p-5 shadow-sm">
     <div class="flex items-center justify-between mb-3">
       <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">{{ agent.label }}</h3>
-      <span class="w-3 h-3 rounded-full {% if agent.health == 'green' %}bg-green-500{% elif agent.health == 'yellow' %}bg-yellow-500 animate-pulse{% else %}bg-red-500 animate-pulse{% endif %}"></span>
+      <span class="w-3 h-3 rounded-full {% if agent.health == 'green' %}bg-green-500{% elif agent.health == 'yellow' %}bg-gold-500 animate-pulse{% else %}bg-red-500 animate-pulse{% endif %}"></span>
     </div>
     <dl class="space-y-2 text-xs">
       <div class="flex justify-between">
         <dt class="text-gray-500 dark:text-gray-400">Success Rate</dt>
-        <dd class="font-semibold {% if agent.success_rate >= 95 %}text-green-600 dark:text-green-400{% elif agent.success_rate >= 80 %}text-yellow-600 dark:text-yellow-400{% else %}text-red-600 dark:text-red-400{% endif %}">{{ agent.success_rate }}%</dd>
+        <dd class="font-semibold {% if agent.success_rate >= 95 %}text-green-600 dark:text-green-400{% elif agent.success_rate >= 80 %}text-gold-600 dark:text-gold-400{% else %}text-red-600 dark:text-red-400{% endif %}">{{ agent.success_rate }}%</dd>
       </div>
       <div class="flex justify-between">
         <dt class="text-gray-500 dark:text-gray-400">Runs (24h)</dt>
@@ -60,7 +60,7 @@
 </div>
 
 <!-- ── AI Automation Intelligence ──────────────────────────────────── -->
-<div class="bg-white dark:bg-gray-900 rounded-xl border border-indigo-200 dark:border-indigo-900/50 p-5 shadow-sm mb-6">
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-kova-200 dark:border-kova-900/50 p-5 shadow-sm mb-6">
   <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">AI Automation Intelligence</h3>
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
 
@@ -69,7 +69,7 @@
       <dl class="space-y-1.5 text-xs">
         <div class="flex justify-between">
           <dt class="text-gray-500 dark:text-gray-400">Research Agent</dt>
-          <dd class="font-semibold text-indigo-600 dark:text-indigo-400">{{ auto_seed_sources.research }}</dd>
+          <dd class="font-semibold text-kova-600 dark:text-kova-400">{{ auto_seed_sources.research }}</dd>
         </div>
         <div class="flex justify-between">
           <dt class="text-gray-500 dark:text-gray-400">Competitor Intel</dt>
@@ -77,7 +77,7 @@
         </div>
         <div class="flex justify-between">
           <dt class="text-gray-500 dark:text-gray-400">Content Recycling</dt>
-          <dd class="font-semibold text-purple-600 dark:text-purple-400">{{ auto_seed_sources.recycle }}</dd>
+          <dd class="font-semibold text-kova-600 dark:text-kova-400">{{ auto_seed_sources.recycle }}</dd>
         </div>
         <div class="flex justify-between">
           <dt class="text-gray-500 dark:text-gray-400">Campaign AI</dt>
@@ -124,11 +124,11 @@
         <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Lead Scoring</span>
         <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Product Promo</span>
         <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">Competitor Intel</span>
-        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">Trend Seeding</span>
-        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">Content Recycling</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-300">Trend Seeding</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-300">Content Recycling</span>
         <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300">Smart Approval</span>
         <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">AI Captions</span>
-        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">Nurture Emails</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300">Nurture Emails</span>
         <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300">Brief Actions</span>
         <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">AI Campaigns</span>
       </div>
@@ -216,7 +216,7 @@
       datasets: [{
         label: 'Success %',
         data: successData.map(d => d.rate),
-        borderColor: '#22c55e',
+        borderColor: '#10B981',
         backgroundColor: 'rgba(34, 197, 94, 0.1)',
         fill: true,
         borderWidth: 2,
@@ -240,8 +240,8 @@
   // ── Token Consumption Trend ────────────────────────────────────────
   const tokenData = {{ token_trend_json|safe }};
   const agentColors = {
-    research: '#6366f1', create: '#3b82f6', adapt: '#8b5cf6',
-    engage: '#f59e0b', analyst: '#10b981', strategist: '#ef4444'
+    research: '#1E3A8A', create: '#3b82f6', adapt: '#2B6F9E',
+    engage: '#f59e0b', analyst: '#10B981', strategist: '#ef4444'
   };
   const agentTypes = {{ agent_types|safe }};
   new Chart(document.getElementById('tokenTrendChart'), {

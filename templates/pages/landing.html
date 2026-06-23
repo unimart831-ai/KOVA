@@ -16,13 +16,13 @@
   <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-28 text-center">
     {% include "components/brand/_agent_loop_badge.html" %}
 
-    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-[1.1] reveal reveal-delay-1">
+    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-gray-50 tracking-tight leading-[1.1] reveal reveal-delay-1">
       {% include "components/brand/_north_star_tagline.html" %}
     </h1>
     <p class="mt-6 max-w-2xl mx-auto text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100 leading-snug reveal reveal-delay-2">
       {{ marketing_hero_subhead }}
     </p>
-    <p class="mt-4 max-w-2xl mx-auto text-base sm:text-lg text-gray-600 dark:text-gray-300 leading-relaxed reveal reveal-delay-2">
+    <p class="mt-4 max-w-2xl mx-auto text-base sm:text-lg text-gray-600 dark:text-gray-400 leading-relaxed reveal reveal-delay-2">
       {{ marketing_hero_body }}
     </p>
 
@@ -53,7 +53,7 @@
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Checkout built for Kenyan SMEs</p>
       </div>
       <div class="reveal reveal-delay-3">
-        <p class="text-2xl sm:text-3xl font-extrabold text-kova-600 dark:text-kova-400">KSh {{ all_plans.starter.price_kes }}</p>
+        <p class="text-2xl sm:text-3xl font-extrabold text-growth-600 dark:text-growth-400">KSh {{ all_plans.starter.price_kes }}</p>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Starting price per month</p>
       </div>
     </div>
@@ -73,17 +73,17 @@
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">You stare at a blank screen. Write everything yourself. Schedule manually. Hope it works. Check analytics. Repeat.</p>
       </div>
       <div class="text-center reveal reveal-delay-2">
-        <div class="w-12 h-12 mx-auto bg-amber-100 dark:bg-amber-950/40 rounded-xl flex items-center justify-center mb-3">
-          <svg class="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <div class="w-12 h-12 mx-auto bg-gold-100 dark:bg-gold-950/40 rounded-xl flex items-center justify-center mb-3">
+          <svg class="w-6 h-6 text-gold-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
         <h3 class="font-semibold text-gray-900 dark:text-white">With generic AI tools</h3>
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">You get generic AI writing that sounds like everyone else. No learning. No strategy. No engagement. Same output forever.</p>
       </div>
       <div class="text-center reveal reveal-delay-3">
-        <div class="w-12 h-12 mx-auto bg-kova-100 dark:bg-kova-950/50 rounded-xl flex items-center justify-center mb-3 ring-1 ring-kova-200/80 dark:ring-kova-800/60">
-          <svg class="w-6 h-6 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        <div class="w-12 h-12 mx-auto bg-growth-100 dark:bg-growth-950/50 rounded-xl flex items-center justify-center mb-3 ring-1 ring-growth-200/80 dark:ring-growth-800/60">
+          <svg class="w-6 h-6 text-growth-600 dark:text-growth-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
         </div>
-        <h3 class="font-semibold text-kova-700 dark:text-kova-400">With Kova</h3>
+        <h3 class="font-semibold text-growth-700 dark:text-growth-400">With Kova</h3>
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">More customers show up. Content is already written. Leads get follow-up drafts. You see what made money yesterday. Approve in 5 minutes.</p>
       </div>
     </div>
@@ -108,11 +108,11 @@
         <!-- SVG Connection Lines -->
         <svg class="absolute inset-0 w-full h-full text-gray-300 dark:text-gray-700" viewBox="0 0 720 620" fill="none" xmlns="http://www.w3.org/2000/svg">
           <!-- Outer ring connections (agent to agent) -->
-          <path d="M360 72 L588 192" class="agent-connection" stroke="url(#grad-blue-purple)" stroke-width="1.5" opacity="0.5"/>
-          <path d="M588 192 L516 468" class="agent-connection" stroke="url(#grad-purple-green)" stroke-width="1.5" opacity="0.5"/>
-          <path d="M516 468 L204 468" class="agent-connection-reverse" stroke="url(#grad-green-amber)" stroke-width="1.5" opacity="0.5"/>
-          <path d="M204 468 L132 192" class="agent-connection-reverse" stroke="url(#grad-amber-rose)" stroke-width="1.5" opacity="0.5"/>
-          <path d="M132 192 L360 72" class="agent-connection" stroke="url(#grad-rose-blue)" stroke-width="1.5" opacity="0.5"/>
+          <path d="M360 72 L588 192" class="agent-connection" stroke="url(#grad-blue-green)" stroke-width="1.5" opacity="0.5"/>
+          <path d="M588 192 L516 468" class="agent-connection" stroke="url(#grad-green-gold)" stroke-width="1.5" opacity="0.5"/>
+          <path d="M516 468 L204 468" class="agent-connection-reverse" stroke="url(#grad-gold-blue)" stroke-width="1.5" opacity="0.5"/>
+          <path d="M204 468 L132 192" class="agent-connection-reverse" stroke="url(#grad-blue-growth)" stroke-width="1.5" opacity="0.5"/>
+          <path d="M132 192 L360 72" class="agent-connection" stroke="url(#grad-growth-blue)" stroke-width="1.5" opacity="0.5"/>
           <!-- Spokes to center (each agent to strategist) -->
           <path d="M360 72 L360 280" class="agent-connection" stroke="currentColor" stroke-width="1" opacity="0.15"/>
           <path d="M588 192 L360 280" class="agent-connection-reverse" stroke="currentColor" stroke-width="1" opacity="0.15"/>
@@ -121,20 +121,20 @@
           <path d="M132 192 L360 280" class="agent-connection" stroke="currentColor" stroke-width="1" opacity="0.15"/>
           <!-- Gradient definitions -->
           <defs>
-            <linearGradient id="grad-blue-purple" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#5c7cfa"/><stop offset="100%" stop-color="#9775fa"/></linearGradient>
-            <linearGradient id="grad-purple-green" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#9775fa"/><stop offset="100%" stop-color="#51cf66"/></linearGradient>
-            <linearGradient id="grad-green-amber" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#51cf66"/><stop offset="100%" stop-color="#fcc419"/></linearGradient>
-            <linearGradient id="grad-amber-rose" x1="100%" y1="100%" x2="0%" y2="0%"><stop offset="0%" stop-color="#fcc419"/><stop offset="100%" stop-color="#ff6b6b"/></linearGradient>
-            <linearGradient id="grad-rose-blue" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#ff6b6b"/><stop offset="100%" stop-color="#5c7cfa"/></linearGradient>
+            <linearGradient id="grad-blue-green" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#1E3A8A"/><stop offset="100%" stop-color="#10B981"/></linearGradient>
+            <linearGradient id="grad-green-gold" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#10B981"/><stop offset="100%" stop-color="#34D399"/></linearGradient>
+            <linearGradient id="grad-gold-blue" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#F59E0B"/><stop offset="100%" stop-color="#1E3A8A"/></linearGradient>
+            <linearGradient id="grad-blue-growth" x1="100%" y1="100%" x2="0%" y2="0%"><stop offset="0%" stop-color="#1E3A8A"/><stop offset="100%" stop-color="#10B981"/></linearGradient>
+            <linearGradient id="grad-growth-blue" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#10B981"/><stop offset="100%" stop-color="#1E3A8A"/></linearGradient>
           </defs>
         </svg>
 
         <!-- Center: Chief Strategist (hub) -->
         <div class="absolute left-1/2 -translate-x-1/2" style="top: 230px;">
           <div class="relative">
-            <div class="absolute -inset-3 bg-kova-400/10 rounded-full motion-hub-ring" aria-hidden="true"></div>
-            <div class="agent-node relative bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-lg dark:shadow-xl dark:shadow-black/25 border-2 border-kova-400 dark:border-kova-500 w-56 text-center z-10 ring-1 ring-kova-100 dark:ring-kova-900/50">
-              <div class="w-12 h-12 mx-auto bg-gradient-to-br from-kova-500 to-indigo-500 rounded-xl flex items-center justify-center mb-3 shadow-kova">
+            <div class="absolute -inset-3 bg-growth-400/10 rounded-full motion-hub-ring" aria-hidden="true"></div>
+            <div class="agent-node relative bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-lg dark:shadow-xl dark:shadow-black/25 border-2 border-growth-400 dark:border-growth-500 w-56 text-center z-10 ring-1 ring-growth-100 dark:ring-growth-900/50">
+              <div class="w-12 h-12 mx-auto bg-gradient-to-br from-growth-500 to-growth-600 rounded-xl flex items-center justify-center mb-3 shadow-growth">
                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
               </div>
               <h3 class="font-bold text-gray-900 dark:text-white">Chief Strategist</h3>
@@ -156,9 +156,9 @@
 
         <!-- Agent 2: Content Creator (top right) -->
         <div class="absolute" style="right: 28px; top: 148px;">
-          <div class="agent-node bg-white dark:bg-gray-900 rounded-xl p-4 shadow-md border border-purple-200 dark:border-purple-900 w-48 text-center hover:shadow-lg hover:border-purple-400 dark:hover:border-purple-700 transition-all">
-            <div class="w-10 h-10 mx-auto bg-purple-100 dark:bg-purple-950/50 rounded-lg flex items-center justify-center mb-2">
-              <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          <div class="agent-node bg-white dark:bg-gray-900 rounded-xl p-4 shadow-md border border-kova-200 dark:border-kova-900 w-48 text-center hover:shadow-lg hover:border-kova-400 dark:hover:border-kova-700 transition-all">
+            <div class="w-10 h-10 mx-auto bg-kova-100 dark:bg-kova-950/50 rounded-lg flex items-center justify-center mb-2">
+              <svg class="w-5 h-5 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
             </div>
             <h4 class="font-semibold text-sm text-gray-900 dark:text-white">Content Creator</h4>
             <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Writes original posts<br>in your brand voice</p>
@@ -178,9 +178,9 @@
 
         <!-- Agent 4: Engagement (bottom left) -->
         <div class="absolute" style="left: 100px; bottom: 60px;">
-          <div class="agent-node bg-white dark:bg-gray-900 rounded-xl p-4 shadow-md border border-amber-200 dark:border-amber-900 w-48 text-center hover:shadow-lg hover:border-amber-400 dark:hover:border-amber-700 transition-all">
-            <div class="w-10 h-10 mx-auto bg-amber-100 dark:bg-amber-950/50 rounded-lg flex items-center justify-center mb-2">
-              <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+          <div class="agent-node bg-white dark:bg-gray-900 rounded-xl p-4 shadow-md border border-gold-200 dark:border-gold-900 w-48 text-center hover:shadow-lg hover:border-gold-400 dark:hover:border-gold-700 transition-all">
+            <div class="w-10 h-10 mx-auto bg-gold-100 dark:bg-gold-950/50 rounded-lg flex items-center justify-center mb-2">
+              <svg class="w-5 h-5 text-gold-600 dark:text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
             </div>
             <h4 class="font-semibold text-sm text-gray-900 dark:text-white">Engagement Agent</h4>
             <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Monitors & replies to<br>comments and mentions</p>
@@ -200,9 +200,9 @@
 
         <!-- Flow labels on connections -->
         <div class="absolute text-[10px] font-medium text-blue-500/70 dark:text-blue-400/50" style="top: 108px; left: 470px;">trends →</div>
-        <div class="absolute text-[10px] font-medium text-purple-500/70 dark:text-purple-400/50" style="top: 360px; right: 115px;">content →</div>
+        <div class="absolute text-[10px] font-medium text-kova-500/70 dark:text-kova-400/50" style="top: 360px; right: 115px;">content →</div>
         <div class="absolute text-[10px] font-medium text-green-500/70 dark:text-green-400/50" style="bottom: 56px; left: 50%; transform: translateX(-50%);">← engagement</div>
-        <div class="absolute text-[10px] font-medium text-amber-500/70 dark:text-amber-400/50" style="top: 360px; left: 80px;">← insights</div>
+        <div class="absolute text-[10px] font-medium text-gold-500/70 dark:text-gold-400/50" style="top: 360px; left: 80px;">← insights</div>
         <div class="absolute text-[10px] font-medium text-rose-500/70 dark:text-rose-400/50" style="top: 108px; left: 175px;">← data</div>
       </div>
     </div>
@@ -211,7 +211,7 @@
     <div class="lg:hidden space-y-3 max-w-sm mx-auto">
       <!-- Strategist at top -->
       <div class="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-md border-2 border-kova-400 dark:border-kova-600 text-center reveal">
-        <div class="w-10 h-10 mx-auto bg-gradient-to-br from-kova-500 to-indigo-500 rounded-lg flex items-center justify-center mb-2">
+        <div class="w-10 h-10 mx-auto bg-gradient-to-br from-kova-500 to-kova-500 rounded-lg flex items-center justify-center mb-2">
           <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
         </div>
         <h4 class="font-bold text-sm text-gray-900 dark:text-white">Chief Strategist</h4>
@@ -230,8 +230,8 @@
       </div>
       <div class="flex justify-center"><svg class="w-5 h-6 text-gray-300 dark:text-gray-700" viewBox="0 0 20 24"><path d="M10 0 L10 18 L6 14 M10 18 L14 14" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
 
-      <div class="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm border border-purple-200 dark:border-purple-900 flex items-center gap-3 reveal reveal-delay-2">
-        <div class="w-9 h-9 bg-purple-100 dark:bg-purple-950/50 rounded-lg flex items-center justify-center flex-shrink-0"><svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></div>
+      <div class="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm border border-kova-200 dark:border-kova-900 flex items-center gap-3 reveal reveal-delay-2">
+        <div class="w-9 h-9 bg-kova-100 dark:bg-kova-950/50 rounded-lg flex items-center justify-center flex-shrink-0"><svg class="w-4 h-4 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></div>
         <div><h4 class="font-semibold text-xs text-gray-900 dark:text-white">Content Creator</h4><p class="text-[11px] text-gray-400">Writes original posts in your voice</p></div>
       </div>
       <div class="flex justify-center"><svg class="w-5 h-6 text-gray-300 dark:text-gray-700" viewBox="0 0 20 24"><path d="M10 0 L10 18 L6 14 M10 18 L14 14" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
@@ -242,8 +242,8 @@
       </div>
       <div class="flex justify-center"><svg class="w-5 h-6 text-gray-300 dark:text-gray-700" viewBox="0 0 20 24"><path d="M10 0 L10 18 L6 14 M10 18 L14 14" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
 
-      <div class="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm border border-amber-200 dark:border-amber-900 flex items-center gap-3 reveal reveal-delay-4">
-        <div class="w-9 h-9 bg-amber-100 dark:bg-amber-950/50 rounded-lg flex items-center justify-center flex-shrink-0"><svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></div>
+      <div class="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm border border-gold-200 dark:border-gold-900 flex items-center gap-3 reveal reveal-delay-4">
+        <div class="w-9 h-9 bg-gold-100 dark:bg-gold-950/50 rounded-lg flex items-center justify-center flex-shrink-0"><svg class="w-4 h-4 text-gold-600 dark:text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></div>
         <div><h4 class="font-semibold text-xs text-gray-900 dark:text-white">Engagement Agent</h4><p class="text-[11px] text-gray-400">Monitors & replies to comments</p></div>
       </div>
       <div class="flex justify-center"><svg class="w-5 h-6 text-gray-300 dark:text-gray-700" viewBox="0 0 20 24"><path d="M10 0 L10 18 L6 14 M10 18 L14 14" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
@@ -271,7 +271,7 @@
       <div class="reveal">
         <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">
           Your marketing is already done.<br>
-          <span class="text-kova-600 dark:text-kova-400">Approve in 5 minutes.</span>
+          <span class="text-gold-600 dark:text-gold-400">Approve in 5 minutes.</span>
         </h2>
         <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">
           Every morning: what made money, who's waiting for a reply, and which posts are ready to go live. Nothing publishes until you say so.
@@ -306,7 +306,7 @@
       <div class="reveal reveal-delay-2 bg-gray-100 dark:bg-gray-800/60 rounded-2xl p-6 sm:p-8 shadow-inner border border-gray-200/50 dark:border-gray-700">
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-md p-5 sm:p-6 space-y-4 border border-gray-100 dark:border-gray-800" x-data="{ show: false }" x-intersect.once="show = true">
           <div class="flex items-center space-x-3 pb-4 border-b border-gray-100 dark:border-gray-800">
-            <div class="w-9 h-9 bg-gradient-to-br from-kova-500 to-indigo-500 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div class="w-9 h-9 bg-gradient-to-br from-kova-500 to-kova-500 rounded-lg flex items-center justify-center flex-shrink-0">
               <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
             </div>
             <div>
@@ -316,9 +316,9 @@
           </div>
           <div class="space-y-3 text-sm text-gray-700 dark:text-gray-300">
             <div class="flex items-center gap-2"><svg class="w-4 h-4 text-rose-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><p>Yesterday: <strong>+23% engagement</strong> vs. last week</p></div>
-            <div class="flex items-center gap-2"><svg class="w-4 h-4 text-purple-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg><p><strong>3 posts</strong> ready for your review</p></div>
+            <div class="flex items-center gap-2"><svg class="w-4 h-4 text-kova-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg><p><strong>3 posts</strong> ready for your review</p></div>
             <div class="flex items-center gap-2"><svg class="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg><p>Trending: <strong>#AIProductivity</strong> in your niche</p></div>
-            <div class="flex items-center gap-2"><svg class="w-4 h-4 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg><p><strong>12 comments</strong> replied to (5 flagged for you)</p></div>
+            <div class="flex items-center gap-2"><svg class="w-4 h-4 text-gold-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg><p><strong>12 comments</strong> replied to (5 flagged for you)</p></div>
           </div>
         </div>
       </div>
@@ -336,12 +336,12 @@
       <!-- Currency Toggle -->
       <div class="mt-8 inline-flex items-center bg-white dark:bg-gray-800 rounded-full p-1 shadow-sm border border-gray-200 dark:border-gray-700">
         <button @click="currency = 'kes'"
-                :class="currency === 'kes' ? 'bg-kova-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                :class="currency === 'kes' ? 'bg-growth-500 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
                 class="px-5 py-2 rounded-full text-sm font-medium transition-all">
           KES
         </button>
         <button @click="currency = 'usd'"
-                :class="currency === 'usd' ? 'bg-kova-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                :class="currency === 'usd' ? 'bg-growth-500 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
                 class="px-5 py-2 rounded-full text-sm font-medium transition-all">
           USD
         </button>
@@ -366,18 +366,18 @@
         </div>
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">For solopreneurs getting started</p>
         <ul class="mt-6 space-y-2 text-sm text-gray-600 dark:text-gray-400 flex-1">
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> 2 social accounts</li>
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> {{ all_plans.starter.max_posts_per_month }} AI posts/month</li>
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> {{ all_plans.starter.visual_enhancements_per_month }} photo polish credits/mo</li>
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> AI carousels &amp; motion reels</li>
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> Daily brief &amp; basic analytics</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> 2 social accounts</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> {{ all_plans.starter.max_posts_per_month }} AI posts/month</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> {{ all_plans.starter.visual_enhancements_per_month }} photo polish credits/mo</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> AI carousels &amp; motion reels</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> Daily brief &amp; basic analytics</li>
         </ul>
         <a href="{% url 'account_signup' %}" class="btn-secondary w-full justify-center mt-6">Get started</a>
       </div>
 
       <!-- Kazi / Growth -->
-      <div class="marketing-card p-6 border-2 border-kova-500 dark:border-kova-500 shadow-md dark:shadow-glow relative flex flex-col ring-1 ring-kova-200/50 dark:ring-kova-800/50">
-        <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-kova-600 text-white text-xs font-medium px-3 py-1 rounded-full">
+      <div class="marketing-card p-6 border-2 border-growth-500 dark:border-growth-500 shadow-md dark:shadow-glow relative flex flex-col ring-1 ring-growth-200/50 dark:ring-growth-800/50">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-growth-500 text-white text-xs font-medium px-3 py-1 rounded-full">
           Most Popular
         </div>
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
@@ -395,11 +395,11 @@
         </div>
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">For growing brands</p>
         <ul class="mt-6 space-y-2 text-sm text-gray-600 dark:text-gray-400 flex-1">
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> 4 social platforms</li>
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> {{ all_plans.growth.max_posts_per_month }} AI posts/month</li>
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> M-Pesa commerce &amp; AI images</li>
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> Branded carousels &amp; promo creatives</li>
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> Lead follow-up &amp; competitor tracking</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> 4 social platforms</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> {{ all_plans.growth.max_posts_per_month }} AI posts/month</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> M-Pesa commerce &amp; AI images</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> Branded carousels &amp; promo creatives</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> Lead follow-up &amp; competitor tracking</li>
         </ul>
         <a href="{% url 'account_signup' %}" class="btn-primary w-full justify-center mt-6">Start free trial</a>
       </div>
@@ -421,11 +421,11 @@
         </div>
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">For serious marketers</p>
         <ul class="mt-6 space-y-2 text-sm text-gray-600 dark:text-gray-400 flex-1">
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> All 5 platforms + WhatsApp</li>
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> {{ all_plans.pro.max_posts_per_month }} AI posts/month</li>
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> Full loop: Snap, WhatsApp, M-Pesa, revenue</li>
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> Cinematic AI reels</li>
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> Team (5 seats) &amp; auto-approve</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> All 5 platforms + WhatsApp</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> {{ all_plans.pro.max_posts_per_month }} AI posts/month</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> Full loop: Snap, WhatsApp, M-Pesa, revenue</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> Cinematic AI reels</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> Team (5 seats) &amp; auto-approve</li>
         </ul>
         <a href="{% url 'account_signup' %}" class="btn-secondary w-full justify-center mt-6">Get started</a>
       </div>
@@ -454,7 +454,7 @@
 
     <!-- M-Pesa callout (KES only) -->
     <div x-show="currency === 'kes'" x-transition class="mt-10 text-center">
-      <div class="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-sm font-medium px-5 py-2.5 rounded-full border border-emerald-200 dark:border-emerald-800/80">
+      <div class="inline-flex items-center gap-2 bg-growth-50 dark:bg-growth-950/40 text-growth-700 dark:text-growth-300 text-sm font-medium px-5 py-2.5 rounded-full border border-growth-200 dark:border-growth-800/80">
         
         Pay with M-Pesa — instant activation
       </div>
@@ -472,36 +472,36 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
       <!-- 1: Gets Smarter -->
       <div class="marketing-card-elevated reveal reveal-delay-1 hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/20 transition-shadow">
-        <div class="w-14 h-14 bg-gradient-to-br from-kova-500 to-indigo-500 rounded-xl flex items-center justify-center mb-5">
+        <div class="w-14 h-14 bg-gradient-to-br from-growth-500 to-growth-600 rounded-xl flex items-center justify-center mb-5">
           <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
         </div>
         <h3 class="text-xl font-bold text-gray-900 dark:text-white">Gets smarter with every post</h3>
         <p class="mt-3 text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
           Content DNA tracks which attributes drive engagement — tone, format, hooks, CTAs. The Analyst Agent feeds this back into content generation. Post #50 is dramatically better than post #1.
         </p>
-        <p class="mt-4 text-xs font-semibold text-kova-600 dark:text-kova-400 uppercase tracking-wider">Compounding intelligence</p>
+        <p class="mt-4 text-xs font-semibold text-growth-600 dark:text-growth-400 uppercase tracking-wider">Compounding intelligence</p>
       </div>
       <!-- 2: Different angle per platform -->
       <div class="marketing-card-elevated reveal reveal-delay-2 hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/20 transition-shadow">
-        <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-5">
+        <div class="w-14 h-14 bg-gradient-to-br from-kova-800 to-kova-700 rounded-xl flex items-center justify-center mb-5">
           <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
         </div>
         <h3 class="text-xl font-bold text-gray-900 dark:text-white">Different angle per platform</h3>
         <p class="mt-3 text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
           One idea becomes a bold take on X, a storytelling post on LinkedIn, a visual caption on Instagram, and a conversational post on Facebook. Not reformatted — rethought.
         </p>
-        <p class="mt-4 text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Platform-native strategy</p>
+        <p class="mt-4 text-xs font-semibold text-kova-800 dark:text-kova-300 uppercase tracking-wider">Platform-native strategy</p>
       </div>
       <!-- 3: Kenya pricing -->
       <div class="marketing-card-elevated reveal reveal-delay-3 hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/20 transition-shadow">
-        <div class="w-14 h-14 bg-gradient-to-br from-kova-500 to-emerald-500 rounded-xl flex items-center justify-center mb-5">
+        <div class="w-14 h-14 bg-gradient-to-br from-growth-500 to-growth-600 rounded-xl flex items-center justify-center mb-5">
           <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
         <h3 class="text-xl font-bold text-gray-900 dark:text-white">Built for Africa, priced for Africa</h3>
         <p class="mt-3 text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
           Buffer starts at $6. FeedHive at $19. Hootsuite at $99. Kova starts at KSh {{ all_plans.starter.price_kes }} (~${{ all_plans.starter.price_usd }}). Same AI power, priced for the businesses that actually need it most.
         </p>
-        <p class="mt-4 text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">10x more affordable</p>
+        <p class="mt-4 text-xs font-semibold text-growth-600 dark:text-growth-400 uppercase tracking-wider">10x more affordable</p>
       </div>
     </div>
   </div>
@@ -511,14 +511,14 @@
 <section class="brand-atmosphere py-24 relative overflow-hidden">
   {% include "components/brand/_atmosphere_orbs.html" %}
   <div class="relative max-w-4xl mx-auto px-4 text-center reveal">
-    <p class="text-sm font-medium text-kova-600 dark:text-kova-400 mb-2">{{ marketing_badge }}</p>
+    <p class="text-sm font-medium text-growth-600 dark:text-growth-400 mb-2">{{ marketing_badge }}</p>
     <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mt-2 leading-tight">
       {% include "components/brand/_north_star_tagline.html" %}
     </h2>
     <p class="mt-4 text-lg text-gray-600 dark:text-gray-400 font-medium">{{ marketing_hero_subhead }}</p>
     <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">From KSh {{ all_plans.starter.price_kes }}/mo · 7-day Starter trial · No credit card</p>
     <div class="mt-8">
-      <a href="{% url 'account_signup' %}" class="btn-primary text-lg px-10 py-3.5 shadow-kova">
+      <a href="{% url 'account_signup' %}" class="btn-primary text-lg px-10 py-3.5 shadow-growth">
         Start your free trial
         <svg class="inline w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
       </a>

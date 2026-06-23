@@ -6,7 +6,7 @@
 <div class="flex items-center gap-2 mt-0.5">
   <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full
     {% if ab_test.status == 'running' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
-    {% elif ab_test.status == 'concluded' %}bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400
+    {% elif ab_test.status == 'concluded' %}bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-400
     {% elif ab_test.status == 'generating' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
     {% elif ab_test.status == 'cancelled' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
     {% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400{% endif %}">
@@ -100,8 +100,8 @@
 
 <!-- ── Conclusion Summary ────────────────────────────────────────────── -->
 {% if ab_test.conclusion_summary %}
-<div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 p-4 sm:p-5 shadow-sm mb-6">
-  <h3 class="text-sm font-semibold text-purple-700 dark:text-purple-400 mb-2">Conclusion Summary</h3>
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-kova-200 dark:border-kova-900/50 p-4 sm:p-5 shadow-sm mb-6">
+  <h3 class="text-sm font-semibold text-kova-700 dark:text-kova-400 mb-2">Conclusion Summary</h3>
   <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ ab_test.conclusion_summary }}</p>
 </div>
 {% endif %}

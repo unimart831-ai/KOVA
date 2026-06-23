@@ -366,7 +366,7 @@ def update_carousel_slides(request, post_id):
 
     if request.headers.get("HX-Request"):
         return HttpResponse(
-            '<span id="slides-save-feedback" class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">'
+            '<span id="slides-save-feedback" class="text-xs text-growth-600 dark:text-growth-400 font-medium">'
             '✓ Slides saved</span>'
         )
     messages.success(request, "Slides updated.")

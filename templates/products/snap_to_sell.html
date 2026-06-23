@@ -16,7 +16,7 @@
 <div class="max-w-lg mx-auto space-y-5" x-data="snapToSell({{ commerce_autopilot|yesno:'true,false' }}, {{ visual_credits.remaining|default:15 }}, {{ visual_credits.at_limit|yesno:'true,false' }}, {{ studio_polish_notice|yesno:'true,false' }}, {{ lite_forced|yesno:'true,false' }}, '{{ default_polish_mode }}')">
   {% include "components/_kova_loop_strip.html" %}
 
-  <div class="rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-xs text-amber-900 dark:text-amber-200">
+  <div class="rounded-lg border border-gold-200 dark:border-gold-900/50 bg-gold-50 dark:bg-gold-950/30 px-4 py-3 text-xs text-gold-900 dark:text-gold-200">
     Photos must follow Kova's <a href="{% url 'acceptable_use' %}" class="underline font-medium">content policy</a>.
     Explicit or violent imagery cannot be used for posts or your shop.
   </div>
@@ -130,10 +130,10 @@
                     :class="snapMode === 'product' ? 'border-kova-500 bg-kova-50 dark:bg-kova-950/40' : 'border-gray-200 dark:border-gray-700 text-gray-600'">Product</button>
             <button type="button" @click="snapMode = 'portfolio'; offeringType = 'product'"
                     class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
-                    :class="snapMode === 'portfolio' ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/40' : 'border-gray-200 dark:border-gray-700 text-gray-600'">Portfolio</button>
+                    :class="snapMode === 'portfolio' ? 'border-kova-500 bg-kova-50 dark:bg-kova-950/40' : 'border-gray-200 dark:border-gray-700 text-gray-600'">Portfolio</button>
             <button type="button" @click="snapMode = 'case_study'; offeringType = 'product'"
                     class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
-                    :class="snapMode === 'case_study' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/40' : 'border-gray-200 dark:border-gray-700 text-gray-600'">Case study</button>
+                    :class="snapMode === 'case_study' ? 'border-kova-500 bg-kova-50 dark:bg-kova-950/40' : 'border-gray-200 dark:border-gray-700 text-gray-600'">Case study</button>
           </div>
         </div>
         <div class="card p-4 space-y-3" x-show="snapMode === 'portfolio' || snapMode === 'case_study'" x-cloak>
@@ -153,7 +153,7 @@
                     :class="offeringType === 'service' ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'">Service</button>
             <button type="button" @click="offeringType = 'digital'"
                     class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
-                    :class="offeringType === 'digital' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'">Digital</button>
+                    :class="offeringType === 'digital' ? 'border-growth-500 bg-growth-50 dark:bg-growth-950/40' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'">Digital</button>
           </div>
         </div>
 
@@ -199,10 +199,10 @@
             Lite uses basic cutout — upgrade for full studio scenes.
           </p>
           {% if studio_polish_notice %}
-          <p class="text-[11px] text-amber-700 dark:text-amber-300">{{ studio_polish_notice }}</p>
+          <p class="text-[11px] text-gold-700 dark:text-gold-300">{{ studio_polish_notice }}</p>
           {% endif %}
           {% if lite_polish_notice %}
-          <p class="text-[11px] text-amber-700 dark:text-amber-300">{{ lite_polish_notice }}</p>
+          <p class="text-[11px] text-gold-700 dark:text-gold-300">{{ lite_polish_notice }}</p>
           {% endif %}
         </div>
         {% endif %}
@@ -225,11 +225,11 @@
 
     <div x-show="(autopilot || visualMode === 'pro_scene') && polishMode === 'studio' && !proSceneDisabled && creditEstimate"
          class="rounded-lg border px-4 py-3 text-xs"
-         :class="creditEstimate.over_budget ? 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400'">
+         :class="creditEstimate.over_budget ? 'border-gold-300 dark:border-gold-800 bg-gold-50 dark:bg-gold-950/30 text-gold-900 dark:text-gold-200' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400'">
       <p class="font-medium text-gray-900 dark:text-white" x-text="creditEstimate.breakdown_label"></p>
       <p class="mt-1" x-show="!creditEstimate.unlimited && creditEstimate.remaining !== null">
         <span x-text="creditEstimate.remaining + ' polish credits remaining this month'"></span>
-        <span x-show="creditEstimate.over_budget" class="font-semibold text-amber-800 dark:text-amber-200"> — may exceed your budget</span>
+        <span x-show="creditEstimate.over_budget" class="font-semibold text-gold-800 dark:text-gold-200"> — may exceed your budget</span>
       </p>
       <p class="mt-1 text-[10px] text-gray-500 dark:text-gray-400" x-show="creditEstimate.multi_angle">
         Includes +1 credit if you upload a second angle (Growth+).

@@ -55,7 +55,7 @@
             <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
               {% if update.reason == 'restock' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
               {% elif update.reason == 'sale' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300
-              {% elif update.reason == 'adjustment' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300
+              {% elif update.reason == 'adjustment' %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300
               {% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300{% endif %}">
               {{ update.get_reason_display }}
             </span>
@@ -64,7 +64,7 @@
             {% if update.previous_status and update.new_status %}
             <span class="text-gray-400">{{ update.previous_status }}</span>
             <span class="text-gray-300 mx-0.5">→</span>
-            <span class="{% if update.new_status == 'out_of_stock' %}text-red-600 dark:text-red-400{% elif update.new_status == 'low_stock' %}text-yellow-600 dark:text-yellow-400{% elif update.new_status == 'in_stock' %}text-green-600 dark:text-green-400{% else %}text-gray-600 dark:text-gray-400{% endif %} font-medium">{{ update.new_status }}</span>
+            <span class="{% if update.new_status == 'out_of_stock' %}text-red-600 dark:text-red-400{% elif update.new_status == 'low_stock' %}text-gold-600 dark:text-gold-400{% elif update.new_status == 'in_stock' %}text-green-600 dark:text-green-400{% else %}text-gray-600 dark:text-gray-400{% endif %} font-medium">{{ update.new_status }}</span>
             {% else %}—{% endif %}
           </td>
           <td class="px-4 py-2.5 text-center text-xs">

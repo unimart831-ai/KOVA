@@ -37,13 +37,13 @@
     <div>
       <div class="flex items-center justify-between gap-3 mb-4">
         <div>
-          <h2 class="text-lg font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-2">
-            <div class="animate-spin rounded-full h-4 w-4 border-2 border-amber-500 border-t-transparent" aria-hidden="true"></div>
+          <h2 class="text-lg font-semibold text-gold-700 dark:text-gold-400 flex items-center gap-2">
+            <div class="animate-spin rounded-full h-4 w-4 border-2 border-gold-500 border-t-transparent" aria-hidden="true"></div>
             Publishing now
           </h2>
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Being sent to platforms right now</p>
         </div>
-        <span class="badge bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200 tabular-nums">{{ publishing|length }}</span>
+        <span class="badge bg-gold-100 text-gold-800 dark:bg-gold-950 dark:text-gold-200 tabular-nums">{{ publishing|length }}</span>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {% for post in publishing %}

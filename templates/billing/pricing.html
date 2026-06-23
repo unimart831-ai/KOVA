@@ -18,12 +18,12 @@
   <div class="text-center mb-8">
     <div class="inline-flex items-center bg-white dark:bg-gray-800 rounded-full p-1 shadow-sm border border-gray-200 dark:border-gray-700">
       <button @click="currency = 'kes'"
-              :class="currency === 'kes' ? 'bg-kova-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+              :class="currency === 'kes' ? 'bg-growth-500 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
               class="px-5 py-2 rounded-full text-sm font-medium transition-all">
         KES
       </button>
       <button @click="currency = 'usd'"
-              :class="currency === 'usd' ? 'bg-kova-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+              :class="currency === 'usd' ? 'bg-growth-500 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
               class="px-5 py-2 rounded-full text-sm font-medium transition-all">
         USD
       </button>
@@ -33,10 +33,10 @@
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
 
     {% for tier, plan in all_plans.items %}
-    <div class="bg-white dark:bg-gray-900 rounded-xl p-6 border {% if tier == 'growth' %}border-2 border-kova-500 dark:border-kova-500 shadow-md relative{% elif current_plan == tier %}border-kova-300 dark:border-kova-700 ring-1 ring-kova-200 dark:ring-kova-800 shadow-sm{% else %}border-gray-200 dark:border-gray-800 shadow-sm{% endif %} flex flex-col">
+    <div class="bg-white dark:bg-gray-900 rounded-xl p-6 border {% if tier == 'growth' %}border-2 border-growth-500 dark:border-growth-500 shadow-md relative{% elif current_plan == tier %}border-growth-300 dark:border-growth-700 ring-1 ring-growth-200 dark:ring-growth-800 shadow-sm{% else %}border-gray-200 dark:border-gray-800 shadow-sm{% endif %} flex flex-col">
 
       {% if tier == 'growth' %}
-        <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-kova-600 text-white text-xs font-medium px-3 py-1 rounded-full">Most Popular</div>
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-growth-500 text-white text-xs font-medium px-3 py-1 rounded-full">Most Popular</div>
       {% endif %}
 
       {% if current_plan == tier %}
@@ -62,72 +62,72 @@
       </p>
 
       <ul class="mt-6 space-y-2 text-sm text-gray-600 dark:text-gray-400 flex-1">
-        <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> {% if plan.max_social_accounts == 1 %}1 social account{% elif tier == 'pro' %}All 5 platforms + WhatsApp{% elif tier == 'growth' %}4 social platforms{% else %}{{ plan.max_social_accounts }} social accounts{% endif %}</li>
-        <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> {{ plan.max_posts_per_month }} AI posts/month</li>
-        <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> {{ plan.max_seeds_per_month }} content seeds/month</li>
-        <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> {{ plan.agents_enabled|length }} AI agents</li>
+        <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> {% if plan.max_social_accounts == 1 %}1 social account{% elif tier == 'pro' %}All 5 platforms + WhatsApp{% elif tier == 'growth' %}4 social platforms{% else %}{{ plan.max_social_accounts }} social accounts{% endif %}</li>
+        <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> {{ plan.max_posts_per_month }} AI posts/month</li>
+        <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> {{ plan.max_seeds_per_month }} content seeds/month</li>
+        <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> {{ plan.agents_enabled|length }} AI agents</li>
         {% if plan.whatsapp_marketing_conversations_per_month %}
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> {{ plan.whatsapp_marketing_conversations_per_month }} WhatsApp marketing convos/mo</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> {{ plan.whatsapp_marketing_conversations_per_month }} WhatsApp marketing convos/mo</li>
         {% endif %}
         {% if plan.monthly_llm_tokens %}
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span>
             {% if plan.monthly_llm_tokens >= 1000000 %}{{ plan.monthly_llm_tokens|floatformat:0|slice:":-6" }}M{% else %}{{ plan.monthly_llm_tokens|floatformat:0|slice:":-3" }}K{% endif %}
             AI tokens/month
           </li>
         {% endif %}
         {% if plan.daily_llm_tokens %}
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span>
             {% if plan.daily_llm_tokens >= 1000000 %}{{ plan.daily_llm_tokens|floatformat:0|slice:":-6" }}M{% else %}{{ plan.daily_llm_tokens|floatformat:0|slice:":-3" }}K{% endif %}
             AI tokens/day
           </li>
         {% endif %}
-        <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> Daily brief</li>
+        <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> Daily brief</li>
         {% if plan.visual_enhancements_per_month %}
           {% include "components/_billing_media_features.html" with plan=plan %}
         {% endif %}
         {% if plan.ai_image_generation %}
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> AI images (Instagram, TikTok, Pinterest)</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> AI images (Instagram, TikTok, Pinterest)</li>
         {% else %}
           <li class="flex items-center"><span class="text-gray-300 dark:text-gray-600 mr-2">✗</span> <span class="text-gray-400 dark:text-gray-500">AI image generation</span></li>
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> <span class="text-gray-600 dark:text-gray-400">Upload your own images</span></li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> <span class="text-gray-600 dark:text-gray-400">Upload your own images</span></li>
         {% endif %}
         {% if plan.email_brief %}
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> Email brief reports</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> Email brief reports</li>
         {% else %}
           <li class="flex items-center"><span class="text-gray-300 dark:text-gray-600 mr-2">✗</span> <span class="text-gray-400 dark:text-gray-500">Email brief reports</span></li>
         {% endif %}
         {% if plan.whatsapp_brief %}
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> WhatsApp morning brief</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> WhatsApp morning brief</li>
         {% else %}
           <li class="flex items-center"><span class="text-gray-300 dark:text-gray-600 mr-2">✗</span> <span class="text-gray-400 dark:text-gray-500">WhatsApp morning brief</span></li>
         {% endif %}
         {% if plan.engagement_agent %}
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> Engagement inbox</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> Engagement inbox</li>
         {% elif plan.engage_trial_enabled %}
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> Engage trial — {{ plan.engage_trial_auto_replies_per_week }} AI replies/week</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> Engage trial — {{ plan.engage_trial_auto_replies_per_week }} AI replies/week</li>
         {% else %}
           <li class="flex items-center"><span class="text-gray-300 dark:text-gray-600 mr-2">✗</span> <span class="text-gray-400 dark:text-gray-500">Engagement inbox</span></li>
         {% endif %}
         {% if plan.competitor_tracking %}
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> Competitor tracking</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> Competitor tracking</li>
         {% else %}
           <li class="flex items-center"><span class="text-gray-300 dark:text-gray-600 mr-2">✗</span> <span class="text-gray-400 dark:text-gray-500">Competitor tracking</span></li>
         {% endif %}
         {% if plan.mpesa_commerce %}
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> M-Pesa commerce checkout</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> M-Pesa commerce checkout</li>
         {% endif %}
         {% if plan.shopify_integration %}
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> Shopify integration</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> Shopify integration</li>
         {% endif %}
         {% if plan.whatsapp_enabled %}
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> WhatsApp Business (full)</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> WhatsApp Business (full)</li>
         {% elif plan.whatsapp_inbox_enabled %}
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> WhatsApp inbox · {{ plan.whatsapp_marketing_conversations_per_month }} marketing convos/mo</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> WhatsApp inbox · {{ plan.whatsapp_marketing_conversations_per_month }} marketing convos/mo</li>
         {% else %}
           <li class="flex items-center"><span class="text-gray-300 dark:text-gray-600 mr-2">✗</span> <span class="text-gray-400 dark:text-gray-500">WhatsApp inbox (Growth+)</span></li>
         {% endif %}
         {% if plan.auto_approve %}
-          <li class="flex items-center"><span class="text-emerald-500 mr-2">✓</span> Auto-approve publishing</li>
+          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> Auto-approve publishing</li>
         {% else %}
           <li class="flex items-center"><span class="text-gray-300 dark:text-gray-600 mr-2">✗</span> <span class="text-gray-400 dark:text-gray-500">Auto-approve publishing</span></li>
         {% endif %}
@@ -193,8 +193,8 @@
 
         {# Trial info #}
         <template x-if="isTrial">
-          <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg p-3">
-            <p class="text-sm text-amber-700 dark:text-amber-400">
+          <div class="bg-gold-50 dark:bg-gold-950/30 border border-gold-200 dark:border-gold-900 rounded-lg p-3">
+            <p class="text-sm text-gold-700 dark:text-gold-400">
               <span class="font-semibold">{{ trial_days }}-day Starter trial</span> — Starter plan features, no payment now. We'll remind you before it ends.
             </p>
           </div>

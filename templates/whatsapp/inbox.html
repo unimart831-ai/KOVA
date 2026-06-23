@@ -38,7 +38,7 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">Active</p>
     </div>
     <div class="card px-4 py-3 text-center">
-      <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ stats.escalated }}</p>
+      <p class="text-2xl font-bold text-gold-600 dark:text-gold-400">{{ stats.escalated }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">Needs Human</p>
     </div>
     <div class="card px-4 py-3 text-center">
@@ -50,7 +50,7 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">Messages Today</p>
     </div>
     <div class="card px-4 py-3 text-center">
-      <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ stats.ai_replies_today }}</p>
+      <p class="text-2xl font-bold text-kova-600 dark:text-kova-400">{{ stats.ai_replies_today }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">AI Replies</p>
     </div>
   </div>
@@ -99,7 +99,7 @@
                 {{ convo.contact_name|default:convo.contact_wa_id }}
               </span>
               {% if convo.status == 'escalated' %}
-                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gold-100 text-gold-800 dark:bg-gold-900 dark:text-gold-200">
                   Needs Human
                 </span>
               {% endif %}

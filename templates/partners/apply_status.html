@@ -7,8 +7,8 @@
   {% include "components/brand/_atmosphere_orbs.html" %}
   <div class="relative text-center max-w-lg glass-panel rounded-2xl p-8 sm:p-10 reveal">
     {% if application.status == "pending" %}
-    <div class="w-16 h-16 mx-auto bg-amber-100 dark:bg-amber-950/40 rounded-2xl flex items-center justify-center mb-6">
-      <svg class="w-8 h-8 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="w-16 h-16 mx-auto bg-gold-100 dark:bg-gold-950/40 rounded-2xl flex items-center justify-center mb-6">
+      <svg class="w-8 h-8 text-gold-600 dark:text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
       </svg>
     </div>
@@ -19,8 +19,8 @@
     <p class="mt-2 text-sm text-gray-400 dark:text-gray-500">Applied {{ application.created_at|timesince }} ago</p>
 
     {% elif application.status == "approved" %}
-    <div class="w-16 h-16 mx-auto bg-emerald-100 dark:bg-emerald-950/40 rounded-2xl flex items-center justify-center mb-6">
-      <svg class="w-8 h-8 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="w-16 h-16 mx-auto bg-growth-100 dark:bg-growth-950/40 rounded-2xl flex items-center justify-center mb-6">
+      <svg class="w-8 h-8 text-growth-600 dark:text-growth-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
       </svg>
     </div>
@@ -29,7 +29,7 @@
       Welcome to the Kova Growth Partners Program. Head to your dashboard to get your referral code and start earning.
     </p>
     <div class="mt-6">
-      <a href="{% url 'partners:dashboard' %}" class="inline-flex items-center px-6 py-3 text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl font-semibold shadow-sm transition-colors">
+      <a href="{% url 'partners:dashboard' %}" class="inline-flex items-center px-6 py-3 text-white bg-growth-600 hover:bg-growth-700 rounded-xl font-semibold shadow-sm transition-colors">
         Go to Partner Dashboard
         <svg class="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
       </a>

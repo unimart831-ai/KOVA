@@ -35,10 +35,10 @@
   {% endif %}
 
   {% if connected_platform_count == 0 %}
-  <div class="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl flex items-start gap-3">
+  <div class="p-4 bg-gold-50 dark:bg-gold-950/30 border border-gold-200 dark:border-gold-800 rounded-xl flex items-start gap-3">
     <div class="flex-1">
-      <p class="text-sm font-medium text-amber-800 dark:text-amber-300">Connect a platform to unlock Studio</p>
-      <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">You're paying for multi-platform AI — connect Instagram, Facebook, or WhatsApp to start generating posts that publish automatically.</p>
+      <p class="text-sm font-medium text-gold-800 dark:text-gold-300">Connect a platform to unlock Studio</p>
+      <p class="text-xs text-gold-700 dark:text-gold-400 mt-1">You're paying for multi-platform AI — connect Instagram, Facebook, or WhatsApp to start generating posts that publish automatically.</p>
       <a href="{% url 'platforms:list' %}" class="inline-flex items-center gap-1 mt-2 text-sm font-medium text-kova-600 dark:text-kova-400 hover:text-kova-800 dark:hover:text-kova-300">
         Connect now
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
@@ -191,7 +191,7 @@
                 <span x-text="p.platform.charAt(0).toUpperCase() + p.platform.slice(1)"></span>
               </button>
             </template>
-            <span x-show="platforms.length === 0" class="text-xs text-amber-600 dark:text-amber-400">Connect accounts under Platforms to enable targets.</span>
+            <span x-show="platforms.length === 0" class="text-xs text-gold-600 dark:text-gold-400">Connect accounts under Platforms to enable targets.</span>
           </div>
         </div>
 
@@ -244,7 +244,7 @@
            hx-swap="outerHTML"
            class="card border border-kova-200 dark:border-kova-800 overflow-hidden">
         {# Animated top bar #}
-        <div class="h-1 bg-gradient-to-r from-kova-400 via-purple-400 to-pink-400 animate-pulse"></div>
+        <div class="h-1 bg-gradient-to-r from-kova-400 via-kova-400 to-pink-400 animate-pulse"></div>
         <div class="card-body flex items-center gap-4">
           {# Pulsing AI orb #}
           <div class="relative shrink-0">

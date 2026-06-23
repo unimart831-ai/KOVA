@@ -68,7 +68,7 @@
             <td class="px-4 py-3">
               <span class="inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-full
                 {% if c.threat_level == 'high' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
-                {% elif c.threat_level == 'medium' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
+                {% elif c.threat_level == 'medium' %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400
                 {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
                 {{ c.threat_level|title }}
               </span>
@@ -112,7 +112,7 @@
         <div class="flex items-start gap-2">
           <span class="mt-0.5 inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded
             {% if ins.priority == 'high' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
-            {% elif ins.priority == 'medium' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
+            {% elif ins.priority == 'medium' %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400
             {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
             {{ ins.priority|upper }}
           </span>
@@ -157,7 +157,7 @@
           <td class="px-4 py-3 text-xs font-medium text-gray-900 dark:text-white">{{ a.competitor.name }}</td>
           <td class="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">{{ a.user.email|default:"—" }}</td>
           <td class="px-4 py-3">
-            <span class="inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 capitalize">{{ a.analysis_type }}</span>
+            <span class="inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-full bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-400 capitalize">{{ a.analysis_type }}</span>
           </td>
           <td class="px-4 py-3 text-right text-xs text-gray-600 dark:text-gray-400">{{ a.tokens_used|format_number }}</td>
           <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{{ a.created_at|timesince }} ago</td>

@@ -35,7 +35,7 @@
             {% endif %}
             {# Post format pill #}
             {% if post.post_format == 'carousel' %}
-              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-kova-100 text-kova-700 dark:bg-kova-950/50 dark:text-kova-300">
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 Carousel{% if post.carousel_slides %} · {{ post.carousel_slides|length }} slides{% endif %}
                 {% if post.visual_metadata.carousel_backend %} · {{ post.carousel_backend_label }}{% endif %}
@@ -51,7 +51,7 @@
               {% if post.reel_compose_pending %}
               <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400 animate-pulse">Composing…</span>
               {% elif post.reel_has_video %}
-              <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">{{ post.reel_compose_backend_label }}</span>
+              <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-growth-50 text-growth-600 dark:bg-growth-950 dark:text-growth-400">{{ post.reel_compose_backend_label }}</span>
               {% endif %}
             {% elif post.post_format == 'image' %}
               <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">Image</span>
@@ -62,7 +62,7 @@
             {% elif post.status == 'blocked' %}bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-200
             {% elif post.status == 'failed' %}bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300
             {% elif post.status == 'approved' or post.status == 'scheduled' %}bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300
-            {% elif post.status == 'publishing' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300
+            {% elif post.status == 'publishing' %}bg-gold-100 text-gold-800 dark:bg-gold-900/40 dark:text-gold-300
             {% else %}bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300{% endif %}">
             {{ post.get_status_display }}
           </span>
@@ -107,8 +107,8 @@
 
         <!-- Media warning -->
         {% if post.media_warning %}
-        <div class="mx-5 mb-4 px-3 py-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-lg">
-          <p class="text-sm text-amber-700 dark:text-amber-300 font-medium flex items-center gap-2">
+        <div class="mx-5 mb-4 px-3 py-2.5 bg-gold-50 dark:bg-gold-950/30 border border-gold-200 dark:border-gold-900/50 rounded-lg">
+          <p class="text-sm text-gold-700 dark:text-gold-300 font-medium flex items-center gap-2">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
             {{ post.media_warning }}
           </p>
@@ -120,25 +120,25 @@
         {# ── Carousel: full slide viewer ── #}
         {% if post.post_format == 'carousel' and post.carousel_slides %}
         <div class="px-5 pb-4">
-          <p class="text-[10px] font-semibold text-purple-500 dark:text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <p class="text-[10px] font-semibold text-kova-500 dark:text-kova-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
             Carousel Slides ({{ post.carousel_slides|length }})
           </p>
           <div class="space-y-3">
             {% for slide in post.carousel_slides %}
-            <div class="flex gap-3 p-3 rounded-xl border border-purple-100 dark:border-purple-900/40 bg-purple-50/30 dark:bg-purple-950/20">
+            <div class="flex gap-3 p-3 rounded-xl border border-kova-100 dark:border-kova-900/40 bg-kova-50/30 dark:bg-kova-950/20">
               {# Slide image #}
-              <div class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-purple-100 dark:bg-purple-900/40">
+              <div class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-kova-100 dark:bg-kova-900/40">
                 {% if slide.image_url %}
                   <img src="{{ slide.image_url }}" alt="Slide {{ forloop.counter }}" loading="lazy"
                        class="w-full h-full object-cover"
-                       onerror="this.parentElement.innerHTML='<div class=\'w-full h-full flex items-center justify-center text-purple-300\'><svg class=\'w-5 h-5\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\'/></svg></div>'">
+                       onerror="this.parentElement.innerHTML='<div class=\'w-full h-full flex items-center justify-center text-kova-300\'><svg class=\'w-5 h-5\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\'/></svg></div>'">
                 {% elif post.media_status == 'pending' %}
                   <div class="w-full h-full flex items-center justify-center">
-                    <svg class="w-4 h-4 text-purple-300 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    <svg class="w-4 h-4 text-kova-300 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                   </div>
                 {% else %}
-                  <div class="w-full h-full flex items-center justify-center text-purple-300 dark:text-purple-600">
+                  <div class="w-full h-full flex items-center justify-center text-kova-300 dark:text-kova-600">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                   </div>
                 {% endif %}
@@ -146,7 +146,7 @@
               {# Slide text #}
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-0.5">
-                  <span class="text-[9px] font-bold text-purple-400 dark:text-purple-500 bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 rounded-full">{{ forloop.counter }}</span>
+                  <span class="text-[9px] font-bold text-kova-400 dark:text-kova-500 bg-kova-100 dark:bg-kova-900/40 px-1.5 py-0.5 rounded-full">{{ forloop.counter }}</span>
                   {% if slide.heading %}
                     <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{{ slide.heading }}</p>
                   {% endif %}
@@ -155,7 +155,7 @@
                   <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-2">{{ slide.body }}</p>
                 {% endif %}
                 {% if slide.image_prompt and not slide.image_url %}
-                  <p class="text-[10px] text-purple-400 dark:text-purple-500 italic mt-0.5 line-clamp-1" title="{{ slide.image_prompt }}">Prompt: {{ slide.image_prompt|truncatechars:60 }}</p>
+                  <p class="text-[10px] text-kova-400 dark:text-kova-500 italic mt-0.5 line-clamp-1" title="{{ slide.image_prompt }}">Prompt: {{ slide.image_prompt|truncatechars:60 }}</p>
                 {% endif %}
               </div>
             </div>
@@ -241,11 +241,11 @@
             <span>AI Score: {{ post.predicted_engagement_score|floatformat:0 }}%</span>
             {% endif %}
             {% if post.post_format == 'reel' %}
-            <span class="inline-flex items-center gap-1 {% if post.reel_has_video %}text-emerald-600 dark:text-emerald-400{% elif post.reel_compose_pending %}text-orange-600 dark:text-orange-400{% elif post.reel_compose_status == 'failed' %}text-red-600 dark:text-red-400{% else %}text-gray-500{% endif %}">
+            <span class="inline-flex items-center gap-1 {% if post.reel_has_video %}text-growth-600 dark:text-growth-400{% elif post.reel_compose_pending %}text-orange-600 dark:text-orange-400{% elif post.reel_compose_status == 'failed' %}text-red-600 dark:text-red-400{% else %}text-gray-500{% endif %}">
               {% if post.reel_has_video %}Motion reel ready{% elif post.reel_compose_pending %}Composing reel…{% elif post.reel_compose_status == 'failed' %}Reel failed{% else %}Reel{% endif %}
             </span>
             {% elif post.media_status and post.media_status != 'none' %}
-            <span class="inline-flex items-center gap-1 {% if post.media_status == 'generated' %}text-emerald-600 dark:text-emerald-400{% elif post.media_status == 'uploaded' %}text-blue-600 dark:text-blue-400{% elif post.media_status == 'failed' %}text-red-600 dark:text-red-400{% elif post.media_status == 'pending' %}text-yellow-600 dark:text-yellow-400{% endif %}">
+            <span class="inline-flex items-center gap-1 {% if post.media_status == 'generated' %}text-growth-600 dark:text-growth-400{% elif post.media_status == 'uploaded' %}text-blue-600 dark:text-blue-400{% elif post.media_status == 'failed' %}text-red-600 dark:text-red-400{% elif post.media_status == 'pending' %}text-gold-600 dark:text-gold-400{% endif %}">
               {% if post.media_status == 'generated' %}AI image{% elif post.media_status == 'uploaded' %}Uploaded{% elif post.media_status == 'failed' %}Image failed{% elif post.media_status == 'pending' %}Generating…{% endif %}
             </span>
             {% endif %}
@@ -258,7 +258,7 @@
       <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
         <div class="px-5 py-3 border-b border-gray-100 dark:border-gray-800">
           <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+            <svg class="w-4 h-4 text-kova-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
             AI Strategy
           </h3>
         </div>
@@ -266,7 +266,7 @@
           {% if post.visual_strategy and post.visual_strategy != 'none' %}
             <div>
               <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Visual Strategy</p>
-              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-kova-50 text-kova-700 dark:bg-kova-950/40 dark:text-kova-300">
                 {% if post.visual_strategy == 'carousel' %}Carousel{% elif post.visual_strategy == 'quote_card' %}Quote Card{% elif post.visual_strategy == 'tip_graphic' %}Tip Graphic{% elif post.visual_strategy == 'stat_highlight' %}Stat Highlight{% elif post.visual_strategy == 'cta_banner' %}CTA Banner{% elif post.visual_strategy == 'ai_photo' %}AI Photo{% elif post.visual_strategy == 'story_graphic' %}Story Graphic{% else %}{{ post.get_visual_strategy_display }}{% endif %}
               </span>
             </div>
@@ -506,8 +506,8 @@
                   <div class="p-2">
                     <button @click="submit('post_now')"
                             class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-left transition-colors">
-                      <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/50">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-amber-500"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                      <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-gold-50 dark:bg-gold-950/50">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-gold-500"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                       </span>
                       <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Post Now</p><p class="text-xs text-gray-400 dark:text-gray-500">Publish immediately</p></div>
                     </button>
@@ -522,8 +522,8 @@
 
                     <button @click="submit('smart_queue')"
                             class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-left transition-colors">
-                      <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-purple-50 dark:bg-purple-950/50">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-purple-500"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                      <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-kova-50 dark:bg-kova-950/50">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-kova-500"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
                       </span>
                       <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Smart Queue</p><p class="text-xs text-gray-400 dark:text-gray-500">Auto-space with other posts</p></div>
                     </button>

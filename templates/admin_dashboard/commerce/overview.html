@@ -18,9 +18,9 @@
     <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ total_products|format_number }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">{{ total_users_with_products }} operator{{ total_users_with_products|pluralize }}</p>
   </a>
-  <a href="{% url 'admin_dashboard:commerce_shops' %}" class="bg-white dark:bg-gray-900 rounded-xl border border-emerald-200 dark:border-emerald-900/50 p-4 shadow-sm hover:border-emerald-400 transition-colors">
-    <p class="text-xs font-medium text-emerald-600">Public pages</p>
-    <p class="text-2xl font-bold text-emerald-600 mt-1">{{ public_shops }}</p>
+  <a href="{% url 'admin_dashboard:commerce_shops' %}" class="bg-white dark:bg-gray-900 rounded-xl border border-growth-200 dark:border-growth-900/50 p-4 shadow-sm hover:border-growth-400 transition-colors">
+    <p class="text-xs font-medium text-growth-600">Public pages</p>
+    <p class="text-2xl font-bold text-growth-600 mt-1">{{ public_shops }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">{{ with_commerce_slug }} shareable links</p>
   </a>
   <a href="{% url 'admin_dashboard:commerce_payments' %}" class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 shadow-sm hover:border-green-400 transition-colors">
@@ -28,9 +28,9 @@
     <p class="text-2xl font-bold text-green-600 mt-1">{{ payment_completed }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">KES {{ payment_revenue|floatformat:0 }} · {{ payments_7d }} this week</p>
   </a>
-  <a href="{% url 'admin_dashboard:commerce_integrations' %}" class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 p-4 shadow-sm hover:border-purple-400 transition-colors">
-    <p class="text-xs font-medium text-purple-600">Integrations</p>
-    <p class="text-2xl font-bold text-purple-600 mt-1">{{ shopify_stores|add:active_marketplaces }}</p>
+  <a href="{% url 'admin_dashboard:commerce_integrations' %}" class="bg-white dark:bg-gray-900 rounded-xl border border-kova-200 dark:border-kova-900/50 p-4 shadow-sm hover:border-kova-400 transition-colors">
+    <p class="text-xs font-medium text-kova-600">Integrations</p>
+    <p class="text-2xl font-bold text-kova-600 mt-1">{{ shopify_stores|add:active_marketplaces }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">{{ shopify_stores }} Shopify · {{ active_marketplaces }} marketplaces</p>
   </a>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-sky-200 dark:border-sky-900/50 p-4 shadow-sm">
@@ -38,9 +38,9 @@
     <p class="text-2xl font-bold text-sky-600 mt-1">{{ seo_ready }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">slug + photo + description</p>
   </div>
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-amber-200 dark:border-amber-900/50 p-4 shadow-sm">
-    <p class="text-xs font-medium text-amber-600">Autopilot brands</p>
-    <p class="text-2xl font-bold text-amber-600 mt-1">{{ autopilot_sellers }}</p>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gold-200 dark:border-gold-900/50 p-4 shadow-sm">
+    <p class="text-xs font-medium text-gold-600">Autopilot brands</p>
+    <p class="text-2xl font-bold text-gold-600 mt-1">{{ autopilot_sellers }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">auto content on sync/snap</p>
   </div>
 </div>
@@ -51,16 +51,16 @@
     <p class="text-lg font-bold text-gray-900 dark:text-white">{{ manual_products }}</p>
     <p class="text-[10px] text-gray-500">Manual</p>
   </a>
-  <a href="{% url 'admin_dashboard:commerce_catalog' %}?source=snap" class="bg-white dark:bg-gray-900 rounded-lg border border-purple-200 dark:border-purple-900/50 p-3 text-center hover:border-purple-400 transition-colors">
-    <p class="text-lg font-bold text-purple-600">{{ snap_products }}</p>
+  <a href="{% url 'admin_dashboard:commerce_catalog' %}?source=snap" class="bg-white dark:bg-gray-900 rounded-lg border border-kova-200 dark:border-kova-900/50 p-3 text-center hover:border-kova-400 transition-colors">
+    <p class="text-lg font-bold text-kova-600">{{ snap_products }}</p>
     <p class="text-[10px] text-gray-500">Snap to Sell</p>
   </a>
-  <a href="{% url 'admin_dashboard:commerce_catalog' %}?source=marketplace" class="bg-white dark:bg-gray-900 rounded-lg border border-indigo-200 dark:border-indigo-900/50 p-3 text-center hover:border-indigo-400 transition-colors">
-    <p class="text-lg font-bold text-indigo-600">{{ marketplace_products }}</p>
+  <a href="{% url 'admin_dashboard:commerce_catalog' %}?source=marketplace" class="bg-white dark:bg-gray-900 rounded-lg border border-kova-200 dark:border-kova-900/50 p-3 text-center hover:border-kova-400 transition-colors">
+    <p class="text-lg font-bold text-kova-600">{{ marketplace_products }}</p>
     <p class="text-[10px] text-gray-500">Marketplace sync</p>
   </a>
-  <a href="{% url 'admin_dashboard:commerce_catalog' %}?source=shopify" class="bg-white dark:bg-gray-900 rounded-lg border border-emerald-200 dark:border-emerald-900/50 p-3 text-center hover:border-emerald-400 transition-colors">
-    <p class="text-lg font-bold text-emerald-600">{{ shopify_products }}</p>
+  <a href="{% url 'admin_dashboard:commerce_catalog' %}?source=shopify" class="bg-white dark:bg-gray-900 rounded-lg border border-growth-200 dark:border-growth-900/50 p-3 text-center hover:border-growth-400 transition-colors">
+    <p class="text-lg font-bold text-growth-600">{{ shopify_products }}</p>
     <p class="text-[10px] text-gray-500">Shopify import</p>
   </a>
   <a href="{% url 'admin_dashboard:commerce_stock_alerts' %}" class="bg-white dark:bg-gray-900 rounded-lg border {% if unread_alerts %}border-red-200 dark:border-red-900/50{% else %}border-gray-200 dark:border-gray-800{% endif %} p-3 text-center hover:border-red-400 transition-colors">
@@ -77,8 +77,8 @@
         <p class="text-2xl font-bold text-blue-600">{{ products_count }}</p>
         <p class="text-[10px] text-gray-500 mt-0.5">Physical</p>
       </a>
-      <a href="{% url 'admin_dashboard:commerce_catalog' %}?offering_type=service" class="rounded-lg border border-emerald-200 dark:border-emerald-900/50 p-3 text-center hover:border-emerald-400 transition-colors">
-        <p class="text-2xl font-bold text-emerald-600">{{ services_count }}</p>
+      <a href="{% url 'admin_dashboard:commerce_catalog' %}?offering_type=service" class="rounded-lg border border-growth-200 dark:border-growth-900/50 p-3 text-center hover:border-growth-400 transition-colors">
+        <p class="text-2xl font-bold text-growth-600">{{ services_count }}</p>
         <p class="text-[10px] text-gray-500 mt-0.5">Service</p>
       </a>
       <a href="{% url 'admin_dashboard:commerce_catalog' %}?offering_type=digital" class="rounded-lg border border-violet-200 dark:border-violet-900/50 p-3 text-center hover:border-violet-400 transition-colors">
@@ -92,8 +92,8 @@
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
     <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Fulfillment Readiness</h2>
     <div class="grid grid-cols-2 gap-3">
-      <div class="rounded-lg border border-emerald-200 dark:border-emerald-900/50 p-3">
-        <p class="text-lg font-bold text-emerald-600">{{ service_fulfillment_ready }}</p>
+      <div class="rounded-lg border border-growth-200 dark:border-growth-900/50 p-3">
+        <p class="text-lg font-bold text-growth-600">{{ service_fulfillment_ready }}</p>
         <p class="text-[10px] text-gray-500 mt-0.5">Services with booking path</p>
       </div>
       <div class="rounded-lg border border-red-200 dark:border-red-900/50 p-3">
@@ -104,8 +104,8 @@
         <p class="text-lg font-bold text-violet-600">{{ digital_fulfillment_ready }}</p>
         <p class="text-[10px] text-gray-500 mt-0.5">Digital offers with access path</p>
       </div>
-      <div class="rounded-lg border border-amber-200 dark:border-amber-900/50 p-3">
-        <p class="text-lg font-bold text-amber-600">{{ digital_missing_fulfillment }}</p>
+      <div class="rounded-lg border border-gold-200 dark:border-gold-900/50 p-3">
+        <p class="text-lg font-bold text-gold-600">{{ digital_missing_fulfillment }}</p>
         <p class="text-[10px] text-gray-500 mt-0.5">Digital offers missing access path</p>
       </div>
     </div>
@@ -118,8 +118,8 @@
     <p class="text-lg font-bold text-green-600">{{ in_stock }}</p>
     <p class="text-[10px] text-gray-500">In Stock</p>
   </a>
-  <a href="{% url 'admin_dashboard:commerce_catalog' %}?status=low_stock" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-yellow-300 transition-colors">
-    <p class="text-lg font-bold text-yellow-600">{{ low_stock }}</p>
+  <a href="{% url 'admin_dashboard:commerce_catalog' %}?status=low_stock" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-gold-300 transition-colors">
+    <p class="text-lg font-bold text-gold-600">{{ low_stock }}</p>
     <p class="text-[10px] text-gray-500">Low Stock</p>
   </a>
   <a href="{% url 'admin_dashboard:commerce_catalog' %}?status=out_of_stock" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-red-300 transition-colors">
@@ -130,8 +130,8 @@
     <p class="text-lg font-bold text-blue-600">{{ made_to_order }}</p>
     <p class="text-[10px] text-gray-500">Made to Order</p>
   </a>
-  <a href="{% url 'admin_dashboard:commerce_catalog' %}?status=unlimited" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-purple-300 transition-colors">
-    <p class="text-lg font-bold text-purple-600">{{ unlimited }}</p>
+  <a href="{% url 'admin_dashboard:commerce_catalog' %}?status=unlimited" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-kova-300 transition-colors">
+    <p class="text-lg font-bold text-kova-600">{{ unlimited }}</p>
     <p class="text-[10px] text-gray-500">Unlimited</p>
   </a>
 </div>
@@ -139,11 +139,11 @@
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
   {# ── Content pipeline ─────────────────────────────────────────────── #}
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-purple-200 dark:border-purple-900/50 shadow-sm p-5">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-kova-200 dark:border-kova-900/50 shadow-sm p-5">
     <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Content &amp; Autopilot</h2>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
       <div class="text-center">
-        <p class="text-2xl font-bold text-purple-600">{{ snap_total }}</p>
+        <p class="text-2xl font-bold text-kova-600">{{ snap_total }}</p>
         <p class="text-[10px] text-gray-500">Snaps ({{ snap_7d }} 7d)</p>
       </div>
       <div class="text-center">
@@ -155,7 +155,7 @@
         <p class="text-[10px] text-gray-500">Reel posts</p>
       </div>
       <div class="text-center">
-        <p class="text-2xl font-bold text-indigo-600">{{ never_promoted }}</p>
+        <p class="text-2xl font-bold text-kova-600">{{ never_promoted }}</p>
         <p class="text-[10px] text-gray-500">Never promoted</p>
       </div>
     </div>
@@ -185,8 +185,8 @@
       </div>
     </div>
     <div class="mt-4 flex flex-wrap gap-2">
-      <a href="{% url 'admin_dashboard:shopify_stores' %}" class="text-[10px] px-2 py-1 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 hover:underline">Shopify stores</a>
-      <a href="{% url 'admin_dashboard:marketplace_list' %}" class="text-[10px] px-2 py-1 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 hover:underline">Marketplaces</a>
+      <a href="{% url 'admin_dashboard:shopify_stores' %}" class="text-[10px] px-2 py-1 rounded bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-300 hover:underline">Shopify stores</a>
+      <a href="{% url 'admin_dashboard:marketplace_list' %}" class="text-[10px] px-2 py-1 rounded bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-300 hover:underline">Marketplaces</a>
       <a href="{% url 'admin_dashboard:revenue_overview' %}" class="text-[10px] px-2 py-1 rounded bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:underline">Revenue attribution</a>
     </div>
   </div>
@@ -216,7 +216,7 @@
               <a href="{% url 'admin_dashboard:user_detail' u.user__id %}" class="text-xs font-medium text-kova-600 hover:underline">{{ u.user__full_name|default:u.user__email }}</a>
             </td>
             <td class="px-4 py-2.5 text-right text-xs font-semibold">{{ u.product_count }}</td>
-            <td class="px-4 py-2.5 text-right text-xs {% if u.low > 0 %}text-yellow-600 font-semibold{% else %}text-gray-400{% endif %}">{{ u.low }}</td>
+            <td class="px-4 py-2.5 text-right text-xs {% if u.low > 0 %}text-gold-600 font-semibold{% else %}text-gray-400{% endif %}">{{ u.low }}</td>
             <td class="px-4 py-2.5 text-right text-xs {% if u.oos > 0 %}text-red-600 font-semibold{% else %}text-gray-400{% endif %}">{{ u.oos }}</td>
           </tr>
           {% empty %}
@@ -237,7 +237,7 @@
       <div class="px-5 py-3">
         <div class="flex items-center gap-2 mb-0.5">
           <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium
-            {% if alert.alert_type == 'out_of_stock' %}bg-red-100 text-red-700{% elif alert.alert_type == 'low_stock' %}bg-yellow-100 text-yellow-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+            {% if alert.alert_type == 'out_of_stock' %}bg-red-100 text-red-700{% elif alert.alert_type == 'low_stock' %}bg-gold-100 text-gold-700{% else %}bg-blue-100 text-blue-700{% endif %}">
             {{ alert.get_alert_type_display }}
           </span>
           <span class="text-[10px] text-gray-400">{{ alert.user.email }}</span>
@@ -286,19 +286,19 @@
           </td>
           <td class="px-4 py-2.5">
             <span class="text-[10px] px-1.5 py-0.5 rounded
-              {% if p.offering_type == 'service' %}bg-emerald-100 text-emerald-700{% elif p.offering_type == 'digital' %}bg-violet-100 text-violet-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+              {% if p.offering_type == 'service' %}bg-growth-100 text-growth-700{% elif p.offering_type == 'digital' %}bg-violet-100 text-violet-700{% else %}bg-blue-100 text-blue-700{% endif %}">
               {{ p.get_offering_type_display }}
             </span>
           </td>
           <td class="px-4 py-2.5">
             <span class="text-[10px] px-1.5 py-0.5 rounded
-              {% if p.admin_business_mode.key == 'service' %}bg-emerald-100 text-emerald-700{% elif p.admin_business_mode.key == 'digital' %}bg-violet-100 text-violet-700{% elif p.admin_business_mode.key == 'expert' %}bg-amber-100 text-amber-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+              {% if p.admin_business_mode.key == 'service' %}bg-growth-100 text-growth-700{% elif p.admin_business_mode.key == 'digital' %}bg-violet-100 text-violet-700{% elif p.admin_business_mode.key == 'expert' %}bg-gold-100 text-gold-700{% else %}bg-blue-100 text-blue-700{% endif %}">
               {{ p.admin_business_mode.label }}
             </span>
           </td>
           <td class="px-4 py-2.5">
             <span class="text-[10px] px-1.5 py-0.5 rounded
-              {% if p.admin_fulfillment.status == 'ready' %}bg-emerald-100 text-emerald-700{% elif p.admin_fulfillment.status == 'missing' %}bg-red-100 text-red-700{% else %}bg-amber-100 text-amber-700{% endif %}">
+              {% if p.admin_fulfillment.status == 'ready' %}bg-growth-100 text-growth-700{% elif p.admin_fulfillment.status == 'missing' %}bg-red-100 text-red-700{% else %}bg-gold-100 text-gold-700{% endif %}">
               {{ p.admin_fulfillment.label }}
             </span>
           </td>

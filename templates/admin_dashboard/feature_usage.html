@@ -11,10 +11,10 @@
 
   {# Period selector #}
   <div class="flex items-center justify-end gap-2">
-    <a href="?days=7" class="px-3 py-1 text-xs rounded-full {% if days == 7 %}bg-purple-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">7d</a>
-    <a href="?days=14" class="px-3 py-1 text-xs rounded-full {% if days == 14 %}bg-purple-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">14d</a>
-    <a href="?days=30" class="px-3 py-1 text-xs rounded-full {% if days == 30 %}bg-purple-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">30d</a>
-    <a href="?days=90" class="px-3 py-1 text-xs rounded-full {% if days == 90 %}bg-purple-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">90d</a>
+    <a href="?days=7" class="px-3 py-1 text-xs rounded-full {% if days == 7 %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">7d</a>
+    <a href="?days=14" class="px-3 py-1 text-xs rounded-full {% if days == 14 %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">14d</a>
+    <a href="?days=30" class="px-3 py-1 text-xs rounded-full {% if days == 30 %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">30d</a>
+    <a href="?days=90" class="px-3 py-1 text-xs rounded-full {% if days == 90 %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">90d</a>
   </div>
 
   {# Hero stats #}
@@ -30,7 +30,7 @@
     </div>
     <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
       <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Adoption Rate</p>
-      <p class="text-3xl font-bold {% if adoption_rate >= 50 %}text-emerald-600{% elif adoption_rate >= 25 %}text-amber-600{% else %}text-red-600{% endif %}">{{ adoption_rate }}%</p>
+      <p class="text-3xl font-bold {% if adoption_rate >= 50 %}text-growth-600{% elif adoption_rate >= 25 %}text-gold-600{% else %}text-red-600{% endif %}">{{ adoption_rate }}%</p>
     </div>
     <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
       <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Features Used</p>
@@ -52,7 +52,7 @@
         <div class="flex-1 min-w-0">
           <div class="h-6 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
             <div class="h-full rounded-full transition-all duration-500
-              {% if forloop.counter <= 3 %}bg-purple-600{% elif forloop.counter <= 6 %}bg-blue-500{% else %}bg-gray-400 dark:bg-gray-600{% endif %}"
+              {% if forloop.counter <= 3 %}bg-kova-600{% elif forloop.counter <= 6 %}bg-blue-500{% else %}bg-gray-400 dark:bg-gray-600{% endif %}"
               style="width: {{ s.bar_pct }}%"></div>
           </div>
         </div>
@@ -73,14 +73,14 @@
   </div>
 
   {% if unused %}
-  <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-5">
-    <h3 class="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-3">
+  <div class="bg-gold-50 dark:bg-gold-900/20 border border-gold-200 dark:border-gold-800 rounded-xl p-5">
+    <h3 class="text-sm font-semibold text-gold-800 dark:text-gold-300 mb-3">
       Unused Features ({{ unused|length }})
     </h3>
-    <p class="text-xs text-amber-700 dark:text-amber-400 mb-3">These features had zero visits in the last {{ days }} days. Consider improving discoverability or onboarding.</p>
+    <p class="text-xs text-gold-700 dark:text-gold-400 mb-3">These features had zero visits in the last {{ days }} days. Consider improving discoverability or onboarding.</p>
     <div class="flex flex-wrap gap-2">
       {% for u in unused %}
-      <span class="px-2.5 py-1 text-xs rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 font-medium">{{ u.label }}</span>
+      <span class="px-2.5 py-1 text-xs rounded-full bg-gold-100 dark:bg-gold-900/40 text-gold-800 dark:text-gold-300 font-medium">{{ u.label }}</span>
       {% endfor %}
     </div>
   </div>
@@ -120,7 +120,7 @@
         <div class="flex items-center gap-3">
           <span class="w-24 text-xs font-medium text-gray-700 dark:text-gray-300">{{ d.sections }} section{{ d.sections|pluralize }}</span>
           <div class="flex-1 h-5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-            <div class="h-full bg-purple-500 rounded-full" style="width: {% if total_active_users %}{% widthratio d.users total_active_users 100 %}{% else %}0{% endif %}%"></div>
+            <div class="h-full bg-kova-500 rounded-full" style="width: {% if total_active_users %}{% widthratio d.users total_active_users 100 %}{% else %}0{% endif %}%"></div>
           </div>
           <span class="w-12 text-xs text-right text-gray-600 dark:text-gray-400">{{ d.users }}</span>
         </div>
@@ -150,7 +150,7 @@
           <tr class="border-b border-gray-100 dark:border-gray-800 last:border-0">
             <td class="py-2.5 px-3 text-gray-400">{{ forloop.counter }}</td>
             <td class="py-2.5 px-3">
-              <a href="{% url 'admin_dashboard:user_detail' u.user__id %}" class="text-purple-600 dark:text-purple-400 hover:underline font-medium">
+              <a href="{% url 'admin_dashboard:user_detail' u.user__id %}" class="text-kova-600 dark:text-kova-400 hover:underline font-medium">
                 {{ u.user__full_name|default:u.user__email }}
               </a>
               {% if u.user__full_name %}

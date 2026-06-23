@@ -1,7 +1,7 @@
 {# Shared copy for Snap → polish → formats → approve pipeline #}
 {# Usage: {% include "components/_media_pipeline_explainer.html" with compact=True %} #}
 
-<div class="rounded-xl border border-purple-100 dark:border-purple-900/50 bg-gradient-to-br from-purple-50/80 to-kova-50/40 dark:from-purple-950/30 dark:to-kova-950/20 px-4 py-3 {% if compact %}text-xs{% else %}text-sm{% endif %}">
+<div class="rounded-xl border border-kova-100 dark:border-kova-900/50 bg-gradient-to-br from-kova-50/80 to-kova-50/40 dark:from-kova-950/30 dark:to-kova-950/20 px-4 py-3 {% if compact %}text-xs{% else %}text-sm{% endif %}">
   <p class="font-semibold text-gray-900 dark:text-white {% if compact %}text-xs{% endif %}">
     {% if compact %}One snap → full campaign{% else %}How Kova builds your campaign{% endif %}
   </p>
@@ -15,15 +15,15 @@
   </p>
   {% if not compact and media_caps %}
   <ul class="mt-2 flex flex-wrap gap-1.5">
-    <li class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/80 dark:bg-gray-900/60 text-purple-700 dark:text-purple-300 border border-purple-100 dark:border-purple-800">Photo polish</li>
-    <li class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/80 dark:bg-gray-900/60 text-purple-700 dark:text-purple-300 border border-purple-100 dark:border-purple-800">
+    <li class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/80 dark:bg-gray-900/60 text-kova-700 dark:text-kova-300 border border-kova-100 dark:border-kova-800">Photo polish</li>
+    <li class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/80 dark:bg-gray-900/60 text-kova-700 dark:text-kova-300 border border-kova-100 dark:border-kova-800">
       {% if media_caps.bannerbear_carousels %}Branded carousels{% else %}AI carousels{% endif %}
     </li>
     <li class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/80 dark:bg-gray-900/60 text-orange-700 dark:text-orange-300 border border-orange-100 dark:border-orange-800">
       {% if media_caps.kling_reels %}Cinematic reels{% else %}Motion reels{% endif %}
     </li>
     {% if media_caps.flux_edits_per_month %}
-    <li class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/80 dark:bg-gray-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-800">Promo creatives</li>
+    <li class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/80 dark:bg-gray-900/60 text-growth-700 dark:text-growth-300 border border-growth-100 dark:border-growth-800">Promo creatives</li>
     {% endif %}
   </ul>
   {% endif %}

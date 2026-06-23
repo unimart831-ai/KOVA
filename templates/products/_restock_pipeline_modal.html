@@ -11,7 +11,7 @@
     <div class="absolute inset-0 bg-gray-950/70 backdrop-blur-sm" @click="close()"></div>
 
     <div class="relative w-full max-w-lg max-h-[90vh] overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-2xl flex flex-col">
-      <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-orange-600 to-amber-600 dark:from-orange-700 dark:to-amber-700">
+      <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-orange-600 to-gold-600 dark:from-orange-700 dark:to-gold-700">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
             <p class="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Receipt to Restock</p>
@@ -28,7 +28,7 @@
         <template x-if="processing">
           <div>
             <div class="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-              <div class="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-700"
+              <div class="h-full bg-gradient-to-r from-orange-500 to-gold-500 rounded-full transition-all duration-700"
                    :style="'width:' + progressPercent + '%'"></div>
             </div>
             <p class="text-[10px] text-gray-400 mt-1.5 text-center">Reading receipt → matching catalog → updating stock</p>

@@ -13,7 +13,7 @@
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Active</p>
-    <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{{ active_accounts|format_number }}</p>
+    <p class="text-2xl font-bold text-growth-600 dark:text-growth-400 mt-1">{{ active_accounts|format_number }}</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">With Errors</p>
@@ -21,7 +21,7 @@
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Expiring (24h)</p>
-    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{{ total_expiring|format_number }}</p>
+    <p class="text-2xl font-bold text-gold-600 dark:text-gold-400 mt-1">{{ total_expiring|format_number }}</p>
   </div>
 </div>
 
@@ -39,7 +39,7 @@
     <div class="grid grid-cols-2 gap-3 text-xs">
       <div>
         <p class="text-gray-400">Active</p>
-        <p class="font-semibold text-emerald-600 dark:text-emerald-400">{{ p.active }}</p>
+        <p class="font-semibold text-growth-600 dark:text-growth-400">{{ p.active }}</p>
       </div>
       <div>
         <p class="text-gray-400">Inactive</p>
@@ -51,7 +51,7 @@
       </div>
       <div>
         <p class="text-gray-400">Expiring</p>
-        <p class="font-semibold {% if p.expiring %}text-amber-500{% else %}text-gray-500{% endif %}">{{ p.expiring }}</p>
+        <p class="font-semibold {% if p.expiring %}text-gold-500{% else %}text-gray-500{% endif %}">{{ p.expiring }}</p>
       </div>
       <div>
         <p class="text-gray-400">Published (7d)</p>
@@ -59,7 +59,7 @@
       </div>
       <div>
         <p class="text-gray-400">Success Rate</p>
-        <p class="font-semibold {% if p.success_rate >= 95 %}text-emerald-600{% elif p.success_rate >= 80 %}text-amber-500{% else %}text-red-500{% endif %}">{{ p.success_rate }}%</p>
+        <p class="font-semibold {% if p.success_rate >= 95 %}text-growth-600{% elif p.success_rate >= 80 %}text-gold-500{% else %}text-red-500{% endif %}">{{ p.success_rate }}%</p>
       </div>
     </div>
   </div>
@@ -98,9 +98,9 @@
           <p class="text-xs text-gray-400">{{ total_errors }} account{{ total_errors|pluralize }} need attention</p>
         </div>
       </a>
-      <a href="{% url 'admin_dashboard:platform_accounts' %}?status=expiring" class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-amber-400 dark:hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all">
-        <div class="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
-          <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <a href="{% url 'admin_dashboard:platform_accounts' %}?status=expiring" class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gold-400 dark:hover:border-gold-500 hover:bg-gold-50 dark:hover:bg-gold-900/20 transition-all">
+        <div class="w-8 h-8 bg-gold-100 dark:bg-gold-900/30 rounded-lg flex items-center justify-center">
+          <svg class="w-4 h-4 text-gold-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
         <div>
           <p class="text-sm font-medium text-gray-900 dark:text-white">Expiring Tokens</p>
@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
         {
           label: 'Published',
           data: pubData.map(d => d.published),
-          backgroundColor: '#10b981',
+          backgroundColor: '#10B981',
           borderRadius: 4
         },
         {

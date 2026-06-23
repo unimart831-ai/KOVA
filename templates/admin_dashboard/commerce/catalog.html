@@ -67,7 +67,7 @@
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
           <td class="px-4 py-2.5">
             <a href="{% url 'admin_dashboard:commerce_product_detail' p.pk %}" class="text-xs font-medium text-kova-600 hover:underline">{{ p.name }}</a>
-            {% if p.is_featured %}<span class="text-[10px] text-amber-600 ml-1">★</span>{% endif %}
+            {% if p.is_featured %}<span class="text-[10px] text-gold-600 ml-1">★</span>{% endif %}
           </td>
           <td class="px-4 py-2.5">
             <a href="{% url 'admin_dashboard:user_detail' p.user.pk %}" class="text-xs text-gray-600 hover:underline">{{ p.user.email }}</a>
@@ -77,26 +77,26 @@
           </td>
           <td class="px-4 py-2.5">
             <span class="text-[10px] px-1.5 py-0.5 rounded
-              {% if p.offering_type == 'service' %}bg-emerald-100 text-emerald-700{% elif p.offering_type == 'digital' %}bg-violet-100 text-violet-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+              {% if p.offering_type == 'service' %}bg-growth-100 text-growth-700{% elif p.offering_type == 'digital' %}bg-violet-100 text-violet-700{% else %}bg-blue-100 text-blue-700{% endif %}">
               {{ p.get_offering_type_display }}
             </span>
           </td>
           <td class="px-4 py-2.5">
             <span class="text-[10px] px-1.5 py-0.5 rounded
-              {% if p.admin_business_mode.key == 'service' %}bg-emerald-100 text-emerald-700{% elif p.admin_business_mode.key == 'digital' %}bg-violet-100 text-violet-700{% elif p.admin_business_mode.key == 'expert' %}bg-amber-100 text-amber-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+              {% if p.admin_business_mode.key == 'service' %}bg-growth-100 text-growth-700{% elif p.admin_business_mode.key == 'digital' %}bg-violet-100 text-violet-700{% elif p.admin_business_mode.key == 'expert' %}bg-gold-100 text-gold-700{% else %}bg-blue-100 text-blue-700{% endif %}">
               {{ p.admin_business_mode.label }}
             </span>
           </td>
           <td class="px-4 py-2.5">
             <span class="text-[10px] px-1.5 py-0.5 rounded
-              {% if p.admin_fulfillment.status == 'ready' %}bg-emerald-100 text-emerald-700{% elif p.admin_fulfillment.status == 'missing' %}bg-red-100 text-red-700{% else %}bg-amber-100 text-amber-700{% endif %}">
+              {% if p.admin_fulfillment.status == 'ready' %}bg-growth-100 text-growth-700{% elif p.admin_fulfillment.status == 'missing' %}bg-red-100 text-red-700{% else %}bg-gold-100 text-gold-700{% endif %}">
               {{ p.admin_fulfillment.label }}
             </span>
           </td>
           <td class="px-4 py-2.5 text-right text-xs">{% if p.price %}{{ p.currency }} {{ p.price|floatformat:0 }}{% else %}—{% endif %}</td>
           <td class="px-4 py-2.5">
             {% if p.commerce_slug %}
-            <span class="text-[10px] font-mono text-emerald-600">{{ p.commerce_slug }}</span>
+            <span class="text-[10px] font-mono text-growth-600">{{ p.commerce_slug }}</span>
             {% else %}
             <span class="text-[10px] text-gray-400">Not live</span>
             {% endif %}

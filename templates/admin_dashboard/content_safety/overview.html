@@ -19,7 +19,7 @@
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Pending review</p>
-    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{{ stats.pending_review|format_number }}</p>
+    <p class="text-2xl font-bold text-gold-600 dark:text-gold-400 mt-1">{{ stats.pending_review|format_number }}</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Incidents today</p>
@@ -29,9 +29,9 @@
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">High severity pending</p>
     <p class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{{ high_severity_pending|format_number }}</p>
   </div>
-  <div class="bg-white dark:bg-gray-900 rounded-xl border {% if stats.auto_publish_paused %}border-red-300 dark:border-red-900{% else %}border-emerald-200 dark:border-emerald-900{% endif %} p-4 shadow-sm">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border {% if stats.auto_publish_paused %}border-red-300 dark:border-red-900{% else %}border-growth-200 dark:border-growth-900{% endif %} p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Global auto-publish</p>
-    <p class="text-lg font-bold mt-1 {% if stats.auto_publish_paused %}text-red-600 dark:text-red-400{% else %}text-emerald-600 dark:text-emerald-400{% endif %}">
+    <p class="text-lg font-bold mt-1 {% if stats.auto_publish_paused %}text-red-600 dark:text-red-400{% else %}text-growth-600 dark:text-growth-400{% endif %}">
       {% if stats.auto_publish_paused %}PAUSED{% else %}Active{% endif %}
     </p>
     {% if stats.auto_publish_paused and stats.paused_by %}
@@ -49,7 +49,7 @@
     <form method="post" action="{% url 'admin_dashboard:content_safety_global_toggle' %}">
       {% csrf_token %}
       <button type="submit"
-              class="px-4 py-2 text-sm font-medium rounded-lg {% if stats.auto_publish_paused %}bg-emerald-600 text-white hover:bg-emerald-700{% else %}bg-red-600 text-white hover:bg-red-700{% endif %}">
+              class="px-4 py-2 text-sm font-medium rounded-lg {% if stats.auto_publish_paused %}bg-growth-600 text-white hover:bg-growth-700{% else %}bg-red-600 text-white hover:bg-red-700{% endif %}">
         {% if stats.auto_publish_paused %}Resume platform auto-publish{% else %}Pause platform auto-publish{% endif %}
       </button>
     </form>
@@ -89,7 +89,7 @@
             <a href="{% url 'admin_dashboard:user_usage_detail' incident.user_id %}" class="text-kova-600 dark:text-kova-400 hover:underline">{{ incident.user.email }}</a>
           </td>
           <td class="px-4 py-2">{{ incident.get_source_display }}</td>
-          <td class="px-4 py-2"><span class="font-semibold {% if incident.severity >= 70 %}text-red-600{% else %}text-amber-600{% endif %}">{{ incident.severity }}</span></td>
+          <td class="px-4 py-2"><span class="font-semibold {% if incident.severity >= 70 %}text-red-600{% else %}text-gold-600{% endif %}">{{ incident.severity }}</span></td>
           <td class="px-4 py-2">{{ incident.get_review_status_display }}</td>
           <td class="px-4 py-2 text-gray-500">{{ incident.created_at|timesince }} ago</td>
         </tr>

@@ -66,19 +66,19 @@
 </div>
 
 {% if brand_preview.is_commerce %}
-<div class="mb-6 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
-  <p class="text-sm font-medium text-emerald-800 dark:text-emerald-300">Commerce setup</p>
-  <p class="text-xs text-emerald-700 dark:text-emerald-400 mt-1">After your agency starts, add your first product with Snap and share your shop link.</p>
+<div class="mb-6 p-4 rounded-xl bg-growth-50 dark:bg-growth-950/30 border border-growth-200 dark:border-growth-800">
+  <p class="text-sm font-medium text-growth-800 dark:text-growth-300">Commerce setup</p>
+  <p class="text-xs text-growth-700 dark:text-growth-400 mt-1">After your agency starts, add your first product with Snap and share your shop link.</p>
 </div>
 {% endif %}
 
 <form method="post" class="space-y-4">
   {% csrf_token %}
   <div class="flex flex-col sm:flex-row gap-3 pt-2">
-    <a href="?step=1" class="btn-secondary text-center">Back</a>
-    <a href="?step=1" class="btn-secondary text-center flex-1">Edit details</a>
+    <a href="{% url 'accounts:onboarding_choose_path' %}" class="btn-secondary text-center">Back</a>
+    <a href="{% url 'accounts:onboarding_choose_path' %}" class="btn-secondary text-center flex-1">Edit details</a>
     <button type="submit" class="btn-primary flex-1 py-3">
-      Looks good — start my agency
+      Looks good — start working
       <svg class="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
       </svg>

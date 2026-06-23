@@ -8,7 +8,7 @@ from typing import Any
 
 from apps.accounts.models import UserProfile
 
-DEFAULT_PRIMARY = "#0d8474"
+DEFAULT_PRIMARY = "#10B981"
 DEFAULT_SECONDARY = "#1a2235"
 
 ARCHETYPE_BY_INDUSTRY: dict[str, str] = {

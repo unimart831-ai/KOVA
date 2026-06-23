@@ -150,7 +150,7 @@
           <td class="px-4 py-3">
             <span class="text-xs font-mono text-gray-900 dark:text-white">{{ m.model }}</span>
             {% if m.input_rate == 0 and m.output_rate == 0 %}
-            <span class="ml-1.5 inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">FREE</span>
+            <span class="ml-1.5 inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400">FREE</span>
             {% endif %}
           </td>
           <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">{{ m.runs|format_number }}</td>
@@ -160,7 +160,7 @@
             <span class="text-gray-400">in:</span>${{ m.input_rate }}
             <span class="text-gray-400 ml-1">out:</span>${{ m.output_rate }}
           </td>
-          <td class="px-4 py-3 text-right text-sm font-medium {% if m.cost > 0 %}text-amber-600 dark:text-amber-400{% else %}text-emerald-600 dark:text-emerald-400{% endif %}">${{ m.cost|floatformat:6 }}</td>
+          <td class="px-4 py-3 text-right text-sm font-medium {% if m.cost > 0 %}text-gold-600 dark:text-gold-400{% else %}text-growth-600 dark:text-growth-400{% endif %}">${{ m.cost|floatformat:6 }}</td>
         </tr>
         {% empty %}
         <tr>
@@ -213,8 +213,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const agentLabels = [{% for a in agent_totals %}'{{ a.agent_type|capfirst }}'{% if not forloop.last %},{% endif %}{% endfor %}];
   const agentTokens = [{% for a in agent_totals %}{{ a.tokens }}{% if not forloop.last %},{% endif %}{% endfor %}];
   const agentColors = {
-    'Research': '#6366f1', 'Create': '#3b82f6', 'Adapt': '#8b5cf6',
-    'Engage': '#f59e0b', 'Analyst': '#10b981', 'Strategist': '#ef4444'
+    'Research': '#1E3A8A', 'Create': '#3b82f6', 'Adapt': '#2B6F9E',
+    'Engage': '#f59e0b', 'Analyst': '#10B981', 'Strategist': '#ef4444'
   };
   const colors = agentLabels.map(l => agentColors[l] || '#9ca3af');
 

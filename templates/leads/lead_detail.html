@@ -40,7 +40,7 @@
         <div class="flex items-center gap-3 mb-4">
           <div class="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold
             {% if lead.priority == 'high' %}bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300
-            {% elif lead.priority == 'medium' %}bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300
+            {% elif lead.priority == 'medium' %}bg-gold-100 text-gold-700 dark:bg-gold-950 dark:text-gold-300
             {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
             {{ lead.name|default:lead.email|truncatechars:1|upper }}
           </div>
@@ -60,7 +60,7 @@
           </span>
           <span class="text-[10px] px-2 py-0.5 rounded-full font-medium
             {% if lead.priority == 'high' %}bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300
-            {% elif lead.priority == 'medium' %}bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300
+            {% elif lead.priority == 'medium' %}bg-gold-100 text-gold-700 dark:bg-gold-950 dark:text-gold-300
             {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
             {{ lead.get_priority_display }}
           </span>
@@ -103,7 +103,7 @@
             <svg class="w-14 h-14 -rotate-90" viewBox="0 0 36 36">
               <circle cx="18" cy="18" r="15.9" fill="none" stroke="currentColor" class="text-gray-200 dark:text-gray-700" stroke-width="3"/>
               <circle cx="18" cy="18" r="15.9" fill="none"
-                      class="{% if lead.metadata.composite_score >= 70 %}text-green-500{% elif lead.metadata.composite_score >= 40 %}text-amber-500{% else %}text-gray-400{% endif %}"
+                      class="{% if lead.metadata.composite_score >= 70 %}text-green-500{% elif lead.metadata.composite_score >= 40 %}text-gold-500{% else %}text-gray-400{% endif %}"
                       stroke="currentColor" stroke-width="3" stroke-linecap="round"
                       stroke-dasharray="{{ lead.metadata.composite_score }}, 100"/>
             </svg>

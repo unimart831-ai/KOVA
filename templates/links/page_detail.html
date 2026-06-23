@@ -5,7 +5,7 @@
 <div class="flex items-center gap-3 mt-0.5">
   <a href="/k/{{ page.slug }}/" target="_blank" class="text-sm text-kova-600 dark:text-kova-400 hover:underline">/k/{{ page.slug }}/ ↗</a>
   {% if page.is_published %}
-  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">Live</span>
+  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-growth-100 text-growth-800 dark:bg-growth-900/30 dark:text-growth-400">Live</span>
   {% else %}
   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">Draft</span>
   {% endif %}
@@ -26,7 +26,7 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">Clicks (30d)</p>
     </div>
     <div class="card px-4 py-3 text-center">
-      <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ total_submissions_30d }}</p>
+      <p class="text-2xl font-bold text-growth-600 dark:text-growth-400">{{ total_submissions_30d }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">Submissions (30d)</p>
     </div>
     <div class="card px-4 py-3 text-center">
@@ -120,7 +120,7 @@
         Add Form
       </a>
       {% else %}
-      <a href="{% url 'billing:pricing' %}" class="text-xs text-amber-600 dark:text-amber-400 hover:underline">Upgrade to Growth →</a>
+      <a href="{% url 'billing:pricing' %}" class="text-xs text-gold-600 dark:text-gold-400 hover:underline">Upgrade to Growth →</a>
       {% endif %}
     </div>
     {% if forms_list %}
@@ -133,7 +133,7 @@
         </div>
         <div class="flex gap-1 flex-shrink-0 ml-4">
           {% if f.is_active %}
-          <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mr-2">Active</span>
+          <span class="text-[10px] text-growth-600 dark:text-growth-400 font-medium mr-2">Active</span>
           {% else %}
           <span class="text-[10px] text-gray-400 font-medium mr-2">Inactive</span>
           {% endif %}

@@ -1,6 +1,6 @@
 {# Professional asset type — product form + studio post edit #}
 {% if business_model == 'professional' %}
-<div class="rounded-xl border border-purple-200 dark:border-purple-900/50 bg-purple-50/50 dark:bg-purple-950/20 p-4 space-y-3"
+<div class="rounded-xl border border-kova-200 dark:border-kova-900/50 bg-kova-50/50 dark:bg-kova-950/20 p-4 space-y-3"
      x-data="{ assetType: '{{ asset_type|default:"product" }}' }">
   <div>
     <p class="text-sm font-semibold text-gray-900 dark:text-white">Showcase type</p>
@@ -13,10 +13,10 @@
             :class="assetType === 'product' ? 'border-kova-500 bg-kova-50 dark:bg-kova-950/40' : 'border-gray-200 dark:border-gray-700 text-gray-600'">Product</button>
     <button type="button" @click="assetType = 'portfolio'"
             class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
-            :class="assetType === 'portfolio' ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/40' : 'border-gray-200 dark:border-gray-700 text-gray-600'">Portfolio</button>
+            :class="assetType === 'portfolio' ? 'border-kova-500 bg-kova-50 dark:bg-kova-950/40' : 'border-gray-200 dark:border-gray-700 text-gray-600'">Portfolio</button>
     <button type="button" @click="assetType = 'case_study'"
             class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
-            :class="assetType === 'case_study' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/40' : 'border-gray-200 dark:border-gray-700 text-gray-600'">Case study</button>
+            :class="assetType === 'case_study' ? 'border-kova-500 bg-kova-50 dark:bg-kova-950/40' : 'border-gray-200 dark:border-gray-700 text-gray-600'">Case study</button>
   </div>
   <div class="space-y-2" x-show="assetType === 'portfolio' || assetType === 'case_study'" x-cloak>
     <input type="text" name="asset_client" class="input text-sm" placeholder="Client name (optional)" value="{{ asset_client|default:'' }}">

@@ -38,7 +38,7 @@
               <span class="text-xs font-medium text-gray-900 dark:text-white capitalize">{{ f.format }}</span>
             </td>
             <td class="px-4 py-2.5 text-right text-xs text-gray-600 dark:text-gray-400">{{ f.count }}</td>
-            <td class="px-4 py-2.5 text-right text-xs font-semibold {% if f.avg_rate >= 5 %}text-emerald-600 dark:text-emerald-400{% else %}text-gray-900 dark:text-white{% endif %}">{{ f.avg_rate }}%</td>
+            <td class="px-4 py-2.5 text-right text-xs font-semibold {% if f.avg_rate >= 5 %}text-growth-600 dark:text-growth-400{% else %}text-gray-900 dark:text-white{% endif %}">{{ f.avg_rate }}%</td>
             <td class="px-4 py-2.5 text-right text-xs text-gray-500 dark:text-gray-400">{{ f.best }}%</td>
           </tr>
           {% empty %}
@@ -76,7 +76,7 @@
               <span class="text-xs font-medium text-gray-900 dark:text-white capitalize">{{ t.tone }}</span>
             </td>
             <td class="px-4 py-2.5 text-right text-xs text-gray-600 dark:text-gray-400">{{ t.count }}</td>
-            <td class="px-4 py-2.5 text-right text-xs font-semibold {% if t.avg_rate >= 5 %}text-emerald-600 dark:text-emerald-400{% else %}text-gray-900 dark:text-white{% endif %}">{{ t.avg_rate }}%</td>
+            <td class="px-4 py-2.5 text-right text-xs font-semibold {% if t.avg_rate >= 5 %}text-growth-600 dark:text-growth-400{% else %}text-gray-900 dark:text-white{% endif %}">{{ t.avg_rate }}%</td>
             <td class="px-4 py-2.5 text-right text-xs text-gray-500 dark:text-gray-400">{{ t.best }}%</td>
           </tr>
           {% empty %}
@@ -119,10 +119,10 @@
             <span class="text-xs text-gray-700 dark:text-gray-300 capitalize">{{ h.tone }}</span>
           </td>
           <td class="px-4 py-2.5 text-right text-xs text-gray-600 dark:text-gray-400">{{ h.count }}</td>
-          <td class="px-4 py-2.5 text-right text-xs font-semibold {% if h.avg_rate >= 5 %}text-emerald-600 dark:text-emerald-400{% elif h.avg_rate >= 2 %}text-amber-600 dark:text-amber-400{% else %}text-gray-600 dark:text-gray-400{% endif %}">{{ h.avg_rate }}%</td>
+          <td class="px-4 py-2.5 text-right text-xs font-semibold {% if h.avg_rate >= 5 %}text-growth-600 dark:text-growth-400{% elif h.avg_rate >= 2 %}text-gold-600 dark:text-gold-400{% else %}text-gray-600 dark:text-gray-400{% endif %}">{{ h.avg_rate }}%</td>
           <td class="px-4 py-2.5 w-32">
             <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div class="h-2 rounded-full {% if h.avg_rate >= 5 %}bg-emerald-500{% elif h.avg_rate >= 2 %}bg-amber-500{% else %}bg-gray-400{% endif %}" style="width: {{ h.avg_rate|floatformat:0 }}0%"></div>
+              <div class="h-2 rounded-full {% if h.avg_rate >= 5 %}bg-growth-500{% elif h.avg_rate >= 2 %}bg-gold-500{% else %}bg-gray-400{% endif %}" style="width: {{ h.avg_rate|floatformat:0 }}0%"></div>
             </div>
           </td>
         </tr>

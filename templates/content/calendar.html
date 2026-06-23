@@ -17,11 +17,11 @@
   {% if unscheduled_batches or unscheduled_ungrouped %}
     <section>
       <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2 flex-wrap">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-amber-500 shrink-0" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-gold-500 shrink-0" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
         <span>Unscheduled</span>
-        <span class="badge bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200 text-[10px]">{{ unscheduled_count }}</span>
+        <span class="badge bg-gold-100 text-gold-800 dark:bg-gold-950 dark:text-gold-200 text-[10px]">{{ unscheduled_count }}</span>
       </h3>
       <div class="space-y-4">
         {% for batch in unscheduled_batches %}

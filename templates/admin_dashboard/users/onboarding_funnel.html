@@ -28,8 +28,8 @@
       </div>
       <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
 
-        <div class="p-3 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/20">
-          <p class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Sell</p>
+        <div class="p-3 rounded-xl border border-growth-200 dark:border-growth-800/60 bg-growth-50/40 dark:bg-growth-950/20">
+          <p class="text-xs font-medium uppercase tracking-wide text-growth-700 dark:text-growth-300">Sell</p>
           <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ automation.path_counts.sell|default:0 }}</p>
           <p class="text-xs text-gray-500 dark:text-gray-400">commerce intent</p>
         </div>
@@ -105,11 +105,11 @@
 
   {# ── Missing phone (outreach blockers) ── #}
   {% if phone_missing_count %}
-  <div class="card border-amber-200 dark:border-amber-800/60">
+  <div class="card border-gold-200 dark:border-gold-800/60">
     <div class="card-body space-y-3">
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Missing phone</h2>
-        <span class="text-xs text-amber-700 dark:text-amber-400">{{ phone_missing_count }} users — cannot WhatsApp</span>
+        <span class="text-xs text-gold-700 dark:text-gold-400">{{ phone_missing_count }} users — cannot WhatsApp</span>
       </div>
       {% if phone_missing_users %}
       <div class="overflow-x-auto">
@@ -257,7 +257,7 @@
   </div>
 
   {# ── Stuck on agency chain ── #}
-  <div class="card {% if stuck_users %}border-amber-200 dark:border-amber-800/60{% endif %}">
+  <div class="card {% if stuck_users %}border-gold-200 dark:border-gold-800/60{% endif %}">
     <div class="card-body space-y-3">
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Stuck on agency chain</h2>
@@ -283,7 +283,7 @@
                     </a>
                   </td>
                   <td class="py-2 pr-4 text-gray-600 dark:text-gray-300">{{ row.started_at|date:"Y-m-d H:i" }}</td>
-                  <td class="py-2 pr-4 text-amber-700 dark:text-amber-400 font-medium">{{ row.minutes_stuck }}</td>
+                  <td class="py-2 pr-4 text-gold-700 dark:text-gold-400 font-medium">{{ row.minutes_stuck }}</td>
                   <td class="py-2 pr-4">
                     {% if row.retried %}<span class="text-gray-500 dark:text-gray-400">yes</span>{% else %}<span class="text-gray-400 dark:text-gray-600">no</span>{% endif %}
                   </td>

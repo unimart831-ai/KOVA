@@ -65,10 +65,10 @@
             <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
               {% if c.status == 'active' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
               {% elif c.status == 'draft' %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300
-              {% elif c.status == 'pending_approval' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300
+              {% elif c.status == 'pending_approval' %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300
               {% elif c.status == 'approved' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300
-              {% elif c.status == 'paused' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300
-              {% elif c.status == 'completed' %}bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300
+              {% elif c.status == 'paused' %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300
+              {% elif c.status == 'completed' %}bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-300
               {% else %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300{% endif %}">
               {{ c.get_status_display }}
             </span>

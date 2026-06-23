@@ -12,7 +12,7 @@
 {% if messages %}
 <div class="mb-4 space-y-2">
   {% for message in messages %}
-  <div class="rounded-lg px-4 py-3 text-sm {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %}">
+  <div class="rounded-lg px-4 py-3 text-sm {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-growth-50 text-growth-700 border border-growth-200{% endif %}">
     {{ message }}
   </div>
   {% endfor %}
@@ -25,10 +25,10 @@
 </div>
 
 <div class="max-w-3xl space-y-6">
-  <div class="bg-emerald-50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200 dark:border-emerald-900/40 p-4 text-xs text-emerald-900 dark:text-emerald-200">
+  <div class="bg-growth-50 dark:bg-growth-950/20 rounded-xl border border-growth-200 dark:border-growth-900/40 p-4 text-xs text-growth-900 dark:text-growth-200">
     <p class="font-semibold mb-1">CSV columns (sellers)</p>
     <p class="font-mono text-[10px] break-all">external_seller_id, full_name, email, business_name, business_url, campus_codes, pending_only</p>
-    <p class="mt-2 text-emerald-800 dark:text-emerald-300">Use <code class="text-[10px]">--partner-slug {{ mp.slug }}</code> with <code class="text-[10px]">import_unimart_vendors</code> for CLI imports.</p>
+    <p class="mt-2 text-growth-800 dark:text-growth-300">Use <code class="text-[10px]">--partner-slug {{ mp.slug }}</code> with <code class="text-[10px]">import_unimart_vendors</code> for CLI imports.</p>
   </div>
 
   {% include "admin_dashboard/partners/_marketplace_csv_import.html" with redirect_to="import" %}

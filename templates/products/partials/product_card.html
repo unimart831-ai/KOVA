@@ -10,7 +10,7 @@
         <div class="flex items-center gap-2 min-w-0">
           <h3 class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ product.name }}</h3>
           {% if product.is_featured %}
-          <span class="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 font-medium">Featured</span>
+          <span class="text-xs px-1.5 py-0.5 rounded bg-kova-100 text-kova-700 dark:bg-kova-950 dark:text-kova-300 font-medium">Featured</span>
           {% endif %}
           {% if product.sync_source_label %}
           <span class="text-xs px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 font-medium">{{ product.sync_source_label }}</span>
@@ -31,7 +31,7 @@
       <p class="text-xs text-sky-600 dark:text-sky-400 mt-0.5">Synced {{ product.last_synced_at|timesince }} ago</p>
       {% endif %}
       {% if product.offering_type == 'product' and product.quantity is not None %}
-      <p class="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5 font-medium">{{ product.quantity }} unit{{ product.quantity|pluralize }} in stock</p>
+      <p class="text-xs text-growth-600 dark:text-growth-400 mt-0.5 font-medium">{{ product.quantity }} unit{{ product.quantity|pluralize }} in stock</p>
       {% endif %}
     </div>
   </div>

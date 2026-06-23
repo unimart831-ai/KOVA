@@ -31,17 +31,17 @@ def _onboarding_setup_context(*, step=None, path_choice=False, complete=False):
         return {
             "setup_step": 1,
             "setup_total": SETUP_TOTAL_STEPS,
-            "setup_label": "What brings you here",
+            "setup_label": "Hire your AI marketer",
         }
     if complete:
         return {
             "setup_step": SETUP_TOTAL_STEPS,
             "setup_total": SETUP_TOTAL_STEPS,
-            "setup_label": "Your agency is starting",
+            "setup_label": "First results loading",
         }
     labels = {
         1: "About your business",
-        2: "Confirm your brand",
+        2: "Confirm — looks good?",
     }
     return {
         "setup_step": setup_step_for_wizard(step),
@@ -188,10 +188,18 @@ def collect_phone(request):
 
 @login_required
 def onboarding_choose_path(request):
-    """Express entry — intent + one link, not a long form."""
+    """Hire Kova — business type + goal in one conversational screen."""
     phone_redirect = _redirect_if_phone_required(request.user)
     if phone_redirect:
         return phone_redirect
+
+    from apps.accounts.onboarding_discovery import (
+        BUSINESS_TYPE_PRESETS,
+        GOAL_OPTIONS,
+        apply_business_type,
+        apply_goal_choice,
+        get_business_type_preset,
+    )
 
     profile = request.user.profile
     if (profile.company_name or "").strip() and profile.industry:
@@ -214,13 +222,64 @@ def onboarding_choose_path(request):
             BUSINESS_MODEL_SERVICE,
             BUSINESS_MODEL_PROFESSIONAL,
             apply_business_model_defaults,
+            ensure_brand_defaults,
             record_business_model,
             record_intent,
         )
 
+        business_type = (request.POST.get("business_type") or "").strip()
+        goal = (request.POST.get("goal") or "").strip()
+        company_name = (request.POST.get("company_name") or "").strip()
+        link = (request.POST.get("link") or "").strip()
+        industry_override = (request.POST.get("industry") or "").strip()
+        industry_other = (request.POST.get("industry_other") or "").strip()
+
+        # ── New conversational flow (primary) ──
+        if business_type:
+            preset = get_business_type_preset(business_type)
+            if not preset:
+                messages.error(request, "Pick a business type to continue.")
+                return redirect("accounts:onboarding_choose_path")
+
+            if not company_name:
+                messages.error(request, "What should we call your business?")
+                return redirect("accounts:onboarding_choose_path")
+
+            if business_type == "other" and not industry_override:
+                messages.error(request, "Pick your industry to continue.")
+                return redirect("accounts:onboarding_choose_path")
+
+            apply_business_type(
+                profile,
+                preset,
+                company_name=company_name,
+                industry=industry_override,
+                industry_other=industry_other,
+            )
+            if goal:
+                apply_goal_choice(profile, goal)
+            if preset.get("business_model"):
+                record_business_model(profile, preset["business_model"])
+            apply_business_model_defaults(profile, request.user)
+            ensure_brand_defaults(profile, request.user)
+            profile.record_onboarding_step("discovery_completed")
+
+            if link:
+                if _looks_like_social_profile_url(link):
+                    messages.info(
+                        request,
+                        "Connect that profile directly — we'll pull your brand details automatically.",
+                    )
+                    return redirect("accounts:onboarding_magic_connect")
+                profile.website_url = link
+                profile.save(update_fields=["website_url"])
+                request.session["onboarding_express_link"] = link
+
+            return redirect("/accounts/onboarding/?step=2")
+
+        # ── Legacy express paths (tests + deep links) ──
         business_model = (request.POST.get("business_model") or "").strip()
         intent = (request.POST.get("intent") or "").strip()
-        link = (request.POST.get("link") or "").strip()
 
         if business_model in VALID_BUSINESS_MODELS:
             record_business_model(profile, business_model)
@@ -252,9 +311,14 @@ def onboarding_choose_path(request):
 
     business_hint = (request.session.pop("onboarding_business_hint", "") or "").strip()[:280]
 
+    from apps.accounts.models import UserProfile
+
     return render(request, "accounts/onboarding_choose_path.html", {
         "page_title": "Welcome to Kova",
         "business_hint": business_hint,
+        "business_types": BUSINESS_TYPE_PRESETS,
+        "goal_options": GOAL_OPTIONS,
+        "industry_choices": UserProfile.Industry.choices,
         **_onboarding_setup_context(path_choice=True),
     })
 

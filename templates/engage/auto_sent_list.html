@@ -45,7 +45,7 @@
             </span>
           </div>
           {% if r.undone_at %}
-            <span class="text-xs font-medium text-amber-700 dark:text-amber-400">Undone {{ r.undone_at|date:"H:i" }}</span>
+            <span class="text-xs font-medium text-gold-700 dark:text-gold-400">Undone {{ r.undone_at|date:"H:i" }}</span>
           {% elif r.can_undo %}
             <button type="button"
                     hx-post="{% url 'engage:auto_sent_undo' r.pk %}"
@@ -76,12 +76,12 @@
 
         {# Correction surface #}
         {% if r.correction_text %}
-          <div class="rounded-lg p-3 border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/30">
-            <p class="text-[10px] uppercase tracking-wide font-semibold text-emerald-700 dark:text-emerald-300 mb-1">
+          <div class="rounded-lg p-3 border border-growth-200 dark:border-growth-800/60 bg-growth-50 dark:bg-growth-950/30">
+            <p class="text-[10px] uppercase tracking-wide font-semibold text-growth-700 dark:text-growth-300 mb-1">
               Your correction · {{ r.get_correction_reason_display|default:"recorded" }}
             </p>
             <p class="text-sm text-gray-900 dark:text-white">{{ r.correction_text }}</p>
-            <p class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1.5">Logged {{ r.corrected_at|date:"M j · H:i" }} — Kova will learn from this.</p>
+            <p class="text-[10px] text-growth-600 dark:text-growth-400 mt-1.5">Logged {{ r.corrected_at|date:"M j · H:i" }} — Kova will learn from this.</p>
           </div>
         {% else %}
           <details class="text-sm">

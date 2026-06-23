@@ -29,7 +29,7 @@
           </div>
           <div class="flex items-center gap-2 flex-shrink-0">
             {% if brief.kova_score %}
-            <span class="text-xs font-bold tabular-nums {% if brief.kova_score >= 70 %}text-green-600 dark:text-green-400{% elif brief.kova_score >= 40 %}text-amber-600 dark:text-amber-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+            <span class="text-xs font-bold tabular-nums {% if brief.kova_score >= 70 %}text-green-600 dark:text-green-400{% elif brief.kova_score >= 40 %}text-gold-600 dark:text-gold-400{% else %}text-red-600 dark:text-red-400{% endif %}">
               {{ brief.kova_score }}
             </span>
             {% endif %}

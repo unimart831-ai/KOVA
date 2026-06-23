@@ -41,12 +41,12 @@
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Reply commands (7d)</p>
-    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">{{ total_commands_7d|format_number }}</p>
+    <p class="text-2xl font-bold text-kova-600 dark:text-kova-400 mt-1">{{ total_commands_7d|format_number }}</p>
     <p class="text-[10px] text-gray-400 mt-1">{{ commands_24h }} in last 24h</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Success rate (7d)</p>
-    <p class="text-2xl font-bold text-emerald-600 mt-1">
+    <p class="text-2xl font-bold text-growth-600 mt-1">
       {% if total_commands_7d %}{% widthratio success_commands_7d total_commands_7d 100 %}%{% else %}—{% endif %}
     </p>
     <p class="text-[10px] text-gray-400 mt-1">{{ approve_commands_7d }} approve · {{ idea_commands_7d }} idea</p>
@@ -144,7 +144,7 @@
           </td>
           <td class="px-4 py-2 max-w-[120px] truncate">{{ log.inbound_text }}</td>
           <td class="px-4 py-2 font-mono text-xs">{{ log.command }}</td>
-          <td class="px-4 py-2">{% if log.success %}<span class="text-emerald-600">✓</span>{% else %}<span class="text-red-500">✗</span>{% endif %}</td>
+          <td class="px-4 py-2">{% if log.success %}<span class="text-growth-600">✓</span>{% else %}<span class="text-red-500">✗</span>{% endif %}</td>
           <td class="px-4 py-2 max-w-md truncate text-xs text-gray-600 dark:text-gray-400">{{ log.response_text|truncatechars:80 }}</td>
         </tr>
         {% empty %}

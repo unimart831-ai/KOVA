@@ -51,26 +51,57 @@ textarea {
 
 @layer base {
   :root {
-    /* Light-mode public surface tokens (marketing, auth, legal) */
-    --kova-light-bg: #ffffff;
-    --kova-light-bg-muted: #f9fafb;
-    --kova-light-bg-subtle: #f3f4f6;
-    --kova-light-text: #111827;
-    --kova-light-text-muted: #4b5563;
-    --kova-light-text-subtle: #6b7280;
-    --kova-light-border: #e5e7eb;
-    --kova-light-border-subtle: #f3f4f6;
-    --kova-accent: #0d8474;
-    --kova-accent-hover: #0a6d60;
-    --kova-accent-subtle: #edfcf8;
-    --kova-navy: #0c1222;
+    /* ── Kova Design System v3 — Growth-first ── */
+    --growth-emerald: #10B981;
+    --growth-emerald-hover: #059669;
+    --growth-emerald-subtle: #ECFDF5;
+    --trust-blue: #1E3A8A;
+    --trust-blue-hover: #172554;
+    --trust-blue-subtle: #EFF6FF;
+    --action-gold: #F59E0B;
+    --action-gold-subtle: #FFFBEB;
+    --kova-charcoal: #0F172A;
+    --kova-error: #DC2626;
+
+    --kova-light-bg: #FFFFFF;
+    --kova-light-bg-muted: #F8FAFC;
+    --kova-light-bg-subtle: #F1F5F9;
+    --kova-light-text: #0F172A;
+    --kova-light-text-muted: #475569;
+    --kova-light-text-subtle: #64748B;
+    --kova-light-border: #E2E8F0;
+    --kova-light-border-subtle: #F1F5F9;
+    --kova-accent: #10B981;
+    --kova-accent-hover: #059669;
+    --kova-accent-subtle: #ECFDF5;
+    --kova-trust: #1E3A8A;
+    --kova-navy: #0F172A;
+
+    --chart-revenue: #10B981;
+    --chart-leads: #34D399;
+    --chart-content: #1E3A8A;
+    --chart-pending: #F59E0B;
+    --chart-error: #DC2626;
+  }
+
+  .dark {
+    --kova-light-bg: #0F172A;
+    --kova-light-bg-muted: #1E293B;
+    --kova-light-bg-subtle: #334155;
+    --kova-light-text: #F8FAFC;
+    --kova-light-text-muted: #94A3B8;
+    --kova-light-text-subtle: #64748B;
+    --kova-light-border: #334155;
+    --kova-light-border-subtle: #1E293B;
+    --kova-accent-subtle: #06253C;
+    --kova-navy: #0F172A;
   }
 
   html {
     @apply scroll-smooth overflow-x-hidden;
   }
   body {
-    @apply bg-gray-50 text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100 overflow-x-hidden;
+    @apply bg-white text-gray-900 antialiased dark:bg-gray-900 dark:text-gray-100 overflow-x-hidden;
     max-width: 100%;
     font-feature-settings: "cv05", "ss01";
     -webkit-font-smoothing: antialiased;
@@ -98,10 +129,10 @@ textarea {
     }
   }
   .btn-primary {
-    @apply btn bg-kova-600 text-white hover:bg-kova-700 focus:ring-kova-500 dark:hover:bg-kova-500;
+    @apply btn bg-growth-500 text-white hover:bg-growth-600 focus:ring-growth-500 shadow-sm dark:hover:bg-growth-500;
   }
   .btn-secondary {
-    @apply btn bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-kova-500 dark:bg-gray-900 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-800;
+    @apply btn bg-white text-kova-800 border border-kova-800 hover:bg-kova-50 focus:ring-kova-500 dark:bg-gray-800 dark:text-kova-300 dark:border-kova-600 dark:hover:bg-kova-950/30;
   }
   .btn-danger {
     @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
@@ -110,7 +141,7 @@ textarea {
     @apply btn bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-kova-500 dark:text-gray-300 dark:hover:bg-gray-800;
   }
   .btn-outline {
-    @apply btn bg-transparent text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-kova-500 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-800;
+    @apply btn bg-transparent text-kova-800 border border-kova-800 hover:bg-kova-50 focus:ring-kova-500 dark:text-kova-300 dark:border-kova-600 dark:hover:bg-kova-950/30;
   }
   .btn-lg {
     @apply px-6 py-3 text-base;
@@ -128,13 +159,13 @@ textarea {
   }
   .input,
   .input-field {
-    @apply block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm placeholder-gray-400 focus:border-kova-500 focus:ring-1 focus:ring-kova-500 focus:outline-none dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500;
+    @apply block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm placeholder-gray-400 focus:border-kova-500 focus:ring-1 focus:ring-kova-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500;
   }
   .label {
     @apply block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300;
   }
   .card {
-    @apply bg-white rounded-xl border border-gray-200 shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:shadow-none;
+    @apply bg-white rounded-xl border border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-700;
   }
   .card-body {
     @apply p-4 sm:p-5;
@@ -143,23 +174,29 @@ textarea {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
   .badge-success {
-    @apply badge bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200;
+    @apply badge bg-growth-100 text-growth-800 dark:bg-growth-950 dark:text-growth-200;
   }
   .badge-warning {
-    @apply badge bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-200;
+    @apply badge bg-gold-100 text-gold-800 dark:bg-gold-950 dark:text-gold-200;
   }
   .badge-danger {
     @apply badge bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200;
   }
   .badge-info {
-    @apply badge bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200;
+    @apply badge bg-kova-100 text-kova-800 dark:bg-kova-950 dark:text-kova-200;
+  }
+  .badge-pending {
+    @apply badge bg-gold-100 text-gold-800 dark:bg-gold-950 dark:text-gold-200;
+  }
+  .badge-revenue {
+    @apply badge bg-growth-100 text-growth-800 dark:bg-growth-950 dark:text-growth-200;
   }
 
   .nav-link {
     @apply flex items-center px-3 py-2 text-sm font-medium rounded-lg border border-transparent text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800;
   }
   .nav-link-active {
-    @apply flex items-center px-3 py-2 text-sm font-medium rounded-lg bg-kova-50 text-kova-700 border border-kova-200 dark:bg-kova-950/50 dark:text-kova-300 dark:border-kova-800;
+    @apply flex items-center px-3 py-2 text-sm font-medium rounded-lg bg-kova-50 text-kova-800 border border-kova-200 dark:bg-kova-950/40 dark:text-kova-300 dark:border-kova-800;
   }
 
   /* Section divider for sidebar grouping */
@@ -170,38 +207,30 @@ textarea {
     @apply pt-0;
   }
 
-  /* Gradient text for branding */
+  /* Gradient text — brand blue only, no purple */
   .text-gradient {
-    @apply text-transparent bg-clip-text bg-gradient-to-r from-kova-600 to-kova-400 dark:from-kova-300 dark:to-kova-500;
+    @apply text-growth-500 dark:text-growth-400;
   }
 
-  /* Hero headline gradient — static (no shifting animation) for a cleaner light-mode read */
   .text-gradient-hero {
-    @apply text-transparent bg-clip-text bg-gradient-to-r from-kova-600 via-kova-500 to-kova-700 dark:from-kova-400 dark:via-indigo-400 dark:to-purple-400;
+    @apply text-growth-500 dark:text-growth-400;
   }
 
-  /* Glass card for mission / auth panels */
+  .text-trust {
+    @apply text-kova-800 dark:text-kova-300;
+  }
+
+  /* Glass card — solid surfaces (no frosted glass on marketing) */
   .glass-panel {
-    @apply bg-white/80 dark:bg-gray-900/75 backdrop-blur-md border border-gray-200/90 dark:border-gray-700/70 rounded-2xl shadow-sm dark:shadow-none;
+    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm;
   }
 
-  /* Subtle animated brand atmosphere */
+  /* Marketing / auth hero — pure white light, flat professional dark */
   .brand-atmosphere {
-    @apply relative overflow-hidden bg-white dark:bg-gray-950;
+    @apply relative overflow-hidden bg-white dark:bg-gray-900;
   }
-  .brand-atmosphere::before {
-    content: "";
-    @apply absolute inset-0 pointer-events-none;
-    background:
-      radial-gradient(ellipse 80% 50% at 20% 20%, rgba(26, 157, 136, 0.1), transparent 55%),
-      radial-gradient(ellipse 60% 40% at 80% 60%, rgba(99, 102, 241, 0.06), transparent 55%),
-      radial-gradient(ellipse 50% 30% at 50% 100%, rgba(147, 51, 234, 0.04), transparent 55%);
-  }
-  .dark .brand-atmosphere::before {
-    background:
-      radial-gradient(ellipse 80% 50% at 15% 10%, rgba(26, 157, 136, 0.18), transparent 55%),
-      radial-gradient(ellipse 55% 35% at 85% 55%, rgba(99, 102, 241, 0.12), transparent 55%),
-      radial-gradient(ellipse 45% 28% at 50% 95%, rgba(147, 51, 234, 0.08), transparent 55%);
+  .brand-atmosphere .orb {
+    @apply hidden;
   }
 
   /* Marketing pages — shared section patterns */
@@ -209,38 +238,38 @@ textarea {
     @apply text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-semibold text-gray-500 dark:text-gray-400 mt-2 block;
   }
   .marketing-stats-strip {
-    @apply py-12 border-y border-gray-100 dark:border-gray-800/90 bg-gray-50/90 dark:bg-gray-900/70;
+    @apply py-12 border-y border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900;
   }
   .marketing-section-muted {
-    @apply bg-gray-50/90 dark:bg-gray-900/50;
+    @apply bg-gray-50 dark:bg-gray-900;
   }
   .marketing-section-default {
-    @apply bg-white dark:bg-gray-950;
+    @apply bg-white dark:bg-gray-900;
   }
   .marketing-card {
-    @apply bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none;
+    @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm;
   }
   .marketing-card-elevated {
-    @apply marketing-card rounded-2xl p-6 sm:p-8 border-gray-100 dark:border-gray-800/90 hover:border-kova-200 dark:hover:border-kova-800/80 transition-colors;
+    @apply marketing-card rounded-2xl p-6 sm:p-8 border-gray-100 dark:border-gray-800/90 hover:border-growth-200 dark:hover:border-growth-800/80 transition-colors;
   }
   .icon-check-success {
-    @apply text-emerald-500 dark:text-emerald-400 flex-shrink-0;
+    @apply text-growth-500 dark:text-growth-400 flex-shrink-0;
   }
 
   /* Hero prompt — Nas-style business description CTA */
   .hero-prompt-inner {
-    @apply flex flex-col sm:flex-row items-stretch gap-2 p-2 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-kova-lg dark:shadow-none ring-1 ring-gray-900/5 dark:ring-white/10;
+    @apply flex flex-col sm:flex-row items-stretch gap-2 p-2 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm ring-1 ring-gray-900/5 dark:ring-gray-700/50;
   }
   .hero-prompt-input {
     @apply flex-1 min-w-0 px-4 py-3.5 sm:py-3 text-base text-gray-900 dark:text-white bg-transparent border-0 focus:ring-0 focus:outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500;
   }
   .hero-prompt-btn {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3.5 sm:py-3 rounded-xl bg-kova-600 hover:bg-kova-700 text-white font-semibold text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-kova-500 focus:ring-offset-2 dark:focus:ring-offset-gray-950 shrink-0;
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3.5 sm:py-3 rounded-xl bg-growth-500 hover:bg-growth-600 text-white font-semibold text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-growth-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shrink-0;
   }
 
   /* Agent loop badge — landing hero pill */
   .agent-loop-badge {
-    @apply inline-flex items-center gap-2 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md text-kova-700 dark:text-kova-300 text-sm font-medium px-4 py-1.5 rounded-full border border-kova-200/90 dark:border-kova-800/80 shadow-sm dark:shadow-none;
+    @apply inline-flex items-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm font-medium px-4 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm;
   }
 
   /* Compact agent orbit ring (auth / mobile) */
@@ -257,7 +286,7 @@ textarea {
   }
 
   .bg-gradient-kova-brand {
-    @apply bg-gradient-to-br from-kova-600 via-indigo-600 to-purple-600;
+    @apply bg-gradient-to-br from-growth-500 via-growth-600 to-growth-700;
   }
 
   /* Stat card with subtle color accent */
@@ -266,7 +295,7 @@ textarea {
   }
   .stat-card::before {
     content: "";
-    @apply absolute inset-x-0 top-0 h-0.5 bg-kova-500 opacity-60;
+    @apply absolute inset-x-0 top-0 h-0.5 bg-growth-500 opacity-80;
   }
 
   /* Shimmer loading effect */

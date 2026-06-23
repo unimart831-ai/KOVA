@@ -65,11 +65,11 @@
             <div class="flex items-center gap-2 flex-wrap">
               <span class="text-[10px] px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">{{ task.category_label }}</span>
               {% if task.status == 'completed' %}
-              <span class="text-[10px] text-emerald-600 dark:text-emerald-400">Done</span>
+              <span class="text-[10px] text-growth-600 dark:text-growth-400">Done</span>
               {% elif task.status == 'failed' %}
               <span class="text-[10px] text-red-600 dark:text-red-400">Failed</span>
               {% else %}
-              <span class="text-[10px] text-amber-600 dark:text-amber-400">{{ task.status }}</span>
+              <span class="text-[10px] text-gold-600 dark:text-gold-400">{{ task.status }}</span>
               {% endif %}
             </div>
             <p class="text-sm font-medium text-gray-900 dark:text-white mt-0.5">{{ task.label }}</p>

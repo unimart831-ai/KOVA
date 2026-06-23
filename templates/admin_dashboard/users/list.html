@@ -134,7 +134,7 @@
             {% if user.phone_number %}
               <span class="text-gray-600 dark:text-gray-400">{{ user.phone_number }}</span>
             {% else %}
-              <span class="px-1.5 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 rounded">NO PHONE</span>
+              <span class="px-1.5 py-0.5 text-[10px] font-medium bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-300 rounded">NO PHONE</span>
             {% endif %}
           </td>
           <td class="px-4 py-3">
@@ -149,7 +149,7 @@
           </td>
           <td class="px-4 py-3">
             <div class="flex flex-col gap-1">
-              <span class="inline-flex w-fit px-2 py-0.5 text-[10px] font-medium rounded-full {% if user.admin_business_mode.key == 'service' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300{% elif user.admin_business_mode.key == 'digital' %}bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300{% elif user.admin_business_mode.key == 'expert' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300{% else %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300{% endif %}">
+              <span class="inline-flex w-fit px-2 py-0.5 text-[10px] font-medium rounded-full {% if user.admin_business_mode.key == 'service' %}bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-300{% elif user.admin_business_mode.key == 'digital' %}bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300{% elif user.admin_business_mode.key == 'expert' %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300{% else %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300{% endif %}">
                 {{ user.admin_business_mode.label }}
               </span>
               <span class="text-[10px] text-gray-500 dark:text-gray-400">{{ user.profile.get_industry_display|default:"—" }}</span>
@@ -163,11 +163,11 @@
           </td>
           <td class="px-4 py-3">
             {% if user.admin_business_mode.key == 'service' %}
-            <span class="text-xs {% if user.service_offer_count and user.service_ready_count == user.service_offer_count %}text-emerald-600{% elif user.service_ready_count %}text-amber-600{% else %}text-red-600{% endif %}">
+            <span class="text-xs {% if user.service_offer_count and user.service_ready_count == user.service_offer_count %}text-growth-600{% elif user.service_ready_count %}text-gold-600{% else %}text-red-600{% endif %}">
               {{ user.service_ready_count }}/{{ user.service_offer_count }} booking-ready
             </span>
             {% elif user.admin_business_mode.key == 'digital' %}
-            <span class="text-xs {% if user.digital_offer_count and user.digital_ready_count == user.digital_offer_count %}text-emerald-600{% elif user.digital_ready_count %}text-amber-600{% else %}text-red-600{% endif %}">
+            <span class="text-xs {% if user.digital_offer_count and user.digital_ready_count == user.digital_offer_count %}text-growth-600{% elif user.digital_ready_count %}text-gold-600{% else %}text-red-600{% endif %}">
               {{ user.digital_ready_count }}/{{ user.digital_offer_count }} access-ready
             </span>
             {% else %}
@@ -181,7 +181,7 @@
               <span class="px-1.5 py-0.5 text-[10px] font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded">INACTIVE</span>
               {% endif %}
               {% if user.is_staff %}
-              <span class="px-1.5 py-0.5 text-[10px] font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded">STAFF</span>
+              <span class="px-1.5 py-0.5 text-[10px] font-medium bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-400 rounded">STAFF</span>
               {% endif %}
               {% if user.onboarding_completed %}
               <span class="w-2 h-2 bg-green-500 rounded-full" title="Onboarded"></span>

@@ -20,10 +20,10 @@
       Download PDF
     </a>
     <div class="flex items-center gap-2 flex-wrap">
-      <a href="?days=7" class="px-3 py-1 text-xs rounded-full {% if days == 7 %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">7d</a>
-      <a href="?days=14" class="px-3 py-1 text-xs rounded-full {% if days == 14 %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">14d</a>
-      <a href="?days=30" class="px-3 py-1 text-xs rounded-full {% if days == 30 %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">30d</a>
-      <a href="?days=90" class="px-3 py-1 text-xs rounded-full {% if days == 90 %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">90d</a>
+      <a href="?days=7" class="px-3 py-1 text-xs rounded-full {% if days == 7 %}bg-growth-500 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">7d</a>
+      <a href="?days=14" class="px-3 py-1 text-xs rounded-full {% if days == 14 %}bg-growth-500 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">14d</a>
+      <a href="?days=30" class="px-3 py-1 text-xs rounded-full {% if days == 30 %}bg-growth-500 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">30d</a>
+      <a href="?days=90" class="px-3 py-1 text-xs rounded-full {% if days == 90 %}bg-growth-500 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">90d</a>
     </div>
   </div>
 
@@ -140,7 +140,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
           </div>
-          <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400">{{ funnel.sales|default:"0" }}</p>
+          <p class="text-xl font-bold text-growth-600 dark:text-growth-400">{{ funnel.sales|default:"0" }}</p>
           <p class="text-[10px] text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">Sales</p>
         </div>
       </div>
@@ -194,18 +194,18 @@
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Total Messages</p>
         </div>
         <div class="text-center">
-          <p class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{{ response_metrics.replied }}</p>
+          <p class="text-3xl font-bold text-growth-600 dark:text-growth-400">{{ response_metrics.replied }}</p>
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Replied To</p>
         </div>
         <div class="text-center">
-          <p class="text-3xl font-bold {% if response_metrics.reply_rate >= 80 %}text-emerald-600 dark:text-emerald-400{% elif response_metrics.reply_rate >= 50 %}text-amber-600 dark:text-amber-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+          <p class="text-3xl font-bold {% if response_metrics.reply_rate >= 80 %}text-growth-600 dark:text-growth-400{% elif response_metrics.reply_rate >= 50 %}text-gold-600 dark:text-gold-400{% else %}text-red-600 dark:text-red-400{% endif %}">
             {{ response_metrics.reply_rate }}%
           </p>
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Reply Rate</p>
         </div>
         <div class="text-center">
           {% if response_metrics.avg_response_minutes is not None %}
-          <p class="text-3xl font-bold {% if response_metrics.avg_response_minutes <= 30 %}text-emerald-600 dark:text-emerald-400{% elif response_metrics.avg_response_minutes <= 120 %}text-amber-600 dark:text-amber-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+          <p class="text-3xl font-bold {% if response_metrics.avg_response_minutes <= 30 %}text-growth-600 dark:text-growth-400{% elif response_metrics.avg_response_minutes <= 120 %}text-gold-600 dark:text-gold-400{% else %}text-red-600 dark:text-red-400{% endif %}">
             {% if response_metrics.avg_response_minutes < 60 %}
               {{ response_metrics.avg_response_minutes|floatformat:0 }}m
             {% else %}
@@ -226,19 +226,19 @@
         <div class="flex items-center gap-3">
           <div class="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
             {% if response_metrics.avg_response_minutes <= 15 %}
-            <div class="h-full bg-emerald-500 rounded-full" style="width: 100%"></div>
+            <div class="h-full bg-growth-500 rounded-full" style="width: 100%"></div>
             {% elif response_metrics.avg_response_minutes <= 60 %}
-            <div class="h-full bg-emerald-400 rounded-full" style="width: 75%"></div>
+            <div class="h-full bg-growth-400 rounded-full" style="width: 75%"></div>
             {% elif response_metrics.avg_response_minutes <= 120 %}
-            <div class="h-full bg-amber-400 rounded-full" style="width: 50%"></div>
+            <div class="h-full bg-gold-400 rounded-full" style="width: 50%"></div>
             {% else %}
             <div class="h-full bg-red-400 rounded-full" style="width: 25%"></div>
             {% endif %}
           </div>
           <span class="text-xs font-medium
-            {% if response_metrics.avg_response_minutes <= 15 %}text-emerald-600 dark:text-emerald-400
-            {% elif response_metrics.avg_response_minutes <= 60 %}text-emerald-600 dark:text-emerald-400
-            {% elif response_metrics.avg_response_minutes <= 120 %}text-amber-600 dark:text-amber-400
+            {% if response_metrics.avg_response_minutes <= 15 %}text-growth-600 dark:text-growth-400
+            {% elif response_metrics.avg_response_minutes <= 60 %}text-growth-600 dark:text-growth-400
+            {% elif response_metrics.avg_response_minutes <= 120 %}text-gold-600 dark:text-gold-400
             {% else %}text-red-600 dark:text-red-400{% endif %}">
             {% if response_metrics.avg_response_minutes <= 15 %}Excellent
             {% elif response_metrics.avg_response_minutes <= 60 %}Great
@@ -270,7 +270,7 @@
                   {{ p.social_account__platform }}
                 </span>
               </div>
-              <span class="text-sm font-bold text-emerald-600 dark:text-emerald-400">KES {{ p.revenue|floatformat:0 }}</span>
+              <span class="text-sm font-bold text-growth-600 dark:text-growth-400">KES {{ p.revenue|floatformat:0 }}</span>
             </div>
             <div class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
               <span>{{ p.clicks }} click{{ p.clicks|pluralize }}</span>
@@ -345,7 +345,7 @@
         <div class="flex-1 flex flex-col items-center justify-end gap-1"
              title="KES {{ day.revenue|floatformat:0 }} — {{ day.date|date:'M d' }}">
           <p class="text-[9px] text-gray-400 mb-0.5">{{ day.revenue|floatformat:0 }}</p>
-          <div class="w-full bg-emerald-500 dark:bg-emerald-400 rounded-t transition-all"
+          <div class="w-full bg-growth-500 dark:bg-growth-400 rounded-t transition-all"
                style="min-height: 4px; height: {% widthratio day.revenue max_rev 120 %}px; max-height: 120px;"></div>
           <p class="text-[8px] text-gray-400">{{ day.date|date:"d" }}</p>
         </div>

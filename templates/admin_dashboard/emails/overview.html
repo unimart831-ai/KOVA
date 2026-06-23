@@ -15,7 +15,7 @@
     </div>
     <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
       <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Delivery Rate</p>
-      <p class="mt-1 text-2xl font-bold {% if delivery_rate >= 95 %}text-green-600{% elif delivery_rate >= 80 %}text-yellow-600{% else %}text-red-600{% endif %}">{{ delivery_rate }}%</p>
+      <p class="mt-1 text-2xl font-bold {% if delivery_rate >= 95 %}text-green-600{% elif delivery_rate >= 80 %}text-gold-600{% else %}text-red-600{% endif %}">{{ delivery_rate }}%</p>
       <p class="text-xs text-gray-400 mt-1">Last 7 days</p>
     </div>
     <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
@@ -227,8 +227,8 @@ if (ctx) {
       datasets: [{
         label: 'Emails',
         data: {{ chart_data|safe }},
-        backgroundColor: 'rgba(124, 58, 237, 0.6)',
-        borderColor: 'rgb(124, 58, 237)',
+        backgroundColor: 'rgba(15, 76, 129, 0.6)',
+        borderColor: 'rgb(15, 76, 129)',
         borderWidth: 1,
         borderRadius: 4,
       }]

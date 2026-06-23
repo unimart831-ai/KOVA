@@ -1,4 +1,4 @@
-﻿{% extends "admin_dashboard/base.html" %}
+{% extends "admin_dashboard/base.html" %}
 {% load dashboard_tags %}
 
 {% block page_title %}{{ page_title }}{% endblock %}
@@ -65,13 +65,13 @@
           </td>
           <td class="px-4 py-3">
             {% if bc.status == 'completed' %}
-            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">Completed</span>
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-growth-100 dark:bg-growth-900/30 text-growth-700 dark:text-growth-400">Completed</span>
             {% elif bc.status == 'sending' %}
             <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">Sending</span>
             {% elif bc.status == 'scheduled' %}
-            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">Scheduled</span>
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-kova-100 dark:bg-kova-900/30 text-kova-700 dark:text-kova-400">Scheduled</span>
             {% elif bc.status == 'paused' %}
-            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">Paused</span>
+            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gold-100 dark:bg-gold-900/30 text-gold-700 dark:text-gold-400">Paused</span>
             {% elif bc.status == 'cancelled' %}
             <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">Cancelled</span>
             {% else %}
@@ -84,7 +84,7 @@
           <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">{{ bc.total_recipients|format_number }}</td>
           <td class="px-4 py-3 text-right text-sm text-gray-900 dark:text-white font-medium">{{ bc.sent_count|format_number }}</td>
           <td class="px-4 py-3 text-right">
-            <span class="text-sm {% if bc.sent_count and bc.delivered_count %}text-emerald-600 dark:text-emerald-400{% else %}text-gray-400{% endif %}">{{ bc.delivered_count|format_number }}</span>
+            <span class="text-sm {% if bc.sent_count and bc.delivered_count %}text-growth-600 dark:text-growth-400{% else %}text-gray-400{% endif %}">{{ bc.delivered_count|format_number }}</span>
             {% if bc.sent_count %}
             <span class="text-[10px] text-gray-400 ml-1">({{ bc.delivered_count|default:0|floatformat:0 }}%)</span>
             {% endif %}

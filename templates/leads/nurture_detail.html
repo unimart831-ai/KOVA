@@ -4,7 +4,7 @@
 {% block page_subtitle %}
   <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
     Trigger: {{ sequence.get_trigger_display }} &middot;
-    {% if sequence.is_active %}<span class="text-emerald-600 dark:text-emerald-400">Active</span>{% else %}<span class="text-gray-500">Paused</span>{% endif %}
+    {% if sequence.is_active %}<span class="text-growth-600 dark:text-growth-400">Active</span>{% else %}<span class="text-gray-500">Paused</span>{% endif %}
   </p>
 {% endblock %}
 
@@ -28,8 +28,8 @@
       <div class="flex items-start gap-4">
         <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold
           {% if step.action_type == 'send_email' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
-          {% elif step.action_type == 'add_tag' %}bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400
-          {% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400{% endif %}">
+          {% elif step.action_type == 'add_tag' %}bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-400
+          {% else %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400{% endif %}">
           {{ forloop.counter }}
         </div>
         <div class="flex-1 min-w-0">
@@ -69,9 +69,9 @@
           <p class="text-xs text-gray-500 dark:text-gray-400">
             Step {{ e.current_step }} &middot;
             {% if e.completed %}
-            <span class="text-emerald-600 dark:text-emerald-400">Completed</span>
+            <span class="text-growth-600 dark:text-growth-400">Completed</span>
             {% elif e.paused %}
-            <span class="text-amber-600 dark:text-amber-400">Paused</span>
+            <span class="text-gold-600 dark:text-gold-400">Paused</span>
             {% else %}
             Next: {{ e.next_step_at|timesince }} ago
             {% endif %}
