@@ -185,10 +185,18 @@ def team_invite(request, slug):
 
         # Send invitation email
         from apps.emails.tasks import send_team_invitation_email
+        from apps.utils import fire_task
+
         invite_url = request.build_absolute_uri(
             reverse("teams:invitation_accept", kwargs={"token": token})
         )
-        send_team_invitation_email.delay(email, request.user.get_full_name() or request.user.email, team.name, invite_url)
+        fire_task(
+            send_team_invitation_email,
+            email,
+            request.user.get_full_name() or request.user.email,
+            team.name,
+            invite_url,
+        )
 
         messages.success(request, f"Invitation sent to {email}.")
         return redirect("teams:detail", slug=slug)

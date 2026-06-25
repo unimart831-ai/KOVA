@@ -45,5 +45,21 @@ def test_unified_summary_includes_mpesa(owner):
 
 def test_recommend_reply_when_inbox_busy():
     ops = {"needs_reply": 3, "ready_to_approve": 0, "hot_leads": 0}
-    nba = recommend_next_revenue_action(owner=None, ops=ops, total_kes=1000)
+    nba = recommend_next_revenue_action(user=None, ops=ops, total_kes=1000)
     assert nba["key"] == "reply"
+
+
+def test_money_board_stats_no_recursion(owner):
+    """Regression: get_money_board_stats must not call get_unified_revenue_summary in a loop."""
+    import sys
+
+    from apps.briefs.dashboard import get_money_board_stats
+
+    old_limit = sys.getrecursionlimit()
+    try:
+        sys.setrecursionlimit(80)
+        stats = get_money_board_stats(owner)
+    finally:
+        sys.setrecursionlimit(old_limit)
+    assert "needs_reply" in stats
+    assert "revenue_total_kes" in stats

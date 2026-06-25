@@ -9,18 +9,23 @@ from django.db.models import Count, Sum
 from django.utils import timezone
 
 
-def get_unified_revenue_summary(user, *, days: int = 7) -> dict:
+def get_unified_revenue_summary(user, *, days: int = 7, ops: dict | None = None) -> dict:
     """
     Single revenue payload for MONEY command, standup, and Today board.
     Combines M-Pesa, bookings, digital conversions, walk-ins, and top asset.
+
+    Pass ``ops`` from ``_collect_money_board_stats`` when the caller already
+    computed ops counts (avoids duplicate queries and must not call
+    ``get_money_board_stats`` — that would recurse).
     """
     from apps.analytics.revenue import get_revenue_brief_data
-    from apps.briefs.dashboard import get_money_board_stats
+    from apps.briefs.dashboard import _collect_money_board_stats
     from apps.products.models import CommercePayment
 
     week_ago = timezone.now() - timedelta(days=days)
     brief = get_revenue_brief_data(user, days=days)
-    ops = get_money_board_stats(user)
+    if ops is None:
+        ops = _collect_money_board_stats(user, week_ago)
     profile = getattr(user, "profile", None)
     business_model = getattr(profile, "business_model", "") if profile else ""
 

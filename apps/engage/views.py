@@ -39,14 +39,24 @@ def engage_inbox(request):
 
     interactions = interactions.all()[:50]
 
-    # Stats for the header
+    from django.db.models import Count, Q
+
+    stats_row = request.user.interactions.aggregate(
+        total=Count("id"),
+        new=Count("id", filter=Q(status="new")),
+        flagged=Count("id", filter=Q(status="flagged")),
+        needs_reply=Count(
+            "id",
+            filter=Q(ai_suggested_reply="")
+            & ~Q(status__in=["ignored", "ai_replied", "user_replied"])
+            & ~Q(sentiment=""),
+        ),
+    )
     stats = {
-        "total": request.user.interactions.count(),
-        "new": request.user.interactions.filter(status="new").count(),
-        "flagged": request.user.interactions.filter(status="flagged").count(),
-        "needs_reply": request.user.interactions.filter(
-            ai_suggested_reply="",
-        ).exclude(status__in=["ignored", "ai_replied", "user_replied"]).exclude(sentiment="").count(),
+        "total": stats_row["total"],
+        "new": stats_row["new"],
+        "flagged": stats_row["flagged"],
+        "needs_reply": stats_row["needs_reply"],
     }
 
     # Superfans tracked by the Engage Agent
@@ -70,32 +80,14 @@ def trigger_engage(request):
         return HttpResponse(status=405)
 
     from apps.agents.engage_agent import run_engage_cycle
+    from apps.utils import fire_task
 
-    try:
-        result = run_engage_cycle(request.user)
-        total = result["fetched"] + result["replies_generated"]
-        if total > 0:
-            parts = []
-            if result["fetched"]:
-                parts.append(f"{result['fetched']} new interaction{'s' if result['fetched'] != 1 else ''}")
-            if result["analyzed"]:
-                parts.append(f"{result['analyzed']} analyzed")
-            if result["replies_generated"]:
-                parts.append(f"{result['replies_generated']} repl{'ies' if result['replies_generated'] != 1 else 'y'} generated")
-            if result["auto_sent"]:
-                parts.append(f"{result['auto_sent']} auto-sent")
-            msg = ", ".join(parts) + "."
-        else:
-            msg = "No new comments found on your recent posts. Comments are checked on posts from the last 14 days."
-        return HttpResponse(
-            f'<div class="text-sm text-green-600 dark:text-green-400 px-4 py-2">{msg}</div>',
-        )
-    except Exception as e:
-        logger.error("Manual engage cycle failed: %s", e)
-        return HttpResponse(
-            '<div class="text-sm text-red-600 px-4 py-2">Engage cycle failed. Try again later.</div>',
-            status=500,
-        )
+    fire_task(run_engage_cycle, request.user)
+    return HttpResponse(
+        '<div class="text-sm text-green-600 dark:text-green-400 px-4 py-2">'
+        "Engage cycle started — refresh in a moment to see new interactions."
+        "</div>",
+    )
 
 
 @login_required

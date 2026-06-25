@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from django.conf import settings
+from django.core.cache import cache
 
 
 def _empty_caps() -> dict:
@@ -21,16 +22,21 @@ def media_capabilities(request):
     if not user or not user.is_authenticated:
         return {"media_caps": _empty_caps()}
 
+    cache_key = f"media_caps:{user.pk}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return {"media_caps": cached}
+
     from apps.billing.models import get_user_plan_limits
     from apps.products.photoroom import photoroom_enabled
 
     limits = get_user_plan_limits(user)
-    return {
-        "media_caps": {
-            "kling_reels": bool(limits.get("kling_reels_enabled")),
-            "bannerbear_carousels": bool(limits.get("bannerbear_carousels_enabled")),
-            "flux_edits_per_month": int(limits.get("fal_flux_edits_per_month") or 0),
-            "photoroom_enabled": photoroom_enabled(),
-            "orchestration_enabled": bool(getattr(settings, "MEDIA_ORCHESTRATION_ENABLED", True)),
-        }
+    caps = {
+        "kling_reels": bool(limits.get("kling_reels_enabled")),
+        "bannerbear_carousels": bool(limits.get("bannerbear_carousels_enabled")),
+        "flux_edits_per_month": int(limits.get("fal_flux_edits_per_month") or 0),
+        "photoroom_enabled": photoroom_enabled(),
+        "orchestration_enabled": bool(getattr(settings, "MEDIA_ORCHESTRATION_ENABLED", True)),
     }
+    cache.set(cache_key, caps, 120)
+    return {"media_caps": caps}

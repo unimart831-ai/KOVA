@@ -57,9 +57,22 @@ logger = logging.getLogger(__name__)
 
 
 def _track_commerce_view(request, product, profile):
+    from apps.utils import run_task_inline
+
+    run_task_inline(_track_commerce_view_sync, product.pk, profile.pk, request.META.get("HTTP_REFERER", "")[:500])
+
+
+def _track_commerce_view_sync(product_pk, profile_pk, referrer: str):
     try:
+        from apps.accounts.models import UserProfile
         from apps.analytics.models import Conversion
         from apps.content.campaign_attribution import create_attributed_conversion, resolve_marketing_campaign
+        from apps.products.models import Product
+
+        product = Product.objects.filter(pk=product_pk).first()
+        profile = UserProfile.objects.filter(pk=profile_pk).first()
+        if not product or not profile:
+            return
 
         campaign = resolve_marketing_campaign(product.user, product=product)
         create_attributed_conversion(
@@ -71,11 +84,11 @@ def _track_commerce_view(request, product, profile):
             metadata={
                 "page_slug": profile.page_slug or "",
                 "commerce_slug": product.commerce_slug,
-                "referrer": request.META.get("HTTP_REFERER", "")[:500],
+                "referrer": referrer,
             },
         )
     except Exception:
-        logger.exception("commerce link view tracking failed for product %s", product.pk)
+        logger.exception("commerce link view tracking failed for product %s", product_pk)
 
 
 def _commerce_context(
@@ -292,18 +305,13 @@ def public_commerce_link(request, page_slug, commerce_slug):
             f"/shop/{shop_slug}/{product.commerce_slug}/"
         )
 
-    _, shop_products = resolve_public_shop(page_slug)
-    storefront = resolve_storefront(profile, user, shop_products, get_public_shop_reels(profile))
-    related_products = [
-        p for p in shop_products
-        if p.pk != product.pk
-    ]
-    if product.category_id:
-        same_cat = [p for p in related_products if p.category_id == product.category_id]
-        other = [p for p in related_products if p.category_id != product.category_id]
-        related_products = (same_cat + other)[:4]
-    else:
-        related_products = related_products[:4]
+    from apps.products.commerce_links import related_public_products
+
+    shop_reels = get_public_shop_reels(profile)
+    related_products = related_public_products(
+        user, product.pk, product.category_id, limit=4,
+    )
+    storefront = resolve_storefront(profile, user, [product, *related_products], shop_reels)
 
     for p in related_products:
         p.shop_teaser = get_product_shop_teaser(p)

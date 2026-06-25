@@ -339,7 +339,7 @@ def competitor_delete(request, pk):
 @login_required
 def competitor_landscape(request):
     """Generate competitive landscape overview."""
-    from apps.analytics.competitor_intel import generate_landscape_report
+    from apps.analytics.competitor_intel import get_cached_landscape_report
 
     competitors = Competitor.objects.filter(user=request.user, is_active=True)
     if not competitors.exists():
@@ -349,8 +349,9 @@ def competitor_landscape(request):
             "competitors": [],
         })
 
+    force_refresh = request.GET.get("refresh") == "1"
     try:
-        report = generate_landscape_report(request.user)
+        report = get_cached_landscape_report(request.user, force_refresh=force_refresh)
     except Exception:
         report = None
         messages.warning(request, "Could not generate landscape report right now. Try again shortly.")

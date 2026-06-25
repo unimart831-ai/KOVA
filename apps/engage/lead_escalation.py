@@ -22,12 +22,12 @@ def escalate_flagged_threads(user) -> int:
     qs = Interaction.objects.filter(
         user=user,
         status=Interaction.Status.NEW,
-    )
-    updated = 0
-    for item in qs[:50]:
+    )[:50]
+    flag_ids = []
+    for item in qs:
         text = (item.content or "") + " " + (item.ai_suggested_reply or "")
         if item.sentiment == "negative" or detect_lead_intent(text):
-            item.status = Interaction.Status.FLAGGED
-            item.save(update_fields=["status"])
-            updated += 1
-    return updated
+            flag_ids.append(item.pk)
+    if not flag_ids:
+        return 0
+    return Interaction.objects.filter(pk__in=flag_ids).update(status=Interaction.Status.FLAGGED)

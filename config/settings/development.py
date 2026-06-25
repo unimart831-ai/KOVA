@@ -53,11 +53,11 @@ CHANNEL_LAYERS = {
     }
 }
 
-# ─── CELERY (run tasks synchronously in dev) ────────────────────────────────
-CELERY_TASK_ALWAYS_EAGER = True
+# ─── CELERY (non-blocking in dev — fire_task() uses daemon threads when no Redis) ─
+CELERY_TASK_ALWAYS_EAGER = False
 CELERY_TASK_EAGER_PROPAGATES = True
 
-# ─── LOGGING (match production format for consistency) ───────────────────────
+# ─── LOGGING (INFO in dev — DEBUG floods I/O and slows every request) ────────
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -75,11 +75,11 @@ LOGGING = {
     },
     "root": {
         "handlers": ["console"],
-        "level": "DEBUG",
+        "level": "INFO",
     },
     "loggers": {
         "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
-        "apps": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+        "apps": {"handlers": ["console"], "level": "INFO", "propagate": False},
         "django.db.backends": {"handlers": ["console"], "level": "WARNING", "propagate": False},
     },
 }

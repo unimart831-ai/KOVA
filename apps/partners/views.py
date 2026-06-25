@@ -143,7 +143,10 @@ def partners_apply(request):
             # Send confirmation email (async)
             try:
                 from apps.emails.tasks import send_partner_app_received_email
-                send_partner_app_received_email.delay(
+                from apps.utils import fire_task
+
+                fire_task(
+                    send_partner_app_received_email,
                     application.email,
                     application.full_name,
                     str(request.user.pk) if request.user.is_authenticated else None,

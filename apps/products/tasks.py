@@ -2573,3 +2573,38 @@ def process_restock_scan(scan_id: str):
         scan.error_message = str(e)[:1000]
         scan.save(update_fields=["status", "error_message"])
         return {"error": str(e)}
+
+
+@shared_task(name="products.generate_product_video_task", soft_time_limit=300, time_limit=360)
+def generate_product_video_task(product_id):
+    from apps.products.models import Product
+    from apps.products.photoroom_video import generate_product_reel_video
+
+    product = Product.objects.filter(pk=product_id).first()
+    if product and product.image:
+        generate_product_reel_video(product)
+
+
+@shared_task(name="products.generate_promo_image_task", soft_time_limit=180, time_limit=240)
+def generate_promo_image_task(product_id, trigger="new_product"):
+    from apps.products.models import Product
+    from apps.products.promo_engine import generate_promo_image as gen_promo
+
+    product = Product.objects.filter(pk=product_id).first()
+    if product and product.image:
+        gen_promo(product, trigger=trigger)
+
+
+@shared_task(name="products.generate_virtual_model_task", soft_time_limit=300, time_limit=360)
+def generate_virtual_model_task(product_id):
+    from apps.products.models import Product
+    from apps.products.photoroom_virtual_models import generate_virtual_model_pack
+
+    product = Product.objects.filter(pk=product_id).first()
+    if not product or not product.image:
+        return
+    paths = generate_virtual_model_pack(product, save_to_product=True, check_credits=True)
+    if paths:
+        kept = [url for url in (product.additional_images or []) if url not in paths]
+        product.additional_images = kept + paths
+        product.save(update_fields=["additional_images", "updated_at"])

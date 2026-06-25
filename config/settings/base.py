@@ -489,7 +489,7 @@ if FACEBOOK_OAUTH_ENABLED:
 
 # Session: keep users logged in for 30 days
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 days
-SESSION_SAVE_EVERY_REQUEST = True         # Reset expiry on each request
+SESSION_SAVE_EVERY_REQUEST = False      # Avoid a DB write on every authenticated request
 
 # Allauth: always remember the session (skip "remember me" checkbox)
 ACCOUNT_SESSION_REMEMBER = True

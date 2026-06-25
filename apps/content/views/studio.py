@@ -166,16 +166,30 @@ def _get_studio_posts(user, status_filter=None, platform_filter=None, format_fil
 
     seed_ids = list(grouped.keys())
     seeds_map = {s.id: s for s in ContentSeed.objects.filter(id__in=seed_ids)}
+    platforms_by_user: dict = {}
+    if seeds_map:
+        from apps.platforms.models import SocialAccount
+
+        user_ids = {s.user_id for s in seeds_map.values()}
+        for row in SocialAccount.objects.filter(
+            user_id__in=user_ids, is_active=True,
+        ).values("user_id", "platform"):
+            platforms_by_user.setdefault(row["user_id"], []).append(row["platform"])
+
     for seed_id, seed_posts in grouped.items():
         seed_obj = seeds_map.get(seed_id)
         if seed_obj:
-            seed_groups.append(_enrich_seed_group(seed_obj, seed_posts))
+            seed_groups.append(_enrich_seed_group(
+                seed_obj,
+                seed_posts,
+                connected_platforms=platforms_by_user.get(seed_obj.user_id, []),
+            ))
 
     seed_groups.sort(key=lambda g: g["seed"].created_at, reverse=True)
     return seed_groups, ungrouped, posts.count()
 
 
-def _enrich_seed_group(seed_obj, seed_posts):
+def _enrich_seed_group(seed_obj, seed_posts, *, connected_platforms=None):
     """Attach batch-approve metadata and campaign context to a seed group."""
     from apps.content.campaigns import campaign_display_label
     from apps.content.campaign_pages import campaign_page_path
@@ -190,9 +204,10 @@ def _enrich_seed_group(seed_obj, seed_posts):
     campaign = getattr(seed_obj, "marketing_campaign", None)
     proposal = (campaign.proposal_meta if campaign else None) or seed_obj.blueprint.get("proposal") or {}
     formats = proposal.get("suggested_formats") or seed_obj.blueprint.get("suggested_formats") or []
-    connected_platforms = list(
-        seed_obj.user.social_accounts.filter(is_active=True).values_list("platform", flat=True)
-    )
+    if connected_platforms is None:
+        connected_platforms = list(
+            seed_obj.user.social_accounts.filter(is_active=True).values_list("platform", flat=True)
+        )
     bundle = bundle_display_for_studio(seed_posts, connected_platforms)
     approval = campaign_approval_summary(seed_posts, bundle=bundle)
     qa_report = (

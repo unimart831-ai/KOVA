@@ -1640,22 +1640,11 @@ def generate_product_video(request, product_id):
         messages.error(request, "Add a product photo first.")
         return redirect("products:detail", product_id=product.pk)
 
-    try:
-        from apps.products.photoroom_video import generate_product_reel_video
+    from apps.products.tasks import generate_product_video_task
+    from apps.utils import fire_task
 
-        result = generate_product_reel_video(product)
-        if result:
-            messages.success(request, f"Video generated for '{product.name}'.")
-        else:
-            messages.warning(
-                request,
-                "Video generation failed — check PHOTOROOM_API_KEY and PHOTOROOM_SANDBOX "
-                "(or set PHOTOROOM_VIDEO_ENABLED=True).",
-            )
-    except Exception as e:
-        logger.error("Video generation failed for product %s: %s", product.pk, e)
-        messages.error(request, "Video generation failed. Try again later.")
-
+    fire_task(generate_product_video_task, str(product.pk))
+    messages.info(request, f"Video generation started for '{product.name}' — refresh in a moment.")
     return redirect("products:detail", product_id=product.pk)
 
 
@@ -1668,18 +1657,12 @@ def generate_promo_image(request, product_id):
         messages.error(request, "Add a product photo first.")
         return redirect("products:detail", product_id=product.pk)
 
-    try:
-        from apps.products.promo_engine import generate_promo_image as gen_promo
-        trigger = request.POST.get("trigger", "new_product")
-        result = gen_promo(product, trigger=trigger)
-        if result:
-            messages.success(request, f"Promo image created for '{product.name}'.")
-        else:
-            messages.info(request, "Promo generation queued.")
-    except Exception as e:
-        logger.error("Promo generation failed for product %s: %s", product.pk, e)
-        messages.error(request, "Promo generation failed. Try again later.")
+    from apps.products.tasks import generate_promo_image_task
+    from apps.utils import fire_task
 
+    trigger = request.POST.get("trigger", "new_product")
+    fire_task(generate_promo_image_task, str(product.pk), trigger)
+    messages.info(request, f"Promo image generation started for '{product.name}'.")
     return redirect("products:detail", product_id=product.pk)
 
 
@@ -1692,43 +1675,25 @@ def generate_virtual_model(request, product_id):
         messages.error(request, "Add a product photo first.")
         return redirect("products:detail", product_id=product.pk)
 
-    try:
-        from apps.billing.visual_credits import check_visual_credit_limit
-        from apps.products.photoroom_virtual_models import (
-            generate_virtual_model_pack,
-            virtual_model_enabled,
+    from apps.billing.visual_credits import check_visual_credit_limit
+    from apps.products.photoroom_virtual_models import virtual_model_enabled
+    from apps.products.tasks import generate_virtual_model_task
+    from apps.utils import fire_task
+
+    if not virtual_model_enabled():
+        messages.warning(
+            request,
+            "Virtual model is not enabled — check PHOTOROOM_VIRTUAL_MODEL_ENABLED and PHOTOROOM_API_KEY.",
         )
+        return redirect("products:detail", product_id=product.pk)
 
-        if not virtual_model_enabled():
-            messages.warning(
-                request,
-                "Virtual model is not enabled — check PHOTOROOM_VIRTUAL_MODEL_ENABLED and PHOTOROOM_API_KEY.",
-            )
-            return redirect("products:detail", product_id=product.pk)
+    allowed, msg = check_visual_credit_limit(request.user)
+    if not allowed:
+        messages.error(request, msg or "Visual credit limit reached.")
+        return redirect("products:detail", product_id=product.pk)
 
-        allowed, msg = check_visual_credit_limit(request.user)
-        if not allowed:
-            messages.error(request, msg or "Visual credit limit reached.")
-            return redirect("products:detail", product_id=product.pk)
-
-        paths = generate_virtual_model_pack(product, save_to_product=True, check_credits=True)
-        if paths:
-            kept = [
-                url for url in (product.additional_images or [])
-                if url not in paths
-            ]
-            product.additional_images = kept + paths
-            product.save(update_fields=["additional_images", "updated_at"])
-            messages.success(
-                request,
-                f"Generated {len(paths)} virtual model shot(s) for '{product.name}'.",
-            )
-        else:
-            messages.warning(request, "Virtual model generation produced no images. Try again later.")
-    except Exception as e:
-        logger.error("Virtual model generation failed for product %s: %s", product.pk, e)
-        messages.error(request, "Virtual model generation failed. Try again later.")
-
+    fire_task(generate_virtual_model_task, str(product.pk))
+    messages.info(request, f"Virtual model generation started for '{product.name}'.")
     return redirect("products:detail", product_id=product.pk)
 
 

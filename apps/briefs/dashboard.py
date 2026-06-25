@@ -274,7 +274,7 @@ def get_money_board_stats(user):
     try:
         from apps.briefs.revenue_summary import get_unified_revenue_summary
 
-        rev = get_unified_revenue_summary(user)
+        rev = get_unified_revenue_summary(user, ops=stats)
         stats["revenue_total_kes"] = rev["total_kes"]
         parts = []
         if rev["mpesa_kes"]:

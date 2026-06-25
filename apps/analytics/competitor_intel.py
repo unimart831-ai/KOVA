@@ -492,6 +492,25 @@ def generate_landscape_report(user):
         return {"landscape_summary": response.content[:500], "top_moves": []}
 
 
+LANDSCAPE_CACHE_TTL = 3600
+
+
+def get_cached_landscape_report(user, *, force_refresh: bool = False):
+    """Return landscape report from cache; generate via LLM on miss."""
+    from django.core.cache import cache
+
+    cache_key = f"competitor:landscape:{user.pk}"
+    if not force_refresh:
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+    report = generate_landscape_report(user)
+    if report is not None:
+        cache.set(cache_key, report, LANDSCAPE_CACHE_TTL)
+    return report
+
+
 # ─── Competitor Intel for Other Agents ───────────────────────────────────────
 
 def get_competitor_context_for_strategist(user):

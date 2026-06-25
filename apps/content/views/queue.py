@@ -58,7 +58,7 @@ def _group_queue_by_seed(posts_list):
 
 def _get_queue_context(user, section_filter=None, platform_filter=None, format_filter=None, search_query=None):
     """Build queue sections, stats, and filter state."""
-    from django.db.models import Q
+    from django.db.models import Count, Q
 
     visible_user_ids = get_teammate_ids(user)
     base = Post.objects.filter(user_id__in=visible_user_ids).select_related(
@@ -89,15 +89,16 @@ def _get_queue_context(user, section_filter=None, platform_filter=None, format_f
     )
 
     stats_base = Post.objects.filter(user_id__in=visible_user_ids)
-    queue_stats = {
-        "ready_count": stats_base.filter(status="approved", scheduled_at__isnull=True).count(),
-        "scheduled_count": stats_base.filter(
-            Q(status="scheduled") | Q(status="approved", scheduled_at__isnull=False)
-        ).count(),
-        "publishing_count": stats_base.filter(status="publishing").count(),
-        "failed_count": stats_base.filter(status__in=("failed", "blocked")).count(),
-        "published_count": stats_base.filter(status="published").count(),
-    }
+    queue_stats = stats_base.aggregate(
+        ready_count=Count("id", filter=Q(status="approved", scheduled_at__isnull=True)),
+        scheduled_count=Count(
+            "id",
+            filter=Q(status="scheduled") | Q(status="approved", scheduled_at__isnull=False),
+        ),
+        publishing_count=Count("id", filter=Q(status="publishing")),
+        failed_count=Count("id", filter=Q(status__in=("failed", "blocked"))),
+        published_count=Count("id", filter=Q(status="published")),
+    )
 
     failed = list(failed_qs)
     publishing = list(publishing_qs)

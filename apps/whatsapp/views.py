@@ -16,6 +16,7 @@ from django.views.decorators.http import require_POST
 
 from apps.platforms.models import SocialAccount
 from apps.platforms.providers.registry import get_provider
+from apps.utils import fire_task
 from apps.whatsapp.models import (
     BroadcastSequence,
     BroadcastSequenceStep,
@@ -524,7 +525,7 @@ def status_create(request):
     if ai_prompt:
         # AI-generate the status content
         from apps.whatsapp.tasks import generate_status_content
-        generate_status_content.delay(request.user.id, ai_prompt, category)
+        fire_task(generate_status_content, request.user.id, ai_prompt, category)
         django_messages.success(request, "AI is generating your Status content...")
         return redirect("whatsapp:status_studio")
 
@@ -585,7 +586,7 @@ def status_repurpose(request, post_id):
     from apps.whatsapp.tasks import repurpose_post_to_status
 
     post = get_object_or_404(Post, pk=post_id, user=request.user)
-    repurpose_post_to_status.delay(request.user.id, str(post.id))
+    fire_task(repurpose_post_to_status, request.user.id, str(post.id))
     django_messages.success(request, "AI is adapting your post for WhatsApp Status...")
     return redirect("whatsapp:status_studio")
 
@@ -798,7 +799,7 @@ def broadcast_launch(request, pk):
 
     # Trigger async execution
     from apps.whatsapp.tasks import execute_broadcast
-    execute_broadcast.delay(str(broadcast.pk))
+    fire_task(execute_broadcast, str(broadcast.pk))
 
     django_messages.success(request, f"Broadcast launched to {len(phones)} recipients!")
     return redirect("whatsapp:broadcast_detail", pk=pk)
@@ -1120,7 +1121,7 @@ def channel_post_create(request, pk):
     if source_post_id:
         # Cross-post from existing content
         from apps.whatsapp.tasks import cross_post_to_channel
-        cross_post_to_channel.delay(str(channel.pk), source_post_id)
+        fire_task(cross_post_to_channel, str(channel.pk), source_post_id)
         django_messages.success(request, "AI is adapting and scheduling your cross-post...")
         return redirect("whatsapp:channel_detail", pk=pk)
 

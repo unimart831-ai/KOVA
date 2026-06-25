@@ -112,3 +112,28 @@ def resolve_public_product(page_slug: str, commerce_slug: str):
     if product.stock_status == Product.StockStatus.OUT_OF_STOCK:
         return profile, product
     return profile, product
+
+
+def related_public_products(user, exclude_pk, category_id=None, *, limit: int = 4):
+    """Lightweight related-product fetch for PDP (avoids full shop reload)."""
+    from apps.products.models import Product
+
+    base = Product.objects.filter(
+        user=user,
+        is_active=True,
+    ).exclude(commerce_slug="").exclude(pk=exclude_pk).select_related("category")
+
+    if category_id:
+        same_cat = list(
+            base.filter(category_id=category_id).order_by("-is_featured", "-created_at")[:limit]
+        )
+        if len(same_cat) >= limit:
+            return same_cat
+        other = list(
+            base.exclude(category_id=category_id).order_by("-is_featured", "-created_at")[
+                : limit - len(same_cat)
+            ]
+        )
+        return same_cat + other
+
+    return list(base.order_by("-is_featured", "-created_at")[:limit])
