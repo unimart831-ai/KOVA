@@ -2,10 +2,21 @@
 (function() {
   var els = document.querySelectorAll('.reveal');
   if (!els.length) return;
+
+  function markVisibleIfInView(el) {
+    var rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      el.classList.add('visible');
+      return true;
+    }
+    return false;
+  }
+
   if (!('IntersectionObserver' in window)) {
     els.forEach(function(el) { el.classList.add('visible'); });
     return;
   }
+
   var observer = new IntersectionObserver(function(entries) {
     entries.forEach(function(entry) {
       if (entry.isIntersecting) {
@@ -13,7 +24,12 @@
         observer.unobserve(entry.target);
       }
     });
-  }, { threshold: 0.08, rootMargin: '0px 0px -24px 0px' });
-  els.forEach(function(el) { observer.observe(el); });
+  }, { threshold: 0.05, rootMargin: '0px 0px 0px 0px' });
+
+  els.forEach(function(el) {
+    if (!markVisibleIfInView(el)) {
+      observer.observe(el);
+    }
+  });
 })();
 </script>

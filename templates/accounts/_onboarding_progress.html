@@ -47,30 +47,30 @@
           {# Step details #}
           <div class="min-w-0 flex-1">
             {% if step.key == "research" %}
-              <p class="text-sm font-medium {% if step.status == 'completed' %}text-green-700 dark:text-green-400{% elif step.status == 'running' %}text-kova-700 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}">
+              <p class="text-sm font-medium {% if step.status == 'completed' %}text-green-700 dark:text-green-300{% elif step.status == 'running' %}text-kova-700 dark:text-kova-300{% else %}text-gray-600 dark:text-gray-400{% endif %}">
                 Research Agent — Analyzing your industry
               </p>
-              <p class="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
                 {% if step.status == "completed" %}Discovered trends and opportunities in your niche
                 {% elif step.status == "running" %}Scanning for trending topics and competitor activity...
                 {% elif step.status == "failed" %}Completed with limited data — will refine over time
                 {% else %}Waiting to start...{% endif %}
               </p>
             {% elif step.key == "seeds" %}
-              <p class="text-sm font-medium {% if step.status == 'completed' %}text-green-700 dark:text-green-400{% elif step.status == 'running' %}text-kova-700 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}">
+              <p class="text-sm font-medium {% if step.status == 'completed' %}text-green-700 dark:text-green-300{% elif step.status == 'running' %}text-kova-700 dark:text-kova-300{% else %}text-gray-600 dark:text-gray-400{% endif %}">
                 Strategist Agent — Planning campaign angles
               </p>
-              <p class="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
                 {% if step.status == "completed" %}Campaign proposals ready from research
                 {% elif step.status == "running" %}Turning research into campaign opportunities...
                 {% elif step.status == "failed" %}Some proposals created — add more in Studio
                 {% else %}Waiting for research...{% endif %}
               </p>
             {% elif step.key == "content" %}
-              <p class="text-sm font-medium {% if step.status == 'completed' %}text-green-700 dark:text-green-400{% elif step.status == 'running' %}text-kova-700 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}">
+              <p class="text-sm font-medium {% if step.status == 'completed' %}text-green-700 dark:text-green-300{% elif step.status == 'running' %}text-kova-700 dark:text-kova-300{% else %}text-gray-600 dark:text-gray-400{% endif %}">
                 Create Agent — Writing platform posts
               </p>
-              <p class="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
                 {% if step.status == "completed" %}Posts ready for review in the Studio
                 {% elif step.status == "running" %}
                   {% if has_platforms %}Crafting platform-native content for each connected account...
@@ -79,10 +79,10 @@
                 {% else %}Waiting for campaign proposals...{% endif %}
               </p>
             {% elif step.key == "brief" %}
-              <p class="text-sm font-medium {% if step.status == 'completed' %}text-green-700 dark:text-green-400{% elif step.status == 'running' %}text-kova-700 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}">
+              <p class="text-sm font-medium {% if step.status == 'completed' %}text-green-700 dark:text-green-300{% elif step.status == 'running' %}text-kova-700 dark:text-kova-300{% else %}text-gray-600 dark:text-gray-400{% endif %}">
                 Chief Strategist — Preparing your welcome brief
               </p>
-              <p class="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
                 {% if step.status == "completed" %}Your personalized strategy is ready
                 {% elif step.status == "running" %}Compiling research, content plan, and strategic recommendations...
                 {% elif step.status == "failed" %}Brief will be available in your daily brief

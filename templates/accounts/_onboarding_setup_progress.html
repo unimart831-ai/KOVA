@@ -1,13 +1,13 @@
-{# Global setup progress: intent/phone (1) → business (2) → confirm (3) #}
-<div class="mb-8">
-  <div class="flex items-center justify-between mb-2 gap-2">
-    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Setup step {{ setup_step }} of {{ setup_total }}</span>
+{# Global setup progress: hire (1) → voice (2) → confirm (3) #}
+<div class="mb-8 onboarding-progress">
+  <div class="flex items-center justify-between mb-2.5 gap-2">
+    <span class="text-sm font-semibold text-gray-900 dark:text-white">Step {{ setup_step }} of {{ setup_total }}</span>
     {% if setup_label %}
-    <span class="text-sm text-gray-500 dark:text-gray-400 text-right">{{ setup_label }}</span>
+    <span class="text-sm font-medium text-kova-700 dark:text-kova-300 text-right">{{ setup_label }}</span>
     {% endif %}
   </div>
-  <div class="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
-    <div class="bg-growth-500 h-2 rounded-full transition-all duration-500"
+  <div class="onboarding-progress__track" role="progressbar" aria-valuenow="{{ setup_step }}" aria-valuemin="1" aria-valuemax="{{ setup_total }}">
+    <div class="onboarding-progress__fill"
          style="width: {% widthratio setup_step setup_total 100 %}%"></div>
   </div>
 </div>

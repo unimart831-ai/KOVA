@@ -870,6 +870,7 @@ def onboarding_complete(request):
     Uses HTMX polling to check progress.
     """
     from apps.agents.onboarding_tasks import get_onboarding_progress
+    from apps.accounts.onboarding_flow import ensure_instant_onboarding_wow
     from apps.briefs.models import DailyBrief
     from apps.accounts.setup_mission import (
         build_setup_mission,
@@ -879,6 +880,7 @@ def onboarding_complete(request):
     from apps.content.models import Post
     from apps.platforms.models import SocialAccount
 
+    ensure_instant_onboarding_wow(request.user)
     progress = get_onboarding_progress(request.user)
     today = timezone.now().date()
     brief = DailyBrief.objects.filter(user=request.user, date=today).first()
@@ -951,10 +953,12 @@ def onboarding_retry(request):
 def onboarding_progress_api(request):
     """HTMX polling endpoint — returns progress fragment."""
     from apps.agents.onboarding_tasks import get_onboarding_progress
+    from apps.accounts.onboarding_flow import ensure_instant_onboarding_wow
     from apps.briefs.models import DailyBrief
     from apps.content.models import Post
     from apps.platforms.models import SocialAccount
 
+    ensure_instant_onboarding_wow(request.user)
     progress = get_onboarding_progress(request.user)
     today = timezone.now().date()
     brief = DailyBrief.objects.filter(user=request.user, date=today).first()

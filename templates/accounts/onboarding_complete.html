@@ -3,18 +3,18 @@
 {% block title %}Your AI Agency is Starting — Step {{ setup_step }} of {{ setup_total }}{% endblock %}
 {% block page_title %}Setting up your workspace{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">{{ setup_label }}</p>
+<p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5 hidden sm:block">{{ setup_label }}</p>
 {% endblock %}
 
 {% block content %}
-<div class="brand-atmosphere relative max-w-3xl mx-auto">
+<div class="brand-atmosphere relative max-w-3xl mx-auto onboarding-flow">
   {% include "components/brand/_atmosphere_orbs.html" %}
   <div class="relative space-y-8 py-4">
   {% include "accounts/_onboarding_setup_progress.html" %}
   {% include "accounts/_onboarding_social_proof.html" %}
 
   {# ── Hero ── #}
-  <div class="text-center space-y-4 reveal">
+  <div class="text-center space-y-4">
     <div class="relative w-16 h-16 mx-auto">
       <div class="absolute inset-0 rounded-xl bg-kova-400/30 animate-pulse-ring"></div>
       <div class="relative w-16 h-16 rounded-xl bg-growth-500 flex items-center justify-center shadow-growth">
@@ -27,9 +27,8 @@
     <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
       Kova is getting to work
     </h1>
-    <p class="text-gray-500 dark:text-gray-400 max-w-lg mx-auto text-sm sm:text-base leading-relaxed">
-      While you wait, we're researching your industry, building your first campaign drafts, and preparing your welcome brief.
-      Most users see results in under 3 minutes.
+    <p class="text-gray-700 dark:text-gray-300 max-w-lg mx-auto text-sm sm:text-base leading-relaxed">
+      Your draft posts and welcome brief are ready below. Deeper research continues in the background.
     </p>
   </div>
 
@@ -37,11 +36,10 @@
        hx-get="{% url 'accounts:onboarding_progress' %}"
        hx-trigger="load, every 8s"
        hx-swap="innerHTML"
-       class="reveal reveal-delay-1">
+       class="">
     {% include "accounts/_onboarding_progress.html" %}
   </div>
 
   </div>
 </div>
-{% include "components/brand/_reveal_script.html" %}
 {% endblock %}

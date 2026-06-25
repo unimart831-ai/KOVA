@@ -255,6 +255,25 @@ class TestSnapToShopGoldenPath:
 
 
 @pytest.mark.django_db
+class TestInstantOnboardingWow:
+    def test_ensure_instant_marks_progress_complete(self):
+        from apps.accounts.onboarding_flow import ensure_instant_onboarding_wow
+        from apps.agents.onboarding_tasks import get_onboarding_progress
+
+        u = User.objects.create_user(username="wow", email="wow@b.com", password="P1!")
+        p = u.profile
+        p.company_name = "Wow Co"
+        p.industry = "agency"
+        p.brand_voice = "Bold and clear."
+        p.brand_voice_examples = ["Hello from Wow Co — we're live!"]
+        p.save()
+
+        assert ensure_instant_onboarding_wow(u) is True
+        progress = get_onboarding_progress(u)
+        assert progress["all_done"] is True
+
+
+@pytest.mark.django_db
 class TestProfileBackfill:
     def test_ensure_user_profile_creates_missing(self):
         from apps.accounts.profile_utils import ensure_user_profile

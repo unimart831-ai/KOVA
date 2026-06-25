@@ -12,60 +12,61 @@ from apps.accounts.onboarding_express import (
 )
 
 # Visual chips shown on the hire-Kova screen (maps to industry + business_model).
+# `icon` keys map to templates/accounts/_business_type_icon.html (Heroicons-style SVG).
 BUSINESS_TYPE_PRESETS: list[dict[str, Any]] = [
     {
         "id": "salon",
         "label": "Salon / Barber",
-        "emoji": "💈",
+        "icon": "scissors",
         "industry": "salon_beauty",
         "business_model": BUSINESS_MODEL_SERVICE,
     },
     {
         "id": "restaurant",
         "label": "Restaurant / Café",
-        "emoji": "🍽️",
+        "icon": "utensils",
         "industry": "food_restaurant",
         "business_model": BUSINESS_MODEL_PRODUCT,
     },
     {
         "id": "boutique",
         "label": "Boutique / Retail",
-        "emoji": "👗",
+        "icon": "shopping",
         "industry": "fashion_beauty",
         "business_model": BUSINESS_MODEL_PRODUCT,
     },
     {
         "id": "electronics",
         "label": "Electronics store",
-        "emoji": "📱",
+        "icon": "device",
         "industry": "wholesale_retail",
         "business_model": BUSINESS_MODEL_PRODUCT,
     },
     {
         "id": "agency",
         "label": "Agency",
-        "emoji": "🎯",
+        "icon": "megaphone",
         "industry": "agency",
         "business_model": BUSINESS_MODEL_PROFESSIONAL,
     },
     {
         "id": "consultant",
         "label": "Consultant",
-        "emoji": "💼",
+        "icon": "briefcase",
         "industry": "consulting",
         "business_model": BUSINESS_MODEL_PROFESSIONAL,
     },
     {
         "id": "health",
         "label": "Health / Wellness",
-        "emoji": "🩺",
+        "icon": "heart",
         "industry": "health",
         "business_model": BUSINESS_MODEL_SERVICE,
     },
     {
         "id": "other",
         "label": "Something else",
-        "emoji": "✨",
+        "icon": "grid",
         "industry": "",
         "business_model": "",
     },

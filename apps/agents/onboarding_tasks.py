@@ -58,7 +58,7 @@ def _enrich_research_with_competitor_hints(user, research: dict) -> dict:
 # If the intelligence task hasn't finished within this window, assume Celery
 # dropped the job or it wedged. Surface a stuck state so the user can retry
 # instead of polling forever.
-STUCK_AFTER_SECONDS = 5 * 60
+STUCK_AFTER_SECONDS = 90
 
 
 def get_onboarding_progress(user):
@@ -129,6 +129,11 @@ def run_onboarding_intelligence(user_id):
 
     profile = user.profile
     result = {}
+
+    progress = get_onboarding_progress(user)
+    if progress["all_done"]:
+        logger.info("Onboarding intelligence already complete for %s — skipping Celery run", user.email)
+        return {"skipped": True, "reason": "already_complete"}
 
     # ── Step 1: Research Agent — discover industry trends ────────────
     research_action = AgentAction.objects.create(

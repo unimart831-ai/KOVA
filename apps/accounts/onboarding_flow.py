@@ -95,6 +95,141 @@ def seed_onboarding_preview_posts(user) -> int:
     return created
 
 
+def ensure_instant_onboarding_wow(user) -> bool:
+    """
+    Sync bootstrap so the WOW screen shows posts + brief immediately.
+    Celery may enrich later; this must never block on LLM.
+    Returns True when instant value is ready (posts or welcome brief).
+    """
+    from apps.agents.models import AgentAction
+    from apps.agents.onboarding_tasks import ONBOARDING_STEPS
+    from apps.briefs.models import DailyBrief
+    from apps.content.models import Post
+
+    profile = user.profile
+    company = (profile.company_name or "your business").strip()
+    industry_label = profile.get_industry_display() if profile.industry else "your industry"
+
+    seed_onboarding_preview_posts(user)
+
+    post_count = Post.objects.filter(
+        user=user,
+        status__in=[Post.Status.PENDING_APPROVAL, Post.Status.DRAFT],
+    ).count()
+
+    pillars = [p for p in (profile.content_pillars or []) if (p or "").strip()][:3]
+    opportunity_briefs = [
+        {
+            "title": pillar,
+            "description": f"Content angle for {company}",
+            "why_now": "Starter campaign from your profile",
+        }
+        for pillar in pillars
+    ] or [
+        {
+            "title": f"Introduce {company}",
+            "description": "Who you are and what you offer",
+            "why_now": "First impression on social",
+        },
+        {
+            "title": f"Why customers choose {company}",
+            "description": "Your edge in {industry_label}",
+            "why_now": "Build trust early",
+        },
+    ]
+
+    stub_research = {
+        "trending_topics": [
+            {
+                "topic": f"What works on social in {industry_label}",
+                "suggested_angle": "Share proof, not promises",
+            }
+        ],
+        "opportunity_briefs": opportunity_briefs,
+    }
+
+    completed = AgentAction.ActionStatus.COMPLETED
+
+    def _mark_complete(step_key: str, agent_type: str, description: str, output_data: dict) -> None:
+        action_type = ONBOARDING_STEPS[step_key]
+        existing = AgentAction.objects.filter(user=user, action_type=action_type).first()
+        if existing:
+            if existing.status == completed:
+                return
+            if existing.status == AgentAction.ActionStatus.RUNNING:
+                return
+        AgentAction.objects.update_or_create(
+            user=user,
+            action_type=action_type,
+            defaults={
+                "agent_type": agent_type,
+                "description": description,
+                "status": completed,
+                "output_data": output_data,
+                "error_message": "",
+            },
+        )
+
+    _mark_complete(
+        "research",
+        "research",
+        "Analyzed your industry (instant profile)",
+        stub_research,
+    )
+    _mark_complete(
+        "seeds",
+        "strategist",
+        "Planned starter campaign angles",
+        {"seed_count": len(opportunity_briefs), "instant": True},
+    )
+    if post_count:
+        _mark_complete(
+            "content",
+            "create",
+            "Draft posts ready in Studio",
+            {"posts_created": post_count, "instant": True},
+        )
+
+    today = timezone.now().date()
+    brief = DailyBrief.objects.filter(user=user, date=today).first()
+    if not brief:
+        summary = (
+            f"Welcome to Kova, {company}! "
+            f"{'Your draft posts are waiting in Studio — written in your voice. ' if post_count else ''}"
+            f"We're tuned for {industry_label} and will keep sharpening your plan as you approve content."
+        )
+        brief = DailyBrief.objects.create(
+            user=user,
+            date=today,
+            summary=summary,
+            trending_topics=stub_research["trending_topics"],
+            suggested_posts=[
+                {"idea": b["title"], "reasoning": b["description"], "platform": "instagram"}
+                for b in opportunity_briefs[:3]
+            ],
+            performance_summary={
+                "highlight": f"You're set up for {industry_label}. Approve your first post to train the agents.",
+                "agent_summary": "Research, Create, and Strategist agents are active on your brand.",
+            },
+            agent_activity=[],
+            posts_pending=post_count,
+        )
+
+    _mark_complete(
+        "brief",
+        "strategist",
+        "Welcome brief ready",
+        {"brief_id": str(brief.pk), "instant": True},
+    )
+
+    try:
+        profile.record_onboarding_step("intelligence_completed")
+    except Exception:
+        logger.exception("record intelligence_completed failed for %s", user.email)
+
+    return bool(post_count or brief)
+
+
 def finish_onboarding(user, *, skipped_platform_connect=False):
     """
     Mark onboarding complete, start trial, bootstrap email, fire intelligence chain.
@@ -136,7 +271,7 @@ def finish_onboarding(user, *, skipped_platform_connect=False):
     profile.onboarding_intelligence_started_at = timezone.now()
     profile.save(update_fields=["onboarding_intelligence_started_at"])
     profile.record_onboarding_step("intelligence_started")
-    seed_onboarding_preview_posts(user)
+    ensure_instant_onboarding_wow(user)
     fire_task(run_onboarding_intelligence, str(user.pk))
 
     logger.info(
