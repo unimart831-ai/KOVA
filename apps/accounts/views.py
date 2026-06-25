@@ -14,6 +14,7 @@ from apps.accounts.forms import (
     UserSettingsForm,
     BrandProfileForm,
     CTASettingsForm,
+    OnboardingBrandVoiceForm,
     OnboardingExpressStep1Form,
     PhoneCaptureForm,
 )
@@ -22,6 +23,8 @@ from apps.accounts.onboarding_flow import (
     SETUP_TOTAL_STEPS,
     apply_url_inference_to_profile,
     finish_onboarding,
+    has_brand_voice_captured,
+    parse_brand_voice_examples,
     setup_step_for_wizard,
 )
 
@@ -41,7 +44,8 @@ def _onboarding_setup_context(*, step=None, path_choice=False, complete=False):
         }
     labels = {
         1: "About your business",
-        2: "Confirm — looks good?",
+        2: "Your brand voice",
+        3: "Confirm — looks good?",
     }
     return {
         "setup_step": setup_step_for_wizard(step),
@@ -53,6 +57,13 @@ def _onboarding_setup_context(*, step=None, path_choice=False, complete=False):
 @login_required
 def settings_view(request):
     """User settings page with two forms: account info + brand profile."""
+    if not request.user.onboarding_completed:
+        messages.info(
+            request,
+            "Complete onboarding first — you'll unlock full Settings right after.",
+        )
+        return redirect("accounts:onboarding_choose_path")
+
     from apps.accounts.forms import PhotoroomBrandKitForm
     from apps.products.photoroom_brand_template import build_photoroom_brand_template
 
@@ -208,16 +219,9 @@ def onboarding_choose_path(request):
 
     profile = request.user.profile
     if (profile.company_name or "").strip() and profile.industry:
+        if has_brand_voice_captured(profile):
+            return redirect("/accounts/onboarding/?step=3")
         return redirect("/accounts/onboarding/?step=2")
-
-    # If user already has platforms auto-connected from social sign-up,
-    # skip path choice and go straight to magic-connect (shows connected state).
-    from apps.platforms.models import SocialAccount
-    auto_connected = SocialAccount.objects.filter(
-        user=request.user, is_active=True, metadata__auto_connected=True,
-    ).exists()
-    if auto_connected and request.method == "GET":
-        return redirect("accounts:onboarding_magic_connect")
 
     if request.method == "POST":
         from apps.accounts.onboarding_express import (
@@ -269,13 +273,7 @@ def onboarding_choose_path(request):
             ensure_brand_defaults(profile, request.user)
             profile.record_onboarding_step("discovery_completed")
 
-            if link:
-                if _looks_like_social_profile_url(link):
-                    messages.info(
-                        request,
-                        "Connect that profile directly — we'll pull your brand details automatically.",
-                    )
-                    return redirect("accounts:onboarding_magic_connect")
+            if link and not _looks_like_social_profile_url(link):
                 profile.website_url = link
                 profile.save(update_fields=["website_url"])
                 request.session["onboarding_express_link"] = link
@@ -293,13 +291,8 @@ def onboarding_choose_path(request):
             record_intent(profile, intent)
 
         if link:
-            if _looks_like_social_profile_url(link):
-                messages.info(
-                    request,
-                    "That looks like a social profile. Connect it directly for the smoothest auto-fill.",
-                )
-                return redirect("accounts:onboarding_magic_connect")
-            request.session["onboarding_express_link"] = link
+            if not _looks_like_social_profile_url(link):
+                request.session["onboarding_express_link"] = link
             return redirect("/accounts/onboarding/?step=1&via=url")
 
         if business_model == BUSINESS_MODEL_PRODUCT:
@@ -307,11 +300,11 @@ def onboarding_choose_path(request):
         if business_model == BUSINESS_MODEL_SERVICE:
             return redirect("/accounts/onboarding/?step=1&via=service")
         if business_model == BUSINESS_MODEL_PROFESSIONAL:
-            return redirect("accounts:onboarding_magic_connect")
+            return redirect("/accounts/onboarding/?step=1&via=manual")
         if intent == "sell":
             return redirect("/accounts/onboarding/?step=1&via=sell")
         if intent in ("grow", "both"):
-            return redirect("accounts:onboarding_magic_connect")
+            return redirect("/accounts/onboarding/?step=1&via=manual")
         return redirect("/accounts/onboarding/?step=1&via=manual")
 
     business_hint = (request.session.pop("onboarding_business_hint", "") or "").strip()[:280]
@@ -330,28 +323,13 @@ def onboarding_choose_path(request):
 
 @login_required
 def onboarding_magic_connect(request):
-    """Magic-Fill platform grid — connect a social account so we can auto-fill."""
-    phone_redirect = _redirect_if_phone_required(request.user)
-    if phone_redirect:
-        return phone_redirect
-
-    request.session["onboarding_magic_fill"] = True
-    request.user.profile.record_onboarding_step("path_choice_magic")
-
-    from apps.platforms.models import SocialAccount
-    connected = SocialAccount.objects.filter(user=request.user, is_active=True)
-
-    # If platforms were auto-connected from social sign-up and user clicks
-    # "Continue", skip directly to step 1 so they can confirm brand details.
-    if request.GET.get("auto_advance") and connected.exists():
-        return redirect("/accounts/onboarding/?step=1&via=url")
-
-    return render(request, "accounts/onboarding_magic_connect.html", {
-        "page_title": "Connect to auto-fill your brand",
-        "connected_accounts": connected,
-        "has_auto_connected": connected.filter(metadata__auto_connected=True).exists(),
-        **_onboarding_setup_context(path_choice=True),
-    })
+    """Deprecated — social auto-fill removed; voice comes from the user."""
+    messages.info(
+        request,
+        "Kova no longer copies voice from social profiles. "
+        "Tell us how you sound on the next screen.",
+    )
+    return redirect("accounts:onboarding_choose_path")
 
 
 @login_required
@@ -370,45 +348,11 @@ def onboarding_view(request):
     if "step" not in request.GET:
         if not (profile.company_name or profile.industry):
             return redirect("accounts:onboarding_choose_path")
-
-    # Magic-Fill handoff — OAuth callback lands on step=2 with session flag set.
-    if request.session.get("onboarding_magic_fill"):
-        latest = (
-            SocialAccount.objects.filter(user=request.user, is_active=True)
-            .order_by("-updated_at")
-            .first()
-        )
-        if latest:
-            from apps.accounts.magic_fill import apply_magic_fill
-
-            try:
-                applied = apply_magic_fill(request.user, latest)
-            except Exception as exc:
-                import logging
-
-                logging.getLogger(__name__).exception(
-                    "Magic Fill failed for %s: %s", request.user.email, exc
-                )
-                applied = []
-            request.session.pop("onboarding_magic_fill", None)
-            if applied:
-                messages.success(
-                    request,
-                    f"We've pre-filled {len(applied)} fields from your "
-                    f"{latest.get_platform_display()} profile. Confirm on the next screen.",
-                )
-            else:
-                messages.info(
-                    request,
-                    "We couldn't pull much from your profile — confirm your details below.",
-                )
-            if not (profile.company_name or "").strip():
-                return redirect("/accounts/onboarding/?step=1")
+        if not has_brand_voice_captured(profile):
             return redirect("/accounts/onboarding/?step=2")
-        request.session.pop("onboarding_magic_fill", None)
 
     step = int(request.GET.get("step", 1))
-    total_steps = 2
+    total_steps = 3
 
     if step > total_steps:
         return redirect(f"/accounts/onboarding/?step={total_steps}")
@@ -421,12 +365,6 @@ def onboarding_view(request):
 
     if step == 1:
         express_link = request.session.pop("onboarding_express_link", None)
-        if express_link and request.method == "GET" and _looks_like_social_profile_url(express_link):
-            messages.info(
-                request,
-                "That link looks social-first. Connect the platform directly and we'll pull cleaner brand details.",
-            )
-            return redirect("accounts:onboarding_magic_connect")
         if express_link and request.method == "GET" and not (profile.website_url or "").strip():
             profile.website_url = express_link
             profile.save(update_fields=["website_url"])
@@ -462,7 +400,45 @@ def onboarding_view(request):
 
     if step == 2:
         if not (profile.company_name or "").strip() or not profile.industry:
-            return redirect("/accounts/onboarding/?step=1")
+            return redirect("accounts:onboarding_choose_path")
+
+        initial = {
+            "brand_voice": profile.brand_voice or "",
+        }
+        examples = profile.brand_voice_examples or []
+        for i, ex in enumerate(examples[:3], start=1):
+            initial[f"example_{i}"] = ex
+
+        if request.method == "POST":
+            form = OnboardingBrandVoiceForm(request.POST)
+            if form.is_valid():
+                profile.brand_voice = (form.cleaned_data.get("brand_voice") or "").strip()
+                profile.brand_voice_examples = parse_brand_voice_examples(
+                    form.cleaned_data.get("example_1", ""),
+                    form.cleaned_data.get("example_2", ""),
+                    form.cleaned_data.get("example_3", ""),
+                )
+                profile.tone_attributes = []
+                profile.save(update_fields=["brand_voice", "brand_voice_examples", "tone_attributes"])
+                profile.record_onboarding_step("brand_voice_completed")
+                ensure_brand_defaults(profile, request.user)
+                return redirect("/accounts/onboarding/?step=3")
+        else:
+            form = OnboardingBrandVoiceForm(initial=initial)
+
+        return render(request, "accounts/onboarding.html", {
+            "form": form,
+            "step": step,
+            "total_steps": total_steps,
+            "page_title": "Your brand voice",
+            **_onboarding_setup_context(step=step),
+        })
+
+    if step == 3:
+        if not has_brand_voice_captured(profile):
+            return redirect("/accounts/onboarding/?step=2")
+        if not (profile.company_name or "").strip() or not profile.industry:
+            return redirect("accounts:onboarding_choose_path")
 
         ensure_brand_defaults(profile, request.user)
         brand_preview = build_brand_preview(profile, request.user)
@@ -699,9 +675,8 @@ def infer_brand_from_url(request):
     if _looks_like_social_profile_url(url):
         return JsonResponse(
             {
-                "error": "That link looks like a social profile. Connect the platform directly for the best auto-fill.",
+                "error": "Social profile links can't be read here. Paste your website, or skip and tell us your voice on the next screen.",
                 "error_type": "social_profile",
-                "redirect_url": "/accounts/onboarding/magic/",
             },
             status=400,
         )
@@ -788,17 +763,13 @@ def infer_brand_from_url(request):
         "If the page is too thin to infer a field confidently, return an empty "
         "string or empty list for that field — DO NOT fabricate.\n\n"
         f"Industry MUST be one of these exact values: {industry_choices}.\n\n"
-        "Tone attributes MUST be from this set (pick 3-4): confident, approachable, "
-        "witty, professional, casual, bold, educational, inspirational, empathetic, "
-        "authoritative, playful, minimalist.\n\n"
+        "Do NOT infer brand voice or tone — the user defines those separately.\n\n"
         "Respond with valid JSON only:\n"
         "{\n"
         '  "company_name": "...",\n'
         '  "industry": "one_of_the_values_above_or_empty",\n'
-        '  "brand_voice": "2-3 sentences describing how the brand sounds",\n'
         '  "target_audience": "specific demographic + psychographic description",\n'
         '  "content_pillars": ["pillar 1", "pillar 2", "pillar 3", "pillar 4"],\n'
-        '  "tone_attributes": ["tone1", "tone2", "tone3"],\n'
         '  "key_offerings": ["product or service 1", "product or service 2"]\n'
         "}"
     )
@@ -844,26 +815,14 @@ def infer_brand_from_url(request):
         if result.get("industry") not in valid_industries:
             result["industry"] = ""
 
-        # Validate tone_attributes
-        allowed_tones = {
-            "confident", "approachable", "witty", "professional", "casual",
-            "bold", "educational", "inspirational", "empathetic",
-            "authoritative", "playful", "minimalist",
-        }
-        result["tone_attributes"] = [
-            t for t in result.get("tone_attributes", []) if t in allowed_tones
-        ]
-
-        # Persist inferred voice/audience onto profile (empty fields only).
+        # Persist inferred business basics onto profile (empty fields only).
         profile = request.user.profile
         inference_payload = {
             "company_name": result.get("company_name", "") or "",
             "website_url": url,
             "industry": result.get("industry", "") or "",
-            "brand_voice": result.get("brand_voice", "") or "",
             "target_audience": result.get("target_audience", "") or "",
             "content_pillars": result.get("content_pillars", []) or [],
-            "tone_attributes": result.get("tone_attributes", []) or [],
             "key_offerings": result.get("key_offerings", []) or [],
         }
         apply_url_inference_to_profile(profile, inference_payload)
@@ -877,10 +836,8 @@ def infer_brand_from_url(request):
         return JsonResponse({
             "company_name": result.get("company_name", "") or "",
             "industry": result.get("industry", "") or "",
-            "brand_voice": result.get("brand_voice", "") or "",
             "target_audience": result.get("target_audience", "") or "",
             "content_pillars": result.get("content_pillars", []) or [],
-            "tone_attributes": result.get("tone_attributes", []) or [],
             "key_offerings": result.get("key_offerings", []) or [],
             "website_url": url,
         })

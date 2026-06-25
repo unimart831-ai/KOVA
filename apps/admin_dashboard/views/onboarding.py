@@ -37,13 +37,15 @@ FUNNEL_STAGES = [
     ("signed_up", "Signed up", None),
     ("phone_collected", "Phone on file", "__phone__"),
     ("path_choice", "Intent / path chosen", "__path_choice__"),
-    ("step_1_completed", "Step 1 — About your business", "step_1_completed"),
-    ("step_2_completed", "Step 2 — Brand confirmed", "step_2_completed"),
+    ("brand_voice_completed", "Brand voice captured", "brand_voice_completed"),
+    ("step_1_completed", "Step 1 — About your business (legacy)", "step_1_completed"),
+    ("step_2_completed", "Brand confirmed", "step_2_completed"),
     ("step_4_completed", "Finished setup", "step_4_completed"),
     ("intelligence_completed", "Agency chain finished", "intelligence_completed"),
 ]
 
 _PATH_CHOICE_MARKERS = (
+    "discovery_completed",
     "path_choice_magic", "path_choice_url", "path_choice_manual", "path_choice_sell",
     "intent_sell", "intent_grow", "intent_both",
 )

@@ -16,26 +16,22 @@
   <div class="card">
     <div class="card-body">
       {% if step == 2 %}
+        {% include "accounts/_onboarding_brand_voice.html" %}
+      {% elif step == 3 %}
         {% include "accounts/_onboarding_brand_preview.html" %}
       {% else %}
         <div x-data="urlInfer('{{ prefill_url|default_if_none:''|escapejs }}', '{% url "accounts:infer_brand_from_url" %}')" x-init="init()">
           <div class="mb-6">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">About your business</h2>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">Just the essentials — we’ll infer the rest from your industry and website when available.</p>
+            <p class="text-gray-600 dark:text-gray-400 mt-1">Just the essentials — we'll tailor content to your industry. Your voice comes on the next screen.</p>
           </div>
 
           <div id="auto-from-url" class="mb-6" x-show="attempted || loading || success || error" x-cloak>
             <div class="p-4 rounded-xl border border-kova-200 dark:border-kova-800 bg-kova-50/50 dark:bg-kova-950/20">
               <p class="text-sm font-medium text-gray-900 dark:text-white">Reading your link…</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-show="loading">Fetching brand details from your page.</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-show="loading">Fetching business details from your page.</p>
               <p class="text-xs text-green-600 dark:text-green-400 mt-1" x-show="success" x-text="success"></p>
               <p class="text-xs text-red-500 mt-1" x-show="error" x-text="error"></p>
-              <a x-show="redirectUrl" :href="redirectUrl" class="inline-flex items-center gap-1 mt-2 text-xs font-medium text-kova-600 dark:text-kova-400 hover:underline">
-                Connect a social profile instead
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-              </a>
             </div>
           </div>
 
@@ -79,7 +75,7 @@
                       Read website
                     </button>
                   </div>
-                  <p class="text-xs text-gray-500 mt-1">Websites work best here. If you're social-first, you can still continue and connect a platform next.</p>
+                  <p class="text-xs text-gray-500 mt-1">Websites help us pre-fill business name and industry — not your voice.</p>
                   {% for error in field.errors %}
                     <p class="text-xs text-red-600 mt-1">{{ error }}</p>
                   {% endfor %}
@@ -124,7 +120,6 @@ function urlInfer(initialUrl, endpoint) {
     loading: false,
     error: '',
     success: '',
-    redirectUrl: '',
     attempted: false,
 
     init() {
@@ -141,7 +136,6 @@ function urlInfer(initialUrl, endpoint) {
       if (!this.url.trim()) {
         this.attempted = true;
         this.success = '';
-        this.redirectUrl = '';
         this.error = 'Add a website first, or continue and fill the form manually.';
         return;
       }
@@ -150,7 +144,6 @@ function urlInfer(initialUrl, endpoint) {
       this.attempted = true;
       this.error = '';
       this.success = '';
-      this.redirectUrl = '';
       try {
         const formData = new FormData();
         formData.append('url', this.url.trim());
@@ -172,7 +165,6 @@ function urlInfer(initialUrl, endpoint) {
         }
         if (!response.ok) {
           this.error = data.error || 'Could not read that page.';
-          this.redirectUrl = data.redirect_url || '';
           return;
         }
         const setIfEmpty = (id, value) => {
@@ -188,7 +180,7 @@ function urlInfer(initialUrl, endpoint) {
             sel.dispatchEvent(new Event('change', { bubbles: true }));
           }
         }
-        this.success = 'Pre-filled from your link — review and continue.';
+        this.success = 'Pre-filled business details — review and continue.';
       } catch (err) {
         this.error = 'We could not reach that link right now. You can still continue manually.';
       } finally {

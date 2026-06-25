@@ -44,11 +44,24 @@ class TestRequirePhoneMiddleware:
         resp = client.get("/billing/pricing/", follow=False)
         assert resp.status_code == 200
 
-    def test_allows_settings_without_phone(self, client):
+    def test_allows_settings_without_phone_when_onboarding_done(self, client):
         u = User.objects.create_user(username="set", email="set@b.com", password="P1!")
+        u.onboarding_completed = True
+        u.save(update_fields=["onboarding_completed"])
         client.force_login(u)
         resp = client.get("/accounts/settings/", follow=False)
         assert resp.status_code == 200
+
+    def test_redirects_settings_until_onboarding_complete(self, client):
+        u = User.objects.create_user(
+            username="setinc", email="setinc@b.com", password="P1!", phone_number="0712345678",
+        )
+        u.onboarding_completed = False
+        u.save(update_fields=["onboarding_completed"])
+        client.force_login(u)
+        resp = client.get("/accounts/settings/", follow=False)
+        assert resp.status_code == 302
+        assert "onboarding/start" in resp.url
 
     def test_allows_favicon_without_phone(self, client):
         u = User.objects.create_user(username="ico", email="ico@b.com", password="P1!")

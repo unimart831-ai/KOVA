@@ -73,12 +73,12 @@ class TestApplyPack:
         u, p = self._fresh_user()
         applied = apply_pack(p, p.industry)
 
-        assert "tone_attributes" in applied
         assert "content_pillars" in applied
         assert "goals" in applied
-        assert p.tone_attributes  # populated
         assert p.content_pillars
         assert p.goals
+        # Voice/tone come from the user — packs no longer set them
+        assert not p.tone_attributes
         # Salon-specific expectations
         assert p.default_cta_type == "whatsapp"
 
@@ -422,7 +422,7 @@ class TestExpressOnboardingHelpers:
         record_intent(p, "sell")
         assert (p.onboarding_step_timestamps or {}).get("intent_sell")
 
-    def test_ensure_brand_defaults_fills_voice(self):
+    def test_ensure_brand_defaults_fills_goals_and_cta(self):
         u = User.objects.create_user(username="defs", email="d@b.com", password="P1!")
         p = u.profile
         p.company_name = "Kawaida Shop"
@@ -432,7 +432,7 @@ class TestExpressOnboardingHelpers:
         ensure_brand_defaults(p, u)
 
         p.refresh_from_db()
-        assert (p.brand_voice or "").strip()
+        assert not (p.brand_voice or "").strip()
         assert p.goals
         assert p.default_cta_type == "link"
 
@@ -584,7 +584,7 @@ class TestExpressOnboardingViews:
         u.refresh_from_db()
         assert (u.profile.onboarding_step_timestamps or {}).get("intent_sell")
 
-    def test_choose_path_routes_social_links_to_magic_connect(self, client):
+    def test_choose_path_routes_social_links_to_step_one(self, client):
         u = self._user_with_phone(username="socialroute", email="social@b.com")
         self._login_client(client, u)
         resp = client.post(
@@ -593,7 +593,53 @@ class TestExpressOnboardingViews:
             follow=False,
         )
         assert resp.status_code == 302
-        assert resp.url == "/accounts/onboarding/magic/"
+        assert "step=1" in resp.url
+        assert "via=url" in resp.url
+
+    def test_brand_voice_flow_then_confirm(self, client, monkeypatch):
+        u = self._user_with_phone(username="voiceflow", email="voice@b.com")
+        self._login_client(client, u)
+        client.post(
+            "/accounts/onboarding/start/",
+            {
+                "business_type": "salon",
+                "goal": "bookings",
+                "company_name": "Glow Salon",
+            },
+            follow=False,
+        )
+        resp = client.post(
+            "/accounts/onboarding/?step=2",
+            {
+                "brand_voice": "Warm, friendly, mixes English and Swahili.",
+                "example_1": "New week, new glow ✨ Book your slot today!",
+                "example_2": "",
+                "example_3": "",
+            },
+            follow=False,
+        )
+        assert resp.status_code == 302
+        assert "step=3" in resp.url
+
+        monkeypatch.setattr(
+            "apps.emails.tasks.send_welcome_email.delay",
+            lambda pk: None,
+        )
+        monkeypatch.setattr(
+            "apps.emails.automation.bootstrap_email_automation",
+            lambda user: None,
+        )
+        monkeypatch.setattr("apps.utils.fire_task", lambda task, pk: None)
+
+        resp = client.post("/accounts/onboarding/?step=3", follow=False)
+        assert resp.status_code == 302
+        assert "onboarding/complete" in resp.url
+
+        u.refresh_from_db()
+        assert u.onboarding_completed is True
+        assert u.profile.brand_voice.startswith("Warm")
+        assert len(u.profile.brand_voice_examples) == 1
+        assert (u.profile.onboarding_step_timestamps or {}).get("brand_voice_completed")
 
     def test_infer_from_url_endpoint_is_accessible_during_onboarding(self, client):
         u = self._user_with_phone(username="inferapi", email="infer@b.com")
@@ -613,7 +659,7 @@ class TestExpressOnboardingViews:
         assert resp.status_code == 400
         payload = resp.json()
         assert payload["error_type"] == "social_profile"
-        assert payload["redirect_url"] == "/accounts/onboarding/magic/"
+        assert "redirect_url" not in payload
 
     def test_express_wizard_confirm_finishes_onboarding(self, client, monkeypatch):
         u = User.objects.create_user(username="wiz", email="w@b.com", password="P1!")
@@ -623,6 +669,8 @@ class TestExpressOnboardingViews:
         p = u.profile
         p.company_name = "Test Shop"
         p.industry = "ecommerce"
+        p.brand_voice = "Bold and direct."
+        p.brand_voice_examples = ["Check out our new arrivals!"]
         p.save()
 
         monkeypatch.setattr(
@@ -636,7 +684,7 @@ class TestExpressOnboardingViews:
         monkeypatch.setattr("apps.utils.fire_task", lambda task, pk: None)
 
         self._login_client(client, u)
-        resp = client.post("/accounts/onboarding/?step=2", follow=False)
+        resp = client.post("/accounts/onboarding/?step=3", follow=False)
         assert resp.status_code == 302
         assert "onboarding/complete" in resp.url
 
@@ -644,14 +692,14 @@ class TestExpressOnboardingViews:
         assert u.onboarding_completed is True
         assert (u.profile.onboarding_step_timestamps or {}).get("step_2_completed")
 
-    def test_step2_requires_step1_basics(self, client):
+    def test_step2_requires_business_basics(self, client):
         u = User.objects.create_user(username="gate", email="g@b.com", password="P1!")
         u.phone_number = "0712345678"
         u.save()
         self._login_client(client, u)
         resp = client.get("/accounts/onboarding/?step=2", follow=False)
         assert resp.status_code == 302
-        assert "step=1" in resp.url
+        assert "onboarding/start" in resp.url
 
 
 @pytest.mark.django_db

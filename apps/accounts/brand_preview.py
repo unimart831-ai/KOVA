@@ -13,6 +13,7 @@ def build_brand_preview(profile, user=None) -> dict:
 
     voice = (profile.brand_voice or "").strip()
     audience = (profile.target_audience or "").strip()
+    examples = [e for e in (profile.brand_voice_examples or []) if (e or "").strip()][:3]
 
     cta_label = profile.default_cta_type or "whatsapp"
     cta_display = {
@@ -29,6 +30,7 @@ def build_brand_preview(profile, user=None) -> dict:
         "is_commerce": is_commerce_industry(profile.industry),
         "brand_voice": voice,
         "brand_voice_preview": _truncate(voice, 220),
+        "brand_voice_examples": examples,
         "target_audience": audience,
         "target_audience_preview": _truncate(audience, 180),
         "tones": tones,
@@ -37,7 +39,7 @@ def build_brand_preview(profile, user=None) -> dict:
         "posting_frequency": profile.posting_frequency or 4,
         "cta_display": cta_display,
         "website_url": profile.website_url or "",
-        "has_rich_profile": bool(voice or audience or tones or pillars),
+        "has_rich_profile": bool(voice or examples or audience or pillars),
     }
 
 

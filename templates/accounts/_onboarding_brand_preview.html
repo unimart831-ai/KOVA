@@ -1,10 +1,10 @@
-{# Express Step 2 — preview card + confirm, not a long form #}
+{# Step 3 — preview card + confirm #}
 
 <div class="mb-6">
   <h2 class="text-xl font-bold text-gray-900 dark:text-white">Does this look right?</h2>
   <p class="text-gray-600 dark:text-gray-400 mt-1">
-    We pre-filled your brand from your industry{% if brand_preview.website_url %} and website{% endif %}.
-    Confirm to start your AI agency — tweak details anytime in Settings.
+    This is how Kova will sound for {{ brand_preview.company_name }}.
+    Confirm to start your AI agency — tweak anything later in Settings.
   </p>
 </div>
 
@@ -22,8 +22,19 @@
 
   {% if brand_preview.brand_voice_preview %}
   <div>
-    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Brand voice</p>
+    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Your voice</p>
     <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">{{ brand_preview.brand_voice_preview }}</p>
+  </div>
+  {% endif %}
+
+  {% if brand_preview.brand_voice_examples %}
+  <div>
+    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Example posts Kova will match</p>
+    <ul class="space-y-2">
+      {% for example in brand_preview.brand_voice_examples %}
+      <li class="text-sm text-gray-700 dark:text-gray-300 p-3 rounded-lg bg-white/80 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800">{{ example }}</li>
+      {% endfor %}
+    </ul>
   </div>
   {% endif %}
 
@@ -31,17 +42,6 @@
   <div>
     <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Audience</p>
     <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">{{ brand_preview.target_audience_preview }}</p>
-  </div>
-  {% endif %}
-
-  {% if brand_preview.tones %}
-  <div>
-    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Tone</p>
-    <div class="flex flex-wrap gap-2">
-      {% for tone in brand_preview.tones %}
-        <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">{{ tone|title }}</span>
-      {% endfor %}
-    </div>
   </div>
   {% endif %}
 
@@ -75,8 +75,7 @@
 <form method="post" class="space-y-4">
   {% csrf_token %}
   <div class="flex flex-col sm:flex-row gap-3 pt-2">
-    <a href="{% url 'accounts:onboarding_choose_path' %}" class="btn-secondary text-center">Back</a>
-    <a href="{% url 'accounts:onboarding_choose_path' %}" class="btn-secondary text-center flex-1">Edit details</a>
+    <a href="/accounts/onboarding/?step=2" class="btn-secondary text-center">Edit voice</a>
     <button type="submit" class="btn-primary flex-1 py-3">
       Looks good — start working
       <svg class="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

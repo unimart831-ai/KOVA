@@ -92,12 +92,12 @@
              maxlength="255">
     </div>
 
-    {# Optional link — accelerates brand DNA, not required #}
+    {# Optional link — pre-fills business basics only, not voice #}
     <div>
-      <label for="onboarding-link" class="label">Website or Instagram <span class="text-gray-400 font-normal">(optional — helps us learn faster)</span></label>
+      <label for="onboarding-link" class="label">Website <span class="text-gray-400 font-normal">(optional)</span></label>
       <input type="url" name="link" id="onboarding-link" class="input w-full"
-             placeholder="https://yoursite.com or instagram.com/yourbrand">
-      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">We'll read your brand voice automatically. Skip if you don't have one yet.</p>
+             placeholder="https://yoursite.com">
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">Helps us learn your business name and industry. You'll define your voice on the next screen.</p>
     </div>
 
     <div class="flex flex-col sm:flex-row gap-3 pt-2">
@@ -107,14 +107,11 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
         </svg>
       </button>
-      <a href="{% url 'accounts:onboarding_magic_connect' %}" class="btn-secondary w-full py-3 text-center text-sm">
-        Connect Instagram instead
-      </a>
     </div>
   </form>
 
   <p class="text-center text-xs text-gray-500 dark:text-gray-400 mt-6">
-    No long forms. No brand worksheets. Platform connect is optional until you're ready to publish.
+    Email and phone stay on your account for login, briefs, and support. Platform connect is optional until you're ready to publish.
   </p>
 </div>
 {% include "components/brand/_reveal_script.html" %}

@@ -600,6 +600,67 @@ class CTASettingsForm(forms.ModelForm):
         }
 
 
+class OnboardingBrandVoiceForm(forms.Form):
+    """Step 2 — user-defined voice; Kova does not infer tone from social profiles."""
+
+    brand_voice = forms.CharField(
+        required=False,
+        max_length=2000,
+        label="How should Kova sound?",
+        widget=forms.Textarea(attrs={
+            "class": "input",
+            "rows": 3,
+            "placeholder": "e.g. Warm and direct, mixes English and Swahili, never uses corporate jargon…",
+        }),
+        help_text="Describe your tone in your own words. This guides every post Kova writes.",
+    )
+    example_1 = forms.CharField(
+        required=False,
+        max_length=2200,
+        label="Example post #1",
+        widget=forms.Textarea(attrs={
+            "class": "input",
+            "rows": 4,
+            "placeholder": "Paste a caption or message you've posted before — or write one you'd be proud to publish.",
+        }),
+    )
+    example_2 = forms.CharField(
+        required=False,
+        max_length=2200,
+        label="Example post #2",
+        widget=forms.Textarea(attrs={
+            "class": "input",
+            "rows": 3,
+            "placeholder": "Optional — another post that sounds like you.",
+        }),
+    )
+    example_3 = forms.CharField(
+        required=False,
+        max_length=2200,
+        label="Example post #3",
+        widget=forms.Textarea(attrs={
+            "class": "input",
+            "rows": 3,
+            "placeholder": "Optional",
+        }),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        voice = (cleaned.get("brand_voice") or "").strip()
+        examples = [
+            (cleaned.get("example_1") or "").strip(),
+            (cleaned.get("example_2") or "").strip(),
+            (cleaned.get("example_3") or "").strip(),
+        ]
+        if not voice and not any(examples):
+            raise forms.ValidationError(
+                "Tell us how you sound or paste at least one example post — "
+                "Kova uses your words, not a generic industry template."
+            )
+        return cleaned
+
+
 class OnboardingExpressStep1Form(forms.ModelForm):
     """Minimal Step 1 — name, business, industry, optional phone/website."""
 

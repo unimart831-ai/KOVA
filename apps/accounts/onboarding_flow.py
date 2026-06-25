@@ -7,12 +7,32 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-SETUP_TOTAL_STEPS = 2
+SETUP_TOTAL_STEPS = 3
 
 
 def setup_step_for_wizard(step: int) -> int:
-    """Map confirm screen (step 2) to global setup progress."""
-    return 2 if step >= 2 else step
+    """Map wizard screen to global setup progress (1=hire, 2=voice, 3=confirm)."""
+    if not step:
+        return 1
+    return min(max(int(step), 1), SETUP_TOTAL_STEPS)
+
+
+def has_brand_voice_captured(profile) -> bool:
+    """True when the user supplied voice guidance or at least one example post."""
+    if (profile.brand_voice or "").strip():
+        return True
+    examples = profile.brand_voice_examples or []
+    return any((e or "").strip() for e in examples)
+
+
+def parse_brand_voice_examples(example_1: str, example_2: str = "", example_3: str = "") -> list[str]:
+    """Normalize up to three sample posts from the voice step form."""
+    out = []
+    for raw in (example_1, example_2, example_3):
+        text = (raw or "").strip()
+        if text:
+            out.append(text[:2200])
+    return out[:3]
 
 
 def apply_url_inference_to_profile(profile, data: dict) -> list[str]:
@@ -37,18 +57,42 @@ def apply_url_inference_to_profile(profile, data: dict) -> list[str]:
         valid = {v for v, _ in profile.Industry.choices}
         if data["industry"] in valid:
             _set_if_empty("industry", data["industry"])
-    _set_if_empty("brand_voice", data.get("brand_voice"))
     _set_if_empty("target_audience", data.get("target_audience"))
     if data.get("content_pillars"):
         _set_if_empty("content_pillars", data["content_pillars"])
-    if data.get("tone_attributes"):
-        _set_if_empty("tone_attributes", data["tone_attributes"])
     if data.get("key_offerings"):
         _set_if_empty("key_offerings", data["key_offerings"])
 
     if updated:
         profile.save()
     return updated
+
+
+def seed_onboarding_preview_posts(user) -> int:
+    """Create instant draft posts from user voice examples (visible before Celery)."""
+    from apps.content.models import Post
+
+    profile = user.profile
+    examples = [e.strip() for e in (profile.brand_voice_examples or []) if e and str(e).strip()]
+    if not examples and (profile.brand_voice or "").strip():
+        examples = [(profile.brand_voice or "").strip()[:500]]
+
+    if not examples:
+        return 0
+    if Post.objects.filter(user=user, generated_by_agent="onboarding_seed").exists():
+        return 0
+
+    created = 0
+    for text in examples[:3]:
+        Post.objects.create(
+            user=user,
+            content_text=text[:2200],
+            status=Post.Status.PENDING_APPROVAL,
+            generated_by_agent="onboarding_seed",
+            platform="instagram",
+        )
+        created += 1
+    return created
 
 
 def finish_onboarding(user, *, skipped_platform_connect=False):
@@ -92,6 +136,7 @@ def finish_onboarding(user, *, skipped_platform_connect=False):
     profile.onboarding_intelligence_started_at = timezone.now()
     profile.save(update_fields=["onboarding_intelligence_started_at"])
     profile.record_onboarding_step("intelligence_started")
+    seed_onboarding_preview_posts(user)
     fire_task(run_onboarding_intelligence, str(user.pk))
 
     logger.info(

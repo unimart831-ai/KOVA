@@ -79,11 +79,6 @@ def ensure_brand_defaults(profile, user) -> None:
     if profile.industry:
         apply_pack(profile, profile.industry)
 
-    if not (profile.brand_voice or "").strip() and profile.industry:
-        pack_voice = _default_voice_line(profile)
-        if pack_voice:
-            profile.brand_voice = pack_voice
-
     if not (profile.target_audience or "").strip() and profile.industry:
         profile.target_audience = (
             f"Customers and followers interested in {profile.get_industry_display().lower()} "

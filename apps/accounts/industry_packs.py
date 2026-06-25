@@ -380,9 +380,6 @@ def apply_pack(profile, industry: str | None) -> list[str]:
     pack = get_pack(industry)
     applied: list[str] = []
 
-    if not profile.tone_attributes:
-        profile.tone_attributes = pack["tone_attributes"]
-        applied.append("tone_attributes")
     if not profile.content_pillars:
         profile.content_pillars = pack["content_pillars"]
         applied.append("content_pillars")
