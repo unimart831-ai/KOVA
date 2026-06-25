@@ -46,7 +46,12 @@ class AsyncEmailAccountAdapter(DefaultAccountAdapter):
         return super().save_user(request, user, form, commit)
 
     def is_email_verified(self, request, email):
-        """Auto-verify superuser emails so they skip the verification flow."""
+        """Skip verification gate when email verification is disabled."""
+        from django.conf import settings
+
+        if getattr(settings, "ACCOUNT_EMAIL_VERIFICATION", "mandatory") == "none":
+            return True
+
         from apps.accounts.models import User
 
         try:

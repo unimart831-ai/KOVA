@@ -103,13 +103,16 @@ class OnboardingMiddleware:
 
 
 class ProfilePrefetchMiddleware:
-    """Load user + profile in one query after authentication."""
+    """Load user + profile in one query; create profile if missing."""
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        if getattr(request, "user", None) and request.user.is_authenticated:
+        if getattr(request, "user", None) and request.user.is_authenticated and request.user.pk:
+            from apps.accounts.profile_utils import ensure_user_profile
+
+            ensure_user_profile(request.user)
             User = get_user_model()
             try:
                 request.user = User.objects.select_related("profile").get(pk=request.user.pk)

@@ -252,3 +252,28 @@ class TestSnapToShopGoldenPath:
         resp2 = client.get(product_url)
         assert resp2.status_code == 200
         assert b"Golden Sneaker" in resp2.content
+
+
+@pytest.mark.django_db
+class TestProfileBackfill:
+    def test_ensure_user_profile_creates_missing(self):
+        from apps.accounts.profile_utils import ensure_user_profile
+
+        u = User.objects.create_user(username="noprof", email="noprof@b.com", password="P1!")
+        UserProfile.objects.filter(user=u).delete()
+
+        profile = ensure_user_profile(u)
+        assert profile.pk
+        assert profile.page_slug
+
+    def test_brief_home_backfills_missing_profile(self, client):
+        u = User.objects.create_user(username="brieffix", email="brieffix@b.com", password="P1!")
+        u.phone_number = "0712345678"
+        u.onboarding_completed = True
+        u.save()
+        UserProfile.objects.filter(user=u).delete()
+
+        client.force_login(u)
+        resp = client.get("/brief/", follow=False)
+        assert resp.status_code == 200
+        assert UserProfile.objects.filter(user=u).exists()

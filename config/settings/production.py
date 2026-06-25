@@ -164,9 +164,10 @@ ANYMAIL = {
     "RESEND_API_KEY": RESEND_API_KEY,
 }
 
-# Email verification is non-negotiable in production — gates trial abuse and
-# guarantees we have a deliverable address before billing the user.
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+# Email verification disabled until Resend domain is verified — users go straight
+# to onboarding after signup. Re-enable with ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+# once noreply@yourdomain.com is live on Resend.
+ACCOUNT_EMAIL_VERIFICATION = "none"
 
 # ─── LOGGING ─────────────────────────────────────────────────────────────────
 import logging as _logging
