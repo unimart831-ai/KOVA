@@ -1468,57 +1468,87 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
             product_image_attached = False
             if seed and seed.product and seed.product.image:
                 try:
-                    from apps.content.models import MediaAttachment
+                    from apps.content.models import Post as PostModel
+                    from apps.content.product_visuals import (
+                        analysis_for_post,
+                        apply_polished_carousel_post,
+                        apply_polished_reel_post,
+                        product_has_polished_gallery,
+                    )
 
                     product = seed.product
-                    all_urls = product.all_image_urls  # primary + additional
+                    post_fmt = post.post_format or PostModel.PostFormat.TEXT
 
-                    # Round-robin: pick a different image for each post
-                    post_index = len(created_posts)  # 0-based index of this post
-                    img_index = post_index % len(all_urls)
-                    chosen_url = all_urls[img_index]
+                    if product_has_polished_gallery(product) and post_fmt == PostModel.PostFormat.CAROUSEL:
+                        if apply_polished_carousel_post(
+                            post,
+                            product,
+                            analysis=analysis_for_post(post),
+                        ):
+                            product_image_attached = True
+                            logger.info(
+                                "Polished carousel applied to post %s (product %s)",
+                                post.id,
+                                product.pk,
+                            )
+                    elif product_has_polished_gallery(product) and post_fmt == PostModel.PostFormat.REEL:
+                        if apply_polished_reel_post(post, product):
+                            product_image_attached = True
+                            logger.info(
+                                "Polished reel queued for post %s (product %s)",
+                                post.id,
+                                product.pk,
+                            )
+                    elif post_fmt not in (PostModel.PostFormat.CAROUSEL, PostModel.PostFormat.REEL):
+                        from apps.content.models import MediaAttachment
 
-                    # Create MediaAttachment — use the actual file for primary,
-                    # or the URL reference for additional images
-                    if img_index == 0 and product.image:
-                        attachment = MediaAttachment.objects.create(
-                            post=post,
-                            file=product.image,
-                            file_type="image",
-                            alt_text=product.name[:500],
-                            order=0,
-                        )
-                    else:
-                        # Additional images are stored via default_storage
-                        from django.core.files.storage import default_storage
-                        from django.core.files.base import ContentFile
-                        # Try to read the file from storage path
-                        storage_path = chosen_url.replace("/media/", "", 1) if chosen_url.startswith("/media/") else chosen_url.lstrip("/")
-                        try:
-                            with default_storage.open(storage_path) as f:
-                                file_data = f.read()
-                            ext = storage_path.rsplit(".", 1)[-1].lower()
-                            filename = f"post_media/{post.pk}_{img_index}.{ext}"
-                            attachment = MediaAttachment.objects.create(
+                        all_urls = product.all_image_urls  # primary + additional
+
+                        # Round-robin: pick a different image for each post
+                        post_index = len(created_posts)  # 0-based index of this post
+                        img_index = post_index % len(all_urls)
+                        chosen_url = all_urls[img_index]
+
+                        # Create MediaAttachment — use the actual file for primary,
+                        # or the URL reference for additional images
+                        if img_index == 0 and product.image:
+                            MediaAttachment.objects.create(
                                 post=post,
+                                file=product.image,
                                 file_type="image",
                                 alt_text=product.name[:500],
                                 order=0,
                             )
-                            attachment.file.save(filename, ContentFile(file_data), save=True)
-                        except Exception:
-                            # Fallback: just use the URL without a file attachment
-                            attachment = None
+                        else:
+                            # Additional images are stored via default_storage
+                            from django.core.files.storage import default_storage
+                            from django.core.files.base import ContentFile
+                            # Try to read the file from storage path
+                            storage_path = chosen_url.replace("/media/", "", 1) if chosen_url.startswith("/media/") else chosen_url.lstrip("/")
+                            try:
+                                with default_storage.open(storage_path) as f:
+                                    file_data = f.read()
+                                ext = storage_path.rsplit(".", 1)[-1].lower()
+                                filename = f"post_media/{post.pk}_{img_index}.{ext}"
+                                attachment = MediaAttachment.objects.create(
+                                    post=post,
+                                    file_type="image",
+                                    alt_text=product.name[:500],
+                                    order=0,
+                                )
+                                attachment.file.save(filename, ContentFile(file_data), save=True)
+                            except Exception:
+                                pass
 
-                    # Set media_urls so the publishing pipeline picks it up
-                    post.media_urls = [chosen_url]
-                    post.media_status = Post.MediaStatus.UPLOADED
-                    post.save(update_fields=["media_urls", "media_status", "updated_at"])
-                    product_image_attached = True
-                    logger.info(
-                        "Attached product image %d/%d to post %s: %s",
-                        img_index + 1, len(all_urls), post.id, chosen_url,
-                    )
+                        # Set media_urls so the publishing pipeline picks it up
+                        post.media_urls = [chosen_url]
+                        post.media_status = Post.MediaStatus.UPLOADED
+                        post.save(update_fields=["media_urls", "media_status", "updated_at"])
+                        product_image_attached = True
+                        logger.info(
+                            "Attached product image %d/%d to post %s: %s",
+                            img_index + 1, len(all_urls), post.id, chosen_url,
+                        )
                 except Exception as img_exc:
                     logger.warning("Failed to attach product image to post %s: %s", post.id, img_exc)
 

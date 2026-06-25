@@ -313,6 +313,13 @@ def _collect_reel_image_sources(post) -> list[str]:
     if source_images:
         return [_normalize_reel_image_source(u) for u in source_images if u and not _is_video_url(u)]
 
+    if post.product:
+        from apps.content.product_visuals import polished_reel_sources
+
+        product_sources = polished_reel_sources(post.product)
+        if product_sources:
+            return product_sources
+
     # Prefer Photoroom 9:16 story variants if available (no blur-letterbox needed)
     if post.product:
         story_urls = [
@@ -712,7 +719,7 @@ def generate_post_images(post_id: str):
     from apps.content.image_gen import generate_image, generate_carousel_images
 
     try:
-        post = Post.objects.select_related("user").get(pk=post_id)
+        post = Post.objects.select_related("user", "product").get(pk=post_id)
     except Post.DoesNotExist:
         logger.warning("generate_post_images: post %s not found", post_id)
         return
@@ -720,6 +727,16 @@ def generate_post_images(post_id: str):
     fmt = post.post_format or Post.PostFormat.TEXT
     if fmt == Post.PostFormat.TEXT:
         return  # Text posts don't need images
+
+    from apps.content.product_visuals import try_apply_product_polished_media
+
+    if try_apply_product_polished_media(post):
+        logger.info(
+            "generate_post_images: used polished product media for post %s",
+            post_id,
+        )
+        _notify_post_status(post)
+        return {"post_id": post_id, "status": post.media_status}
 
     post.media_status = Post.MediaStatus.PENDING
     post.save(update_fields=["media_status", "updated_at"])

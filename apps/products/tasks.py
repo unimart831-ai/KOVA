@@ -1329,6 +1329,18 @@ def expand_product_photo_set(
             fire_task=fire_task,
         )
 
+    if result.get("variations_created", 0) > 0:
+        try:
+            from apps.content.product_visuals import refresh_product_polished_posts
+
+            refresh_product_polished_posts(product)
+        except Exception as exc:
+            logger.warning(
+                "Polish follow-up: could not refresh posts for product %s: %s",
+                product.pk,
+                exc,
+            )
+
     return result
 
 

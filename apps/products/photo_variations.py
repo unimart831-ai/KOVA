@@ -807,10 +807,15 @@ def _expand_studio_polish(
 
     story_banner_slots, marketplace_slots = scene_pack_export_budget(scene_pack, plan_tier)
     export_slots = story_banner_slots + marketplace_slots
-    min_scenes = int(getattr(django_settings, "PHOTOROOM_MIN_SCENE_VARIANTS", 3))
+    target_variants = int(getattr(django_settings, "STUDIO_POLISH_TARGET_VARIANTS", 4))
+    min_scenes = min(
+        int(getattr(django_settings, "PHOTOROOM_MIN_SCENE_VARIANTS", 3)),
+        target_variants,
+    )
     if getattr(django_settings, "PHOTOROOM_PROFESSIONAL_MODE", True):
-        min_scenes = max(min_scenes, int(getattr(django_settings, "PHOTOROOM_PROFESSIONAL_MIN_SCENES", 8)))
-    if credit_pool > min_scenes and export_slots > 0:
+        prof_min = int(getattr(django_settings, "PHOTOROOM_PROFESSIONAL_MIN_SCENES", 4))
+        min_scenes = min(max(min_scenes, prof_min), target_variants)
+    if credit_pool > min_scenes and export_slots > 0 and target_variants > 4:
         export_budget = min(export_slots, credit_pool - min_scenes)
         channel_budget = min(story_banner_slots, export_budget)
         marketplace_budget = min(
@@ -821,7 +826,7 @@ def _expand_studio_polish(
     else:
         channel_budget = 0
         marketplace_budget = 0
-        scene_budget = max(1, credit_pool)
+        scene_budget = max(1, min(credit_pool, target_variants))
 
     from apps.media.orchestrator import cap_photoroom_scenes_for_plan
 
@@ -1046,7 +1051,8 @@ def _expand_studio_polish(
     multi_angle_variant: str | None = None
     multi_angle_count = 0
     if (
-        multi_angle_polish_credit_enabled(plan_tier)
+        target_variants > 4
+        and multi_angle_polish_credit_enabled(plan_tier)
         and raw_extra_angles
         and credit_pool > 0
     ):
@@ -1120,16 +1126,21 @@ def _expand_studio_polish(
         offering == "product"
         and credit_pool > 0
         and getattr(django_settings, "PHOTOROOM_VIRTUAL_MODEL_AUTO_PACK", True)
+        and len(variant_ids) < target_variants
+        and "virtual_model" not in variant_ids
+        and not any(v.startswith("virtual_model") for v in variant_ids)
     ):
         from apps.products.photoroom_virtual_models import append_virtual_model_pack
 
+        remaining = target_variants - len(variant_ids)
+        vm_budget = min(credit_pool, remaining, 1 if target_variants <= 4 else credit_pool)
         vm_urls, vm_ids, vm_credits = append_virtual_model_pack(
             product,
             source,
             analysis,
             brand_colors,
             brand_template=brand_template,
-            credit_budget=credit_pool,
+            credit_budget=vm_budget,
             product_category=product_category,
         )
         if vm_urls:
@@ -1174,23 +1185,24 @@ def _expand_studio_polish(
             )
             new_urls.extend(marketplace_urls)
 
-    try:
-        if first_hero_bytes:
-            hero_img = Image.open(BytesIO(first_hero_bytes)).convert("RGB")
-        display_name = sanitize_product_name(product.name) or "Product"
-        shop_hint = "Shop link in bio" if product.product_url else ""
-        promo = _render_promo_from_hero(
-            hero_img,
-            product_name=display_name,
-            display_price=product.display_price or "",
-            shop_hint=shop_hint,
-            colors=brand_colors,
-        )
-        new_urls.append(_save_variation_jpeg(product.pk, PRESET_PROMO_FRAME, promo))
-    except Exception as exc:
-        logger.debug("Promo frame from Plus hero failed: %s", exc)
+    if target_variants > 4:
+        try:
+            if first_hero_bytes:
+                hero_img = Image.open(BytesIO(first_hero_bytes)).convert("RGB")
+                display_name = sanitize_product_name(product.name) or "Product"
+                shop_hint = "Shop link in bio" if product.product_url else ""
+                promo = _render_promo_from_hero(
+                    hero_img,
+                    product_name=display_name,
+                    display_price=product.display_price or "",
+                    shop_hint=shop_hint,
+                    colors=brand_colors,
+                )
+                new_urls.append(_save_variation_jpeg(product.pk, PRESET_PROMO_FRAME, promo))
+        except Exception as exc:
+            logger.debug("Promo frame from Plus hero failed: %s", exc)
 
-    if cutout_png_url:
+    if cutout_png_url and target_variants > 4:
         new_urls.append(cutout_png_url)
 
     kept = _strip_generated_variations(product.additional_images, product.pk)

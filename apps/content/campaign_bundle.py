@@ -666,19 +666,26 @@ def _queue_bundle_media(post, seed, image_prompt: str, visual_strategy_data: dic
     from apps.content.models import Post
 
     product = getattr(seed, "product", None)
-    if product and getattr(product, "image", None) and post.post_format == Post.PostFormat.IMAGE:
-        try:
-            urls = list(product.all_image_urls or [])
-            if urls:
-                post.media_urls = [urls[0]]
-                post.media_status = Post.MediaStatus.UPLOADED
-                post.save(update_fields=["media_urls", "media_status", "updated_at"])
-                if post.post_format == Post.PostFormat.REEL:
-                    from apps.content.tasks import _queue_reel_compose
-                    _queue_reel_compose(str(post.pk))
+    if product and getattr(product, "image", None):
+        if post.post_format in (
+            Post.PostFormat.CAROUSEL,
+            Post.PostFormat.REEL,
+            Post.PostFormat.STORY,
+        ):
+            from apps.content.product_visuals import try_apply_product_polished_media
+
+            if try_apply_product_polished_media(post):
                 return True
-        except Exception as exc:
-            logger.warning("Bundle: product image attach failed for %s: %s", post.pk, exc)
+        if post.post_format == Post.PostFormat.IMAGE:
+            try:
+                urls = list(product.all_image_urls or [])
+                if urls:
+                    post.media_urls = [urls[0]]
+                    post.media_status = Post.MediaStatus.UPLOADED
+                    post.save(update_fields=["media_urls", "media_status", "updated_at"])
+                    return True
+            except Exception as exc:
+                logger.warning("Bundle: product image attach failed for %s: %s", post.pk, exc)
 
     meta = post.visual_metadata or {}
     source_images = meta.get("source_images") or []

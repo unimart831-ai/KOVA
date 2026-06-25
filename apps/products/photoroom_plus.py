@@ -1749,13 +1749,28 @@ def _target_ai_scene_count(
     min_ai = int(getattr(settings, "PHOTOROOM_MIN_AI_SCENES", 2))
     max_ai = int(getattr(settings, "PHOTOROOM_MAX_AI_SCENES", 3))
     if getattr(settings, "PHOTOROOM_PROFESSIONAL_MODE", True):
-        min_ai = max(min_ai, 4)
-        max_ai = max(max_ai, 8)
+        min_ai = max(min_ai, 3)
+        max_ai = max(max_ai, 4)
+    max_ai = min(max_ai, max(1, max_count - 1))
+    min_ai = min(min_ai, max_ai)
     if max_count <= 1 or offering != "product":
         return 0
 
     available = max_count - 1  # reserve hero
-    if max_count >= 5:
+    if max_count <= 4:
+        # Compact 4-variant pack: hero + angle + scene + proof/model — one AI scene
+        target = 1
+        ctx = _scene_intelligence_context(
+            analysis,
+            offering=offering,
+            category=category,
+            vertical=vertical,
+            stall_context=stall_context,
+        )
+        wearable = category in ("apparel", "apparel_mitumba", "beauty", "jewelry", "footwear")
+        if not wearable and max_count >= 4:
+            target = min(2, available)  # product-only: extra scene, no people
+    elif max_count >= 5:
         target = max_ai
     elif max_count >= 3:
         target = min_ai
@@ -1808,7 +1823,9 @@ def _target_edit_with_ai_count(
         stall_context=stall_context,
     )
 
-    if max_count < 5:
+    if max_count >= 4:
+        base = 1  # one angle/position variant in the 4-pack
+    elif max_count < 5:
         base = 1
     else:
         base = min(cap, max(0, max_count - 3))
@@ -2080,12 +2097,16 @@ def select_plus_variants(
         or hero_studio_variant_ids(brand_template, brand_colors, force_brand=force_brand)
     )
 
-    # Always include brand-aware studio hero + lifestyle for physical products
+    # Studio hero + optional lifestyle (wearables / beauty only — not every product)
     if offering == "product":
-        for required_id in (*hero_studio_ids, "ai_lifestyle"):
+        for required_id in hero_studio_ids:
             req = PLUS_VARIANT_CATALOG.get(required_id)
             if req and req not in candidates:
                 candidates.append(req)
+        if category in ("apparel", "apparel_mitumba", "beauty", "jewelry"):
+            lifestyle = PLUS_VARIANT_CATALOG.get("ai_lifestyle")
+            if lifestyle and lifestyle not in candidates:
+                candidates.append(lifestyle)
     elif offering == "service":
         for required_id in ("service_hero", "service_context"):
             req = PLUS_VARIANT_CATALOG.get(required_id)
@@ -2245,9 +2266,12 @@ def select_plus_variants(
 
 def get_max_variants_for_plan(plan_tier: str) -> int:
     from apps.billing.models import PLAN_LIMITS
+    from django.conf import settings
 
     limits = PLAN_LIMITS.get(plan_tier, PLAN_LIMITS["starter"])
-    return int(limits.get("plus_max_variants_per_product", 3))
+    plan_cap = int(limits.get("plus_max_variants_per_product", 3))
+    target = int(getattr(settings, "STUDIO_POLISH_TARGET_VARIANTS", 4))
+    return min(plan_cap, target)
 
 
 def multi_angle_polish_credit_enabled(plan_tier: str) -> bool:
