@@ -170,8 +170,15 @@ def moderation_model() -> str:
     return getattr(
         settings,
         "CONTENT_SAFETY_MODEL",
-        "google/gemini-2.0-flash-001",
+        "google/gemini-2.5-flash",
     )
+
+
+_MODERATION_MODEL_FALLBACKS = (
+    "google/gemini-2.5-flash",
+    "google/gemini-2.0-flash-001",
+    "openai/gpt-4o-mini",
+)
 
 
 def is_publishing_paused(user=None) -> tuple[bool, str]:
@@ -295,15 +302,26 @@ def save_incident_image(uploaded_file) -> str:
     """Persist an uploaded image for staff review; returns storage path."""
     import uuid
 
+    from django.core.files.base import ContentFile
     from django.core.files.storage import default_storage
 
     from apps.products.image_utils import normalize_uploaded_image
 
-    path = default_storage.save(
-        f"content_safety/incidents/{uuid.uuid4()}.jpg",
-        normalize_uploaded_image(uploaded_file),
-    )
-    return path
+    path = f"content_safety/incidents/{uuid.uuid4()}.jpg"
+    try:
+        content = normalize_uploaded_image(uploaded_file)
+    except ValueError as exc:
+        logger.warning("Incident image normalize failed (%s) — storing raw bytes", exc)
+        if hasattr(uploaded_file, "seek"):
+            uploaded_file.seek(0)
+        raw = uploaded_file.read() if hasattr(uploaded_file, "read") else b""
+        if hasattr(uploaded_file, "seek"):
+            uploaded_file.seek(0)
+        if not raw:
+            return ""
+        content = ContentFile(raw, name="incident_upload.bin")
+
+    return default_storage.save(path, content)
 
 
 def _fail_closed_result(reason: str) -> SafetyResult:
@@ -378,7 +396,8 @@ def _parse_moderation_response(data: dict) -> SafetyResult:
         reasons = [f"Detected: {', '.join(categories)}"]
 
     threshold = _high_severity_threshold()
-    safe = bool(categories and severity >= threshold)
+    unsafe = bool(categories and severity >= threshold)
+    safe = not unsafe
 
     return SafetyResult(
         safe=safe,
@@ -397,27 +416,58 @@ def _openrouter_moderate_text(text: str, user=None) -> SafetyResult:
         return SafetyResult()
 
     client = _get_openrouter_client()
-    model = moderation_model()
     prompt = f"{_MODERATION_JSON_SCHEMA}\n\nContent to review:\n{text[:8000]}"
+    messages = [
+        {"role": "system", "content": _MODERATION_SYSTEM},
+        {"role": "user", "content": prompt},
+    ]
 
-    try:
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": _MODERATION_SYSTEM},
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=512,
-            temperature=0,
-            response_format={"type": "json_object"},
-        )
-        content = response.choices[0].message.content or "{}"
-        return _parse_moderation_response(parse_llm_json(content))
-    except Exception as exc:
-        logger.error("Content safety text moderation failed: %s", exc)
+    last_exc = None
+    for model in _moderation_models_to_try():
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=512,
+                temperature=0,
+                response_format={"type": "json_object"},
+            )
+            content = response.choices[0].message.content or "{}"
+            return _parse_moderation_response(parse_llm_json(content))
+        except Exception as exc:
+            last_exc = exc
+            err = str(exc).lower()
+            if "404" in err or "no endpoints found" in err:
+                logger.warning("Content safety model %s unavailable, trying fallback", model)
+                continue
+            logger.error("Content safety text moderation failed: %s", exc)
+            break
+
+    if last_exc:
+        logger.error("Content safety text moderation failed: %s", last_exc)
+        err = str(last_exc).lower()
+        if content_safety_enabled() and (
+            "404" in err or "no endpoints found" in err
+        ):
+            return SafetyResult(
+                safe=True,
+                api_failed=True,
+                reasons=["Moderation skipped — model unavailable"],
+            )
         if content_safety_enabled():
-            return _fail_closed_result(f"Moderation API error: {exc}")
-        return SafetyResult()
+            return _fail_closed_result(f"Moderation API error: {last_exc}")
+    return SafetyResult()
+
+
+def _moderation_models_to_try() -> list[str]:
+    primary = moderation_model()
+    seen = {primary}
+    models = [primary]
+    for slug in _MODERATION_MODEL_FALLBACKS:
+        if slug not in seen:
+            models.append(slug)
+            seen.add(slug)
+    return models
 
 
 def _openrouter_moderate_image(image_url: str, user=None) -> SafetyResult:
@@ -429,7 +479,6 @@ def _openrouter_moderate_image(image_url: str, user=None) -> SafetyResult:
         return SafetyResult()
 
     client = _get_openrouter_client()
-    model = moderation_model()
     prompt = (
         f"{_MODERATION_JSON_SCHEMA}\n\n"
         "Review this image ONLY for clear sexual nudity, pornography, sexually explicit "
@@ -437,31 +486,52 @@ def _openrouter_moderate_image(image_url: str, user=None) -> SafetyResult:
         "Construction, architecture, work sites, street photography, catalog swimwear, "
         "and normal business product photos are safe. When uncertain, allow."
     )
-
-    try:
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": _MODERATION_SYSTEM},
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "image_url", "image_url": {"url": image_url, "detail": "low"}},
-                        {"type": "text", "text": prompt},
-                    ],
-                },
+    messages = [
+        {"role": "system", "content": _MODERATION_SYSTEM},
+        {
+            "role": "user",
+            "content": [
+                {"type": "image_url", "image_url": {"url": image_url, "detail": "low"}},
+                {"type": "text", "text": prompt},
             ],
-            max_tokens=512,
-            temperature=0,
-            response_format={"type": "json_object"},
-        )
-        content = response.choices[0].message.content or "{}"
-        return _parse_moderation_response(parse_llm_json(content))
-    except Exception as exc:
-        logger.error("Content safety image moderation failed: %s", exc)
+        },
+    ]
+
+    last_exc = None
+    for model in _moderation_models_to_try():
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=512,
+                temperature=0,
+                response_format={"type": "json_object"},
+            )
+            content = response.choices[0].message.content or "{}"
+            return _parse_moderation_response(parse_llm_json(content))
+        except Exception as exc:
+            last_exc = exc
+            err = str(exc).lower()
+            if "404" in err or "no endpoints found" in err:
+                logger.warning("Content safety model %s unavailable, trying fallback", model)
+                continue
+            logger.error("Content safety image moderation failed: %s", exc)
+            break
+
+    if last_exc:
+        logger.error("Content safety image moderation failed: %s", last_exc)
+        err = str(last_exc).lower()
+        if content_safety_enabled() and (
+            "404" in err or "no endpoints found" in err
+        ):
+            return SafetyResult(
+                safe=True,
+                api_failed=True,
+                reasons=["Moderation skipped — vision model unavailable"],
+            )
         if content_safety_enabled():
-            return _fail_closed_result(f"Moderation API error: {exc}")
-        return SafetyResult()
+            return _fail_closed_result(f"Moderation API error: {last_exc}")
+    return SafetyResult()
 
 
 def encode_uploaded_file(uploaded_file) -> str:
@@ -469,6 +539,7 @@ def encode_uploaded_file(uploaded_file) -> str:
     if hasattr(uploaded_file, "read"):
         uploaded_file.seek(0)
         raw = uploaded_file.read()
+        uploaded_file.seek(0)
     else:
         raw = uploaded_file
 

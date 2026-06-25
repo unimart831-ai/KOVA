@@ -596,7 +596,7 @@ LLM_MODEL_FAST = env("LLM_MODEL_FAST", default="deepseek/deepseek-v3.2")
 CONTENT_SAFETY_ENABLED = env.bool("CONTENT_SAFETY_ENABLED", default=False)
 CONTENT_SAFETY_MODEL = env(
     "CONTENT_SAFETY_MODEL",
-    default="google/gemini-2.0-flash-001",
+    default="google/gemini-2.5-flash",
 )
 CONTENT_SAFETY_NOTIFY_EMAIL = env("CONTENT_SAFETY_NOTIFY_EMAIL", default="")
 # Lenient sex-only defaults — raise threshold to tighten without code changes.

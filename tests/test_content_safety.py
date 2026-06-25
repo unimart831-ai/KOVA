@@ -28,6 +28,14 @@ from apps.content.tasks import publish_post
 from apps.platforms.models import SocialAccount
 
 
+@pytest.fixture(autouse=True)
+def enable_content_safety_checks(db):
+    """Ensure moderation API paths run unless a test explicitly pauses checks."""
+    config, _ = SystemSafetyConfig.objects.get_or_create(pk=1)
+    config.content_safety_checks_enabled = True
+    config.save()
+
+
 @pytest.fixture
 def user_b(db):
     u = User.objects.create_user(
@@ -120,6 +128,7 @@ class TestStaffModerationToggle:
         assert result.safe is True
 
     @override_settings(CONTENT_SAFETY_ENABLED=False)
+    @pytest.mark.django_db
     def test_env_off_staff_pause_has_no_effect(self):
         config, _ = SystemSafetyConfig.objects.get_or_create(pk=1)
         config.content_safety_checks_enabled = False
@@ -166,6 +175,19 @@ class TestFailClosed:
 
         result = check_image_safe("https://cdn.example.com/x.jpg", user=user)
         assert result.safe is False
+        assert result.api_failed is True
+
+    @override_settings(CONTENT_SAFETY_ENABLED=True, OPENROUTER_API_KEY="test-key")
+    @patch("apps.agents.llm._get_openrouter_client")
+    def test_image_fail_open_when_model_unavailable(self, mock_client_fn, user):
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.side_effect = RuntimeError(
+            "Error code: 404 - {'error': {'message': 'No endpoints found for google/gemini-2.0-flash-001.'}}"
+        )
+        mock_client_fn.return_value = mock_client
+
+        result = check_image_safe("https://cdn.example.com/x.jpg", user=user)
+        assert result.safe is True
         assert result.api_failed is True
 
 

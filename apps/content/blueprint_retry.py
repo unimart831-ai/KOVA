@@ -33,8 +33,7 @@ def improve_low_blueprint_posts(
     if not blueprint or not post_dicts:
         return post_dicts
 
-    from apps.agents.create_agent import _regenerate_single_platform
-    from apps.content.models import log_gen_step
+    from apps.agents.create_agent import _regenerate_single_platform, log_gen_step
 
     low_platforms: list[str] = []
     for pd in post_dicts:

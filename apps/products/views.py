@@ -1115,7 +1115,7 @@ def snap_launch(request):
     """
     from apps.billing.models import get_user_plan_limits
     from apps.products.commerce_autopilot import commerce_autopilot_active, sanitize_product_name
-    from apps.products.image_utils import normalize_uploaded_image
+    from apps.products.image_utils import normalize_uploaded_image, validate_uploaded_images
     from apps.products.photo_variations import normalize_visual_mode
     from apps.products.tasks import snap_to_sell_analyze
     from apps.utils import fire_task
@@ -1151,6 +1151,11 @@ def snap_launch(request):
 
     # Cap at 6 images
     photos = photos[:6]
+
+    image_error = validate_uploaded_images(photos)
+    if image_error:
+        messages.error(request, image_error)
+        return redirect("products:snap")
 
     # Parse price (optional for portfolio / case study snaps)
     price_raw = request.POST.get("price", "").strip()

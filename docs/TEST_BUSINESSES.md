@@ -842,7 +842,7 @@ closers, signing off with the founder's first name where it fits.
 
 - [ ] **Brand Voice Examples** — Verify the 4 examples are saved on the profile and surface in the Step 2 review page
 - [ ] **AI Voice Match** — Generate 5 posts from seeds; check the output reads like Elvis-W. (short paragraphs, code-switch, concrete scenes, no corporate-speak)
-- [ ] **Manual Onboarding Path** — Confirm the manual route works when both Magic Fill and URL inference are unavailable
+- [ ] **Manual Onboarding Path** — Walk through the Hire Kova → Brand voice → Confirm flow (no magic fill required)
 - [ ] **Industry Pack — education** — Verify defaults applied; check that the bolder bespoke `brand_voice` overrides the pack's softer default tones
 - [ ] **Code-Switch Content** — Verify AI keeps English/Swahili/Sheng mix in generated posts (not pure English, not pure Swahili)
 - [ ] **Pre-Launch Mode** — Test the platform with no products, no website, no live socials — does it still feel useful?
@@ -863,7 +863,7 @@ closers, signing off with the founder's first name where it fits.
 - **Voice Style Transfer:** The strongest test of whether Kova's AI can match a distinctive non-corporate voice given strong `brand_voice_examples`.
 - **Pre-Launch Use Case:** Bridge has no website, no products, no socials connected. Stress-tests the platform for founders who use Kova as part of going to market — not after launch.
 - **Code-Switching Content:** Specifically tests AI handling of English + Swahili + Sheng mix, the way the founder actually writes.
-- **Manual Path Validation:** The cleanest test of the manual onboarding path — Bridge can't use Magic Fill (no socials) or URL inference (no site). If the manual flow doesn't feel good here, it doesn't feel good for any new founder.
+- **Manual Path Validation:** The cleanest test of the Hire Kova → voice → confirm path — Bridge has no website and no socials connected at signup. If onboarding doesn't feel good here, it won't for any new founder.
 - **Industry Pack Collision:** Pairs with Elimu Hub. Both `education`, deliberately different voices, both Growth plan. Validates that strong voice examples override pack defaults.
 
 ---
@@ -1018,19 +1018,26 @@ any course / cohort / curriculum-based educator.
    audience, pillars, tones, goals, CTA, brand colors), and a starter set of
    products. Pass `--complete-onboarding` to skip the wizard entirely for
    businesses you don't need to manually walk through.
-2. **Manual onboarding (for QA coverage of the new wizard):** sign up each
+2. **Manual onboarding (for QA coverage of the current wizard):** sign up each
    business through the public UI to exercise express onboarding end-to-end.
-   The new flow is:
-   * **Path-choice screen** — pick Magic Fill (auto-fill from a social account),
-     URL inference (paste a website), or manual setup.
-   * **Step 1 — Basics:** company name, industry, audience, key offerings,
-     timezone, website. If Magic Fill or URL inference fired, fields arrive
-     pre-populated.
-   * **Step 2 — Review your brand:** merged voice + visuals + goals + autonomy
-     + CTA. Industry pack values are already filled in; the user skims and
-     edits anything off.
-   * **Step 2 — Confirm brand** (preview card, not a long form).
-   * **Agency meeting** — completion page polls intelligence chain.
+   The current flow is:
+   * **Signup** — email + phone (Kenyan numbers auto-set timezone `Africa/Nairobi`,
+     country `KE`, and `mpesa_phone`). Email verification is **off** in dev/staging
+     (`ACCOUNT_EMAIL_VERIFICATION = none`); users go straight to onboarding after signup.
+   * **Phone step** — OAuth signups land on `/accounts/onboarding/phone/` first if
+     no phone is on file.
+   * **Hire Kova** (`/accounts/onboarding/start/`) — pick a business type chip,
+     primary goal, business name, and optional website. Industry pack defaults
+     (pillars, posting cadence, CTA style) apply here but **not** brand voice.
+   * **Step 2 — Your brand voice** — user writes how they sound and/or pastes
+     1–3 example posts (at least one of voice description or an example is required).
+     Industry packs no longer pre-fill `brand_voice` or `tone_attributes`.
+   * **Step 3 — Confirm your brand** — preview card; user confirms and finishes.
+   * **WOW screen** — `/accounts/onboarding/complete/` shows draft posts and a
+     welcome brief **immediately** (`ensure_instant_onboarding_wow`); Celery
+     enriches in the background (no 3-minute wait on the completion page).
+   * **Post-onboarding redirect** — commerce-first intents go to Snap; others to Studio.
+   * **Settings** — gated until `onboarding_completed` is true.
    * **Platform connect** — optional anytime from Platforms (not a wizard step).
    Phase 1 of the test plan only takes one or two businesses through the
    manual route; the rest go through `seed_test_businesses`.
@@ -1079,54 +1086,50 @@ by the per-business feature lists above. Run through this section explicitly to
 confirm the new automation paths work end-to-end and surface correctly in the
 admin Onboarding Funnel.
 
-### Path Choice
+### Hire Kova (discovery)
 
-Each new user lands on a 3-option screen before Step 1:
+Each new user lands on the business-type + goal screen before brand voice:
 
-| Path | Test with business | Expected admin marker |
-|------|---------------------|------------------------|
-| Magic Fill (auto-fill from social) | **Kawaida Hair & Beauty** (#12), **Mara & Moto** (#1), **Nyama Mama** (#4) | `path_choice_magic` |
-| URL inference (paste a website) | **CloudStack Africa** (#5), **PixelCraft Studios** (#2), **Elimu Hub** (#3) | `path_choice_url` |
-| Manual setup | **Kakuma Wholesale** (#11), **Coach Amara** (#7) | `path_choice_manual` |
+| What to test | Test with business | Expected admin marker |
+|--------------|---------------------|------------------------|
+| Salon / beauty chip | **Kawaida Hair & Beauty** (#12) | `discovery_completed` |
+| Food / restaurant chip | **Nyama Mama** (#4) | `discovery_completed` |
+| Sell-products goal | **Mara & Moto** (#1) | `intent_sell` or `path_choice_sell` |
+| Optional website on hire screen | **CloudStack Africa** (#5) | `discovery_completed` + `website_url` saved |
+| Manual / professional path (legacy deep link) | **Kakuma Wholesale** (#11), **Coach Amara** (#7) | `path_choice_manual` |
 
-Verify in admin `/admin/users/onboarding-funnel/` → **Path choice** panel shows
-the counts and percentages.
+Verify in admin `/admin/users/onboarding-funnel/` → **Intent / path chosen** panel.
 
-### Magic Fill (profile_audit → UserProfile)
+**Deprecated (do not test as primary path):** Magic Fill (`/accounts/onboarding/magic-connect/`)
+redirects to Hire Kova with an info message. Social auto-fill no longer copies brand voice.
 
-- [ ] Connect Instagram for Kawaida → audit pulls bio, profile pic, website, phone
-- [ ] Connect Facebook Page for Nyama Mama → audit pulls category, hours, address
-- [ ] Connect LinkedIn for PixelCraft → audit pulls org description, website
-- [ ] Verify admin marker: `magic_fill_applied:<platform>` recorded per audit success
-- [ ] Verify provider breakdown panel shows IG / FB / LinkedIn counts
+### Brand voice step
 
-### URL Inference (paste a URL → LLM fills fields)
+- [ ] Step 2 requires brand voice description **or** at least one example post
+- [ ] Up to 3 example posts saved on `profile.brand_voice_examples`
+- [ ] `tone_attributes` cleared on save (voice comes from user text, not pack grid)
+- [ ] Verify admin marker: `brand_voice_completed`
+- [ ] **Bridge Academy** (#13) — strongest voice-match test: 4 bespoke examples must surface in generated posts
+- [ ] **Elimu Hub** vs **Bridge** — same `education` industry, different voices; confirm examples override pack defaults
 
-- [ ] CloudStack: paste `cloudstackafrica.com` → industry inferred as `saas`, voice + pillars filled
-- [ ] PixelCraft: paste `pixelcraftstudios.com` → industry inferred as `agency`
-- [ ] PesaPal: paste `pesapalfinance.co.ke` → industry inferred as `finance`
-- [ ] Verify malformed URLs return a friendly error (404, no scheme, etc.)
-- [ ] Verify admin marker: `url_inference_applied` recorded
+### Industry pack defaults
 
-### Industry Pack Defaults
-
-Each business should see its industry-specific defaults applied after Step 1.
+Packs apply structural defaults on Hire Kova (pillars, cadence, CTA) but **not** voice.
 Spot-check at least these:
 
-| Business | Industry | Expected pack defaults |
-|----------|---------|------------------------|
-| Kawaida | `salon_beauty` | WhatsApp CTA, 5 posts/wk, warm/playful tones, "Transformations & before/after" pillar |
-| Nyama Mama | `food_restaurant` | Phone CTA, 6 posts/wk, warm/playful tones, "Menu highlights" pillar |
-| Coach Amara | `health` | WhatsApp CTA, 3 posts/wk, empathetic/educational tones |
-| Mara & Moto | `fashion_beauty` | Link CTA, 5 posts/wk, bold/playful tones, vibrant visuals |
-| Makao Homes | `real_estate` | WhatsApp CTA, 4 posts/wk, confident/professional tones |
-| Kakuma | `wholesale_retail` | WhatsApp CTA, 4 posts/wk, approachable tones |
+| Business | Industry | Expected pack defaults (non-voice) |
+|----------|---------|----------------------------------|
+| Kawaida | `salon_beauty` | WhatsApp CTA, 5 posts/wk, "Transformations & before/after" pillar |
+| Nyama Mama | `food_restaurant` | Phone CTA, 6 posts/wk, "Menu highlights" pillar |
+| Coach Amara | `health` | WhatsApp CTA, 3 posts/wk |
+| Mara & Moto | `fashion_beauty` | Link CTA, 5 posts/wk, vibrant visuals |
+| Makao Homes | `real_estate` | WhatsApp CTA, 4 posts/wk |
+| Kakuma | `wholesale_retail` | WhatsApp CTA, 4 posts/wk |
 
-- [ ] Verify admin marker: `industry_pack_applied:<industry>` recorded
-- [ ] Verify "Industry pack — applied" stat shows count + % of completed users
+- [ ] Verify admin marker: `industry_pack_applied:<industry>` when pack fields apply
 - [ ] Verify "Industry mix (top 10)" panel shows the 14-business distribution
 
-### Smart Kenya Defaults (signup)
+### Smart Kenya defaults (signup)
 
 All 14 businesses use Kenyan phone numbers, so all should auto-set:
 
@@ -1135,15 +1138,22 @@ All 14 businesses use Kenyan phone numbers, so all should auto-set:
 - [ ] `profile.mpesa_phone` matches the signup phone
 - [ ] Verify "Country mix" panel shows **KE** dominating (should be 14/14)
 
-### Wizard Structure
+### Wizard structure
 
-- [ ] Confirm wizard is **3 steps**, not 4 (progress bar shows "Step X of 3")
-- [ ] Step 2 is a single "Confirm your brand" preview page (not a long legacy form)
-- [ ] African timezones surfaced at top of the timezone dropdown in Step 1
-- [ ] Mid-flow OAuth callback returns user to `?step=2` (magic fill handoff)
+- [ ] Confirm wizard is **3 steps** (Hire Kova → Brand voice → Confirm); progress bar shows "Step X of 3"
+- [ ] Step 3 is a single "Confirm your brand" preview page (not a long legacy form)
 - [ ] Signup requires phone number; OAuth users land on `/accounts/onboarding/phone/` first
+- [ ] Settings page redirects incomplete users back to onboarding
+- [ ] Legacy Step 1 form (`?step=1&via=url`) still works for deep links / tests but is not the default path
 
-### WhatsApp Completion Ping
+### Instant WOW screen
+
+- [ ] Complete onboarding → WOW page shows draft posts from voice examples within seconds
+- [ ] Welcome daily brief visible without waiting for Celery
+- [ ] Agent setup steps show **Done** synchronously; background `run_onboarding_intelligence` enriches later
+- [ ] If Celery is down, user still reaches Studio/Snap (no infinite spinner)
+
+### WhatsApp completion ping
 
 - [ ] Verify `KOVA_ONBOARDING_TEMPLATE_NAME` env var is set in test env
 - [ ] Complete onboarding for Kawaida (Kenyan phone) → verify WhatsApp template
@@ -1156,10 +1166,10 @@ All 14 businesses use Kenyan phone numbers, so all should auto-set:
 After running the full test cohort, the admin funnel at
 `/admin/users/onboarding-funnel/` should show:
 
-- [ ] **Funnel** — drop-off: Signup → Phone → Intent → Step 1 → Step 2 confirm → Agency chain
+- [ ] **Funnel** — drop-off: Signup → Phone → Intent → Brand voice → Confirm → Agency chain
 - [ ] **Top summary line** — median time-to-complete in minutes
-- [ ] **Path choice** — Magic / URL / Manual / Unknown breakdown
-- [ ] **Automation hits** — Magic Fill providers, URL inference count, industry pack hits
+- [ ] **Path choice** — Sell / Manual / discovery markers (Magic Fill counts legacy only)
+- [ ] **Automation hits** — industry pack hits, `brand_voice_completed` count
 - [ ] **Industry mix** — top 10 industries
 - [ ] **Country mix** — KE dominant
 - [ ] **Stuck users** — empty (or accurate if you intentionally break a celery worker to test)

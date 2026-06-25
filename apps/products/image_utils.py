@@ -22,7 +22,15 @@ def apply_exif_orientation(image: Image.Image) -> Image.Image:
 
 def normalize_image_bytes(data: bytes, *, format: str = "JPEG") -> bytes:
     """Return upright image bytes suitable for storage / processing."""
-    img = Image.open(BytesIO(data))
+    if not data or len(data) < 16:
+        raise ValueError("Image file is empty or too small to process.")
+
+    try:
+        img = Image.open(BytesIO(data))
+        img.load()
+    except Exception as exc:
+        raise ValueError("Could not read image file — try JPEG or PNG.") from exc
+
     img = apply_exif_orientation(img)
     if format.upper() == "JPEG":
         img = img.convert("RGB")
@@ -34,10 +42,32 @@ def normalize_image_bytes(data: bytes, *, format: str = "JPEG") -> bytes:
     return out.getvalue()
 
 
+def validate_uploaded_images(uploaded_files) -> str | None:
+    """Return a user-facing error message if any upload is empty or unreadable."""
+    for uploaded in uploaded_files:
+        if hasattr(uploaded, "seek"):
+            uploaded.seek(0)
+        raw = uploaded.read()
+        if hasattr(uploaded, "seek"):
+            uploaded.seek(0)
+        if not raw:
+            return "Uploaded image is empty — please retake or choose another photo."
+        try:
+            normalize_image_bytes(raw)
+        except ValueError as exc:
+            return str(exc)
+    return None
+
+
 def normalize_uploaded_image(uploaded_file) -> ContentFile:
     """Normalize an uploaded image file (EXIF upright, JPEG)."""
+    if hasattr(uploaded_file, "seek"):
+        uploaded_file.seek(0)
     raw = uploaded_file.read()
-    uploaded_file.seek(0)
+    if hasattr(uploaded_file, "seek"):
+        uploaded_file.seek(0)
+    if not raw:
+        raise ValueError("Uploaded image is empty — please retake or choose another photo.")
     normalized = normalize_image_bytes(raw)
-    base = (uploaded_file.name or "photo").rsplit(".", 1)[0]
+    base = (getattr(uploaded_file, "name", None) or "photo").rsplit(".", 1)[0]
     return ContentFile(normalized, name=f"{base}.jpg")
