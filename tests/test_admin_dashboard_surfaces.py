@@ -161,3 +161,16 @@ class TestAdminDashboardSurfaces:
         assert resp["Location"] == overview_url
         config.refresh_from_db()
         assert config.content_safety_checks_enabled is False
+
+    def test_overview_metrics_uses_cache(self, staff_user):
+        from apps.admin_dashboard.overview_metrics import (
+            get_cached_overview_context,
+            invalidate_overview_cache,
+        )
+
+        invalidate_overview_cache()
+        cold = get_cached_overview_context(force_refresh=True)
+        warm = get_cached_overview_context()
+        assert cold["total_users"] == warm["total_users"]
+        assert "ops_hub" in warm
+        assert "pilot_metrics" in warm
