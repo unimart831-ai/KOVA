@@ -821,6 +821,9 @@ function settingsBrandBuilder() {
       this.error = '';
       this.upgradeUrl = '';
       this.success = false;
+      if (window.KovaBusy) {
+        window.KovaBusy.start({ instant: true, message: 'Training Kova on your brand voice…' });
+      }
 
       try {
         const formData = new FormData();
@@ -900,6 +903,7 @@ function settingsBrandBuilder() {
           this.error = 'Network error. Check your connection and try again.';
         }
       } finally {
+        if (window.KovaBusy) window.KovaBusy.stop();
         this.loading = false;
       }
     }

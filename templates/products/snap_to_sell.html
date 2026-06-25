@@ -26,6 +26,8 @@
   {% include "components/_media_pipeline_explainer.html" with compact=True %}
 
   <form method="post" action="{% url 'products:snap_launch' %}" enctype="multipart/form-data" class="space-y-4"
+        data-kova-busy="instant"
+        data-kova-busy-message="Analyzing your photo and building your listing…"
         @submit="prepareSubmit($event)">
     {% csrf_token %}
     <input type="hidden" name="offering_type" :value="offeringType">

@@ -22,6 +22,8 @@
   </div>
 
   <form method="post" class="space-y-8"
+        data-kova-busy="instant"
+        data-kova-busy-message="Tailoring Kova to your business…"
         x-data="{ businessType: 'salon', goal: 'leads', showOtherIndustry: false }"
         x-init="showOtherIndustry = businessType === 'other'">
     {% csrf_token %}

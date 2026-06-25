@@ -99,6 +99,12 @@ document.addEventListener("alpine:init", function () {
           return;
         }
         this.submitting = true;
+        if (window.KovaBusy) {
+          window.KovaBusy.start({
+            instant: form.getAttribute("data-kova-busy") === "instant",
+            message: form.getAttribute("data-kova-busy-message"),
+          });
+        }
         form.submit();
       },
     };

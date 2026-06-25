@@ -16,7 +16,7 @@
 
     {# Status area — HTMX polls every 3 seconds #}
     <div class="card-body py-8">
-      <div id="mpesa-status" hx-get="{% url 'billing:mpesa_check_status' %}" hx-trigger="every 3s" hx-swap="outerHTML">
+      <div id="mpesa-status" hx-get="{% url 'billing:mpesa_check_status' %}" hx-trigger="every 3s" hx-swap="outerHTML" data-kova-busy="off">
         <div class="flex flex-col items-center">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mb-3"></div>
           <p class="text-sm text-gray-600 dark:text-gray-400">Waiting for M-Pesa confirmation...</p>

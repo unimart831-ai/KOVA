@@ -76,6 +76,8 @@
   </details>
 
   <form id="batch-form" method="post" action="{% url 'products:snap_batch_launch' %}" enctype="multipart/form-data"
+        data-kova-busy="instant"
+        data-kova-busy-message="Processing your batch — Kova is reading every photo…"
         class="space-y-5" @submit="prepareSubmit($event)">
     {% csrf_token %}
     <input type="hidden" name="offering_type" :value="offeringType">

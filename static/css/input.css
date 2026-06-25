@@ -558,6 +558,9 @@ textarea {
     .motion-hub-ring {
       animation: pulse-ring 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
+    .kova-busy-orb {
+      animation: pulse-ring 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
   }
 
   /* Reduced motion: disable decorative animations; keep functional spinners via Tailwind defaults */
@@ -570,6 +573,7 @@ textarea {
     .motion-orb,
     .motion-orb-delayed,
     .motion-hub-ring,
+    .kova-busy-orb,
     .orb,
     .animate-float,
     .animate-float-delayed,

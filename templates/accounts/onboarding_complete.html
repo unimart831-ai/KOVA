@@ -35,6 +35,7 @@
   <div id="onboarding-progress"
        hx-get="{% url 'accounts:onboarding_progress' %}"
        hx-trigger="load, every 8s"
+       data-kova-busy="off"
        hx-swap="innerHTML"
        class="">
     {% include "accounts/_onboarding_progress.html" %}

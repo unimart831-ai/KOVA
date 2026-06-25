@@ -141,6 +141,9 @@ function urlInfer(initialUrl, endpoint) {
       }
 
       this.loading = true;
+      if (window.KovaBusy) {
+        window.KovaBusy.start({ instant: true, message: "Reading your page and filling in the basics…" });
+      }
       this.attempted = true;
       this.error = '';
       this.success = '';
@@ -184,6 +187,7 @@ function urlInfer(initialUrl, endpoint) {
       } catch (err) {
         this.error = 'We could not reach that link right now. You can still continue manually.';
       } finally {
+        if (window.KovaBusy) window.KovaBusy.stop();
         this.loading = false;
       }
     }

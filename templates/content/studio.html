@@ -119,6 +119,8 @@
             hx-target="#seed-processing-zone"
             hx-swap="afterbegin"
             hx-on::after-request="if(event.detail.successful) this.reset()"
+            data-kova-busy="instant"
+            data-kova-busy-message="Starting your campaign — Create Agent is waking up…"
             class="space-y-4 group/form" x-data="seedForm()"{% if at_seed_limit %} data-seed-limit="1"{% endif %}>
         {% csrf_token %}
         <div>
@@ -243,6 +245,7 @@
     {% for seed in active_seeds %}
       <div hx-get="{% url 'content:seed_status' seed.id %}"
            hx-trigger="every 2s"
+           data-kova-busy="off"
            hx-swap="outerHTML"
            class="card border border-kova-200 dark:border-kova-800 overflow-hidden">
         {# Animated top bar #}

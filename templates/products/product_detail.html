@@ -149,34 +149,34 @@
              class="block px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">Export for Google Shopping</a>
           {% endif %}
           {% if product.image %}
-          <form method="post" action="{% url 'products:expand_photos' product_id=product.pk %}">
+          <form method="post" action="{% url 'products:expand_photos' product_id=product.pk %}" data-kova-busy="instant" data-kova-busy-message="Refreshing your studio photos…">
             {% csrf_token %}
             <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">Refresh studio photos</button>
           </form>
-          <form method="post" action="{% url 'products:quick_post' product_id=product.pk %}">
+          <form method="post" action="{% url 'products:quick_post' product_id=product.pk %}" data-kova-busy="instant" data-kova-busy-message="Drafting a quick post from your product…">
             {% csrf_token %}
             <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">Quick post (photo only)</button>
           </form>
           {% if product.stock_status != 'out_of_stock' %}
-          <form method="post" action="{% url 'products:fix_promote' product_id=product.pk %}">
+          <form method="post" action="{% url 'products:fix_promote' product_id=product.pk %}" data-kova-busy="instant" data-kova-busy-message="Polishing photos and preparing your promo…">
             {% csrf_token %}
             <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">Fix photos &amp; promote</button>
           </form>
           {% endif %}
           <div class="border-t border-gray-100 dark:border-gray-800 my-1"></div>
-          <form method="post" action="{% url 'products:generate_video' product_id=product.pk %}">
+          <form method="post" action="{% url 'products:generate_video' product_id=product.pk %}" data-kova-busy="instant" data-kova-busy-message="Generating your product video — this can take a minute…">
             {% csrf_token %}
             <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">AI product video</button>
           </form>
-          <form method="post" action="{% url 'products:generate_promo' product_id=product.pk %}">
+          <form method="post" action="{% url 'products:generate_promo' product_id=product.pk %}" data-kova-busy="instant" data-kova-busy-message="Creating your promo image…">
             {% csrf_token %}
             <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">Promo image</button>
           </form>
-          <form method="post" action="{% url 'products:virtual_model' product_id=product.pk %}">
+          <form method="post" action="{% url 'products:virtual_model' product_id=product.pk %}" data-kova-busy="instant" data-kova-busy-message="Building your virtual model pack…">
             {% csrf_token %}
             <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">Virtual model pack</button>
           </form>
-          <form method="post" action="{% url 'products:seasonal_variant' product_id=product.pk %}">
+          <form method="post" action="{% url 'products:seasonal_variant' product_id=product.pk %}" data-kova-busy="instant" data-kova-busy-message="Creating a seasonal variant…">
             {% csrf_token %}
             <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">Seasonal variant</button>
           </form>

@@ -47,6 +47,7 @@
   <!-- HTMX + Alpine (self-hosted — no CDN round-trips) -->
   <script defer src="{% static 'js/vendor/htmx.min.js' %}"></script>
   <script defer src="{% static 'js/vendor/alpine.min.js' %}"></script>
+  <script defer src="{% static 'js/kova-busy.js' %}"></script>
   <script defer src="{% static 'js/kova-forms.js' %}"></script>
 
   <!-- HTMX config -->
@@ -58,6 +59,8 @@
       hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 
   {% block body %}{% endblock %}
+
+  {% include "components/_kova_busy_overlay.html" %}
 
   <!-- Notifications (toast) — full width on mobile -->
   <div id="notifications"
