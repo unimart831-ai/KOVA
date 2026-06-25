@@ -1686,21 +1686,45 @@ def generate_promo_image(request, product_id):
 @login_required
 @require_POST
 def generate_virtual_model(request, product_id):
-    """Generate virtual model shots for fashion/apparel products."""
+    """Generate category-aware virtual model pack (wear / hold / adorn)."""
     product = get_object_or_404(Product, pk=product_id, user=request.user)
     if not product.image:
         messages.error(request, "Add a product photo first.")
         return redirect("products:detail", product_id=product.pk)
 
     try:
-        from apps.products.photoroom_virtual_models import generate_fashion_pack
+        from apps.billing.visual_credits import check_visual_credit_limit
+        from apps.products.photoroom_virtual_models import (
+            generate_virtual_model_pack,
+            virtual_model_enabled,
+        )
 
-        paths = generate_fashion_pack(product)
-        result = paths[0] if paths else None
-        if result:
-            messages.success(request, f"Virtual model shot generated for '{product.name}'.")
+        if not virtual_model_enabled():
+            messages.warning(
+                request,
+                "Virtual model is not enabled — check PHOTOROOM_VIRTUAL_MODEL_ENABLED and PHOTOROOM_API_KEY.",
+            )
+            return redirect("products:detail", product_id=product.pk)
+
+        allowed, msg = check_visual_credit_limit(request.user)
+        if not allowed:
+            messages.error(request, msg or "Visual credit limit reached.")
+            return redirect("products:detail", product_id=product.pk)
+
+        paths = generate_virtual_model_pack(product, save_to_product=True, check_credits=True)
+        if paths:
+            kept = [
+                url for url in (product.additional_images or [])
+                if url not in paths
+            ]
+            product.additional_images = kept + paths
+            product.save(update_fields=["additional_images", "updated_at"])
+            messages.success(
+                request,
+                f"Generated {len(paths)} virtual model shot(s) for '{product.name}'.",
+            )
         else:
-            messages.warning(request, "Virtual model feature is not yet enabled. Enable PHOTOROOM_VIRTUAL_MODEL_ENABLED in settings.")
+            messages.warning(request, "Virtual model generation produced no images. Try again later.")
     except Exception as e:
         logger.error("Virtual model generation failed for product %s: %s", product.pk, e)
         messages.error(request, "Virtual model generation failed. Try again later.")

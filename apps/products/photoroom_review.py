@@ -12,7 +12,10 @@ from django.conf import settings
 ALTERATION_REVIEW_VARIANT_IDS = frozenset({
     "ghost_mannequin",
     "virtual_model",
+    "virtual_model_hold",
+    "virtual_model_adorn",
     "beautify",
+    "beautify_nocutout",
     "flat_lay",
     "edit_ai_staging",
     "edit_ai_angle",
@@ -44,6 +47,8 @@ def needs_alteration_review(
             return True, "ghost_mannequin"
         if variant_id == "virtual_model":
             return True, "virtual_model"
+        if variant_id in ("virtual_model_hold", "virtual_model_adorn"):
+            return True, variant_id
         return True, f"alteration:{variant_id}"
 
     from apps.products.photoroom_api import uncertainty_is_high

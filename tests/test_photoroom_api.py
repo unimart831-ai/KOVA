@@ -43,7 +43,8 @@ def test_normalize_photoroom_edit_params():
 
 def test_beautify_mode_by_category():
     assert beautify_mode_for_category("food") == "ai.food"
-    assert beautify_mode_for_category("electronics") == "ai.car"
+    assert beautify_mode_for_category("electronics") == "ai.auto"
+    assert beautify_mode_for_category("beauty") == "ai.auto"
     assert beautify_mode_for_category("general") == "ai.auto"
 
 

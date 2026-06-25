@@ -76,7 +76,7 @@ class TextOverlayPass:
                 continue
             if len(text) > self.MAX_HOOK_LEN:
                 text = text[: self.MAX_HOOK_LEN - 1] + "…"
-            position = "top" if i == 0 else "bottom"
+            position = "lower_third"
             overlays.append(OverlaySpec(
                 text=text,
                 position=position,
@@ -102,7 +102,7 @@ class TextOverlayPass:
             if ov.end_sec <= ov.start_sec:
                 checks["timing"] = False
                 issues.append("Overlay timing invalid")
-            if ov.position not in ("top", "center", "bottom"):
+            if ov.position not in ("top", "center", "bottom", "lower_third"):
                 checks["positioning"] = False
                 issues.append(f"Unknown overlay position: {ov.position}")
             if len(ov.text) > self.MAX_HOOK_LEN:
@@ -122,16 +122,18 @@ class TextOverlayPass:
         """
         Run quality pass; return sanitized hook_texts for video_compose + report.
         """
+        sanitized: list[str] = []
+        for raw in hook_texts or []:
+            text = (raw or "").strip()
+            if len(text) > self.MAX_HOOK_LEN:
+                text = text[: self.MAX_HOOK_LEN - 1] + "…"
+            sanitized.append(text)
         overlays = self.build_overlays(
-            hook_texts,
+            sanitized,
             slide_duration=slide_duration,
             transition_sec=transition_sec,
         )
         report = self.validate(overlays)
-        sanitized = [ov.text for ov in overlays]
-        # Pad to match slide count if some slides had empty hooks
-        while len(sanitized) < len(hook_texts or []):
-            sanitized.append("")
         return sanitized, report
 
 

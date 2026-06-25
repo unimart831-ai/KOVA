@@ -56,6 +56,40 @@ class TestRequirePhoneMiddleware:
         resp = client.get("/favicon.ico", follow=False)
         assert resp.status_code != 302 or "onboarding/phone" not in resp.get("Location", "")
 
+
+@pytest.mark.django_db
+class TestAnalyticsTabPages:
+    """Smoke-test analytics tabs that regressed when URLs/templates were dropped."""
+
+    def _user(self):
+        u = User.objects.create_user(username="an", email="an@b.com", password="P1!")
+        u.phone_number = "+254711111111"
+        u.onboarding_completed = True
+        u.save(update_fields=["phone_number", "onboarding_completed"])
+        UserProfile.objects.filter(user=u).update(plan="kova", subscription_status="active")
+        return u
+
+    def test_competitors_dashboard(self, client):
+        client.force_login(self._user())
+        assert client.get(reverse("analytics:competitors")).status_code == 200
+
+    def test_screenshot_compete(self, client):
+        client.force_login(self._user())
+        assert client.get(reverse("analytics:screenshot_compete")).status_code == 200
+
+    def test_competitor_add(self, client):
+        client.force_login(self._user())
+        assert client.get(reverse("analytics:competitor_add")).status_code == 200
+
+    def test_competitor_landscape(self, client):
+        client.force_login(self._user())
+        assert client.get(reverse("analytics:competitor_landscape")).status_code == 200
+
+    def test_results_subpages(self, client):
+        client.force_login(self._user())
+        for name in ("analytics:revenue", "analytics:insights", "analytics:attribution", "analytics:content_intelligence"):
+            assert client.get(reverse(name)).status_code == 200
+
     def test_allows_onboarding_with_phone(self, client):
         u = User.objects.create_user(
             username="hasph", email="hp@b.com", password="P1!", phone_number="0712345678",

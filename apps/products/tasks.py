@@ -936,6 +936,20 @@ def create_catalog_showcase(user_id: str, source: str = "manual", seed_id: str =
     if len(products) > 6:
         product_names += f" +{len(products) - 6} more"
 
+    composition_hero_url = None
+    if len(products) >= 2:
+        from apps.products.photoroom_composition import (
+            compose_catalog_showcase_hero,
+            composition_enabled,
+        )
+
+        if composition_enabled():
+            composition_hero_url = compose_catalog_showcase_hero(
+                products[:6],
+                user=user,
+                brand_name=(getattr(profile, "company_name", None) or "").strip() or "Our catalog",
+            )
+
     if seed is None:
         seed = ContentSeed.objects.create(
             user=user,
@@ -968,7 +982,11 @@ def create_catalog_showcase(user_id: str, source: str = "manual", seed_id: str =
             visual_strategy="carousel",
             media_status="pending",
             generated_by_agent="create",
-            visual_metadata={"catalog_showcase": True, "source": source},
+            visual_metadata={
+                "catalog_showcase": True,
+                "source": source,
+                "composition_hero_url": composition_hero_url or "",
+            },
         )
         media_urls = generate_catalog_showcase_carousel(
             post,
@@ -976,6 +994,7 @@ def create_catalog_showcase(user_id: str, source: str = "manual", seed_id: str =
             title=brand,
             subtitle="Swipe for prices →",
             closing_cta="Shop now",
+            composition_hero_url=composition_hero_url,
         )
         if media_urls:
             posts_created += 1
@@ -1008,6 +1027,7 @@ def create_catalog_showcase(user_id: str, source: str = "manual", seed_id: str =
                 "video_compose_status": "pending",
                 "reel_director": True,
                 "catalog_showcase": True,
+                "composition_hero_url": composition_hero_url or "",
                 "source_carousel_post_id": str(platform_carousel.pk),
             }
 

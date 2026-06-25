@@ -14,7 +14,7 @@ from apps.media.carousel_strategy import (
 )
 from apps.media.media_provider_config import MediaProviderConfig
 from apps.media.media_factory import prepare_campaign_media_factory
-from apps.media.orchestrator import MAX_PHOTOROOM_SCENES_PER_CAMPAIGN
+from apps.media.orchestrator import PROFESSIONAL_PHOTOROOM_SCENES_PER_CAMPAIGN, cap_photoroom_scenes_for_plan
 from apps.media.reel_strategy import build_reel_strategy, ReelStrategy
 from apps.media.text_overlay import TextOverlayPass
 from apps.content.platform_fit import score_platform_fit, PLATFORM_FIT_MIN_SCORE, platform_fit_gate
@@ -27,7 +27,7 @@ class TestCampaignVisualBrief:
     def test_scene_cap_enforced(self, user):
         brief = CampaignVisualBrief(scenes=list(DEFAULT_SCENE_ROLES) + ["extra1", "extra2", "extra3"])
         capped = brief.capped_scenes(user)
-        assert len(capped) <= MAX_PHOTOROOM_SCENES_PER_CAMPAIGN
+        assert len(capped) <= cap_photoroom_scenes_for_plan(user, PROFESSIONAL_PHOTOROOM_SCENES_PER_CAMPAIGN)
 
     def test_build_from_seed(self, user):
         seed = ContentSeed.objects.create(
@@ -38,7 +38,7 @@ class TestCampaignVisualBrief:
         campaign = ensure_campaign_for_seed(seed, title="Weekend sale", objective="sales")
         brief = build_campaign_visual_brief(seed, campaign)
         assert brief.objective
-        assert len(brief.scenes) <= MAX_PHOTOROOM_SCENES_PER_CAMPAIGN
+        assert len(brief.scenes) <= cap_photoroom_scenes_for_plan(user, PROFESSIONAL_PHOTOROOM_SCENES_PER_CAMPAIGN)
         assert brief.photoroom_scene_prompt("studio", product_name="Bag")
 
 

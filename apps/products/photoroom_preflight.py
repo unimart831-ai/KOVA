@@ -14,7 +14,15 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-REPAIR_ORDER = ("photofix", "smart_crop", "text_removal", "relight", "upscale", "uncrop")
+REPAIR_ORDER = (
+    "photofix",
+    "beautify_nocutout",
+    "smart_crop",
+    "text_removal",
+    "relight",
+    "upscale",
+    "uncrop",
+)
 GROWTH_PLUS_TIERS = frozenset({"kova", "growth", "pro", "agency"})
 SNAP_COMMERCE_SOURCES = frozenset({"snap", "batch_snap", "snap_to_sell"})
 
@@ -148,6 +156,7 @@ def build_repair_plan(
     *,
     plan_tier: str = "starter",
     commerce_source: str | None = None,
+    category: str = "general",
 ) -> list[str]:
     """Ordered repair variant ids based on quality triggers."""
     from apps.products.photoroom_photofix import should_run_photofix_for_commerce
@@ -156,16 +165,25 @@ def build_repair_plan(
     plan = (plan_tier or "starter").lower()
     plan_ok_for_uncrop = plan in GROWTH_PLUS_TIERS
     force_photofix = should_run_photofix_for_commerce(commerce_source=commerce_source)
+    cat = (category or "general").lower()
 
     from apps.products.photoroom_api import uncertainty_is_high
 
     high_uncertainty = uncertainty_is_high(report.uncertainty_score)
 
-    triggers: dict[str, bool] = {
-        "photofix": force_photofix
-        or report.lighting in ("dark", "uneven")
+    needs_beautify = (
+        report.lighting in ("dark", "uneven")
         or report.sharpness in ("blurry", "soft")
-        or report.whatsapp_compressed,
+        or report.whatsapp_compressed
+    )
+
+    triggers: dict[str, bool] = {
+        "photofix": force_photofix or needs_beautify,
+        "beautify_nocutout": (
+            cat in ("food", "beauty", "general")
+            and needs_beautify
+            and getattr(settings, "PHOTOROOM_BEAUTIFY_NOCUTOUT_ENABLED", True)
+        ),
         "smart_crop": report.crop in ("tight", "very_tight")
         or (commerce_source or "") in SNAP_COMMERCE_SOURCES,
         "text_removal": report.has_distracting_text,
@@ -213,8 +231,27 @@ def run_preflight_repairs(
         )
 
     report = assess_photo_quality(source_url, analysis)
+    from apps.products.photoroom_plus import detect_product_category
+
+    category = detect_product_category(product, analysis)
+
+    if report.uncertainty_score is None and getattr(
+        settings, "PHOTOROOM_BASIC_PROBE_ENABLED", True,
+    ):
+        from apps.products.photoroom_basic import probe_basic_cutout_quality
+
+        basic_score, _reason = probe_basic_cutout_quality(
+            source_url,
+            category=category,
+        )
+        if basic_score is not None:
+            report.uncertainty_score = basic_score
+
     plan = build_repair_plan(
-        report, plan_tier=plan_tier, commerce_source=commerce_source,
+        report,
+        plan_tier=plan_tier,
+        commerce_source=commerce_source,
+        category=category,
     )[: max(0, budget)]
 
     master_url = source_url

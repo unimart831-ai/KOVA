@@ -48,10 +48,10 @@ def test_build_hook_texts_staggered_sequence():
         cta_label="Order on WhatsApp",
     )
     assert texts[0] == "Amaya Speaker"
-    assert texts[1] == "KES 1,200\nShop on WhatsApp"
-    assert texts[2] == "Amaya Audio"
+    assert texts[1] == ""
+    assert texts[2] == ""
     assert texts[3] == ""
-    assert texts[4] == ""
+    assert texts[4] == "KES 1,200\nShop on WhatsApp"
 
 
 def test_build_hook_texts_short_cta():

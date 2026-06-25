@@ -1,0 +1,103 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Edit QR Code{% endblock %}
+{% block page_title %}Edit QR Code{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">{{ qr.label }}</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-6" x-data="{ template: '{{ qr.landing_template }}' }">
+  <form method="post" class="card">
+    {% csrf_token %}
+    <div class="card-body space-y-5">
+
+      <div>
+        <label class="label">Name this code</label>
+        <input type="text" name="label" class="input w-full" value="{{ qr.label }}" required maxlength="200">
+      </div>
+
+      <div>
+        <label class="label">What should the scan show?</label>
+        <select name="landing_template" class="input w-full" x-model="template">
+          {% for value, label in templates %}
+            <option value="{{ value }}" {% if qr.landing_template == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div x-show="template === 'discount'" x-cloak class="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl">
+        <div>
+          <label class="label">Discount %</label>
+          <input type="number" name="discount_pct" class="input w-full" min="1" max="100" value="{{ qr.landing_payload.discount_pct|default:10 }}">
+        </div>
+        <div>
+          <label class="label">Valid until (optional)</label>
+          <input type="date" name="valid_until" class="input w-full" value="{{ qr.landing_payload.valid_until|default:'' }}">
+        </div>
+        <div>
+          <label class="label">Terms (optional)</label>
+          <input type="text" name="terms" class="input w-full" maxlength="300" value="{{ qr.landing_payload.terms|default:'' }}">
+        </div>
+      </div>
+
+      <div x-show="template === 'menu'" x-cloak class="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl">
+        <div>
+          <label class="label">Menu image URL</label>
+          <input type="url" name="menu_image_url" class="input w-full" value="{{ qr.landing_payload.menu_image_url|default:'' }}">
+        </div>
+        <div>
+          <label class="label">Today's special (optional)</label>
+          <input type="text" name="today_special" class="input w-full" maxlength="200" value="{{ qr.landing_payload.today_special|default:'' }}">
+        </div>
+      </div>
+
+      <div x-show="template === 'booking'" x-cloak class="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl">
+        <div>
+          <label class="label">Booking link</label>
+          <input type="url" name="booking_link" class="input w-full" value="{{ qr.landing_payload.booking_link|default:'' }}">
+        </div>
+        <div>
+          <label class="label">WhatsApp number (without +)</label>
+          <input type="text" name="contact_whatsapp" class="input w-full" value="{{ qr.landing_payload.contact_whatsapp|default:'' }}">
+        </div>
+      </div>
+
+      <div x-show="template === 'follow'" x-cloak class="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl">
+        <div>
+          <label class="label">Instagram handle (without @)</label>
+          <input type="text" name="instagram_handle" class="input w-full" value="{{ qr.landing_payload.instagram_handle|default:'' }}">
+        </div>
+        <div>
+          <label class="label">Facebook page URL</label>
+          <input type="url" name="facebook_url" class="input w-full" value="{{ qr.landing_payload.facebook_url|default:'' }}">
+        </div>
+      </div>
+
+      <div x-show="template === 'custom'" x-cloak class="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl">
+        <div>
+          <label class="label">Headline</label>
+          <input type="text" name="headline" class="input w-full" maxlength="120" value="{{ qr.landing_payload.headline|default:'' }}">
+        </div>
+        <div>
+          <label class="label">Body</label>
+          <textarea name="body" rows="3" class="input w-full" maxlength="500">{{ qr.landing_payload.body|default:'' }}</textarea>
+        </div>
+        <div>
+          <label class="label">Button text</label>
+          <input type="text" name="cta_text" class="input w-full" maxlength="40" value="{{ qr.landing_payload.cta_text|default:'' }}">
+        </div>
+        <div>
+          <label class="label">Button link</label>
+          <input type="url" name="cta_url" class="input w-full" value="{{ qr.landing_payload.cta_url|default:'' }}">
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-800">
+        <a href="{% url 'qr_attribution:detail' qr.pk %}" class="text-sm text-gray-500 dark:text-gray-400 hover:underline">Cancel</a>
+        <button type="submit" class="btn-primary">Save changes</button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

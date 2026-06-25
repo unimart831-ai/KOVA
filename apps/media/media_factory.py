@@ -72,7 +72,39 @@ def prepare_campaign_media_factory(seed, campaign=None) -> dict[str, Any]:
         carousel_strategy.type,
         reel_strategy.hook[:40],
     )
+
+    _trigger_campaign_visual_production(seed, campaign, visual_brief)
+
     return factory_payload
+
+
+def _trigger_campaign_visual_production(seed, campaign, visual_brief) -> None:
+    """Run Photoroom polish when campaign has a product hero — brief-driven."""
+    product = getattr(seed, "product", None)
+    if not product or not getattr(product, "image", None):
+        return
+    from apps.products.photo_variations import variation_storage_marker
+
+    marker = variation_storage_marker(product.pk)
+    existing = [
+        u for u in (product.additional_images or [])
+        if marker in (u or "")
+    ]
+    if len(existing) >= 3:
+        return
+
+    try:
+        from apps.products.tasks import expand_product_photo_set
+        from apps.utils import fire_task
+
+        fire_task(
+            expand_product_photo_set,
+            str(product.pk),
+            commerce_source="campaign",
+            seed_id=str(seed.pk),
+        )
+    except Exception as exc:
+        logger.warning("Campaign visual production dispatch failed: %s", exc)
 
 
 def get_media_factory_payload(seed) -> dict[str, Any]:

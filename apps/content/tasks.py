@@ -940,8 +940,15 @@ def compose_reel_video(post_id: str):
         return {"error": "no_images"}
 
     reel_plan = None
+    from apps.content.reel_studio import build_professional_plan, professional_mode_enabled
+
     try:
-        image_sources, reel_plan = _apply_reel_director(post, image_sources, meta)
+        if professional_mode_enabled() and meta.get("reel_template") != "carousel_to_video":
+            image_sources, reel_plan, meta = build_professional_plan(
+                post, image_sources, meta,
+            )
+        else:
+            image_sources, reel_plan = _apply_reel_director(post, image_sources, meta)
         post.visual_metadata = meta
         post.save(update_fields=["visual_metadata", "updated_at"])
     except Exception as exc:
@@ -1023,7 +1030,7 @@ def compose_reel_video(post_id: str):
     from apps.media.content_types import ReelBackend
     from apps.media.router import reel_backend_for_post
 
-    if reel_backend_for_post(post) == ReelBackend.KLING:
+    if reel_backend_for_post(post) == ReelBackend.KLING and not professional_mode_enabled():
         try:
             from apps.media.reel_bridge import try_kling_reel_for_post
 
@@ -1043,7 +1050,8 @@ def compose_reel_video(post_id: str):
 
     # Photoroom animate: single-hero only; multi-slide director plans use FFmpeg.
     use_photoroom = (
-        not reel_plan
+        not professional_mode_enabled()
+        and not reel_plan
         and len(image_sources) <= 2
         and (
             meta.get("composition_hero_url")

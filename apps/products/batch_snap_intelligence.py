@@ -29,20 +29,9 @@ def is_market_day_mode(commerce_source: str | None = None) -> bool:
 
 def build_market_day_composition_prompt(stall_context: dict | None = None) -> str:
     """AI polish prompt for multi-product batch showcase heroes."""
-    ctx = stall_context or {}
-    stall_title = ctx.get("stall_title") or "market stall"
-    market = (ctx.get("market_context") or "").strip()
-    tagline = (ctx.get("stall_tagline") or "").strip()
-    base = (
-        f"Professional market-day collection photograph showing multiple products "
-        f"arranged evenly on a clean branded studio surface with soft natural lighting "
-        f"and cohesive shadows for '{stall_title}'"
-    )
-    if market:
-        base += f". Setting: {market[:120]}"
-    if tagline:
-        base += f". Mood: {tagline[:80]}"
-    return base
+    from apps.products.photoroom_composition import build_market_day_composition_prompt as _compose_prompt
+
+    return _compose_prompt(stall_context)
 
 
 def _safe_decimal(value) -> Decimal | None:

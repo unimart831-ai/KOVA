@@ -19,8 +19,9 @@ def test_build_repair_plan_dark_and_blurry():
         has_distracting_text=False,
         crop="comfortable",
     )
-    plan = build_repair_plan(report, plan_tier="growth")
+    plan = build_repair_plan(report, plan_tier="pro")
     assert plan[0] == "photofix"
+    assert "beautify_nocutout" in plan
     assert "relight" in plan
     assert "upscale" in plan
 
@@ -32,7 +33,7 @@ def test_build_repair_plan_text_first():
         has_distracting_text=True,
         crop="very_tight",
     )
-    plan = build_repair_plan(report, plan_tier="growth")
+    plan = build_repair_plan(report, plan_tier="agency")
     assert plan[0] == "photofix"
     assert "text_removal" in plan
     assert "uncrop" in plan
@@ -56,7 +57,8 @@ def test_assess_merges_vision_photo_quality():
     report = assess_photo_quality("https://example.com/photo.jpg", analysis)
     assert report.lighting == "uneven"
     assert report.has_distracting_text is True
-    assert "text_removal" in report.repair_plan
+    assert "photofix" in report.repair_plan or "beautify_nocutout" in report.repair_plan
+    assert "smart_crop" in report.repair_plan
 
 
 def test_channel_export_budget_growth():

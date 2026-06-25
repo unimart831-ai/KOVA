@@ -34,10 +34,11 @@ def test_hook_texts_staggered_on_early_slides():
         brand_name="Amaya",
     )
     assert texts[0] == "Amaya Speaker"
-    assert texts[1].startswith("KES 1,200")
-    assert "Shop on WhatsApp" in texts[1]
-    assert texts[2] == "Amaya"
-    assert texts[-1] == ""
+    assert texts[1] == ""
+    assert texts[2] == ""
+    assert texts[3] == ""
+    assert texts[4].startswith("KES 1,200")
+    assert "Shop on WhatsApp" in texts[4]
 
 
 def test_lifestyle_story_orders_edit_ai_slides():
@@ -86,6 +87,28 @@ def test_flash_drop_uses_flash_template_and_boost():
     assert plan.cta_audio_boost is True
     assert plan.transition_sec == 0.35
     assert all(h == "" for h in plan.hook_texts)
+
+
+def test_build_reel_plan_assigns_role_aware_hooks():
+    urls = [
+        "/media/studio_polish/x/channel_story_c.jpg",
+        "/media/studio_polish/x/studio_white_d.jpg",
+        "/media/studio_polish/x/ai_scene_table_a.jpg",
+        "/media/studio_polish/x/edit_ai_staging_e.jpg",
+        "/media/studio_polish/x/studio_brand_f.jpg",
+    ]
+    plan = build_reel_plan(
+        urls,
+        seed="prod-hooks",
+        product_name="Glow Serum",
+        price_label="KES 800",
+    )
+    assert plan is not None
+    assert plan.hook_texts[0] == "Glow Serum"
+    assert plan.hook_texts[1] == ""
+    assert "KES 800" in plan.hook_texts[-1]
+    assert plan.slide_durations
+    assert len(plan.slide_durations) == len(plan.image_urls)
 
 
 def test_baked_carousel_urls_skip_hook_overlay():

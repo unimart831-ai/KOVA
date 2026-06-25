@@ -10,9 +10,13 @@ from __future__ import annotations
 REEL_EXCLUDE_MARKERS = (
     "preflight_",
     "channel_banner",
+    "channel_marketplace",
     "sandbox",
     "local_quick_polish",
     "photofix",
+    "/carousels/",
+    "catalog_carousel",
+    "product_carousel",
 )
 REEL_RAW_SNAP_MARKERS = ("product_images/",)
 REEL_MAX_SLIDES = 5
@@ -35,6 +39,8 @@ def _is_reel_excluded(url: str) -> bool:
 def _variant_tier(url: str) -> tuple[int, int, str]:
     """Lower sort key = earlier in reel."""
     u = url.lower()
+    if "composition_hero" in u:
+        return (-1, 0, url)
     if "channel_story_uncrop" in u:
         return (0, 0, url)
     if "channel_story" in u:
@@ -61,7 +67,18 @@ def _variant_tier(url: str) -> tuple[int, int, str]:
         return (3, 2, url)
     if "background_blur" in u or "relight_nocutout" in u:
         return (3, 3, url)
-    if any(m in u for m in ("ghost_mannequin", "virtual_model", "flat_lay", "relight", "beautify")):
+    if any(
+        m in u
+        for m in (
+            "ghost_mannequin",
+            "virtual_model",
+            "virtual_model_hold",
+            "virtual_model_adorn",
+            "flat_lay",
+            "relight",
+            "beautify",
+        )
+    ):
         return (4, 0, url)
     if "promo_frame" in u:
         return (8, 0, url)
@@ -95,6 +112,8 @@ def curate_reel_image_urls(urls: list[str], *, max_slides: int = REEL_MAX_SLIDES
         "edit_ai_angle",
         "ghost_mannequin",
         "virtual_model",
+        "virtual_model_hold",
+        "virtual_model_adorn",
         "flat_lay",
         "beautify",
     )

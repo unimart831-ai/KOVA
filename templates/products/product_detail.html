@@ -172,12 +172,10 @@
             {% csrf_token %}
             <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">Promo image</button>
           </form>
-          {% if product.category and 'fashion' in product.category.name|lower or 'apparel' in product.category.name|lower or 'clothing' in product.category.name|lower %}
           <form method="post" action="{% url 'products:virtual_model' product_id=product.pk %}">
             {% csrf_token %}
-            <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">Virtual model shot</button>
+            <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">Virtual model pack</button>
           </form>
-          {% endif %}
           <form method="post" action="{% url 'products:seasonal_variant' product_id=product.pk %}">
             {% csrf_token %}
             <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">Seasonal variant</button>

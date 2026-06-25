@@ -1,5 +1,7 @@
 """Unit tests for motion reel composition helpers."""
 
+import pytest
+
 from apps.content.video_compose import (
     REEL_TRANSITIONS,
     _build_xfade_filter,
@@ -44,6 +46,16 @@ def test_xfade_single_clip():
     graph, vout = _build_xfade_filter(1, slide_sec=3.0, transition_sec=0.5)
     assert vout == "vout"
     assert "format=yuv420p" in graph
+
+
+def test_slide_durations_for_roles_targets_runtime():
+    from apps.content.video_compose import slide_durations_for_roles
+
+    roles = ["hook", "hero", "desire", "cta"]
+    d = slide_durations_for_roles(roles, target_total_sec=14.0, transition_sec=0.45)
+    assert len(d) == 4
+    gaps = 3 * 0.45
+    assert sum(d) - gaps == pytest.approx(14.0, rel=0.05)
 
 
 def test_slide_durations_hook_longer_than_middle():

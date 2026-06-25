@@ -543,6 +543,7 @@ def expand_product_photos(
     scene_pack: str | None = None,
     brand_template=None,
     polish_mode: str | None = None,
+    visual_brief=None,
 ) -> dict:
     """
     Generate scene variations from the product's primary photo.
@@ -575,6 +576,7 @@ def expand_product_photos(
         polish_session=polish_session,
         scene_pack=pack,
         brand_template=brand_template,
+        visual_brief=visual_brief,
     )
 
 
@@ -627,6 +629,7 @@ def _expand_studio_polish(
     polish_session=None,
     scene_pack: str | None = None,
     brand_template=None,
+    visual_brief=None,
 ) -> dict:
     """Photoroom Plus pack — all applicable v2/edit variants (1 credit each)."""
     from apps.billing.models import get_effective_plan_tier
@@ -755,7 +758,33 @@ def _expand_studio_polish(
     if loaded:
         master_bytes, _ = loaded
 
+    cutout_png_url: str | None = None
+    if getattr(django_settings, "PHOTOROOM_TRANSPARENT_CUTOUT_SAVE", True):
+        from apps.products.photoroom_basic import save_transparent_cutout
+
+        cutout_png_url = save_transparent_cutout(
+            product.pk,
+            source,
+            file_bytes=master_bytes,
+        )
+
     uncertainty = preflight.quality.uncertainty_score
+    if uncertainty is None and getattr(
+        django_settings, "PHOTOROOM_BASIC_PROBE_ENABLED", True,
+    ):
+        from apps.products.photoroom_basic import probe_basic_cutout_quality
+        from apps.products.photoroom_plus import detect_product_category
+
+        product_category_early = detect_product_category(product, analysis)
+        basic_score, _ = probe_basic_cutout_quality(
+            source,
+            category=product_category_early,
+            original_bytes=master_bytes,
+        )
+        if basic_score is not None:
+            uncertainty = basic_score
+            preflight.quality.uncertainty_score = uncertainty
+
     if (
         uncertainty is None
         and getattr(django_settings, "PHOTOROOM_UNCERTAINTY_PROBE_ENABLED", True)
@@ -779,6 +808,8 @@ def _expand_studio_polish(
     story_banner_slots, marketplace_slots = scene_pack_export_budget(scene_pack, plan_tier)
     export_slots = story_banner_slots + marketplace_slots
     min_scenes = int(getattr(django_settings, "PHOTOROOM_MIN_SCENE_VARIANTS", 3))
+    if getattr(django_settings, "PHOTOROOM_PROFESSIONAL_MODE", True):
+        min_scenes = max(min_scenes, int(getattr(django_settings, "PHOTOROOM_PROFESSIONAL_MIN_SCENES", 8)))
     if credit_pool > min_scenes and export_slots > 0:
         export_budget = min(export_slots, credit_pool - min_scenes)
         channel_budget = min(story_banner_slots, export_budget)
@@ -798,9 +829,16 @@ def _expand_studio_polish(
 
     from apps.media.campaign_visual_brief import get_visual_brief_for_product
 
-    brief = get_visual_brief_for_product(product)
+    brief = visual_brief or get_visual_brief_for_product(product)
     if brief:
         scene_budget = min(scene_budget, len(brief.capped_scenes(product.user)))
+        if getattr(django_settings, "PHOTOROOM_PROFESSIONAL_MODE", True):
+            from apps.media.photoroom_brief import max_scenes_for_user
+
+            scene_budget = max(scene_budget, min(max_scenes_for_user(product.user), credit_pool))
+
+    category = detect_product_category(product, analysis)
+    offering = getattr(product, "offering_type", "product") or "product"
 
     variants = select_plus_variants(
         product,
@@ -812,6 +850,7 @@ def _expand_studio_polish(
         brand_colors=brand_colors,
         commerce_source=commerce_source,
         scene_pack=scene_pack,
+        visual_brief=brief,
     )
 
     new_urls: list[str] = []
@@ -833,6 +872,7 @@ def _expand_studio_polish(
                 brand_colors,
                 brand_template=brand_template,
                 layout_index=layout_idx,
+                visual_brief=brief,
             )
         except Exception as exc:
             logger.warning("Plus variant %s failed: %s", spec.id, exc)
@@ -888,6 +928,23 @@ def _expand_studio_polish(
             )
         image_bytes = edit_result.content if edit_result and edit_result.ok else None
 
+        if edit_result and getattr(django_settings, "PHOTOROOM_QA_ENABLED", True):
+            from apps.media.photoroom_brief import qa_retry_params, validate_plus_result
+            from apps.products.photoroom_plus import photoroom_edit
+
+            ok_qa, qa_reason = validate_plus_result(edit_result, variant_id=spec.id)
+            if not ok_qa and image_bytes:
+                logger.info("Photoroom QA retry for %s (%s)", spec.id, qa_reason)
+                retry_params = qa_retry_params(spec.id, product_category)
+                if retry_params and credit_pool > 0:
+                    retry_result = photoroom_edit(source, retry_params)
+                    if retry_result.ok and retry_result.content:
+                        edit_result = retry_result
+                        image_bytes = retry_result.content
+                        credit_pool -= 1
+                    else:
+                        image_bytes = None
+
         if image_bytes and master_bytes and is_cutout_variant(spec.id):
             ok_cutout, reject_reason = validate_cutout_output(
                 master_bytes,
@@ -910,6 +967,7 @@ def _expand_studio_polish(
                         analysis,
                         brand_colors,
                         brand_template=brand_template,
+                        visual_brief=brief,
                     )
                     if safe_result.ok and safe_result.content:
                         image_bytes = safe_result.content
@@ -1058,6 +1116,27 @@ def _expand_studio_polish(
                 multi_angle_count += 1
                 credit_pool = max(0, credit_pool - 1)
 
+    if (
+        offering == "product"
+        and credit_pool > 0
+        and getattr(django_settings, "PHOTOROOM_VIRTUAL_MODEL_AUTO_PACK", True)
+    ):
+        from apps.products.photoroom_virtual_models import append_virtual_model_pack
+
+        vm_urls, vm_ids, vm_credits = append_virtual_model_pack(
+            product,
+            source,
+            analysis,
+            brand_colors,
+            brand_template=brand_template,
+            credit_budget=credit_pool,
+            product_category=product_category,
+        )
+        if vm_urls:
+            new_urls.extend(vm_urls)
+            variant_ids.extend(vm_ids)
+            credit_pool = max(0, credit_pool - vm_credits)
+
     channel_ids: list[str] = []
     marketplace_ids: list[str] = []
     if new_urls:
@@ -1110,6 +1189,9 @@ def _expand_studio_polish(
         new_urls.append(_save_variation_jpeg(product.pk, PRESET_PROMO_FRAME, promo))
     except Exception as exc:
         logger.debug("Promo frame from Plus hero failed: %s", exc)
+
+    if cutout_png_url:
+        new_urls.append(cutout_png_url)
 
     kept = _strip_generated_variations(product.additional_images, product.pk)
     product.additional_images = kept + new_urls

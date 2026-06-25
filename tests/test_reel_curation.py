@@ -40,7 +40,7 @@ def test_curate_prioritizes_edit_ai():
     assert "/media/edit_ai_angle.jpg" in out
 
 
-def test_curate_caps_ai_scenes_at_three():
+def test_curate_caps_ai_scenes_at_two():
     urls = [
         "/media/studio_white.jpg",
         "/media/ai_scene_table.jpg",
@@ -51,7 +51,7 @@ def test_curate_caps_ai_scenes_at_three():
     ]
     out = curate_reel_image_urls(urls, max_slides=10)
     ai_count = sum(1 for u in out if "ai_" in u)
-    assert ai_count == 3
+    assert ai_count == 2
 
 
 def test_curate_prefers_polished_over_raw_snap():

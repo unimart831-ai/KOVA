@@ -62,14 +62,24 @@ ROLE_KEN_BURNS: dict[str, int] = {
     SLIDE_ROLE_CTA: 9,
 }
 
-# xfade transition into slide i (from slide i-1); length = num_slides - 1.
+# Subtle transitions only — flashy wipes read as template automation.
 ROLE_TRANSITION_IN: dict[str, str] = {
     SLIDE_ROLE_HOOK: "fade",
-    SLIDE_ROLE_HERO: "slideup",
+    SLIDE_ROLE_HERO: "dissolve",
     SLIDE_ROLE_STAGING: "dissolve",
-    SLIDE_ROLE_ANGLE: "slideright",
-    SLIDE_ROLE_DESIRE: "slideleft",
-    SLIDE_ROLE_CTA: "zoomin",
+    SLIDE_ROLE_ANGLE: "fade",
+    SLIDE_ROLE_DESIRE: "smoothup",
+    SLIDE_ROLE_CTA: "fade",
+}
+
+# Base beat length per role (seconds) — scaled to REEL_TARGET_DURATION_SEC in compose.
+ROLE_DURATION_SEC: dict[str, float] = {
+    SLIDE_ROLE_HOOK: 2.6,
+    SLIDE_ROLE_HERO: 3.6,
+    SLIDE_ROLE_STAGING: 2.5,
+    SLIDE_ROLE_ANGLE: 2.4,
+    SLIDE_ROLE_DESIRE: 2.3,
+    SLIDE_ROLE_CTA: 3.2,
 }
 
 REEL_MAX_SLIDES_DEFAULT = 5
@@ -89,6 +99,7 @@ class ReelComposePlan:
     ken_burns_variants: list[int] = field(default_factory=list)
     cta_audio_boost: bool = False
     transition_sec: float | None = None
+    slide_durations: list[float] = field(default_factory=list)
 
     def to_metadata(self) -> dict[str, Any]:
         return {
@@ -135,6 +146,8 @@ def pick_recipe_id(
 
 def _url_role(url: str) -> str:
     u = url.lower()
+    if "composition_hero" in u:
+        return SLIDE_ROLE_HOOK
     if "channel_story" in u:
         return SLIDE_ROLE_HOOK
     if "edit_ai_staging" in u:
@@ -277,21 +290,22 @@ def build_hook_texts(
     cta_label: str = "Order on WhatsApp",
 ) -> list[str]:
     """
-    Stagger one hook per early slide — never stack copy over the hero product.
+    Role-aware copy — text only on hook + CTA beats; hero/lifestyle slides stay clean.
 
-    Slide 1: product name
-    Slide 2: price + CTA (max 2 lines in lower third)
-    Slide 3: brand tag
-    Middle / hero slides stay text-free for product focus.
-    """
+    hook role: product name (one line)
+    cta role: price + CTA (two lines max in lower third)
+  """
     texts = [""] * slide_count
     if slide_count == 0:
         return texts
 
     hook = _short_hook(hook_override or product_name)
     price = (price_label or "").strip()[:32]
-    brand = _short_hook(brand_name, max_len=28)
     cta = _short_cta(cta_label)
+
+    roles = list(slide_roles or [])
+    while len(roles) < slide_count:
+        roles.append("")
 
     if slide_count == 1:
         if price and cta:
@@ -304,22 +318,25 @@ def build_hook_texts(
             texts[0] = cta
         return texts
 
-    # Slide 1 — product hook
-    if hook:
-        texts[0] = hook
+    hook_indices = [i for i, r in enumerate(roles) if r == SLIDE_ROLE_HOOK]
+    cta_indices = [i for i, r in enumerate(roles) if r == SLIDE_ROLE_CTA]
 
-    # Slide 2 — price + CTA (two lines max)
-    if slide_count >= 2:
+    if hook_indices and hook:
+        texts[hook_indices[0]] = hook
+
+    cta_idx = cta_indices[-1] if cta_indices else slide_count - 1
+    if roles[cta_idx] not in (
+        SLIDE_ROLE_HERO,
+        SLIDE_ROLE_STAGING,
+        SLIDE_ROLE_ANGLE,
+        SLIDE_ROLE_DESIRE,
+    ):
         if price and cta:
-            texts[1] = f"{price}\n{cta}"
+            texts[cta_idx] = f"{price}\n{cta}"
         elif price:
-            texts[1] = price
+            texts[cta_idx] = price
         elif cta:
-            texts[1] = cta
-
-    # Slide 3 — brand tag (single line)
-    if slide_count >= 3 and brand:
-        texts[2] = brand
+            texts[cta_idx] = cta
 
     return texts
 
@@ -333,6 +350,27 @@ def build_transitions(slide_roles: list[str]) -> list[str]:
         role = slide_roles[i]
         out.append(ROLE_TRANSITION_IN.get(role, "dissolve"))
     return out
+
+
+def build_slide_durations(
+    slide_roles: list[str],
+    *,
+    template: str = "story_arc",
+    transition_sec: float | None = None,
+) -> list[float]:
+    """Beat-grid pacing aligned to ~REEL_TARGET_DURATION_SEC."""
+    from apps.content.video_compose import slide_durations_for_roles
+
+    t_sec = transition_sec
+    if t_sec is None:
+        t_sec = 0.35 if template == "flash_commerce" else 0.45
+    target = float(getattr(settings, "REEL_TARGET_DURATION_SEC", 14.0))
+    return slide_durations_for_roles(
+        slide_roles,
+        template=template,
+        target_total_sec=target,
+        transition_sec=t_sec,
+    )
 
 
 def build_ken_burns_variants(slide_roles: list[str]) -> list[int]:
@@ -397,8 +435,9 @@ def build_reel_plan(
     if not ordered:
         return None
 
+    skip_hooks = _sources_have_baked_captions(clean) or _sources_have_baked_captions(ordered)
+
     roles = [_url_role(u) for u in ordered]
-    # Last slide with promo or hero treated as CTA for motion
     if roles and roles[-1] not in (SLIDE_ROLE_CTA,):
         if "promo_frame" in (ordered[-1] or "").lower():
             roles[-1] = SLIDE_ROLE_CTA
@@ -407,7 +446,7 @@ def build_reel_plan(
 
     template = RECIPE_TEMPLATES.get(recipe, "story_arc")
     mood = RECIPE_MOODS.get(recipe, "upbeat")
-    if _sources_have_baked_captions(ordered):
+    if skip_hooks:
         hooks = [""] * len(ordered)
     else:
         hooks = build_hook_texts(
@@ -425,6 +464,12 @@ def build_reel_plan(
     transition_sec = None
     if recipe == "flash_drop":
         transition_sec = 0.35
+    else:
+        transition_sec = 0.45
+
+    durations = build_slide_durations(
+        roles, template=template, transition_sec=transition_sec,
+    )
 
     return ReelComposePlan(
         recipe_id=recipe,
@@ -437,4 +482,5 @@ def build_reel_plan(
         ken_burns_variants=ken,
         cta_audio_boost=(recipe == "flash_drop"),
         transition_sec=transition_sec,
+        slide_durations=durations,
     )

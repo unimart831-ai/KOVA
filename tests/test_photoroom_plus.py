@@ -90,6 +90,9 @@ def test_catalog_covers_plus_feature_groups():
     assert "flat_lay" in ids
     assert "ghost_mannequin" in ids
     assert "virtual_model" in ids
+    assert "virtual_model_hold" in ids
+    assert "virtual_model_adorn" in ids
+    assert "beautify_nocutout" in ids
     assert "relight" in ids
     assert "beautify" in ids
     assert "upscale" in ids

@@ -36,7 +36,8 @@ def owner(db):
         plan="growth", company_name="Test Salon",
     )
     u.onboarding_completed = True
-    u.save(update_fields=["onboarding_completed"])
+    u.phone_number = "+254712345678"
+    u.save(update_fields=["onboarding_completed", "phone_number"])
     return u
 
 
@@ -49,7 +50,8 @@ def other_owner(db):
         full_name="Other Owner",
     )
     u.onboarding_completed = True
-    u.save(update_fields=["onboarding_completed"])
+    u.phone_number = "+254798765432"
+    u.save(update_fields=["onboarding_completed", "phone_number"])
     return u
 
 
@@ -181,6 +183,26 @@ class TestQRDetailView:
         client.login(email="other@kova.ai", password="OtherPass123!")
         url = reverse("qr_attribution:detail", kwargs={"pk": discount_qr.pk})
         assert client.get(url).status_code == 404
+
+
+class TestQREditView:
+    def test_owner_can_edit(self, owner_client, discount_qr):
+        url = reverse("qr_attribution:edit", kwargs={"pk": discount_qr.pk})
+        resp = owner_client.get(url)
+        assert resp.status_code == 200
+        assert discount_qr.label.encode() in resp.content
+
+    def test_post_updates_label(self, owner_client, discount_qr):
+        url = reverse("qr_attribution:edit", kwargs={"pk": discount_qr.pk})
+        resp = owner_client.post(url, {
+            "label": "Updated flyer",
+            "landing_template": "discount",
+            "discount_pct": "20",
+        })
+        assert resp.status_code == 302
+        discount_qr.refresh_from_db()
+        assert discount_qr.label == "Updated flyer"
+        assert discount_qr.landing_payload["discount_pct"] == 20
 
 
 class TestQRDeleteView:

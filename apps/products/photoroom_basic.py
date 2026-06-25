@@ -8,18 +8,23 @@ https://docs.photoroom.com/remove-background-api-basic-plan/
 from __future__ import annotations
 
 import logging
+import uuid
 from io import BytesIO
 
 import requests
 from django.conf import settings
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 
 logger = logging.getLogger(__name__)
 
 PHOTOROOM_SEGMENT_URL = "https://sdk.photoroom.com/v1/segment"
+TRANSPARENT_CUTOUT_FOLDER = "cutout_png"
 
 # White-bg cutout exports eligible for Basic routing (5 Basic ≈ 1 Plus internally).
 BASIC_ROUTE_VARIANT_IDS = frozenset({
     "studio_white",
+    "studio_brand",
     "channel_marketplace",
     "channel_marketplace_jpeg",
 })
@@ -49,6 +54,7 @@ def is_basic_routable_variant(variant_id: str, params: dict[str, str]) -> bool:
         return False
     if params.get("editWithAI.mode") or params.get("expand.mode") or params.get("uncrop.mode"):
         return False
+    # Allow ai.soft shadow on Basic-routed white exports (composite is local).
     return params.get("removeBackground") == "true"
 
 
@@ -182,3 +188,83 @@ def run_basic_white_cutout(
         padding=params.get("padding", "0.06"),
         export_format=params.get("export.format", "jpeg"),
     )
+
+
+def save_transparent_cutout(product_id, image_url: str, *, file_bytes: bytes | None = None) -> str | None:
+    """
+    Save a transparent PNG cutout via Basic API for compositing / marketplace.
+
+    Returns public URL or None.
+    """
+    if not getattr(settings, "PHOTOROOM_TRANSPARENT_CUTOUT_SAVE", True):
+        return None
+    if not basic_api_enabled() and not file_bytes:
+        cutout = None
+    else:
+        cutout = photoroom_basic_segment(image_url, file_bytes=file_bytes)
+
+    if not cutout:
+        from apps.products.photoroom_plus import photoroom_edit
+
+        result = photoroom_edit(
+            image_url,
+            {
+                "removeBackground": "true",
+                "background.color": "FFFFFF",
+                "outputSize": "1080x1080",
+                "export.format": "png",
+                "referenceBox": "originalImage",
+            },
+            file_bytes=file_bytes,
+        )
+        cutout = result.content if result.ok else None
+
+    if not cutout or len(cutout) < 500:
+        return None
+
+    from apps.content.tasks import _public_url_for_file
+
+    filename = f"{TRANSPARENT_CUTOUT_FOLDER}/{product_id}/cutout_{uuid.uuid4().hex[:10]}.png"
+    saved = default_storage.save(filename, ContentFile(cutout))
+    return _public_url_for_file(saved)
+
+
+def probe_basic_cutout_quality(
+    image_url: str,
+    *,
+    category: str | None = None,
+    original_bytes: bytes | None = None,
+) -> tuple[float | None, str]:
+    """
+    Cheap Basic segment probe — returns synthetic uncertainty (0–1) and reason.
+
+    Lower score = better cutout. Used before Plus uncertainty probe to save credits.
+    """
+    if not getattr(settings, "PHOTOROOM_BASIC_PROBE_ENABLED", True):
+        return None, ""
+
+    cutout = photoroom_basic_segment(image_url, file_bytes=original_bytes)
+    if not cutout:
+        return 0.85, "basic_segment_failed"
+
+    if not original_bytes:
+        from apps.products.photoroom import _load_image_bytes
+
+        loaded = _load_image_bytes(image_url)
+        if loaded:
+            original_bytes, _ = loaded
+
+    if not original_bytes:
+        return None, ""
+
+    from apps.products.photoroom_guard import validate_cutout_output
+
+    ok, reason = validate_cutout_output(
+        original_bytes,
+        composite_cutout_on_white(cutout, export_format="jpeg") or cutout,
+        category=category,
+    )
+    if not ok:
+        return 0.78, f"basic_{reason}"
+
+    return 0.25, "basic_ok"

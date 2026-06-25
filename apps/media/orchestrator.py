@@ -14,8 +14,20 @@ from apps.products.business_assets import sync_asset_from_product
 
 logger = logging.getLogger(__name__)
 
-# Max Photoroom Plus scenes per activated campaign (economics guardrail).
+# Max Photoroom Plus scenes per activated campaign.
+# Professional mode raises cap — Photoroom is primary value (see PHOTOROOM_PROFESSIONAL_MODE).
 MAX_PHOTOROOM_SCENES_PER_CAMPAIGN = 5
+PROFESSIONAL_PHOTOROOM_SCENES_PER_CAMPAIGN = 12
+
+
+def professional_scene_cap() -> int:
+    from django.conf import settings
+
+    if getattr(settings, "PHOTOROOM_PROFESSIONAL_MODE", True):
+        return int(
+            getattr(settings, "PHOTOROOM_PROFESSIONAL_SCENE_CAP", PROFESSIONAL_PHOTOROOM_SCENES_PER_CAMPAIGN)
+        )
+    return MAX_PHOTOROOM_SCENES_PER_CAMPAIGN
 
 
 def cap_photoroom_scenes_for_plan(user, requested: int) -> int:
@@ -23,8 +35,41 @@ def cap_photoroom_scenes_for_plan(user, requested: int) -> int:
     from apps.billing.models import get_user_plan_limits
 
     limits = get_user_plan_limits(user)
-    cap = int(limits.get("max_photoroom_scenes_per_campaign") or MAX_PHOTOROOM_SCENES_PER_CAMPAIGN)
+    cap = int(limits.get("max_photoroom_scenes_per_campaign") or professional_scene_cap())
     return max(1, min(requested, cap))
+
+
+def execute_visual_brief(
+    product,
+    *,
+    seed=None,
+    campaign=None,
+    analysis: dict | None = None,
+    commerce_source: str = "campaign",
+) -> dict:
+    """
+    Central Photoroom entry for campaign-driven visual production.
+    Builds/refreshes CampaignVisualBrief then runs studio polish.
+    """
+    from apps.media.campaign_visual_brief import (
+        build_campaign_visual_brief,
+        get_visual_brief_for_product,
+        persist_visual_brief,
+    )
+    from apps.products.photo_variations import expand_product_photos
+
+    brief = get_visual_brief_for_product(product)
+    if not brief and seed is not None:
+        brief = build_campaign_visual_brief(seed, campaign, user=product.user)
+        if campaign:
+            persist_visual_brief(campaign, brief)
+
+    return expand_product_photos(
+        product,
+        analysis=analysis,
+        commerce_source=commerce_source,
+        visual_brief=brief,
+    )
 
 
 def plan_media_for_product(

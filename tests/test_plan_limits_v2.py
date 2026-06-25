@@ -59,7 +59,8 @@ class TestKovaPlanLimits:
         assert limits["mpesa_commerce"] is True
 
     def test_kova_studio_polish_quota(self):
-        assert PLAN_LIMITS["kova"]["visual_enhancements_per_month"] == 150
+        assert PLAN_LIMITS["kova"]["visual_enhancements_per_month"] == 500
+        assert PLAN_LIMITS["kova"]["max_photoroom_scenes_per_campaign"] == 12
 
 
 @pytest.mark.django_db

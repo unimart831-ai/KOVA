@@ -124,11 +124,16 @@ def relight_mode_for(offering: str, category: str) -> str:
 
 
 def beautify_mode_for_category(category: str) -> str:
-    """Map product category to beautify.mode per Photoroom docs."""
-    if category == "food":
+    """Map product category to beautify.mode per Photoroom Product Beautifier docs."""
+    cat = (category or "general").strip().lower()
+    if cat == "food":
         return "ai.food"
-    if category == "electronics":
-        return "ai.car"
+    if cat in ("beauty", "jewelry"):
+        return "ai.auto"
+    if cat == "electronics":
+        return "ai.auto"
+    if cat == "apparel":
+        return "ai.auto"
     return "ai.auto"
 
 

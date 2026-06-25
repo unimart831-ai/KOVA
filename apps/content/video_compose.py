@@ -19,6 +19,8 @@ from urllib.parse import urlparse
 import httpx
 from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
+from django.conf import settings
+
 logger = logging.getLogger(__name__)
 
 OUTPUT_WIDTH = 1080
@@ -37,23 +39,11 @@ LOWER_THIRD_HEIGHT = 0.22
 CAPTION_MAX_LINES = 2
 CAPTION_FONT_SCALE = 0.072
 
-# Rotating FFmpeg xfade transitions — each slide change gets a distinct motion style.
-REEL_TRANSITIONS = (
-    "slideup",
-    "slidedown",
-    "slideleft",
-    "slideright",
-    "wipeup",
-    "wipedown",
-    "smoothup",
-    "smoothdown",
-    "circleopen",
-    "dissolve",
-    "zoomin",
-    "wipetl",
-    "wipebr",
-    "fade",
-)
+# Professional transitions — calm crossfades only (director supplies per-gap).
+PROFESSIONAL_TRANSITIONS = ("fade", "dissolve", "smoothup")
+
+# Legacy pool — only used when no director plan is present.
+REEL_TRANSITIONS = PROFESSIONAL_TRANSITIONS
 
 
 class VideoComposeError(Exception):
@@ -282,6 +272,10 @@ def render_progress_bar(
     return img.convert("RGB")
 
 
+def show_progress_bars() -> bool:
+    return bool(getattr(settings, "REEL_SHOW_PROGRESS_BAR", False))
+
+
 def render_hook_text_on_frame(
     frame: Image.Image,
     text: str,
@@ -290,13 +284,15 @@ def render_hook_text_on_frame(
     font_scale: float = 1.0,
     slide_index: int = 0,
     slide_count: int = 1,
-    show_progress: bool = True,
+    show_progress: bool | None = None,
 ) -> Image.Image:
     """
     Burn a single hook into the lower-third caption bar (never over the hero product).
 
     position: 'lower_third' (default) — legacy 'top'/'center'/'bottom' map here too.
     """
+    if show_progress is None:
+        show_progress = show_progress_bars()
     from PIL import ImageDraw, ImageFont
 
     if not text or not text.strip():
@@ -377,7 +373,7 @@ def _write_hook_frame(
             slide_index=slide_index,
             slide_count=slide_count,
         )
-    elif slide_count > 1:
+    elif slide_count > 1 and show_progress_bars():
         frame = render_progress_bar(
             frame, slide_index=slide_index, slide_count=slide_count,
         )
@@ -399,15 +395,15 @@ def _ken_burns_filter(slide_frames: int, variant: int = 0) -> str:
     ease = _ken_burns_ease(f"on/{d}")
 
     if v == 0:
-        zoom_expr = f"1+0.18*{ease}"
+        zoom_expr = f"1+0.10*{ease}"
         x_expr = "iw/2-(iw/zoom/2)"
         y_expr = "ih/2-(ih/zoom/2)"
     elif v == 1:
-        zoom_expr = f"1.16-0.16*{ease}"
+        zoom_expr = f"1.08-0.08*{ease}"
         x_expr = "iw/2-(iw/zoom/2)"
         y_expr = "ih/2-(ih/zoom/2)"
     elif v == 2:
-        zoom_expr = f"1+0.14*{ease}"
+        zoom_expr = f"1+0.08*{ease}"
         x_expr = "iw/2-(iw/zoom/2)"
         y_expr = f"ih/2-(ih/zoom/2)+{pan_y}*(1-{ease})"
     elif v == 3:
@@ -448,6 +444,52 @@ def _ken_burns_filter(slide_frames: int, variant: int = 0) -> str:
 
 def _pick_transition(index: int) -> str:
     return REEL_TRANSITIONS[index % len(REEL_TRANSITIONS)]
+
+
+def slide_durations_for_roles(
+    slide_roles: list[str],
+    *,
+    template: str = "story_arc",
+    target_total_sec: float | None = None,
+    transition_sec: float = 0.45,
+) -> list[float]:
+    """Role-weighted beats scaled to a target reel length (~12–15s)."""
+    from apps.content.reel_director import ROLE_DURATION_SEC, SLIDE_ROLE_CTA, SLIDE_ROLE_HERO, SLIDE_ROLE_HOOK
+
+    if not slide_roles:
+        return []
+
+    if len(slide_roles) == 1:
+        return [min(8.0, target_total_sec or 8.0)]
+
+    weights: list[float] = []
+    for role in slide_roles:
+        weights.append(ROLE_DURATION_SEC.get(role, 2.5))
+
+    if template == "flash_commerce":
+        for i, role in enumerate(slide_roles):
+            if role not in (SLIDE_ROLE_HOOK, SLIDE_ROLE_CTA, SLIDE_ROLE_HERO):
+                weights[i] *= 0.85
+
+    raw_total = sum(weights)
+    gaps = max(len(slide_roles) - 1, 0)
+    target = target_total_sec or 14.0
+    clip_sum_target = target + gaps * transition_sec
+    scale = clip_sum_target / max(raw_total, 0.1)
+
+    durations = [
+        max(MIN_SLIDE_SEC, min(w * scale, MAX_SLIDE_SEC))
+        for w in weights
+    ]
+
+    # Hero beat held slightly longer when present
+    for i, role in enumerate(slide_roles):
+        if role == SLIDE_ROLE_HERO and i < len(durations):
+            durations[i] = min(MAX_SLIDE_SEC, durations[i] * 1.08)
+        if role == SLIDE_ROLE_HOOK and i == 0 and i < len(durations):
+            durations[i] = min(MAX_SLIDE_SEC, durations[i] * 1.05)
+
+    return durations
 
 
 def _slide_durations_for(
@@ -561,6 +603,7 @@ def compose_motion_reel(
     ken_burns_variants: list[int] | None = None,
     transitions: list[str] | None = None,
     cta_audio_boost: bool = False,
+    slide_durations: list[float] | None = None,
 ) -> bytes:
     """
     Compose a motion Reel MP4 from ordered image sources (URLs or paths).
@@ -584,10 +627,14 @@ def compose_motion_reel(
     try:
         frame_paths: list[Path] = []
         texts = hook_texts or []
+        roles = slide_roles or []
         slide_count = len(sources)
         for idx, source in enumerate(sources):
             frame_path = workdir / f"frame_{idx:02d}.jpg"
             text = texts[idx] if idx < len(texts) else ""
+            role = roles[idx] if idx < len(roles) else ""
+            if role in ("hero", "staging", "angle", "desire"):
+                text = ""
             if text:
                 pos = hook_position_for_slide(idx, text)
                 _write_hook_frame(
@@ -602,7 +649,7 @@ def compose_motion_reel(
                 frame = fit_image_to_story_frame(
                     _download_bytes(source), slide_index=idx,
                 )
-                if slide_count > 1:
+                if slide_count > 1 and show_progress_bars():
                     frame = render_progress_bar(
                         frame, slide_index=idx, slide_count=slide_count,
                     )
@@ -611,14 +658,23 @@ def compose_motion_reel(
 
         source_list = list(sources)
         is_promo_last = bool(source_list) and "promo_frame" in (source_list[-1] or "")
-        slide_durations = _slide_durations_for(
-            len(frame_paths), is_promo_last=is_promo_last, template=template,
-        )
+        if slide_durations and len(slide_durations) >= len(frame_paths):
+            slide_durs = list(slide_durations[: len(frame_paths)])
+        elif slide_roles and len(slide_roles) >= len(frame_paths):
+            slide_durs = slide_durations_for_roles(
+                slide_roles[: len(frame_paths)],
+                template=template,
+                transition_sec=transition_sec,
+            )
+        else:
+            slide_durs = _slide_durations_for(
+                len(frame_paths), is_promo_last=is_promo_last, template=template,
+            )
 
         clip_paths: list[Path] = []
         for idx, frame_path in enumerate(frame_paths):
             clip_path = workdir / f"clip_{idx:02d}.mp4"
-            dur = slide_durations[idx] if idx < len(slide_durations) else slide_sec
+            dur = slide_durs[idx] if idx < len(slide_durs) else slide_sec
             dur = max(MIN_SLIDE_SEC, min(dur, MAX_SLIDE_SEC))
             slide_frames = max(int(dur * DEFAULT_FPS), 1)
             kb_variant = idx
@@ -637,9 +693,9 @@ def compose_motion_reel(
             subprocess.run(cmd, check=True, capture_output=True, timeout=120)
             clip_paths.append(clip_path)
 
-        total_duration = sum(slide_durations[: len(clip_paths)])
+        total_duration = sum(slide_durs[: len(clip_paths)])
         total_duration -= transition_sec * max(len(clip_paths) - 1, 0)
-        total_duration = max(total_duration, slide_durations[0] if slide_durations else slide_sec)
+        total_duration = max(total_duration, slide_durs[0] if slide_durs else slide_sec)
 
         audio_input = audio_path
         if audio_input is None:
@@ -653,7 +709,7 @@ def compose_motion_reel(
             len(clip_paths),
             slide_sec,
             transition_sec,
-            slide_durations=slide_durations[: len(clip_paths)],
+            slide_durations=slide_durs[: len(clip_paths)],
             transitions=transitions,
         )
 
@@ -770,4 +826,5 @@ def compose_from_plan(plan, *, audio_path: Optional[Path] = None) -> bytes:
         ken_burns_variants=plan.ken_burns_variants,
         transitions=plan.transitions or None,
         cta_audio_boost=plan.cta_audio_boost,
+        slide_durations=plan.slide_durations or None,
     )

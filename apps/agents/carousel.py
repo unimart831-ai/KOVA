@@ -1275,6 +1275,7 @@ def generate_catalog_showcase_carousel(
     title: str = "Our catalog",
     subtitle: str = "Swipe for prices →",
     closing_cta: str = "Shop now",
+    composition_hero_url: str | None = None,
 ) -> list[str]:
     """
     Multi-product catalog carousel: title → one slide per product (name + price) → CTA.
@@ -1295,10 +1296,41 @@ def generate_catalog_showcase_carousel(
     total_slides = len(products) + 2
     media_urls = []
 
+    if not composition_hero_url and len(products) >= 2:
+        from apps.products.photoroom_composition import (
+            compose_catalog_showcase_hero,
+            composition_enabled,
+        )
+
+        if composition_enabled():
+            composition_hero_url = compose_catalog_showcase_hero(
+                products[:6],
+                user=post.user,
+                brand_name=brand_name or title,
+            )
+
     try:
-        slide_images = [
-            _render_title_slide(width, height, title, subtitle, colors),
-        ]
+        slide_images = []
+        if composition_hero_url:
+            hero_src = _normalize_reel_image_source(composition_hero_url)
+            if hero_src:
+                slide_images.append(
+                    _render_product_price_slide(
+                        width,
+                        height,
+                        hero_src,
+                        "",
+                        subtitle,
+                        title,
+                        colors,
+                        slide_num=1,
+                        total_slides=total_slides,
+                    )
+                )
+        if not slide_images:
+            slide_images = [
+                _render_title_slide(width, height, title, subtitle, colors),
+            ]
 
         for idx, product in enumerate(products):
             slide_num = idx + 2

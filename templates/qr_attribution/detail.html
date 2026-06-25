@@ -33,6 +33,7 @@
       <code class="block text-sm bg-gray-50 dark:bg-gray-800 rounded p-3 break-all">{{ public_url }}</code>
       <div class="flex gap-3 flex-wrap">
         <a href="{% url 'qr_attribution:print' qr.pk %}" class="btn-primary text-sm">📄 Download print pack (PDF)</a>
+        <a href="{% url 'qr_attribution:edit' qr.pk %}" class="btn-secondary text-sm">Edit QR</a>
         <a href="{{ public_url }}" target="_blank" class="text-sm text-kova-600 dark:text-kova-400 hover:underline self-center">Preview landing →</a>
       </div>
     </div>
