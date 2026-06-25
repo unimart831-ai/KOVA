@@ -1,0 +1,48 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Profile Health{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Completeness checks for Facebook, Instagram, and LinkedIn profiles</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+  <p class="text-sm text-gray-600 dark:text-gray-400">
+    Kova scans connected business profiles nightly and surfaces gaps in bio, links, and contact info.
+    Audits run automatically at 02:00 UTC.
+  </p>
+
+  {% if accounts %}
+  <div class="space-y-3">
+    {% for account in accounts %}
+    <a href="{% url 'profile_audit:detail' account.pk %}"
+       class="card block hover:border-kova-300 dark:hover:border-kova-700 transition-colors">
+      <div class="card-body flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="text-gray-700 dark:text-gray-200 shrink-0">
+            {% include "components/platform_icon.html" with platform=account.platform size="w-6 h-6" %}
+          </span>
+          <div class="min-w-0">
+            <p class="font-medium text-gray-900 dark:text-white truncate">@{{ account.username|default:account.platform }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 capitalize">{{ account.platform }}</p>
+          </div>
+        </div>
+        <span class="text-xs font-medium text-kova-600 dark:text-kova-400 shrink-0">View →</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card border-dashed">
+    <div class="card-body text-center py-12">
+      <p class="text-gray-600 dark:text-gray-400 text-sm">No auditable profiles yet.</p>
+      <a href="{% url 'platforms:list' %}" class="btn-primary mt-4 inline-flex">Connect Facebook, Instagram, or LinkedIn</a>
+    </div>
+  </div>
+  {% endif %}
+
+  <p class="text-center">
+    <a href="{% url 'platforms:list' %}" class="text-sm text-kova-600 dark:text-kova-400 hover:underline">← Back to platforms</a>
+  </p>
+</div>
+{% endblock %}

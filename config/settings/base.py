@@ -78,6 +78,7 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     "apps.accounts",
     "apps.platforms",
+    "apps.profile_audit",
     "apps.content",
     "apps.agents",
     "apps.analytics",

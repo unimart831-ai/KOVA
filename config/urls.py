@@ -155,6 +155,7 @@ urlpatterns = [
     path("calendar/", include("apps.calendar_intel.urls")),
     path("content/", include("apps.content.urls")),
     path("platforms/", include("apps.platforms.urls")),
+    path("profile-audit/", include("apps.profile_audit.urls")),
     path("agents/", include("apps.agents.urls")),
     path("analytics/", include("apps.analytics.urls")),
     path("engage/", include("apps.engage.urls")),

@@ -1,0 +1,52 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Profile Health{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">@{{ account.username|default:account.platform }} · {{ account.platform|capfirst }}</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+  <div class="card">
+    <div class="card-body space-y-4">
+      <div class="flex items-center gap-3">
+        <span class="text-gray-700 dark:text-gray-200">
+          {% include "components/platform_icon.html" with platform=account.platform size="w-8 h-8" %}
+        </span>
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">@{{ account.username|default:account.platform }}</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 capitalize">{{ account.platform }} business profile</p>
+        </div>
+      </div>
+
+      {% if account.platform in audit_platforms %}
+      <div class="rounded-lg border border-gold-200 dark:border-gold-900/40 bg-gold-50/50 dark:bg-gold-950/20 px-4 py-3">
+        <p class="text-sm text-gold-800 dark:text-gold-300">
+          The next automated audit runs at <strong>02:00 UTC</strong>. Suggestions for bio, links, and contact fields will appear here after the scan completes.
+        </p>
+      </div>
+      {% else %}
+      <p class="text-sm text-gray-600 dark:text-gray-400">Profile audits are available for Facebook, Instagram, and LinkedIn only.</p>
+      {% endif %}
+
+      <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+        <div>
+          <dt class="text-gray-500 dark:text-gray-400">Status</dt>
+          <dd class="font-medium text-gray-900 dark:text-white">{% if account.is_active %}Connected{% else %}Inactive{% endif %}</dd>
+        </div>
+        {% if account.last_synced_at %}
+        <div>
+          <dt class="text-gray-500 dark:text-gray-400">Last synced</dt>
+          <dd class="font-medium text-gray-900 dark:text-white">{{ account.last_synced_at|timesince }} ago</dd>
+        </div>
+        {% endif %}
+      </dl>
+    </div>
+  </div>
+
+  <p class="flex flex-wrap gap-4 justify-center text-sm">
+    <a href="{% url 'profile_audit:list' %}" class="text-kova-600 dark:text-kova-400 hover:underline">All profile audits</a>
+    <a href="{% url 'platforms:list' %}" class="text-kova-600 dark:text-kova-400 hover:underline">Platform settings</a>
+  </p>
+</div>
+{% endblock %}
