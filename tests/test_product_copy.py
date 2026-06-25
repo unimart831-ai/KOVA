@@ -197,11 +197,13 @@ def test_carousel_plan_includes_story_and_price():
         "key_features": ["Full HD display", "Smart apps built-in", "Slim bezel design"],
         "campaign_angle": "Big screen entertainment without the big price",
     }
-    plan = build_product_carousel_plan(product, analysis, analysis["key_features"])
+    plan = build_product_carousel_plan(
+        product, analysis, analysis["key_features"][:1], max_photo_slides=6,
+    )
     layouts = [s["layout"] for s in plan]
     assert layouts[0] == "hero_hook"
     assert "story_card" in layouts
     assert "price_reveal" in layouts
     assert len(plan) >= 4
-    benefit_headlines = [s["headline"] for s in plan if s["layout"].startswith("benefit")]
-    assert len({h.split(" ", 1)[0] for h in benefit_headlines}) >= 2
+    benefit_layouts = [s["layout"] for s in plan if s["layout"] in ("clean_split", "side_panel")]
+    assert len(benefit_layouts) >= 1

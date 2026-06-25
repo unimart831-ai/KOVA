@@ -39,6 +39,38 @@ from apps.content.models import MediaAttachment
 logger = logging.getLogger(__name__)
 
 
+def _show_carousel_counters() -> bool:
+    try:
+        from apps.content.carousel_studio import show_slide_counters
+        return show_slide_counters()
+    except Exception:
+        return False
+
+
+def _draw_slide_counter(
+    draw,
+    *,
+    slide_num: int,
+    total_slides: int,
+    x: int,
+    y: int,
+    colors: dict,
+    size_ratio: float = 0.028,
+    width: int = 1080,
+    height: int = 1080,
+) -> None:
+    if not _show_carousel_counters():
+        return
+    counter_size = int(min(width, height) * size_ratio)
+    font_counter = _get_font(counter_size, bold=True)
+    draw.text(
+        (x, y),
+        f"{slide_num}/{total_slides}",
+        font=font_counter,
+        fill=_hex_to_rgb(colors["accent"]),
+    )
+
+
 def _render_title_slide(width: int, height: int, title: str,
                         subtitle: str, colors: dict) -> Image.Image:
     """Opening slide: big title + subtitle. Sets the hook."""
@@ -112,14 +144,15 @@ def _render_content_slide(width: int, height: int, slide_number: int,
     padding_y = int(height * 0.08)
 
     # Slide number (top-left)
-    num_size = int(min(width, height) * 0.04)
-    font_num = _get_font(num_size, bold=True)
-    draw.text(
-        (padding_x, padding_y),
-        f"{slide_number}/{total_slides}",
-        font=font_num,
-        fill=_hex_to_rgb(colors["accent"]),
-    )
+    if _show_carousel_counters():
+        num_size = int(min(width, height) * 0.04)
+        font_num = _get_font(num_size, bold=True)
+        draw.text(
+            (padding_x, padding_y),
+            f"{slide_number}/{total_slides}",
+            font=font_num,
+            fill=_hex_to_rgb(colors["accent"]),
+        )
 
     # Slide title (if provided)
     title_y = padding_y + num_size + int(height * 0.03)
@@ -554,7 +587,7 @@ def _render_product_hero_hook_slide(
 
     draw.text(
         (padding_x, height - int(height * 0.08)),
-        f"{slide_num}/{total_slides}  ·  Swipe →",
+        f"{slide_num}/{total_slides}  ·  Swipe →" if _show_carousel_counters() else "Swipe →",
         font=_get_font(int(min(width, height) * 0.028), bold=True),
         fill=_hex_to_rgb(colors["accent"]),
     )
@@ -628,11 +661,10 @@ def _render_product_story_slide(
         spacing=body_spacing,
     )
 
-    draw.text(
-        (padding_x, height - int(height * 0.06)),
-        f"{slide_num}/{total_slides}",
-        font=_get_font(int(min(width, height) * 0.028), bold=True),
-        fill=_hex_to_rgb(colors["accent"]),
+    _draw_slide_counter(
+        draw, slide_num=slide_num, total_slides=total_slides,
+        x=padding_x, y=height - int(height * 0.06), colors=colors,
+        width=width, height=height,
     )
     return img
 
@@ -724,11 +756,10 @@ def _render_product_benefit_slide(
             spacing=body_spacing,
         )
 
-    draw.text(
-        (padding_x, int(height * 0.05)),
-        f"{slide_num}/{total_slides}",
-        font=_get_font(int(min(width, height) * 0.028), bold=True),
-        fill=_hex_to_rgb(colors["accent"]),
+    _draw_slide_counter(
+        draw, slide_num=slide_num, total_slides=total_slides,
+        x=padding_x, y=int(height * 0.05), colors=colors,
+        width=width, height=height,
     )
     return img
 
@@ -789,11 +820,10 @@ def _render_product_price_slide(
             spacing=int(body_size * 0.3),
         )
 
-    draw.text(
-        (padding_x, height - int(height * 0.06)),
-        f"{slide_num}/{total_slides}",
-        font=_get_font(int(min(width, height) * 0.028), bold=True),
-        fill=_hex_to_rgb(colors["accent"]),
+    _draw_slide_counter(
+        draw, slide_num=slide_num, total_slides=total_slides,
+        x=padding_x, y=height - int(height * 0.06), colors=colors,
+        width=width, height=height,
     )
     return img
 
@@ -847,13 +877,10 @@ def _render_photo_slide(
 
     # Slide counter (top-left, accent color)
     if slide_num is not None and total_slides is not None:
-        num_size = int(min(width, height) * 0.032)
-        font_num = _get_font(num_size, bold=True)
-        draw.text(
-            (padding_x, int(height * 0.06)),
-            f"{slide_num}/{total_slides}",
-            font=font_num,
-            fill=_hex_to_rgb(colors["accent"]),
+        _draw_slide_counter(
+            draw, slide_num=slide_num, total_slides=total_slides,
+            x=padding_x, y=int(height * 0.06), colors=colors,
+            width=width, height=height, size_ratio=0.032,
         )
 
     # Main overlay text — white, bold, bottom of gradient zone
@@ -958,13 +985,10 @@ def _render_clean_split_slide(
             fill=_hex_to_rgb(colors["text_muted"]), spacing=body_spacing,
         )
 
-    counter_size = int(min(width, height) * 0.024)
-    font_counter = _get_font(counter_size, bold=True)
-    draw.text(
-        (padding_x, height - int(bar_h * 0.25)),
-        f"{slide_num}/{total_slides}",
-        font=font_counter,
-        fill=_hex_to_rgb(colors["accent"]),
+    _draw_slide_counter(
+        draw, slide_num=slide_num, total_slides=total_slides,
+        x=padding_x, y=height - int(bar_h * 0.25), colors=colors,
+        width=width, height=height, size_ratio=0.024,
     )
 
     return canvas
@@ -1045,13 +1069,10 @@ def _render_side_panel_slide(
             fill=_hex_to_rgb(colors["text_muted"]), spacing=body_spacing,
         )
 
-    counter_size = int(min(width, height) * 0.024)
-    font_counter = _get_font(counter_size, bold=True)
-    draw.text(
-        (panel_x + padding, height - int(height * 0.08)),
-        f"{slide_num}/{total_slides}",
-        font=font_counter,
-        fill=_hex_to_rgb(colors["accent"]),
+    _draw_slide_counter(
+        draw, slide_num=slide_num, total_slides=total_slides,
+        x=panel_x + padding, y=height - int(height * 0.08), colors=colors,
+        width=width, height=height, size_ratio=0.024,
     )
 
     return canvas
@@ -1067,7 +1088,7 @@ def _render_minimal_caption_slide(
     slide_num: int | None = None,
     total_slides: int | None = None,
 ) -> Image.Image:
-    """Product-first: full photo with only a minimal 10% caption strip at bottom."""
+    """Product-first: full bleed photo; optional thin caption strip when copy is provided."""
     raw = _load_product_image(image_source)
     if raw is None:
         return _render_content_slide(
@@ -1075,38 +1096,135 @@ def _render_minimal_caption_slide(
         )
 
     img = ImageOps.fit(raw, (width, height), method=Image.Resampling.LANCZOS).convert("RGBA")
+    caption = (caption or "").strip()
 
-    strip_h = int(height * 0.10)
-    strip = Image.new("RGBA", (width, strip_h), (0, 0, 0, 120))
-    img.paste(strip, (0, height - strip_h), strip)
+    if caption:
+        strip_h = int(height * 0.10)
+        strip = Image.new("RGBA", (width, strip_h), (0, 0, 0, 120))
+        img.paste(strip, (0, height - strip_h), strip)
 
     img = img.convert("RGB")
     draw = ImageDraw.Draw(img)
     padding_x = int(width * 0.06)
 
-    cap_size = int(min(width, height) * 0.032)
-    font_cap = _get_font(cap_size, bold=True)
-    max_w = width - padding_x * 2 - (int(width * 0.12) if slide_num else 0)
-    display_text = caption
-    while draw.textbbox((0, 0), display_text, font=font_cap)[2] > max_w and len(display_text) > 10:
-        display_text = display_text[:-4] + "\u2026"
-    cap_y = height - strip_h + (strip_h - cap_size) // 2
-    draw.text(
-        (padding_x, cap_y), display_text, font=font_cap, fill=(255, 255, 255),
-    )
+    if caption:
+        cap_size = int(min(width, height) * 0.032)
+        font_cap = _get_font(cap_size, bold=True)
+        max_w = width - padding_x * 2 - (int(width * 0.12) if slide_num else 0)
+        display_text = caption
+        while draw.textbbox((0, 0), display_text, font=font_cap)[2] > max_w and len(display_text) > 10:
+            display_text = display_text[:-4] + "\u2026"
+        strip_h = int(height * 0.10)
+        cap_y = height - strip_h + (strip_h - cap_size) // 2
+        draw.text(
+            (padding_x, cap_y), display_text, font=font_cap, fill=(255, 255, 255),
+        )
 
     if slide_num is not None and total_slides is not None:
-        counter_text = f"{slide_num}/{total_slides}"
-        counter_size = int(min(width, height) * 0.024)
-        font_counter = _get_font(counter_size, bold=True)
-        cb = draw.textbbox((0, 0), counter_text, font=font_counter)
-        cw = cb[2] - cb[0]
-        draw.text(
-            (width - padding_x - cw, cap_y),
-            counter_text, font=font_counter, fill=_hex_to_rgb(colors["accent"]),
+        _draw_slide_counter(
+            draw, slide_num=slide_num, total_slides=total_slides,
+            x=width - padding_x - int(width * 0.12), y=int(height * 0.04),
+            colors=colors, width=width, height=height, size_ratio=0.024,
         )
 
     return img
+
+
+def _render_price_bar_slide(
+    width: int,
+    height: int,
+    image_source: str,
+    price: str,
+    body: str,
+    subtext: str,
+    colors: dict,
+    *,
+    slide_num: int,
+    total_slides: int,
+) -> Image.Image:
+    """Product top 68%, branded price bar bottom — price never floats over the product."""
+    raw = _load_product_image(image_source)
+    if raw is None:
+        return _render_closing_slide(width, height, price or "Shop now", subtext, colors)
+
+    img_zone_h = int(height * 0.68)
+    bar_h = height - img_zone_h
+    product_img = ImageOps.fit(raw, (width, img_zone_h), method=Image.Resampling.LANCZOS)
+
+    canvas = Image.new("RGB", (width, height), _hex_to_rgb(colors["primary"]))
+    canvas.paste(product_img, (0, 0))
+
+    draw = ImageDraw.Draw(canvas)
+    padding_x = int(width * 0.08)
+    bar_top = img_zone_h
+
+    draw.rectangle(
+        [(0, bar_top), (width, bar_top + int(bar_h * 0.04))],
+        fill=_hex_to_rgb(colors["accent"]),
+    )
+
+    price_y = bar_top + int(bar_h * 0.14)
+    price_font, wrapped_price, price_spacing = _fit_font_size(
+        draw,
+        price,
+        max_width=width - padding_x * 2,
+        max_height=int(bar_h * 0.35),
+        start_size=int(min(width, height) * 0.078),
+        min_size=22,
+        bold=True,
+        max_lines=1,
+    )
+    draw.multiline_text(
+        (padding_x, price_y), wrapped_price, font=price_font,
+        fill=(255, 255, 255), spacing=price_spacing,
+    )
+
+    price_bbox = draw.multiline_textbbox(
+        (padding_x, price_y), wrapped_price, font=price_font, spacing=price_spacing,
+    )
+    line_y = price_bbox[3] + int(bar_h * 0.06)
+
+    if subtext:
+        sub_font, wrapped_sub, sub_spacing = _fit_font_size(
+            draw,
+            subtext,
+            max_width=width - padding_x * 2,
+            max_height=int(bar_h * 0.22),
+            start_size=int(min(width, height) * 0.034),
+            min_size=14,
+            bold=True,
+            max_lines=1,
+        )
+        draw.multiline_text(
+            (padding_x, line_y), wrapped_sub, font=sub_font,
+            fill=_hex_to_rgb(colors["text_muted"]), spacing=sub_spacing,
+        )
+        line_y = draw.multiline_textbbox(
+            (padding_x, line_y), wrapped_sub, font=sub_font, spacing=sub_spacing,
+        )[3] + int(bar_h * 0.04)
+
+    if body:
+        body_font, wrapped_body, body_spacing = _fit_font_size(
+            draw,
+            body,
+            max_width=width - padding_x * 2,
+            max_height=max(bar_top + bar_h - line_y - int(bar_h * 0.12), 28),
+            start_size=int(min(width, height) * 0.028),
+            min_size=12,
+            max_lines=2,
+            line_spacing_ratio=0.3,
+        )
+        draw.multiline_text(
+            (padding_x, line_y), wrapped_body, font=body_font,
+            fill=_hex_to_rgb(colors["text_muted"]), spacing=body_spacing,
+        )
+
+    _draw_slide_counter(
+        draw, slide_num=slide_num, total_slides=total_slides,
+        x=padding_x, y=height - int(bar_h * 0.18), colors=colors,
+        width=width, height=height, size_ratio=0.024,
+    )
+    return canvas
 
 
 def generate_product_carousel(
@@ -1122,11 +1240,15 @@ def generate_product_carousel(
 
     Uses vision analysis for accurate copy and varied slide layouts.
     """
-    from apps.content.tasks import _normalize_reel_image_source
-    from apps.products.product_copy import build_product_carousel_plan
+    from apps.content.carousel_studio import prepare_carousel_generation
 
-    raw_images = product.carousel_image_urls or product.all_image_urls
-    all_images = [_normalize_reel_image_source(u) for u in raw_images if u]
+    prepared = prepare_carousel_generation(product, analysis, key_features)
+    slide_plan = prepared.plan
+    all_images = prepared.image_urls
+
+    if not slide_plan:
+        logger.warning("generate_product_carousel: empty plan for product %s", product.pk)
+        return []
     if not all_images:
         logger.warning("generate_product_carousel: product %s has no images", product.pk)
         return []
@@ -1136,7 +1258,6 @@ def generate_product_carousel(
     colors = _get_brand_palette(profile)
     brand_name = getattr(profile, "company_name", "") if profile else ""
 
-    slide_plan = build_product_carousel_plan(product, analysis, key_features)
     total_slides = len(slide_plan) + 1
 
     media_urls = []
@@ -1145,7 +1266,9 @@ def generate_product_carousel(
 
         for idx, spec in enumerate(slide_plan):
             slide_num = idx + 1
-            img_src = all_images[spec.get("image_index", idx) % len(all_images)]
+            img_src = spec.get("image_url") or all_images[
+                spec.get("image_index", idx) % len(all_images)
+            ]
             layout = spec.get("layout", "benefit_bottom")
 
             if layout == "hero_hook":
@@ -1177,6 +1300,16 @@ def generate_product_carousel(
                     slide_num=slide_num,
                     total_slides=total_slides,
                 )
+            elif layout == "price_bar":
+                slide = _render_price_bar_slide(
+                    width, height, img_src,
+                    spec.get("headline", product.display_price or ""),
+                    spec.get("body", ""),
+                    spec.get("subtext", product.name),
+                    colors,
+                    slide_num=slide_num,
+                    total_slides=total_slides,
+                )
             elif layout == "clean_split":
                 slide = _render_clean_split_slide(
                     width, height, img_src,
@@ -1198,7 +1331,7 @@ def generate_product_carousel(
             elif layout == "minimal_caption":
                 slide = _render_minimal_caption_slide(
                     width, height, img_src,
-                    spec.get("headline", product.name),
+                    spec.get("caption", spec.get("headline", "")),
                     colors,
                     slide_num=slide_num,
                     total_slides=total_slides,
@@ -1253,7 +1386,12 @@ def generate_product_carousel(
             post.media_urls = []
         post.media_urls = list(media_urls)
         post.media_status = "generated"
-        post.save(update_fields=["media_urls", "media_status", "updated_at"])
+        meta = dict(post.visual_metadata or {})
+        meta["carousel_studio"] = True
+        meta["carousel_studio_version"] = 2
+        meta["carousel_slide_roles"] = [s.get("role", "") for s in slide_plan]
+        post.visual_metadata = meta
+        post.save(update_fields=["media_urls", "media_status", "visual_metadata", "updated_at"])
 
         logger.info(
             "Generated %d-slide story carousel for post %s (product=%s, platform=%s)",

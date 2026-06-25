@@ -731,6 +731,12 @@ REEL_PROFESSIONAL_MODE = env.bool("REEL_PROFESSIONAL_MODE", default=True)
 REEL_TARGET_DURATION_SEC = env.float("REEL_TARGET_DURATION_SEC", default=14.0)
 REEL_SHOW_PROGRESS_BAR = env.bool("REEL_SHOW_PROGRESS_BAR", default=False)
 
+# Professional carousel studio — product-first layouts (apps/content/carousel_studio.py)
+CAROUSEL_PROFESSIONAL_MODE = env.bool("CAROUSEL_PROFESSIONAL_MODE", default=True)
+CAROUSEL_MAX_SLIDES = env.int("CAROUSEL_MAX_SLIDES", default=5)
+CAROUSEL_MAX_SOURCE_IMAGES = env.int("CAROUSEL_MAX_SOURCE_IMAGES", default=8)
+CAROUSEL_SHOW_COUNTERS = env.bool("CAROUSEL_SHOW_COUNTERS", default=False)
+
 # Campaign QA — minimum quality score required before publish (default 75)
 CAMPAIGN_PUBLISH_MIN_QUALITY = env.int("CAMPAIGN_PUBLISH_MIN_QUALITY", default=75)
 # Phase 2 — PhotoFix, Composition, Video (see docs.photoroom.com)
