@@ -43,10 +43,21 @@
               <p class="text-sm text-gray-900 dark:text-gray-100 {% if not notif.is_read %}font-semibold{% endif %}">{{ notif.message }}</p>
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ notif.created_at|timesince }} ago</p>
               {% if notif.related_post %}
-                <a href="{% url 'content:post_detail' notif.related_post.id %}"
-                   class="inline-flex items-center mt-2 text-xs font-medium text-kova-600 dark:text-kova-400 hover:underline">
-                  View post &rarr;
-                </a>
+                <div class="flex items-center gap-3 mt-2">
+                  <a href="{% url 'content:post_detail' notif.related_post.id %}"
+                     class="inline-flex items-center text-xs font-medium text-kova-600 dark:text-kova-400 hover:underline">
+                    View post &rarr;
+                  </a>
+                  {% if notif.related_post.publish_needs_retry %}
+                  <form method="post" action="{% url 'content:retry_publish' notif.related_post.id %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="inline-flex items-center gap-1 text-xs font-medium text-orange-600 dark:text-orange-400 hover:underline">
+                      Retry publish
+                    </button>
+                  </form>
+                  {% endif %}
+                </div>
               {% endif %}
             </div>
             {% if not notif.is_read %}

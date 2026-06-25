@@ -314,7 +314,7 @@ def retry_publish(request, post_id):
     post = get_object_or_404(Post.objects.select_related("user", "social_account"), id=post_id)
     if not can_edit_post(request.user, post):
         raise Http404
-    if post.status != Post.Status.FAILED:
+    if post.status != Post.Status.FAILED and not post.publish_needs_retry:
         return HttpResponse("Post is not in failed state", status=400)
 
     post.status = Post.Status.APPROVED

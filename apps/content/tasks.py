@@ -237,6 +237,12 @@ def _reel_video_url(media_urls):
 
 
 def _post_has_reel_video(post) -> bool:
+    if getattr(post, "reel_has_video", False):
+        return True
+    meta = post.visual_metadata or {}
+    video_url = meta.get("reel_video_url")
+    if video_url and _is_video_url(video_url):
+        return True
     for url in post.media_urls or []:
         if _is_video_url(url):
             return True
@@ -1230,18 +1236,30 @@ def publish_post(self, post_id: str):
         logger.info("PUBLISH PAUSED: skipping post %s — %s", post_id, pause_reason)
         return {"error": pause_reason}
 
-    # ── Campaign QA gate — block publish below quality threshold ────────
+    # ── Auto-fill commerce CTA when missing (Snap / Studio posts) ───────
+    if not (post.cta_url or "").strip():
+        seed = getattr(post, "seed", None)
+        if seed:
+            from apps.content.campaign_cta import apply_default_campaign_cta
+            from apps.content.professional_cta import apply_professional_cta_to_post
+
+            if not apply_professional_cta_to_post(post, post.user, seed):
+                apply_default_campaign_cta(post, post.user, seed)
+            post.refresh_from_db(fields=["cta_url", "cta_type", "cta_text", "utm_source", "utm_medium", "utm_campaign", "utm_content"])
+
+    # ── Campaign QA gate — block only this post's hard issues ─────────
     from apps.content.campaign_qa import check_post_publish_gate
 
     qa_allowed, qa_reason, qa_score = check_post_publish_gate(post, post.user)
     if not qa_allowed:
-        post.status = Post.Status.PENDING_APPROVAL
         note = f"QA GATE ({qa_score}/100): {qa_reason}"[:500]
+        post.status = Post.Status.FAILED
+        post.publish_error = qa_reason[:2000]
         post.ai_reasoning = note
-        post.save(update_fields=["status", "ai_reasoning", "updated_at"])
+        post.save(update_fields=["status", "publish_error", "ai_reasoning", "updated_at"])
         Notification.create_for_user(
             post.user,
-            "system",
+            "publish_failed",
             f"Publish blocked — quality {qa_score}/100. {qa_reason[:120]}",
             related_post=post,
         )

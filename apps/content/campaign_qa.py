@@ -167,10 +167,16 @@ def _score_visual(post) -> tuple[int, list[str]]:
         return 50, issues
 
     if fmt == "reel":
+        meta = post.visual_metadata or {}
         if getattr(post, "reel_has_video", False) or post.has_media:
             return 90, issues
-        if post.media_status == post.MediaStatus.PENDING:
-            return 55, issues
+        if meta.get("video_compose_status") == "done" and meta.get("reel_video_url"):
+            return 90, issues
+        if getattr(post, "reel_compose_pending", False) or meta.get("video_compose_status") == "pending":
+            return 65, issues
+        if meta.get("video_compose_status") == "failed":
+            issues.append("Reel video composition failed")
+            return 35, issues
         issues.append("Reel video not ready")
         return 40, issues
 
@@ -422,41 +428,43 @@ def refresh_campaign_qa(campaign, *, posts: list | None = None, user=None) -> Ca
     return report
 
 
+def _publish_blocking_reason(post, ps: PostQAScore) -> str | None:
+    """Hard block reasons for this post only — not sibling posts in a campaign."""
+    for issue in ps.issues:
+        if issue.endswith(" post needs media") or issue in (
+            "Images still generating",
+            "Carousel needs more slides",
+            "Reel video composition failed",
+        ):
+            return issue
+        if issue == "Reel video not ready":
+            if getattr(post, "reel_compose_pending", False):
+                continue
+            meta = post.visual_metadata or {}
+            if meta.get("video_compose_status") == "pending":
+                continue
+            return issue
+    return None
+
+
 def check_post_publish_gate(post, user) -> tuple[bool, str, int]:
     """
     Returns (allowed, reason, score).
-    Uses campaign QA when post belongs to a seed with MarketingCampaign.
+    Scores only the post being published — sibling posts in a campaign do not block this one.
     """
-    campaign = None
     seed = getattr(post, "seed", None)
-    if seed:
-        campaign = getattr(seed, "marketing_campaign", None)
-
-    if campaign:
-        from apps.content.models import Post
-
-        posts = list(Post.objects.filter(seed=seed))
-        report = audit_campaign_qa(campaign, posts, user)
-        ps = next((p for p in report.posts if p.post_id == str(post.pk)), None)
-        post_score = ps.overall if ps else report.overall
-
-        if not report.publish_ready:
-            reason = report.issues[0] if report.issues else (
-                f"Campaign quality {report.overall}/100 — minimum {report.min_required}"
-            )
-            return False, reason, post_score
-
-        if ps and ps.overall < max(50, report.min_required - POST_FLOOR_BELOW_CAMPAIGN):
-            return False, f"Post quality {ps.overall}/100 is too low to publish", post_score
-
-        return True, "", post_score
-
-    # Ungrouped post — score individually
     ps = score_post_qa(post, seed=seed)
     min_required = get_publish_min_score(user)
-    if ps.overall < min_required:
-        reason = ps.issues[0] if ps.issues else f"Quality {ps.overall}/100 — minimum {min_required}"
+    post_floor = max(50, min_required - POST_FLOOR_BELOW_CAMPAIGN)
+
+    blocking = _publish_blocking_reason(post, ps)
+    if blocking:
+        return False, blocking, ps.overall
+
+    if ps.overall < post_floor:
+        reason = ps.issues[0] if ps.issues else f"Post quality {ps.overall}/100 is too low"
         return False, reason, ps.overall
+
     return True, "", ps.overall
 
 

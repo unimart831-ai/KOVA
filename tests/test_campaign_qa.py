@@ -176,3 +176,31 @@ class TestPublishGate:
         allowed, reason, score = check_post_publish_gate(post, user)
         assert allowed is True
         assert score >= 75
+
+    @override_settings(CAMPAIGN_PUBLISH_MIN_QUALITY=75)
+    def test_sibling_weak_post_does_not_block_good_post(self, user, ig_account, fb_account):
+        """Publishing one post must not fail because another post in the campaign is weak."""
+        seed = ContentSeed.objects.create(user=user, idea="Mixed campaign")
+        ensure_campaign_for_seed(seed, title="Mixed campaign")
+        weak_reel = Post.objects.create(
+            user=user,
+            seed=seed,
+            social_account=ig_account,
+            platform="instagram",
+            post_format="reel",
+            content_text="Reel without video yet " * 5,
+            status=Post.Status.PENDING_APPROVAL,
+        )
+        good_fb = _good_post(
+            user,
+            seed,
+            fb_account,
+            post_format="image",
+            status=Post.Status.APPROVED,
+        )
+        report = audit_campaign_qa(seed.marketing_campaign, [weak_reel, good_fb], user)
+        assert report.publish_ready is False
+
+        allowed, reason, score = check_post_publish_gate(good_fb, user)
+        assert allowed is True
+        assert score >= 75

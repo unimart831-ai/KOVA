@@ -367,12 +367,21 @@ class Post(SoftDeleteMixin, models.Model):
         return f"{self.get_status_display()} — {self.content_text[:60]}"
 
     @property
+    def publish_needs_retry(self) -> bool:
+        """True when publish failed or was blocked by QA — show Retry in queue."""
+        if self.status == self.Status.FAILED:
+            return True
+        return (self.ai_reasoning or "").startswith("QA GATE")
+
+    @property
     def publish_failure_message(self) -> str:
         """User-facing publish failure text for Queue / detail views."""
         if self.publish_error:
             return self.publish_error
         if self.ai_reasoning and self.ai_reasoning.startswith("Publish error:"):
             return self.ai_reasoning[len("Publish error:"):].strip()
+        if self.ai_reasoning and self.ai_reasoning.startswith("QA GATE"):
+            return self.ai_reasoning
         return ""
 
     @property
