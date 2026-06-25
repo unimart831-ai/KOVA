@@ -55,6 +55,18 @@ SECTION_ORDER_BY_VIBE: dict[str, list[str]] = {
     "lookbook": ["hero", "featured", "reels", "catalog", "about", "faq"],
 }
 
+SECTION_ORDER_BY_BUSINESS_MODEL: dict[str, list[str]] = {
+    "product": ["hero", "catalog", "reels", "featured", "about", "faq", "trust"],
+    "service": ["hero", "services", "bookings", "reels", "testimonials", "about", "faq"],
+    "professional": ["hero", "portfolio", "services", "testimonials", "about", "faq", "bookings"],
+}
+
+CATALOG_LABEL_BY_MODEL: dict[str, str] = {
+    "product": "Shop our collection",
+    "service": "Our services",
+    "professional": "Work with us",
+}
+
 FONT_PAIR_BY_ARCHETYPE: dict[str, dict[str, str]] = {
     "boutique": {"heading": "Playfair Display", "body": "Plus Jakarta Sans"},
     "market_stall": {"heading": "Plus Jakarta Sans", "body": "Plus Jakarta Sans"},
@@ -104,7 +116,62 @@ def _theme_tokens(profile, user) -> dict[str, str]:
     }
 
 
+def resolve_business_model(profile) -> str:
+    bm = (getattr(profile, "business_model", None) or "").strip()
+    if bm in ("product", "service", "professional"):
+        return bm
+    return "product"
+
+
+def resolve_business_layout(profile) -> dict[str, Any]:
+    """Layout hints driven by business_model (service/professional vs product)."""
+    bm = resolve_business_model(profile)
+    return {
+        "business_model": bm,
+        "section_order": list(SECTION_ORDER_BY_BUSINESS_MODEL.get(bm, SECTION_ORDER_BY_BUSINESS_MODEL["product"])),
+        "catalog_label": CATALOG_LABEL_BY_MODEL.get(bm, CATALOG_LABEL_BY_MODEL["product"]),
+        "show_portfolio": bm == "professional",
+        "show_bookings_cta": bm in ("service", "professional"),
+        "hero_emphasis": "portfolio" if bm == "professional" else ("services" if bm == "service" else "catalog"),
+    }
+
+
+def portfolio_items_for_shop(user, *, limit: int = 6) -> list:
+    """Published portfolio / case studies for professional shop pages."""
+    from apps.products.models import BusinessAsset
+
+    return list(
+        BusinessAsset.objects.filter(
+            user=user,
+            asset_type__in=[
+                BusinessAsset.AssetType.PORTFOLIO,
+                BusinessAsset.AssetType.CASE_STUDY,
+                BusinessAsset.AssetType.TESTIMONIAL,
+            ],
+            status=BusinessAsset.Status.PUBLISHED,
+        ).order_by("-updated_at")[:limit]
+    )
+
+
+def service_offerings_for_shop(products, *, limit: int = 12) -> list:
+    """Service-type products for service-business storefronts."""
+    from apps.products.models import Product
+
+    services = [
+        p for p in (products or [])
+        if getattr(p, "offering_type", None) == Product.OfferingType.SERVICE
+    ]
+    if services:
+        return services[:limit]
+    return list(products or [])[:limit]
+
+
 def resolve_archetype(profile) -> str:
+    bm = resolve_business_model(profile)
+    if bm == "professional":
+        return "studio"
+    if bm == "service":
+        return "boutique"
     industry = (profile.industry or "").strip()
     if industry in ARCHETYPE_BY_INDUSTRY:
         return ARCHETYPE_BY_INDUSTRY[industry]
@@ -157,7 +224,10 @@ def resolve_storefront(profile, user, products, shop_reels) -> dict[str, Any]:
     theme_tokens = _theme_tokens(profile, user)
     surface_mode = theme_tokens["surface"]
     font_pair = FONT_PAIR_BY_ARCHETYPE.get(archetype, FONT_PAIR_BY_ARCHETYPE["catalog"])
-    section_order = list(SECTION_ORDER_BY_VIBE.get(vibe, SECTION_ORDER_BY_VIBE["classic_shop"]))
+    business_layout = resolve_business_layout(profile)
+    section_order = business_layout["section_order"]
+    if vibe == "minimal_catalog" and business_layout["business_model"] == "product":
+        section_order = list(SECTION_ORDER_BY_VIBE.get("minimal_catalog", section_order))
 
     return {
         "archetype": archetype,
@@ -168,6 +238,7 @@ def resolve_storefront(profile, user, products, shop_reels) -> dict[str, Any]:
         "surface_mode": surface_mode,
         "font_pair": font_pair,
         "powered_by_kova": _powered_by_kova(user),
+        **business_layout,
     }
 
 
@@ -180,6 +251,7 @@ def storefront_body_classes(storefront: dict[str, Any], *, extra: str = "") -> s
         f"shop-site--vibe-{storefront.get('vibe', 'classic_shop')}",
         f"shop-site--surface-{storefront.get('surface_mode', 'dark')}",
         f"shop-site--hero-{storefront.get('hero_mode', 'compact')}",
+        f"shop-site--model-{storefront.get('business_model', 'product')}",
     ]
     if extra:
         parts.append(extra.strip())

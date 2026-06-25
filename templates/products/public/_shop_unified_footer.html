@@ -1,0 +1,53 @@
+{# Kova Page links + lead form merged into the commerce shop footer #}
+{% if shop_footer.has_kova_extras %}
+<section class="shop-section shop-unified-footer" aria-label="More from {{ brand_name }}">
+  {% if shop_footer.kova_page_bio %}
+  <p class="shop-unified-bio">{{ shop_footer.kova_page_bio }}</p>
+  {% endif %}
+
+  {% if shop_footer.kova_links %}
+  <div class="shop-kova-links">
+    <h2 class="shop-section-title shop-section-title--sm">Quick links</h2>
+    <ul class="shop-kova-link-list">
+      {% for link in shop_footer.kova_links %}
+      <li>
+        <a href="{{ link.url }}" class="shop-kova-link{% if link.featured %} shop-kova-link--featured{% endif %}"
+           {% if link.external %}target="_blank" rel="noopener"{% endif %}>
+          {{ link.title }}
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if shop_footer.kova_active_form and shop_footer.kova_form_instance %}
+  <div class="shop-kova-form" id="shop-contact">
+    <h2 class="shop-section-title shop-section-title--sm">{{ shop_footer.kova_active_form.title }}</h2>
+    {% if shop_footer.kova_active_form.description %}
+    <p class="shop-unified-form-desc">{{ shop_footer.kova_active_form.description }}</p>
+    {% endif %}
+    <div id="kova-form-container" class="shop-kova-form-inner">
+      <form method="post"
+            action="{{ shop_footer.kova_form_submit_path }}"
+            hx-post="{{ shop_footer.kova_form_submit_path }}"
+            hx-target="#kova-form-container"
+            hx-swap="innerHTML"
+            class="shop-kova-form-fields">
+        {% csrf_token %}
+        {% for field in shop_footer.kova_form_instance %}
+        <div class="shop-field">
+          <label for="{{ field.id_for_label }}" class="shop-field-label">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<p class="shop-field-error">{{ field.errors.0 }}</p>{% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="shop-btn shop-btn--outline shop-btn--lg">
+          {{ shop_footer.kova_active_form.button_text }}
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endif %}

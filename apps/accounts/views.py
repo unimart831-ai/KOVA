@@ -86,6 +86,10 @@ def settings_view(request):
     preview_bg = f"#{brand_template.studio_color_hex}"
     shadow_labels = dict(PhotoroomBrandKitForm.SHADOW_CHOICES)
 
+    from apps.billing.enforcement import get_seed_usage
+
+    seed_usage = get_seed_usage(request.user)
+
     return render(request, "accounts/settings.html", {
         "user_form": user_form,
         "brand_form": brand_form,
@@ -99,6 +103,7 @@ def settings_view(request):
             "enabled": brand_template.enabled,
         },
         "plan_limits": get_user_plan_limits(request.user),
+        "seed_usage": seed_usage,
         "page_title": "Settings",
         "business_model": getattr(profile, "business_model", ""),
     })

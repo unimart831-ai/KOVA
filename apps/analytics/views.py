@@ -416,6 +416,10 @@ def revenue_dashboard(request):
     """Revenue attribution dashboard — enhanced with ROI, trends, funnel, product attribution."""
     from apps.analytics.revenue import get_revenue_summary, get_revenue_headline_insight
     from apps.analytics.models import ShopifyStore
+    from apps.content.campaign_attribution import (
+        get_campaign_performance_rows,
+        get_objective_platform_comparison,
+    )
 
     days = int(request.GET.get("days", 30))
     if days not in (7, 14, 30, 90):
@@ -426,11 +430,15 @@ def revenue_dashboard(request):
     # surface at the top of the dashboard. Computed from the same summary so
     # no extra queries.
     insight = get_revenue_headline_insight(request.user, days=days, summary=summary)
+    campaign_performance = get_campaign_performance_rows(request.user, days=days)
+    objective_platform = get_objective_platform_comparison(request.user, days=days)
 
     # Recent conversions for the feed
     conversions = Conversion.objects.filter(
         user=request.user,
-    ).select_related("post__social_account", "social_account", "product").order_by("-created_at")[:50]
+    ).select_related(
+        "post__social_account", "social_account", "product", "marketing_campaign",
+    ).order_by("-created_at")[:50]
 
     # Shopify stores
     shopify_stores = ShopifyStore.objects.filter(user=request.user, is_active=True)
@@ -455,6 +463,31 @@ def revenue_dashboard(request):
         "asset_type_breakdown": summary.get("asset_type_breakdown", []),
         "max_asset_breakdown_revenue": summary.get("max_asset_breakdown_revenue", 0),
         "attribution_confidence": summary.get("attribution_confidence", {}),
+        "campaign_performance": campaign_performance,
+        "objective_platform": objective_platform,
+    })
+
+
+@login_required
+def campaign_revenue_detail(request, campaign_id):
+    """Drill-down: funnel + platform split for one marketing campaign."""
+    from apps.content.campaign_attribution import get_campaign_performance_detail
+    from apps.content.models import MarketingCampaign
+
+    days = int(request.GET.get("days", 30))
+    if days not in (7, 14, 30, 90):
+        days = 30
+
+    campaign = get_object_or_404(MarketingCampaign, pk=campaign_id, user=request.user)
+    detail = get_campaign_performance_detail(campaign, days=days)
+
+    return render(request, "analytics/campaign_revenue.html", {
+        "campaign": campaign,
+        "detail": detail,
+        "stats": detail["stats"],
+        "platforms": detail["platforms"],
+        "recent_conversions": detail["recent_conversions"],
+        "days": days,
     })
 
 

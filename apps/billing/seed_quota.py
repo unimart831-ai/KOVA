@@ -41,10 +41,30 @@ def get_effective_seed_max(user, limits: dict | None = None) -> int:
 
 
 def count_seeds_in_period(user) -> int:
-    from apps.content.models import ContentSeed
+    """Count campaign activations (MarketingCampaign rows) in the billing period."""
+    from apps.content.models import ContentSeed, MarketingCampaign
 
     period_start = get_seed_period_start(user)
-    return ContentSeed.objects.filter(user=user, created_at__gte=period_start).count()
+    activated = MarketingCampaign.objects.filter(
+        user=user,
+        created_at__gte=period_start,
+    ).count()
+
+    # Seeds that entered generation before campaign row existed (edge cases)
+    orphan = (
+        ContentSeed.objects.filter(
+            user=user,
+            created_at__gte=period_start,
+            status__in=(
+                ContentSeed.SeedStatus.PROCESSING,
+                ContentSeed.SeedStatus.COMPLETED,
+                ContentSeed.SeedStatus.FAILED,
+            ),
+        )
+        .filter(marketing_campaign__isnull=True)
+        .count()
+    )
+    return activated + orphan
 
 
 def _log_action(user, admin, action: str, reason: str, *, snapshot: dict | None = None):

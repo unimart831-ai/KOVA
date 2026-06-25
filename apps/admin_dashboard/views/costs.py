@@ -611,11 +611,12 @@ def cost_calculator(request):
         except (TypeError, ValueError):
             return default
 
+    kova_users = _int("kova_users", 0)
     starter_users = _int("starter_users", 0)
     growth_users = _int("growth_users", 0)
     pro_users = _int("pro_users", 0)
     agency_users = _int("agency_users", 0)
-    total_users = starter_users + growth_users + pro_users + agency_users
+    total_users = kova_users + starter_users + growth_users + pro_users + agency_users
 
     # Model pricing overrides
     premium_input = _float("premium_input_price", 0.50)
@@ -634,6 +635,7 @@ def cost_calculator(request):
     total_cost = 0.0
 
     plan_image_costs = {
+        "kova": image_cost_growth,
         "starter": 0.00,
         "growth": image_cost_growth,
         "pro": image_cost_pro,
@@ -641,7 +643,7 @@ def cost_calculator(request):
     }
 
     for plan_code, user_count in [
-        ("starter", starter_users), ("growth", growth_users),
+        ("kova", kova_users), ("starter", starter_users), ("growth", growth_users),
         ("pro", pro_users), ("agency", agency_users),
     ]:
         if user_count <= 0:

@@ -80,6 +80,76 @@ class ContentSeed(models.Model):
         return f"Seed: {self.idea[:60]}"
 
 
+class MarketingCampaign(models.Model):
+    """
+    One marketing campaign — user-facing unit (internally tied to ContentSeed).
+
+    A campaign bundles reel + carousel + posts + commerce destination for one opportunity.
+    """
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        GENERATING = "generating", "Generating"
+        REVIEW = "review", "Ready for review"
+        APPROVED = "approved", "Approved"
+        PUBLISHED = "published", "Published"
+        ARCHIVED = "archived", "Archived"
+        FAILED = "failed", "Failed"
+
+    class Objective(models.TextChoices):
+        SALES = "sales", "Sales"
+        LEADS = "leads", "Leads"
+        AWARENESS = "awareness", "Awareness"
+        BOOKINGS = "bookings", "Bookings"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="marketing_campaigns",
+    )
+    content_seed = models.OneToOneField(
+        ContentSeed, on_delete=models.CASCADE, related_name="marketing_campaign",
+    )
+    business_asset = models.ForeignKey(
+        "products.BusinessAsset", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="marketing_campaigns",
+    )
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=80, blank=True)
+    objective = models.CharField(
+        max_length=20, choices=Objective.choices, default=Objective.SALES,
+    )
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.DRAFT, db_index=True,
+    )
+    quality_score = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        help_text="Campaign quality 0–100 from blueprint QA.",
+    )
+    proposal_meta = models.JSONField(
+        default=dict, blank=True,
+        help_text="Seed proposal angle, formats, rationale when picked from multi-proposal flow.",
+    )
+    commerce_url = models.URLField(blank=True, help_text="Campaign or product commerce page CTA.")
+    expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="When the offer ends — campaign page auto-archives after this.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "status", "-created_at"]),
+            models.Index(fields=["user", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return self.title[:80]
+
+
 class Post(SoftDeleteMixin, models.Model):
     """A social media post — draft, scheduled, or published."""
 
@@ -502,7 +572,14 @@ class Post(SoftDeleteMixin, models.Model):
         if not self.utm_medium:
             self.utm_medium = "social"
         if not self.utm_campaign and self.seed:
-            self.utm_campaign = str(self.seed.pk)[:8]
+            try:
+                campaign = self.seed.marketing_campaign
+            except Exception:
+                campaign = None
+            if campaign and campaign.slug:
+                self.utm_campaign = campaign.slug[:100]
+            else:
+                self.utm_campaign = str(self.seed.pk)[:8]
         if not self.utm_content:
             self.utm_content = str(self.pk)[:8]
 
@@ -696,9 +773,9 @@ class VoiceBrief(models.Model):
 
     # ── Generated outputs ──
     campaign = models.ForeignKey(
-        "campaigns.Campaign", on_delete=models.SET_NULL,
+        "content.MarketingCampaign", on_delete=models.SET_NULL,
         null=True, blank=True, related_name="voice_briefs",
-        help_text="The campaign auto-generated from this voice brief",
+        help_text="The marketing campaign auto-generated from this voice brief",
     )
     seeds_created = models.PositiveIntegerField(
         default=0,

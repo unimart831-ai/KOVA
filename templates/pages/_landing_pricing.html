@@ -1,0 +1,92 @@
+{# Public landing — single Kova plan + campaign add-ons (matches billing/pricing.html) #}
+{% with plan=kova_plan %}
+<section class="py-20 marketing-section-muted" x-data="{ currency: 'kes' }">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-12 reveal">
+      <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">One plan. Full marketing department.</h2>
+      <p class="mt-4 text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+        {{ plan.max_seeds_per_month }} marketing campaigns per month — each one a reel, carousel, platform posts, and commerce page.
+        Publishing, brief, inbox, and shop are included.
+      </p>
+
+      <div class="mt-8 inline-flex items-center bg-white dark:bg-gray-800 rounded-full p-1 shadow-sm border border-gray-200 dark:border-gray-700">
+        <button type="button" @click="currency = 'kes'"
+                :class="currency === 'kes' ? 'bg-growth-500 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                class="px-5 py-2 rounded-full text-sm font-medium transition-all">KES</button>
+        <button type="button" @click="currency = 'usd'"
+                :class="currency === 'usd' ? 'bg-growth-500 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                class="px-5 py-2 rounded-full text-sm font-medium transition-all">USD</button>
+      </div>
+    </div>
+
+    <div class="marketing-card p-8 border-2 border-growth-500 dark:border-growth-500 shadow-lg relative max-w-xl mx-auto reveal">
+      <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-growth-500 text-white text-xs font-semibold px-4 py-1 rounded-full">
+        AI Marketing + Commerce
+      </div>
+
+      <h3 class="text-2xl font-bold text-gray-900 dark:text-white mt-1">Kova</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Your AI marketing department — approve in ~5 minutes a day.</p>
+
+      <div class="mt-6 flex items-baseline gap-1">
+        <template x-if="currency === 'kes'">
+          <span class="text-5xl font-extrabold text-gray-900 dark:text-white">KSh {{ plan.price_kes }}</span>
+        </template>
+        <template x-if="currency === 'usd'">
+          <span class="text-5xl font-extrabold text-gray-900 dark:text-white">${{ plan.price_usd }}</span>
+        </template>
+        <span class="text-gray-500 dark:text-gray-400">/month</span>
+      </div>
+
+      <ul class="mt-8 space-y-2.5 text-sm text-gray-600 dark:text-gray-400">
+        <li class="flex gap-2"><span class="text-growth-500 shrink-0">✓</span> <strong>{{ plan.max_seeds_per_month }} marketing campaigns</strong> / month</li>
+        <li class="flex gap-2"><span class="text-growth-500 shrink-0">✓</span> Each campaign: reel + carousel + stories + platform posts</li>
+        <li class="flex gap-2"><span class="text-growth-500 shrink-0">✓</span> Kova Commerce shop + M-Pesa checkout</li>
+        <li class="flex gap-2"><span class="text-growth-500 shrink-0">✓</span> Daily brief, WhatsApp inbox, lead capture</li>
+        <li class="flex gap-2"><span class="text-growth-500 shrink-0">✓</span> {{ plan.max_social_accounts }} social accounts · revenue attribution</li>
+        <li class="flex gap-2"><span class="text-growth-500 shrink-0">✓</span> Professional product images (Photoroom)</li>
+      </ul>
+
+      <a href="{% url 'account_signup' %}" class="btn-primary w-full justify-center mt-8 text-base py-3">
+        Start {{ trial_days }}-day free trial
+      </a>
+      <p class="text-center text-xs text-gray-400 dark:text-gray-500 mt-3">{{ trial_campaigns }} campaigns during trial · no card required</p>
+    </div>
+
+    <div class="mt-14 reveal">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white text-center mb-2">Need more campaigns?</h3>
+      <p class="text-sm text-gray-500 text-center mb-6">Add extra opportunities on top of your {{ plan.max_seeds_per_month }}/month.</p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
+        {% for pack in campaign_addons.values %}
+        <div class="marketing-card p-4 text-center flex flex-col">
+          <p class="font-semibold text-gray-900 dark:text-white">{{ pack.label }}</p>
+          <p class="text-2xl font-bold text-growth-600 mt-2">KSh {{ pack.price_kes }}</p>
+          <p class="text-xs text-gray-400 mt-1">{% if pack.recurring %}recurring{% else %}one-time this month{% endif %}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="mt-10 max-w-3xl mx-auto reveal">
+      <div class="marketing-card p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border border-gray-200 dark:border-gray-700">
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Agency</h3>
+          <p class="text-xs text-gray-400 dark:text-gray-500 -mt-0.5">Wakala · Multi-client teams</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">White-label · multi-brand · custom caps · sales onboarding</p>
+          <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            <template x-if="currency === 'kes'"><span class="font-bold text-gray-900 dark:text-white">KSh {{ agency_plan.price_kes }}</span></template>
+            <template x-if="currency === 'usd'"><span class="font-bold text-gray-900 dark:text-white">${{ agency_plan.price_usd }}</span></template>
+            <span class="text-gray-500">/mo — contact us to get approved</span>
+          </p>
+        </div>
+        <a href="{% url 'billing:contact_sales' %}" class="btn-secondary whitespace-nowrap justify-center shrink-0">Contact sales</a>
+      </div>
+    </div>
+
+    <div x-show="currency === 'kes'" x-transition class="mt-10 text-center">
+      <div class="inline-flex items-center gap-2 bg-growth-50 dark:bg-growth-950/40 text-growth-700 dark:text-growth-300 text-sm font-medium px-5 py-2.5 rounded-full border border-growth-200 dark:border-growth-800/80">
+        Pay with M-Pesa — instant activation
+      </div>
+    </div>
+  </div>
+</section>
+{% endwith %}

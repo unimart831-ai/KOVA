@@ -40,15 +40,18 @@ HELP_TEXT = (
     "• MONEY — revenue + leads this week\n"
     "• SCORE — your Kova score\n"
     "• BRIEF — today's summary\n"
-    "• POSTS — pending approvals\n"
+    "• CAMPAIGNS — campaigns ready to approve\n"
+    "• APPROVE CAMPAIGN — approve full campaign package\n"
+    "• SHARE — campaign + shop links for Status\n"
+    "• POSTS — pending approvals (by post)\n"
     "• APPROVE — approve next post\n"
-    "• APPROVE ALL — approve all pending\n"
-    "• APPROVE 2 — approve post #2\n"
+    "• APPROVE ALL — approve all pending posts\n"
     "• REJECT — reject next post\n"
-    "• REJECT ALL — reject all pending\n"
     "• LEADS — hot leads + need reply\n"
     "• BOOK — your booking page + services\n"
-    "• IDEA 1 — queue idea #1 for creation\n"
+    "• REPLIES — AI reply drafts waiting for approval\n"
+    "• APPROVE REPLY — send the latest AI draft\n"
+    "• REJECT REPLY — discard the latest AI draft\n"
     "• HELP — this list"
 )
 
@@ -78,6 +81,14 @@ def handle_owner_whatsapp_message(msg_data: dict, contacts: dict | None = None) 
 
     text = _extract_command_text(msg_data, msg_type)
     if not text:
+        return True
+
+    from apps.whatsapp.owner_onboarding import try_whatsapp_onboarding
+
+    onboarding_reply = try_whatsapp_onboarding(user, text)
+    if onboarding_reply:
+        _send_owner_reply(wa_id, onboarding_reply, user=user, brief=_get_today_brief(user))
+        _log_command(user, wa_id, text, "wa_onboarding", onboarding_reply, success=True)
         return True
 
     from apps.products.owner_snap_whatsapp import try_complete_pending_snap
@@ -121,8 +132,8 @@ def handle_owner_brief_command(
     if not limits.get("whatsapp_brief") or not getattr(user, "brief_whatsapp_enabled", True):
         _send_owner_reply(
             wa_id,
-            "WhatsApp brief commands need Biashara (Pro). Upgrade at "
-            f"{getattr(settings, 'SITE_URL', '').rstrip('/')}/billing/",
+            "WhatsApp brief commands require an active Kova subscription. "
+            f"Subscribe at {getattr(settings, 'SITE_URL', '').rstrip('/')}/billing/pricing/",
             send_buttons=False,
         )
         _log_command(user, wa_id, text, "plan_blocked", success=False)
@@ -243,6 +254,24 @@ def _dispatch_command(user, raw_text: str) -> tuple[str, str, bool, dict]:
             {"pending_count": len(pending)},
         )
 
+    if text in {"campaigns", "campaign", "my campaigns"}:
+        return _handle_campaigns(user)
+
+    if text.startswith("share"):
+        return _handle_share(user, text)
+
+    if text.startswith("approve reply"):
+        return _handle_approve_reply(user, text)
+
+    if text.startswith("reject reply"):
+        return _handle_reject_reply(user, text)
+
+    if text in {"replies", "reply drafts", "drafts"}:
+        return _handle_replies(user)
+
+    if text.startswith("approve campaign"):
+        return _handle_approve_campaign(user, text)
+
     if text.startswith("approve"):
         return _handle_approve(user, text)
 
@@ -270,6 +299,71 @@ def _dispatch_command(user, raw_text: str) -> tuple[str, str, bool, dict]:
         False,
         metadata,
     )
+
+
+def _handle_replies(user) -> tuple[str, str, bool, dict]:
+    from apps.whatsapp.draft_actions import format_drafts_whatsapp_summary, pending_draft_count
+
+    count = pending_draft_count(user)
+    return (
+        format_drafts_whatsapp_summary(user),
+        "replies",
+        True,
+        {"pending_drafts": count},
+    )
+
+
+def _handle_approve_reply(user, text: str) -> tuple[str, str, bool, dict]:
+    from apps.whatsapp.draft_actions import approve_draft
+
+    parts = text.split()
+    index = 1
+    if len(parts) >= 3 and parts[2].isdigit():
+        index = int(parts[2])
+    ok, message, draft = approve_draft(user, index=index)
+    meta = {"draft_id": str(draft.pk)} if draft else {}
+    return message, f"approve_reply_{index}", ok, meta
+
+
+def _handle_reject_reply(user, text: str) -> tuple[str, str, bool, dict]:
+    from apps.whatsapp.draft_actions import reject_draft
+
+    parts = text.split()
+    index = 1
+    if len(parts) >= 3 and parts[2].isdigit():
+        index = int(parts[2])
+    ok, message = reject_draft(user, index=index)
+    return message, f"reject_reply_{index}", ok, {}
+
+
+def _handle_campaigns(user) -> tuple[str, str, bool, dict]:
+    from apps.content.campaign_whatsapp import format_campaigns_list_message
+
+    return format_campaigns_list_message(user), "campaigns", True, {}
+
+
+def _handle_share(user, text: str) -> tuple[str, str, bool, dict]:
+    from apps.content.campaign_whatsapp import format_commerce_share_message
+
+    parts = text.split()
+    index = 1
+    if len(parts) >= 2 and parts[1].isdigit():
+        index = int(parts[1])
+    msg, ok, meta = format_commerce_share_message(user, index=index)
+    return msg, f"share_{index}", ok, meta
+
+
+def _handle_approve_campaign(user, text: str) -> tuple[str, str, bool, dict]:
+    from apps.content.campaign_whatsapp import approve_campaign_via_whatsapp
+
+    parts = text.split()
+    index = 1
+    if len(parts) >= 3 and parts[2].isdigit():
+        index = int(parts[2])
+    elif len(parts) >= 2 and parts[1].isdigit():
+        index = int(parts[1])
+    msg, ok, meta = approve_campaign_via_whatsapp(user, index=index)
+    return msg, f"approve_campaign_{index}", ok, meta
 
 
 def _handle_approve(user, text: str) -> tuple[str, str, bool, dict]:
@@ -483,7 +577,7 @@ def _handle_money(user) -> tuple[str, str, bool, dict]:
 
 
 def _handle_idea(user, text: str) -> tuple[str, str, bool, dict]:
-    from apps.briefs.actions import create_seed_from_brief_idea
+    from apps.briefs.actions import ensure_brief_idea_asset, proposals_url_for_asset
 
     brief = _get_today_brief(user)
     if not brief:
@@ -511,20 +605,26 @@ def _handle_idea(user, text: str) -> tuple[str, str, bool, dict]:
     if not idea:
         return "That idea slot is empty in today's brief.", "idea", False, {}
 
-    seed = create_seed_from_brief_idea(
+    from apps.billing.enforcement import check_seed_limit
+
+    allowed, limit_msg = check_seed_limit(user)
+    if not allowed:
+        return limit_msg, "idea", False, {}
+
+    asset = ensure_brief_idea_asset(
         user,
         idea,
         context=context,
         platform_hint=platform_hint,
-        action_type="whatsapp",
+        source="whatsapp",
     )
-    site = getattr(settings, "SITE_URL", "").rstrip("/")
+    url = proposals_url_for_asset(asset)
     return (
-        f"Queued idea #{idx + 1} for creation:\n\"{idea[:120]}\"\n\n"
-        f"Open Studio: {site}/content/studio/",
+        f"Idea #{idx + 1} — pick your campaign angle:\n\"{idea[:120]}\"\n\n"
+        f"{url}\n\nReply CAMPAIGNS to see campaigns ready to approve.",
         f"idea_{idx + 1}",
         True,
-        {"seed_id": str(seed.id)},
+        {"asset_id": str(asset.pk)},
     )
 
 

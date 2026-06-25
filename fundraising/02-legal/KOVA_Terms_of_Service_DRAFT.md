@@ -3,7 +3,7 @@
 **[COMPANY LEGAL NAME]** · Kova Agent · Last updated: [DATE]
 
 > **DRAFT FOR DISCUSSION — NOT LEGAL ADVICE — REVIEW WITH KENYAN ADVOCATE**  
-> Adapted from live template: `templates/pages/terms.html`. **Plan v2 pricing.** Deploy reviewed version to `/terms/`.
+> Adapted from live template: `templates/pages/terms.html`. **Kova single-plan pricing.** Deploy reviewed version to `/terms/`.
 
 ---
 
@@ -50,22 +50,20 @@ Kova is a **Business Intelligence Operating System** using AI agents to research
 
 ---
 
-## 5. Subscriptions & payment (Plan v2)
+## 5. Subscriptions & payment
 
-**5.1 Plans.** Subscriptions are offered in four public tiers (Agency by approval):
+**5.1 Plans.** The public subscription is **Kova** (KES 1,300 / USD 10 per month). **Agency** is available by sales approval only. Legacy tiers (Starter, Growth, Pro) may apply to grandfathered accounts.
 
 | Tier | KES/month | USD/month |
 |------|-----------|-----------|
-| Starter (Jipange) | 499 | 4 |
-| Growth (Kazi) | 1,499 | 11 |
-| Pro (Biashara) | 2,999 | 22 |
+| Kova | 1,300 | 10 |
 | Agency (Wakala) | 7,999 | 59 |
 
-Feature limits (posts, tokens, WhatsApp caps, etc.) are defined in the Service and `docs/PLAN_V2_SPEC.md`.
+Feature limits (campaigns, tokens, WhatsApp caps, etc.) are defined in the Service and `docs/KOVA_BUILD_CHECKLIST.md`.
 
 **5.2 Billing.** Monthly in advance via **M-Pesa** and/or **Stripe**. You authorise recurring charges.
 
-**5.3 Free trial.** **7-day trial** with Starter-tier limits unless otherwise stated. Converts to paid unless cancelled before trial end.
+**5.3 Free trial.** **7-day trial** with Kova-tier limits and up to **5 campaigns** unless otherwise stated. Converts to paid unless cancelled before trial end.
 
 **5.4 Cancellation.** Cancel anytime; access continues until period end. **No refunds** for partial months unless required by law.
 

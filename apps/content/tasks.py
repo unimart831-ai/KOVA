@@ -515,6 +515,26 @@ def generate_from_seed(seed_id: str):
     maybe_attach_sampled_product_to_autonomous_seed(seed)
     seed.refresh_from_db()
 
+    from apps.content.campaigns import ensure_campaign_for_seed, sync_campaign_status_from_seed, update_campaign_quality_from_posts
+
+    proposal = (seed.blueprint or {}).get("proposal") if isinstance(seed.blueprint, dict) else None
+    objective = (seed.blueprint or {}).get("objective", "sales") if isinstance(seed.blueprint, dict) else "sales"
+    ensure_campaign_for_seed(
+        seed,
+        title=(seed.idea or "").split("\n")[0],
+        objective=objective or "sales",
+        proposal_meta=proposal,
+    )
+    seed.refresh_from_db()
+
+    campaign = getattr(seed, "marketing_campaign", None)
+    try:
+        from apps.media.media_factory import prepare_campaign_media_factory
+
+        prepare_campaign_media_factory(seed, campaign)
+    except Exception as exc:
+        logger.warning("Media factory prep failed for seed %s: %s", seed_id, exc)
+
     from apps.billing.exceptions import PlanLimitExceeded
     from apps.notifications.models import Notification
 
@@ -548,6 +568,17 @@ def generate_from_seed(seed_id: str):
             seed.error_message = f"Generation failed: {exc}"
             seed.save(update_fields=["status", "error_message", "updated_at"])
         return {"error": str(exc)}
+
+    sync_campaign_status_from_seed(seed)
+    campaign = getattr(seed, "marketing_campaign", None)
+    if campaign:
+        update_campaign_quality_from_posts(campaign)
+        try:
+            from apps.content.campaign_whatsapp import notify_campaign_ready
+
+            notify_campaign_ready(campaign)
+        except Exception as e:
+            logger.warning("Campaign WA notify failed for seed %s: %s", seed_id, e)
 
     # Fire off Content DNA + engagement prediction as separate async tasks
     # so they don't block the user from seeing their generated posts.
@@ -871,7 +902,7 @@ def compose_reel_video(post_id: str):
     from apps.content.video_compose import VideoComposeError, compose_carousel_to_reel, compose_motion_reel
 
     try:
-        post = Post.objects.select_related("user").get(pk=post_id)
+        post = Post.objects.select_related("user", "seed").get(pk=post_id)
     except Post.DoesNotExist:
         logger.warning("compose_reel_video: post %s not found", post_id)
         return
@@ -888,6 +919,15 @@ def compose_reel_video(post_id: str):
     meta["video_compose_status"] = "pending"
     post.visual_metadata = meta
     post.save(update_fields=["visual_metadata", "updated_at"])
+
+    if getattr(post, "seed_id", None):
+        from apps.media.media_factory import apply_reel_strategy_to_post
+
+        try:
+            apply_reel_strategy_to_post(post, post.seed)
+            meta = dict(post.visual_metadata or {})
+        except Exception as exc:
+            logger.warning("apply_reel_strategy_to_post failed for %s: %s", post_id, exc)
 
     image_sources = _collect_reel_image_sources(post)
     if not image_sources:
@@ -957,6 +997,27 @@ def compose_reel_video(post_id: str):
     )
     if meta.get("reel_template") == "carousel_to_video" or post.carousel_slides:
         hook_texts = [""] * len(image_sources)
+    elif meta.get("reel_strategy"):
+        from apps.media.reel_strategy import ReelStrategy
+
+        rs = ReelStrategy.from_dict(meta.get("reel_strategy"))
+        if rs:
+            hook_texts = rs.hook_texts_for_compose()
+            while len(hook_texts) < len(image_sources):
+                hook_texts.append("")
+
+    from apps.media.text_overlay import TextOverlayPass, apply_overlay_report_to_metadata
+
+    slide_dur = 3.5 if len(image_sources) == 1 else 3.0
+    overlay_pass = TextOverlayPass()
+    hook_texts, overlay_report = overlay_pass.prepare_for_compose(
+        hook_texts,
+        slide_duration=slide_dur,
+        transition_sec=0.5,
+    )
+    meta = apply_overlay_report_to_metadata(meta, overlay_report)
+    post.visual_metadata = meta
+    post.save(update_fields=["visual_metadata", "updated_at"])
 
     # Kling (Fal): cinematic motion when media plan requests it.
     from apps.media.content_types import ReelBackend
@@ -1143,6 +1204,24 @@ def publish_post(self, post_id: str):
     if paused:
         logger.info("PUBLISH PAUSED: skipping post %s — %s", post_id, pause_reason)
         return {"error": pause_reason}
+
+    # ── Campaign QA gate — block publish below quality threshold ────────
+    from apps.content.campaign_qa import check_post_publish_gate
+
+    qa_allowed, qa_reason, qa_score = check_post_publish_gate(post, post.user)
+    if not qa_allowed:
+        post.status = Post.Status.PENDING_APPROVAL
+        note = f"QA GATE ({qa_score}/100): {qa_reason}"[:500]
+        post.ai_reasoning = note
+        post.save(update_fields=["status", "ai_reasoning", "updated_at"])
+        Notification.create_for_user(
+            post.user,
+            "system",
+            f"Publish blocked — quality {qa_score}/100. {qa_reason[:120]}",
+            related_post=post,
+        )
+        logger.info("QA GATE blocked publish for post %s: %s", post_id, qa_reason)
+        return {"error": qa_reason, "qa_score": qa_score}
 
     # ── Content safety gate — last line of defense before going live ──
     from apps.content.safety import (
@@ -2356,6 +2435,16 @@ def evaluate_ab_tests():
 
 
 # ── Content Recycling Engine ─────────────────────────────────────────────────
+
+@shared_task(name="content.archive_expired_campaigns")
+def archive_expired_campaigns_task():
+    """Daily — archive campaigns past expires_at."""
+    from apps.content.campaign_archive import archive_expired_campaigns
+
+    result = archive_expired_campaigns()
+    logger.info("archive_expired_campaigns: %s", result)
+    return result
+
 
 @shared_task(name="content.recycle_top_content", soft_time_limit=15 * 60, time_limit=18 * 60)
 @single_run("content.recycle_top_content", timeout=20 * 60)

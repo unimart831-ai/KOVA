@@ -5,31 +5,43 @@
 {% block content %}
 <div class="max-w-md mx-auto mt-12">
   <div class="card overflow-hidden">
-    {# Header #}
     <div class="px-6 py-8 bg-kova-700 border-b border-gray-100 dark:border-gray-800 text-center">
       <div class="w-14 h-14 mx-auto bg-kova-500 rounded-xl flex items-center justify-center mb-4">
         <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
       </div>
       <h2 class="text-2xl font-semibold text-white">Karibu sana!</h2>
-      <p class="text-sm text-kova-200 mt-1">You're now on the <span class="font-semibold text-white">{{ plan_name }}</span> plan</p>
+      {% if payment_kind == 'campaign_addon' and addon_pack %}
+        <p class="text-sm text-kova-200 mt-1">
+          <span class="font-semibold text-white">+{{ addon_pack.campaigns }} campaigns</span> added to your account
+        </p>
+      {% else %}
+        <p class="text-sm text-kova-200 mt-1">You're now on the <span class="font-semibold text-white">{{ plan_name }}</span> plan</p>
+      {% endif %}
     </div>
 
-    {# Body #}
     <div class="card-body py-6 text-center space-y-4">
-      <p class="text-sm text-gray-600 dark:text-gray-400">
-        Your M-Pesa payment was confirmed. Your subscription is active for 30 days.
-      </p>
+      {% if payment_kind == 'campaign_addon' %}
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          Your M-Pesa payment was confirmed. You now have
+          <strong class="text-gray-900 dark:text-white">{{ seed_usage.remaining }}</strong>
+          of <strong>{{ seed_usage.max }}</strong> campaigns remaining this month.
+        </p>
+      {% else %}
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          Your M-Pesa payment was confirmed. Your subscription is active for 30 days.
+        </p>
+      {% endif %}
 
-      {% if profile.subscription_status == 'trialing' %}
+      {% if profile.subscription_status == 'trialing' and payment_kind != 'campaign_addon' %}
         <div class="bg-gold-50 dark:bg-gold-950/30 border border-gold-200 dark:border-gold-900 rounded-lg p-3">
           <p class="text-sm text-gold-700 dark:text-gold-400">
-            <span class="font-semibold">7-day Starter trial active.</span> Starter plan limits until {{ profile.trial_ends_at|date:"M d, Y" }}.
+            <span class="font-semibold">Kova trial active.</span> Trial ends {{ profile.trial_ends_at|date:"M d, Y" }}.
           </p>
         </div>
       {% endif %}
 
       <div class="flex flex-col gap-2 pt-2">
-        <a href="{% url 'content:studio' %}" class="btn-primary w-full justify-center">Start creating content</a>
+        <a href="{% url 'content:studio' %}" class="btn-primary w-full justify-center">Start creating campaigns</a>
         <a href="{% url 'billing:overview' %}" class="btn-secondary w-full justify-center">View billing details</a>
       </div>
     </div>

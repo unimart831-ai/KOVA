@@ -22,8 +22,10 @@ class HealthCheckMiddleware:
 class RequirePhoneMiddleware:
     """Redirect authenticated users without phone to the capture screen."""
 
+    # Paths reachable before phone capture (keep in sync with OnboardingMiddleware where noted).
     EXEMPT_PREFIXES = (
-        "/accounts/onboarding/phone/",
+        "/accounts/onboarding/",
+        "/accounts/settings/",
         "/accounts/logout/",
         "/accounts/login/",
         "/accounts/signup/",
@@ -31,12 +33,18 @@ class RequirePhoneMiddleware:
         "/accounts/password/",
         "/accounts/google/",
         "/accounts/facebook/",
+        "/billing/pricing/",
+        "/help/",
+        "/teams/invite/",
         "/admin/",
         "/health/",
         "/static/",
         "/media/",
         "/learn/",
         "/blog/",
+        "/favicon.ico",
+        "/__reload__/",  # django-browser-reload SSE (dev only)
+        "/sw.js",  # PWA service worker — must not redirect
     )
 
     def __init__(self, get_response):
@@ -76,6 +84,9 @@ class OnboardingMiddleware:
         "/health/",
         "/static/",
         "/media/",
+        "/favicon.ico",
+        "/__reload__/",
+        "/sw.js",
     )
 
     def __init__(self, get_response):

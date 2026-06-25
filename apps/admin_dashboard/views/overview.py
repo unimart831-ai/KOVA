@@ -64,15 +64,10 @@ def overview(request):
         if agent_total_24h > 0 else 100.0
     )
 
-    # MRR calculation — use live PlanPrice when available
-    from apps.billing.models import PlanPrice
+    # MRR calculation — use PLAN_LIMITS (Kova + legacy grandfathered tiers)
+    from apps.billing.models import PLAN_LIMITS, PlanPrice
 
-    plan_prices_kes = {
-        "starter": 499,
-        "growth": 1499,
-        "pro": 2999,
-        "agency": 7999,
-    }
+    plan_prices_kes = {tier: limits["price_kes"] for tier, limits in PLAN_LIMITS.items()}
     for pp in PlanPrice.objects.filter(is_active=True):
         plan_prices_kes[pp.tier] = pp.price_kes
     mrr_kes = 0

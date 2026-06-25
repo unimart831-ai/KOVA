@@ -1397,20 +1397,18 @@ def fix_and_promote_product(product_id: str):
 
 
 @shared_task(name="products.snap_to_sell_analyze")
-def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_post: bool = False):
+def snap_to_sell_analyze(
+    product_id: str,
+    photo_context: str = "",
+    skip_quick_post: bool = False,
+    proposals_only: bool = False,
+):
     """
-    Vision AI analyzes product photos, enriches the product description,
-    then auto-creates a ContentSeed and fires the content pipeline.
+    Vision AI analyzes product photos and enriches the product.
 
-    Supports multiple images — analyzes the primary image for product details,
-    and tells the content pipeline about all available images so each post
-    can use a different photo.
-
-    Offering-type-aware: adapts vision prompt and content strategy for
-    physical products, services, and digital products.
-
-    Called after the user snaps/uploads photos, provides name + price,
-    and hits "Launch".
+    When proposals_only=True (default Snap flow), stops before creating a
+    ContentSeed — the owner picks a marketing angle on the proposals screen.
+    Legacy callers (Shopify import, fix_and_promote) pass proposals_only=False.
     """
     from apps.agents.llm import analyze_image, generate, parse_llm_json
     from apps.agents.models import AgentAction
@@ -1579,9 +1577,36 @@ def snap_to_sell_analyze(product_id: str, photo_context: str = "", skip_quick_po
         product.tags = new_tags[:8]
         product.save(update_fields=["tags", "updated_at"])
 
-    # ── Step 2b: Studio polish (async — do not block seed / writing) ──
     num_images = len(all_images)
     features = analysis.get("key_features", [])
+
+    from apps.products.business_assets import sync_asset_from_product
+    from apps.products.models import BusinessAsset
+
+    asset = sync_asset_from_product(
+        product,
+        source=BusinessAsset.Source.SNAP,
+        status=BusinessAsset.Status.DRAFT if proposals_only else BusinessAsset.Status.PENDING_APPROVAL,
+    )
+    if asset:
+        meta = dict(asset.metadata or {})
+        meta["vision_analysis"] = analysis
+        meta["snap_enriched_at"] = timezone.now().isoformat()
+        meta["campaign_angle"] = analysis.get("campaign_angle", "showcase")
+        meta["target_audience"] = analysis.get("target_audience", "")
+        asset.metadata = meta
+        asset.save(update_fields=["metadata", "status", "updated_at"])
+
+    if proposals_only:
+        logger.info(
+            "Snap enrich (proposals_only): product=%s asset=%s user=%s",
+            product_id, getattr(asset, "pk", None), user.email,
+        )
+        return {
+            "product_id": str(product.pk),
+            "asset_id": str(asset.pk) if asset else None,
+            "proposals_only": True,
+        }
 
     # ── Step 3: Create a content seed and launch the campaign ────────
     platforms = list(

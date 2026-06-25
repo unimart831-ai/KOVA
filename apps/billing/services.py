@@ -16,19 +16,24 @@ import stripe
 from django.conf import settings
 from django.urls import reverse
 
-from apps.billing.models import PUBLIC_PLAN_TIERS, get_plan_limits
+from apps.billing.models import BillingEvent, PUBLIC_PLAN_TIERS, get_plan_limits
 
 logger = logging.getLogger(__name__)
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
-# ─── Stripe Price ID mapping ────────────────────────────────────────────────
-# These are set via env vars. Create Products + Prices in Stripe Dashboard first.
 PLAN_PRICE_MAP = {
+    "kova": settings.STRIPE_PRICE_KOVA,
     "starter": settings.STRIPE_PRICE_STARTER,
     "growth": settings.STRIPE_PRICE_GROWTH,
     "pro": settings.STRIPE_PRICE_PRO,
     "agency": settings.STRIPE_PRICE_AGENCY,
+}
+
+ADDON_PRICE_MAP = {
+    "boost": settings.STRIPE_PRICE_ADDON_BOOST,
+    "scale": settings.STRIPE_PRICE_ADDON_SCALE,
+    "burst": settings.STRIPE_PRICE_ADDON_BURST,
 }
 
 # Reverse lookup: Stripe Price ID → plan tier
@@ -84,6 +89,45 @@ def create_checkout_session(user, plan_tier, request):
         allow_promotion_codes=True,
     )
     logger.info("Created checkout session %s for user %s (plan: %s)", session.id, user.email, plan_tier)
+    return session
+
+
+def create_addon_checkout_session(user, pack_id: str, request):
+    """Stripe Checkout for campaign add-on packs."""
+    from apps.billing.campaign_addons import get_addon_pack, user_can_purchase_addons
+    from apps.billing.models import CAMPAIGN_ADDON_PACKS
+
+    if pack_id not in CAMPAIGN_ADDON_PACKS:
+        raise ValueError(f"Unknown add-on pack: {pack_id}")
+
+    allowed, msg = user_can_purchase_addons(user)
+    if not allowed:
+        raise ValueError(msg)
+
+    price_id = ADDON_PRICE_MAP.get(pack_id)
+    if not price_id:
+        raise ValueError(f"No Stripe Price ID configured for add-on: {pack_id}")
+
+    pack = get_addon_pack(pack_id)
+    customer_id = get_or_create_customer(user)
+    mode = "subscription" if pack.get("recurring") else "payment"
+
+    session = stripe.checkout.Session.create(
+        customer=customer_id,
+        mode=mode,
+        line_items=[{"price": price_id, "quantity": 1}],
+        success_url=request.build_absolute_uri(
+            reverse("billing:checkout_success")
+        ) + "?session_id={CHECKOUT_SESSION_ID}&addon=1",
+        cancel_url=request.build_absolute_uri(reverse("billing:pricing")),
+        metadata={
+            "kova_user_id": str(user.id),
+            "addon_pack_id": pack_id,
+            "payment_kind": "campaign_addon",
+        },
+        allow_promotion_codes=True,
+    )
+    logger.info("Stripe add-on checkout %s for user %s pack=%s", session.id, user.email, pack_id)
     return session
 
 
@@ -198,6 +242,14 @@ def _handle_checkout_completed(event, billing_event):
         billing_event.user = user
         if subscription_id:
             sync_subscription(user, subscription_id)
+        addon_pack = session.get("metadata", {}).get("addon_pack_id")
+        if addon_pack:
+            from apps.billing.campaign_addons import get_addon_pack
+            from apps.billing.campaign_renewal import apply_addon_purchase_bonus
+
+            pack = get_addon_pack(addon_pack)
+            if pack:
+                apply_addon_purchase_bonus(user.profile, pack)
         logger.info("Checkout completed for user %s", user.email)
 
         # Send payment confirmation email
@@ -237,7 +289,7 @@ def _handle_subscription_deleted(event, billing_event):
     if user:
         billing_event.user = user
         profile = user.profile
-        profile.plan = "starter"
+        profile.plan = "kova"
         profile.subscription_status = "canceled"
         profile.payment_provider = "none"
         profile.stripe_subscription_id = ""
@@ -261,6 +313,12 @@ def _handle_invoice_paid(event, billing_event):
         sub_id = invoice.get("subscription")
         if sub_id:
             sync_subscription(user, sub_id)
+
+        from apps.billing.campaign_renewal import maybe_grandfather_to_kova, sync_campaign_bonus_totals
+
+        profile = user.profile
+        maybe_grandfather_to_kova(profile, on_renewal=True)
+        sync_campaign_bonus_totals(profile, reason="stripe_invoice_paid")
 
         # Send receipt email
         from apps.emails.tasks import send_email_task

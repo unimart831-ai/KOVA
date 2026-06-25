@@ -267,6 +267,14 @@ class Conversion(models.Model):
         null=True, blank=True, related_name="conversions",
         help_text="Product associated with this conversion (from Sprint 6H catalog).",
     )
+    marketing_campaign = models.ForeignKey(
+        "content.MarketingCampaign",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="conversions",
+        help_text="Marketing campaign this event is attributed to.",
+    )
 
     conversion_type = models.CharField(
         max_length=20, choices=ConversionType.choices, default=ConversionType.CLICK,
@@ -294,6 +302,7 @@ class Conversion(models.Model):
             models.Index(fields=["user", "-created_at"]),
             models.Index(fields=["utm_campaign", "-created_at"]),
             models.Index(fields=["user", "conversion_type", "-created_at"]),
+            models.Index(fields=["user", "marketing_campaign", "-created_at"]),
         ]
 
     def __str__(self):

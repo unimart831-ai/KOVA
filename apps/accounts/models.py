@@ -113,6 +113,7 @@ class UserProfile(models.Model):
         OTHER = "other", "Other"
 
     class PlanTier(models.TextChoices):
+        KOVA = "kova", "Kova"
         STARTER = "starter", "Starter"
         GROWTH = "growth", "Growth"
         PRO = "pro", "Pro"
@@ -292,7 +293,20 @@ class UserProfile(models.Model):
     )
     seed_monthly_bonus = models.PositiveIntegerField(
         default=0,
-        help_text="Extra seeds added on top of plan limit (promotions).",
+        help_text="Extra campaigns on top of plan limit (recurring add-ons + burst).",
+    )
+    recurring_campaign_bonus = models.PositiveIntegerField(
+        default=0,
+        help_text="Active recurring campaign add-ons (Boost/Scale) — stacks on base quota.",
+    )
+    burst_campaign_bonus = models.PositiveIntegerField(
+        default=0,
+        help_text="One-time burst pack credits for the current calendar month.",
+    )
+    burst_campaign_expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When burst credits expire (end of purchase month).",
     )
     # Agent autonomy preferences
     auto_approve_posts = models.BooleanField(

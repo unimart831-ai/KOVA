@@ -1,0 +1,16 @@
+{# Horizontal category navigation #}
+{% if category_nav|length > 1 %}
+<nav class="category-rail" aria-label="Shop categories">
+  <div class="category-rail-track">
+    {% for cat in category_nav %}
+    <a href="{{ cat.anchor }}"
+       class="category-chip{% if forloop.first %} is-active{% endif %}"
+       data-category="{{ cat.slug }}">
+      <span class="category-chip-icon" aria-hidden="true">{{ cat.icon }}</span>
+      <span class="category-chip-name">{{ cat.name }}</span>
+      <span class="category-chip-count">{{ cat.count }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</nav>
+{% endif %}

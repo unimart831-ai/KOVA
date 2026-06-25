@@ -25,6 +25,7 @@ from apps.products.commerce_seo import (
     build_shop_page_seo,
     shop_index_url,
 )
+from apps.products.commerce_canonical import build_unified_shop_footer
 from apps.products.commerce_social import get_public_social_links, resolve_shop_whatsapp
 from apps.products.storefront import (
     about_blurb,
@@ -32,11 +33,12 @@ from apps.products.storefront import (
     featured_products,
     hero_carousel_slides,
     hero_promo_products,
+    portfolio_items_for_shop,
     products_by_category,
     resolve_hero_layout,
     resolve_storefront,
+    service_offerings_for_shop,
     shop_faq_items,
-    shop_footer_data,
     split_marketplace_hero_promos,
     storefront_body_classes,
 )
@@ -57,11 +59,14 @@ logger = logging.getLogger(__name__)
 def _track_commerce_view(request, product, profile):
     try:
         from apps.analytics.models import Conversion
+        from apps.content.campaign_attribution import create_attributed_conversion, resolve_marketing_campaign
 
-        Conversion.objects.create(
-            user=product.user,
+        campaign = resolve_marketing_campaign(product.user, product=product)
+        create_attributed_conversion(
+            product.user,
+            Conversion.ConversionType.CLICK,
             product=product,
-            conversion_type=Conversion.ConversionType.CLICK,
+            campaign=campaign,
             event_name="commerce_link_view",
             metadata={
                 "page_slug": profile.page_slug or "",
@@ -73,16 +78,28 @@ def _track_commerce_view(request, product, profile):
         logger.exception("commerce link view tracking failed for product %s", product.pk)
 
 
-def _whatsapp_url(profile, text: str, user=None) -> str:
+def _commerce_context(
+    profile,
+    user,
+    *,
+    wa_text: str = "",
+    product=None,
+    campaign=None,
+    request=None,
+    source: str = "shop",
+) -> dict:
+    from apps.products.commerce_checkout import tracked_whatsapp_order_url, whatsapp_checkout_url
+
+    brand = brand_name(profile, user)
+    wa_url = tracked_whatsapp_order_url(
+        user, profile, brand,
+        product=product, campaign=campaign, request=request, source=source,
+    )
     whatsapp = resolve_shop_whatsapp(profile, user)
-    if not whatsapp:
-        return ""
-    return f"https://wa.me/{whatsapp}?text={quote(text)}"
+    if not wa_url and wa_text and whatsapp:
+        wa_url = whatsapp_checkout_url(whatsapp, wa_text)
 
-
-def _commerce_context(profile, user, *, wa_text: str) -> dict:
     social_links = get_public_social_links(user, profile, wa_text=wa_text)
-    wa_url = _whatsapp_url(profile, wa_text, user)
     if not wa_url:
         for link in social_links:
             if link["platform"] == "whatsapp":
@@ -91,7 +108,7 @@ def _commerce_context(profile, user, *, wa_text: str) -> dict:
     return {
         "social_links": social_links,
         "wa_url": wa_url,
-        "whatsapp": resolve_shop_whatsapp(profile, user),
+        "whatsapp": whatsapp,
     }
 
 
@@ -122,6 +139,9 @@ def public_shop_index(request, page_slug):
     wa_text = f"Hi! I'd like to browse your offers — {brand}."
     commerce_ctx = _commerce_context(profile, user, wa_text=wa_text)
     shop_reels = get_public_shop_reels(profile)
+    from apps.products.commerce_gallery import get_published_media_gallery
+
+    media_gallery = get_published_media_gallery(user)
     storefront = resolve_storefront(profile, user, products, shop_reels)
     seo = build_shop_page_seo(request, profile, user, products, shop_reels=shop_reels)
     from apps.teams.branding import get_commerce_branding
@@ -135,10 +155,21 @@ def public_shop_index(request, page_slug):
     seller_limits = get_user_plan_limits(user)
     mpesa_shop_enabled = bool(seller_limits.get("mpesa_commerce"))
 
+    from apps.products.shop_flagship import (
+        attach_product_wa_urls,
+        enrich_flash_reels,
+        shop_category_nav,
+        shop_hero_collage,
+        shop_promo_banners,
+        shop_public_testimonials,
+    )
+
     for p in products:
         p.shop_teaser = get_product_shop_teaser(p)
 
-    featured = featured_products(products)
+    attach_product_wa_urls(products, brand, profile, user, request=request)
+
+    featured = featured_products(products, limit=10)
     promos = hero_promo_products(products)
     carousel_slides = hero_carousel_slides(
         shop_reels, products, featured=featured, brand_name=brand,
@@ -146,10 +177,22 @@ def public_shop_index(request, page_slug):
     hero_layout = resolve_hero_layout(products, promos, carousel_slides)
     promo_left, promo_right = split_marketplace_hero_promos(promos, carousel_slides)
     category_groups = products_by_category(products)
+    flash_reels = enrich_flash_reels(shop_reels)
+    category_nav = shop_category_nav(category_groups)
+    hero_collage = shop_hero_collage(products, featured)
+    promo_banner_left, promo_banner_right = shop_promo_banners(
+        products, featured, reels=shop_reels,
+    )
+    shop_testimonials = shop_public_testimonials(user)
+    use_flagship = len(products) >= 1
+    portfolio_items = portfolio_items_for_shop(user) if storefront.get("show_portfolio") else []
+    service_products = service_offerings_for_shop(products) if storefront.get("business_model") == "service" else []
 
     body_extra = " ".join(filter(None, [
-        "shop-site--has-mobile-nav" if commerce_ctx.get("social_links") else "",
-        "shop-site--has-wa-fab" if commerce_ctx.get("wa_url") else "",
+        "shop-site--flagship" if use_flagship else "",
+        "shop-site--has-sticky-bar" if use_flagship and (commerce_ctx.get("wa_url") or products) else "",
+        "shop-site--has-mobile-nav" if commerce_ctx.get("social_links") and not use_flagship else "",
+        "shop-site--has-wa-fab" if commerce_ctx.get("wa_url") and not use_flagship else "",
     ]))
 
     return render(request, "products/public/shop_index.html", {
@@ -159,6 +202,7 @@ def public_shop_index(request, page_slug):
         "shop_slug": resolve_page_slug(profile),
         "brand_name": brand,
         "shop_reels": shop_reels,
+        "media_gallery": media_gallery,
         "storefront": storefront,
         "storefront_body_class": storefront_body_classes(storefront, extra=body_extra),
         "hero_mode": storefront["hero_mode"],
@@ -169,12 +213,21 @@ def public_shop_index(request, page_slug):
         "hero_promo_right": promo_right,
         "hero_carousel_slides": carousel_slides,
         "products_by_category": category_groups,
-        "catalog_section_label": catalog_section_label(category_groups),
+        "catalog_section_label": storefront.get("catalog_label") or catalog_section_label(category_groups),
         "about_blurb": about_blurb(profile),
         "faq_items": shop_faq_items(profile),
-        "shop_footer": shop_footer_data(profile),
+        "shop_footer": build_unified_shop_footer(profile, user, request=request),
         "commerce_branding": commerce_branding,
         "mpesa_shop_enabled": mpesa_shop_enabled,
+        "use_flagship": use_flagship,
+        "flash_reels": flash_reels,
+        "category_nav": category_nav,
+        "hero_collage": hero_collage,
+        "promo_banner_left": promo_banner_left,
+        "promo_banner_right": promo_banner_right,
+        "shop_testimonials": shop_testimonials,
+        "portfolio_items": portfolio_items,
+        "service_products": service_products,
         **commerce_ctx,
         **seo,
     })
@@ -190,12 +243,12 @@ def public_commerce_link(request, page_slug, commerce_slug):
 
     user = product.user
     brand = brand_name(profile, user)
-    wa_text = (
-        f"Hi! I'm interested in {product.name}"
-        f"{f' ({product.display_price})' if product.display_price else ''} "
-        f"from your Kova offer page."
+    from apps.products.commerce_checkout import build_product_order_wa_text, checkout_heading_for
+
+    wa_text = build_product_order_wa_text(product, brand, request=request)
+    commerce_ctx = _commerce_context(
+        profile, user, wa_text=wa_text, product=product, request=request, source="product",
     )
-    commerce_ctx = _commerce_context(profile, user, wa_text=wa_text)
     whatsapp = commerce_ctx["whatsapp"]
     wa_url = commerce_ctx["wa_url"]
 
@@ -265,6 +318,15 @@ def public_commerce_link(request, page_slug, commerce_slug):
         product.offering_type != product.OfferingType.PRODUCT
         or product.stock_status != product.StockStatus.OUT_OF_STOCK
     )
+    checkout_heading = checkout_heading_for(product, whatsapp_available=bool(wa_url))
+    mpesa_pay_url = ""
+    if mpesa_available:
+        from django.urls import reverse
+
+        mpesa_pay_url = reverse(
+            "public_commerce_pay",
+            kwargs={"page_slug": shop_slug, "commerce_slug": product.commerce_slug},
+        )
 
     sticky = can_purchase and (bool(wa_url) or mpesa_available)
     non_wa_social = [
@@ -292,7 +354,9 @@ def public_commerce_link(request, page_slug, commerce_slug):
         "whatsapp": whatsapp,
         "mpesa_available": mpesa_available,
         "can_purchase": can_purchase,
-        "action_heading": public_action_heading_for(product),
+        "checkout_heading": checkout_heading,
+        "mpesa_pay_url": mpesa_pay_url,
+        "action_heading": checkout_heading,
         "primary_action_url": primary_action_url,
         "primary_action_label": primary_action_label,
         "primary_action_external": primary_action_url.startswith(("http://", "https://")) if primary_action_url else False,
@@ -304,7 +368,7 @@ def public_commerce_link(request, page_slug, commerce_slug):
         "breadcrumb_items": breadcrumb_items,
         "about_blurb": about_blurb(profile),
         "faq_items": shop_faq_items(profile),
-        "shop_footer": shop_footer_data(profile),
+        "shop_footer": build_unified_shop_footer(profile, user, request=request),
         "commerce_branding": commerce_branding,
         "related_products": related_products,
         "show_mobile_nav": show_mobile_nav,
@@ -476,3 +540,20 @@ def commerce_payment_status(request, payment_id):
     elif payment.status == CommercePayment.Status.FAILED:
         data["result_desc"] = payment.result_desc or "Payment was not completed."
     return JsonResponse(data)
+
+
+@require_GET
+@ratelimit(key="ip", rate="120/m", block=True)
+def public_whatsapp_order(request):
+    """Track WhatsApp order intent, notify seller, redirect buyer to wa.me."""
+    token = (request.GET.get("t") or "").strip()
+    if not token:
+        raise Http404
+
+    from apps.products.commerce_wa_orders import resolve_whatsapp_order_redirect
+
+    try:
+        return resolve_whatsapp_order_redirect(request, token)
+    except ValueError as exc:
+        logger.info("Invalid WA order redirect: %s", exc)
+        raise Http404("This order link is invalid or has expired.") from exc

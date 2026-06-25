@@ -180,7 +180,7 @@ STUDIO_SHADOW_HEADER_VARIANT_IDS = frozenset({
     "channel_marketplace_jpeg",
 })
 
-PLAN_TIER_ORDER = ("starter", "growth", "pro", "agency")
+PLAN_TIER_ORDER = ("starter", "kova", "growth", "pro", "agency")
 
 # Phase C — carousel slide roles (variant pick order)
 SLIDE_ROLE_PRODUCT = (

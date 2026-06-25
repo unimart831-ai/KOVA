@@ -8,9 +8,10 @@
       <a href="{% url 'admin_dashboard:billing_overview' %}" class="text-[10px] font-medium text-kova-600 dark:text-kova-400 hover:underline shrink-0">Billing →</a>
     </div>
     <dl class="space-y-1.5 text-xs">
-      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Starter</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.plan_counts.starter|default:0 }}</dd></div>
-      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Growth</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.plan_counts.growth|default:0 }}</dd></div>
-      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Pro</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.plan_counts.pro|default:0 }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Kova</dt><dd class="font-semibold text-kova-600 dark:text-kova-400">{{ ops_hub.plan_counts.kova|default:0 }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Starter <span class="text-gray-400 font-normal">(legacy)</span></dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.plan_counts.starter|default:0 }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Growth <span class="text-gray-400 font-normal">(legacy)</span></dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.plan_counts.growth|default:0 }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Pro <span class="text-gray-400 font-normal">(legacy)</span></dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.plan_counts.pro|default:0 }}</dd></div>
       <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Agency</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.plan_counts.agency|default:0 }}{% if ops_hub.agency_pending %} <span class="text-gold-600 dark:text-gold-400 font-normal">({{ ops_hub.agency_pending }} pending)</span>{% endif %}</dd></div>
       <div class="border-t border-gray-100 dark:border-gray-800 my-2"></div>
       <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Trialing</dt><dd class="font-semibold text-kova-600 dark:text-kova-400">{{ ops_hub.trialing_users }}</dd></div>
@@ -31,7 +32,7 @@
   <!-- Usage caps -->
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
     <div class="flex items-start justify-between gap-2 mb-3">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Usage & Caps (Plan v2)</h3>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Usage & Caps (Kova)</h3>
       <a href="{% url 'admin_dashboard:cost_overview' %}" class="text-[10px] font-medium text-kova-600 dark:text-kova-400 hover:underline shrink-0">Costs →</a>
     </div>
     <dl class="space-y-1.5 text-xs">

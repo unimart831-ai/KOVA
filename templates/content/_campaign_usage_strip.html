@@ -1,0 +1,38 @@
+{# Monthly campaign quota — shown at top of Studio #}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+  <div class="flex items-center gap-3 min-w-0">
+    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-kova-500 to-growth-500 flex items-center justify-center shrink-0 shadow-sm">
+      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+    </div>
+    <div class="min-w-0">
+      <p class="text-sm font-semibold text-gray-900 dark:text-white">Marketing campaigns</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+        {% if seed_usage.unlimited %}
+          Unlimited campaigns on your plan
+        {% elif seed_usage.at_limit %}
+          All {{ seed_usage.max }} campaigns used this month
+        {% else %}
+          <span class="tabular-nums font-semibold text-kova-600 dark:text-kova-400">{{ seed_usage.remaining }}</span>
+          campaigns left this month · each campaign = reel + carousel + posts + shop page
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-2 shrink-0">
+    {% if not seed_usage.unlimited %}
+    <div class="hidden sm:flex items-center gap-1.5 mr-2">
+      {% widthratio seed_usage.remaining seed_usage.max 100 as pct %}
+      <div class="w-24 h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+        <div class="h-full rounded-full bg-gradient-to-r from-kova-500 to-growth-500 transition-all"
+             style="width: {% if seed_usage.at_limit %}0{% else %}{{ pct }}%{% endif %}"></div>
+      </div>
+    </div>
+    {% endif %}
+    {% if seed_usage.at_limit %}
+    <a href="{% url 'billing:pricing' %}" class="btn-primary btn-sm">Get more campaigns</a>
+    {% else %}
+    <a href="{% url 'products:list' %}" class="text-xs font-medium text-kova-600 dark:text-kova-400 hover:underline">Snap new asset →</a>
+    {% endif %}
+  </div>
+</div>

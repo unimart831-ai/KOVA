@@ -53,8 +53,8 @@
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Checkout built for Kenyan SMEs</p>
       </div>
       <div class="reveal reveal-delay-3">
-        <p class="text-2xl sm:text-3xl font-extrabold text-growth-600 dark:text-growth-400">KSh {{ all_plans.starter.price_kes }}</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Starting price per month</p>
+        <p class="text-2xl sm:text-3xl font-extrabold text-growth-600 dark:text-growth-400">KSh {{ kova_plan.price_kes }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">One plan · {{ kova_plan.max_seeds_per_month }} campaigns/mo</p>
       </div>
     </div>
   </div>
@@ -316,7 +316,7 @@
           </div>
           <div class="space-y-3 text-sm text-gray-700 dark:text-gray-300">
             <div class="flex items-center gap-2"><svg class="w-4 h-4 text-rose-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><p>Yesterday: <strong>+23% engagement</strong> vs. last week</p></div>
-            <div class="flex items-center gap-2"><svg class="w-4 h-4 text-kova-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg><p><strong>3 posts</strong> ready for your review</p></div>
+            <div class="flex items-center gap-2"><svg class="w-4 h-4 text-kova-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg><p><strong>2 campaigns</strong> ready for your review</p></div>
             <div class="flex items-center gap-2"><svg class="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg><p>Trending: <strong>#AIProductivity</strong> in your niche</p></div>
             <div class="flex items-center gap-2"><svg class="w-4 h-4 text-gold-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg><p><strong>12 comments</strong> replied to (5 flagged for you)</p></div>
           </div>
@@ -327,140 +327,7 @@
 </section>
 
 <!-- Pricing -->
-<section class="py-20 marketing-section-muted" x-data="{ currency: 'kes' }">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="text-center mb-12 reveal">
-      <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">Simple, transparent pricing</h2>
-      <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">More customers for less than a part-time hire — from KSh {{ all_plans.starter.price_kes }}/mo</p>
-
-      <!-- Currency Toggle -->
-      <div class="mt-8 inline-flex items-center bg-white dark:bg-gray-800 rounded-full p-1 shadow-sm border border-gray-200 dark:border-gray-700">
-        <button @click="currency = 'kes'"
-                :class="currency === 'kes' ? 'bg-growth-500 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                class="px-5 py-2 rounded-full text-sm font-medium transition-all">
-          KES
-        </button>
-        <button @click="currency = 'usd'"
-                :class="currency === 'usd' ? 'bg-growth-500 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                class="px-5 py-2 rounded-full text-sm font-medium transition-all">
-          USD
-        </button>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-      <!-- Jipange / Starter -->
-      <div class="marketing-card p-6 flex flex-col">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-          Starter
-        </h3>
-        <p class="text-xs text-gray-400 dark:text-gray-500 -mt-0.5">Jipange · Get organized</p>
-        <div class="mt-3 flex items-baseline">
-          <template x-if="currency === 'kes'">
-            <span class="text-4xl font-extrabold text-gray-900 dark:text-white">KSh {{ all_plans.starter.price_kes }}</span>
-          </template>
-          <template x-if="currency === 'usd'">
-            <span class="text-4xl font-extrabold text-gray-900 dark:text-white">${{ all_plans.starter.price_usd }}</span>
-          </template>
-          <span class="text-gray-500 dark:text-gray-400 ml-1">/mo</span>
-        </div>
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">For solopreneurs getting started</p>
-        <ul class="mt-6 space-y-2 text-sm text-gray-600 dark:text-gray-400 flex-1">
-          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> 2 social accounts</li>
-          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> {{ all_plans.starter.max_posts_per_month }} AI posts/month</li>
-          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> {{ all_plans.starter.visual_enhancements_per_month }} photo polish credits/mo</li>
-          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> AI carousels &amp; motion reels</li>
-          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> Daily brief &amp; basic analytics</li>
-        </ul>
-        <a href="{% url 'account_signup' %}" class="btn-secondary w-full justify-center mt-6">Get started</a>
-      </div>
-
-      <!-- Kazi / Growth -->
-      <div class="marketing-card p-6 border-2 border-growth-500 dark:border-growth-500 shadow-md dark:shadow-glow relative flex flex-col ring-1 ring-growth-200/50 dark:ring-growth-800/50">
-        <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-growth-500 text-white text-xs font-medium px-3 py-1 rounded-full">
-          Most Popular
-        </div>
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-          Growth
-        </h3>
-        <p class="text-xs text-gray-400 dark:text-gray-500 -mt-0.5">Kazi · Work mode</p>
-        <div class="mt-3 flex items-baseline">
-          <template x-if="currency === 'kes'">
-            <span class="text-4xl font-extrabold text-gray-900 dark:text-white">KSh {{ all_plans.growth.price_kes }}</span>
-          </template>
-          <template x-if="currency === 'usd'">
-            <span class="text-4xl font-extrabold text-gray-900 dark:text-white">${{ all_plans.growth.price_usd }}</span>
-          </template>
-          <span class="text-gray-500 dark:text-gray-400 ml-1">/mo</span>
-        </div>
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">For growing brands</p>
-        <ul class="mt-6 space-y-2 text-sm text-gray-600 dark:text-gray-400 flex-1">
-          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> 4 social platforms</li>
-          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> {{ all_plans.growth.max_posts_per_month }} AI posts/month</li>
-          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> M-Pesa commerce &amp; AI images</li>
-          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> Branded carousels &amp; promo creatives</li>
-          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> Lead follow-up &amp; competitor tracking</li>
-        </ul>
-        <a href="{% url 'account_signup' %}" class="btn-primary w-full justify-center mt-6">Start free trial</a>
-      </div>
-
-      <!-- Biashara / Pro -->
-      <div class="marketing-card p-6 flex flex-col">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-          Business
-        </h3>
-        <p class="text-xs text-gray-400 dark:text-gray-500 -mt-0.5">Biashara · Full loop + WhatsApp</p>
-        <div class="mt-3 flex items-baseline">
-          <template x-if="currency === 'kes'">
-            <span class="text-4xl font-extrabold text-gray-900 dark:text-white">KSh {{ all_plans.pro.price_kes }}</span>
-          </template>
-          <template x-if="currency === 'usd'">
-            <span class="text-4xl font-extrabold text-gray-900 dark:text-white">${{ all_plans.pro.price_usd }}</span>
-          </template>
-          <span class="text-gray-500 dark:text-gray-400 ml-1">/mo</span>
-        </div>
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">For serious marketers</p>
-        <ul class="mt-6 space-y-2 text-sm text-gray-600 dark:text-gray-400 flex-1">
-          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> All 5 platforms + WhatsApp</li>
-          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> {{ all_plans.pro.max_posts_per_month }} AI posts/month</li>
-          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> Full loop: Snap, WhatsApp, M-Pesa, revenue</li>
-          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> Cinematic AI reels</li>
-          <li class="flex items-center"><span class="text-growth-500 mr-2">✓</span> Team (5 seats) &amp; auto-approve</li>
-        </ul>
-        <a href="{% url 'account_signup' %}" class="btn-secondary w-full justify-center mt-6">Get started</a>
-      </div>
-    </div>
-
-    <!-- Agency / Wakala — contact sales -->
-    <div class="mt-8 max-w-3xl mx-auto">
-      <div class="marketing-card p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border border-gray-200 dark:border-gray-700">
-        <div>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-            Agency
-          </h3>
-          <p class="text-xs text-gray-400 dark:text-gray-500 -mt-0.5">Wakala · Multi-client teams</p>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Multi-client teams · 25 accounts · 300 posts/mo · sales onboarding only</p>
-          <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            <template x-if="currency === 'kes'"><span class="font-bold text-gray-900 dark:text-white">KSh {{ agency_plan.price_kes }}</span></template>
-            <template x-if="currency === 'usd'"><span class="font-bold text-gray-900 dark:text-white">${{ agency_plan.price_usd }}</span></template>
-            <span class="text-gray-500">/mo — contact us to get approved</span>
-          </p>
-        </div>
-        <a href="mailto:hello@kova.ai?subject=Agency%20plan%20inquiry" class="btn-secondary whitespace-nowrap justify-center shrink-0">Contact sales</a>
-      </div>
-    </div>
-
-    <p class="mt-6 text-center text-xs text-gray-400 dark:text-gray-500">7-day Starter trial on signup · No credit card required</p>
-
-    <!-- M-Pesa callout (KES only) -->
-    <div x-show="currency === 'kes'" x-transition class="mt-10 text-center">
-      <div class="inline-flex items-center gap-2 bg-growth-50 dark:bg-growth-950/40 text-growth-700 dark:text-growth-300 text-sm font-medium px-5 py-2.5 rounded-full border border-growth-200 dark:border-growth-800/80">
-        
-        Pay with M-Pesa — instant activation
-      </div>
-    </div>
-  </div>
-</section>
+{% include "pages/_landing_pricing.html" %}
 
 <!-- Why Kova Is Different -->
 <section class="py-20 marketing-section-muted">
@@ -499,7 +366,7 @@
         </div>
         <h3 class="text-xl font-bold text-gray-900 dark:text-white">Built for Africa, priced for Africa</h3>
         <p class="mt-3 text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
-          Buffer starts at $6. FeedHive at $19. Hootsuite at $99. Kova starts at KSh {{ all_plans.starter.price_kes }} (~${{ all_plans.starter.price_usd }}). Same AI power, priced for the businesses that actually need it most.
+          Buffer starts at $6. FeedHive at $19. Hootsuite at $99. Kova is KSh {{ kova_plan.price_kes }} (~${{ kova_plan.price_usd }}) for your full AI marketing department. Same power, priced for the businesses that actually need it most.
         </p>
         <p class="mt-4 text-xs font-semibold text-growth-600 dark:text-growth-400 uppercase tracking-wider">10x more affordable</p>
       </div>
@@ -516,7 +383,7 @@
       {% include "components/brand/_north_star_tagline.html" %}
     </h2>
     <p class="mt-4 text-lg text-gray-600 dark:text-gray-400 font-medium">{{ marketing_hero_subhead }}</p>
-    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">From KSh {{ all_plans.starter.price_kes }}/mo · 7-day Starter trial · No credit card</p>
+    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">KSh {{ kova_plan.price_kes }}/mo · {{ trial_days }}-day trial · {{ trial_campaigns }} campaigns · M-Pesa or card</p>
     <div class="mt-8">
       <a href="{% url 'account_signup' %}" class="btn-primary text-lg px-10 py-3.5 shadow-growth">
         Start your free trial

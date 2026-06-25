@@ -36,7 +36,7 @@ def plan_limit_banner_html(message: str, upgrade_url: str | None = None) -> str:
         '</svg>'
         f'<span class="flex-1 min-w-0">{safe_message}</span>'
         f'<a href="{upgrade_url}" class="font-semibold text-kova-600 dark:text-kova-400 '
-        'hover:underline shrink-0">Upgrade plan →</a>'
+        'hover:underline shrink-0">Get more campaigns →</a>'
         '</div>'
     )
 

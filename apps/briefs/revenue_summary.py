@@ -41,6 +41,9 @@ def get_unified_revenue_summary(user, *, days: int = 7) -> dict:
 
     top_asset = _top_asset_this_week(user, week_ago, business_model=business_model)
 
+    campaign_lines = brief.get("campaign_revenue_lines") or []
+    best_campaign = brief.get("best_campaign")
+
     return {
         "days": days,
         "business_model": business_model,
@@ -59,6 +62,8 @@ def get_unified_revenue_summary(user, *, days: int = 7) -> dict:
         "top_asset_type": top_asset.get("asset_type", ""),
         "top_asset_type_label": top_asset.get("type_label", ""),
         "top_asset_source": top_asset.get("source", ""),
+        "campaign_revenue_lines": campaign_lines,
+        "best_campaign": best_campaign,
         "next_action": recommend_next_revenue_action(user, ops, total_kes),
     }
 
@@ -160,6 +165,8 @@ def format_money_whatsapp_message(summary: dict) -> str:
             lines.append(f"• Top {type_label.lower()}: {summary['top_asset_title']} (KES {rev:,.0f})")
         else:
             lines.append(f"• Top {type_label.lower()}: {summary['top_asset_title']}")
+    for camp_line in (summary.get("campaign_revenue_lines") or [])[:2]:
+        lines.append(f"• {camp_line}")
     nba = summary.get("next_action") or {}
     if nba.get("label"):
         lines.append(f"\nNext: {nba['label']}")

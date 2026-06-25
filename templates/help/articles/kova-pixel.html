@@ -1,45 +1,32 @@
 <h2>Kova Pixel — Website Tracking</h2>
 
-<p>The Kova Pixel is a lightweight JavaScript snippet you add to your website. It tracks visitor behavior — page views, clicks, and conversions — and connects them back to your social media posts.</p>
+<p>The Kova Pixel is a lightweight JavaScript snippet for your website. It tracks visitors and conversions and connects them back to your social campaigns.</p>
 
-<h3>What It Does</h3>
+<h3>What it does</h3>
 <ul>
-  <li><strong>Tracks page views</strong> — See which pages your social media audience visits</li>
-  <li><strong>Measures conversions</strong> — Track purchases, sign-ups, or any custom event</li>
-  <li><strong>Attribution</strong> — Links website activity back to the specific social post or platform that drove the visit</li>
-  <li><strong>Revenue tracking</strong> — When you fire a conversion event with a value, Kova calculates your social media ROI</li>
+  <li><strong>Page views</strong> — Which pages your social audience visits</li>
+  <li><strong>Conversions</strong> — Purchases, sign-ups, or custom events</li>
+  <li><strong>Attribution</strong> — Links website activity to the post or platform that drove the visit</li>
+  <li><strong>Revenue tracking</strong> — Social ROI when you fire conversion events with values</li>
 </ul>
 
-<h3>Setting Up the Pixel</h3>
+<h3>Setting up the pixel</h3>
 <ol>
-  <li>Go to <a href="/analytics/pixel/">Kova Pixel</a> from the sidebar under Conversion</li>
-  <li>Copy the pixel code snippet</li>
-  <li>Paste it into the <code>&lt;head&gt;</code> section of your website (or use Google Tag Manager)</li>
-  <li>The pixel starts tracking immediately — no configuration needed for basic page views</li>
+  <li>Go to <a href="/analytics/pixel/">Kova Pixel</a> under Conversion</li>
+  <li>Copy the snippet</li>
+  <li>Paste into the <code>&lt;head&gt;</code> of your site (or Google Tag Manager)</li>
+  <li>Page views start tracking immediately</li>
 </ol>
 
-<h3>Tracking Custom Events</h3>
-<p>Beyond page views, you can track custom events like purchases or form submissions:</p>
+<h3>Tracking custom events</h3>
 <pre><code>// Track a purchase
 KovaPixel.track('purchase', { value: 2500, currency: 'KES' });
 
 // Track a sign-up
-KovaPixel.track('signup');
+KovaPixel.track('signup');</code></pre>
 
-// Track a custom event
-KovaPixel.track('added_to_cart', { product: 'Premium Plan' });</code></pre>
+<h3>Viewing results</h3>
+<p>On the Pixel page: total events, unique visitors, revenue attributed to social, and top pages.</p>
 
-<h3>Viewing Results</h3>
-<p>Go to <a href="/analytics/pixel/">Kova Pixel</a> settings to see:</p>
-<ul>
-  <li>Total events tracked</li>
-  <li>Unique visitors</li>
-  <li>Revenue attributed to social media</li>
-  <li>Top pages visited</li>
-</ul>
-
-<h3>How Attribution Works</h3>
-<p>When someone clicks a link from your social post, the Kova Pixel picks up UTM parameters automatically. It then connects that visitor's website activity back to the specific post and platform — so you can see exactly which social content drives real business results.</p>
-
-<h3>Availability</h3>
-<p>The Kova Pixel is available on the <strong>Biashara (Pro)</strong> plan.</p>
+<h3>How attribution works</h3>
+<p>When someone clicks from your social post, UTM parameters link their session to that campaign. You see which content drives real business results — included on <strong>Kova</strong>.</p>

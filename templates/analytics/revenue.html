@@ -59,18 +59,19 @@
   {# ── Headline Insight (W1.2 — the single-sentence "what happened") ── #}
   {% if insight %}
   <div class="rounded-xl border
-    {% if insight.kind == 'top_post' %}border-growth-300 dark:border-growth-800 bg-growth-50 dark:bg-growth-950/30
+        {% if insight.kind == 'top_post' %}border-growth-300 dark:border-growth-800 bg-growth-50 dark:bg-growth-950/30
+        {% elif insight.kind == 'top_campaign' %}border-growth-300 dark:border-growth-800 bg-growth-50 dark:bg-growth-950/30
     {% elif insight.kind == 'no_revenue_in_window' %}border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900
     {% elif insight.kind == 'pipeline_warming' %}border-gold-300 dark:border-gold-800 bg-gold-50 dark:bg-gold-950/30
     {% else %}border-kova-300 dark:border-kova-800 bg-kova-50 dark:bg-kova-950/30
     {% endif %} p-5">
     <div class="flex items-start gap-3">
       <div class="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center
-        {% if insight.kind == 'top_post' %}bg-growth-100 dark:bg-growth-900/50 text-growth-700 dark:text-growth-300
+        {% if insight.kind == 'top_post' or insight.kind == 'top_campaign' %}bg-growth-100 dark:bg-growth-900/50 text-growth-700 dark:text-growth-300
         {% elif insight.kind == 'pipeline_warming' %}bg-gold-100 dark:bg-gold-900/50 text-gold-700 dark:text-gold-300
         {% else %}bg-kova-100 dark:bg-kova-900/50 text-kova-700 dark:text-kova-300
         {% endif %}">
-        {% if insight.kind == 'top_post' %}
+        {% if insight.kind == 'top_post' or insight.kind == 'top_campaign' %}
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
         {% elif insight.kind == 'pipeline_warming' %}
           <svg class="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -86,6 +87,10 @@
         {% if insight.cta_url and insight.cta_text %}
           <a href="{{ insight.cta_url }}" class="inline-flex items-center text-sm font-medium text-kova-700 dark:text-kova-300 hover:underline mt-2">
             {{ insight.cta_text }}
+          </a>
+        {% elif insight.kind == 'top_campaign' and insight.campaign_id %}
+          <a href="{% url 'analytics:campaign_revenue' insight.campaign_id %}?days={{ days }}" class="inline-flex items-center text-sm font-medium text-kova-700 dark:text-kova-300 hover:underline mt-2">
+            View campaign performance →
           </a>
         {% endif %}
       </div>
@@ -147,6 +152,78 @@
       </div>
     </div>
   </div>
+
+  {# Campaign performance (Phase 6.1) #}
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Campaign Performance</h3>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Revenue and funnel by marketing campaign — not just individual posts.</p>
+    </div>
+    {% if campaign_performance %}
+    <div class="divide-y divide-gray-200 dark:divide-gray-700">
+      {% for row in campaign_performance %}
+      <a href="{% url 'analytics:campaign_revenue' row.campaign_id %}?days={{ days }}" class="block px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2 mb-1">
+              <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ row.title }}</p>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-kova-100 text-kova-700 dark:bg-kova-900/40 dark:text-kova-300 capitalize">{{ row.objective_label }}</span>
+            </div>
+            <div class="flex flex-wrap gap-3 text-xs text-gray-500 dark:text-gray-400">
+              <span>{{ row.views }} view{{ row.views|pluralize }}</span>
+              <span>{{ row.clicks }} click{{ row.clicks|pluralize }}</span>
+              <span>{{ row.leads }} lead{{ row.leads|pluralize }}</span>
+              <span class="text-growth-600 dark:text-growth-400 font-medium">{{ row.sales }} sale{{ row.sales|pluralize }}</span>
+            </div>
+            {% if row.platforms %}
+            <div class="flex flex-wrap gap-1.5 mt-2">
+              {% for p in row.platforms|slice:":3" %}
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 capitalize">{{ p.platform }} · KES {{ p.revenue|floatformat:0 }}</span>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+          <div class="text-right shrink-0">
+            <p class="text-lg font-bold text-growth-600 dark:text-growth-400 tabular-nums">KES {{ row.revenue|floatformat:0 }}</p>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="px-5 py-10 text-center">
+      <p class="text-sm text-gray-500 dark:text-gray-400">No campaign-attributed activity in this period yet.</p>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Publish campaigns with commerce CTAs — sales will appear here.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if objective_platform %}
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Platform by Campaign Type</h3>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Which social channels drive sales for each campaign objective.</p>
+    </div>
+    <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+      {% for group in objective_platform %}
+      <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white capitalize">{{ group.objective_label }} campaigns</p>
+          <p class="text-sm font-bold text-growth-600 dark:text-growth-400">KES {{ group.total_revenue|floatformat:0 }}</p>
+        </div>
+        <div class="space-y-2">
+          {% for p in group.platforms %}
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-600 dark:text-gray-400 capitalize">{{ p.platform }}</span>
+            <span class="font-medium text-gray-900 dark:text-white">KES {{ p.revenue|floatformat:0 }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
@@ -432,7 +509,7 @@
               {{ c.get_conversion_type_display }}
             </span>
             {% if c.product %}<span class="text-[10px] text-gray-500 dark:text-gray-400">{{ c.product.name }}</span>{% endif %}
-            {% if c.utm_campaign %}<span class="text-[10px] text-gray-400">{{ c.utm_campaign }}</span>{% endif %}
+            {% if c.marketing_campaign %}<span class="text-[10px] text-kova-600 dark:text-kova-400">{{ c.marketing_campaign.title|truncatechars:24 }}</span>{% elif c.utm_campaign %}<span class="text-[10px] text-gray-400">{{ c.utm_campaign }}</span>{% endif %}
           </div>
           {% if c.post %}
           <p class="text-xs text-gray-500 dark:text-gray-400 truncate max-w-md">{{ c.post.content_text|truncatechars:80 }}</p>

@@ -1,0 +1,106 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}{{ campaign.title }} — Campaign Results{% endblock %}
+{% block page_subtitle %}
+  <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
+    {{ detail.objective_label }} campaign · last {{ days }} days
+  </p>
+{% endblock %}
+
+{% block content %}
+{% include "analytics/_results_tabs.html" %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+  <div class="flex items-center justify-between gap-4">
+    <a href="{% url 'analytics:revenue' %}?days={{ days }}" class="text-sm text-kova-600 dark:text-kova-400 hover:underline">← Back to revenue</a>
+    <div class="flex items-center gap-2">
+      <a href="?days=7" class="px-3 py-1 text-xs rounded-full {% if days == 7 %}bg-growth-500 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400{% endif %}">7d</a>
+      <a href="?days=30" class="px-3 py-1 text-xs rounded-full {% if days == 30 %}bg-growth-500 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400{% endif %}">30d</a>
+      <a href="?days=90" class="px-3 py-1 text-xs rounded-full {% if days == 90 %}bg-growth-500 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400{% endif %}">90d</a>
+    </div>
+  </div>
+
+  <div class="rounded-xl bg-kova-700 p-6 text-white">
+    <p class="text-kova-200 text-xs font-medium uppercase tracking-wider">Attributed revenue</p>
+    <p class="text-4xl font-bold mt-1 tabular-nums">KES {{ stats.revenue|floatformat:0 }}</p>
+    <p class="text-sm text-kova-200 mt-2">{{ stats.sales }} sale{{ stats.sales|pluralize }} · {{ stats.leads }} lead{{ stats.leads|pluralize }}</p>
+  </div>
+
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Campaign Funnel</h3>
+    </div>
+    <div class="p-5">
+      <div class="flex items-center justify-between gap-2 overflow-x-auto">
+        <div class="text-center flex-1 min-w-[60px]">
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.views }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Page views</p>
+        </div>
+        <div class="text-gray-300 dark:text-gray-600">→</div>
+        <div class="text-center flex-1 min-w-[60px]">
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.clicks }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Clicks</p>
+        </div>
+        <div class="text-gray-300 dark:text-gray-600">→</div>
+        <div class="text-center flex-1 min-w-[60px]">
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.leads }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Leads</p>
+        </div>
+        <div class="text-gray-300 dark:text-gray-600">→</div>
+        <div class="text-center flex-1 min-w-[60px]">
+          <p class="text-2xl font-bold text-growth-600 dark:text-growth-400">{{ stats.sales }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Sales</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if platforms %}
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Revenue by Platform</h3>
+    </div>
+    <div class="p-5 space-y-3">
+      {% for p in platforms %}
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-700 dark:text-gray-300 capitalize">{{ p.platform }}</span>
+        <span class="text-sm font-semibold text-growth-600 dark:text-growth-400">KES {{ p.revenue|floatformat:0 }} · {{ p.sales }} sale{{ p.sales|pluralize }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="flex flex-wrap gap-3">
+    <a href="{% url 'public_campaign' campaign_slug=campaign.slug %}" target="_blank" rel="noopener" class="btn-secondary text-sm px-4 py-2">View campaign page ↗</a>
+    <a href="{% url 'content:studio' %}?q={{ campaign.title|urlencode }}" class="btn-secondary text-sm px-4 py-2">Open in Studio</a>
+  </div>
+
+  {% if recent_conversions %}
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Recent Activity</h3>
+    </div>
+    <div class="divide-y divide-gray-200 dark:divide-gray-700">
+      {% for c in recent_conversions %}
+      <div class="px-5 py-3 flex items-center justify-between">
+        <div class="min-w-0">
+          <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+            {% if c.conversion_type == 'sale' %}bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-300
+            {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+            {{ c.get_conversion_type_display }}
+          </span>
+          {% if c.product %}<span class="text-xs text-gray-500 ml-2">{{ c.product.name }}</span>{% endif %}
+        </div>
+        <div class="text-right shrink-0 ml-4">
+          {% if c.revenue %}<p class="text-sm font-medium text-growth-600 dark:text-growth-400">KES {{ c.revenue|floatformat:0 }}</p>{% endif %}
+          <p class="text-[10px] text-gray-400">{{ c.created_at|timesince }} ago</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

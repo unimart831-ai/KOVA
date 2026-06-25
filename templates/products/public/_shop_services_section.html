@@ -1,0 +1,15 @@
+{# Service offerings grid — service business_model (non-flagship layout) #}
+<section class="shop-section shop-services-section" aria-label="Services">
+  <div class="shop-section-head">
+    <h2 class="shop-section-title">{{ catalog_section_label|default:"Our services" }}</h2>
+    <span class="shop-section-meta">{{ service_products|length }} service{{ service_products|length|pluralize }}</span>
+  </div>
+  <div class="shop-grid shop-product-grid" role="list">
+    {% for product in service_products %}
+    {% include "products/public/_shop_product_card.html" %}
+    {% endfor %}
+  </div>
+  {% if wa_url %}
+  <p class="shop-section-cta"><a href="{{ wa_url }}" rel="noopener" class="shop-btn shop-btn--wa">Book on WhatsApp</a></p>
+  {% endif %}
+</section>

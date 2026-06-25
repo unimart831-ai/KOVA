@@ -14,6 +14,18 @@ from apps.products.business_assets import sync_asset_from_product
 
 logger = logging.getLogger(__name__)
 
+# Max Photoroom Plus scenes per activated campaign (economics guardrail).
+MAX_PHOTOROOM_SCENES_PER_CAMPAIGN = 5
+
+
+def cap_photoroom_scenes_for_plan(user, requested: int) -> int:
+    """Clamp scene count to plan + campaign limits."""
+    from apps.billing.models import get_user_plan_limits
+
+    limits = get_user_plan_limits(user)
+    cap = int(limits.get("max_photoroom_scenes_per_campaign") or MAX_PHOTOROOM_SCENES_PER_CAMPAIGN)
+    return max(1, min(requested, cap))
+
 
 def plan_media_for_product(
   product,

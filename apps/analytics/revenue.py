@@ -291,6 +291,33 @@ def get_revenue_headline_insight(user, days=7, summary=None):
 
     total_revenue = float(summary["totals"]["total_revenue"] or 0)
     top_posts = summary.get("top_posts") or []
+    best_campaign = None
+    if summary is not None:
+        from apps.content.campaign_attribution import top_campaigns_by_revenue
+        camps = top_campaigns_by_revenue(user, days=days, limit=1)
+        if camps:
+            best_campaign = camps[0]
+
+    # ── Top campaign revenue (preferred headline when available) ─────────
+    if best_campaign and float(best_campaign.get("revenue", 0) or 0) > 0:
+        rev = float(best_campaign["revenue"])
+        share = (rev / total_revenue * 100) if total_revenue > 0 else 0
+        title = best_campaign.get("title", "Your campaign")
+        headline = f'"{title}" campaign earned KES {rev:,.0f} in the last {days} days.'
+        subline = (
+            f"That's {share:.0f}% of your attributed revenue this period."
+            if share >= 5 else
+            f"{best_campaign.get('sales', 0)} sale(s) tied to this campaign."
+        )
+        return {
+            "kind": "top_campaign",
+            "headline": headline,
+            "subline": subline,
+            "cta_url": "",
+            "cta_text": "",
+            "campaign_id": best_campaign.get("campaign_id"),
+            "campaign_revenue": rev,
+        }
 
     # ── Happy path: we have a winning post with attributed revenue ─────
     if total_revenue > 0 and top_posts:
@@ -485,6 +512,12 @@ def get_revenue_brief_data(user, days=7):
 
     total_rev = digital_rev + Decimal(str(walkin_rev)) + Decimal(str(booking_rev))
 
+    from apps.content.campaign_attribution import campaign_revenue_brief_lines, top_campaigns_by_revenue
+
+    # Best performing campaign this period
+    top_campaigns = top_campaigns_by_revenue(user, days=days, limit=3)
+    campaign_lines = campaign_revenue_brief_lines(user, days=days, limit=3)
+
     # Best performing post this week (digital only — walk-ins/bookings have no single post)
     best_post = (
         conversions
@@ -509,6 +542,9 @@ def get_revenue_brief_data(user, days=7):
             "platform": best_post["post__social_account__platform"] if best_post else "",
             "revenue": float(best_post["revenue"]) if best_post else 0,
         } if best_post else None,
+        "top_campaigns": top_campaigns,
+        "campaign_revenue_lines": campaign_lines,
+        "best_campaign": top_campaigns[0] if top_campaigns else None,
     }
 
 

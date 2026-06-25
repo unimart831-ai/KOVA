@@ -3,6 +3,7 @@
 Complete reference for configuring **media orchestration**, **Photoroom**, **Fal.ai**, **Bannerbear**, **AI image providers**, and **cloud storage** in Kova.
 
 **Related docs:**
+- [MEDIA_PROVIDER_AUDIT.md](MEDIA_PROVIDER_AUDIT.md) — **Full capability scan** (Photoroom / Bannerbear / Remotion) + implementation map
 - [VISUAL_PIPELINE_SETUP.md](VISUAL_PIPELINE_SETUP.md) — R2 storage, media-required platforms, visual strategy
 - [VISUAL_ENHANCEMENT_SPEC.md](VISUAL_ENHANCEMENT_SPEC.md) — Photoroom Plus variant catalog
 - [KOVA_PHOTOROOM_STRATEGY.md](KOVA_PHOTOROOM_STRATEGY.md) — Basic vs Plus routing, cost strategy

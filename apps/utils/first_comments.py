@@ -68,11 +68,12 @@ def compose_first_comment(
     product=None,
     profile=None,
     kova_page_url: str = "",
+    commerce_url: str = "",
 ) -> str:
     """
     Return a conversational first-comment string for the given platform.
 
-    Priority: product link > kova_page_url > profile.website_url
+    Priority: commerce_url (campaign / shop) > product link > kova_page_url > profile.website_url
 
     Args:
         platform: 'facebook' or 'linkedin' (others return empty string).
@@ -90,7 +91,17 @@ def compose_first_comment(
     seed_id = str(getattr(post, "id", "") or "")
     bucket = _bucket_for(seed_id)
 
-    # ── Product link branch (highest priority) ──
+    preferred = (commerce_url or "").strip()
+    if preferred:
+        templates = (
+            _WEBSITE_TEMPLATES_FACEBOOK if platform == "facebook"
+            else _WEBSITE_TEMPLATES_LINKEDIN
+        )
+        template = templates[bucket % len(templates)]
+        brand = (getattr(profile, "company_name", "") or "").strip() if profile else ""
+        return template.format(brand=brand or "us", url=preferred).strip()
+
+    # ── Product link branch ──
     if product:
         from apps.products.product_cta import resolve_product_cta_url
 

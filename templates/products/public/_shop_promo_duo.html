@@ -1,0 +1,37 @@
+{# Side-by-side promotional banners #}
+{% if promo_banner_left or promo_banner_right %}
+<section class="promo-duo" aria-label="Special offers">
+  {% if promo_banner_left %}
+  <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=promo_banner_left.commerce_slug %}"
+     class="promo-banner promo-banner--{{ promo_banner_left.tone }}">
+    {% if promo_banner_left.image %}
+    <div class="promo-banner-media">
+      <img src="{{ promo_banner_left.image }}" alt="" loading="lazy">
+    </div>
+    {% endif %}
+    <div class="promo-banner-overlay">
+      <span class="promo-banner-tag">{{ promo_banner_left.subtitle }}</span>
+      <h3 class="promo-banner-title">{{ promo_banner_left.title }}</h3>
+      {% if promo_banner_left.price %}<p class="promo-banner-price">{{ promo_banner_left.price }}</p>{% endif %}
+      <span class="promo-banner-cta">{{ promo_banner_left.cta }} →</span>
+    </div>
+  </a>
+  {% endif %}
+  {% if promo_banner_right %}
+  <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=promo_banner_right.commerce_slug %}"
+     class="promo-banner promo-banner--{{ promo_banner_right.tone }}">
+    {% if promo_banner_right.image %}
+    <div class="promo-banner-media">
+      <img src="{{ promo_banner_right.image }}" alt="" loading="lazy">
+    </div>
+    {% endif %}
+    <div class="promo-banner-overlay">
+      <span class="promo-banner-tag">{{ promo_banner_right.subtitle }}</span>
+      <h3 class="promo-banner-title">{{ promo_banner_right.title }}</h3>
+      {% if promo_banner_right.price %}<p class="promo-banner-price">{{ promo_banner_right.price }}</p>{% endif %}
+      <span class="promo-banner-cta">{{ promo_banner_right.cta }} →</span>
+    </div>
+  </a>
+  {% endif %}
+</section>
+{% endif %}

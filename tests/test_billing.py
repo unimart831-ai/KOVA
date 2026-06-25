@@ -35,57 +35,52 @@ class TestBillingEvent:
 
 @pytest.mark.django_db
 class TestMpesaPayment:
-    def test_mpesa_payment_protect_on_delete(self, user):
-        """MpesaPayment.user uses PROTECT — deleting user should fail."""
+    def test_mpesa_payment_protect_on_hard_delete(self, user):
+        """MpesaPayment.user uses PROTECT — hard delete should fail."""
+        from django.db import models
         from django.db.models import ProtectedError
 
         MpesaPayment.objects.create(
             user=user,
             phone_number="254712345678",
-            amount=999,
-            plan_tier="growth",
+            amount=1300,
+            plan_tier="kova",
             merchant_request_id="mr_123",
             checkout_request_id="cr_123",
             status="pending",
         )
         with pytest.raises(ProtectedError):
-            user.delete()
+            models.Model.delete(user)
 
 
 @pytest.mark.django_db
 class TestPlanLimits:
     def test_plan_limits_exist(self):
+        assert "kova" in PLAN_LIMITS
         assert "starter" in PLAN_LIMITS
         assert "growth" in PLAN_LIMITS
         assert "pro" in PLAN_LIMITS
         assert "agency" in PLAN_LIMITS
-        assert PLAN_LIMITS["starter"]["max_posts_per_month"] < PLAN_LIMITS["agency"]["max_posts_per_month"]
+        assert PLAN_LIMITS["kova"]["max_seeds_per_month"] == 30
+        assert PLAN_LIMITS["kova"]["price_kes"] == 1300
 
     def test_public_pricing_tiers(self):
         from apps.billing.models import PUBLIC_PLAN_TIERS, get_public_plan_limits
 
-        assert PUBLIC_PLAN_TIERS == ("starter", "growth", "pro")
+        assert PUBLIC_PLAN_TIERS == ("kova",)
         public = get_public_plan_limits()
-        assert set(public.keys()) == set(PUBLIC_PLAN_TIERS)
+        assert set(public.keys()) == {"kova"}
         assert "agency" not in public
 
-    def test_starter_pricing_and_accounts(self):
-        assert PLAN_LIMITS["starter"]["price_kes"] == 499
-        assert PLAN_LIMITS["starter"]["max_social_accounts"] == 2
-        assert PLAN_LIMITS["starter"]["trial_days"] == 7
-
-    def test_growth_platform_ladder(self):
-        assert PLAN_LIMITS["growth"]["max_social_accounts"] == 4
-        assert PLAN_LIMITS["growth"]["price_kes"] == 1499
-
-    def test_pro_platform_ladder(self):
-        assert PLAN_LIMITS["pro"]["max_social_accounts"] == 5
-        assert PLAN_LIMITS["pro"]["whatsapp_enabled"] is True
-        assert PLAN_LIMITS["pro"]["price_kes"] == 2999
+    def test_kova_plan_quality_features(self):
+        kova = PLAN_LIMITS["kova"]
+        assert kova["bannerbear_carousels_enabled"] is True
+        assert kova["mpesa_commerce"] is True
+        assert kova["visual_enhancements_per_month"] >= 150
 
     def test_user_profile_default_plan(self, user):
         profile = user.profile
-        assert profile.plan in ("starter", "growth", "pro", "agency")
+        assert profile.plan in ("kova", "starter", "growth", "pro", "agency")
 
 
 @pytest.mark.django_db
@@ -100,7 +95,7 @@ class TestSidebarPlanDisplay:
         profile.save(update_fields=["subscription_status", "trial_ends_at", "plan"])
 
         display = get_sidebar_plan_display(user)
-        assert display["label"] == "Starter trial"
+        assert display["label"] == "Kova trial"
         assert display["variant"] == "trial"
 
     def test_active_paid_shows_tier_name(self, user):
@@ -141,14 +136,17 @@ class TestSidebarPlanDisplay:
 
     def test_sidebar_label_in_app_layout(self, client, user):
         profile = user.profile
-        profile.plan = "growth"
+        profile.plan = "kova"
         profile.subscription_status = "active"
         profile.save(update_fields=["plan", "subscription_status"])
+        user.phone_number = "0712345678"
+        user.onboarding_completed = True
+        user.save(update_fields=["phone_number", "onboarding_completed"])
 
         client.force_login(user)
         resp = client.get(reverse("brief:home"))
         assert resp.status_code == 200
-        assert b"Growth" in resp.content
+        assert b"Kova" in resp.content
 
 
 @pytest.mark.django_db
@@ -185,25 +183,28 @@ class TestBillingAccess:
         assert allowed is False
         assert "trial" in msg.lower()
 
-    def test_active_trial_unlocks_starter_features(self, user):
+    def test_active_trial_uses_kova_features_with_campaign_cap(self, user):
         from apps.billing.enforcement import check_ab_testing, check_seed_limit
-        from apps.billing.models import get_effective_plan_tier, get_user_plan_limits
+        from apps.billing.models import TRIAL_CAMPAIGN_LIMIT, get_effective_plan_tier, get_user_plan_limits
+        from apps.content.campaigns import ensure_campaign_for_seed
         from apps.content.models import ContentSeed
 
         profile = user.profile
-        profile.plan = "growth"
+        profile.plan = "kova"
         profile.subscription_status = "trialing"
         profile.trial_ends_at = timezone.now() + timezone.timedelta(days=5)
         profile.save(update_fields=["plan", "subscription_status", "trial_ends_at"])
 
-        assert get_effective_plan_tier(profile) == "starter"
-        assert get_user_plan_limits(user)["mpesa_commerce"] is False
+        assert get_effective_plan_tier(profile) == "kova"
+        assert get_user_plan_limits(user)["mpesa_commerce"] is True
+        assert get_user_plan_limits(user)["max_seeds_per_month"] == TRIAL_CAMPAIGN_LIMIT
 
         allowed, _ = check_ab_testing(user)
-        assert allowed is False
+        assert allowed is True
 
-        for i in range(8):
-            ContentSeed.objects.create(user=user, idea=f"seed {i}")
+        for i in range(TRIAL_CAMPAIGN_LIMIT):
+            seed = ContentSeed.objects.create(user=user, idea=f"campaign {i}")
+            ensure_campaign_for_seed(seed, title=f"campaign {i}")
         allowed, _ = check_seed_limit(user)
         assert allowed is False
 
@@ -212,6 +213,7 @@ class TestBillingAccess:
 class TestEnforcement:
     def test_seed_limit_blocks_at_cap(self, user):
         from apps.billing.enforcement import check_seed_limit
+        from apps.content.campaigns import ensure_campaign_for_seed
         from apps.content.models import ContentSeed
 
         profile = user.profile
@@ -220,11 +222,12 @@ class TestEnforcement:
         profile.save(update_fields=["plan", "subscription_status"])
 
         for i in range(8):
-            ContentSeed.objects.create(user=user, idea=f"seed {i}")
+            seed = ContentSeed.objects.create(user=user, idea=f"seed {i}")
+            ensure_campaign_for_seed(seed, title=f"seed {i}")
 
         allowed, msg = check_seed_limit(user)
         assert allowed is False
-        assert "seed" in msg.lower()
+        assert "marketing campaign" in msg.lower()
 
     def test_ab_testing_blocked_on_starter(self, user):
         from apps.billing.enforcement import check_ab_testing
@@ -266,7 +269,9 @@ class TestAgencySalesInquiry:
 
     def test_contact_sales_prefill_logged_in(self, client, user):
         user.full_name = "Alex Wakala"
-        user.save(update_fields=["full_name"])
+        user.phone_number = "0712345678"
+        user.onboarding_completed = True
+        user.save(update_fields=["full_name", "phone_number", "onboarding_completed"])
         client.force_login(user)
         resp = client.get(reverse("billing:contact_sales"))
         assert resp.status_code == 200

@@ -568,17 +568,22 @@
         <h3 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3">User Counts by Plan</h3>
         <div class="space-y-3">
           <div class="flex items-center gap-3">
-            <label class="text-xs text-gray-600 dark:text-gray-400 w-28">Starter ($4/mo)</label>
+            <label class="text-xs text-gray-600 dark:text-gray-400 w-28">Kova ($10/mo)</label>
+            <input type="number" x-model.number="kova_users" min="0" step="1"
+                   class="w-24 text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500">
+          </div>
+          <div class="flex items-center gap-3">
+            <label class="text-xs text-gray-600 dark:text-gray-400 w-28">Starter ($4, legacy)</label>
             <input type="number" x-model.number="starter_users" min="0" step="1"
                    class="w-24 text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500">
           </div>
           <div class="flex items-center gap-3">
-            <label class="text-xs text-gray-600 dark:text-gray-400 w-28">Growth ($7/mo)</label>
+            <label class="text-xs text-gray-600 dark:text-gray-400 w-28">Growth ($7, legacy)</label>
             <input type="number" x-model.number="growth_users" min="0" step="1"
                    class="w-24 text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500">
           </div>
           <div class="flex items-center gap-3">
-            <label class="text-xs text-gray-600 dark:text-gray-400 w-28">Pro ($14/mo)</label>
+            <label class="text-xs text-gray-600 dark:text-gray-400 w-28">Pro ($14, legacy)</label>
             <input type="number" x-model.number="pro_users" min="0" step="1"
                    class="w-24 text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-kova-500">
           </div>
@@ -798,22 +803,22 @@
               <span class="text-[9px] px-1.5 py-0.5 rounded bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-400 font-semibold">TIER-ROUTED</span>
             </div>
           </td>
-          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Together.ai <span class="text-[9px] text-gray-400">Starter</span></td>
+          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Together.ai <span class="text-[9px] text-gray-400">Legacy Starter</span></td>
           <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">FLUX.1-schnell</td>
           <td class="px-4 py-2.5 text-right">
             <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500">DISABLED</span>
           </td>
           <td class="px-4 py-2.5 text-right font-mono text-xs text-gray-400">$0.00</td>
-          <td class="px-4 py-2.5 text-[10px] text-gray-400">Starter plan: images disabled (0 limit)</td>
+          <td class="px-4 py-2.5 text-[10px] text-gray-400">Legacy Starter: images disabled (0 limit)</td>
         </tr>
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Together.ai <span class="text-[9px] text-kova-500 font-semibold">Growth</span></td>
+          <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Together.ai <span class="text-[9px] text-kova-500 font-semibold">Kova</span></td>
           <td class="px-4 py-2.5 text-xs font-mono text-gray-600 dark:text-gray-400">FLUX.1-krea-dev</td>
           <td class="px-4 py-2.5 text-right">
             <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400">$0.025/img</span>
           </td>
           <td class="px-4 py-2.5 text-right font-mono text-xs text-gray-600 dark:text-gray-400">50 × $0.025 = $1.25</td>
-          <td class="px-4 py-2.5 text-[10px] text-gray-400">Growth: 50 images/mo limit</td>
+          <td class="px-4 py-2.5 text-[10px] text-gray-400">Kova: 60 images/mo (FLUX.1-krea-dev)</td>
         </tr>
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
           <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">Together.ai <span class="text-[9px] text-kova-500 font-semibold">Pro</span></td>
@@ -985,8 +990,9 @@
 function costCalculator() {
   return {
     // User counts (default: "typical" scenario from cost doc)
-    starter_users: 45,
-    growth_users: 30,
+    kova_users: 80,
+    starter_users: 5,
+    growth_users: 10,
     pro_users: 15,
     agency_users: 10,
     // Model pricing defaults (Budget-Smart: Gemini Flash + DeepSeek)
@@ -1042,6 +1048,7 @@ function costCalculator() {
       try { token = JSON.parse(csrfToken)['X-CSRFToken']; } catch(e) {}
 
       var body = new FormData();
+      body.append('kova_users', self.kova_users || 0);
       body.append('starter_users', self.starter_users || 0);
       body.append('growth_users', self.growth_users || 0);
       body.append('pro_users', self.pro_users || 0);

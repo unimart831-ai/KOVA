@@ -15,7 +15,7 @@
       </svg>
       <div class="text-sm text-blue-800 dark:text-blue-300">
         <p class="font-medium">How pricing works</p>
-        <p class="mt-1 text-blue-700 dark:text-blue-400">Custom prices override defaults across pricing page, M-Pesa checkout, and Stripe. Limits below come from <code class="text-[10px]">PLAN_LIMITS</code> (Plan v2). Trial users get <strong>Starter limits</strong> for 7 days. Agency is sales-only (<code class="text-[10px]">is_agency_approved</code>).</p>
+        <p class="mt-1 text-blue-700 dark:text-blue-400">Custom prices override defaults across pricing page, M-Pesa checkout, and Stripe. Limits below come from <code class="text-[10px]">PLAN_LIMITS</code>. Public plan: <strong>Kova</strong> (KES 1,300). Trial users get <strong>Kova limits</strong> with <strong>5 campaigns</strong> for 7 days. Legacy tiers (Starter/Growth/Pro) are grandfathered only. Agency is sales-only (<code class="text-[10px]">is_agency_approved</code>).</p>
       </div>
     </div>
   </div>
@@ -29,6 +29,11 @@
           <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ plan.label }}</h3>
           <p class="text-xs text-gray-400 mt-0.5">
             Default: KES {{ plan.default_kes }} / ${{ plan.default_usd }}
+            {% if plan.is_public %}
+              <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-kova-100 text-kova-800 dark:bg-kova-900/30 dark:text-kova-300">Public plan</span>
+            {% elif plan.is_legacy %}
+              <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">Legacy (grandfathered)</span>
+            {% endif %}
             {% if plan.has_override %}
               <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-kova-100 text-kova-800 dark:bg-kova-900/30 dark:text-kova-300">Custom price active</span>
             {% endif %}
@@ -43,11 +48,11 @@
           <span>{{ plan.daily_llm_tokens|format_number }} LLM tokens/day</span>
           <span>{{ plan.monthly_llm_tokens|format_number }} LLM tokens/mo</span>
           <span>{{ plan.max_posts_per_month }} posts/mo</span>
-          <span>{{ plan.max_seeds_per_month }} seeds/mo</span>
+          <span>{{ plan.max_seeds_per_month }} campaigns/mo</span>
           <span>{{ plan.visual_enhancements_per_month }} studio polish/mo</span>
           <span>{{ plan.max_social_accounts }} social account{{ plan.max_social_accounts|pluralize }}</span>
           <span>{{ plan.ai_images_per_month }} AI images/mo</span>
-          <span>{{ plan.trial_days }}d trial (Starter limits)</span>
+          <span>{{ plan.trial_days }}d trial (Kova limits, 5 campaigns)</span>
           {% if plan.tier == "agency" %}<span class="text-gold-600">Sales-only — not public checkout</span>{% endif %}
         </div>
       </div>
@@ -60,12 +65,12 @@
           <div>
             <label class="label">Price (KES)</label>
             <input type="number" name="price_kes" value="{{ plan.current_kes }}" min="0" step="1"
-                   class="input-field w-full" placeholder="e.g. 499">
+                   class="input-field w-full" placeholder="e.g. 1300">
           </div>
           <div>
             <label class="label">Price (USD)</label>
             <input type="number" name="price_usd" value="{{ plan.current_usd }}" min="0" step="1"
-                   class="input-field w-full" placeholder="e.g. 4">
+                   class="input-field w-full" placeholder="e.g. 10">
           </div>
         </div>
 

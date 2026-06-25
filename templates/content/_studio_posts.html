@@ -29,8 +29,8 @@
 
   <div class="flex items-center justify-between gap-4 mb-6">
     <div>
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Posts to review</h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Approve in one tap — Kova already wrote, angled, and sized each post for its platform</p>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Campaigns to review</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Approve your campaign posts — each package is ready for its platform</p>
     </div>
     {% if total_pending %}
       <span class="badge bg-kova-100 text-kova-800 dark:bg-kova-950 dark:text-kova-200 tabular-nums">{{ total_pending }} pending</span>
@@ -40,65 +40,11 @@
   {% if seed_groups %}
     <div class="space-y-8">
       {% for group in seed_groups %}
-        {# ── Seed Group Container ── #}
+        {# ── Campaign group ── #}
         <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden shadow-sm"
              x-data="{ showBatchSchedule: false, expanded: true }">
 
-          {# Group Header — the original idea #}
-          <div class="px-5 py-4 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800/60 dark:to-gray-900 border-b border-gray-100 dark:border-gray-800">
-            <div class="flex items-start justify-between gap-3 flex-wrap">
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-2 mb-1.5">
-                  <span class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-kova-100 dark:bg-kova-950/60" aria-hidden="true">
-                    <svg class="w-3.5 h-3.5 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-                  </span>
-                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ group.seed.idea|truncatewords:20 }}</h3>
-                </div>
-                {% if group.seed.batch_strategy %}
-                  <p class="text-xs text-gray-500 dark:text-gray-400 ml-8 line-clamp-2">
-                    <span class="font-medium text-kova-600 dark:text-kova-400">Strategy:</span> {{ group.seed.batch_strategy }}
-                  </p>
-                {% endif %}
-                {% if group.showcase_summary %}
-                  <p class="text-[11px] text-kova-600 dark:text-kova-400 ml-8 mt-1 font-medium">
-                    {{ group.showcase_summary }}
-                  </p>
-                {% endif %}
-                {% if group.minutes_saved_estimate %}
-                  <p class="text-[11px] text-green-600 dark:text-green-400 ml-8 mt-1 font-medium">
-                    ≈ {{ group.minutes_saved_estimate }} min saved vs writing {{ group.platform_count }} posts manually
-                  </p>
-                {% endif %}
-              </div>
-
-              <div class="flex items-center gap-2 shrink-0">
-                {# Platform count badge #}
-                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-xs font-medium text-gray-600 dark:text-gray-300">
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                  {{ group.platform_count }} platform{{ group.platform_count|pluralize }}
-                </span>
-
-                {# Batch Approve — skips posts that still need media #}
-                {% if group.can_batch_approve %}
-                  <button @click="showBatchSchedule = true"
-                          class="btn-primary btn-sm gap-1.5 font-semibold shadow-sm shadow-kova-600/20">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                    Approve {% if group.approvable_count < group.platform_count %}{{ group.approvable_count }}/{% endif %}{{ group.platform_count }}
-                  </button>
-                {% elif group.media_blocked_count %}
-                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gold-50 dark:bg-gold-950/40 text-[11px] font-medium text-gold-700 dark:text-gold-300 border border-gold-200 dark:border-gold-800">
-                    {{ group.media_blocked_count }} need image
-                  </span>
-                {% endif %}
-
-                {# Collapse toggle #}
-                <button @click="expanded = !expanded"
-                        class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                  <svg :class="expanded ? '' : '-rotate-90'" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                </button>
-              </div>
-            </div>
-          </div>
+          {% include "content/_campaign_group_header.html" %}
 
           {# Batch Schedule Modal — teleported to body #}
           {% if group.can_batch_approve %}
@@ -125,17 +71,23 @@
                    x-transition:leave-end="opacity-0 scale-95"
                    class="relative w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
 
-                <form method="post" action="{% url 'content:batch_approve' group.seed.id %}">
+                <form method="post" action="{% if group.campaign %}{% url 'content:campaign_approve' group.campaign.id %}{% else %}{% url 'content:batch_approve' group.seed.id %}{% endif %}">
                   {% csrf_token %}
 
                   <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
                     <div>
-                      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Approve {{ group.approvable_count }} post{{ group.approvable_count|pluralize }}</h3>
+                      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+                        {{ group.approval.modal_title|default:"Approve entire campaign" }}
+                      </h3>
                       <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
-                        Schedule across platforms at once
-                        {% if group.media_blocked_count %} · {{ group.media_blocked_count }} skipped (need images){% endif %}
-                        {% if group.showcase_summary %} · {{ group.showcase_summary }}{% endif %}
+                        {{ group.campaign_title|truncatewords:12 }}
+                        {% if group.approval.modal_subtitle %} · {{ group.approval.modal_subtitle }}{% endif %}
                       </p>
+                      {% if group.qa and not group.qa.publish_ready %}
+                      <p class="text-[11px] text-gold-600 dark:text-gold-400 mt-1 font-medium">
+                        Quality {{ group.qa.overall }}/{{ group.qa.min_required }} — you can approve now; publish unlocks after edits or when score improves.
+                      </p>
+                      {% endif %}
                     </div>
                     <button type="button" @click="showBatchSchedule = false"
                             class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
@@ -149,7 +101,7 @@
                       <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-gold-50 dark:bg-gold-950/50">
                         <svg class="w-[18px] h-[18px] text-gold-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                       </span>
-                      <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Post All Now</p><p class="text-xs text-gray-400 dark:text-gray-500">Publish to all {{ group.platform_count }} platforms immediately</p></div>
+                      <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Post Campaign Now</p><p class="text-xs text-gray-400 dark:text-gray-500">Reel first, then stories &amp; posts — rolled out in minutes</p></div>
                     </button>
 
                     <button type="submit" name="schedule_intent" value="next_best"
@@ -157,7 +109,7 @@
                       <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-kova-50 dark:bg-kova-950/50">
                         <svg class="w-[18px] h-[18px] text-kova-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
                       </span>
-                      <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Best Slot per Platform</p><p class="text-xs text-gray-400 dark:text-gray-500">Optimal peak time for each platform</p></div>
+                      <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Best Slot per Platform</p><p class="text-xs text-gray-400 dark:text-gray-500">Reel leads, carousel &amp; stories spread across peak times</p></div>
                     </button>
 
                     <button type="submit" name="schedule_intent" value="smart_queue"
@@ -186,10 +138,23 @@
                   </div>
 
                   <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/50">
+                    {% if group.bundle.display_items %}
+                    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Campaign package</p>
+                    <div class="flex flex-wrap gap-1 mb-3">
+                      {% for item in group.bundle.display_items %}
+                      <span class="text-[10px] px-2 py-0.5 rounded-full font-medium
+                        {% if item.ready %}bg-growth-50 text-growth-700 dark:bg-growth-950/50 dark:text-growth-300
+                        {% elif item.pending_media %}bg-gold-50 text-gold-700 dark:bg-gold-950/50 dark:text-gold-300
+                        {% else %}bg-gray-100 text-gray-500 dark:bg-gray-800{% endif %}">
+                        {{ item.label }}
+                      </span>
+                      {% endfor %}
+                    </div>
+                    {% endif %}
                     {% if group.showcase_summary %}
                     <p class="text-[11px] text-kova-700 dark:text-kova-300 mb-2 font-medium">{{ group.showcase_summary }}</p>
                     {% endif %}
-                    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Posts in this batch</p>
+                    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Posts in this campaign</p>
                     <ul class="space-y-1 mb-3 max-h-28 overflow-y-auto">
                       {% for post in group.posts %}
                       {% post_showcase_badge post as showcase %}
@@ -239,10 +204,10 @@
         <div class="w-14 h-14 mx-auto rounded-xl bg-kova-100 dark:bg-kova-950 flex items-center justify-center mb-4" aria-hidden="true">
           <svg class="w-7 h-7 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
         </div>
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Your AI content team is ready</h3>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Your AI marketing team is ready</h3>
         <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm max-w-md mx-auto">
-          Drop one idea above. In ~2 minutes you'll get platform-native posts for every connected channel —
-          work that would take hours to write, adapt, and format manually.
+          Snap a product or drop an idea above. In ~2 minutes you'll get a full campaign —
+          posts for every platform plus your commerce page.
         </p>
         <p class="text-xs text-kova-600 dark:text-kova-400 mt-4 font-medium">
           Tip: use the mic button to dictate your idea while you're on the go.

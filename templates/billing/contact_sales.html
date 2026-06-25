@@ -1,17 +1,17 @@
-{% extends "layouts/app.html" %}
-
-{% block page_title %}{{ page_title }}{% endblock %}
-{% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
-  Agency / Wakala — KSh {{ agency_plan.price_kes }} / ${{ agency_plan.price_usd }} per month · sales onboarding only
-</p>
-{% endblock %}
+{% extends "layouts/marketing.html" %}
 
 {% block content %}
-<div class="max-w-xl mx-auto">
+<div class="max-w-xl mx-auto px-4 py-12">
   <a href="{% url 'billing:pricing' %}" class="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6">
     ← Back to plans
   </a>
+
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ page_title }}</h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+      Agency / Wakala — KSh {{ agency_plan.price_kes }} / ${{ agency_plan.price_usd }} per month · sales onboarding only
+    </p>
+  </div>
 
   {% if submitted %}
   <div class="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-xl p-6 text-center">

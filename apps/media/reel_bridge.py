@@ -48,7 +48,22 @@ def _attach_video_to_post(post, video_url: str, *, backend: str = "kling") -> st
 
 
 def try_kling_reel_for_post(post, image_sources: list[str]) -> str | None:
-  """Generate reel via Kling when media plan requests it."""
+  """Generate reel via Kling when media plan requests it (QA-gated)."""
+  from apps.content.campaign_qa import score_post_qa
+  from django.conf import settings
+
+  min_qa = int(getattr(settings, "KLING_MIN_CAMPAIGN_QA", 75))
+  seed = getattr(post, "seed", None)
+  campaign = getattr(seed, "marketing_campaign", None) if seed else None
+  if campaign and campaign.quality_score and campaign.quality_score < min_qa:
+    ps = score_post_qa(post, seed=seed)
+    if ps.overall < min_qa:
+      logger.info(
+        "Kling blocked for post %s — campaign QA %s < %s",
+        post.pk, ps.overall, min_qa,
+      )
+      return None
+
   prompt = (post.visual_metadata or {}).get("kling_prompt") or ""
   if not prompt and post.product_id:
     try:

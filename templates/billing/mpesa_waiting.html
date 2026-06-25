@@ -45,7 +45,11 @@
 
       <div class="mt-6 text-center">
         <p class="text-xs text-gray-400 dark:text-gray-500">
-          Subscribing to <span class="font-medium text-gray-600 dark:text-gray-300">{{ plan_name }}</span>
+          {% if payment_kind == 'campaign_addon' %}
+            Purchasing <span class="font-medium text-gray-600 dark:text-gray-300">{{ plan_name }}</span>
+          {% else %}
+            Subscribing to <span class="font-medium text-gray-600 dark:text-gray-300">{{ plan_name }}</span>
+          {% endif %}
         </p>
         <a href="{% url 'billing:pricing' %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline mt-2 inline-block">Cancel and go back</a>
       </div>

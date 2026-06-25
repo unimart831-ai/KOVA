@@ -690,7 +690,11 @@ def plan_pricing(request):
     db_prices = {p.tier: p for p in PlanPrice.objects.all()}
 
     plans = []
-    for tier, info in PLAN_LIMITS.items():
+    tier_order = ("kova", "agency", "starter", "growth", "pro")
+    for tier in tier_order:
+        if tier not in PLAN_LIMITS:
+            continue
+        info = PLAN_LIMITS[tier]
         db = db_prices.get(tier)
         live = all_plans[tier]
         plans.append({
@@ -710,6 +714,8 @@ def plan_pricing(request):
             "ai_images_per_month": live.get("ai_images_per_month", 0),
             "visual_enhancements_per_month": live.get("visual_enhancements_per_month", 0),
             "trial_days": live.get("trial_days", 7),
+            "is_public": info.get("public", False),
+            "is_legacy": tier in ("starter", "growth", "pro"),
         })
 
     context = {

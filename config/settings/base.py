@@ -95,7 +95,7 @@ LOCAL_APPS = [
     "apps.links",
     "apps.leads",
     "apps.products",
-    "apps.campaigns",
+    "apps.campaigns",  # migrations only — legacy tables dropped in campaigns.0003
     "apps.whatsapp",
     "apps.qr_attribution",
     "apps.bookings",
@@ -310,6 +310,10 @@ CELERY_BEAT_SCHEDULE = {
     "recycle-top-content": {
         "task": "content.recycle_top_content",
         "schedule": 24 * 3600.0,  # daily — repurpose high-performing old content
+    },
+    "archive-expired-campaigns": {
+        "task": "content.archive_expired_campaigns",
+        "schedule": 24 * 3600.0,  # daily — archive campaigns past offer expiry
     },
     "detect-top-performers-email": {
         "task": "analytics.detect_top_performers",
@@ -723,6 +727,9 @@ PHOTOROOM_EDIT_WITH_AI_MAX_PER_PACK = env.int("PHOTOROOM_EDIT_WITH_AI_MAX_PER_PA
 # Motion reel director — recipe rotation, 5 slides, role-based motion (apps/content/reel_director.py)
 REEL_MAX_SLIDES = env.int("REEL_MAX_SLIDES", default=5)
 REEL_DIRECTOR_ENABLED = env.bool("REEL_DIRECTOR_ENABLED", default=True)
+
+# Campaign QA — minimum quality score required before publish (default 75)
+CAMPAIGN_PUBLISH_MIN_QUALITY = env.int("CAMPAIGN_PUBLISH_MIN_QUALITY", default=75)
 # Phase 2 — PhotoFix, Composition, Video (see docs.photoroom.com)
 PHOTOROOM_PHOTOFIX_ENABLED = env.bool("PHOTOROOM_PHOTOFIX_ENABLED", default=True)
 PHOTOROOM_PHOTOFIX_ALWAYS = env.bool("PHOTOROOM_PHOTOFIX_ALWAYS", default=False)
@@ -786,10 +793,14 @@ TAVILY_API_KEY = env("TAVILY_API_KEY", default="")
 # ─── STRIPE (kept for future international billing) ─────────────────────────
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY", default="")
-STRIPE_PRICE_STARTER = env("STRIPE_PRICE_STARTER", default="")  # KES 499/mo — 7-day trial
+STRIPE_PRICE_STARTER = env("STRIPE_PRICE_STARTER", default="")  # legacy grandfathered
 STRIPE_PRICE_GROWTH = env("STRIPE_PRICE_GROWTH", default="")
 STRIPE_PRICE_PRO = env("STRIPE_PRICE_PRO", default="")
 STRIPE_PRICE_AGENCY = env("STRIPE_PRICE_AGENCY", default="")
+STRIPE_PRICE_KOVA = env("STRIPE_PRICE_KOVA", default="")  # KES 1,300 / USD 10 — public plan
+STRIPE_PRICE_ADDON_BOOST = env("STRIPE_PRICE_ADDON_BOOST", default="")
+STRIPE_PRICE_ADDON_SCALE = env("STRIPE_PRICE_ADDON_SCALE", default="")
+STRIPE_PRICE_ADDON_BURST = env("STRIPE_PRICE_ADDON_BURST", default="")
 
 # ─── M-PESA (Daraja API — primary payment for Kenya) ────────────────────────
 MPESA_ENVIRONMENT = env("MPESA_ENVIRONMENT", default="sandbox")  # sandbox | production

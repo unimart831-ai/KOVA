@@ -448,6 +448,12 @@ def approve_post(request, post_id):
     post.status = Post.Status.APPROVED
     post.save(update_fields=["status", "scheduled_at", "updated_at"])
 
+    if post.seed_id:
+        from apps.content.campaign_approval import sync_campaign_after_approval
+
+        campaign = getattr(post.seed, "marketing_campaign", None)
+        sync_campaign_after_approval(campaign, post.seed)
+
     if intent == "post_now":
         from apps.content.tasks import publish_post
         fire_task(publish_post, str(post.id))
@@ -458,90 +464,82 @@ def approve_post(request, post_id):
 
 
 @login_required
+@require_POST
 def batch_approve(request, seed_id):
-    """Approve ALL posts from a seed at once with the same scheduling intent."""
-    from django.utils import timezone
-    from apps.content.scheduling import (
-        get_next_best_slot,
-        get_quick_schedule_time,
-        get_smart_queue_slot,
+    """Approve ALL posts from a campaign seed (legacy URL — prefer campaign_approve)."""
+    return _handle_campaign_approve(request, seed_id=seed_id)
+
+
+@login_required
+@require_POST
+def campaign_approve(request, campaign_id):
+    """Approve an entire marketing campaign in one action."""
+    from apps.content.models import MarketingCampaign
+
+    visible_user_ids = get_teammate_ids(request.user)
+    campaign = get_object_or_404(
+        MarketingCampaign.objects.select_related("content_seed"),
+        id=campaign_id,
+        user_id__in=visible_user_ids,
+    )
+    return _handle_campaign_approve(request, campaign=campaign)
+
+
+def _handle_campaign_approve(request, *, seed_id=None, campaign=None):
+    from apps.content.campaign_approval import (
+        approval_flash_messages,
+        approve_campaign_posts,
+        sync_campaign_after_approval,
     )
 
-    seed = get_object_or_404(ContentSeed, id=seed_id)
+    if campaign is not None:
+        seed = get_object_or_404(ContentSeed, pk=campaign.content_seed_id)
+    else:
+        seed = get_object_or_404(ContentSeed, id=seed_id)
+        campaign = getattr(seed, "marketing_campaign", None)
+
     visible_user_ids = get_teammate_ids(request.user)
     if seed.user_id not in visible_user_ids:
         raise Http404
-    posts = Post.objects.filter(
-        seed=seed,
-        user_id__in=visible_user_ids,
-        status__in=(Post.Status.DRAFT, Post.Status.PENDING_APPROVAL),
-    ).select_related("social_account")
 
-    if not posts.exists():
+    posts = list(
+        Post.objects.filter(
+            seed=seed,
+            status__in=(Post.Status.DRAFT, Post.Status.PENDING_APPROVAL),
+        ).select_related("social_account")
+    )
+
+    if not posts:
+        return redirect("content:studio")
+
+    blocked, block_msg = client_approval_blocks_publish(campaign, request.user)
+    if blocked:
+        messages.warning(request, block_msg)
         return redirect("content:studio")
 
     intent = request.POST.get("schedule_intent", "next_best")
-    now = timezone.now()
+    exact = request.POST.get("exact_datetime", "") or None
 
-    approved_count = 0
-    skipped_media = 0
-    post_now_ids = []
+    result = approve_campaign_posts(
+        request.user,
+        posts,
+        intent,
+        exact_datetime=exact,
+    )
 
-    for post in posts:
-        if post.needs_media:
-            skipped_media += 1
-            continue
-
-        platform = post.social_account.platform if post.social_account else None
-
-        if intent == "post_now":
-            post.scheduled_at = now
-        elif intent == "next_best":
-            post.scheduled_at = get_next_best_slot(request.user, platform)
-        elif intent == "smart_queue":
-            post.scheduled_at = get_smart_queue_slot(request.user)
-        elif intent.startswith("quick:"):
-            option = intent.split(":", 1)[1]
-            post.scheduled_at = get_quick_schedule_time(option)
-        elif intent == "exact":
-            exact_str = request.POST.get("exact_datetime", "")
-            if exact_str:
-                try:
-                    naive = dt.fromisoformat(exact_str)
-                    post.scheduled_at = timezone.make_aware(
-                        naive, timezone.get_current_timezone()
-                    )
-                except (ValueError, TypeError):
-                    post.scheduled_at = get_next_best_slot(request.user, platform)
-            else:
-                post.scheduled_at = get_next_best_slot(request.user, platform)
-        else:
-            post.scheduled_at = get_next_best_slot(request.user, platform)
-
-        post.status = Post.Status.APPROVED
-        post.save(update_fields=["status", "scheduled_at", "updated_at"])
-        approved_count += 1
-
-        if intent == "post_now":
-            post_now_ids.append(str(post.id))
-
-    if intent == "post_now":
+    if intent == "post_now" and result.post_now_ids:
         from apps.content.tasks import publish_post
-        for post_id in post_now_ids:
+        for post_id in result.post_now_ids:
             fire_task(publish_post, post_id)
 
-    if approved_count == 0 and skipped_media:
-        messages.warning(
-            request,
-            f"No posts approved — {skipped_media} need images before they can go live.",
-        )
-    elif skipped_media:
-        messages.warning(
-            request,
-            f"Approved {approved_count} posts. {skipped_media} skipped — upload images first.",
-        )
-    elif approved_count:
-        messages.success(request, f"All {approved_count} posts approved and scheduled!")
+    sync_campaign_after_approval(campaign, seed)
+
+    for level, text in approval_flash_messages(result):
+        if level == "success":
+            messages.success(request, text)
+        else:
+            messages.warning(request, text)
+
     return redirect("content:studio")
 
 
@@ -579,3 +577,36 @@ def rate_post(request, post_id):
         post.save(update_fields=["user_rating", "updated_at"])
 
     return render(request, "components/_rating_widget.html", {"post": post})
+
+
+@login_required
+@require_POST
+def campaign_request_client_approval(request, campaign_id):
+    """Agency: send campaign to client for sign-off before publish."""
+    from apps.content.models import MarketingCampaign
+    from apps.teams.client_approval import request_client_approval
+
+    visible_user_ids = get_teammate_ids(request.user)
+    campaign = get_object_or_404(
+        MarketingCampaign.objects.select_related("content_seed"),
+        id=campaign_id,
+        user_id__in=visible_user_ids,
+    )
+    request_client_approval(campaign, requested_by=request.user)
+    messages.success(request, "Campaign sent to client for approval.")
+    return redirect("content:studio")
+
+
+@login_required
+@require_POST
+def campaign_client_approve(request, campaign_id):
+    """Client role: approve campaign for agency to publish."""
+    from apps.content.models import MarketingCampaign
+    from apps.teams.client_approval import client_approve_campaign
+
+    campaign = get_object_or_404(MarketingCampaign, id=campaign_id)
+    if client_approve_campaign(campaign, request.user):
+        messages.success(request, "Campaign approved — your agency can publish now.")
+    else:
+        messages.error(request, "You do not have permission to approve this campaign.")
+    return redirect("content:studio")

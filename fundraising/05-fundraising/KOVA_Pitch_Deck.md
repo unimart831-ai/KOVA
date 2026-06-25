@@ -87,14 +87,12 @@ Idea (3 min) → Create → Analyst → Adapt → Publish
 
 | Tier | KES/mo | USD/mo |
 |------|--------|--------|
-| Starter | 499 | 4 |
-| Growth | 1,499 | 11 |
-| Pro | 2,999 | 22 |
+| **Kova** | **1,300** | **10** |
 | Agency | 7,999 | 59 |
 
-- 7-day trial (Starter limits)  
+- 7-day trial (Kova limits, 5 campaigns)  
 - **Growth Partners:** 15–30% referral commissions  
-- Expansion: agency white-label, grants
+- Expansion: agency white-label, campaign add-ons, grants
 
 ---
 
@@ -133,7 +131,7 @@ Idea (3 min) → Create → Analyst → Adapt → Publish
 1. Founder-led + incubator partnerships  
 2. Pilot → case study → LOI pipeline  
 3. **50+ Growth Partners** activation target  
-4. WhatsApp-native SME campaigns (Pro tier)  
+4. WhatsApp-native SME campaigns (Kova plan inbox + marketing caps)  
 5. Demo-first sales — show the Daily Brief
 
 ---
@@ -172,11 +170,11 @@ Idea (3 min) → Create → Analyst → Adapt → Publish
 
 ## Appendix slides (optional)
 
-- **A1:** Plan v2 limits matrix (posts, tokens, WhatsApp caps)  
+- **A1:** Kova plan limits matrix (campaigns, tokens, WhatsApp caps)  
 - **A2:** Platform resilience & content safety  
 - **A3:** Unit economics assumptions  
 - **A4:** Grant / impact parallel track  
 
 ---
 
-*DRAFT — Update Slide 11 metrics monthly · Align all pricing to Plan v2*
+*DRAFT — Update Slide 11 metrics monthly · Align all pricing to Kova (KES 1,300/mo)*

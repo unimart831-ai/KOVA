@@ -1,0 +1,84 @@
+{# WhatsApp-first checkout — primary CTA is always WhatsApp when configured #}
+<div class="offer-actions-card" id="offer-buy-box" aria-label="Checkout">
+  <p class="offer-actions-title">{{ checkout_heading }}</p>
+
+  {% if wa_url %}
+  <a href="{{ wa_url }}" class="shop-btn shop-btn--wa shop-btn--wa-primary shop-btn--lg" target="_blank" rel="noopener">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+    {% if checkout_wa_button_label %}{{ checkout_wa_button_label }}{% else %}Order on WhatsApp{% endif %}
+  </a>
+  <p class="offer-wa-hint">Message {{ brand_name }} directly — confirm size, delivery &amp; payment in chat.</p>
+  {% else %}
+  <p class="shop-wa-unavailable">WhatsApp ordering isn't set up for this shop yet.{% if mpesa_available %} Use M-Pesa below.{% endif %}</p>
+  {% endif %}
+
+  {% if primary_action_url and not wa_url %}
+  <a href="{{ primary_action_url }}" class="shop-btn shop-btn--outline shop-btn--lg"{% if primary_action_external %} target="_blank" rel="noopener"{% endif %}>{{ primary_action_label }}</a>
+  {% endif %}
+
+  {% if mpesa_available and mpesa_pay_url %}
+  <div class="offer-mpesa-section" id="mpesa-checkout" x-data="{ open: false }">
+    <button type="button" @click="open = !open"
+            class="offer-mpesa-toggle"
+            :aria-expanded="open">
+      <span>{% if wa_url %}Prefer to pay with M-Pesa instead?{% else %}Pay with M-Pesa{% endif %}</span>
+      <svg :class="open ? 'rotate-180' : ''" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open" x-collapse class="offer-mpesa-panel">
+      <div x-data="mpesaPay()" x-cloak>
+        <form @submit.prevent="initiate" x-show="state === 'idle' || state === 'error'">
+          {% csrf_token %}
+          <input class="offer-field" type="tel" name="phone" x-model="phone" placeholder="M-Pesa number (07… or 254…)" required autocomplete="tel">
+          <button type="submit" class="shop-btn shop-btn--accent shop-btn--lg" :disabled="submitting">
+            <span x-show="!submitting">{% if product and product.display_price %}Pay {{ product.display_price }} with M-Pesa{% else %}Pay with M-Pesa{% endif %}</span>
+            <span x-show="submitting">Starting payment…</span>
+          </button>
+          <p class="offer-msg-err" x-show="errorMsg" x-text="errorMsg"></p>
+        </form>
+
+        <div x-show="state === 'polling'" class="pay-polling">
+          <div class="pay-spinner"></div>
+          <p class="pay-polling-text">Waiting for M-Pesa confirmation…</p>
+          <p class="pay-polling-sub">Enter your PIN on the prompt sent to your phone.</p>
+          <p class="pay-polling-timer" x-text="timerText"></p>
+        </div>
+
+        <div x-show="state === 'success'" class="pay-result pay-success">
+          <div class="pay-result-icon">&#10003;</div>
+          <p class="pay-result-title">Payment successful!</p>
+          <div class="pay-receipt">
+            <p><strong>Receipt:</strong> <span x-text="receipt.receipt_number"></span></p>
+            <p><strong>Amount:</strong> <span x-text="receipt.currency + ' ' + receipt.amount"></span></p>
+            <template x-if="receipt.product_name">
+              <p><strong>Item:</strong> <span x-text="receipt.product_name"></span></p>
+            </template>
+          </div>
+        </div>
+
+        <div x-show="state === 'failed'" class="pay-result pay-failed">
+          <p class="pay-result-title">Payment was not completed</p>
+          <p class="pay-result-desc" x-text="failReason"></p>
+          <button type="button" class="shop-btn shop-btn--accent" @click="retry">Try again</button>
+        </div>
+
+        <div x-show="state === 'timeout'" class="pay-result pay-timeout">
+          <p class="pay-result-title">Payment timed out</p>
+          <p class="pay-result-desc">We didn't receive a confirmation from M-Pesa. You were not charged.</p>
+          <button type="button" class="shop-btn shop-btn--accent" @click="retry">Try again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% elif product and product.display_price and product.currency != 'KES' and not wa_url %}
+  <p class="offer-contact-note">Contact the seller to complete payment.</p>
+  {% endif %}
+
+  {% if secondary_shop_url and wa_url %}
+  <a href="{{ secondary_shop_url }}" class="offer-secondary-link">View full product page →</a>
+  {% endif %}
+
+  <div class="offer-payment-methods" aria-label="Accepted payment methods">
+    {% if wa_url %}<span class="offer-payment-chip offer-payment-chip--wa">WhatsApp — recommended</span>{% endif %}
+    {% if mpesa_available %}<span class="offer-payment-chip offer-payment-chip--mpesa">M-Pesa</span>{% endif %}
+  </div>
+</div>

@@ -58,12 +58,12 @@
               </p>
             {% elif step.key == "seeds" %}
               <p class="text-sm font-medium {% if step.status == 'completed' %}text-green-700 dark:text-green-400{% elif step.status == 'running' %}text-kova-700 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}">
-                Strategist Agent — Creating content ideas
+                Strategist Agent — Planning campaign angles
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
-                {% if step.status == "completed" %}Content ideas ready based on research findings
-                {% elif step.status == "running" %}Turning research into actionable content ideas...
-                {% elif step.status == "failed" %}Some ideas created — you can add more in the Studio
+                {% if step.status == "completed" %}Campaign proposals ready from research
+                {% elif step.status == "running" %}Turning research into campaign opportunities...
+                {% elif step.status == "failed" %}Some proposals created — add more in Studio
                 {% else %}Waiting for research...{% endif %}
               </p>
             {% elif step.key == "content" %}
@@ -76,7 +76,7 @@
                   {% if has_platforms %}Crafting platform-native content for each connected account...
                   {% else %}Writing draft posts tailored to your brand — connect a platform later to publish{% endif %}
                 {% elif step.status == "failed" %}Some posts created — check the Studio
-                {% else %}Waiting for content ideas...{% endif %}
+                {% else %}Waiting for campaign proposals...{% endif %}
               </p>
             {% elif step.key == "brief" %}
               <p class="text-sm font-medium {% if step.status == 'completed' %}text-green-700 dark:text-green-400{% elif step.status == 'running' %}text-kova-700 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}">
@@ -237,7 +237,7 @@
         </svg>
         <div class="flex-1">
           <p class="text-sm font-medium text-gold-800 dark:text-gold-300">Connect a platform to start publishing</p>
-          <p class="text-xs text-gold-700 dark:text-gold-400 mt-1">Your starter posts are saved as drafts. Connect a social account to assign and schedule them.</p>
+          <p class="text-xs text-gold-700 dark:text-gold-400 mt-1">Your draft campaign posts are saved in Studio. Connect a social account to assign platforms and schedule them.</p>
           <a href="{% url 'platforms:list' %}" class="inline-flex items-center gap-1 mt-2 text-sm font-medium text-kova-600 dark:text-kova-400 hover:text-kova-800 dark:hover:text-kova-300">
             Connect now
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>

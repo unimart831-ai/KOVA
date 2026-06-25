@@ -1,6 +1,6 @@
 # KOVA — Fundraising & Legal Drafts
 
-**Version:** 1.0 · **June 2026**  
+**Version:** 1.1 · **June 2026**  
 **Status:** Drafts for founder review — not executed legal documents
 
 ---
@@ -18,7 +18,7 @@ These materials are **drafts for discussion only**. They are **not legal, tax, o
 | `01-corporate/` | Incorporation placeholders (CR12, resolutions) — populate after BRS registration |
 | `02-legal/` | Founders agreement, IP assignment, NDA templates; policy drafts |
 | `03-financial/` | Cap table template, financial projections template |
-| `04-commercial/` | Pricing reference (Plan v2) — see `docs/PLAN_V2_SPEC.md` |
+| `04-commercial/` | Pricing reference — see `docs/KOVA_BUILD_CHECKLIST.md` |
 | `05-fundraising/` | Executive summary, one-pager, pitch deck, investor FAQ, use of funds, data room index |
 | `06-grants/` | Grant impact narrative template |
 | `pdf/` | Generated PDFs (mirror of markdown sources) |
@@ -43,18 +43,19 @@ These materials are **drafts for discussion only**. They are **not legal, tax, o
 
 ---
 
-## Pricing source of truth (Plan v2)
+## Pricing source of truth (Kova single plan)
 
-All fundraising drafts use **Plan v2** pricing (May 2026):
+All fundraising drafts use **Kova** public pricing (June 2026):
 
-| Tier | KES/mo | USD/mo |
-|------|--------|--------|
-| Starter (Jipange) | 499 | 4 |
-| Growth (Kazi) | 1,499 | 11 |
-| Pro (Biashara) | 2,999 | 22 |
-| Agency (Wakala) | 7,999 | 59 |
+| Tier | KES/mo | USD/mo | Notes |
+|------|--------|--------|-------|
+| **Kova** | **1,300** | **10** | Single public plan — 30 campaigns/mo, M-Pesa + Stripe |
+| Agency (Wakala) | 7,999 | 59 | Sales-approved only |
+| Starter / Growth / Pro | — | — | Legacy grandfathered tiers (not public checkout) |
 
-Authoritative spec: `docs/PLAN_V2_SPEC.md`, `apps/billing/models.py`.
+**Trial:** 7 days with Kova feature limits and **5 campaigns** (`TRIAL_CAMPAIGN_LIMIT`).
+
+Authoritative spec: `docs/KOVA_BUILD_CHECKLIST.md`, `apps/billing/models.py` (`PLAN_LIMITS`).
 
 ---
 
@@ -96,7 +97,7 @@ Print-ready HTML + PDF: [`../marketing/brochures/`](../marketing/brochures/) —
 - [KOVA Business Proposal](../docs/KOVA_BUSINESS_PROPOSAL.md)
 - [KOVA Funding Plan](../docs/KOVA_FUNDING_PLAN.md)
 - [KOVA Founder Pitch](../docs/KOVA_FOUNDER_PITCH.md)
-- [Plan v2 Spec](../docs/PLAN_V2_SPEC.md)
+- [KOVA Build Checklist](../docs/KOVA_BUILD_CHECKLIST.md)
 
 ---
 

@@ -43,7 +43,7 @@ Use this index for Google Drive, Notion, or DocSend. Status: **Not started → D
 | MSA / contractor templates | 2 | Not started | — | |
 | DPA template | 1 | Draft | `templates/pages/dpa.html` | Live on platform |
 | Privacy Policy | 1 | Draft | `fundraising/02-legal/KOVA_Privacy_Policy_DRAFT.md` | Align with live `/privacy/` |
-| Terms of Service | 1 | Draft | `fundraising/02-legal/KOVA_Terms_of_Service_DRAFT.md` | Plan v2 tiers |
+| Terms of Service | 1 | Draft | `fundraising/02-legal/KOVA_Terms_of_Service_DRAFT.md` | Kova plan tiers |
 | Acceptable Use | 1 | Final | `templates/pages/acceptable_use.html` | Export PDF |
 | Cookie Policy | 1 | Final | `templates/pages/cookies.html` | Export PDF |
 | ODPC registration | 1 | Not started | — | DPA 2019 |
@@ -55,7 +55,7 @@ Use this index for Google Drive, Notion, or DocSend. Status: **Not started → D
 | Document | Tier | Status | Location | Notes |
 |----------|------|--------|----------|-------|
 | Use of funds | 1 | Draft | `fundraising/05-fundraising/KOVA_Use_of_Funds.md` | |
-| 3-year financial model | 1 | Draft | `fundraising/03-financial/KOVA_Financial_Projections_TEMPLATE.md` | Plan v2 ARPU |
+| 3-year financial model | 1 | Draft | `fundraising/03-financial/KOVA_Financial_Projections_TEMPLATE.md` | Kova ARPU (KES 1,300) |
 | Financial audit (internal) | 1 | Final | `docs/KOVA_FINANCIAL_AUDIT.md` | Not statutory |
 | Funding plan (full) | 1 | Final | `docs/KOVA_FUNDING_PLAN.md` | |
 | Bank statements | 2 | Not started | — | Corporate account required |
@@ -68,7 +68,7 @@ Use this index for Google Drive, Notion, or DocSend. Status: **Not started → D
 | Document | Tier | Status | Location | Notes |
 |----------|------|--------|----------|-------|
 | Architecture overview | 1 | Draft | `docs/system-maps/SYSTEM_AUDIT_AND_FLOWS.md` | |
-| Plan v2 spec | 1 | Final | `docs/PLAN_V2_SPEC.md` | Pricing source of truth |
+| Build checklist | 1 | Final | `docs/KOVA_BUILD_CHECKLIST.md` | Pricing source of truth |
 | Platform resilience | 1 | Draft | `docs/PLATFORM_RESILIENCE.md` | |
 | Content safety | 1 | Final | `docs/CONTENT_SAFETY.md` | |
 | Security summary | 1 | Not started | — | Pull from prod settings |
@@ -80,7 +80,7 @@ Use this index for Google Drive, Notion, or DocSend. Status: **Not started → D
 
 | Document | Tier | Status | Location | Notes |
 |----------|------|--------|----------|-------|
-| Pricing (Plan v2) | 1 | Final | `docs/PLAN_V2_SPEC.md`, `docs/KOVA_PLANS_GUIDE.md` | KES 499 / 1499 / 2999 / 7999 |
+| Pricing (Kova) | 1 | Final | `docs/KOVA_BUILD_CHECKLIST.md`, `apps/billing/models.py` | KES 1,300 / USD 10 |
 | Business proposal | 1 | Draft | `docs/KOVA_BUSINESS_PROPOSAL.md` | Update pricing refs |
 | GTM playbook | 1 | Draft | `docs/FIRST_50_CUSTOMERS_PLAYBOOK.md` | |
 | TEST_BUSINESSES pilot | 1 | Draft | `docs/TEST_BUSINESSES.md` | 14 verticals |

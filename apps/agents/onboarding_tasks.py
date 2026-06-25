@@ -34,6 +34,27 @@ ONBOARDING_STEPS = {
 }
 
 
+def _enrich_research_with_competitor_hints(user, research: dict) -> dict:
+    """Add competitor landscape hints for welcome brief."""
+    from apps.analytics.models import Competitor
+
+    profile = getattr(user, "profile", None)
+    industry = getattr(profile, "industry", "") or "your industry"
+    tracked = list(
+        Competitor.objects.filter(user=user, is_active=True).values_list("name", flat=True)[:5]
+    )
+    research = dict(research or {})
+    if tracked:
+        research["competitor_hints"] = tracked
+        research["competitor_landscape"] = f"Tracking {len(tracked)} competitor(s): {', '.join(tracked)}."
+    else:
+        research["competitor_landscape"] = (
+            f"In {industry.replace('_', ' ')}, watch local leaders on Instagram and TikTok — "
+            "add competitors in Analytics to unlock gap analysis."
+        )
+    return research
+
+
 # If the intelligence task hasn't finished within this window, assume Celery
 # dropped the job or it wedged. Surface a stuck state so the user can retry
 # instead of polling forever.
@@ -119,6 +140,7 @@ def run_onboarding_intelligence(user_id):
     try:
         from apps.agents.research_agent import discover_trends
         research = discover_trends(user)
+        research = _enrich_research_with_competitor_hints(user, research)
         research_action.status = AgentAction.ActionStatus.COMPLETED
         research_action.output_data = research
         research_action.save(update_fields=["status", "output_data", "updated_at"])
@@ -138,7 +160,7 @@ def run_onboarding_intelligence(user_id):
         user=user,
         agent_type="strategist",
         action_type=ONBOARDING_STEPS["seeds"],
-        description="Creating starter content ideas from research",
+        description="Planning onboarding campaign proposals from research",
     )
     try:
         seeds = _create_starter_seeds(user, research)
@@ -159,7 +181,7 @@ def run_onboarding_intelligence(user_id):
         user=user,
         agent_type="create",
         action_type=ONBOARDING_STEPS["content"],
-        description="Generating platform-optimized posts from your ideas",
+        description="Building draft posts for your first campaign",
     )
     try:
         from apps.platforms.models import SocialAccount
@@ -484,7 +506,7 @@ def _generate_welcome_brief(user, research, onboarding_result):
         "This is NOT a daily update. This is a strategic welcome that:\n"
         "1. Shows you've already done research on their industry\n"
         "2. Summarizes what you discovered and why it matters\n"
-        "3. Explains the starter content you've prepared and the strategic thinking behind it\n"
+        "3. Explains the first campaign drafts you've prepared and the strategic thinking behind them\n"
         "4. Gives a clear 7-day roadmap for building their presence\n"
         "5. Makes them feel like they've hired a smart agency, not installed a tool\n\n"
         "Write in a confident, warm, strategic tone. Be specific — reference actual "
@@ -492,7 +514,7 @@ def _generate_welcome_brief(user, research, onboarding_result):
         "Respond in JSON with these keys:\n"
         '"summary": 4-6 sentences — the main welcome message + what you found + what\'s ready\n'
         '"trending_topics": top 5 trending topics from research (list of {topic, relevance, urgency, suggested_angle, platforms})\n'
-        '"suggested_posts": 3-5 content ideas with {idea, reasoning, platform} — grounded in the research\n'
+        '"suggested_posts": 3-5 campaign opportunities with {idea, reasoning, platform} — grounded in the research\n'
         '"performance_highlight": a strategic observation about their industry or niche opportunity\n'
         '"engagement_summary": advice on engaging with their audience in the first week\n'
         '"agent_summary": what each of the 6 agents will do for them this week\n'
@@ -504,7 +526,7 @@ def _generate_welcome_brief(user, research, onboarding_result):
     prompt = (
         f"Welcome briefing for {company} ({industry}).\n\n"
         f"Research findings: {json.dumps(research, default=str)[:3000]}\n\n"
-        f"We've created {seeds_created} content ideas and generated {posts_created} platform posts.\n\n"
+        f"We've prepared {seeds_created} campaign proposals and generated {posts_created} draft posts.\n\n"
         "Compose a welcome brief that shows the user their AI agency is already working. "
         "Reference specific trends and opportunities from the research. Make it feel personal and strategic."
     )

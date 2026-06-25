@@ -28,7 +28,7 @@ This Letter of Intent ("**LOI**") outlines the intended scope of a pilot. It is 
 | Industry | **[e.g. salon_beauty, fashion_beauty, food_restaurant]** |
 | Primary contact | **[NAME, TITLE]** |
 | Email / phone | **[EMAIL] / [PHONE]** |
-| Plan tier (proposed) | **[Starter / Growth / Pro / Agency]** |
+| Plan tier (proposed) | **[Kova / Agency / legacy tier]** |
 | Primary platforms | **[WhatsApp, Instagram, Facebook, etc.]** |
 
 ---

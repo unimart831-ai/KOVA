@@ -6,7 +6,7 @@
 
 ## 1. Organisation summary
 
-[COMPANY LEGAL NAME] operates **KOVA** (Kova Agent), a Business Intelligence Operating System that helps African MSMEs grow revenue through AI-powered social media, lead capture, and email marketing — from **KES 499/month** with **M-Pesa** payments.
+[COMPANY LEGAL NAME] operates **KOVA** (Kova Agent), a Business Intelligence Operating System that helps African MSMEs grow revenue through AI-powered social media, lead capture, and email marketing — from **KES 1,300/month** with **M-Pesa** payments.
 
 | Field | Detail |
 |-------|--------|
@@ -65,7 +65,7 @@ Pilot design: **14 TEST_BUSINESSES** vertical matrix (`docs/TEST_BUSINESSES.md`)
 |-----|--------------|
 | **SDG 8** — Decent work & economic growth | MSME revenue, partner income via Growth Partner Program |
 | **SDG 9** — Industry & innovation | Locally built AI infrastructure; reduces dependency on Western SaaS |
-| **SDG 10** — Reduced inequalities | Accessible pricing (KES 499–7,999); M-Pesa inclusion |
+| **SDG 10** — Reduced inequalities | Accessible pricing (KES 1,300 public plan; Agency by approval); M-Pesa inclusion |
 
 ---
 
@@ -101,7 +101,7 @@ Pilot design: **14 TEST_BUSINESSES** vertical matrix (`docs/TEST_BUSINESSES.md`)
 
 ## 9. Sustainability
 
-Post-grant, KOVA sustains impact through **subscription revenue** (Plan v2) and **Growth Partners**. Target: grant cohort converts to paid plans at **[X]%** by month 6.
+Post-grant, KOVA sustains impact through **subscription revenue** (Kova plan at KES 1,300/mo) and **Growth Partners**. Target: grant cohort converts to paid plans at **[X]%** by month 6.
 
 ---
 

@@ -10,6 +10,7 @@ urlpatterns = [
     path("insights/<uuid:pk>/action/", views.insight_action, name="insight_action"),
     # Revenue Attribution
     path("revenue/", views.revenue_dashboard, name="revenue"),
+    path("revenue/campaign/<uuid:campaign_id>/", views.campaign_revenue_detail, name="campaign_revenue"),
     path("revenue/export/assets/", views.export_asset_breakdown_csv, name="export_asset_breakdown"),
     path("revenue/shopify/connect/", views.shopify_connect, name="shopify_connect"),
     path("revenue/shopify/oauth/begin/", views.shopify_oauth_begin, name="shopify_oauth_begin"),

@@ -28,7 +28,7 @@ The Parties wish to explore a potential **investment, partnership, pilot, or com
 
 (a) Business plans, financial models, cap tables, fundraising terms;  
 (b) Product architecture, source code, roadmaps, security practices;  
-(c) Customer lists, pilot data, pricing (including Plan v2 tiers), and metrics;  
+(c) Customer lists, pilot data, pricing (including Kova plan tiers), and metrics;  
 (d) AI prompts, agent logic, and operational procedures;  
 (e) Any information marked "Confidential" or reasonably understood to be confidential.
 

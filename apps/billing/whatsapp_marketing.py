@@ -1,4 +1,4 @@
-"""WhatsApp marketing conversation caps — Plan v2.
+"""WhatsApp marketing conversation caps — Kova plan.
 
 Counts outbound *marketing* template sends per calendar month. Utility templates
 (e.g. booking confirmations) and authentication templates do NOT count toward the cap.

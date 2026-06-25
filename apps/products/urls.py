@@ -7,6 +7,7 @@ app_name = "products"
 urlpatterns = [
     path("", views.product_list, name="list"),
     path("add/", views.product_add, name="add"),
+    path("assets/intake/", views.asset_intake, name="asset_intake"),
     path("import/", views.product_import, name="import"),
     path("catalog-showcase/", views.catalog_showcase, name="catalog_showcase"),
     path("catalog-showcase/<uuid:seed_id>/status/", views.catalog_showcase_status, name="catalog_showcase_status"),

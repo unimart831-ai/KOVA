@@ -63,7 +63,7 @@ def content_studio(request):
 
     active_seeds = request.user.content_seeds.filter(
         status__in=["new", "processing"]
-    )[:10]
+    ).select_related("marketing_campaign")[:10]
     failed_seeds = request.user.content_seeds.filter(status="failed")[:5]
 
     connected_platforms = list(
@@ -89,9 +89,13 @@ def content_studio(request):
     plan_limit_notice = None
     if at_seed_limit:
         plan_limit_notice = (
-            f"You've used all {seed_usage['max']} content seeds this month "
+            f"You've used all {seed_usage['max']} marketing campaigns this month "
             f"({seed_usage['plan_label']})."
         )
+
+    from apps.products.asset_queries import studio_assets_for_user
+
+    studio_assets = studio_assets_for_user(request.user, limit=8)
 
     return render(request, "content/studio.html", {
         "seed_groups": seed_groups,
@@ -120,6 +124,7 @@ def content_studio(request):
         "page_title": "Studio",
         "generating_seed_id": request.GET.get("generating", ""),
         "business_model": getattr(profile, "business_model", ""),
+        "studio_assets": studio_assets,
     })
 
 
@@ -133,7 +138,11 @@ def _get_studio_posts(user, status_filter=None, platform_filter=None, format_fil
     posts = Post.objects.filter(
         user_id__in=visible_user_ids,
         status__in=filter_statuses,
-    ).select_related("social_account", "seed", "seed__product", "user").order_by("-created_at")
+    ).select_related(
+        "social_account", "seed", "seed__product",
+        "seed__marketing_campaign", "seed__marketing_campaign__business_asset",
+        "user",
+    ).order_by("-created_at")
 
     if platform_filter:
         posts = posts.filter(platform=platform_filter)
@@ -167,30 +176,55 @@ def _get_studio_posts(user, status_filter=None, platform_filter=None, format_fil
 
 
 def _enrich_seed_group(seed_obj, seed_posts):
-    """Attach batch-approve metadata and value hints to a seed group."""
+    """Attach batch-approve metadata and campaign context to a seed group."""
+    from apps.content.campaigns import campaign_display_label
+    from apps.content.campaign_pages import campaign_page_path
+    from apps.content.campaign_bundle import bundle_display_for_studio
+    from apps.content.campaign_approval import campaign_approval_summary
+    from apps.content.campaign_qa import audit_campaign_qa, qa_display_for_studio
+    from apps.content.campaign_attribution import campaign_revenue_snapshot
     from apps.content.post_labels import summarize_showcase_types
 
     pending_statuses = ("pending_approval", "draft")
-    approvable = [
-        p for p in seed_posts
-        if p.status in pending_statuses and not p.needs_media
-    ]
-    media_blocked = [
-        p for p in seed_posts
-        if p.status in pending_statuses and p.needs_media
-    ]
-    # Rough manual-equivalent minutes: ~35 min per platform-native post
     minutes_saved = len(seed_posts) * 35
+    campaign = getattr(seed_obj, "marketing_campaign", None)
+    proposal = (campaign.proposal_meta if campaign else None) or seed_obj.blueprint.get("proposal") or {}
+    formats = proposal.get("suggested_formats") or seed_obj.blueprint.get("suggested_formats") or []
+    connected_platforms = list(
+        seed_obj.user.social_accounts.filter(is_active=True).values_list("platform", flat=True)
+    )
+    bundle = bundle_display_for_studio(seed_posts, connected_platforms)
+    approval = campaign_approval_summary(seed_posts, bundle=bundle)
+    qa_report = (
+        audit_campaign_qa(campaign, seed_posts, seed_obj.user)
+        if campaign and seed_posts
+        else None
+    )
+    qa = qa_display_for_studio(qa_report) if qa_report else None
+    revenue = campaign_revenue_snapshot(campaign, seed_obj.user) if campaign else None
+
     return {
         "seed": seed_obj,
+        "campaign": campaign,
+        "campaign_title": campaign.title if campaign else seed_obj.idea.split("\n")[0][:200],
+        "campaign_objective": campaign.get_objective_display() if campaign else "",
+        "campaign_quality": qa_report.overall if qa_report else (campaign.quality_score if campaign else None),
+        "campaign_url": campaign_page_path(campaign) if campaign else "",
+        "campaign_formats": formats,
+        "campaign_rationale": (proposal.get("rationale") or "")[:300],
         "posts": seed_posts,
         "platform_count": len(seed_posts),
         "all_pending": all(p.status in pending_statuses for p in seed_posts),
-        "can_batch_approve": len(approvable) > 0,
-        "approvable_count": len(approvable),
-        "media_blocked_count": len(media_blocked),
+        "can_batch_approve": approval["can_approve_campaign"],
+        "approvable_count": approval["approvable_count"],
+        "media_blocked_count": approval["media_blocked_count"],
         "minutes_saved_estimate": minutes_saved,
         "showcase_summary": summarize_showcase_types(seed_posts),
+        "bundle": bundle,
+        "approval": approval,
+        "qa": qa,
+        "revenue": revenue,
+        "display_label": campaign_display_label(campaign) if campaign else seed_obj.idea[:80],
     }
 
 
@@ -285,6 +319,10 @@ def submit_seed(request):
         seed.generation_log = []
         seed.save()
 
+        from apps.content.campaigns import ensure_campaign_for_seed
+
+        ensure_campaign_for_seed(seed, title=seed.idea[:200], objective="awareness")
+
         from apps.agents.create_agent import log_gen_step
         log_gen_step(seed, "queued", "Queued your idea.", seed.idea[:120])
 
@@ -357,6 +395,9 @@ def voice_to_seed(request):
             notes=request.POST.get("notes", ""),
             target_platforms=platforms_list,
         )
+        from apps.content.campaigns import ensure_campaign_for_seed
+
+        ensure_campaign_for_seed(seed, title=text[:200], objective="awareness")
         fire_task(generate_from_seed, str(seed.id))
 
         return JsonResponse({

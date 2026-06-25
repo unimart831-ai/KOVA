@@ -2,13 +2,13 @@
 
 **[COMPANY LEGAL NAME]** · Confidential · [DATE]
 
-Frequently asked questions for angels, Africa-focused VCs, accelerators, and strategic partners. Figures align with **Plan v2** pricing unless noted.
+Frequently asked questions for angels, Africa-focused VCs, accelerators, and strategic partners. Figures align with **Kova** pricing (KES 1,300/mo) unless noted.
 
 ---
 
 ## 1. What is KOVA in one sentence?
 
-KOVA is a **Business Intelligence Operating System** — six AI agents plus conversion tools (links, leads, email, WhatsApp) that run an SME's digital marketing for as little as **KES 499/month**, with **M-Pesa** billing.
+KOVA is a **Business Intelligence Operating System** — six AI agents plus conversion tools (links, leads, email, WhatsApp) that run an SME's digital marketing for **KES 1,300/month**, with **M-Pesa** billing.
 
 ---
 
@@ -46,14 +46,14 @@ See `KOVA_Use_of_Funds.md`. Summary at ~USD 200K baseline:
 
 ## 5. What is your pricing and why will SMEs pay?
 
-**Plan v2 (May 2026):**
+**Kova plan (June 2026):**
 
 | Tier | KES/mo | USD/mo |
 |------|--------|--------|
-| Starter | 499 | 4 |
-| Growth | 1,499 | 11 |
-| Pro | 2,999 | 22 |
+| **Kova** | **1,300** | **10** |
 | Agency | 7,999 | 59 |
+
+**Trial:** 7 days, Kova limits, 5 campaigns.
 
 **Value anchor:** A part-time social manager costs **KES 30,000+/month**; Western tool stacks often exceed **USD 50–200/month** without AI or conversion. KOVA replaces multiple tools at African price points with local payment rails.
 
@@ -75,7 +75,7 @@ Update specific user/revenue counts in `[METRICS AS OF DATE]` before each invest
 
 **Primary ICP:** Kenyan SMEs and solopreneurs who depend on social for discovery but cannot hire a marketing team.
 
-**Secondary:** Creative/marketing agencies (Agency tier), NGOs (Growth), campus commerce and fintech (Growth/Pro).
+**Secondary:** Creative/marketing agencies (Agency tier), NGOs, campus commerce and fintech (Kova plan).
 
 Beachhead playbook: `docs/FIRST_50_CUSTOMERS_PLAYBOOK.md`.
 
@@ -162,10 +162,10 @@ See `03-financial/KOVA_Cap_Table_TEMPLATE.csv`. Current draft assumes **[FOUNDER
 
 | Metric | Planning assumption (validate in model) |
 |--------|----------------------------------------|
-| Blended ARPU | KES 1,200–1,500/mo (Growth-weighted mix) |
+| Blended ARPU | KES ~1,300/mo (Kova plan) |
 | Gross margin | 70–85% at scale (LLM largest COGS) |
 | CAC (founder-led) | Low in Year 1; rises with paid GTM |
-| Payback | <6 months target on Growth tier |
+| Payback | <6 months target on Kova plan |
 | Churn | **[X]% monthly — measure from pilot]** |
 
 Full model: `03-financial/KOVA_Financial_Projections_TEMPLATE.md`, `docs/KOVA_FINANCIAL_AUDIT.md`.

@@ -21,10 +21,32 @@ def generate_branded_carousel_urls(
 ) -> list[str]:
   """
   Try Bannerbear branded slides; fall back to local generate_product_carousel.
+  Uses Campaign CarouselStrategy when available on the post's seed.
   """
   from apps.agents.carousel import generate_product_carousel
+  from apps.media.carousel_strategy import CarouselStrategy
 
   plan = None
+  strategy = None
+  try:
+    if getattr(post, "seed_id", None):
+      blueprint = getattr(post.seed, "blueprint", None) or {}
+      cs = blueprint.get("carousel_strategy")
+      if not cs and getattr(post.seed, "marketing_campaign", None):
+        cs = (post.seed.marketing_campaign.proposal_meta or {}).get("carousel_strategy")
+      strategy = CarouselStrategy.from_dict(cs)
+  except Exception:
+    pass
+
+  if strategy and strategy.slides:
+    from apps.media.carousel_renderer import render_carousel_from_strategy
+
+    urls = render_carousel_from_strategy(
+      post, product, strategy, key_features=key_features, analysis=analysis,
+    )
+    if urls:
+      return urls
+
   try:
     asset = product.business_asset
     plan = MediaPlan.from_metadata((asset.metadata or {}).get("media_plan"))

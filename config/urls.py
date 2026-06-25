@@ -13,7 +13,9 @@ from apps.products.commerce_views import (
     public_commerce_link,
     public_commerce_pay,
     public_shop_index,
+    public_whatsapp_order,
 )
+from apps.content.views.campaign_pages import public_campaign_page
 from apps.products.commerce_sitemap import commerce_sitemap_xml, robots_txt
 from apps.partners.views import referral_redirect
 from apps.platforms.facebook_data_deletion_views import (
@@ -30,11 +32,20 @@ def landing_page(request):
     if request.user.is_authenticated:
         return redirect("brief:home")
     from apps.accounts.product_voice import marketing_voice_context
-    from apps.billing.models import get_plan_limits, get_public_plan_limits
+    from apps.billing.models import (
+        TRIAL_CAMPAIGN_LIMIT,
+        get_campaign_addon_packs,
+        get_plan_limits,
+        get_public_plan_limits,
+    )
+    kova = get_plan_limits("kova")
     return render(request, "pages/landing.html", {
         "all_plans": get_public_plan_limits(),
+        "kova_plan": kova,
+        "campaign_addons": get_campaign_addon_packs(),
         "agency_plan": get_plan_limits("agency"),
-        "trial_days": get_plan_limits("starter")["trial_days"],
+        "trial_days": kova.get("trial_days", 7),
+        "trial_campaigns": TRIAL_CAMPAIGN_LIMIT,
         **marketing_voice_context(),
     })
 
@@ -176,6 +187,16 @@ urlpatterns = [
         "shop/payment/<uuid:payment_id>/status/",
         commerce_payment_status,
         name="commerce_payment_status",
+    ),
+    path(
+        "c/<slug:campaign_slug>/",
+        public_campaign_page,
+        name="public_campaign",
+    ),
+    path(
+        "commerce/wa-order/",
+        public_whatsapp_order,
+        name="public_whatsapp_order",
     ),
     path("whatsapp/", include("apps.whatsapp.urls")),
     # QR codes + walk-in attribution (Phase 2 W5-6). Mounted at root

@@ -131,17 +131,29 @@ def shopify_order_webhook(request):
                 user=store.user, name__iexact=product_title, is_active=True,
             ).first()
 
+    # Try to match campaign via utm_campaign slug
+    campaign = None
+    if utm_campaign:
+        from apps.content.campaign_attribution import resolve_marketing_campaign
+
+        campaign = resolve_marketing_campaign(
+            store.user, utm_campaign=utm_campaign, post=post, product=product,
+        )
+
     # Deduplicate: don't create conversion if order_id already exists
     if Conversion.objects.filter(
         user=store.user, event_name=f"shopify_order_{order_id}",
     ).exists():
         return HttpResponse("OK (duplicate)", status=200)
 
-    conversion = Conversion.objects.create(
-        user=store.user,
+    from apps.content.campaign_attribution import create_attributed_conversion
+
+    create_attributed_conversion(
+        store.user,
+        Conversion.ConversionType.SALE,
         post=post,
         product=product,
-        conversion_type=Conversion.ConversionType.SALE,
+        campaign=campaign,
         revenue=total_price,
         event_name=f"shopify_order_{order_id}",
         utm_source=utm_source,
@@ -161,6 +173,9 @@ def shopify_order_webhook(request):
             "referring_site": referring_site,
         },
     )
+    conversion = Conversion.objects.filter(
+        user=store.user, event_name=f"shopify_order_{order_id}",
+    ).order_by("-created_at").first()
 
     # Update store stats
     store.orders_tracked += 1
@@ -308,12 +323,21 @@ def mpesa_commerce_callback(request):
                         product.stock_status = Product.StockStatus.LOW_STOCK
                         product.save(update_fields=["stock_status"])
 
-        Conversion.objects.create(
-            user=commerce_payment.user,
+        from apps.content.campaign_attribution import create_attributed_conversion, resolve_marketing_campaign
+
+        campaign = resolve_marketing_campaign(
+            commerce_payment.user,
             product=commerce_payment.product,
-            conversion_type=Conversion.ConversionType.SALE,
+            metadata={"source": commerce_payment.source},
+        )
+        create_attributed_conversion(
+            commerce_payment.user,
+            Conversion.ConversionType.SALE,
+            product=commerce_payment.product,
+            campaign=campaign,
             revenue=amount,
             event_name=f"mpesa_{receipt}",
+            utm_campaign=campaign.slug if campaign else "",
             metadata={
                 "source": commerce_payment.source,
                 "receipt_number": receipt,
@@ -337,6 +361,12 @@ def mpesa_commerce_callback(request):
                 )
             except Exception:
                 logger.exception("WhatsApp commerce receipt failed for %s", checkout_id)
+
+        try:
+            from apps.products.commerce_wa_orders import notify_seller_mpesa_order
+            notify_seller_mpesa_order(commerce_payment)
+        except Exception:
+            logger.exception("Seller M-Pesa notification failed for %s", checkout_id)
 
         logger.info(
             "M-Pesa commerce payment tracked: %s KES %s product=%s",

@@ -614,7 +614,7 @@ flowchart TB
             "Trial: 7-day Starter limits on finish_onboarding (MPESA_TRIAL_DAYS setting).",
             "M-Pesa: /billing/mpesa/checkout/ → STK Push → webhook → activate_subscription.",
             "Stripe: card checkout with trial for international users.",
-            "PLAN_LIMITS in billing/models.py — authoritative Plan v2 caps (KOVA_PLANS_GUIDE.md).",
+            "PLAN_LIMITS in billing/models.py — authoritative caps (KOVA_BUILD_CHECKLIST.md).",
             "PlanEnforcementMiddleware gates: engage, whatsapp, memes, competitors, teams, posts/seeds/tokens.",
             "100% of any cap = hard block with upgrade message; downgrade pauses scheduled posts.",
             "Agency tier sales-only via AgencySalesInquiry contact form.",
@@ -862,7 +862,7 @@ flowchart LR
         print_order=28,
         summary="Public Agency/Wakala contact form → AgencySalesInquiry → admin review and status workflow.",
         audit=[
-            "Agency plan is sales-only (not public checkout) — KOVA_PLANS_GUIDE.md.",
+            "Agency plan is sales-only (not public checkout) — KOVA_BUILD_CHECKLIST.md.",
             "Public form creates AgencySalesInquiry with status NEW.",
             "Admin: /dashboard/billing/sales-inquiries/ — list, filter, staff notes.",
             "Status workflow: NEW → CONTACTED → QUALIFIED → CLOSED/WON/LOST.",

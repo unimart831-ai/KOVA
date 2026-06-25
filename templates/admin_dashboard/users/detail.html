@@ -40,9 +40,10 @@
       <form method="post" action="{% url 'admin_dashboard:user_change_plan' pk=target_user.pk %}" class="flex items-center gap-1">
         {% csrf_token %}
         <select name="plan" class="text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-          <option value="starter" {% if profile.plan == "starter" %}selected{% endif %}>Starter</option>
-          <option value="growth" {% if profile.plan == "growth" %}selected{% endif %}>Growth</option>
-          <option value="pro" {% if profile.plan == "pro" %}selected{% endif %}>Pro</option>
+          <option value="kova" {% if profile.plan == "kova" %}selected{% endif %}>Kova</option>
+          <option value="starter" {% if profile.plan == "starter" %}selected{% endif %}>Starter (legacy)</option>
+          <option value="growth" {% if profile.plan == "growth" %}selected{% endif %}>Growth (legacy)</option>
+          <option value="pro" {% if profile.plan == "pro" %}selected{% endif %}>Pro (legacy)</option>
           <option value="agency" {% if profile.plan == "agency" %}selected{% endif %}>Agency</option>
         </select>
         <button type="submit" class="px-2 py-1 text-xs font-medium text-white bg-kova-600 hover:bg-kova-700 rounded transition-colors">Set Plan</button>

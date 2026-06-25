@@ -52,15 +52,13 @@ def consultation_url_for_user(user) -> str:
         pass
 
     profile = getattr(user, "profile", None)
-    if profile and profile.page_slug:
-        from django.conf import settings
-        from django.urls import reverse
+    if profile:
+        from apps.products.commerce_canonical import canonical_business_url
 
-        site = getattr(settings, "SITE_URL", "").rstrip("/")
-        try:
-            return f"{site}{reverse('public_page', kwargs={'slug': profile.page_slug})}"
-        except Exception:
-            return f"{site}/k/{profile.page_slug}/"
+        url = canonical_business_url(user, profile)
+        if url:
+            return url
+
     return ""
 
 

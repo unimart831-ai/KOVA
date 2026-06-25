@@ -42,13 +42,17 @@ class BillingEvent(models.Model):
 
 
 class MpesaPayment(models.Model):
-    """Tracks M-Pesa STK Push payments for subscriptions."""
+    """Tracks M-Pesa STK Push payments for subscriptions and campaign add-ons."""
 
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"          # STK push sent, waiting for user
         COMPLETED = "completed", "Completed"    # User confirmed, payment received
         FAILED = "failed", "Failed"             # User canceled or timeout
         EXPIRED = "expired", "Expired"          # No callback after timeout
+
+    class PaymentKind(models.TextChoices):
+        SUBSCRIPTION = "subscription", "Subscription"
+        CAMPAIGN_ADDON = "campaign_addon", "Campaign add-on"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
@@ -64,7 +68,17 @@ class MpesaPayment(models.Model):
     # Payment details
     phone_number = models.CharField(max_length=15)  # 254XXXXXXXXX
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    plan_tier = models.CharField(max_length=20)      # starter, growth, pro, agency
+    plan_tier = models.CharField(max_length=20)      # starter, growth, pro, agency, kova
+    payment_kind = models.CharField(
+        max_length=20,
+        choices=PaymentKind.choices,
+        default=PaymentKind.SUBSCRIPTION,
+    )
+    addon_pack_id = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="boost, scale, or burst when payment_kind=campaign_addon",
+    )
     currency = models.CharField(max_length=3, default="KES")
 
     # Status tracking
@@ -91,17 +105,106 @@ class MpesaPayment(models.Model):
     def __str__(self):
         return f"M-Pesa {self.amount} KES → {self.user} ({self.get_status_display()})"
 
+    @property
+    def is_campaign_addon(self) -> bool:
+        return self.payment_kind == self.PaymentKind.CAMPAIGN_ADDON
+
+
+class CampaignAddonPurchase(models.Model):
+    """Audit record when a user buys extra campaign quota via M-Pesa."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="campaign_addon_purchases",
+    )
+    mpesa_payment = models.OneToOneField(
+        MpesaPayment,
+        on_delete=models.PROTECT,
+        related_name="addon_purchase",
+    )
+    pack_id = models.CharField(max_length=20)
+    campaigns_granted = models.PositiveIntegerField()
+    bonus_before = models.PositiveIntegerField(default=0)
+    bonus_after = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["pack_id", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"+{self.campaigns_granted} campaigns ({self.pack_id}) → {self.user_id}"
+
 
 # ─── Plan Limits ─────────────────────────────────────────────────────────────
 # Defines what each plan tier can do. Used by middleware and views.
 #
-# Public pricing: 3 tiers (starter / growth / pro). Agency is sales-approved only.
-# New users get a 7-day trial with Starter+ limits — see TRIAL_FEATURE_PLAN.
-# Plan v2 spec: docs/PLAN_V2_SPEC.md
+# Public pricing: single Kova plan (KES 1,300). Agency is sales-approved only.
+# New users get a 7-day Kova trial (5 campaigns) — see TRIAL_FEATURE_PLAN.
+# Kova plan limits — authoritative source: docs/KOVA_BUILD_CHECKLIST.md
 #
 # Platform ladder (5 channels: FB, IG, TikTok, LinkedIn, WhatsApp):
 #   Starter 2 · Growth 4 (WA inbox wedge) · Pro 5 (full WA Business)
+# Single public plan: docs/KOVA_BUILD_CHECKLIST.md
+# Legacy tiers (starter/growth/pro) remain for grandfathered subscribers.
 PLAN_LIMITS = {
+    "kova": {
+        "label": "Kova",
+        "max_social_accounts": 4,
+        "max_posts_per_month": 9999,
+        "max_seeds_per_month": 30,
+        "max_photoroom_scenes_per_campaign": 5,
+        "daily_llm_tokens": 250_000,
+        "monthly_llm_tokens": 5_000_000,
+        "agents_enabled": ["create", "analyst", "research", "adapt", "engage"],
+        "daily_brief": True,
+        "email_brief": True,
+        "whatsapp_brief": False,
+        "engagement_agent": True,
+        "competitor_tracking": True,
+        "ai_image_generation": True,
+        "ai_images_per_month": 60,
+        "visual_enhancements_per_month": 150,
+        "plus_max_variants_per_product": 5,
+        "visual_enhance_premium": False,
+        "auto_approve": False,
+        "ab_testing": True,
+        "max_team_members": 0,
+        "kova_pages": 3,
+        "kova_links_per_page": 20,
+        "kova_forms": True,
+        "max_leads": 100,
+        "leads_can_edit": True,
+        "email_subscribers": 2500,
+        "email_lists": 5,
+        "email_campaigns_per_month": 10,
+        "email_sequences": 3,
+        "max_products": 50,
+        "product_quantity_tracking": True,
+        "product_csv_import": True,
+        "shopify_integration": True,
+        "mpesa_commerce": True,
+        "multi_touch_attribution": True,
+        "revenue_dashboard": True,
+        "whatsapp_enabled": False,
+        "whatsapp_inbox_enabled": True,
+        "whatsapp_marketing_conversations_per_month": 50,
+        "memes_enabled": False,
+        "adapt_v2_enabled": True,
+        "max_campaigns": 30,
+        "kling_reels_enabled": False,
+        "bannerbear_carousels_enabled": True,
+        "fal_flux_edits_per_month": 10,
+        "price_kes": 1300,
+        "price_usd": 10,
+        "trial_days": 7,
+        "public": True,
+    },
     "starter": {
         "label": "Jipange / Starter",
         "max_social_accounts": 2,
@@ -308,11 +411,45 @@ PLAN_LIMITS = {
     },
 }
 
-# Customer-facing tiers (Agency is sales / grandfather only).
-PUBLIC_PLAN_TIERS = ("starter", "growth", "pro")
+# Customer-facing tier (legacy starter/growth/pro hidden from checkout).
+PUBLIC_PLAN_TIERS = ("kova",)
 
-# Active free trials use Starter-tier limits (not full Growth).
-TRIAL_FEATURE_PLAN = "starter"
+# Active free trials use Kova limits with a reduced campaign quota.
+TRIAL_FEATURE_PLAN = "kova"
+TRIAL_CAMPAIGN_LIMIT = 5
+
+# Extra campaign packs (subscribe on top of base 30/month).
+CAMPAIGN_ADDON_PACKS = {
+    "boost": {
+        "id": "boost",
+        "label": "+10 campaigns / month",
+        "campaigns": 10,
+        "price_kes": 450,
+        "price_usd": 4,
+        "recurring": True,
+    },
+    "scale": {
+        "id": "scale",
+        "label": "+30 campaigns / month",
+        "campaigns": 30,
+        "price_kes": 1200,
+        "price_usd": 9,
+        "recurring": True,
+    },
+    "burst": {
+        "id": "burst",
+        "label": "+5 campaigns (this month)",
+        "campaigns": 5,
+        "price_kes": 250,
+        "price_usd": 2,
+        "recurring": False,
+    },
+}
+
+
+def get_campaign_addon_packs():
+    """Public add-on packs for pricing UI."""
+    return CAMPAIGN_ADDON_PACKS.copy()
 
 
 def _get_db_prices():
@@ -333,7 +470,7 @@ def _get_db_prices():
 
 def get_plan_limits(plan_tier):
     """Get the limits for a plan tier. DB prices override hardcoded ones."""
-    base = PLAN_LIMITS.get(plan_tier, PLAN_LIMITS["starter"]).copy()
+    base = PLAN_LIMITS.get(plan_tier, PLAN_LIMITS["kova"]).copy()
     overrides = _get_db_prices()
     if plan_tier in overrides:
         base["price_kes"] = overrides[plan_tier]["price_kes"]
@@ -352,26 +489,28 @@ def is_active_trial(profile) -> bool:
 
 
 def get_effective_plan_tier(profile) -> str:
-    """Plan tier used for feature/limit enforcement (trial → Starter limits)."""
+    """Plan tier used for feature/limit enforcement (trial → Kova limits, 5 campaigns)."""
     if is_active_trial(profile):
         return TRIAL_FEATURE_PLAN
     if profile and profile.plan in PLAN_LIMITS:
         return profile.plan
-    return "starter"
+    return "kova"
 
 
 def get_user_plan_limits(user):
-    """Effective limits for a user — trialing users receive Starter-tier limits."""
+    """Effective limits for a user — trialing users receive Kova with trial campaign cap."""
     profile = getattr(user, "profile", None)
     tier = get_effective_plan_tier(profile)
     limits = get_plan_limits(tier)
     if is_active_trial(profile):
         limits = limits.copy()
-        limits["label"] = "Starter trial"
+        limits["label"] = "Kova trial"
+        limits["max_seeds_per_month"] = TRIAL_CAMPAIGN_LIMIT
     return limits
 
 
 SIDEBAR_PLAN_NAMES = {
+    "kova": "Kova",
     "starter": "Starter",
     "growth": "Growth",
     "pro": "Pro",
@@ -381,7 +520,7 @@ SIDEBAR_PLAN_NAMES = {
 
 def get_sidebar_plan_display(user) -> dict:
     """
-    Plan label for the app sidebar — Plan v2 tier names (Free, Starter, Growth, Pro, Agency).
+    Plan label for the app sidebar — Kova trial, paid tier, Free, or Agency pending.
 
     Returns dict with keys: label, variant (free|trial|paid|pending|none), is_staff.
     Uses profile already on user — no extra queries when profile is cached.
@@ -395,7 +534,7 @@ def get_sidebar_plan_display(user) -> dict:
         return {"label": "Free", "variant": "free", "is_staff": is_staff}
 
     if is_active_trial(profile):
-        return {"label": "Starter trial", "variant": "trial", "is_staff": is_staff}
+        return {"label": "Kova trial", "variant": "trial", "is_staff": is_staff}
 
     plan = (profile.plan or "starter").lower()
     status = profile.subscription_status or "none"
@@ -501,6 +640,7 @@ class ContentSeedQuotaLog(models.Model):
         SET_LIMIT_OVERRIDE = "set_limit_override", "Set monthly limit override"
         CLEAR_LIMIT_OVERRIDE = "clear_limit_override", "Clear limit override"
         SET_BONUS = "set_bonus", "Set bonus seeds"
+        ADDON_PURCHASE = "addon_purchase", "Campaign add-on purchase"
         CLEAR_ALL = "clear_all", "Clear all overrides"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

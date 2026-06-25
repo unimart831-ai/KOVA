@@ -336,9 +336,26 @@ def submission_mark_read(request, submission_id):
 def public_page(request, slug):
     """
     Public-facing Kova link page — NO authentication required.
-    Tracks page views. Renders the user's links and forms.
+
+    When the owner has a live commerce shop, redirect to the canonical
+    /shop/<handle>/ URL (301). Append ?legacy=1 to force the link-in-bio view.
     """
+    from django.db import models
+    from django.http import HttpResponsePermanentRedirect
+
+    from apps.products.commerce_canonical import commerce_shop_redirect_path
+
     page = get_object_or_404(KovaPage, slug=slug, is_published=True)
+
+    if request.GET.get("legacy") != "1":
+        shop_path = commerce_shop_redirect_path(page)
+        if shop_path:
+            target = request.build_absolute_uri(shop_path)
+            qs = request.GET.urlencode()
+            if qs:
+                target = f"{target}?{qs}"
+            return HttpResponsePermanentRedirect(target)
+
     links = page.links.filter(is_active=True)
     forms_list = page.forms.filter(is_active=True)
 

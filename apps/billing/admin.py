@@ -3,6 +3,7 @@ from django.contrib import admin
 from apps.billing.models import (
     AgencySalesInquiry,
     BillingEvent,
+    CampaignAddonPurchase,
     DiscountCode,
     DiscountRedemption,
     MpesaPayment,
@@ -31,14 +32,26 @@ class BillingEventAdmin(admin.ModelAdmin):
 
 @admin.register(MpesaPayment)
 class MpesaPaymentAdmin(admin.ModelAdmin):
-    list_display = ["user", "amount", "plan_tier", "status", "receipt_number", "phone_number", "created_at"]
-    list_filter = ["status", "plan_tier", "created_at"]
+    list_display = ["user", "amount", "payment_kind", "plan_tier", "addon_pack_id", "status", "receipt_number", "created_at"]
+    list_filter = ["status", "payment_kind", "plan_tier", "created_at"]
     search_fields = ["user__email", "phone_number", "receipt_number", "checkout_request_id"]
     readonly_fields = [
         "id", "user", "checkout_request_id", "merchant_request_id", "receipt_number",
         "phone_number", "amount", "plan_tier", "currency", "status", "result_code",
         "result_desc", "is_renewal", "subscription_period_start", "subscription_period_end",
         "created_at", "completed_at",
+    ]
+    ordering = ["-created_at"]
+
+
+@admin.register(CampaignAddonPurchase)
+class CampaignAddonPurchaseAdmin(admin.ModelAdmin):
+    list_display = ["user", "pack_id", "campaigns_granted", "bonus_before", "bonus_after", "created_at"]
+    list_filter = ["pack_id", "created_at"]
+    search_fields = ["user__email", "pack_id"]
+    readonly_fields = [
+        "id", "user", "mpesa_payment", "pack_id", "campaigns_granted",
+        "bonus_before", "bonus_after", "created_at",
     ]
     ordering = ["-created_at"]
 

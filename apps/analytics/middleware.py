@@ -1,15 +1,8 @@
 """
 Feature-usage tracking middleware.
-
-Logs one PageView row per authenticated GET request so the admin
-dashboard can show which sections users actually use.
-
-Lightweight by design:
-- Skips anonymous users, AJAX/HTMX partials, static files, admin, API, dashboard
-- Uses bulk_create with a small buffer (flushed every N requests) to
-  reduce DB writes — but falls back to single insert for simplicity
-  in low-traffic environments.
 """
+
+from __future__ import annotations
 
 import re
 

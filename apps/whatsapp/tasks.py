@@ -171,7 +171,7 @@ def handle_incoming_message(self, message_id: str):
             )
             logger.error("WhatsApp AI reply send failed: %s", e)
     else:
-        WhatsAppMessage.objects.create(
+        draft = WhatsAppMessage.objects.create(
             conversation=conversation,
             direction=WhatsAppMessage.Direction.OUTBOUND,
             message_type=WhatsAppMessage.MessageType.TEXT,
@@ -184,6 +184,12 @@ def handle_incoming_message(self, message_id: str):
             "WhatsApp AI draft saved (confidence=%.2f, autonomy=%s) — conversation %s",
             confidence, autonomy, conversation.id,
         )
+        try:
+            from apps.whatsapp.draft_actions import notify_owner_draft_created
+
+            notify_owner_draft_created(draft)
+        except Exception as exc:
+            logger.debug("Draft owner notify skipped: %s", exc)
 
 
 def _escalate_conversation(conversation, trigger_message, draft_reply, confidence, reasoning):

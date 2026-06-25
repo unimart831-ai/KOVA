@@ -580,10 +580,6 @@ class ProductSyncView(APIView):
             mapped[kova_field] = value
         return mapped
 
-    def _trigger_snap(self, user, mp):
-        """Deprecated — use marketplace_sync.trigger_marketplace_autopilot."""
-        return False
-
 
 # ─── Aggregate Stats ─────────────────────────────────────────────────────────
 

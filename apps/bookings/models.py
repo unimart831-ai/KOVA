@@ -130,7 +130,7 @@ class Booking(models.Model):
         null=True, blank=True, related_name="bookings",
     )
     source_campaign = models.ForeignKey(
-        "campaigns.Campaign", on_delete=models.SET_NULL,
+        "content.MarketingCampaign", on_delete=models.SET_NULL,
         null=True, blank=True, related_name="bookings",
     )
     source_qr = models.ForeignKey(

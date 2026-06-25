@@ -221,19 +221,31 @@ def launch_owner_snap(
     )
     _clear_pending_snap(user)
 
-    fire_task(snap_to_sell_analyze, str(product.pk), photo_context or caption)
+    fire_task(
+        snap_to_sell_analyze,
+        str(product.pk),
+        photo_context=photo_context or caption,
+        proposals_only=True,
+    )
 
     site = getattr(settings, "SITE_URL", "").rstrip("/")
+    proposals_url = f"{site}/content/campaigns/asset/{asset.pk}/proposals/" if site else ""
     metadata.update({
         "product_id": str(product.pk),
         "asset_id": str(asset.pk),
         "price": str(price),
+        "proposals_url": proposals_url,
     })
+    lines = [
+        f"Snap ready for *{name}* — KES {price:,.0f}.",
+        "",
+        "Kova found marketing angles for this. Pick one to build your full campaign (reel + carousel + posts + shop page).",
+    ]
+    if proposals_url:
+        lines.append(f"\nChoose your angle:\n{proposals_url}")
+    lines.append("\nReply CAMPAIGNS when your package is ready to approve.")
     return (
-        f"Snap started for {name} — KES {price:,.0f}.\n"
-        f"I'm creating your listing and posts now.\n\n"
-        f"Track progress: {site}/products/{product.pk}/?snap=1\n"
-        f"Reply POSTS when content is ready to approve.",
+        "\n".join(lines),
         "snap_launched",
         True,
         metadata,

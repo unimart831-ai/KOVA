@@ -18,8 +18,6 @@ logger = logging.getLogger(__name__)
 
 # URL names checked for plan limits (must match apps/*/urls.py name= values)
 PLATFORM_CONNECT_URLS = ["platforms:connect", "platforms:oauth_callback"]
-# Post limits enforced at publish time — no direct post-create URL
-CONTENT_CREATE_URLS: list[str] = []
 ENGAGE_URLS = ["engage:inbox", "engage:send_reply", "engage:trigger"]
 WHATSAPP_INBOX_URLS = [
     "whatsapp:inbox", "whatsapp:conversation", "whatsapp:send_message",
@@ -50,7 +48,7 @@ class PlanEnforcementMiddleware:
     Middleware that:
     1. Attaches plan_limits to request for easy template access
     2. Blocks platform connects if at limit
-    3. Blocks post creation if at monthly limit
+    3. Blocks campaign creation if at monthly quota (seed limit)
     """
 
     def __init__(self, get_response):
@@ -85,34 +83,6 @@ class PlanEnforcementMiddleware:
             )
         return None
 
-    def _check_post_limit(self, request):
-        """Check if user can create another post this month."""
-        from django.utils import timezone
-
-        from apps.content.models import Post
-
-        limits = get_user_plan_limits(request.user)
-
-        # Unlimited check
-        if limits["max_posts_per_month"] >= 999999:
-            return None
-
-        now = timezone.now()
-        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        month_count = Post.objects.filter(
-            user=request.user,
-            created_at__gte=month_start,
-        ).count()
-
-        if month_count >= limits["max_posts_per_month"]:
-            return plan_limit_redirect(
-                request,
-                f"You've used all {limits['max_posts_per_month']} posts for this month "
-                f"on your {limits['label']} plan. Upgrade for more.",
-                "content:queue",
-            )
-        return None
-
     def _check_seed_limit(self, request):
         """Check if user can create another seed this month."""
         from apps.billing.enforcement import check_seed_limit, seed_limit_block_response
@@ -131,9 +101,8 @@ class PlanEnforcementMiddleware:
         if not engage_inbox_allowed(request.user):
             return plan_limit_redirect(
                 request,
-                f"The engagement inbox is not included in your {limits['label']} plan. "
-                f"Upgrade to Kazi or higher to unlock.",
-                "brief:home",
+                "Engagement inbox is included on Kova. Subscribe to unlock.",
+                "billing:pricing",
             )
         return None
 
@@ -145,9 +114,8 @@ class PlanEnforcementMiddleware:
         if not whatsapp_inbox_allowed(limits):
             return plan_limit_redirect(
                 request,
-                f"WhatsApp is not included in your {limits['label']} plan. "
-                f"Upgrade to Kazi or Biashara to unlock.",
-                "brief:home",
+                "WhatsApp inbox is included on Kova. Subscribe to unlock.",
+                "billing:pricing",
             )
         return None
 
@@ -161,15 +129,13 @@ class PlanEnforcementMiddleware:
         if limits.get("whatsapp_inbox_enabled"):
             return plan_limit_redirect(
                 request,
-                f"WhatsApp broadcasts and templates require Biashara (Pro). "
-                f"Your {limits['label']} plan includes inbox + utility replies.",
+                "WhatsApp broadcasts require Agency. Contact sales for Wakala access.",
                 "whatsapp:inbox",
             )
         return plan_limit_redirect(
             request,
-            f"WhatsApp is not included in your {limits['label']} plan. "
-            f"Upgrade to Kazi or Biashara to unlock.",
-            "brief:home",
+            "WhatsApp inbox is included on Kova. Subscribe to unlock.",
+            "billing:pricing",
         )
 
     def process_view(self, request, view_func, view_args, view_kwargs):
@@ -204,9 +170,6 @@ class PlanEnforcementMiddleware:
 
         if full_name in PLATFORM_CONNECT_URLS:
             return self._check_platform_limit(request)
-
-        if full_name in CONTENT_CREATE_URLS:
-            return self._check_post_limit(request)
 
         if full_name in SEED_CREATE_URLS:
             # voice_to_seed only creates a seed in submit mode

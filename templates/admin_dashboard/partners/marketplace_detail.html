@@ -185,9 +185,10 @@
           <div>
             <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Default seller plan</label>
             <select name="seller_default_plan" class="w-full text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2">
-              <option value="starter" {% if mp.seller_default_plan == 'starter' %}selected{% endif %}>Starter</option>
-              <option value="growth" {% if mp.seller_default_plan == 'growth' %}selected{% endif %}>Growth</option>
-              <option value="pro" {% if mp.seller_default_plan == 'pro' %}selected{% endif %}>Pro</option>
+              <option value="kova" {% if mp.seller_default_plan == 'kova' %}selected{% endif %}>Kova</option>
+              <option value="starter" {% if mp.seller_default_plan == 'starter' %}selected{% endif %}>Starter (legacy)</option>
+              <option value="growth" {% if mp.seller_default_plan == 'growth' %}selected{% endif %}>Growth (legacy)</option>
+              <option value="pro" {% if mp.seller_default_plan == 'pro' %}selected{% endif %}>Pro (legacy)</option>
               <option value="agency" {% if mp.seller_default_plan == 'agency' %}selected{% endif %}>Agency</option>
             </select>
           </div>

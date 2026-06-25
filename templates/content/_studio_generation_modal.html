@@ -14,7 +14,7 @@
       <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-kova-600 dark:bg-kova-700">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <p class="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Content Studio</p>
+            <p class="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Campaign Studio</p>
             <h2 id="studio-generation-title" class="text-lg font-bold text-white mt-0.5" x-text="headerTitle"></h2>
             <p class="text-xs text-white/80 mt-1" x-text="headerSubtitle"></p>
           </div>
@@ -178,17 +178,17 @@ function studioGenerationModal(seedId) {
     },
     get headerTitle() {
       if (this.status === 'completed' && this.autoApprovePosts && this.pendingCount === 0) return 'Posts auto-approved';
-      if (this.status === 'completed') return 'Your posts are ready';
-      if (this.status === 'failed') return 'Generation interrupted';
-      return 'Create Agent is writing your posts';
+      if (this.status === 'completed') return 'Your campaign is ready';
+      if (this.status === 'failed') return 'Campaign build interrupted';
+      return 'Kova is building your campaign';
     },
     get headerSubtitle() {
       if (this.status === 'completed' && this.autoApprovePosts && this.pendingCount === 0) {
         return 'Auto-approve is on — find them in Queue, not Posts to review.';
       }
-      if (this.status === 'completed') return 'Each platform got its own angle — review and approve below.';
-      if (this.status === 'failed') return 'Fix the issue and try submitting your idea again.';
-      return 'Watch the thought process live. Nothing publishes until you approve.';
+      if (this.status === 'completed') return 'Reel, carousel & posts for each platform — review and approve below.';
+      if (this.status === 'failed') return 'Fix the issue and try again or pick another angle.';
+      return 'Professional visuals + platform posts + commerce page. Nothing publishes until you approve.';
     },
     get progressPercent() {
       const steps = ['queued', 'brand', 'platforms', 'writing', 'strategy', 'complete'];

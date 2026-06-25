@@ -1,6 +1,6 @@
 # Kova AI — 14 Test Businesses for Full Platform Testing
 
-> **Pricing source of truth:** Plan tiers, caps, and monthly prices are defined in [KOVA_PLANS_GUIDE.md](./KOVA_PLANS_GUIDE.md) and `apps/billing/models.py` → `PLAN_LIMITS` (Plan v2, May 2026). If this doc disagrees, trust the guide.
+> **Pricing source of truth:** [KOVA_BUILD_CHECKLIST.md](./KOVA_BUILD_CHECKLIST.md) and `apps/billing/models.py` → `PLAN_LIMITS` (single public plan `kova`, KES 1,300 / 30 campaigns).
 
 > **Purpose:** 14 fictional businesses across different industries to onboard onto Kova and test every feature end-to-end.
 > Each business has a unique profile, plan, platforms, and testing focus.

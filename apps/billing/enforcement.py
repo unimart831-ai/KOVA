@@ -2,7 +2,7 @@
 Plan enforcement utilities — reusable limit checks for API, Celery tasks, and views.
 
 Use these instead of middleware when you need plan checks outside the HTTP request cycle.
-Trialing users receive Starter limits via get_user_plan_limits().
+Trialing users receive Kova limits (5 campaigns) via get_user_plan_limits().
 """
 
 from __future__ import annotations
@@ -35,14 +35,14 @@ def get_daily_llm_token_cap(plan: str) -> int:
 
 
 def get_user_daily_llm_token_cap(user) -> int:
-    """Daily LLM cap for a user (respects active trial → Starter limits)."""
+    """Daily LLM cap for a user (respects active trial → Kova limits)."""
     profile = getattr(user, "profile", None)
     tier = get_effective_plan_tier(profile) if profile else "starter"
     return get_daily_llm_token_cap(tier)
 
 
 def get_user_monthly_llm_token_cap(user) -> int:
-    """Monthly LLM cap for a user (respects active trial → Starter limits)."""
+    """Monthly LLM cap for a user (respects active trial → Kova limits)."""
     limits = get_user_plan_limits(user)
     return int(limits.get("monthly_llm_tokens", PLAN_LIMITS["starter"]["monthly_llm_tokens"]))
 
@@ -62,36 +62,6 @@ def check_plan_feature(user, feature_key: str, feature_label: str | None = None)
     return False, f"{label} is not included in your {plan_label} plan."
 
 
-def check_post_limit(user):
-    """
-    Check if user can create/publish another post this month.
-
-    Returns:
-        (allowed: bool, message: str)
-    """
-    from apps.content.models import Post
-
-    profile = getattr(user, "profile", None)
-    if not profile:
-        return False, "No user profile found."
-
-    limits = get_user_plan_limits(user)
-    max_posts = limits["max_posts_per_month"]
-
-    if max_posts >= 999999:
-        return True, ""
-
-    now = timezone.now()
-    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    month_count = Post.objects.filter(
-        user=user, created_at__gte=month_start,
-    ).count()
-
-    if month_count >= max_posts:
-        return False, f"Monthly post limit reached ({max_posts} on {limits['label']} plan)."
-    return True, ""
-
-
 def check_seed_limit(user):
     """
     Check if user can create another content seed this month.
@@ -103,7 +73,7 @@ def check_seed_limit(user):
     if usage["unlimited"] or not usage["at_limit"]:
         return True, ""
     return False, (
-        f"You've used all {usage['max']} content seeds for this month "
+        f"You've used all {usage['max']} marketing campaigns for this month "
         f"on your {usage['plan_label']} plan."
     )
 
@@ -145,10 +115,15 @@ def get_seed_usage(user) -> dict:
         "bonus": int(getattr(profile, "seed_monthly_bonus", 0) or 0) if profile else 0,
         "limit_override": getattr(profile, "seed_monthly_limit_override", None) if profile else None,
         "reset_at": getattr(profile, "seed_quota_reset_at", None) if profile else None,
+        "campaigns_left_label": (
+            f"{max(0, effective_max - used)} campaigns left this month"
+            if effective_max - used != 1
+            else "1 campaign left this month"
+        ),
     }
 
 
-DEFAULT_SEED_LIMIT_MESSAGE = "Monthly content seed limit reached."
+DEFAULT_SEED_LIMIT_MESSAGE = "Monthly campaign limit reached."
 
 
 def seed_limit_block_response(request, message: str = ""):

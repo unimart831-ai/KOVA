@@ -43,7 +43,7 @@ We process personal data in accordance with the **Kenya Data Protection Act 2019
 - Operate and improve the Service, including six AI agents (Research, Create, Adapt, Engage, Analyst, Chief Strategist)  
 - Generate, schedule, and publish content on connected accounts  
 - Analyze engagement and deliver Daily Briefs and reports  
-- Process subscriptions (Plan v2 tiers: Starter, Growth, Pro, Agency)  
+- Process subscriptions (Kova plan; legacy tiers for grandfathered accounts; Agency by approval)  
 - Send transactional and (with consent) promotional email  
 - Detect fraud and abuse; comply with law  
 

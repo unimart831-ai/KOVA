@@ -120,6 +120,10 @@ def product_add(request):
                 product.quantity = None
             product.check_low_stock()
             product.save()
+            from apps.products.business_assets import sync_asset_from_product
+            from apps.products.models import BusinessAsset
+
+            sync_asset_from_product(product, source=BusinessAsset.Source.MANUAL)
             if getattr(request.user.profile, "business_model", "") == "professional":
                 from apps.products.professional_assets import apply_professional_asset_from_post
 
@@ -1019,6 +1023,35 @@ def review_variant_view(request, product_id):
 # ── Snap to Sell ─────────────────────────────────────────────────────
 
 @login_required
+def asset_intake(request):
+    """Unified asset intake — manual add routes to campaign proposals."""
+    from apps.products.asset_intake import create_manual_asset
+    from apps.products.models import BusinessAsset
+
+    if request.method == "POST":
+        title = (request.POST.get("title") or "").strip()
+        description = (request.POST.get("description") or "").strip()
+        asset_type = request.POST.get("asset_type") or BusinessAsset.AssetType.PRODUCT
+        if not title:
+            messages.error(request, "Enter a title for your asset.")
+        else:
+            asset = create_manual_asset(
+                request.user,
+                title=title,
+                description=description,
+                asset_type=asset_type,
+            )
+            messages.success(request, "Asset saved — pick your campaign angle.")
+            return redirect("content:asset_proposals", asset_id=asset.pk)
+
+    return render(request, "products/asset_intake.html", {
+        "title": "Add asset",
+        "asset_types": BusinessAsset.AssetType.choices,
+        "snap_url": reverse("products:snap"),
+    })
+
+
+@login_required
 def snap_to_sell(request):
     """Camera/upload page — user snaps a product photo."""
     import json
@@ -1246,8 +1279,13 @@ def snap_launch(request):
         product.additional_images = additional_urls
         product.save(update_fields=["additional_images"])
 
-    # Fire background task: vision AI → content generation
-    fire_task(snap_to_sell_analyze, str(product.pk), photo_context)
+    # Fire background task: vision enrich only — user picks campaign angle next
+    fire_task(
+        snap_to_sell_analyze,
+        str(product.pk),
+        photo_context=photo_context,
+        proposals_only=True,
+    )
 
     from apps.products.business_assets import sync_asset_from_product
     from apps.products.models import BusinessAsset
@@ -1284,8 +1322,10 @@ def snap_launch(request):
     messages.success(
         request,
         f"📸 '{product.name}' added as a {launch_label} with {photo_count} photo{'s' if photo_count != 1 else ''}! "
-        f"AI is analyzing and creating content — watch the progress popup."
+        f"Pick your marketing angle next."
     )
+    if asset:
+        return redirect("content:asset_proposals", asset_id=asset.pk)
     url = reverse("products:detail", kwargs={"product_id": product.pk})
     return redirect(f"{url}?snap=1")
 

@@ -150,6 +150,12 @@ def _gather_strategy_inputs(user):
         logger.warning("Product intelligence for strategist failed: %s", e)
         product_intelligence = ""
 
+    from apps.media.audience_dna import infer_audience_dna
+    from apps.media.authority_packs import authority_seed_ideas_for_user
+
+    audience_dna = infer_audience_dna(user, profile).to_dict()
+    authority_pack = authority_seed_ideas_for_user(user)
+
     return {
         "trends": trends,
         "performance": performance,
@@ -158,6 +164,8 @@ def _gather_strategy_inputs(user):
         "platforms": platforms,
         "competitor_intel": competitor_intel,
         "product_intelligence": product_intelligence,
+        "audience_dna": audience_dna,
+        "authority_pack": authority_pack,
         "growth_intelligence": {
             "growth_summary": growth_summary,
             "content_growth_correlation": content_growth_correlation,
@@ -575,6 +583,20 @@ def _make_strategic_decisions(user, inputs):
     if product_intel:
         prompt += f"{product_intel}\n"
 
+    audience_dna = inputs.get("audience_dna") or {}
+    if audience_dna.get("primary_audience") or audience_dna.get("desires"):
+        prompt += (
+            f"=== AUDIENCE DNA ===\n"
+            f"{json.dumps(audience_dna, indent=2, default=str)}\n\n"
+        )
+
+    authority_pack = inputs.get("authority_pack") or []
+    if authority_pack:
+        prompt += (
+            "=== AUTHORITY CONTENT PACK (consultant/coach — include at least one seed) ===\n"
+            f"{json.dumps(authority_pack, indent=2, default=str)}\n\n"
+        )
+
     prompt += (
         f"=== USER GOALS ===\n"
         f"{json.dumps(inputs['user_context'].get('goals', []))}\n\n"
@@ -712,6 +734,14 @@ def _execute_proactive_seeds(user, decisions, inputs):
             idea=idea,
             notes=f"[Strategist Agent] {item.get('reasoning', '')}\nSource: {item.get('source', 'trend')}",
             target_platforms=valid_platforms if valid_platforms else [],
+        )
+
+        from apps.content.campaigns import ensure_campaign_for_seed
+
+        ensure_campaign_for_seed(
+            seed,
+            title=idea.split("\n")[0][:200],
+            objective=item.get("intent", "awareness") or "awareness",
         )
 
         # Trigger Create Agent via Celery task

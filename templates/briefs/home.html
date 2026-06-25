@@ -34,6 +34,29 @@
   {# ── Money chase board ── #}
   {% include "briefs/_money_board.html" %}
 
+  {% if asset_campaign_opportunities %}
+  <div class="card p-4 sm:p-5">
+    <div class="flex items-center justify-between gap-3 mb-3">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Campaign ideas from your catalog</h2>
+      <a href="{% url 'products:asset_intake' %}" class="text-xs font-medium text-kova-600 dark:text-kova-400 hover:underline">Add asset →</a>
+    </div>
+    <ul class="space-y-2">
+      {% for opp in asset_campaign_opportunities %}
+      <li class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800">
+        <div class="min-w-0">
+          <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ opp.title }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ opp.asset_type }} · {{ opp.angle }}</p>
+        </div>
+        <a href="{% url opp.proposals_url_name asset_id=opp.asset_id %}"
+           class="shrink-0 inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-lg bg-kova-600 text-white hover:bg-kova-700">
+          Start campaign
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
   {# ── Wedge onboarding checklist ── #}
   {% include "briefs/_wedge_checklist.html" %}
 

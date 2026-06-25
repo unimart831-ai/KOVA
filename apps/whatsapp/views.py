@@ -81,6 +81,10 @@ def whatsapp_inbox(request):
         is_ai_generated=True,
     ).count()
 
+    from apps.whatsapp.draft_actions import pending_draft_count
+
+    stats["pending_ai_drafts"] = pending_draft_count(request.user)
+
     return render(request, "whatsapp/inbox.html", {
         "conversations": conversations,
         "stats": stats,

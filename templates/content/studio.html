@@ -4,7 +4,7 @@
 {% block page_subtitle %}
 <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
   {% if approve_first %}
-    {{ pending_approve_count }} post{{ pending_approve_count|pluralize }} ready — {{ kova_subhead }}
+    {{ pending_approve_count }} campaign post{{ pending_approve_count|pluralize }} ready — {{ kova_subhead }}
   {% elif business_model == 'professional' %}
     {{ kova_copy.sell }} Approve in Studio.
   {% else %}
@@ -19,12 +19,14 @@
 
   {% include "content/_create_tabs.html" %}
   {% include "content/_studio_subnav.html" %}
+  {% include "content/_campaign_usage_strip.html" %}
+  {% include "content/_studio_assets_panel.html" %}
 
   {% if approve_first %}
   <div class="p-4 rounded-xl bg-kova-50 dark:bg-kova-950/40 border border-kova-200 dark:border-kova-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
     <div>
       <p class="text-sm font-semibold text-kova-900 dark:text-kova-100">Approve first — your 5-minute ritual</p>
-      <p class="text-xs text-kova-700 dark:text-kova-300 mt-0.5">Kova wrote these posts. Review, edit if needed, approve — then create more below.</p>
+      <p class="text-xs text-kova-700 dark:text-kova-300 mt-0.5">Kova built these from your campaigns. Review, edit if needed, approve — then start your next campaign below.</p>
     </div>
     <a href="#studio-posts-section" class="btn-primary btn-sm shrink-0">Jump to posts ↓</a>
   </div>
@@ -54,8 +56,8 @@
         <svg class="w-4 h-4 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
       </div>
       <div class="min-w-0">
-        <p class="text-sm font-medium text-kova-900 dark:text-kova-200">Voice to post idea</p>
-        <p class="text-xs text-kova-600 dark:text-kova-400 mt-0.5">Record a quick memo — Kova turns it into posts in Studio.</p>
+        <p class="text-sm font-medium text-kova-900 dark:text-kova-200">Voice to campaign idea</p>
+        <p class="text-xs text-kova-600 dark:text-kova-400 mt-0.5">Record a quick memo — Kova turns it into a campaign brief.</p>
       </div>
     </div>
     <button type="button" onclick="document.getElementById('voice-seed-trigger')?.click()" class="btn-primary btn-sm gap-1 shrink-0 font-semibold">
@@ -82,7 +84,7 @@
   <div x-data="{ showCreate: false }" class="border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
     <button type="button" @click="showCreate = !showCreate"
             class="w-full flex items-center justify-between px-4 py-3 text-left bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition">
-      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Create a new post</span>
+      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Start another campaign</span>
       <span class="text-xs text-gray-500 dark:text-gray-400" x-text="showCreate ? 'Collapse ↑' : 'Expand ↓'"></span>
     </button>
     <div x-show="showCreate" x-cloak class="p-4 space-y-6 border-t border-gray-100 dark:border-gray-800">
@@ -93,8 +95,8 @@
     <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-br from-kova-50/80 to-white dark:from-kova-950/40 dark:to-gray-900">
       <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Drop your idea</h2>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1 max-w-2xl">One idea becomes unique, platform-native posts — each with a different strategic angle. Not copy-paste. Reimagined for every channel.</p>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Start a campaign</h2>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1 max-w-2xl">One idea becomes a full marketing campaign — unique posts for every platform, plus your commerce page. Not copy-paste. Reimagined for each channel.</p>
         </div>
         {% if connected_platform_count > 0 %}
         <div class="shrink-0 px-3 py-2 rounded-lg bg-white/80 dark:bg-gray-900/80 border border-kova-200 dark:border-kova-800 text-right">
@@ -108,8 +110,8 @@
     <div class="card-body">
       {% if not at_seed_limit and not seed_usage.unlimited and seed_usage.remaining <= 3 %}
       <p class="mb-4 text-xs text-gray-500 dark:text-gray-400">
-        {{ seed_usage.remaining }} content seed{{ seed_usage.remaining|pluralize }} left this month.
-        <a href="{% url 'billing:pricing' %}" class="text-kova-600 dark:text-kova-400 hover:underline">Upgrade</a> for more.
+        {{ seed_usage.remaining }} campaign{{ seed_usage.remaining|pluralize }} left this month.
+        <a href="{% url 'billing:pricing' %}" class="text-kova-600 dark:text-kova-400 hover:underline">Add more campaigns</a>
       </p>
       {% endif %}
       <form method="post" action="{% url 'content:submit_seed' %}"
@@ -120,7 +122,7 @@
             class="space-y-4 group/form" x-data="seedForm()"{% if at_seed_limit %} data-seed-limit="1"{% endif %}>
         {% csrf_token %}
         <div>
-          <label for="idea-input" class="label">What do you want to post about?</label>
+          <label for="idea-input" class="label">What's your campaign about?</label>
           <div class="relative">
             <textarea id="idea-input" name="idea" rows="4" required
                       x-ref="ideaInput"
@@ -215,14 +217,14 @@
 
           <button type="submit"
                   class="btn-primary gap-2 h-10 px-5 font-semibold shadow-sm shadow-kova-600/25 w-full sm:w-auto sm:min-w-[10rem] disabled:opacity-60 disabled:cursor-not-allowed group"
-                  {% if at_seed_limit %}disabled aria-disabled="true" title="Monthly seed limit reached — upgrade to continue"{% endif %}
+                  {% if at_seed_limit %}disabled aria-disabled="true" title="Monthly campaign limit reached — add campaigns or wait for renewal"{% endif %}
                   :disabled="$el.closest('form')?.classList.contains('htmx-request') || $el.closest('form')?.dataset.seedLimit === '1'"
                   >
             {# Normal state #}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="shrink-0 opacity-95 group-[.htmx-request]/form:hidden" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
             </svg>
-            <span class="group-[.htmx-request]/form:hidden">Generate {{ connected_platform_count|default:1 }} post{{ connected_platform_count|default:1|pluralize }}</span>
+            <span class="group-[.htmx-request]/form:hidden">Build campaign ({{ connected_platform_count|default:1 }} post{{ connected_platform_count|default:1|pluralize }})</span>
             {# Loading state #}
             <svg class="w-4 h-4 animate-spin hidden group-[.htmx-request]/form:block" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
             <span class="hidden group-[.htmx-request]/form:inline">Generating…</span>
@@ -232,10 +234,10 @@
     </div>
   </div>
 
-  {# ━━━ Seed Suggestions (dynamic AI + playbook ideas) ━━━ #}
+  {# ━━━ Campaign suggestions ━━━ #}
   {% include "content/_suggestions.html" %}
 
-  {# ━━━ Processing seeds (HTMX target + existing active seeds) ━━━ #}
+  {# ━━━ Campaigns in progress (HTMX target) ━━━ #}
   <div id="seed-processing-zone" class="space-y-3">
   {% if active_seeds %}
     {% for seed in active_seeds %}
@@ -255,7 +257,9 @@
           </div>
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2 mb-1">
-              <p class="text-sm font-semibold text-gray-900 dark:text-white">Kova AI is writing your posts</p>
+              <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                {% if seed.marketing_campaign %}Building campaign: {{ seed.marketing_campaign.title|truncatewords:8 }}{% else %}Kova is building your campaign{% endif %}
+              </p>
               <div class="flex gap-0.5">
                 <span class="w-1 h-1 rounded-full bg-kova-500 animate-bounce" style="animation-delay:0ms"></span>
                 <span class="w-1 h-1 rounded-full bg-kova-500 animate-bounce" style="animation-delay:120ms"></span>
@@ -274,7 +278,7 @@
   {% if failed_seeds %}
   <div class="space-y-3" id="failed-seeds-section">
     <div class="flex items-center justify-between mb-2">
-      <p class="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wider">Failed generations</p>
+      <p class="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wider">Failed campaigns</p>
       <form method="post" action="{% url 'content:dismiss_failed' %}"
             hx-post="{% url 'content:dismiss_failed' %}"
             hx-target="#failed-seeds-section"
@@ -286,7 +290,7 @@
     {% for seed in failed_seeds %}
       <div class="card border-l-4 border-l-red-400 dark:border-l-red-500">
         <div class="card-body">
-          <p class="text-sm font-medium text-red-700 dark:text-red-300">Generation failed</p>
+          <p class="text-sm font-medium text-red-700 dark:text-red-300">Campaign build failed</p>
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ seed.idea|truncatewords:15 }}</p>
           <p class="text-xs text-red-600 dark:text-red-400 mt-2">{{ seed.error_message|truncatewords:20 }}</p>
         </div>

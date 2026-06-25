@@ -21,6 +21,7 @@ from apps.billing.visual_credits import get_platform_photoroom_usage
 
 # ── Per-plan image cost (USD) — tier-routed FLUX models ─────────────────────
 PLAN_IMAGE_COST = {
+    "kova": 0.025,
     "starter": 0.00,
     "growth": 0.025,
     "pro": 0.04,
@@ -29,6 +30,7 @@ PLAN_IMAGE_COST = {
 
 # Plan token/image/voice estimates for scenario calculator (medium utilization)
 PLAN_TOKEN_ESTIMATES = {
+    "kova": {"input": 1_600_000, "output": 1_400_000, "images": 50, "voice_memos": 20},
     "starter": {"input": 400_000, "output": 350_000, "images": 0, "voice_memos": 5},
     "growth": {"input": 1_600_000, "output": 1_400_000, "images": 50, "voice_memos": 20},
     "pro": {"input": 4_000_000, "output": 3_500_000, "images": 100, "voice_memos": 50},

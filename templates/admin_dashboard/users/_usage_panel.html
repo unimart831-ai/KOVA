@@ -3,7 +3,7 @@
   <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {{ profile.plan|status_color }}">{{ profile.get_plan_display }}</span>
   <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {{ profile.subscription_status|status_color }}">{{ profile.subscription_status|default:"none" }}</span>
   {% if usage.is_trialing %}
-  <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-300">Starter trial{% if usage.trial_ends_at %} · ends {{ usage.trial_ends_at|date:"M j, Y" }}{% endif %}</span>
+  <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-300">Kova trial{% if usage.trial_ends_at %} · ends {{ usage.trial_ends_at|date:"M j, Y" }}{% endif %}</span>
   {% endif %}
   {% if usage.effective_tier != profile.plan %}
   <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">Effective: {{ usage.effective_label }}</span>

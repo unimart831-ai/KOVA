@@ -63,18 +63,16 @@ KOVA runs six AI agents in a continuous loop:
 
 ---
 
-## Business model (Plan v2)
+## Business model (Kova)
 
 | Tier | KES/mo | USD/mo | Target user |
 |------|--------|--------|-------------|
-| **Starter** (Jipange) | 499 | 4 | Solo entrepreneurs, trial conversion |
-| **Growth** (Kazi) | 1,499 | 11 | Growing SMEs — mass market |
-| **Pro** (Biashara) | 2,999 | 22 | Established businesses, WhatsApp Business |
+| **Kova** | **1,300** | **10** | All SMEs — single public plan, 30 campaigns/mo |
 | **Agency** (Wakala) | 7,999 | 59 | Agencies, multi-brand (approval required) |
 
-- **7-day trial** with Starter-tier limits  
-- **Secondary revenue:** Growth Partner commissions (15–30%), future agency white-label  
-- **Blended ARPU target (Year 1):** Growth-tier weighted (~KES 1,200–1,500/month at scale)
+- **7-day trial** with Kova limits and **5 campaigns**  
+- **Secondary revenue:** Growth Partner commissions (15–30%), campaign add-ons, agency white-label  
+- **Blended ARPU target (Year 1):** ~KES 1,300/month (Kova plan)
 
 ---
 
@@ -134,7 +132,7 @@ Detailed allocation: `KOVA_Use_of_Funds.md`, `docs/KOVA_FUNDING_PLAN.md`.
 
 - **SDG 8:** Decent work — MSME revenue growth, partner income via Growth Partners  
 - **SDG 9:** Industry & innovation — locally built AI infrastructure  
-- **SDG 10:** Reduced inequality — tools priced for African budgets (from KES 499/month)
+- **SDG 10:** Reduced inequality — tools priced for African budgets (from **KES 1,300/month**)
 
 ---
 

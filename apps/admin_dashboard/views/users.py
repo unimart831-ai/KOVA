@@ -137,7 +137,7 @@ def user_list(request):
 
 @staff_required
 def user_usage_detail(request, pk):
-    """Plan v2 monthly usage — dedicated admin page."""
+    """Kova plan monthly usage — dedicated admin page."""
     user = get_object_or_404(
         User.objects.select_related("profile").prefetch_related("social_accounts"),
         pk=pk,
@@ -160,8 +160,7 @@ def user_detail(request, pk):
     from apps.analytics.models import PostMetric
     from apps.billing.models import MpesaPayment
     from apps.briefs.models import DailyBrief
-    from apps.campaigns.models import Campaign
-    from apps.content.models import ContentSeed, Post
+    from apps.content.models import ContentSeed, MarketingCampaign, Post
     from apps.content.models import VoiceBrief
     from apps.engage.models import Interaction, Superfan
     from apps.platforms.models import SocialAccount
@@ -198,7 +197,7 @@ def user_detail(request, pk):
         "briefs": DailyBrief.objects.filter(user=user).count(),
         "voice_briefs": VoiceBrief.objects.filter(user=user).count(),
         "ready_moments": 0,
-        "campaigns": Campaign.objects.filter(user=user).count(),
+        "campaigns": MarketingCampaign.objects.filter(user=user).count(),
     }
 
     context = {

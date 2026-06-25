@@ -23,6 +23,7 @@ from django.utils import timezone
 
 from apps.billing.models import BillingEvent, MpesaPayment, get_plan_limits
 from apps.billing.mpesa import format_phone_number, initiate_stk_push, parse_stk_callback
+from apps.billing.campaign_addons import get_addon_pack, user_can_purchase_addons
 
 logger = logging.getLogger(__name__)
 
@@ -129,6 +130,73 @@ def initiate_mpesa_checkout(user, plan_tier, phone_number, discount=None):
     return payment
 
 
+def initiate_mpesa_addon_checkout(user, pack_id, phone_number):
+    """
+    Start M-Pesa STK Push for a campaign add-on pack (boost / scale / burst).
+
+    Returns:
+        MpesaPayment (status=pending, payment_kind=campaign_addon)
+    """
+    pack = get_addon_pack(pack_id)
+    if not pack:
+        raise ValueError("Invalid campaign add-on selected.")
+
+    allowed, message = user_can_purchase_addons(user)
+    if not allowed:
+        raise ValueError(message)
+
+    amount = pack["price_kes"]
+    formatted_phone = format_phone_number(phone_number)
+
+    recent_cutoff = timezone.now() - timedelta(minutes=2)
+    recent_pending = MpesaPayment.objects.filter(
+        user=user,
+        status=MpesaPayment.Status.PENDING,
+        created_at__gte=recent_cutoff,
+    ).exists()
+    if recent_pending:
+        raise ValueError(
+            "A payment is already in progress. Please check your phone for the M-Pesa prompt, "
+            "or wait 2 minutes before trying again."
+        )
+
+    MpesaPayment.objects.filter(
+        user=user,
+        status=MpesaPayment.Status.PENDING,
+        created_at__lt=recent_cutoff,
+    ).update(status=MpesaPayment.Status.EXPIRED)
+
+    profile = user.profile
+    result = initiate_stk_push(
+        phone_number=formatted_phone,
+        amount=amount,
+        account_reference="KovaAddon",
+        transaction_desc=f"Kova {pack['label'][:40]}",
+    )
+
+    payment = MpesaPayment.objects.create(
+        user=user,
+        checkout_request_id=result["CheckoutRequestID"],
+        merchant_request_id=result.get("MerchantRequestID", ""),
+        phone_number=formatted_phone,
+        amount=amount,
+        plan_tier=profile.plan or "kova",
+        payment_kind=MpesaPayment.PaymentKind.CAMPAIGN_ADDON,
+        addon_pack_id=pack_id,
+        is_renewal=False,
+        status=MpesaPayment.Status.PENDING,
+    )
+
+    profile.mpesa_phone = formatted_phone
+    profile.save(update_fields=["mpesa_phone"])
+
+    logger.info(
+        "M-Pesa add-on checkout: user=%s pack=%s amount=%s",
+        user.email, pack_id, amount,
+    )
+    return payment
+
+
 def process_mpesa_callback(callback_data):
     """
     Process M-Pesa STK Push callback.
@@ -198,10 +266,17 @@ def process_mpesa_callback(callback_data):
             payment.result_desc = parsed["result_desc"]
             payment.receipt_number = parsed.get("receipt_number", "")
             payment.completed_at = timezone.now()
-            activate_subscription(payment)
+            if payment.is_campaign_addon:
+                from apps.billing.campaign_addons import apply_campaign_addon_purchase
+                apply_campaign_addon_purchase(payment)
+            else:
+                activate_subscription(payment)
             logger.info(
-                "M-Pesa payment SUCCESS: user=%s amount=%s receipt=%s",
-                payment.user.email, payment.amount, payment.receipt_number,
+                "M-Pesa payment SUCCESS: user=%s kind=%s amount=%s receipt=%s",
+                payment.user.email,
+                payment.payment_kind,
+                payment.amount,
+                payment.receipt_number,
             )
         else:
             payment.status = MpesaPayment.Status.FAILED
@@ -219,7 +294,7 @@ def process_mpesa_callback(callback_data):
     # rollback fired. ``transaction.on_commit`` would be cleaner, but
     # placing the email here (post-atomic block) is equivalent and avoids
     # closure capture surprises.
-    if succeeded:
+    if succeeded and not payment.is_campaign_addon:
         from apps.emails.tasks import send_payment_confirmation_email
         send_payment_confirmation_email.delay(
             str(payment.user.pk),
@@ -263,6 +338,11 @@ def activate_subscription(payment):
         "plan", "payment_provider", "subscription_status",
         "current_period_end", "trial_ends_at",
     ])
+
+    from apps.billing.campaign_renewal import maybe_grandfather_to_kova, sync_campaign_bonus_totals
+
+    maybe_grandfather_to_kova(profile, on_renewal=payment.is_renewal)
+    sync_campaign_bonus_totals(profile, reason="mpesa_renewal")
 
     logger.info(
         "Subscription activated: user=%s plan=%s period=%s to %s",

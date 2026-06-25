@@ -417,6 +417,10 @@ def brief_home(request):
     profile = getattr(request.user, "profile", None)
     today_compact = get_effective_plan_tier(profile) == "starter"
 
+    from apps.briefs.asset_suggestions import asset_campaign_opportunities
+
+    asset_opportunities = asset_campaign_opportunities(request.user)
+
     return render(request, "briefs/home.html", {
         "brief": brief,
         "today_compact": today_compact,
@@ -444,6 +448,7 @@ def brief_home(request):
             connected_platforms=connected_platforms,
         ),
         **home_extras,
+        "asset_campaign_opportunities": asset_opportunities,
     })
 
 
@@ -595,16 +600,15 @@ def brief_dismiss_decision(request):
 @require_POST
 def brief_action(request):
     """
-    One-click action from brief: turn a suggestion/trend into a ContentSeed.
-    HTMX-aware — returns a success badge to swap inline.
+    One-click action from brief: turn a suggestion into marketing proposals.
+    HTMX-aware — returns a success badge or redirect to proposals.
     """
-    from apps.content.models import ContentSeed
-    from apps.platforms.models import SocialAccount
+    from apps.billing.enforcement import check_seed_limit
+    from apps.briefs.actions import ensure_brief_idea_asset, proposals_url_for_asset
 
     idea = request.POST.get("idea", "").strip()
     context = request.POST.get("context", "").strip()
-    action_type = request.POST.get("action_type", "suggestion")  # suggestion, trend, decision
-    # Platform hint from the suggestion (e.g. "linkedin" or "facebook,instagram")
+    action_type = request.POST.get("action_type", "suggestion")
     platform_hint = request.POST.get("platform_hint", "").strip()
 
     if not idea:
@@ -615,40 +619,36 @@ def brief_action(request):
             )
         return redirect("brief:home")
 
-    # Use suggestion's platform(s) if provided and user has them connected;
-    # fall back to user's first 3 active platforms.
-    active_platforms = set(
-        SocialAccount.objects.filter(user=request.user, is_active=True)
-        .values_list("platform", flat=True)
+    allowed, limit_msg = check_seed_limit(request.user)
+    if not allowed:
+        if request.headers.get("HX-Request"):
+            return HttpResponse(
+                f'<span class="text-xs text-red-500">{limit_msg}</span>',
+                content_type="text/html",
+            )
+        messages.error(request, limit_msg)
+        return redirect("billing:pricing")
+
+    asset = ensure_brief_idea_asset(
+        request.user,
+        idea,
+        context=context,
+        platform_hint=platform_hint,
+        source=f"brief_{action_type}",
     )
-    if platform_hint:
-        hint_platforms = [p.strip() for p in platform_hint.split(",") if p.strip()]
-        target_platforms = [p for p in hint_platforms if p in active_platforms] or list(active_platforms)[:3]
-    else:
-        target_platforms = list(active_platforms)[:3]
-
-    seed_idea = idea
-    if context:
-        seed_idea += f"\n\nContext: {context}"
-
-    notes = f"Created from Daily Brief ({action_type})"
-
-    ContentSeed.objects.create(
-        user=request.user,
-        idea=seed_idea,
-        notes=notes,
-        target_platforms=target_platforms[:3],
-    )
+    proposals_url = proposals_url_for_asset(asset, request)
 
     if request.headers.get("HX-Request"):
-        return HttpResponse(
+        response = HttpResponse(
             '<span class="inline-flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">'
             '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">'
             '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>'
-            '</svg>Queued for creation</span>',
+            '</svg>Pick your campaign angle</span>',
             content_type="text/html",
         )
-    return redirect("brief:home")
+        response["HX-Redirect"] = proposals_url
+        return response
+    return redirect(proposals_url)
 
 
 @login_required

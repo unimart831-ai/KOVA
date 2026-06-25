@@ -792,6 +792,16 @@ def _expand_studio_polish(
         marketplace_budget = 0
         scene_budget = max(1, credit_pool)
 
+    from apps.media.orchestrator import cap_photoroom_scenes_for_plan
+
+    scene_budget = cap_photoroom_scenes_for_plan(product.user, scene_budget)
+
+    from apps.media.campaign_visual_brief import get_visual_brief_for_product
+
+    brief = get_visual_brief_for_product(product)
+    if brief:
+        scene_budget = min(scene_budget, len(brief.capped_scenes(product.user)))
+
     variants = select_plus_variants(
         product,
         analysis,

@@ -14,6 +14,10 @@ logger = logging.getLogger(__name__)
 @login_required
 def engage_inbox(request):
     """Engagement inbox — view and respond to interactions with filter support."""
+    from apps.engage.lead_escalation import escalate_flagged_threads
+
+    escalate_flagged_threads(request.user)
+
     interactions = request.user.interactions.select_related(
         "social_account", "post"
     )

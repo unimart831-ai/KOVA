@@ -6,7 +6,7 @@
 
 ## One sentence
 
-**KOVA** gives African businesses an autonomous AI team for social media, leads, and email — from **KES 499/month**, with **M-Pesa** and **WhatsApp**, built in Nairobi.
+**KOVA** gives African businesses an autonomous AI team for social media, leads, and email — from **KES 1,300/month**, with **M-Pesa** and **WhatsApp**, built in Nairobi.
 
 ---
 
@@ -15,7 +15,7 @@
 | Problem | KOVA solution |
 |---------|---------------|
 | SMEs lack 3–5 hrs/day for social | 6 AI agents run 24/7 |
-| Agencies cost KES 30K–50K/mo | Plans from **KES 499/mo** (Plan v2) |
+| Agencies cost KES 30K–50K/mo | **KES 1,300/mo** single public plan |
 | 4–6 fragmented tools | One BIOS: create → publish → engage → convert |
 | No lead path from social | Kova Links, forms, CRM, email sequences |
 
@@ -30,14 +30,14 @@
 
 ---
 
-## Pricing (Plan v2 — May 2026)
+## Pricing (June 2026)
 
 | Tier | KES/mo | Best for |
 |------|--------|----------|
-| Starter | 499 | Solos, trial |
-| Growth | 1,499 | Core SME segment |
-| Pro | 2,999 | WhatsApp Business, teams |
-| Agency | 7,999 | Multi-brand agencies |
+| **Kova** | **1,300** | All SMEs — 30 campaigns/mo, full feature set |
+| Agency | 7,999 | Multi-brand agencies (sales approval) |
+
+**Trial:** 7 days, Kova limits, 5 campaigns.
 
 ---
 
@@ -52,7 +52,7 @@
 
 ## Business model
 
-Subscription SaaS + **Growth Partner** referral commissions (15–30%). Capital-efficient: **~USD 159–245K** product already built.
+Subscription SaaS (**KES 1,300/mo** Kova plan) + **Growth Partner** referral commissions (15–30%). Capital-efficient: **~USD 159–245K** product already built.
 
 ---
 
@@ -75,4 +75,4 @@ Built KOVA solo; Mastercard Foundation Scholar, USIU-Africa; also runs Unimart A
 
 ---
 
-*Confidential · Plan v2 pricing · Not an offer to sell securities — counsel review required*
+*Confidential · Kova KES 1,300 pricing · Not an offer to sell securities — counsel review required*

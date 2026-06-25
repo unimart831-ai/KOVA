@@ -334,6 +334,25 @@ def build_commerce_page_seo(
     }
 
 
+def shop_seo_keywords(profile, user) -> str:
+    """Meta keywords from Brand DNA — industry, offerings, location."""
+    from apps.media.brand_dna import resolve_brand_dna
+
+    dna = resolve_brand_dna(user, profile)
+    parts = [dna.brand_name]
+    if dna.industry:
+        parts.append(dna.industry.replace("_", " "))
+    city = (profile.city or "").strip()
+    if city:
+        parts.append(city)
+    offerings = profile.key_offerings or []
+    for item in offerings[:4]:
+        label = str(item).strip()
+        if label:
+            parts.append(label)
+    return ", ".join(dict.fromkeys(p for p in parts if p))[:255]
+
+
 def build_shop_page_seo(request, profile, user, products, *, shop_reels=None) -> dict[str, Any]:
     brand = brand_name(profile, user)
     canonical_url = shop_index_url(profile, request)
@@ -341,15 +360,29 @@ def build_shop_page_seo(request, profile, user, products, *, shop_reels=None) ->
     count = len(products)
     headline = (profile.page_headline or "").strip()
 
-    seo_title = f"{brand} Offers"
+    from apps.media.brand_dna import resolve_brand_dna
+
+    dna = resolve_brand_dna(user, profile)
+    bm = dna.business_model or "product"
+
+    if bm == "service":
+        seo_title = f"{brand} Services"
+    elif bm == "professional":
+        seo_title = f"{brand} — Portfolio & Consultation"
+    else:
+        seo_title = f"{brand} Offers"
     if city:
-        seo_title = f"{brand} · Offers in {city}"
+        seo_title = f"{seo_title} · {city}"
     seo_title = seo_title[:70]
 
+    voice_snippet = (dna.brand_voice or "").strip()
     if headline:
         seo_description = headline[:160]
+    elif voice_snippet:
+        seo_description = voice_snippet[:160]
     else:
-        seo_description = f"Browse {count} offer{'s' if count != 1 else ''} from {brand}"
+        noun = "services" if bm == "service" else ("projects" if bm == "professional" else "offers")
+        seo_description = f"Browse {count} {noun} from {brand}"
         if city:
             seo_description += f" in {city}"
         seo_description += ". Connect on WhatsApp, booking, or checkout."
@@ -377,6 +410,7 @@ def build_shop_page_seo(request, profile, user, products, *, shop_reels=None) ->
     return {
         "seo_title": seo_title,
         "seo_description": seo_description[:160],
+        "seo_keywords": shop_seo_keywords(profile, user),
         "canonical_url": canonical_url,
         "og_image": og_image,
         "html_lang": html_lang(profile),

@@ -26,6 +26,36 @@ class TestRequirePhoneMiddleware:
         resp = client.get("/accounts/onboarding/phone/")
         assert resp.status_code == 200
 
+    def test_allows_browser_reload_sse_without_phone(self, client):
+        u = User.objects.create_user(username="reload", email="reload@b.com", password="P1!")
+        client.force_login(u)
+        resp = client.get("/__reload__/events/", follow=False)
+        assert resp.status_code != 302 or "onboarding/phone" not in resp.get("Location", "")
+
+    def test_allows_service_worker_without_phone(self, client):
+        u = User.objects.create_user(username="sw", email="sw@b.com", password="P1!")
+        client.force_login(u)
+        resp = client.get("/sw.js", follow=False)
+        assert resp.status_code != 302 or "onboarding/phone" not in resp.get("Location", "")
+
+    def test_allows_billing_pricing_without_phone(self, client):
+        u = User.objects.create_user(username="price", email="price@b.com", password="P1!")
+        client.force_login(u)
+        resp = client.get("/billing/pricing/", follow=False)
+        assert resp.status_code == 200
+
+    def test_allows_settings_without_phone(self, client):
+        u = User.objects.create_user(username="set", email="set@b.com", password="P1!")
+        client.force_login(u)
+        resp = client.get("/accounts/settings/", follow=False)
+        assert resp.status_code == 200
+
+    def test_allows_favicon_without_phone(self, client):
+        u = User.objects.create_user(username="ico", email="ico@b.com", password="P1!")
+        client.force_login(u)
+        resp = client.get("/favicon.ico", follow=False)
+        assert resp.status_code != 302 or "onboarding/phone" not in resp.get("Location", "")
+
     def test_allows_onboarding_with_phone(self, client):
         u = User.objects.create_user(
             username="hasph", email="hp@b.com", password="P1!", phone_number="0712345678",

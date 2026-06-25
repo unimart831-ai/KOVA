@@ -145,17 +145,13 @@ def _should_auto_approve(user, post):
 
 
 def _get_kova_page_url(user) -> str:
-    """Return the absolute public URL of the user's first active Kova Link Page, or ''."""
+    """Canonical public business URL — shop when catalog exists, else /k/ page."""
     try:
-        from django.conf import settings
-        from apps.links.models import KovaPage
-        page = KovaPage.objects.filter(user=user).first()
-        if page:
-            base = (getattr(settings, "SITE_URL", "") or "").rstrip("/")
-            return f"{base}/k/{page.slug}/"
+        from apps.products.commerce_canonical import canonical_business_url
+
+        return canonical_business_url(user) or ""
     except Exception:
-        pass
-    return ""
+        return ""
 
 
 # ─── Performance Intelligence (Content DNA Feedback Loop) ────────────────────
@@ -537,6 +533,23 @@ def build_system_prompt(user) -> str:
     if profile.target_audience:
         parts.append(f"## TARGET AUDIENCE\n{profile.target_audience}")
         parts.append("Think about: What keeps this audience up at night? What do they aspire to? What frustrates them about the status quo?")
+    try:
+        from apps.media.audience_dna import infer_audience_dna
+
+        dna = infer_audience_dna(user, profile)
+        dna_lines = []
+        if dna.geography:
+            dna_lines.append(f"Geography: {dna.geography}")
+        if dna.pain_points:
+            dna_lines.append(f"Pain points: {', '.join(dna.pain_points[:3])}")
+        if dna.desires:
+            dna_lines.append(f"Desires: {', '.join(dna.desires[:3])}")
+        if dna.buying_stage:
+            dna_lines.append(f"Buying stage: {dna.buying_stage}")
+        if dna_lines:
+            parts.append("## AUDIENCE DNA\n" + "\n".join(dna_lines))
+    except Exception:
+        pass
 
     # Content pillars
     if profile.content_pillars:
@@ -722,7 +735,20 @@ For each platform, consider:
 3. What hook will stop the scroll in the first line?
 4. What's the takeaway that makes this worth sharing/saving?
 
-### TARGET PLATFORMS
+"""
+
+    campaign = getattr(seed, "marketing_campaign", None)
+    if campaign or getattr(seed, "product_id", None):
+        from apps.content.campaign_bundle import campaign_bundle_prompt_section
+
+        prompt += campaign_bundle_prompt_section([p.get("platform") for p in platforms]) + "\n\n"
+
+    if campaign or (getattr(seed, "blueprint", None) or {}).get("media_factory"):
+        from apps.media.media_factory import media_factory_prompt_section
+
+        prompt += media_factory_prompt_section(seed) + "\n\n"
+
+    prompt += f"""### TARGET PLATFORMS
 {platform_section}
 
 ### OUTPUT FORMAT
@@ -1295,6 +1321,10 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
                 post_dicts, seed, user, system, platform_map,
             )
 
+        from apps.content.platform_rewrite import apply_platform_rewrites
+
+        post_dicts = apply_platform_rewrites(seed, post_dicts, user=user)
+
         # Save batch strategy on the seed
         seed.batch_strategy = batch_strategy
         seed.save(update_fields=["batch_strategy", "updated_at"])
@@ -1424,9 +1454,11 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
             # Auto-populate UTM fields for revenue attribution
             post.populate_utm()
 
+            from apps.content.campaign_cta import apply_default_campaign_cta
             from apps.content.professional_cta import apply_professional_cta_to_post
 
-            apply_professional_cta_to_post(post, user, seed)
+            if not apply_professional_cta_to_post(post, user, seed):
+                apply_default_campaign_cta(post, user, seed)
 
             # ── Attach product image if available (Snap to Sell) ─────
             # If the seed's product has photos, use them directly instead
@@ -1490,7 +1522,10 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
                 except Exception as img_exc:
                     logger.warning("Failed to attach product image to post %s: %s", post.id, img_exc)
 
-            # ── Resolve the user's Kova Link Page URL once for all platforms ──
+            # ── Resolve commerce URL for CTAs (campaign page > product shop) ──
+            from apps.content.campaign_cta import commerce_url_for_first_comment
+
+            commerce_url = commerce_url_for_first_comment(seed, user) if seed else ""
             kova_page_url = _get_kova_page_url(user)
 
             # ── Facebook first-comment: populate link to be posted after publish ──
@@ -1505,6 +1540,7 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
                     product=getattr(seed, "product", None) if seed else None,
                     profile=profile,
                     kova_page_url=kova_page_url,
+                    commerce_url=commerce_url,
                 )
                 if fc_text:
                     post.first_comment = fc_text
@@ -1516,7 +1552,16 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
             # saves (top algorithm signal). Keep it brief and action-oriented.
             if platform == "instagram":
                 ig_fc = ""
-                if seed and seed.product and getattr(seed.product, "product_url", ""):
+                if commerce_url:
+                    display_name = "our shop"
+                    if seed:
+                        try:
+                            display_name = seed.marketing_campaign.title or display_name
+                        except Exception:
+                            if seed.product:
+                                display_name = seed.product.name or display_name
+                    ig_fc = f"💾 Save this! 🛍️ {display_name} — link in bio 👆"
+                elif seed and seed.product and getattr(seed.product, "product_url", ""):
                     name = seed.product.name or "this"
                     ig_fc = f"💾 Save this! 🛍️ Shop {name} — link in bio 👆"
                 elif kova_page_url:
@@ -1540,6 +1585,7 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
                     product=getattr(seed, "product", None) if seed else None,
                     profile=profile,
                     kova_page_url=kova_page_url,
+                    commerce_url=commerce_url,
                 )
                 if li_fc:
                     post.first_comment = li_fc
@@ -1633,6 +1679,24 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
                 seed, "images",
                 f"Queued {images_queued} AI image{'s' if images_queued != 1 else ''}.",
                 "Images generate in the background — posts are ready to review now.",
+            )
+
+        # Campaign bundle — fill reel, carousel, stories, and platform gaps
+        from apps.content.campaign_bundle import ensure_campaign_bundle
+
+        bundle_posts = ensure_campaign_bundle(
+            seed,
+            user,
+            created_posts,
+            account_map=account_map,
+            initial_status=initial_status,
+            force_pending=force_pending,
+        )
+        if bundle_posts:
+            created_posts.extend(bundle_posts)
+            images_queued += sum(
+                1 for p in bundle_posts
+                if p.media_status == Post.MediaStatus.PENDING
             )
 
         log_gen_step(
@@ -1998,7 +2062,18 @@ Respond with a JSON object. No markdown code fences.
             )
             # Auto-populate UTM fields for revenue attribution
             post.populate_utm()
-            post.save(update_fields=["utm_source", "utm_medium", "utm_campaign", "utm_content"])
+            from apps.content.campaign_cta import apply_default_campaign_cta
+            from apps.content.professional_cta import apply_professional_cta_to_post
+
+            _rp_seed = source_post.seed
+            if not apply_professional_cta_to_post(post, user, _rp_seed):
+                apply_default_campaign_cta(post, user, _rp_seed)
+            post.save(
+                update_fields=[
+                    "utm_source", "utm_medium", "utm_campaign", "utm_content",
+                    "cta_type", "cta_text", "cta_url", "first_comment", "updated_at",
+                ],
+            )
             created_posts.append(post)
 
         action.status = AgentAction.ActionStatus.COMPLETED
@@ -2174,7 +2249,17 @@ Generate exactly {n} variants labeled {', '.join(VARIANT_LABELS[:n])}.
             )
             # Auto-populate UTM fields for revenue attribution
             post.populate_utm()
-            post.save(update_fields=["utm_source", "utm_medium", "utm_campaign", "utm_content"])
+            from apps.content.campaign_cta import apply_default_campaign_cta
+            from apps.content.professional_cta import apply_professional_cta_to_post
+
+            if not apply_professional_cta_to_post(post, user, seed):
+                apply_default_campaign_cta(post, user, seed)
+            post.save(
+                update_fields=[
+                    "utm_source", "utm_medium", "utm_campaign", "utm_content",
+                    "cta_type", "cta_text", "cta_url", "first_comment", "updated_at",
+                ],
+            )
             created_posts.append(post)
 
         # Update test status

@@ -148,7 +148,7 @@ def whatsapp_overview(request):
         .order_by("-last_message_at")[:8]
     )
 
-    # Plan v2 marketing conversation caps (utility/auth templates excluded)
+    # Kova plan marketing conversation caps (utility/auth templates excluded)
     from apps.billing.models import PLAN_LIMITS, get_all_plan_limits
     from apps.billing.whatsapp_marketing import MARKETING_TEMPLATE_CATEGORIES
 
@@ -166,7 +166,7 @@ def whatsapp_overview(request):
     )
     marketing_conversations_month = marketing_msgs_month.values("conversation_id").distinct().count()
     marketing_plan_caps = []
-    for tier in ("starter", "growth", "pro", "agency"):
+    for tier in ("kova", "starter", "growth", "pro", "agency"):
         lim = PLAN_LIMITS.get(tier, {})
         marketing_plan_caps.append({
             "tier": tier,

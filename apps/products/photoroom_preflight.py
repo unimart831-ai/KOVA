@@ -15,7 +15,7 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 REPAIR_ORDER = ("photofix", "smart_crop", "text_removal", "relight", "upscale", "uncrop")
-GROWTH_PLUS_TIERS = frozenset({"growth", "pro", "agency"})
+GROWTH_PLUS_TIERS = frozenset({"kova", "growth", "pro", "agency"})
 SNAP_COMMERCE_SOURCES = frozenset({"snap", "batch_snap", "snap_to_sell"})
 
 

@@ -1,23 +1,21 @@
 # KOVA — Financial Projections (Template)
 
-**[COMPANY LEGAL NAME]** · [DATE] · **Plan v2 pricing**
+**[COMPANY LEGAL NAME]** · [DATE] · **Kova pricing (KES 1,300/mo)**
 
 > Populate monthly Year 1, quarterly Years 2–3 in spreadsheet. This markdown template defines assumptions — export to Excel for investor model.
 
 ---
 
-## Pricing assumptions (Plan v2)
+## Pricing assumptions (Kova)
 
 | Tier | KES/mo | USD/mo | Mix % (Y1 planning) |
 |------|--------|--------|---------------------|
-| Starter | 499 | 4 | 25% |
-| Growth | 1,499 | 11 | 50% |
-| Pro | 2,999 | 22 | 20% |
-| Agency | 7,999 | 59 | 5% |
+| **Kova** | **1,300** | **10** | 90% |
+| Agency | 7,999 | 59 | 10% |
 
-**Blended ARPU (planning):** KES **~1,400/month** (~USD 11)
+**Blended ARPU (planning):** KES **~1,400/month** (~USD 11) — Kova-weighted with small Agency mix
 
-**Trial:** 7 days, Starter limits; target trial→paid **10–15%**
+**Trial:** 7 days, Kova limits, 5 campaigns; target trial→paid **10–15%**
 
 ---
 
@@ -39,6 +37,7 @@
 | MRR | Paying users × blended ARPU |
 | ARR | MRR × 12 |
 | Partner revenue | [X]% of referred MRR — Growth Partner Program |
+| Campaign add-ons | [X]% of MRR — optional overage packs |
 
 ---
 
@@ -46,8 +45,8 @@
 
 | Item | Driver | Y1 estimate |
 |------|--------|-------------|
-| LLM (OpenRouter) | Tokens per plan caps | [ ]% of revenue |
-| WhatsApp / Meta API | Pro/Agency usage | [ ] |
+| LLM (OpenRouter) | Tokens per Kova plan caps | [ ]% of revenue |
+| WhatsApp / Meta API | Kova marketing conversation caps | [ ] |
 | Photoroom / vision | Studio polish credits | [ ] |
 | Payment fees | M-Pesa + Stripe % | ~3–5% of revenue |
 
@@ -91,7 +90,7 @@
 
 - `docs/KOVA_FINANCIAL_AUDIT.md` — cost inventory  
 - `docs/KOVA_FUNDING_PLAN.md` — revenue vs burn  
-- `docs/PLAN_V2_SPEC.md` — caps and metering  
+- `docs/KOVA_BUILD_CHECKLIST.md` — caps and metering  
 
 ---
 

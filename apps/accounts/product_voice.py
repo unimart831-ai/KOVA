@@ -8,7 +8,7 @@ NORTH_STAR = "The system that chases money for your business while you run the s
 
 LOOP_STEPS = (
     ("Snap", "Send a photo or showcase piece"),
-    ("Create", "Kova drafts platform-native posts"),
+    ("Create", "Kova drafts full marketing campaigns"),
     ("Approve", "You review in Studio — ~5 minutes"),
     ("Publish", "Posts go live on your channels"),
     ("Leads", "Inquiries land in your inbox"),
@@ -37,9 +37,9 @@ MARKETING_HERO_STRIP = (
 
 WHATSAPP_LOOP_STEPS = (
     ("Send photo on WhatsApp", "Product, service, or portfolio"),
-    ("Kova creates content", "Post, reel, carousel, story"),
+    ("Kova builds your campaign", "Reel, carousel, posts, shop page"),
     ("You approve", "~5 minutes in Studio"),
-    ("Posts go live", "Instagram, Facebook, TikTok & more"),
+    ("Campaign goes live", "Instagram, Facebook, TikTok & more"),
     ("Leads arrive", "DMs, forms, booking intent"),
     ("Kova drafts replies", "You send — your voice"),
     ("Customer pays", "M-Pesa or booking confirmed"),
@@ -47,21 +47,21 @@ WHATSAPP_LOOP_STEPS = (
 )
 
 BUILT_FOR_TYPES = (
-    ("Retail & fashion", "Snap products → shop link + posts"),
-    ("Salons & barbers", "Bookings on every post"),
+    ("Retail & fashion", "Snap products → shop link + campaigns"),
+    ("Salons & barbers", "Bookings on every campaign"),
     ("Restaurants & F&B", "Menus, offers, walk-in QR"),
-    ("Agencies & designers", "Portfolio → authority posts"),
+    ("Agencies & designers", "Portfolio → authority campaigns"),
     ("Consultants & lawyers", "Case studies → consultation CTAs"),
     ("Service businesses", "Transformations & testimonials"),
 )
 
 OUTCOME_CAPABILITIES = (
     ("Finds opportunities", "Trends and angles in your market — surfaced in your morning brief, not a blank calendar."),
-    ("Creates content", "Posts, reels, and carousels in your brand voice. One snap can become five assets."),
+    ("Creates campaigns", "Reel, carousel, platform posts, and commerce page in your brand voice. One snap can start a full campaign."),
     ("Publishes everywhere", "Instagram, Facebook, LinkedIn, TikTok — native angles, not copy-paste."),
     ("Follows up with leads", "Comments and DMs with drafted replies. Hot leads flagged before they go cold."),
-    ("Tracks sales", "M-Pesa, bookings, and walk-ins tied back to the post or offer that drove them."),
-    ("Gets smarter daily", "What worked feeds the next batch — post #50 outperforms post #1."),
+    ("Tracks sales", "M-Pesa, bookings, and walk-ins tied back to the campaign that drove them."),
+    ("Gets smarter daily", "What worked feeds the next campaign — #30 outperforms #1."),
 )
 
 

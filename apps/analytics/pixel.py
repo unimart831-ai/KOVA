@@ -465,10 +465,18 @@ def _update_journey(user, event):
         update_fields += ["is_converted", "converted_at", "total_revenue"]
 
         # Bridge: create a Conversion record so revenue appears in the dashboard
-        conversion = Conversion.objects.create(
-            user=user,
+        from apps.content.campaign_attribution import create_attributed_conversion, resolve_marketing_campaign
+
+        campaign = resolve_marketing_campaign(
+            user,
+            utm_campaign=event.utm_campaign,
             post=event.post,
-            conversion_type=Conversion.ConversionType.SALE,
+        )
+        conversion = create_attributed_conversion(
+            user,
+            Conversion.ConversionType.SALE,
+            post=event.post,
+            campaign=campaign,
             revenue=event.revenue,
             event_name=event.event_name or "pixel_purchase",
             utm_source=event.utm_source,
@@ -487,11 +495,18 @@ def _update_journey(user, event):
 
     elif event.event_type == "sign_up":
         # Also record sign-ups as lead conversions
-        Conversion.objects.create(
-            user=user,
+        from apps.content.campaign_attribution import create_attributed_conversion, resolve_marketing_campaign
+
+        campaign = resolve_marketing_campaign(
+            user,
+            utm_campaign=event.utm_campaign,
             post=event.post,
-            conversion_type=Conversion.ConversionType.LEAD,
-            revenue=0,
+        )
+        create_attributed_conversion(
+            user,
+            Conversion.ConversionType.LEAD,
+            post=event.post,
+            campaign=campaign,
             event_name=event.event_name or "pixel_signup",
             utm_source=event.utm_source,
             utm_medium=event.utm_medium,

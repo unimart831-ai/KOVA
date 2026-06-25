@@ -15,16 +15,20 @@ from django_ratelimit.decorators import ratelimit
 
 from apps.billing.access import can_start_free_trial
 from apps.billing.forms import AgencySalesInquiryForm
+from apps.billing.campaign_addons import user_can_purchase_addons
 from apps.billing.models import (
     PLAN_LIMITS,
     PUBLIC_PLAN_TIERS,
+    TRIAL_CAMPAIGN_LIMIT,
     get_all_plan_limits,
+    get_campaign_addon_packs,
     get_plan_limits,
     get_public_plan_limits,
     get_user_plan_limits,
     is_active_trial,
 )
 from apps.billing.services import (
+    create_addon_checkout_session,
     create_checkout_session,
     create_portal_session,
     handle_webhook_event,
@@ -69,10 +73,17 @@ def billing_overview(request):
     tokens_cap = int(limits.get("daily_llm_tokens", 0))
     tokens_pct = int(min(100, (tokens_used_today / tokens_cap) * 100)) if tokens_cap else 0
 
+    from apps.billing.enforcement import get_seed_usage
+
+    seed_usage = get_seed_usage(request.user)
+
     return render(request, "billing/overview.html", {
         "page_title": "Billing & Plan",
         "profile": profile,
         "limits": limits,
+        "seed_usage": seed_usage,
+        "campaign_addons": get_campaign_addon_packs(),
+        "can_purchase_addons": user_can_purchase_addons(request.user)[0],
         "all_plans": get_public_plan_limits(),
         "is_kazi_trial": is_active_trial(profile),
         "paid_plan_limits": get_plan_limits(profile.plan),
@@ -87,14 +98,18 @@ def billing_overview(request):
 @login_required
 def pricing(request):
     """Standalone pricing page (for logged-in users upgrading)."""
+    can_addons, _ = user_can_purchase_addons(request.user)
     return render(request, "billing/pricing.html", {
-        "page_title": "Choose Your Plan",
+        "page_title": "Kova Plan",
         "all_plans": get_public_plan_limits(),
         "agency_plan": get_plan_limits("agency"),
+        "campaign_addons": get_campaign_addon_packs(),
+        "can_purchase_addons": can_addons,
         "current_plan": request.user.profile.plan,
         "can_start_free_trial": can_start_free_trial(request.user),
         "is_kazi_trial": is_active_trial(request.user.profile),
-        "trial_days": get_plan_limits("starter")["trial_days"],
+        "trial_days": get_plan_limits("kova")["trial_days"],
+        "trial_campaigns": TRIAL_CAMPAIGN_LIMIT,
         "stripe_checkout_available": bool(getattr(settings, "STRIPE_SECRET_KEY", "")),
     })
 
@@ -143,7 +158,7 @@ def checkout(request):
         messages.error(request, "Invalid plan selected.")
         return redirect("billing:pricing")
 
-    # Stripe checkout includes a free trial; features during trial match Starter limits.
+    # Stripe checkout includes a free trial; features during trial match Kova limits (5 campaigns).
 
     try:
         session = create_checkout_session(request.user, plan_tier, request)
@@ -153,6 +168,27 @@ def checkout(request):
         return redirect("billing:pricing")
     except stripe.error.StripeError as e:
         logger.exception("Stripe checkout error: %s", e)
+        messages.error(request, "Payment service error. Please try again.")
+        return redirect("billing:pricing")
+
+
+@login_required
+@require_POST
+def stripe_addon_checkout(request):
+    """Stripe Checkout for campaign add-on packs (card / USD)."""
+    pack_id = request.POST.get("addon_pack", "").strip()
+    if not pack_id:
+        messages.error(request, "Select an add-on pack.")
+        return redirect("billing:pricing")
+
+    try:
+        session = create_addon_checkout_session(request.user, pack_id, request)
+        return redirect(session.url)
+    except ValueError as e:
+        messages.error(request, str(e))
+        return redirect("billing:pricing")
+    except stripe.error.StripeError as e:
+        logger.exception("Stripe add-on checkout error: %s", e)
         messages.error(request, "Payment service error. Please try again.")
         return redirect("billing:pricing")
 
@@ -259,10 +295,10 @@ def mpesa_checkout(request):
     if is_trial and can_start_free_trial(request.user):
         try:
             activate_trial(request.user, plan_tier, formatted_phone)
-            trial_days = get_plan_limits("starter")["trial_days"]
+            trial_days = get_plan_limits("kova")["trial_days"]
             messages.success(
                 request,
-                f"Your {trial_days}-day free trial is active — Starter plan features unlocked.",
+                f"Your {trial_days}-day Kova trial is active — {TRIAL_CAMPAIGN_LIMIT} campaigns unlocked.",
             )
             return redirect("billing:mpesa_success")
         except Exception as e:
@@ -296,6 +332,8 @@ def mpesa_checkout(request):
         # Store checkout_request_id in session for the waiting page
         request.session["mpesa_checkout_id"] = payment.checkout_request_id
         request.session["mpesa_plan"] = plan_tier
+        request.session["mpesa_payment_kind"] = "subscription"
+        request.session.pop("mpesa_addon_pack", None)
         return redirect("billing:mpesa_waiting")
     except ValueError as e:
         messages.error(request, str(e))
@@ -307,18 +345,62 @@ def mpesa_checkout(request):
 
 
 @login_required
+@require_POST
+def mpesa_addon_checkout(request):
+    """Initiate M-Pesa STK Push for a campaign add-on pack."""
+    from apps.billing.mpesa_services import initiate_mpesa_addon_checkout
+
+    pack_id = request.POST.get("addon_pack", "").strip()
+    phone_number = request.POST.get("phone_number", "").strip()
+
+    if not phone_number:
+        messages.error(request, "Please enter your M-Pesa phone number.")
+        return redirect("billing:pricing")
+
+    from apps.billing.mpesa import format_phone_number
+    try:
+        formatted_phone = format_phone_number(phone_number)
+    except ValueError:
+        messages.error(request, "Invalid phone number. Use format: 07XXXXXXXX or 254XXXXXXXXX")
+        return redirect("billing:pricing")
+
+    try:
+        payment = initiate_mpesa_addon_checkout(request.user, pack_id, formatted_phone)
+        request.session["mpesa_checkout_id"] = payment.checkout_request_id
+        request.session["mpesa_payment_kind"] = "campaign_addon"
+        request.session["mpesa_addon_pack"] = pack_id
+        return redirect("billing:mpesa_waiting")
+    except ValueError as e:
+        messages.error(request, str(e))
+        return redirect("billing:pricing")
+    except ConnectionError as e:
+        logger.exception("M-Pesa add-on STK error: %s", e)
+        messages.error(request, "M-Pesa service unavailable. Please try again in a moment.")
+        return redirect("billing:pricing")
+
+
+@login_required
 def mpesa_waiting(request):
     """Waiting page — shown after STK Push is sent. Polls for completion."""
     checkout_id = request.session.get("mpesa_checkout_id", "")
-    plan_tier = request.session.get("mpesa_plan", "starter")
+    plan_tier = request.session.get("mpesa_plan", "kova")
+    payment_kind = request.session.get("mpesa_payment_kind", "subscription")
+    addon_pack_id = request.session.get("mpesa_addon_pack", "")
 
     if not checkout_id:
         return redirect("billing:pricing")
 
+    if payment_kind == "campaign_addon":
+        pack = get_campaign_addon_packs().get(addon_pack_id, {})
+        plan_name = pack.get("label", "Campaign add-on")
+    else:
+        plan_name = get_plan_limits(plan_tier).get("label", plan_tier)
+
     return render(request, "billing/mpesa_waiting.html", {
         "page_title": "Confirming Payment",
         "checkout_id": checkout_id,
-        "plan_name": get_plan_limits(plan_tier).get("label", plan_tier),
+        "plan_name": plan_name,
+        "payment_kind": payment_kind,
     })
 
 
@@ -365,17 +447,29 @@ def mpesa_check_status(request):
 @login_required
 def mpesa_success(request):
     """Success page after M-Pesa payment."""
-    # Clear session
+    payment_kind = request.session.pop("mpesa_payment_kind", "subscription")
+    addon_pack_id = request.session.pop("mpesa_addon_pack", None)
     request.session.pop("mpesa_checkout_id", None)
     request.session.pop("mpesa_plan", None)
 
     profile = request.user.profile
+    from apps.billing.enforcement import get_seed_usage
+
+    seed_usage = get_seed_usage(request.user)
+
+    addon_pack = None
+    if payment_kind == "campaign_addon" and addon_pack_id:
+        addon_pack = get_campaign_addon_packs().get(addon_pack_id)
+
     plan_name = get_plan_limits(profile.plan).get("label", profile.get_plan_display())
 
     return render(request, "billing/mpesa_success.html", {
         "page_title": "Payment Successful!",
         "profile": profile,
         "plan_name": plan_name,
+        "payment_kind": payment_kind,
+        "addon_pack": addon_pack,
+        "seed_usage": seed_usage,
     })
 
 

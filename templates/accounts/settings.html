@@ -66,7 +66,7 @@
                 {% if plan_limits.email_brief %}
                   Rich morning summary with score, your move, and top decisions.
                 {% else %}
-                  Available on <a href="{% url 'billing:pricing' %}" class="text-kova-600 dark:text-kova-400 underline">Kazi (Growth)</a> and above.
+                  Available with an <a href="{% url 'billing:pricing' %}" class="text-kova-600 dark:text-kova-400 underline">active Kova subscription</a>.
                 {% endif %}
               </p>
             </div>
@@ -80,7 +80,7 @@
                 {% if plan_limits.whatsapp_brief %}
                   2-line summary each morning. Reply <strong>HELP</strong> for commands (APPROVE, IDEA 1, SCORE).
                 {% else %}
-                  Available on <a href="{% url 'billing:pricing' %}" class="text-kova-600 dark:text-kova-400 underline">Biashara (Pro)</a>.
+                  Included with <a href="{% url 'billing:pricing' %}" class="text-kova-600 dark:text-kova-400 underline">Kova</a> — connect your WhatsApp number in Platforms.
                 {% endif %}
               </p>
             </div>
@@ -375,7 +375,7 @@
                   <label for="id_brand_{{ field.name }}" class="text-sm font-medium text-gray-900 dark:text-white">{{ field.label }}</label>
                   {% if field.help_text %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ field.help_text }}</p>{% endif %}
                   <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Optional for Autopilot. When off, you still get weekly plan previews — posts land in Studio for your approval before scheduling.
+                    Optional for Autopilot. When off, you still get weekly campaign previews — content lands in Studio for your approval before scheduling.
                   </p>
                 </div>
               </div>
@@ -409,11 +409,11 @@
             Lead follow-up, WhatsApp nudges, and auto-publish — all off by default. Turn on only what you want.
           </p>
           <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
-            <strong>Content autopilot</strong> (weekly post plans) lives in <a href="{% url 'content:studio' %}" class="text-kova-600 dark:text-kova-400 underline">Studio → Autopilot</a>.
+            <strong>Content autopilot</strong> (weekly campaign plans) lives in <a href="{% url 'content:studio' %}" class="text-kova-600 dark:text-kova-400 underline">Studio → Autopilot</a>.
             {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}
-              <span class="block mt-1 text-gold-700 dark:text-gold-400">WhatsApp follow-ups require <a href="{% url 'billing:pricing' %}" class="underline font-medium">Kazi (Growth)</a> or above.</span>
+              <span class="block mt-1 text-gold-700 dark:text-gold-400">WhatsApp inbox requires an <a href="{% url 'billing:pricing' %}" class="underline font-medium">active Kova subscription</a>.</span>
             {% elif not plan_limits.whatsapp_enabled %}
-              <span class="block mt-1 text-teal-700 dark:text-teal-400">Your plan includes WhatsApp inbox — broadcasts need <a href="{% url 'billing:pricing' %}" class="underline font-medium">Biashara (Pro)</a>.</span>
+              <span class="block mt-1 text-teal-700 dark:text-teal-400">Your plan includes WhatsApp inbox — connect your business number under Platforms.</span>
             {% endif %}
           </p>
 
@@ -692,12 +692,28 @@
 
   <div id="settings-billing" class="card scroll-mt-24">
     <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Plan & billing</h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">You’re on <strong class="text-gray-800 dark:text-gray-200">{{ request.user.profile.get_plan_display }}</strong></p>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Plan &amp; billing</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        You're on <strong class="text-gray-800 dark:text-gray-200">{{ request.user.profile.get_plan_display }}</strong>
+        {% if seed_usage %}
+        · <span class="tabular-nums">{{ seed_usage.used }} / {{ seed_usage.max }}</span> campaigns used this month
+        {% if seed_usage.bonus %}<span class="text-kova-600 dark:text-kova-400">(+{{ seed_usage.bonus }} add-on)</span>{% endif %}
+        {% endif %}
+      </p>
     </div>
     <div class="card-body flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <p class="text-sm text-gray-600 dark:text-gray-400">Upgrade, invoices, and payment methods will live here.</p>
-      <a href="{% url 'billing:overview' %}" class="btn-secondary btn-sm shrink-0">Open billing</a>
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Manage subscription, M-Pesa receipts, campaign add-ons, and usage.
+        {% if seed_usage.at_limit and not seed_usage.unlimited %}
+        <span class="block mt-1 text-gold-700 dark:text-gold-400 font-medium">You've used all campaigns this month — add a Boost or Burst pack to keep creating.</span>
+        {% endif %}
+      </p>
+      <div class="flex flex-wrap gap-2 shrink-0">
+        {% if seed_usage.at_limit and not seed_usage.unlimited %}
+        <a href="{% url 'billing:pricing' %}" class="btn-primary btn-sm">Get more campaigns</a>
+        {% endif %}
+        <a href="{% url 'billing:overview' %}" class="btn-secondary btn-sm">Open billing</a>
+      </div>
     </div>
   </div>
 
@@ -719,9 +735,9 @@
             <h3 class="text-sm font-semibold {% if request.user.profile.emergency_pause %}text-red-800 dark:text-red-200{% else %}text-gray-900 dark:text-white{% endif %}">Emergency pause</h3>
             <p class="text-xs {% if request.user.profile.emergency_pause %}text-red-700 dark:text-red-300{% else %}text-gray-600 dark:text-gray-400{% endif %} mt-1">
               {% if request.user.profile.emergency_pause %}
-                All autonomous agent actions are <strong>halted</strong> — publishing, auto-replies, strategist seeds, and media queue are frozen.
+                All autonomous agent actions are <strong>halted</strong> — publishing, auto-replies, strategist campaigns, and media queue are frozen.
               {% else %}
-                Instantly halt ALL autonomous agent actions (publishing, auto-replies, strategist seeds, media queue). Use this if something goes wrong.
+                Instantly halt ALL autonomous agent actions (publishing, auto-replies, strategist campaigns, media queue). Use this if something goes wrong.
               {% endif %}
             </p>
           </div>

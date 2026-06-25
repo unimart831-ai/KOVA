@@ -54,7 +54,7 @@ class QRCode(models.Model):
 
     # What this QR points back to for attribution
     campaign = models.ForeignKey(
-        "campaigns.Campaign", on_delete=models.SET_NULL,
+        "content.MarketingCampaign", on_delete=models.SET_NULL,
         null=True, blank=True, related_name="qr_codes",
     )
     post = models.ForeignKey(

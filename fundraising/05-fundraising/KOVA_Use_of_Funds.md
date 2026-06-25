@@ -64,24 +64,22 @@
 | Line item | Budget (USD) | Purpose |
 |-----------|--------------|---------|
 | Performance ads (Meta, TikTok) | 18,000 | SME targeting — Nairobi + secondary cities |
-| WhatsApp / SMS campaigns | 8,000 | Pro-tier funnel; salon, food, retail verticals |
+| WhatsApp / SMS campaigns | 8,000 | Kova-tier funnel; salon, food, retail verticals |
 | Partner program activation | 10,000 | Commissions, onboarding kits, partner events |
 | Events & incubators | 6,000 | Demo days, university partnerships |
 | Pilot incentives & LOIs | 8,000 | 14 TEST_BUSINESSES → 3–5 public case studies |
 
-**KPI:** CAC payback <6 months on Growth tier (KES 1,499/mo).
+**KPI:** CAC payback <6 months on Kova plan (KES 1,300/mo).
 
 ---
 
 ## LLM & API costs (15% — USD 30,000)
 
-Scaled for **~1,000 users** with Plan v2 token caps:
+Scaled for **~1,000 users** on the Kova plan:
 
 | Tier | Monthly LLM cap (planning) |
 |------|---------------------------|
-| Starter | 1M tokens |
-| Growth | 4M tokens |
-| Pro | 10M tokens |
+| Kova | 5M tokens |
 | Agency | 40M tokens |
 
 Includes OpenRouter inference, vision analysis, WhatsApp template costs, and Photoroom studio polish pool. **Metering enforced** in `apps/agents/budget.py`.
@@ -158,4 +156,4 @@ Detailed model: `03-financial/KOVA_Financial_Projections_TEMPLATE.md`.
 
 ---
 
-*Source: adapted from `docs/KOVA_FUNDING_PLAN.md` · Plan v2 pricing · DRAFT — verify with finance before investor distribution*
+*Source: adapted from `docs/KOVA_FUNDING_PLAN.md` · Kova KES 1,300 pricing · DRAFT — verify with finance before investor distribution*
