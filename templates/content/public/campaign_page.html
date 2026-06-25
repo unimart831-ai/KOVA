@@ -12,8 +12,9 @@
   <meta property="og:url" content="{{ canonical_url }}">
   {% if og_image %}<meta property="og:image" content="{{ og_image }}">{% endif %}
   <meta name="twitter:card" content="summary_large_image">
-  {% include "products/public/_shop_public_styles.html" %}
-  {% include "products/public/_commerce_page_styles.html" %}
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/commerce.css' %}">
+  <style>:root { --kc-accent: #047857; }</style>
   <style>
     .campaign-page { min-height: 100vh; background: linear-gradient(165deg, #f0fdf4 0%, #fff 40%, #faf5ff 100%); }
     .campaign-shell { max-width: 56rem; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }

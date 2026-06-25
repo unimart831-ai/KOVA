@@ -156,7 +156,7 @@ class TestStorefrontHelpers:
         p2 = Product.objects.create(user=user, name="B", commerce_slug="b")
         p3 = Product.objects.create(user=user, name="C", commerce_slug="c")
         slides = [{"kind": "product", "commerce_slug": "a"}]
-        left, right = split_marketplace_hero_promos([p1, p2, p3], slides)
+        left, right = split_marketplace_hero_promos([p1, p2, p3], slides, per_side=1)
         assert p1 not in left and p1 not in right
         assert left == [p2]
         assert right == [p3]

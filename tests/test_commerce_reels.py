@@ -93,7 +93,14 @@ class TestCommerceReels:
         )
         old = _ready_reel(user, product, video_url="https://cdn.example.com/old.mp4")
         new = _ready_reel(user, product, video_url="https://cdn.example.com/new.mp4")
-        assert new.created_at >= old.created_at
+        from datetime import timedelta
+        from django.utils import timezone
+
+        Post.objects.filter(pk=new.pk).update(
+            created_at=old.created_at + timedelta(seconds=1),
+        )
+        new.refresh_from_db()
+        assert new.created_at > old.created_at
 
         reel = get_public_product_reel(product)
         assert reel is not None
@@ -119,9 +126,7 @@ class TestCommerceReels:
         assert "shop-hero-carousel" in content
         assert "reel-video" in content
         assert "muted autoplay loop playsinline" in content
-        assert "Explore Now" in content
         assert "https://cdn.example.com/reel.mp4" in content
-        assert "reels-section" not in content
 
     def test_product_page_renders_featured_reel(self, client, user):
         user.profile.page_slug = "reel-shop"

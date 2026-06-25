@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="{{ html_lang|default:'en' }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}{{ seo_title }}{% endblock %}</title>
+  <meta name="description" content="{{ seo_description }}">
+  {% if seo_keywords %}<meta name="keywords" content="{{ seo_keywords }}">{% endif %}
+  <link rel="canonical" href="{{ canonical_url }}">
+  {% if commerce_branding.logo_url %}<link rel="icon" href="{{ commerce_branding.logo_url }}">{% endif %}
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  <meta property="og:title" content="{{ seo_title }}">
+  <meta property="og:description" content="{{ seo_description }}">
+  <meta property="og:url" content="{{ canonical_url }}">
+  {% if og_image %}<meta property="og:image" content="{{ og_image }}">{% endif %}
+  {% block og_product %}{% endblock %}
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ seo_title }}">
+  <meta name="twitter:description" content="{{ seo_description }}">
+  {% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}
+  {% block schema %}<script type="application/ld+json">{{ shop_schema_json|default:structured_data_json|default:product_schema_json|safe }}</script>{% endblock %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/commerce.css' %}">
+  <style>:root { --kc-accent: {{ commerce_branding.theme_primary_color|default:'#0f172a' }}; }</style>
+  {% if shop_footer.has_kova_extras %}<script defer src="{% static 'js/vendor/htmx.min.js' %}"></script>{% endif %}
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="kc-shop {% block body_class %}{{ storefront_body_class|default:'' }}{% endblock %}">
+<div class="kc-shell">
+  {% block nav %}{% include "products/public/_shop_nav.html" %}{% endblock %}
+  <main class="kc-main">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% block sticky %}{% endblock %}
+<script defer src="{% static 'js/commerce.js' %}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

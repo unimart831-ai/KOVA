@@ -184,15 +184,10 @@ def public_shop_index(request, page_slug):
         products, featured, reels=shop_reels,
     )
     shop_testimonials = shop_public_testimonials(user)
-    use_flagship = len(products) >= 1
     portfolio_items = portfolio_items_for_shop(user) if storefront.get("show_portfolio") else []
     service_products = service_offerings_for_shop(products) if storefront.get("business_model") == "service" else []
-
     body_extra = " ".join(filter(None, [
-        "shop-site--flagship" if use_flagship else "",
-        "shop-site--has-sticky-bar" if use_flagship and (commerce_ctx.get("wa_url") or products) else "",
-        "shop-site--has-mobile-nav" if commerce_ctx.get("social_links") and not use_flagship else "",
-        "shop-site--has-wa-fab" if commerce_ctx.get("wa_url") and not use_flagship else "",
+        "kc-shop--sticky" if commerce_ctx.get("wa_url") and products else "",
     ]))
 
     return render(request, "products/public/shop_index.html", {
@@ -219,7 +214,6 @@ def public_shop_index(request, page_slug):
         "shop_footer": build_unified_shop_footer(profile, user, request=request),
         "commerce_branding": commerce_branding,
         "mpesa_shop_enabled": mpesa_shop_enabled,
-        "use_flagship": use_flagship,
         "flash_reels": flash_reels,
         "category_nav": category_nav,
         "hero_collage": hero_collage,
@@ -329,17 +323,9 @@ def public_commerce_link(request, page_slug, commerce_slug):
         )
 
     sticky = can_purchase and (bool(wa_url) or mpesa_available)
-    non_wa_social = [
-        link for link in commerce_ctx.get("social_links", [])
-        if link.get("platform") != "whatsapp"
-    ]
-    show_mobile_nav = bool(non_wa_social) and not sticky
     body_extra = " ".join(filter(None, [
-        "shop-site--marketplace",
-        "shop-site--pdp",
-        "shop-site--has-mobile-nav" if show_mobile_nav else "",
-        "shop-site--has-sticky-cta" if sticky else "",
-        "shop-site--product-page",
+        "kc-pdp",
+        "kc-shop--sticky" if sticky else "",
     ]))
 
     return render(request, "products/public/commerce_link.html", {
@@ -371,7 +357,6 @@ def public_commerce_link(request, page_slug, commerce_slug):
         "shop_footer": build_unified_shop_footer(profile, user, request=request),
         "commerce_branding": commerce_branding,
         "related_products": related_products,
-        "show_mobile_nav": show_mobile_nav,
         **commerce_ctx,
         **seo,
     })

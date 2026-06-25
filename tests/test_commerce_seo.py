@@ -273,7 +273,7 @@ class TestPublicShopPages:
         assert 'rel="canonical"' in content
         assert 'property="og:title"' in content
         assert '"@type": "Product"' in content
-        assert "All offers" in content
+        assert "View all offers" in content
 
     def test_public_commerce_page_breadcrumb_schema(self, client, user):
         user.profile.page_slug = "demo-shop"

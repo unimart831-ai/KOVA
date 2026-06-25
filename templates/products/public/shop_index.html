@@ -1,108 +1,129 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>{{ seo_title }}</title>
-  <meta name="description" content="{{ seo_description }}">
-  {% if seo_keywords %}<meta name="keywords" content="{{ seo_keywords }}">{% endif %}
-  <link rel="canonical" href="{{ canonical_url }}">
-  {% if commerce_branding.logo_url %}<link rel="icon" href="{{ commerce_branding.logo_url }}">{% endif %}
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="{{ seo_title }}">
-  <meta property="og:description" content="{{ seo_description }}">
-  <meta property="og:url" content="{{ canonical_url }}">
-  {% if og_image %}<meta property="og:image" content="{{ og_image }}">{% endif %}
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="{{ seo_title }}">
-  <meta name="twitter:description" content="{{ seo_description }}">
-  {% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}
-  <script type="application/ld+json">{{ shop_schema_json|safe }}</script>
-  {% include "products/public/_shop_public_styles.html" %}
-  {% include "products/public/_shop_public_revamp.html" %}
-  {% include "products/public/_shop_reels_styles.html" %}
-  {% if use_flagship %}{% include "products/public/_shop_flagship_styles.html" %}{% endif %}
-  {% if shop_footer.has_kova_extras %}{% load static %}<script defer src="{% static 'js/vendor/htmx.min.js' %}"></script>{% endif %}
-</head>
-{% with blurb=about_blurb|default:"" %}
-{% with show_powered=powered_by_kova %}
-<body class="{{ storefront_body_class|default:'shop-site shop-site--surface-light' }}{% if use_flagship %} shop-site--flagship{% endif %}">
-{% include "products/public/_shop_nav.html" %}
-<div class="shop-container shop-shell">
+{% extends "products/public/base_shop.html" %}
 
-  {% if use_flagship %}
-  {# ── Flagship landing (website replacement) ── #}
-  {% include "products/public/_shop_flagship_hero.html" %}
-  {% include "products/public/_shop_flash_reels.html" %}
-  {% include "products/public/_shop_category_rail.html" %}
+{% block body_class %}{{ storefront_body_class|default:'' }}{% if wa_url %} kc-shop--sticky{% endif %}{% endblock %}
 
-  {% if featured_products %}
-  <section class="flagship-featured" aria-label="Featured products">
-    <div class="flagship-section-head">
-      <h2 class="flagship-section-title">Featured products</h2>
-      <a href="#shop-catalog" class="flagship-section-link">View all {{ products|length }} →</a>
+{% block schema %}
+<script type="application/ld+json">{{ structured_data_json|default:shop_schema_json|safe }}</script>
+{% endblock %}
+
+{% block content %}
+<section class="kc-hero">
+  <div class="kc-container kc-hero-grid">
+    <div class="kc-hero-copy">
+      <p class="kc-hero-eyebrow">{{ brand_name }}</p>
+      <h1 class="kc-hero-title">
+        {% if profile.page_headline %}{{ profile.page_headline }}{% else %}Shop {{ brand_name }}{% endif %}
+      </h1>
+      {% if about_blurb %}
+      <p class="kc-hero-lead">{{ about_blurb|truncatewords:28 }}</p>
+      {% elif wa_url %}
+      <p class="kc-hero-lead">Curated products with fast WhatsApp ordering — delivery and payment confirmed in chat.</p>
+      {% endif %}
+      <div class="kc-hero-actions">
+        <a href="#shop-catalog" class="shop-btn shop-btn--primary shop-btn--lg">Shop our collection</a>
+        {% if wa_url %}
+        <a href="{{ wa_url }}" class="shop-btn shop-btn--wa shop-btn--lg" target="_blank" rel="noopener">Chat on WhatsApp</a>
+        {% endif %}
+        <button type="button" class="shop-btn shop-btn--outline kc-share-btn shop-share-btn" hidden
+                data-share-title="{{ brand_name }}"
+                data-share-url="{{ canonical_url }}">Share shop</button>
+      </div>
     </div>
-    <div class="flagship-product-grid flagship-product-grid--dense" role="list">
-      {% for product in featured_products %}
+    {% if hero_collage %}
+    <div class="kc-hero-collage" aria-hidden="true">
+      {% for item in hero_collage|slice:":4" %}
+      <img src="{{ item.image }}" alt="" class="kc-collage-{% cycle 'a' 'b' 'c' 'd' %}" loading="lazy">
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{% if flash_reels %}
+<section class="kc-reels reels-section" aria-label="Shop reels">
+  <div class="kc-container">
+    <div class="kc-section-head">
+      <div>
+        <h2 class="kc-section-title">Shop reels</h2>
+        <p class="kc-section-sub">See products in motion — tap to explore</p>
+      </div>
+    </div>
+    <div class="kc-reels-track shop-hero-carousel">
+      {% for reel in flash_reels %}
+      <article class="kc-reel-card">
+        <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=reel.commerce_slug %}" class="kc-reel-link" aria-label="Explore {{ reel.product_name }}"></a>
+        <video class="reel-video" src="{{ reel.video_url }}" poster="{{ reel.thumbnail_url }}" muted autoplay loop playsinline preload="metadata"></video>
+        <button type="button" class="reel-unmute-btn" aria-label="Toggle sound">🔇</button>
+        <div class="kc-reel-overlay">
+          <strong>{{ reel.product_name }}</strong>
+          {% if reel.product_price %}<span>{{ reel.product_price }}</span>{% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if category_nav %}
+<nav class="kc-container kc-section--tight" aria-label="Categories">
+  <div class="kc-categories">
+    <a href="#shop-catalog" class="category-chip kc-category-chip is-active" data-target="#shop-catalog">All</a>
+    {% for cat in category_nav %}
+    {% if cat.slug != 'all' %}
+    <a href="{{ cat.anchor }}" class="category-chip kc-category-chip" data-target="{{ cat.anchor }}">{{ cat.name }}</a>
+    {% endif %}
+    {% endfor %}
+  </div>
+</nav>
+{% endif %}
+
+{% if featured_products %}
+<section class="kc-section kc-section--tight" aria-label="Featured products">
+  <div class="kc-container">
+    <div class="kc-section-head">
+      <h2 class="kc-section-title">Featured</h2>
+      <a href="#shop-catalog" class="shop-btn shop-btn--outline shop-btn--sm">View all {{ products|length }}</a>
+    </div>
+    <div class="shop-grid shop-product-grid" role="list">
+      {% for product in featured_products|slice:":8" %}
       {% include "products/public/_shop_product_card.html" %}
       {% endfor %}
     </div>
-  </section>
-  {% endif %}
+  </div>
+</section>
+{% endif %}
 
-  {% include "products/public/_shop_promo_duo.html" %}
-
-  {% else %}
-  {# ── Legacy compact hero for edge cases ── #}
-  {% include "products/public/_shop_hero_grid.html" %}
-  {% if profile.page_headline and hero_layout != 'spotlight' %}
-  <p class="shop-page-tagline">{{ profile.page_headline }}</p>
-  {% endif %}
-  {% if shop_reels and not use_flagship %}
-  {% include "products/public/_shop_reels_strip.html" with reels_title="Shop reels" %}
-  {% endif %}
-  {% endif %}
-
-  {% include "products/public/_shop_media_gallery.html" %}
-
-  {% if portfolio_items %}
-  {% include "products/public/_shop_portfolio_section.html" %}
-  {% endif %}
-
-  {% if service_products and storefront.business_model == 'service' and not use_flagship %}
-  {% include "products/public/_shop_services_section.html" %}
-  {% endif %}
-
-  <section id="shop-catalog" class="shop-catalog-section" aria-label="Product catalog">
-    <div class="shop-section-head shop-catalog-head">
-      <div class="shop-section-head-copy">
-        <h2 class="shop-section-title">{% if use_flagship %}All products{% else %}{{ catalog_section_label|default:"Shop our collection" }}{% endif %}</h2>
+<section id="shop-catalog" class="kc-section shop-catalog-section" aria-label="Product catalog">
+  <div class="kc-container">
+    <div class="kc-section-head shop-catalog-head">
+      <div>
+        <h2 class="kc-section-title">{% if catalog_section_label %}{{ catalog_section_label }}{% else %}Shop our collection{% endif %}</h2>
         {% if wa_url %}
-        <p class="shop-section-sub">Order on WhatsApp — we'll confirm delivery &amp; payment in chat.</p>
+        <p class="kc-section-sub">Order on WhatsApp — we'll confirm delivery &amp; payment in chat.</p>
         {% endif %}
       </div>
-      <span class="shop-section-meta shop-section-count" data-catalog-count>{{ products|length }} item{{ products|length|pluralize }}</span>
+      <span class="kc-section-meta shop-section-meta" data-catalog-count>{{ products|length }} item{{ products|length|pluralize }}</span>
     </div>
     <p class="shop-search-empty" id="shop-search-empty" hidden>No products match your search.</p>
 
     {% if not products %}
     <div class="shop-empty-state">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
       <p class="shop-empty-title">New items coming soon</p>
-      <p class="shop-empty-text">{{ brand_name }} hasn't listed any products yet.{% if wa_url %} Message us on WhatsApp to ask what's available.{% endif %}</p>
-      {% if wa_url %}<a href="{{ wa_url }}" rel="noopener" class="shop-btn shop-btn--wa">Chat on WhatsApp</a>{% endif %}
+      <p>{{ brand_name }} hasn't listed products yet.{% if wa_url %} Message us on WhatsApp to ask what's available.{% endif %}</p>
+      {% if wa_url %}<a href="{{ wa_url }}" class="shop-btn shop-btn--wa" rel="noopener">Chat on WhatsApp</a>{% endif %}
     </div>
     {% elif products_by_category %}
     <div class="shop-catalog shop-catalog--grouped">
       {% for group in products_by_category %}
-      <section class="shop-section shop-category-section" id="cat-{{ group.name|slugify }}" aria-label="{{ group.name }}">
+      <section class="shop-category-section kc-category-block" id="cat-{{ group.name|slugify }}" aria-label="{{ group.name }}">
         {% if products_by_category|length > 1 or group.name != "All offers" %}
-        <div class="shop-section-head shop-category-head">
-          <h3 class="shop-section-title">{{ group.name }}</h3>
-          <span class="shop-section-meta">{{ group.products|length }} item{{ group.products|length }}</span>
+        <div class="kc-section-head shop-category-head">
+          <h3 class="kc-section-title">{{ group.name }}</h3>
+          <span class="kc-section-meta">{{ group.products|length }} item{{ group.products|length|pluralize }}</span>
         </div>
         {% endif %}
-        <div class="shop-grid shop-product-grid{% if use_flagship %} flagship-product-grid{% endif %}" role="list">
+        <div class="shop-grid shop-product-grid" role="list">
           {% for product in group.products %}
           {% include "products/public/_shop_product_card.html" %}
           {% endfor %}
@@ -111,130 +132,66 @@
       {% endfor %}
     </div>
     {% else %}
-    <div class="shop-grid shop-product-grid{% if use_flagship %} flagship-product-grid flagship-product-grid--dense{% endif %}" role="list">
+    <div class="shop-grid shop-product-grid" role="list">
       {% for product in products %}
       {% include "products/public/_shop_product_card.html" %}
       {% endfor %}
     </div>
     {% endif %}
-  </section>
+  </div>
+</section>
 
-  {% if use_flagship %}
-  {% include "products/public/_shop_testimonials.html" %}
-  {% include "products/public/_shop_value_props.html" %}
-  {% endif %}
+{% if media_gallery %}
+<section class="kc-section kc-section--tight" aria-label="From our social">
+  <div class="kc-container">
+    <div class="kc-section-head"><h2 class="kc-section-title">From our social</h2></div>
+    <div class="shop-grid shop-product-grid">
+      {% for img in media_gallery|slice:":8" %}
+      <div class="shop-product-card" style="pointer-events:none">
+        <div class="shop-product-card-media"><img src="{{ img.url }}" alt="{{ img.caption|default:brand_name }}" loading="lazy"></div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
 
-  {% if blurb and not use_flagship %}
-  <section class="shop-about" aria-label="About this shop">
-    <h2 class="shop-section-title">About {{ brand_name }}</h2>
-    <p class="shop-about-blurb">{{ blurb }}</p>
-  </section>
-  {% endif %}
-
-  {% if faq_items %}
-  <section class="shop-faq" aria-label="Frequently asked questions">
-    <h2 class="shop-section-title">Questions &amp; answers</h2>
+{% if faq_items %}
+<section class="kc-section kc-section--tight shop-faq" aria-label="FAQ">
+  <div class="kc-container">
+    <h2 class="kc-section-title">Questions &amp; answers</h2>
     <div class="shop-faq-list">
-      {% for item in faq_items|slice:":4" %}
+      {% for item in faq_items|slice:":5" %}
       <details class="shop-faq-item">
-        <summary class="shop-faq-question">
-          {% if item.question %}{{ item.question }}{% elif item.keywords %}{{ item.keywords|join:", " }}{% else %}FAQ{% endif %}
-        </summary>
+        <summary class="shop-faq-question">{% if item.question %}{{ item.question }}{% elif item.keywords %}{{ item.keywords|join:", " }}{% else %}FAQ{% endif %}</summary>
         <div class="shop-faq-answer">{% if item.answer %}{{ item.answer }}{% else %}{{ item.reply }}{% endif %}</div>
       </details>
       {% endfor %}
     </div>
-  </section>
-  {% elif user.wa_faq_answers %}
-  <section class="shop-faq" aria-label="Frequently asked questions">
-    <h2 class="shop-section-title">Questions &amp; answers</h2>
-    <div class="shop-faq-list">
-      {% for item in user.wa_faq_answers|slice:":4" %}
-      <details class="shop-faq-item">
-        <summary class="shop-faq-question">{{ item.keywords|join:", " }}</summary>
-        <div class="shop-faq-answer">{{ item.reply }}</div>
-      </details>
-      {% endfor %}
-    </div>
-  </section>
-  {% endif %}
-
-  {% if shop_footer.hours or shop_footer.delivery_note %}
-  <section class="shop-section shop-footer-info" aria-label="Shop info">
-    {% if shop_footer.hours %}<p><strong>Hours:</strong> {{ shop_footer.hours }}</p>{% endif %}
-    {% if shop_footer.delivery_note %}<p>{{ shop_footer.delivery_note }}</p>{% endif %}
-    {% if shop_footer.policy_url %}<p><a href="{{ shop_footer.policy_url }}" rel="noopener">Shop policies</a></p>{% endif %}
-  </section>
-  {% endif %}
-
-  {% include "products/public/_shop_unified_footer.html" %}
-
-  {% if show_powered %}
-  <p class="shop-powered">Powered by <a href="https://kovaagents.com" rel="noopener">Kova</a></p>
-  {% endif %}
-</div>
-
-{% if use_flagship %}
-{% include "products/public/_shop_sticky_commerce_bar.html" %}
-{% else %}
-{% include "products/public/_shop_wa_fab.html" %}
-{% include "products/public/_shop_mobile_nav.html" with hide_whatsapp_in_nav=True %}
+  </div>
+</section>
 {% endif %}
 
-{% include "products/public/_shop_reels_autoplay.js.html" %}
-{% if not use_flagship %}{% include "products/public/_shop_hero_carousel.js.html" %}{% endif %}
-<script>
-(function () {
-  document.querySelectorAll('.shop-share-btn').forEach(function (btn) {
-    if (navigator.share) {
-      btn.hidden = false;
-      btn.addEventListener('click', function () {
-        navigator.share({
-          title: btn.dataset.shareTitle || document.title,
-          url: btn.dataset.shareUrl || window.location.href
-        }).catch(function () {});
-      });
-    }
-  });
+{% if shop_footer.hours or shop_footer.delivery_note %}
+<section class="kc-container kc-section--tight" aria-label="Shop info">
+  {% if shop_footer.hours %}<p><strong>Hours:</strong> {{ shop_footer.hours }}</p>{% endif %}
+  {% if shop_footer.delivery_note %}<p>{{ shop_footer.delivery_note }}</p>{% endif %}
+</section>
+{% endif %}
 
-  var searchInput = document.getElementById('shop-product-search');
-  if (searchInput) {
-    var cards = Array.prototype.slice.call(document.querySelectorAll('.shop-product-card'));
-    var emptyMsg = document.getElementById('shop-search-empty');
-    var countEl = document.querySelector('[data-catalog-count]');
+<div class="kc-container">
+  {% include "products/public/_shop_unified_footer.html" %}
+  {% if powered_by_kova %}
+  <p class="shop-powered kc-powered">Powered by <a href="https://kovaagents.com" rel="noopener">Kova</a></p>
+  {% endif %}
+</div>
+{% endblock %}
 
-    function filterProducts() {
-      var query = (searchInput.value || '').trim().toLowerCase();
-      var visible = 0;
-      cards.forEach(function (card) {
-        var name = card.getAttribute('data-product-name') || '';
-        var show = !query || name.indexOf(query) !== -1;
-        card.hidden = !show;
-        if (show) visible += 1;
-      });
-      if (emptyMsg) emptyMsg.hidden = visible > 0 || !query;
-      if (countEl) countEl.textContent = visible + ' item' + (visible === 1 ? '' : 's');
-      document.querySelectorAll('.shop-category-section').forEach(function (section) {
-        var sectionCards = section.querySelectorAll('.shop-product-card');
-        var anyVisible = Array.prototype.some.call(sectionCards, function (c) { return !c.hidden; });
-        section.hidden = query ? !anyVisible : false;
-      });
-    }
-
-    searchInput.addEventListener('input', filterProducts);
-    searchInput.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') { e.preventDefault(); filterProducts(); }
-    });
-  }
-
-  document.querySelectorAll('.category-chip').forEach(function (chip) {
-    chip.addEventListener('click', function () {
-      document.querySelectorAll('.category-chip').forEach(function (c) { c.classList.remove('is-active'); });
-      chip.classList.add('is-active');
-    });
-  });
-})();
-</script>
-</body>
-{% endwith %}{% endwith %}
-</html>
+{% block sticky %}
+{% if wa_url %}
+<div class="kc-sticky-bar" aria-label="Quick order">
+  <span class="kc-section-sub" style="margin:0;font-weight:600">{{ brand_name }}</span>
+  <a href="{{ wa_url }}" class="shop-btn shop-btn--wa shop-btn--sm" target="_blank" rel="noopener">Order on WhatsApp</a>
+</div>
+{% endif %}
+{% endblock %}
