@@ -121,6 +121,95 @@ def approve_post_for_user(
     }
 
 
+_REPUBLISHABLE_STATUSES = (
+    Post.Status.APPROVED,
+    Post.Status.SCHEDULED,
+    Post.Status.FAILED,
+)
+
+
+def republish_post_for_user(
+    user,
+    post,
+    *,
+    schedule_intent: str = "post_now",
+    exact_datetime: str | None = None,
+) -> dict:
+    """Reschedule or immediately republish an approved, scheduled, or failed post."""
+    if post.user_id != user.pk:
+        return {"success": False, "error": "not_owner", "post_id": str(post.id)}
+
+    republishable = post.status in _REPUBLISHABLE_STATUSES
+    if not republishable and not (
+        post.status == Post.Status.PENDING_APPROVAL and post.publish_needs_retry
+    ):
+        return {"success": False, "error": "invalid_status", "post_id": str(post.id)}
+
+    from apps.platforms.token_health import get_post_token_block
+
+    token_block = get_post_token_block(post)
+    if token_block:
+        return {
+            "success": False,
+            "error": "token_expiring",
+            "post_id": str(post.id),
+            "message": token_block["message"],
+            "reconnect_url_name": token_block["reconnect_url_name"],
+        }
+
+    from apps.content.safety import (
+        POLICY_BLOCK_MESSAGE,
+        block_post_for_policy,
+        check_post_safe,
+        is_publishing_paused,
+    )
+
+    paused, pause_reason = is_publishing_paused(user)
+    if paused:
+        return {
+            "success": False,
+            "error": "publish_paused",
+            "post_id": str(post.id),
+            "message": pause_reason,
+        }
+
+    safety = check_post_safe(post)
+    if not safety.safe:
+        block_post_for_policy(post, safety, source="republish")
+        return {
+            "success": False,
+            "error": "policy_blocked",
+            "post_id": str(post.id),
+            "message": POLICY_BLOCK_MESSAGE,
+        }
+
+    scheduled_at, publish_now = _resolve_scheduled_at(
+        user, post, schedule_intent, exact_datetime,
+    )
+    post.scheduled_at = scheduled_at
+    post.status = Post.Status.APPROVED
+    post.publish_error = ""
+    post.ai_reasoning = ""
+    post.save(update_fields=[
+        "status", "scheduled_at", "publish_error", "ai_reasoning", "updated_at",
+    ])
+
+    if publish_now:
+        from apps.content.tasks import publish_post
+        from apps.utils import fire_task
+
+        fire_task(publish_post, str(post.id))
+
+    preview = (post.content_text or "")[:60].strip()
+    return {
+        "success": True,
+        "post_id": str(post.id),
+        "published_now": publish_now,
+        "preview": preview,
+        "platform": post.social_account.platform if post.social_account else "",
+    }
+
+
 def get_pending_posts(user, *, limit: int = 20):
     return list(
         Post.objects.filter(

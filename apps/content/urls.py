@@ -30,6 +30,7 @@ urlpatterns = [
     path("<uuid:post_id>/edit/", views.edit_post, name="edit"),
     path("<uuid:post_id>/reschedule/", views.reschedule_post, name="reschedule"),
     path("<uuid:post_id>/approve/", views.approve_post, name="approve"),
+    path("<uuid:post_id>/republish/", views.republish_post, name="republish"),
     path("<uuid:post_id>/reject/", views.reject_post, name="reject"),
     path("<uuid:post_id>/delete/", views.delete_post, name="delete_post"),
     path("<uuid:post_id>/regenerate/", views.regenerate_post, name="regenerate"),

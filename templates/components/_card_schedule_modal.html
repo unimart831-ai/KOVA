@@ -17,8 +17,8 @@
 
     {# Modal panel — nested x-data for image-approval step #}
     <div x-show="showSchedule"
-         x-data="{ imgOk: {% if post.reel_has_video or not post.media_urls and not post.reel_compose_pending %}true{% else %}false{% endif %} }"
-         x-effect="if(!showSchedule) imgOk = {% if post.reel_has_video or not post.media_urls and not post.reel_compose_pending %}true{% else %}false{% endif %}"
+         x-data="{ imgOk: {% if schedule_mode == 'republish' or post.reel_has_video or not post.media_urls and not post.reel_compose_pending %}true{% else %}false{% endif %} }"
+         x-effect="if(!showSchedule) imgOk = {% if schedule_mode == 'republish' or post.reel_has_video or not post.media_urls and not post.reel_compose_pending %}true{% else %}false{% endif %}"
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0 scale-95 translate-y-2"
          x-transition:enter-end="opacity-100 scale-100 translate-y-0"
@@ -31,9 +31,9 @@
       <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
         <div>
           <h3 class="text-sm font-semibold text-gray-900 dark:text-white"
-              x-text="imgOk ? 'Approve &amp; Schedule' : 'Review image'">{% if post.media_urls %}Review image{% else %}Approve &amp; Schedule{% endif %}</h3>
+              x-text="imgOk ? '{% if schedule_mode == 'republish' %}Publish or Reschedule{% else %}Approve &amp; Schedule{% endif %}' : 'Review image'">{% if schedule_mode == 'republish' %}Publish or Reschedule{% elif post.media_urls %}Review image{% else %}Approve &amp; Schedule{% endif %}</h3>
           <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5"
-             x-text="imgOk ? 'Choose when to publish this post' : '{% if post.visual_strategy == 'carousel' %}{{ post.media_urls|length }} slide{{ post.media_urls|length|pluralize }} · looks good?{% else %}Looks good before we schedule it?{% endif %}'">{% if post.media_urls %}{% if post.visual_strategy == 'carousel' %}{{ post.media_urls|length }} slide{{ post.media_urls|length|pluralize }} · looks good?{% else %}Looks good before we schedule it?{% endif %}{% else %}Choose when to publish this post{% endif %}</p>
+             x-text="imgOk ? 'Choose when to publish this post' : '{% if post.visual_strategy == 'carousel' %}{{ post.media_urls|length }} slide{{ post.media_urls|length|pluralize }} · looks good?{% else %}Looks good before we schedule it?{% endif %}'">{% if schedule_mode == 'republish' %}Choose when to publish this post{% elif post.media_urls %}{% if post.visual_strategy == 'carousel' %}{{ post.media_urls|length }} slide{{ post.media_urls|length|pluralize }} · looks good?{% else %}Looks good before we schedule it?{% endif %}{% else %}Choose when to publish this post{% endif %}</p>
         </div>
         <button @click="showSchedule = false"
                 class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
@@ -41,6 +41,7 @@
         </button>
       </div>
 
+      {% if schedule_mode != 'republish' %}
       {% if post.media_urls or post.reel_has_video or post.reel_compose_pending %}
       {# ── Step 1: Image review ─────────────────────────────────────── #}
       <div x-show="!imgOk" x-cloak>
@@ -112,6 +113,7 @@
           {% endif %}
         </div>
       </div>
+      {% endif %}
       {% endif %}
 
       {# ── Step 2 (or only step): Scheduling options ────────────────── #}

@@ -48,14 +48,11 @@
                      class="inline-flex items-center text-xs font-medium text-kova-600 dark:text-kova-400 hover:underline">
                     View post &rarr;
                   </a>
-                  {% if notif.related_post.publish_needs_retry %}
-                  <form method="post" action="{% url 'content:retry_publish' notif.related_post.id %}" class="inline">
-                    {% csrf_token %}
-                    <button type="submit"
-                            class="inline-flex items-center gap-1 text-xs font-medium text-orange-600 dark:text-orange-400 hover:underline">
-                      Retry publish
-                    </button>
-                  </form>
+                  {% if notif.related_post.publish_needs_retry or notif.related_post.status == 'approved' or notif.related_post.status == 'scheduled' or notif.related_post.status == 'failed' %}
+                  <a href="{% url 'content:post_detail' notif.related_post.id %}#actions"
+                     class="inline-flex items-center gap-1 text-xs font-medium text-orange-600 dark:text-orange-400 hover:underline">
+                    {% if notif.related_post.status == 'approved' or notif.related_post.status == 'scheduled' %}Publish / reschedule{% else %}Retry publish{% endif %}
+                  </a>
                   {% endif %}
                 </div>
               {% endif %}

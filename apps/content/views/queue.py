@@ -466,6 +466,42 @@ def approve_post(request, post_id):
 
 @login_required
 @require_POST
+def republish_post(request, post_id):
+    """Reschedule or immediately republish an approved, scheduled, or failed post."""
+    from django.contrib import messages
+
+    from apps.content.approval import republish_post_for_user
+
+    post = get_object_or_404(Post.objects.select_related("social_account", "user"), id=post_id)
+    if not can_approve_post(request.user, post):
+        raise Http404
+    is_htmx = bool(request.headers.get("HX-Request"))
+
+    intent = request.POST.get("schedule_intent", "post_now")
+    exact = request.POST.get("exact_datetime") or None
+    result = republish_post_for_user(
+        request.user, post, schedule_intent=intent, exact_datetime=exact,
+    )
+
+    if not result.get("success"):
+        err = result.get("error", "")
+        msg = result.get("message") or "Could not publish this post."
+        if err == "invalid_status":
+            msg = "This post cannot be republished in its current state."
+        messages.warning(request, msg)
+        if is_htmx:
+            post.refresh_from_db()
+            return render(request, "components/post_card.html", {"post": post})
+        return redirect("content:post_detail", post_id=post.id)
+
+    post.refresh_from_db()
+    if is_htmx:
+        return render(request, "components/post_card.html", {"post": post})
+    return redirect("content:post_detail", post_id=post.id)
+
+
+@login_required
+@require_POST
 def batch_approve(request, seed_id):
     """Approve ALL posts from a campaign seed (legacy URL — prefer campaign_approve)."""
     return _handle_campaign_approve(request, seed_id=seed_id)

@@ -1,20 +1,33 @@
 {# Post card actions — approve/schedule modal, reject, edit, regenerate, view details #}
 
 {% if post.publish_needs_retry and post.status == 'pending_approval' %}
-  <div class="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2">
+  <div class="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2"
+       x-data="{ showSchedule: false }">
     <p class="text-xs text-red-600 dark:text-red-400 truncate flex-1" title="{{ post.publish_failure_message }}">
       {{ post.publish_failure_message|truncatechars:80 }}
     </p>
-    <form method="post" action="{% url 'content:retry_publish' post.id %}"
-          hx-post="{% url 'content:retry_publish' post.id %}"
-          hx-target="#post-{{ post.id }}" hx-swap="outerHTML">
-      {% csrf_token %}
-      <button type="submit"
-              class="inline-flex items-center gap-1 h-8 px-3 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors shrink-0">
-        Retry publish
-      </button>
-    </form>
+    <button @click="showSchedule = true" type="button"
+            class="inline-flex items-center gap-1 h-8 px-3 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors shrink-0">
+      Publish
+    </button>
+    {% include "components/_card_schedule_modal.html" with schedule_mode="republish" %}
   </div>
+  <script>
+    (function() {
+      var key = '_kr_{{ post.id }}';
+      if (window[key]) document.removeEventListener('schedule-{{ post.id }}', window[key]);
+      window[key] = function(e) {
+        var intent = e.detail.intent;
+        var values = {schedule_intent: intent};
+        if (intent === 'exact' && e.detail.datetime) values.exact_datetime = e.detail.datetime;
+        var tok = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (tok) values.csrfmiddlewaretoken = tok.value;
+        else { var h = document.body.getAttribute('hx-headers'); if(h){try{values.csrfmiddlewaretoken=JSON.parse(h)['X-CSRFToken']}catch(x){}} }
+        htmx.ajax('POST', '{% url "content:republish" post.id %}', {target:'#post-{{ post.id }}', swap:'outerHTML', values:values});
+      };
+      document.addEventListener('schedule-{{ post.id }}', window[key]);
+    })();
+  </script>
 
 {% elif post.status == 'pending_approval' or post.status == 'draft' %}
   <div class="flex items-center gap-2 pt-3 border-t border-gray-100 dark:border-gray-700"
@@ -106,7 +119,8 @@
   </div>
 
 {% elif post.status == 'published' or post.status == 'failed' or post.status == 'scheduled' or post.status == 'approved' or post.publish_needs_retry %}
-  <div class="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2">
+  <div class="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2"
+       x-data="{ showSchedule: false }">
     <a href="{% url 'content:post_detail' post.id %}"
        class="inline-flex items-center gap-1 h-8 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:12px;height:12px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
@@ -122,7 +136,7 @@
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
       </button>
       {% endif %}
-      {% if post.status == 'failed' or post.publish_needs_retry %}
+      {% if post.status != 'published' %}
       {% if 'rate limit' in post.publish_failure_message|lower or '429' in post.publish_failure_message %}
       <form method="post" action="{% url 'content:reschedule_rate_limited' post.id %}"
             hx-post="{% url 'content:reschedule_rate_limited' post.id %}"
@@ -134,17 +148,31 @@
         </button>
       </form>
       {% endif %}
-      <form method="post" action="{% url 'content:retry_publish' post.id %}"
-            hx-post="{% url 'content:retry_publish' post.id %}"
-            hx-target="#post-{{ post.id }}" hx-swap="outerHTML">
-        {% csrf_token %}
-        <button type="submit"
-                class="inline-flex items-center gap-1 h-8 px-3 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:12px;height:12px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-          Retry now
-        </button>
-      </form>
+      <button @click="showSchedule = true" type="button"
+              class="inline-flex items-center gap-1 h-8 px-3 text-xs font-medium text-white {% if post.status == 'failed' or post.publish_needs_retry %}bg-orange-600 hover:bg-orange-700{% else %}bg-kova-600 hover:bg-kova-700{% endif %} rounded-lg transition-colors">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:12px;height:12px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        {% if post.status == 'scheduled' %}Reschedule{% elif post.status == 'failed' or post.publish_needs_retry %}Retry publish{% else %}Publish{% endif %}
+      </button>
+      {% include "components/_card_schedule_modal.html" with schedule_mode="republish" %}
       {% endif %}
     </div>
   </div>
+  {% if post.status != 'published' %}
+  <script>
+    (function() {
+      var key = '_kr_{{ post.id }}';
+      if (window[key]) document.removeEventListener('schedule-{{ post.id }}', window[key]);
+      window[key] = function(e) {
+        var intent = e.detail.intent;
+        var values = {schedule_intent: intent};
+        if (intent === 'exact' && e.detail.datetime) values.exact_datetime = e.detail.datetime;
+        var tok = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (tok) values.csrfmiddlewaretoken = tok.value;
+        else { var h = document.body.getAttribute('hx-headers'); if(h){try{values.csrfmiddlewaretoken=JSON.parse(h)['X-CSRFToken']}catch(x){}} }
+        htmx.ajax('POST', '{% url "content:republish" post.id %}', {target:'#post-{{ post.id }}', swap:'outerHTML', values:values});
+      };
+      document.addEventListener('schedule-{{ post.id }}', window[key]);
+    })();
+  </script>
+  {% endif %}
 {% endif %}
