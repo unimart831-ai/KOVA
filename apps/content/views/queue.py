@@ -526,6 +526,7 @@ def _handle_campaign_approve(request, *, seed_id=None, campaign=None):
     from apps.content.campaign_approval import (
         approval_flash_messages,
         approve_campaign_posts,
+        client_approval_blocks_publish,
         sync_campaign_after_approval,
     )
 
