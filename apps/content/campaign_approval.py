@@ -20,7 +20,9 @@ PENDING_STATUSES = ("draft", "pending_approval")
 
 # Minutes after campaign anchor time — reel leads, stories follow, carousel spreads.
 ROLL_OUT_MINUTES: dict[str, int] = {
-    "primary_reel": 0,
+    "ig_reel": 0,
+    "fb_reel": 10,
+    "primary_reel": 0,  # legacy bundle tag
     "tiktok_copy": 5,
     "ig_feed": 90,
     "fb_feed": 120,

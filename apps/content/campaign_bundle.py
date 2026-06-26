@@ -6,7 +6,7 @@ v1 base-plan deliverables (when platforms are connected):
   - FB feed post
   - IG carousel (5–6 funnel slides)
   - IG story set (3 frames)
-  - 1 reel (IG preferred, else TikTok / Facebook)
+  - 1 reel per video platform (IG reel, FB reel, TikTok reel when connected)
   - LinkedIn + TikTok copy when those accounts are connected
 
 Enforcement runs after the Create Agent LLM pass so structural gaps are filled
@@ -37,7 +37,9 @@ BUNDLE_LABELS = {
     "ig_story_1": "Story 1",
     "ig_story_2": "Story 2",
     "ig_story_3": "Story 3",
-    "primary_reel": "Reel",
+    "ig_reel": "IG Reel",
+    "fb_reel": "FB Reel",
+    "primary_reel": "Reel",  # legacy tag from older campaigns
     "linkedin_copy": "LinkedIn",
     "tiktok_copy": "TikTok",
 }
@@ -58,8 +60,10 @@ def required_bundle_roles(connected_platforms: set[str] | list[str]) -> list[str
         ])
     if "facebook" in platforms:
         roles.append("fb_feed")
-    if platforms.intersection({"instagram", "tiktok", "facebook"}):
-        roles.append("primary_reel")
+    if "instagram" in platforms:
+        roles.append("ig_reel")
+    if "facebook" in platforms:
+        roles.append("fb_reel")
     if "linkedin" in platforms:
         roles.append("linkedin_copy")
     if "tiktok" in platforms:
@@ -253,6 +257,14 @@ def _matches_fb_feed(post) -> bool:
     return post.platform == "facebook" and post.post_format in ("text", "image")
 
 
+def _matches_ig_reel(post) -> bool:
+    return post.platform == "instagram" and post.post_format == "reel"
+
+
+def _matches_fb_reel(post) -> bool:
+    return post.platform == "facebook" and post.post_format == "reel"
+
+
 def _matches_reel(post) -> bool:
     return post.post_format == "reel" and post.platform in REEL_PLATFORM_PRIORITY
 
@@ -268,7 +280,7 @@ def _matches_tiktok(post) -> bool:
 def assign_bundle_roles(posts: list) -> dict[str, Any]:
     """
     Map bundle roles to posts. Tags content_dna and returns role → post dict.
-    One post may satisfy tiktok_copy via primary_reel on TikTok.
+    Legacy primary_reel tags map to ig_reel / fb_reel / tiktok_copy by platform.
     """
     from apps.content.models import Post
 
@@ -283,9 +295,18 @@ def assign_bundle_roles(posts: list) -> dict[str, Any]:
         if not _bundle_role(post):
             _set_bundle_role(post, role)
 
-    # Explicit tags win
+    # Explicit tags win (normalize legacy primary_reel → platform reel roles)
     for post in posts:
         role = _bundle_role(post)
+        if not role:
+            continue
+        if role == "primary_reel":
+            if post.platform == "instagram":
+                role = "ig_reel"
+            elif post.platform == "facebook":
+                role = "fb_reel"
+            elif post.platform == "tiktok":
+                role = "tiktok_copy"
         if role and role not in role_map:
             role_map[role] = post
             used.add(post.pk)
@@ -295,13 +316,25 @@ def assign_bundle_roles(posts: list) -> dict[str, Any]:
     if carousels:
         claim("ig_carousel", max(carousels, key=lambda p: len(p.carousel_slides or [])))
 
-    # Primary reel — platform priority
+    # Platform reels
+    ig_reels = [p for p in posts if p.pk not in used and _matches_ig_reel(p)]
+    if ig_reels:
+        claim("ig_reel", ig_reels[0])
+
+    fb_reels = [p for p in posts if p.pk not in used and _matches_fb_reel(p)]
+    if fb_reels:
+        claim("fb_reel", fb_reels[0])
+
+    # Legacy: unattributed reel → highest-priority platform slot still open
     reels = [p for p in posts if p.pk not in used and _matches_reel(p)]
     if reels:
         order = {plat: i for i, plat in enumerate(REEL_PLATFORM_PRIORITY)}
         best_reel = min(reels, key=lambda p: order.get(p.platform, 99))
-        claim("primary_reel", best_reel)
-        if best_reel.platform == "tiktok":
+        if best_reel.platform == "instagram" and "ig_reel" not in role_map:
+            claim("ig_reel", best_reel)
+        elif best_reel.platform == "facebook" and "fb_reel" not in role_map:
+            claim("fb_reel", best_reel)
+        elif best_reel.platform == "tiktok":
             claim("tiktok_copy", best_reel)
 
     # IG feed
@@ -452,13 +485,6 @@ def bundle_display_for_studio(posts: list, connected_platforms=None) -> dict[str
     }
 
 
-def _reel_target_platform(account_map: dict) -> str | None:
-    for plat in REEL_PLATFORM_PRIORITY:
-        if plat in account_map:
-            return plat
-    return None
-
-
 def _adapt_caption(text: str, platform: str, max_len: int = 2200) -> str:
     cleaned = re.sub(r"\s+", " ", (text or "").strip())
     if not cleaned:
@@ -468,6 +494,54 @@ def _adapt_caption(text: str, platform: str, max_len: int = 2200) -> str:
     if len(cleaned) > max_len:
         return cleaned[: max_len - 1] + "…"
     return cleaned
+
+
+def _reel_slot_payload(seed, platform: str) -> dict[str, Any]:
+    """Build reel post fields for a specific platform."""
+    from apps.content.models import Post
+
+    ctx = _campaign_context(seed)
+    hook = ctx["hook"][:120]
+    if platform == "facebook":
+        reel_caption = hook
+        if ctx["price"]:
+            reel_caption += f"\n\n{ctx['price']}"
+        reel_caption += "\n\nWatch till the end 👇"
+    elif platform == "tiktok":
+        reel_caption = f"{hook[:80]} 🔥\n\n#fyp #smallbusiness"
+    else:
+        reel_caption = f"{hook}\n\n{'💰 ' + ctx['price'] + chr(10) if ctx['price'] else ''}Link in bio 👆"
+
+    visual_meta: dict[str, Any] = {
+        "image_prompt": (
+            f"Vertical 9:16 cinematic product shot of {ctx['name']}, "
+            f"dynamic lighting, reel-ready, no text in image"
+        ),
+        "bundle_synthesized": True,
+    }
+    product = getattr(seed, "product", None)
+    if product:
+        urls = list(getattr(product, "all_image_urls", None) or [])
+        if urls:
+            visual_meta["source_images"] = urls[:5]
+
+    label = {
+        "instagram": "IG",
+        "facebook": "Facebook",
+        "tiktok": "TikTok",
+    }.get(platform, platform.title())
+
+    return {
+        "platform": platform,
+        "post_format": Post.PostFormat.REEL,
+        "content_text": _adapt_caption(reel_caption, platform, 2200),
+        "content_intent": "offer",
+        "image_prompt": visual_meta["image_prompt"],
+        "aspect_ratio": Post.AspectRatio.STORY,
+        "visual_strategy": "ai_photo",
+        "visual_metadata": visual_meta,
+        "ai_angle": f"Campaign bundle — {label} motion reel",
+    }
 
 
 def _synthesize_slot_payload(
@@ -539,33 +613,11 @@ def _synthesize_slot_payload(
             "ai_angle": f"Campaign bundle — story frame {frame_num}",
         }
 
-    if role == "primary_reel":
-        plat = reel_platform or "instagram"
-        hook = ctx["hook"][:120]
-        reel_caption = f"{hook}\n\n{'💰 ' + ctx['price'] + chr(10) if ctx['price'] else ''}Link in bio 👆"
-        visual_meta: dict[str, Any] = {
-            "image_prompt": (
-                f"Vertical 9:16 cinematic product shot of {ctx['name']}, "
-                f"dynamic lighting, reel-ready, no text in image"
-            ),
-            "bundle_synthesized": True,
-        }
-        product = getattr(seed, "product", None)
-        if product:
-            urls = list(getattr(product, "all_image_urls", None) or [])
-            if urls:
-                visual_meta["source_images"] = urls[:5]
-        return {
-            "platform": plat,
-            "post_format": Post.PostFormat.REEL,
-            "content_text": _adapt_caption(reel_caption, plat, 2200),
-            "content_intent": "offer",
-            "image_prompt": visual_meta["image_prompt"],
-            "aspect_ratio": Post.AspectRatio.STORY,
-            "visual_strategy": "ai_photo",
-            "visual_metadata": visual_meta,
-            "ai_angle": "Campaign bundle — motion reel",
-        }
+    if role in ("ig_reel", "primary_reel"):
+        return _reel_slot_payload(seed, reel_platform or "instagram")
+
+    if role == "fb_reel":
+        return _reel_slot_payload(seed, "facebook")
 
     if role == "linkedin_copy":
         li_text = _adapt_caption(source_text, "linkedin", 3000)
@@ -581,20 +633,7 @@ def _synthesize_slot_payload(
         }
 
     if role == "tiktok_copy":
-        tiktok_caption = f"{ctx['hook'][:80]} 🔥\n\n#fyp #smallbusiness"
-        return {
-            "platform": "tiktok",
-            "post_format": Post.PostFormat.REEL,
-            "content_text": tiktok_caption,
-            "content_intent": "awareness",
-            "image_prompt": (
-                f"Vertical 9:16 TikTok-style energetic shot of {ctx['name']}, "
-                f"trend-aware, bold colors, no text in image"
-            ),
-            "aspect_ratio": Post.AspectRatio.STORY,
-            "visual_strategy": "ai_photo",
-            "ai_angle": "Campaign bundle — TikTok reel",
-        }
+        return _reel_slot_payload(seed, "tiktok")
 
     return {}
 
@@ -826,21 +865,19 @@ def ensure_campaign_bundle(
         return []
 
     source = _best_source_post(existing_posts)
-    reel_platform = _reel_target_platform(account_map)
+
     created: list = []
 
     for role in missing:
-        if role == "tiktok_copy" and audit["role_map"].get("primary_reel"):
-            reel_post = audit["role_map"]["primary_reel"]
-            if reel_post.platform == "tiktok":
-                continue
-
-        if role == "primary_reel" and not reel_platform:
+        existing_reel = None
+        for reel_role in ("ig_reel", "fb_reel", "primary_reel"):
+            existing_reel = audit["role_map"].get(reel_role)
+            if existing_reel:
+                break
+        if role == "tiktok_copy" and existing_reel and existing_reel.platform == "tiktok":
             continue
 
-        payload = _synthesize_slot_payload(
-            role, seed, source, reel_platform=reel_platform,
-        )
+        payload = _synthesize_slot_payload(role, seed, source)
         if not payload:
             continue
 
@@ -885,7 +922,7 @@ def campaign_bundle_prompt_section(connected_platforms: set[str] | list[str]) ->
     if "instagram" in platforms:
         lines.append("- Instagram: feed image post AND/OR carousel (5–6 slides) AND story frames AND reel")
     if "facebook" in platforms:
-        lines.append("- Facebook: feed post (text or image)")
+        lines.append("- Facebook: feed post (text or image) AND vertical reel (post_format=reel)")
     if "linkedin" in platforms:
         lines.append("- LinkedIn: thought-leadership text post")
     if "tiktok" in platforms:

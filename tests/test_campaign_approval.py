@@ -56,7 +56,7 @@ def _post(user, seed, account, fmt, role, *, needs_media=False):
 class TestCampaignRolloutOrder:
     def test_reel_before_carousel(self, user, ig_account):
         seed = ContentSeed.objects.create(user=user, idea="Test")
-        reel = _post(user, seed, ig_account, "reel", "primary_reel")
+        reel = _post(user, seed, ig_account, "reel", "ig_reel")
         carousel = _post(user, seed, ig_account, "carousel", "ig_carousel")
         assert campaign_rollout_minutes(reel) < campaign_rollout_minutes(carousel)
 
@@ -67,7 +67,7 @@ class TestApproveCampaignPosts:
         seed = ContentSeed.objects.create(user=user, idea="Campaign")
         ensure_campaign_for_seed(seed, title="Campaign")
         posts = [
-            _post(user, seed, ig_account, "reel", "primary_reel"),
+            _post(user, seed, ig_account, "reel", "ig_reel"),
             _post(user, seed, ig_account, "image", "ig_feed"),
             _post(user, seed, fb_account, "text", "fb_feed"),
         ]
@@ -81,7 +81,7 @@ class TestApproveCampaignPosts:
 
     def test_staggered_rollout(self, user, ig_account):
         seed = ContentSeed.objects.create(user=user, idea="Stagger")
-        reel = _post(user, seed, ig_account, "reel", "primary_reel")
+        reel = _post(user, seed, ig_account, "reel", "ig_reel")
         carousel = _post(user, seed, ig_account, "carousel", "ig_carousel")
         carousel.carousel_slides = [{"heading": "A", "body": "B", "image_url": "/x.jpg"}] * 6
         carousel.save(update_fields=["carousel_slides"])

@@ -56,13 +56,15 @@ class TestRequiredBundleRoles:
         assert "ig_carousel" in roles
         assert "ig_story_1" in roles
         assert "fb_feed" in roles
-        assert "primary_reel" in roles
+        assert "ig_reel" in roles
+        assert "fb_reel" in roles
 
     def test_linkedin_tiktok_when_connected(self):
         roles = required_bundle_roles({"linkedin", "tiktok"})
         assert "linkedin_copy" in roles
         assert "tiktok_copy" in roles
-        assert "primary_reel" in roles
+        assert "ig_reel" not in roles
+        assert "fb_reel" not in roles
 
 
 @pytest.mark.django_db
@@ -137,7 +139,13 @@ class TestAuditCampaignBundle:
             user=user, seed=seed, social_account=ig_account, platform="instagram",
             post_format=Post.PostFormat.REEL, content_text="Reel hook",
             media_urls=["/m/r.jpg"], media_status=Post.MediaStatus.GENERATED,
-            content_dna={"bundle_role": "primary_reel"},
+            content_dna={"bundle_role": "ig_reel"},
+        ))
+        posts.append(Post.objects.create(
+            user=user, seed=seed, social_account=fb_account, platform="facebook",
+            post_format=Post.PostFormat.REEL, content_text="FB reel hook",
+            media_urls=["/m/fr.jpg"], media_status=Post.MediaStatus.GENERATED,
+            content_dna={"bundle_role": "fb_reel"},
         ))
         posts.append(Post.objects.create(
             user=user, seed=seed, social_account=fb_account, platform="facebook",
@@ -171,12 +179,13 @@ class TestEnsureCampaignBundle:
             account_map=account_map,
             initial_status=Post.Status.PENDING_APPROVAL,
         )
-        assert len(created) >= 5  # carousel, 3 stories, reel, ig feed at minimum
+        assert len(created) >= 6  # carousel, 3 stories, ig reel, fb reel, ig feed at minimum
 
         all_posts = list(Post.objects.filter(seed=seed))
         audit = audit_campaign_bundle(all_posts, {"instagram", "facebook"})
         assert audit["slots"]["ig_carousel"]["status"] != "missing"
-        assert audit["slots"]["primary_reel"]["status"] != "missing"
+        assert audit["slots"]["ig_reel"]["status"] != "missing"
+        assert audit["slots"]["fb_reel"]["status"] != "missing"
         assert audit["slots"]["ig_feed"]["status"] != "missing"
 
         campaign = seed.marketing_campaign

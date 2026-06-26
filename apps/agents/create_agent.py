@@ -942,6 +942,35 @@ def build_fallback_posts(seed: ContentSeed, platforms: list[dict]) -> tuple[str,
             if shop_url:
                 text += f"\n\n{shop_url}"
             post_format = "text"
+            posts.append({
+                "platform": plat,
+                "username": handle,
+                "content_text": text.strip(),
+                "content_type": "original",
+                "post_format": post_format,
+                "carousel_slides": [],
+                "framework_used": "Template fallback",
+                "angle": "Direct highlight",
+                "reasoning": "Generated without AI — edit before publishing",
+                "predicted_score": 50,
+                "image_prompt": "",
+                "visual_strategy": {"strategy": "none"},
+            })
+            posts.append({
+                "platform": plat,
+                "username": handle,
+                "content_text": f"{hook} 🎬".strip(),
+                "content_type": "original",
+                "post_format": "reel",
+                "carousel_slides": [],
+                "framework_used": "Template fallback",
+                "angle": "Motion highlight",
+                "reasoning": "Generated without AI — edit before publishing",
+                "predicted_score": 50,
+                "image_prompt": f"Vertical 9:16 product shot of {name}, dynamic lighting, no text",
+                "visual_strategy": {"strategy": "ai_photo"},
+            })
+            continue
         elif plat == "tiktok":
             text = f"{hook} {'Link in bio!' if shop_url else 'Check it out!'}"
             post_format = "reel"
