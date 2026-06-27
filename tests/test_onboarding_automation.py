@@ -549,78 +549,9 @@ class TestExpressOnboardingViews:
         u.save(update_fields=["phone_number"])
         return u
 
-    def test_discovery_fast_path_skips_step_one_form(self, client):
+    def test_start_completes_onboarding(self, client, monkeypatch):
         u = self._user_with_phone(username="fast", email="fast@b.com")
         self._login_client(client, u)
-        resp = client.post(
-            "/accounts/onboarding/start/",
-            {
-                "business_type": "salon",
-                "goal": "bookings",
-                "company_name": "Glow Salon",
-            },
-            follow=False,
-        )
-        assert resp.status_code == 302
-        assert "step=2" in resp.url
-        u.refresh_from_db()
-        p = u.profile
-        assert p.company_name == "Glow Salon"
-        assert p.industry == "salon_beauty"
-        assert p.business_model == "service"
-        assert (p.onboarding_step_timestamps or {}).get("discovery_completed")
-
-    def test_choose_path_records_intent_and_routes_sell(self, client):
-        u = self._user_with_phone(username="route", email="r@b.com")
-        self._login_client(client, u)
-        resp = client.post(
-            "/accounts/onboarding/start/",
-            {"intent": "sell"},
-            follow=False,
-        )
-        assert resp.status_code == 302
-        assert "step=1" in resp.url
-        assert "via=sell" in resp.url
-        u.refresh_from_db()
-        assert (u.profile.onboarding_step_timestamps or {}).get("intent_sell")
-
-    def test_choose_path_routes_social_links_to_step_one(self, client):
-        u = self._user_with_phone(username="socialroute", email="social@b.com")
-        self._login_client(client, u)
-        resp = client.post(
-            "/accounts/onboarding/start/",
-            {"intent": "grow", "link": "https://instagram.com/kovaagent"},
-            follow=False,
-        )
-        assert resp.status_code == 302
-        assert "step=1" in resp.url
-        assert "via=url" in resp.url
-
-    def test_brand_voice_flow_then_confirm(self, client, monkeypatch):
-        u = self._user_with_phone(username="voiceflow", email="voice@b.com")
-        self._login_client(client, u)
-        client.post(
-            "/accounts/onboarding/start/",
-            {
-                "business_type": "salon",
-                "goal": "bookings",
-                "company_name": "Glow Salon",
-            },
-            follow=False,
-        )
-        resp = client.post(
-            "/accounts/onboarding/?step=2",
-            {
-                "brand_voice": "Warm, friendly, mixes English and Swahili.",
-                "example_1": "New week, new glow ✨ Book your slot today!",
-                "example_2": "",
-                "example_3": "",
-            },
-            follow=False,
-        )
-        assert resp.status_code == 302
-        assert "step=3" in resp.url
-
         monkeypatch.setattr(
             "apps.emails.tasks.send_welcome_email.delay",
             lambda pk: None,
@@ -631,15 +562,65 @@ class TestExpressOnboardingViews:
         )
         monkeypatch.setattr("apps.utils.fire_task", lambda task, pk: None)
 
-        resp = client.post("/accounts/onboarding/?step=3", follow=False)
+        resp = client.post(
+            "/accounts/onboarding/start/",
+            {
+                "company_name": "Glow Salon",
+                "brand_voice": "Warm, friendly salon in Westlands. We mix English and Swahili and keep captions short.",
+                "example_1": "New week, new glow ✨ Book your slot today!",
+            },
+            follow=False,
+        )
         assert resp.status_code == 302
         assert "onboarding/complete" in resp.url
-
         u.refresh_from_db()
+        p = u.profile
         assert u.onboarding_completed is True
-        assert u.profile.brand_voice.startswith("Warm")
-        assert len(u.profile.brand_voice_examples) == 1
-        assert (u.profile.onboarding_step_timestamps or {}).get("brand_voice_completed")
+        assert p.company_name == "Glow Salon"
+        assert p.brand_voice.startswith("Warm")
+        assert len(p.brand_voice_examples) == 1
+        assert not p.industry
+        assert (p.onboarding_step_timestamps or {}).get("brand_captured")
+
+    def test_choose_path_legacy_intent_redirects_to_start(self, client):
+        u = self._user_with_phone(username="route", email="r@b.com")
+        self._login_client(client, u)
+        resp = client.post(
+            "/accounts/onboarding/start/",
+            {"intent": "sell"},
+            follow=False,
+        )
+        assert resp.status_code == 200
+        assert b"Describe your brand" in resp.content
+
+    def test_choose_path_social_link_does_not_prefill(self, client):
+        u = self._user_with_phone(username="socialroute", email="social@b.com")
+        self._login_client(client, u)
+        resp = client.post(
+            "/accounts/onboarding/start/",
+            {"intent": "grow", "link": "https://instagram.com/kovaagent"},
+            follow=False,
+        )
+        assert resp.status_code == 200
+        assert b"id_brand_voice" in resp.content
+
+    def test_brand_description_required(self, client):
+        u = self._user_with_phone(username="voiceflow", email="voice@b.com")
+        self._login_client(client, u)
+        resp = client.post(
+            "/accounts/onboarding/start/",
+            {"company_name": "Glow Salon", "brand_voice": "Too short"},
+            follow=False,
+        )
+        assert resp.status_code == 200
+        assert not User.objects.get(pk=u.pk).onboarding_completed
+
+    def test_legacy_wizard_url_redirects_to_start(self, client):
+        u = self._user_with_phone(username="legacy", email="legacy@b.com")
+        self._login_client(client, u)
+        resp = client.get("/accounts/onboarding/?step=2", follow=False)
+        assert resp.status_code == 302
+        assert "onboarding/start" in resp.url
 
     def test_infer_from_url_endpoint_is_accessible_during_onboarding(self, client):
         u = self._user_with_phone(username="inferapi", email="infer@b.com")
@@ -661,15 +642,14 @@ class TestExpressOnboardingViews:
         assert payload["error_type"] == "social_profile"
         assert "redirect_url" not in payload
 
-    def test_express_wizard_confirm_finishes_onboarding(self, client, monkeypatch):
+    def test_legacy_wizard_url_when_brand_already_saved(self, client, monkeypatch):
         u = User.objects.create_user(username="wiz", email="w@b.com", password="P1!")
         u.phone_number = "0712345678"
         u.onboarding_completed = False
         u.save()
         p = u.profile
         p.company_name = "Test Shop"
-        p.industry = "ecommerce"
-        p.brand_voice = "Bold and direct."
+        p.brand_voice = "Bold and direct ecommerce brand selling fashion in Nairobi."
         p.brand_voice_examples = ["Check out our new arrivals!"]
         p.save()
 
@@ -684,22 +664,10 @@ class TestExpressOnboardingViews:
         monkeypatch.setattr("apps.utils.fire_task", lambda task, pk: None)
 
         self._login_client(client, u)
-        resp = client.post("/accounts/onboarding/?step=3", follow=False)
-        assert resp.status_code == 302
-        assert "onboarding/complete" in resp.url
-
-        u.refresh_from_db()
-        assert u.onboarding_completed is True
-        assert (u.profile.onboarding_step_timestamps or {}).get("step_2_completed")
-
-    def test_step2_requires_business_basics(self, client):
-        u = User.objects.create_user(username="gate", email="g@b.com", password="P1!")
-        u.phone_number = "0712345678"
-        u.save()
-        self._login_client(client, u)
-        resp = client.get("/accounts/onboarding/?step=2", follow=False)
+        resp = client.get("/accounts/onboarding/?step=3", follow=False)
         assert resp.status_code == 302
         assert "onboarding/start" in resp.url
+        assert not User.objects.get(pk=u.pk).onboarding_completed
 
 
 @pytest.mark.django_db

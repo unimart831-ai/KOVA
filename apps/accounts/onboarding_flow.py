@@ -7,14 +7,12 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-SETUP_TOTAL_STEPS = 3
+SETUP_TOTAL_STEPS = 1
 
 
 def setup_step_for_wizard(step: int) -> int:
-    """Map wizard screen to global setup progress (1=hire, 2=voice, 3=confirm)."""
-    if not step:
-        return 1
-    return min(max(int(step), 1), SETUP_TOTAL_STEPS)
+    """Single onboarding screen — always step 1."""
+    return 1
 
 
 def has_brand_voice_captured(profile) -> bool:
@@ -108,7 +106,8 @@ def ensure_instant_onboarding_wow(user) -> bool:
 
     profile = user.profile
     company = (profile.company_name or "your business").strip()
-    industry_label = profile.get_industry_display() if profile.industry else "your industry"
+    brand_snippet = (profile.brand_voice or "").strip()
+    brand_preview = brand_snippet[:160] + ("…" if len(brand_snippet) > 160 else "")
 
     seed_onboarding_preview_posts(user)
 
@@ -117,36 +116,34 @@ def ensure_instant_onboarding_wow(user) -> bool:
         status__in=[Post.Status.PENDING_APPROVAL, Post.Status.DRAFT],
     ).count()
 
-    pillars = [p for p in (profile.content_pillars or []) if (p or "").strip()][:3]
     opportunity_briefs = [
         {
-            "title": pillar,
-            "description": f"Content angle for {company}",
-            "why_now": "Starter campaign from your profile",
-        }
-        for pillar in pillars
-    ] or [
-        {
             "title": f"Introduce {company}",
-            "description": "Who you are and what you offer",
+            "description": brand_preview or f"Who {company} is and what you offer",
             "why_now": "First impression on social",
         },
         {
-            "title": f"Why customers choose {company}",
-            "description": "Your edge in {industry_label}",
+            "title": f"A day in the life of {company}",
+            "description": "Show customers what makes you different",
             "why_now": "Build trust early",
         },
     ]
+    if brand_snippet:
+        opportunity_briefs.insert(0, {
+            "title": "Your brand story",
+            "description": brand_preview,
+            "why_now": "From what you told Kova",
+        })
 
     stub_research = {
         "trending_topics": [
             {
-                "topic": f"What works on social in {industry_label}",
-                "suggested_angle": "Share proof, not promises",
+                "topic": f"Content ideas for {company}",
+                "suggested_angle": "Lead with your own words — Kova matches your voice",
             }
         ],
-        "opportunity_briefs": opportunity_briefs,
-        "source": "profile",
+        "opportunity_briefs": opportunity_briefs[:3],
+        "source": "brand_description",
     }
 
     completed = AgentAction.ActionStatus.COMPLETED
@@ -197,7 +194,7 @@ def ensure_instant_onboarding_wow(user) -> bool:
         summary = (
             f"Welcome to Kova, {company}! "
             f"{'Your draft posts are waiting in Studio — written in your voice. ' if post_count else ''}"
-            f"We're tuned for {industry_label} and will keep sharpening your plan as you approve content."
+            f"Kova is learning from what you told us and will sharpen every post as you approve content."
         )
         brief = DailyBrief.objects.create(
             user=user,
@@ -209,7 +206,7 @@ def ensure_instant_onboarding_wow(user) -> bool:
                 for b in opportunity_briefs[:3]
             ],
             performance_summary={
-                "highlight": f"You're set up for {industry_label}. Approve your first post to train the agents.",
+                "highlight": f"You're set up. Approve your first post to train the agents on {company}'s voice.",
                 "agent_summary": "Research, Create, and Strategist agents are active on your brand.",
             },
             agent_activity=[],

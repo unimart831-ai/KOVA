@@ -39,7 +39,9 @@ def _enrich_research_with_competitor_hints(user, research: dict) -> dict:
     from apps.analytics.models import Competitor
 
     profile = getattr(user, "profile", None)
-    industry = getattr(profile, "industry", "") or "your industry"
+    company = (getattr(profile, "company_name", "") or "your space").strip()
+    industry = getattr(profile, "industry", "") or ""
+    space_label = industry.replace("_", " ") if industry else company
     tracked = list(
         Competitor.objects.filter(user=user, is_active=True).values_list("name", flat=True)[:5]
     )
@@ -49,7 +51,7 @@ def _enrich_research_with_competitor_hints(user, research: dict) -> dict:
         research["competitor_landscape"] = f"Tracking {len(tracked)} competitor(s): {', '.join(tracked)}."
     else:
         research["competitor_landscape"] = (
-            f"In {industry.replace('_', ' ')}, watch local leaders on Instagram and TikTok — "
+            f"For {space_label}, watch local leaders on Instagram and TikTok — "
             "add competitors in Analytics to unlock gap analysis."
         )
     return research

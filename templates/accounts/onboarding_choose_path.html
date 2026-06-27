@@ -3,114 +3,69 @@
 {% block title %}Welcome — Step {{ setup_step }} of {{ setup_total }}{% endblock %}
 {% block page_title %}Welcome to Kova{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5 hidden sm:block">Hire your AI marketing employee — takes about 2 minutes.</p>
+<p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5 hidden sm:block">One quick step — then Kova starts working in your voice.</p>
 {% endblock %}
 
 {% block content %}
-<div class="onboarding-flow relative max-w-2xl mx-auto py-6 sm:py-8">
+<div class="onboarding-flow relative max-w-xl mx-auto py-6 sm:py-8">
   {% include "accounts/_onboarding_setup_progress.html" %}
 
   <div class="text-center mb-8">
-    <p class="text-sm font-semibold text-growth-700 dark:text-growth-400 mb-2">You're hiring Kova</p>
-    <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">What kind of business do you run?</h2>
-    <p class="mt-2 text-gray-700 dark:text-gray-300 text-sm sm:text-base">Tap a category — we'll tailor content, WhatsApp, and your shop.</p>
-    {% if business_hint %}
-    <p class="mt-3 text-sm text-kova-900 dark:text-kova-200 bg-kova-50 dark:bg-kova-950/50 border border-kova-200 dark:border-kova-700 rounded-lg px-4 py-2.5 max-w-lg mx-auto">
-      From your signup: <span class="font-semibold">"{{ business_hint }}"</span>
+    <p class="text-sm font-semibold text-kova-700 dark:text-kova-300 mb-2">You're hiring Kova</p>
+    <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Tell us about your brand</h2>
+    <p class="mt-2 text-gray-600 dark:text-gray-400 text-sm sm:text-base max-w-md mx-auto">
+      No industry templates — Kova learns from what you write here and uses it for every post.
     </p>
-    {% endif %}
   </div>
 
-  <form method="post" class="space-y-8"
+  <form method="post" class="app-surface p-5 sm:p-6 space-y-5"
         data-kova-busy="instant"
-        data-kova-busy-message="Tailoring Kova to your business…"
-        x-data="{ businessType: 'salon', goal: 'leads', showOtherIndustry: false }"
-        x-init="showOtherIndustry = businessType === 'other'">
+        data-kova-busy-message="Teaching Kova your brand…">
     {% csrf_token %}
 
-    <input type="hidden" name="business_type" :value="businessType">
-    <input type="hidden" name="goal" :value="goal">
-
-    {# Business type chips — Alpine-driven selection (reliable in dark mode) #}
-    <div>
-      <p class="section-label">Your business</p>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3" role="radiogroup" aria-label="Business type">
-        {% for bt in business_types %}
-        <button type="button"
-                role="radio"
-                :aria-checked="businessType === '{{ bt.id }}'"
-                @click="businessType = '{{ bt.id }}'; showOtherIndustry = businessType === 'other'"
-                class="onboarding-chip text-center w-full"
-                :class="businessType === '{{ bt.id }}' ? 'onboarding-chip--selected' : ''">
-          {% include "accounts/_business_type_icon.html" with icon=bt.icon %}
-          <span class="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white leading-tight block">{{ bt.label }}</span>
-        </button>
-        {% endfor %}
-      </div>
-
-      <div x-show="showOtherIndustry" x-cloak class="mt-4 space-y-3">
-        <div>
-          <label for="industry" class="label">Industry</label>
-          <select name="industry" id="industry" class="input w-full">
-            <option value="">Select industry…</option>
-            {% for value, label in industry_choices %}
-              {% if value != "other" %}
-              <option value="{{ value }}">{{ label }}</option>
-              {% endif %}
-            {% endfor %}
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <div>
-          <label for="industry_other" class="label">Describe your business <span class="text-gray-500 dark:text-gray-400 font-normal">(optional)</span></label>
-          <input type="text" name="industry_other" id="industry_other" class="input w-full" placeholder="e.g. Mobile money agent">
-        </div>
-      </div>
+    {% if form.non_field_errors %}
+    <div class="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-sm text-red-700 dark:text-red-300">
+      {{ form.non_field_errors }}
     </div>
+    {% endif %}
 
-    {# Goal chips #}
     <div>
-      <p class="section-label">What do you want more of?</p>
-      <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Primary goal">
-        {% for g in goal_options %}
-        <button type="button"
-                role="radio"
-                :aria-checked="goal === '{{ g.id }}'"
-                @click="goal = '{{ g.id }}'"
-                class="onboarding-goal-pill"
-                :class="goal === '{{ g.id }}' ? 'onboarding-goal-pill--selected' : ''">
-          {{ g.label }}
-        </button>
-        {% endfor %}
-      </div>
+      <label for="id_company_name" class="label">{{ form.company_name.label }}</label>
+      {{ form.company_name }}
+      {% for error in form.company_name.errors %}
+      <p class="text-xs text-red-600 mt-1">{{ error }}</p>
+      {% endfor %}
     </div>
 
     <div>
-      <label for="company_name" class="label">What should we call your business?</label>
-      <input type="text" name="company_name" id="company_name" class="input w-full text-base"
-             placeholder="e.g. Glow Salon, Mama Njeri's Kitchen" required
-             maxlength="255">
+      <label for="id_brand_voice" class="label">{{ form.brand_voice.label }}</label>
+      {{ form.brand_voice }}
+      {% if form.brand_voice.help_text %}
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">{{ form.brand_voice.help_text }}</p>
+      {% endif %}
+      {% for error in form.brand_voice.errors %}
+      <p class="text-xs text-red-600 mt-1">{{ error }}</p>
+      {% endfor %}
     </div>
 
     <div>
-      <label for="onboarding-link" class="label">Website <span class="text-gray-500 dark:text-gray-400 font-normal">(optional)</span></label>
-      <input type="url" name="link" id="onboarding-link" class="input w-full"
-             placeholder="https://yoursite.com">
-      <p class="text-xs text-gray-600 dark:text-gray-400 mt-1.5">Helps us learn your business name and industry. You'll define your voice on the next screen.</p>
+      <label for="id_example_1" class="label">{{ form.example_1.label }} <span class="text-gray-400 font-normal">(optional)</span></label>
+      {{ form.example_1 }}
+      {% for error in form.example_1.errors %}
+      <p class="text-xs text-red-600 mt-1">{{ error }}</p>
+      {% endfor %}
     </div>
 
-    <div class="flex flex-col sm:flex-row gap-3 pt-2">
-      <button type="submit" class="btn-primary w-full py-3.5 text-base shadow-growth">
-        Start my AI marketer
-        <svg class="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-        </svg>
-      </button>
-    </div>
+    <button type="submit" class="btn-primary w-full py-3.5 text-base shadow-growth">
+      Start my AI marketer
+      <svg class="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+      </svg>
+    </button>
   </form>
 
-  <p class="text-center text-xs text-gray-600 dark:text-gray-400 mt-6">
-    Email and phone stay on your account for login, briefs, and support.
+  <p class="text-center text-xs text-gray-500 dark:text-gray-400 mt-6">
+    Email and phone on your account are for login, briefs, and support only.
   </p>
 </div>
 {% endblock %}

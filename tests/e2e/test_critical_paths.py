@@ -148,13 +148,9 @@ class TestOnboardingFlow:
         page.click("button[type='submit']")
         page.wait_for_load_state("networkidle")
 
-        page.goto(f"{base_url}/accounts/onboarding/?step=1&via=manual")
-        page.fill("input[name='full_name']", "Onboard Test")
+        page.goto(f"{base_url}/accounts/onboarding/start/")
         page.fill("input[name='company_name']", "Test Brand Co")
-        page.select_option("select[name='industry']", "agency")
-        page.click("button[type='submit']")
-        page.wait_for_load_state("networkidle")
-
+        page.fill("textarea[name='brand_voice']", "We sell handmade jewelry in Nairobi. Warm, personal captions in English.")
         page.click("button[type='submit']")
         page.wait_for_load_state("networkidle")
 

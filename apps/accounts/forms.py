@@ -639,6 +639,57 @@ class CTASettingsForm(forms.ModelForm):
         }
 
 
+class OnboardingStartForm(forms.Form):
+    """Single onboarding screen — business name + brand description (no industry packs)."""
+
+    company_name = forms.CharField(
+        max_length=255,
+        label="Business name",
+        widget=forms.TextInput(attrs={
+            "class": "input text-base",
+            "placeholder": "e.g. Glow Salon, Mama Njeri's Kitchen",
+            "autocomplete": "organization",
+        }),
+    )
+    brand_voice = forms.CharField(
+        max_length=2000,
+        label="Describe your brand",
+        widget=forms.Textarea(attrs={
+            "class": "input text-base",
+            "rows": 5,
+            "placeholder": (
+                "What you sell or do, who you serve, and how you talk to customers. "
+                "Mix languages if that's how you post — Kova will match it."
+            ),
+        }),
+        help_text="Kova learns from this. Every post follows your words, not a generic industry template.",
+    )
+    example_1 = forms.CharField(
+        required=False,
+        max_length=2200,
+        label="Example post",
+        widget=forms.Textarea(attrs={
+            "class": "input",
+            "rows": 3,
+            "placeholder": "Optional — paste a caption you've published before.",
+        }),
+    )
+
+    def clean_company_name(self):
+        name = (self.cleaned_data.get("company_name") or "").strip()
+        if not name:
+            raise forms.ValidationError("What should we call your business?")
+        return name
+
+    def clean_brand_voice(self):
+        voice = (self.cleaned_data.get("brand_voice") or "").strip()
+        if len(voice) < 15:
+            raise forms.ValidationError(
+                "Give Kova at least a sentence or two — who you are and how you sound."
+            )
+        return voice
+
+
 class OnboardingBrandVoiceForm(forms.Form):
     """Step 2 — user-defined voice; Kova does not infer tone from social profiles."""
 

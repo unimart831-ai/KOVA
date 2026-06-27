@@ -14,8 +14,7 @@ from apps.accounts.forms import (
     UserSettingsForm,
     BrandProfileForm,
     CTASettingsForm,
-    OnboardingBrandVoiceForm,
-    OnboardingExpressStep1Form,
+    OnboardingStartForm,
     PhoneCaptureForm,
 )
 from apps.billing.models import get_user_plan_limits
@@ -23,9 +22,7 @@ from apps.accounts.onboarding_flow import (
     SETUP_TOTAL_STEPS,
     apply_url_inference_to_profile,
     finish_onboarding,
-    has_brand_voice_captured,
     parse_brand_voice_examples,
-    setup_step_for_wizard,
 )
 
 
@@ -34,23 +31,18 @@ def _onboarding_setup_context(*, step=None, path_choice=False, complete=False):
         return {
             "setup_step": 1,
             "setup_total": SETUP_TOTAL_STEPS,
-            "setup_label": "Hire your AI marketer",
+            "setup_label": "About your brand",
         }
     if complete:
         return {
-            "setup_step": SETUP_TOTAL_STEPS,
+            "setup_step": 1,
             "setup_total": SETUP_TOTAL_STEPS,
-            "setup_label": "First results loading",
+            "setup_label": "Kova is learning your brand",
         }
-    labels = {
-        1: "About your business",
-        2: "Your brand voice",
-        3: "Confirm — looks good?",
-    }
     return {
-        "setup_step": setup_step_for_wizard(step),
+        "setup_step": 1,
         "setup_total": SETUP_TOTAL_STEPS,
-        "setup_label": labels.get(step, ""),
+        "setup_label": "About your brand",
     }
 
 
@@ -208,251 +200,42 @@ def collect_phone(request):
 
 @login_required
 def onboarding_choose_path(request):
-    """Hire Kova — business type + goal in one conversational screen."""
+    """Single onboarding screen — business name + brand description, then go."""
     phone_redirect = _redirect_if_phone_required(request.user)
     if phone_redirect:
         return phone_redirect
 
-    from apps.accounts.onboarding_discovery import (
-        BUSINESS_TYPE_PRESETS,
-        GOAL_OPTIONS,
-        apply_business_type,
-        apply_goal_choice,
-        get_business_type_preset,
-    )
+    if request.user.onboarding_completed:
+        return redirect("brief:home")
 
-    profile = request.user.profile
-    if (profile.company_name or "").strip() and profile.industry:
-        if has_brand_voice_captured(profile):
-            return redirect("/accounts/onboarding/?step=3")
-        return redirect("/accounts/onboarding/?step=2")
-
-    if request.method == "POST":
-        from apps.accounts.onboarding_express import (
-            VALID_BUSINESS_MODELS,
-            VALID_INTENTS,
-            BUSINESS_MODEL_PRODUCT,
-            BUSINESS_MODEL_SERVICE,
-            BUSINESS_MODEL_PROFESSIONAL,
-            apply_business_model_defaults,
-            ensure_brand_defaults,
-            record_business_model,
-            record_intent,
-        )
-
-        business_type = (request.POST.get("business_type") or "").strip()
-        goal = (request.POST.get("goal") or "").strip()
-        company_name = (request.POST.get("company_name") or "").strip()
-        link = (request.POST.get("link") or "").strip()
-        industry_override = (request.POST.get("industry") or "").strip()
-        industry_other = (request.POST.get("industry_other") or "").strip()
-
-        # ── New conversational flow (primary) ──
-        if business_type:
-            preset = get_business_type_preset(business_type)
-            if not preset:
-                messages.error(request, "Pick a business type to continue.")
-                return redirect("accounts:onboarding_choose_path")
-
-            if not company_name:
-                messages.error(request, "What should we call your business?")
-                return redirect("accounts:onboarding_choose_path")
-
-            if business_type == "other" and not industry_override:
-                messages.error(request, "Pick your industry to continue.")
-                return redirect("accounts:onboarding_choose_path")
-
-            apply_business_type(
-                profile,
-                preset,
-                company_name=company_name,
-                industry=industry_override,
-                industry_other=industry_other,
-            )
-            if not profile.business_model:
-                profile.business_model = BUSINESS_MODEL_SERVICE
-                profile.save(update_fields=["business_model"])
-            if goal:
-                apply_goal_choice(profile, goal)
-            if preset.get("business_model"):
-                record_business_model(profile, preset["business_model"])
-            apply_business_model_defaults(profile, request.user)
-            ensure_brand_defaults(profile, request.user)
-            profile.record_onboarding_step("discovery_completed")
-
-            if link and not _looks_like_social_profile_url(link):
-                profile.website_url = link
-                profile.save(update_fields=["website_url"])
-                request.session["onboarding_express_link"] = link
-
-            return redirect("/accounts/onboarding/?step=2")
-
-        # ── Legacy express paths (tests + deep links) ──
-        business_model = (request.POST.get("business_model") or "").strip()
-        intent = (request.POST.get("intent") or "").strip()
-
-        if business_model in VALID_BUSINESS_MODELS:
-            record_business_model(profile, business_model)
-            apply_business_model_defaults(profile, request.user)
-        elif intent in VALID_INTENTS:
-            record_intent(profile, intent)
-
-        if link:
-            if not _looks_like_social_profile_url(link):
-                request.session["onboarding_express_link"] = link
-            return redirect("/accounts/onboarding/?step=1&via=url")
-
-        if business_model == BUSINESS_MODEL_PRODUCT:
-            return redirect("/accounts/onboarding/?step=1&via=sell")
-        if business_model == BUSINESS_MODEL_SERVICE:
-            return redirect("/accounts/onboarding/?step=1&via=service")
-        if business_model == BUSINESS_MODEL_PROFESSIONAL:
-            return redirect("/accounts/onboarding/?step=1&via=manual")
-        if intent == "sell":
-            return redirect("/accounts/onboarding/?step=1&via=sell")
-        if intent in ("grow", "both"):
-            return redirect("/accounts/onboarding/?step=1&via=manual")
-        return redirect("/accounts/onboarding/?step=1&via=manual")
-
-    business_hint = (request.session.pop("onboarding_business_hint", "") or "").strip()[:280]
-
-    from apps.accounts.models import UserProfile
-
-    return render(request, "accounts/onboarding_choose_path.html", {
-        "page_title": "Welcome to Kova",
-        "business_hint": business_hint,
-        "business_types": BUSINESS_TYPE_PRESETS,
-        "goal_options": GOAL_OPTIONS,
-        "industry_choices": UserProfile.Industry.choices,
-        **_onboarding_setup_context(path_choice=True),
-    })
-
-
-@login_required
-def onboarding_magic_connect(request):
-    """Deprecated — social auto-fill removed; voice comes from the user."""
-    messages.info(
-        request,
-        "Kova no longer copies voice from social profiles. "
-        "Tell us how you sound on the next screen.",
-    )
-    return redirect("accounts:onboarding_choose_path")
-
-
-@login_required
-def onboarding_view(request):
-    """Express onboarding — Step 1 basics, Step 2 preview + confirm."""
-    from apps.accounts.brand_preview import build_brand_preview
-    from apps.accounts.onboarding_express import ensure_brand_defaults
     from apps.platforms.models import SocialAccount
 
     profile = request.user.profile
 
-    phone_redirect = _redirect_if_phone_required(request.user)
-    if phone_redirect:
-        return phone_redirect
-
-    if "step" not in request.GET:
-        if not (profile.company_name or profile.industry):
-            return redirect("accounts:onboarding_choose_path")
-        if not has_brand_voice_captured(profile):
-            return redirect("/accounts/onboarding/?step=2")
-
-    step = int(request.GET.get("step", 1))
-    total_steps = 3
-
-    if step > total_steps:
-        return redirect(f"/accounts/onboarding/?step={total_steps}")
-
-    via = request.GET.get("via")
-    if via in ("url", "manual", "sell"):
-        marker = "path_choice_sell" if via == "sell" else f"path_choice_{via}"
-        if not (profile.onboarding_step_timestamps or {}).get(marker):
-            profile.record_onboarding_step(marker)
-
-    if step == 1:
-        express_link = request.session.pop("onboarding_express_link", None)
-        if express_link and request.method == "GET" and not (profile.website_url or "").strip():
-            profile.website_url = express_link
-            profile.save(update_fields=["website_url"])
-
-        form_class = OnboardingExpressStep1Form
-        extra_kwargs = {"user": request.user}
-
-        if request.method == "POST":
-            form = form_class(request.POST, instance=profile, **extra_kwargs)
-            if form.is_valid():
-                form.save()
-                profile.record_onboarding_step("step_1_completed")
-                ensure_brand_defaults(profile, request.user)
-                applied = getattr(form, "applied_pack_fields", None)
-                if applied:
-                    messages.info(
-                        request,
-                        f"We've pre-filled {len(applied)} brand defaults for your industry.",
-                    )
-                return redirect("/accounts/onboarding/?step=2")
-        else:
-            form = form_class(instance=profile, **extra_kwargs)
-
-        return render(request, "accounts/onboarding.html", {
-            "form": form,
-            "step": step,
-            "total_steps": total_steps,
-            "page_title": "About your business",
-            "prefill_url": express_link or (profile.website_url or ""),
-            "phone_on_file": bool((request.user.phone_number or "").strip()),
-            **_onboarding_setup_context(step=step),
-        })
-
-    if step == 2:
-        if not (profile.company_name or "").strip() or not profile.industry:
-            return redirect("accounts:onboarding_choose_path")
-
-        initial = {
-            "brand_voice": profile.brand_voice or "",
-        }
-        examples = profile.brand_voice_examples or []
-        for i, ex in enumerate(examples[:3], start=1):
-            initial[f"example_{i}"] = ex
-
-        if request.method == "POST":
-            form = OnboardingBrandVoiceForm(request.POST)
-            if form.is_valid():
-                profile.brand_voice = (form.cleaned_data.get("brand_voice") or "").strip()
-                profile.brand_voice_examples = parse_brand_voice_examples(
-                    form.cleaned_data.get("example_1", ""),
-                    form.cleaned_data.get("example_2", ""),
-                    form.cleaned_data.get("example_3", ""),
-                )
-                profile.tone_attributes = []
-                profile.save(update_fields=["brand_voice", "brand_voice_examples", "tone_attributes"])
-                profile.record_onboarding_step("brand_voice_completed")
-                ensure_brand_defaults(profile, request.user)
-                return redirect("/accounts/onboarding/?step=3")
-        else:
-            form = OnboardingBrandVoiceForm(initial=initial)
-
-        return render(request, "accounts/onboarding.html", {
-            "form": form,
-            "step": step,
-            "total_steps": total_steps,
-            "page_title": "Your brand voice",
-            **_onboarding_setup_context(step=step),
-        })
-
-    if step == 3:
-        if not has_brand_voice_captured(profile):
-            return redirect("/accounts/onboarding/?step=2")
-        if not (profile.company_name or "").strip() or not profile.industry:
-            return redirect("accounts:onboarding_choose_path")
-
-        ensure_brand_defaults(profile, request.user)
-        brand_preview = build_brand_preview(profile, request.user)
-
-        if request.method == "POST":
-            profile.record_onboarding_step("step_2_completed")
-            profile.record_onboarding_step("step_3_completed")
+    if request.method == "POST":
+        form = OnboardingStartForm(request.POST)
+        if form.is_valid():
+            profile.company_name = form.cleaned_data["company_name"]
+            profile.brand_voice = form.cleaned_data["brand_voice"]
+            profile.brand_voice_examples = parse_brand_voice_examples(
+                form.cleaned_data.get("example_1", ""),
+            )
+            profile.tone_attributes = []
+            profile.content_pillars = []
+            profile.target_audience = ""
+            profile.key_offerings = []
+            profile.goals = []
+            profile.save(update_fields=[
+                "company_name",
+                "brand_voice",
+                "brand_voice_examples",
+                "tone_attributes",
+                "content_pillars",
+                "target_audience",
+                "key_offerings",
+                "goals",
+            ])
+            profile.record_onboarding_step("brand_captured")
 
             has_platform = SocialAccount.objects.filter(
                 user=request.user, is_active=True
@@ -463,19 +246,35 @@ def onboarding_view(request):
             )
             messages.success(
                 request,
-                "Welcome to Kova! Your AI agency is analyzing your industry now.",
+                "Welcome to Kova! Your AI team is learning your brand now.",
             )
             return redirect("accounts:onboarding_complete")
+    else:
+        form = OnboardingStartForm()
 
-        return render(request, "accounts/onboarding.html", {
-            "step": step,
-            "total_steps": total_steps,
-            "brand_preview": brand_preview,
-            "page_title": "Confirm your brand",
-            **_onboarding_setup_context(step=step),
-        })
+    return render(request, "accounts/onboarding_choose_path.html", {
+        "form": form,
+        "page_title": "Welcome to Kova",
+        **_onboarding_setup_context(path_choice=True),
+    })
 
-    return redirect("/accounts/onboarding/?step=1")
+
+@login_required
+def onboarding_magic_connect(request):
+    """Deprecated — social auto-fill removed; voice comes from the user."""
+    messages.info(
+        request,
+        "Tell Kova about your brand on the next screen — we learn from your words, not templates.",
+    )
+    return redirect("accounts:onboarding_choose_path")
+
+
+@login_required
+def onboarding_view(request):
+    """Legacy wizard URL — single-screen onboarding lives at onboarding/start/."""
+    if request.user.onboarding_completed:
+        return redirect("brief:home")
+    return redirect("accounts:onboarding_choose_path")
 
 
 @login_required

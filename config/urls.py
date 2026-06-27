@@ -51,11 +51,7 @@ def landing_page(request):
 
 
 def landing_start(request):
-    """Capture hero business hint, then send to signup (Nas-style prompt flow)."""
-    if request.method == "POST":
-        hint = (request.POST.get("business_hint") or "").strip()[:280]
-        if hint:
-            request.session["onboarding_business_hint"] = hint
+    """Hero CTA → signup (no session prefill)."""
     return redirect("account_signup")
 
 
