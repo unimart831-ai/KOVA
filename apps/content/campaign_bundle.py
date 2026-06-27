@@ -588,16 +588,22 @@ def _reel_slot_payload(seed, platform: str) -> dict[str, Any]:
 
     visual_meta: dict[str, Any] = {
         "image_prompt": (
-            f"Vertical 9:16 cinematic product shot of {ctx['name']}, "
-            f"dynamic lighting, reel-ready, no text in image"
+            f"Vertical 9:16 premium product photography of {ctx['name']}, "
+            f"clean minimal scene, soft natural light, reel-ready, no text in image"
         ),
         "bundle_synthesized": True,
     }
     product = getattr(seed, "product", None)
     if product:
+        from apps.products.reel_curation import curate_reel_image_urls
+
         urls = list(getattr(product, "all_image_urls", None) or [])
         if urls:
-            visual_meta["source_images"] = urls[:5]
+            curated = curate_reel_image_urls(urls)
+            visual_meta["source_images"] = curated
+            if len(curated) >= 2:
+                visual_meta["reel_compose_backend"] = "ffmpeg"
+                visual_meta["prefer_photoroom_video"] = False
 
     label = {
         "instagram": "IG",
@@ -803,9 +809,18 @@ def _queue_bundle_media(post, seed, image_prompt: str, visual_strategy_data: dic
     meta = post.visual_metadata or {}
     source_images = meta.get("source_images") or []
     if post.post_format == Post.PostFormat.REEL and source_images:
-        post.media_urls = source_images[:1]
+        from apps.products.reel_curation import curate_reel_image_urls
+
+        curated = curate_reel_image_urls(source_images)
+        meta = dict(meta)
+        meta["source_images"] = curated
+        if len(curated) >= 2:
+            meta["prefer_photoroom_video"] = False
+            meta["reel_compose_backend"] = "ffmpeg"
+        post.visual_metadata = meta
+        post.media_urls = curated
         post.media_status = Post.MediaStatus.UPLOADED
-        post.save(update_fields=["media_urls", "media_status", "updated_at"])
+        post.save(update_fields=["visual_metadata", "media_urls", "media_status", "updated_at"])
         from apps.content.tasks import _queue_reel_compose
         _queue_reel_compose(str(post.pk))
         return True

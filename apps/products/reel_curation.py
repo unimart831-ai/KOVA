@@ -20,7 +20,8 @@ REEL_EXCLUDE_MARKERS = (
 )
 REEL_RAW_SNAP_MARKERS = ("product_images/",)
 REEL_MAX_SLIDES = 5
-REEL_MAX_AI_SCENES = 2
+REEL_MAX_AI_SCENES = 4
+REEL_MIN_SLIDES = 3
 
 
 def _is_raw_snap_url(url: str) -> bool:
@@ -138,8 +139,18 @@ def curate_reel_image_urls(urls: list[str], *, max_slides: int = REEL_MAX_SLIDES
     if promo:
         result = [u for u in result if "promo_frame" not in u] + promo
 
-    # Single hero product — one strong slide beats a repetitive slideshow.
-    if len(result) == 1:
-        return result
+    if len(pool) >= REEL_MIN_SLIDES and len(result) < REEL_MIN_SLIDES:
+        for url in ordered:
+            if url in seen:
+                continue
+            is_ai = any(m in url for m in ai_markers)
+            if is_ai and ai_kept >= REEL_MAX_AI_SCENES:
+                continue
+            if is_ai:
+                ai_kept += 1
+            result.append(url)
+            seen.add(url)
+            if len(result) >= REEL_MIN_SLIDES or len(result) >= max_slides:
+                break
 
     return result[:max_slides]

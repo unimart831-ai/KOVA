@@ -1087,9 +1087,10 @@ def _clean_name(product) -> str:
 
 _COMMERCE_VISIBILITY_RULES = (
     "The product must be the clear hero — fully visible, sharp, and unobstructed, "
-    "occupying at least half the frame. Use a simple realistic surface or setting with "
-    "soft natural or studio light. No water splash, liquid, powder burst, neon glow, "
-    "smoke, or particles covering the product. No text, logos, or extra products."
+    "occupying at least half the frame. Clean minimal background, soft diffused natural "
+    "or studio light, airy negative space, uncluttered premium e-commerce styling. "
+    "No water splash, liquid, powder burst, neon glow, smoke, or particles covering the product. "
+    "No text, logos, or extra products."
 )
 
 
@@ -1132,8 +1133,8 @@ def build_commerce_scene_prompt(scene: str, product, analysis: dict | None) -> s
             f"home decor e-commerce styling"
         ),
         "general": (
-            f"{name} on a clean neutral table surface, balanced soft studio lighting, "
-            f"simple uncluttered product photography"
+            f"{name} on a clean white or light oak surface, soft diffused daylight, "
+            f"minimal uncluttered product photography with generous negative space"
         ),
     }
     shelf_by_category = {

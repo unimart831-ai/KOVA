@@ -87,8 +87,11 @@ def apply_polished_reel_post(post, product) -> bool:
     meta["source_images"] = sources
     meta.setdefault("reel_template", "story_arc")
     meta["visual_strategy"] = meta.get("visual_strategy") or "carousel"
+    meta["prefer_photoroom_video"] = len(sources) == 1
+    if len(sources) >= 2:
+        meta["reel_compose_backend"] = "ffmpeg"
     post.visual_metadata = meta
-    post.media_urls = sources[:1]
+    post.media_urls = sources
     post.aspect_ratio = Post.AspectRatio.STORY
     post.media_status = Post.MediaStatus.GENERATED
     post.save(
@@ -161,6 +164,7 @@ def refresh_product_polished_posts(product) -> int:
     for post in candidates.iterator():
         if try_apply_product_polished_media(post):
             updated += 1
+    updated += refresh_product_reel_compose(product)
     if updated:
         logger.info(
             "Refreshed polished media on %d post(s) for product %s",
@@ -168,6 +172,47 @@ def refresh_product_polished_posts(product) -> int:
             product.pk,
         )
     return updated
+
+
+def refresh_product_reel_compose(product) -> int:
+    """
+    Re-queue reel compose when the product gallery grew (e.g. after async scene expand).
+    """
+    from apps.content.models import Post
+
+    sources = polished_reel_sources(product)
+    if len(sources) < 2:
+        return 0
+
+    queued = 0
+    for post in Post.objects.filter(
+        product=product,
+        post_format=Post.PostFormat.REEL,
+    ).iterator():
+        meta = dict(post.visual_metadata or {})
+        existing = meta.get("source_images") or []
+        if len(existing) >= len(sources):
+            continue
+        meta["source_images"] = sources
+        meta["prefer_photoroom_video"] = False
+        meta["reel_compose_backend"] = "ffmpeg"
+        meta.pop("reel_video_url", None)
+        meta["video_compose_status"] = "pending"
+        post.visual_metadata = meta
+        post.media_urls = sources
+        post.save(update_fields=["visual_metadata", "media_urls", "updated_at"])
+        from apps.content.tasks import _queue_reel_compose
+
+        _queue_reel_compose(str(post.pk))
+        queued += 1
+    if queued:
+        logger.info(
+            "Re-queued reel compose on %d post(s) for product %s (%d frames)",
+            queued,
+            product.pk,
+            len(sources),
+        )
+    return queued
 
 
 def product_has_polished_gallery(product) -> bool:

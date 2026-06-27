@@ -141,6 +141,57 @@ def generate_image(prompt: str, aspect_ratio: str = "square") -> Optional[str]:
     return _save_bytes_to_storage(img_bytes)
 
 
+# ── Reel scene prompts — clean, minimal, scroll-stopping ─────────────────────
+
+REEL_SCENE_SUFFIX = (
+    "Ultra-clean composition, soft diffused natural light, uncluttered background, "
+    "premium e-commerce quality, shallow depth of field, no text, no watermark, no logos."
+)
+
+REEL_SCENE_VARIANTS = (
+    "Hero close-up, product centered, soft studio lighting",
+    "Lifestyle context, product on a clean minimal surface, warm natural daylight",
+    "Alternate angle, three-quarter view, airy negative space, editorial product photography",
+    "Detail or use-context shot, subtle environment blur, polished marketing aesthetic",
+)
+
+
+def build_reel_scene_prompts(
+    subject: str,
+    base_prompt: str = "",
+    *,
+    count: int = 4,
+) -> list[str]:
+    """Build distinct 9:16 scene prompts for a multi-slide reel."""
+    subject = (subject or "the product").strip()
+    base = (base_prompt or f"Vertical 9:16 cinematic product photo of {subject}").strip().rstrip(".")
+    prompts: list[str] = []
+    for i in range(min(count, len(REEL_SCENE_VARIANTS))):
+        variant = REEL_SCENE_VARIANTS[i]
+        prompts.append(f"{base}. {variant}. {REEL_SCENE_SUFFIX}")
+    while len(prompts) < count:
+        prompts.append(f"{base}. Scene {len(prompts) + 1}. {REEL_SCENE_SUFFIX}")
+    return prompts[:count]
+
+
+def generate_reel_images(
+    subject: str,
+    base_prompt: str = "",
+    *,
+    count: int = 4,
+) -> list[str]:
+    """Generate multiple 9:16 frames for a motion reel."""
+    urls: list[str] = []
+    for i, prompt in enumerate(build_reel_scene_prompts(subject, base_prompt, count=count)):
+        logger.info("Generating reel frame %d/%d: %s…", i + 1, count, prompt[:70])
+        url = generate_image(prompt, aspect_ratio="story")
+        if url:
+            urls.append(url)
+        if i < count - 1:
+            time.sleep(0.5)
+    return urls
+
+
 def generate_carousel_images(slides: list, aspect_ratio: str = "square") -> list:
     """
     Generate images for carousel slides that have an image_prompt but no image_url.

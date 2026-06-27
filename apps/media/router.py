@@ -29,7 +29,7 @@ def pick_reel_backend(
         return ReelBackend.KLING
   if meta.get("prefer_photoroom_video") or meta.get("composition_hero_url"):
     from apps.products.photoroom_video import video_generation_enabled
-    if video_generation_enabled() and image_count <= 2:
+    if video_generation_enabled() and image_count == 1:
       return ReelBackend.PHOTOROOM
   return ReelBackend.FFMPEG
 
@@ -65,5 +65,10 @@ def reel_backend_for_post(post) -> ReelBackend:
       plan = MediaPlan.from_metadata((asset.metadata or {}).get("media_plan"))
     except Exception:
       pass
-  image_count = len(meta.get("reel_image_sources") or post.media_urls or [])
+  image_count = len(
+    meta.get("source_images")
+    or meta.get("reel_image_sources")
+    or post.media_urls
+    or []
+  )
   return pick_reel_backend(user, plan=plan, image_count=image_count, visual_metadata=meta)

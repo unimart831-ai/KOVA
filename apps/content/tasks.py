@@ -316,15 +316,16 @@ def _collect_reel_image_sources(post) -> list[str]:
     meta = post.visual_metadata or {}
 
     source_images = meta.get("source_images") or []
-    if source_images:
-        return [_normalize_reel_image_source(u) for u in source_images if u and not _is_video_url(u)]
 
     if post.product:
         from apps.content.product_visuals import polished_reel_sources
 
         product_sources = polished_reel_sources(post.product)
-        if product_sources:
-            return product_sources
+        if product_sources and len(product_sources) > len(source_images):
+            source_images = product_sources
+
+    if source_images:
+        return [_normalize_reel_image_source(u) for u in source_images if u and not _is_video_url(u)]
 
     # Prefer Photoroom 9:16 story variants if available (no blur-letterbox needed)
     if post.product:
@@ -715,14 +716,14 @@ def generate_post_images(post_id: str):
     - image:    generate one image from media_prompt, square or portrait
     - carousel: generate one image per slide that has an image_prompt
     - story:    generate one image at 9:16 aspect ratio
-    - reel:     generate one image at 9:16 aspect ratio (used as thumbnail)
+    - reel:     generate multiple 9:16 scenes for a multi-slide motion reel
 
     After generation, media_status is set to GENERATED (or FAILED).
     Sets media_urls for image/story/reel, and updates carousel_slides
     in-place with each slide's image_url.
     """
     from apps.content.models import Post
-    from apps.content.image_gen import generate_image, generate_carousel_images
+    from apps.content.image_gen import generate_image, generate_carousel_images, generate_reel_images
 
     try:
         post = Post.objects.select_related("user", "product").get(pk=post_id)
@@ -785,21 +786,49 @@ def generate_post_images(post_id: str):
                 post.save(update_fields=["media_status", "updated_at"])
                 return
 
-            url = generate_image(prompt, aspect_ratio="story")
-            if url:
-                post.media_urls = [url]
-                post.aspect_ratio = Post.AspectRatio.STORY
-                post.media_status = Post.MediaStatus.GENERATED
-                post.save(update_fields=[
-                    "media_urls", "aspect_ratio", "media_status", "updated_at",
-                ])
-                logger.info("generate_post_images: story/reel post %s — image generated", post_id)
-                if fmt == Post.PostFormat.REEL:
+            if fmt == Post.PostFormat.REEL:
+                subject = ""
+                if post.product:
+                    subject = (post.product.name or "").strip()
+                if not subject:
+                    subject = (getattr(post.user.profile, "company_name", None) or "product").strip()
+                urls = generate_reel_images(subject, prompt, count=4)
+                if urls:
+                    meta = dict(post.visual_metadata or {})
+                    meta["source_images"] = urls
+                    meta["prefer_photoroom_video"] = len(urls) == 1
+                    if len(urls) >= 2:
+                        meta["reel_compose_backend"] = "ffmpeg"
+                    post.visual_metadata = meta
+                    post.media_urls = urls
+                    post.aspect_ratio = Post.AspectRatio.STORY
+                    post.media_status = Post.MediaStatus.GENERATED
+                    post.save(update_fields=[
+                        "visual_metadata", "media_urls", "aspect_ratio", "media_status", "updated_at",
+                    ])
+                    logger.info(
+                        "generate_post_images: reel post %s — %d scene(s) generated",
+                        post_id, len(urls),
+                    )
                     _queue_reel_compose(post_id)
+                else:
+                    post.media_status = Post.MediaStatus.FAILED
+                    post.save(update_fields=["media_status", "updated_at"])
+                    logger.warning("generate_post_images: reel scene gen failed for post %s", post_id)
             else:
-                post.media_status = Post.MediaStatus.FAILED
-                post.save(update_fields=["media_status", "updated_at"])
-                logger.warning("generate_post_images: image gen failed for story/reel post %s", post_id)
+                url = generate_image(prompt, aspect_ratio="story")
+                if url:
+                    post.media_urls = [url]
+                    post.aspect_ratio = Post.AspectRatio.STORY
+                    post.media_status = Post.MediaStatus.GENERATED
+                    post.save(update_fields=[
+                        "media_urls", "aspect_ratio", "media_status", "updated_at",
+                    ])
+                    logger.info("generate_post_images: story post %s — image generated", post_id)
+                else:
+                    post.media_status = Post.MediaStatus.FAILED
+                    post.save(update_fields=["media_status", "updated_at"])
+                    logger.warning("generate_post_images: image gen failed for story post %s", post_id)
 
         else:  # image format
             prompt = (post.media_prompt or "").strip()
@@ -953,6 +982,12 @@ def compose_reel_video(post_id: str):
             logger.warning("apply_reel_strategy_to_post failed for %s: %s", post_id, exc)
 
     image_sources = _collect_reel_image_sources(post)
+    if len(image_sources) >= 2:
+        meta["prefer_photoroom_video"] = False
+        meta["reel_compose_backend"] = "ffmpeg"
+        meta["reel_image_sources"] = image_sources
+        post.visual_metadata = meta
+        post.save(update_fields=["visual_metadata", "updated_at"])
     if not image_sources:
         meta["video_compose_status"] = "failed"
         meta["video_compose_error"] = "No images available for reel composition"
@@ -1071,11 +1106,11 @@ def compose_reel_video(post_id: str):
                 post_id, exc,
             )
 
-    # Photoroom animate: single-hero only; multi-slide director plans use FFmpeg.
+    # Photoroom animate: single-hero only; multi-slide plans always use FFmpeg.
     use_photoroom = (
         not professional_mode_enabled()
         and not reel_plan
-        and len(image_sources) <= 2
+        and len(image_sources) == 1
         and (
             meta.get("composition_hero_url")
             or meta.get("prefer_photoroom_video")
