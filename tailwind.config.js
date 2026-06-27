@@ -70,6 +70,12 @@ module.exports = {
           900: "#0F172A",
           950: "#020617",
         },
+        surface: {
+          canvas: "#E6ECF4",
+          sidebar: "#F4F7FB",
+          elevated: "#FFFFFF",
+          border: "#CCD6E3",
+        },
         charcoal: "#0F172A",
       },
       boxShadow: {

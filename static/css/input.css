@@ -78,13 +78,20 @@ textarea {
     --kova-error: #DC2626;
 
     --kova-light-bg: #FFFFFF;
-    --kova-light-bg-muted: #F8FAFC;
-    --kova-light-bg-subtle: #F1F5F9;
+    --kova-light-bg-muted: #E6ECF4;
+    --kova-light-bg-subtle: #F4F7FB;
     --kova-light-text: #0F172A;
     --kova-light-text-muted: #475569;
     --kova-light-text-subtle: #64748B;
-    --kova-light-border: #E2E8F0;
-    --kova-light-border-subtle: #F1F5F9;
+    --kova-light-border: #CCD6E3;
+    --kova-light-border-subtle: #E2E9F2;
+
+    /* App shell — light mode surfaces (slate canvas, not flat white) */
+    --app-canvas: #E6ECF4;
+    --app-sidebar: #F4F7FB;
+    --app-header: #F4F7FB;
+    --app-surface: #FFFFFF;
+    --app-border: #CCD6E3;
     --kova-accent: var(--brand-emerald);
     --kova-accent-hover: var(--brand-emerald-hover);
     --kova-accent-subtle: var(--brand-emerald-subtle);
@@ -109,6 +116,11 @@ textarea {
     --kova-light-border-subtle: #1E293B;
     --kova-accent-subtle: #06253C;
     --kova-navy: #0F172A;
+    --app-canvas: #0F172A;
+    --app-sidebar: #0F172A;
+    --app-header: #0F172A;
+    --app-surface: #1E293B;
+    --app-border: #334155;
   }
 
   html {
@@ -134,6 +146,46 @@ textarea {
 }
 
 @layer components {
+  /* ── App shell (logged-in product UI) ── */
+  .app-canvas {
+    background-color: var(--app-canvas);
+  }
+  .app-sidebar {
+    background-color: var(--app-sidebar);
+    border-color: var(--app-border);
+  }
+  .app-header {
+    background-color: color-mix(in srgb, var(--app-header) 95%, transparent);
+    border-color: var(--app-border);
+  }
+  @supports not (background-color: color-mix(in srgb, white 95%, transparent)) {
+    .app-header {
+      background-color: var(--app-header);
+    }
+  }
+  .app-surface {
+    background-color: var(--app-surface);
+    border: 1px solid var(--app-border);
+    @apply rounded-xl shadow-kova dark:shadow-none;
+  }
+  .stream-item {
+    @apply flex items-start gap-3 p-3 rounded-xl transition-colors;
+    background-color: var(--app-surface);
+    border: 1px solid var(--app-border);
+    @apply shadow-sm dark:shadow-none dark:bg-gray-900/50 dark:border-gray-800;
+  }
+  .stream-item:hover {
+    border-color: color-mix(in srgb, var(--brand-navy) 25%, var(--app-border));
+  }
+  .score-bar {
+    @apply flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 rounded-xl border shadow-kova;
+    background-color: var(--brand-navy);
+    border-color: color-mix(in srgb, var(--brand-navy) 85%, black);
+  }
+  .dark .score-bar {
+    @apply bg-gray-800 border-gray-700 shadow-none;
+  }
+
   .btn {
     @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2;
   }
@@ -215,7 +267,9 @@ textarea {
     @apply border-growth-600 bg-growth-600 text-white dark:bg-growth-500 dark:border-growth-400 shadow-sm;
   }
   .card {
-    @apply bg-white rounded-xl border border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-700;
+    background-color: var(--app-surface);
+    border: 1px solid var(--app-border);
+    @apply rounded-xl shadow-kova dark:bg-gray-800 dark:border-gray-700 dark:shadow-none;
   }
   .card-body {
     @apply p-4 sm:p-5;
@@ -243,10 +297,23 @@ textarea {
   }
 
   .nav-link {
-    @apply flex items-center px-3 py-2 text-sm font-medium rounded-lg border border-transparent text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800;
+    @apply flex items-center px-3 py-2 text-sm font-medium rounded-lg border border-transparent text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white;
+  }
+  .nav-link:hover {
+    background-color: color-mix(in srgb, var(--app-surface) 70%, var(--app-sidebar));
+  }
+  .dark .nav-link:hover {
+    @apply bg-gray-800;
   }
   .nav-link-active {
-    @apply flex items-center px-3 py-2 text-sm font-medium rounded-lg bg-kova-50 text-kova-800 border border-kova-200 dark:bg-kova-950/40 dark:text-kova-300 dark:border-kova-800;
+    @apply flex items-center pl-[9px] pr-3 py-2 text-sm font-semibold rounded-lg shadow-sm;
+    background-color: var(--app-surface);
+    color: var(--brand-navy);
+    border: 1px solid var(--app-border);
+    border-left: 3px solid var(--brand-navy);
+  }
+  .dark .nav-link-active {
+    @apply bg-kova-950/40 text-kova-300 border-kova-800 border-l-kova-500 shadow-none;
   }
 
   /* Section divider for sidebar grouping */

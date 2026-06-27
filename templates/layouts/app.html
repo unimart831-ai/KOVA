@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load nav_tags %}
 
-{% block body_class %}bg-gray-50 dark:bg-gray-900{% endblock %}
+{% block body_class %}app-canvas dark:bg-gray-900{% endblock %}
 
 {% block body %}
 {% if agency_brand_theme %}
@@ -24,10 +24,10 @@
   <!-- Sidebar -->
   <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
          id="app-sidebar"
-         class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-transform duration-200 ease-in-out lg:translate-x-0 flex flex-col">
+         class="fixed inset-y-0 left-0 z-50 w-64 app-sidebar border-r dark:bg-gray-900 dark:border-gray-800 transform transition-transform duration-200 ease-in-out lg:translate-x-0 flex flex-col">
 
     <!-- Logo + agency client switcher -->
-    <div class="px-6 border-b border-gray-200 dark:border-gray-800">
+    <div class="px-6 border-b border-[color:var(--app-border)] dark:border-gray-800">
       <div class="flex items-center h-16">
         <a href="{% url 'brief:home' %}" class="flex items-center space-x-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-kova-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
           <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-kova bg-kova-800"{% if agency_brand_theme %} style="background-color: var(--brand-accent);"{% endif %}>
@@ -74,7 +74,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
         </svg>
         Inbox
-        {% if not request.plan_limits.engagement_agent and request.plan_limits.engage_trial_enabled %}<span class="ml-auto text-[10px] font-medium text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/30 px-1.5 py-0.5 rounded">TRIAL</span>{% elif not request.plan_limits.engagement_agent %}<span class="ml-auto text-[10px] font-medium text-gold-600 dark:text-gold-400 bg-gold-50 dark:bg-gold-900/30 px-1.5 py-0.5 rounded">PRO</span>{% elif nav_badge_inbox %}<span class="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_inbox }}</span>{% endif %}
+        {% if not request.plan_limits.engagement_agent and request.plan_limits.engage_trial_enabled %}<span class="ml-auto text-[10px] font-medium text-kova-700 dark:text-kova-300 bg-white dark:bg-kova-900/40 px-1.5 py-0.5 rounded border border-kova-200 dark:border-kova-800">TRIAL</span>{% elif not request.plan_limits.engagement_agent %}<span class="ml-auto text-[10px] font-medium text-gold-700 dark:text-gold-400 bg-gold-50 dark:bg-gold-900/30 px-1.5 py-0.5 rounded border border-gold-200 dark:border-gold-800">PRO</span>{% elif nav_badge_inbox %}<span class="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_inbox }}</span>{% endif %}
       </a>
 
       {# ── 3. WhatsApp ── #}
@@ -166,12 +166,12 @@
     </nav>
 
     <!-- User menu at bottom -->
-    <div class="border-t border-gray-200 dark:border-gray-800 p-3">
+    <div class="border-t border-[color:var(--app-border)] dark:border-gray-800 p-3">
       <div x-data="{ open: false }" class="relative">
         <button type="button" @click="open = !open" :aria-expanded="open" aria-haspopup="true"
                 class="flex items-center w-full px-3 py-2 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-kova-500">
-          <div class="w-8 h-8 rounded-full bg-kova-100 dark:bg-kova-900 flex items-center justify-center mr-3">
-            <span class="text-kova-700 dark:text-kova-300 font-semibold text-xs">{{ user.full_name|default:user.email|truncatechars:2|upper }}</span>
+          <div class="w-8 h-8 rounded-full bg-kova-800 flex items-center justify-center mr-3">
+            <span class="text-white font-semibold text-xs">{{ user.full_name|default:user.email|truncatechars:2|upper }}</span>
           </div>
           <div class="flex-1 text-left min-w-0">
             <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ user.full_name|default:"User" }}</p>
@@ -209,7 +209,7 @@
   <!-- Main content -->
   <div class="lg:pl-64 flex flex-col min-h-screen">
     <!-- Top bar -->
-    <header class="sticky top-0 z-30 bg-white/95 dark:bg-gray-900/95 backdrop-blur border-b border-gray-200 dark:border-gray-800">
+    <header class="sticky top-0 z-30 app-header backdrop-blur border-b dark:bg-gray-900/95 dark:border-gray-800">
       <div class="flex items-center justify-between min-h-16 gap-3 py-3 px-4 sm:px-6">
         <div class="flex items-center gap-3 min-w-0 flex-1">
           <button type="button" @click="sidebarOpen = true" class="lg:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-lg focus:outline-none focus:ring-2 focus:ring-kova-500" aria-label="Open navigation menu" aria-controls="app-sidebar" :aria-expanded="sidebarOpen">
