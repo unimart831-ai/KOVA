@@ -1,0 +1,11 @@
+<div class="mp-section-head">
+  <div class="mp-section-head-left">
+    {% if section_icon %}
+    <span class="mp-section-icon" aria-hidden="true">{{ section_icon }}</span>
+    {% endif %}
+    <h2 class="mp-section-title">{{ section_title }}</h2>
+  </div>
+  {% if section_link %}
+  <a href="{{ section_link }}" class="mp-section-link">{{ section_link_label|default:"Browse all" }}</a>
+  {% endif %}
+</div>

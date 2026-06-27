@@ -5,13 +5,19 @@
   "use strict";
 
   function initShare() {
-    document.querySelectorAll(".shop-share-btn, .kc-share-btn").forEach(function (btn) {
+    document.querySelectorAll(".shop-share-btn, .kc-share-btn, .mp-share-btn").forEach(function (btn) {
       if (!navigator.share) return;
       btn.hidden = false;
-      btn.addEventListener("click", function () {
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var url = btn.dataset.shareUrl || window.location.href;
+        if (url.indexOf("http") !== 0) {
+          url = window.location.origin + url;
+        }
         navigator.share({
           title: btn.dataset.shareTitle || document.title,
-          url: btn.dataset.shareUrl || window.location.href,
+          url: url,
         }).catch(function () {});
       });
     });
@@ -187,6 +193,22 @@
     resetTimer();
   }
 
+  function initBoostCarousel() {
+    document.querySelectorAll("[data-boost-carousel]").forEach(function (wrap) {
+      var track = wrap.querySelector("[data-boost-track]");
+      if (!track) return;
+      var prev = wrap.querySelector("[data-boost-prev]");
+      var next = wrap.querySelector("[data-boost-next]");
+      var step = function (dir) {
+        var card = track.querySelector(".mp-card--boost");
+        var amount = card ? card.offsetWidth + 12 : 280;
+        track.scrollBy({ left: dir * amount, behavior: "smooth" });
+      };
+      if (prev) prev.addEventListener("click", function () { step(-1); });
+      if (next) next.addEventListener("click", function () { step(1); });
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     initShare();
     initProductSearch();
@@ -195,5 +217,6 @@
     initDetailTabs();
     initReels();
     initHeroCarousel();
+    initBoostCarousel();
   });
 })();

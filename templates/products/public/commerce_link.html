@@ -1,5 +1,7 @@
 {% extends "products/public/base_shop.html" %}
 
+{% block body_class %}{{ storefront_body_class|default:'' }} kc-shop--marketplace{% endblock %}
+
 {% block nav %}{% include "products/public/_shop_nav.html" with hide_shop_search=True hide_header_wa=True %}{% endblock %}
 
 {% block og_type %}product{% endblock %}

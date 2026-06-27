@@ -1,0 +1,10 @@
+{# Horizontal boosted carousel — featured products, or top catalog items #}
+{% if featured_products %}
+  {% with boost_products=featured_products %}
+  {% include "products/public/_shop_boosted_carousel_inner.html" %}
+  {% endwith %}
+{% elif products %}
+  {% with boost_products=products %}
+  {% include "products/public/_shop_boosted_carousel_inner.html" %}
+  {% endwith %}
+{% endif %}
