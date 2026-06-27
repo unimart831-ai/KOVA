@@ -161,6 +161,10 @@ def fit_image_to_story_frame(
     aspect = img.width / max(img.height, 1)
     target_aspect = target_w / target_h
 
+    # Square studio shots — cover-fill the 9:16 frame (no side pillarboxing).
+    if _is_light_studio_background(img) and abs(aspect - 1.0) < 0.12:
+        return ImageOps.fit(img, (target_w, target_h), method=Image.LANCZOS, centering=(0.5, 0.42))
+
     # Portrait-first: tall phone photos get cover crop into hero zone (no letterbox bars).
     if abs(aspect - target_aspect) > 0.12 and aspect < target_aspect * 0.95:
         cover = ImageOps.fit(img, (target_w, target_h), method=Image.LANCZOS, centering=(0.5, 0.42))
@@ -396,9 +400,12 @@ def _write_hook_frame(
     slide_count: int = 1,
     hook_text: str = "",
     position: str = "lower_third",
+    source_hint: str = "",
 ) -> None:
     """Write a reel frame with optional lower-third hook burned in."""
-    frame = fit_image_to_story_frame(image_bytes, slide_index=slide_index)
+    frame = fit_image_to_story_frame(
+        image_bytes, slide_index=slide_index, source_hint=source_hint,
+    )
     if hook_text:
         frame = render_hook_text_on_frame(
             frame,
@@ -707,6 +714,7 @@ def compose_motion_reel(
                     brand=brand_context,
                     slide_index=idx,
                     hero_image_bytes=hero_bytes,
+                    source_hint=source,
                 )
             elif text and not use_beat_frames:
                 pos = hook_position_for_slide(idx, text)
@@ -717,6 +725,7 @@ def compose_motion_reel(
                     slide_count=slide_count,
                     hook_text=text,
                     position=pos,
+                    source_hint=source,
                 )
             else:
                 frame = fit_image_to_story_frame(

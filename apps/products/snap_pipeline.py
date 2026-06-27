@@ -297,7 +297,7 @@ def build_snap_pipeline_status(product, user):
             "platform", flat=True
         )
     )
-    carousel_eligible = photo_count >= 2 and bool(platforms & CAROUSEL_PLATFORMS)
+    carousel_eligible = bool(platforms & CAROUSEL_PLATFORMS) and photo_count >= 1
     reel_eligible = photo_count >= 1 and bool(platforms & REEL_PLATFORMS)
     single_photo_reel = photo_count == 1 and reel_eligible
 
@@ -531,9 +531,9 @@ def build_snap_pipeline_status(product, user):
     if not carousel_eligible:
         carousel_status = "skipped"
         carousel_detail = (
-            "Need 2+ photos and Instagram, Facebook, or LinkedIn connected"
-            if photo_count < 2
-            else "Connect Instagram, Facebook, or LinkedIn for carousel posts"
+            "Connect Instagram, Facebook, or LinkedIn for carousel posts"
+            if not (platforms & CAROUSEL_PLATFORMS)
+            else "Waiting for photos"
         )
     elif analyze_status != "completed":
         carousel_status = "pending"

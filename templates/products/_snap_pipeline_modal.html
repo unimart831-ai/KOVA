@@ -215,7 +215,7 @@ function snapPipelineModal(productId) {
     get photoSummary() {
       const n = this.photoCount || 0;
       if (!n) return '';
-      return n + ' photo' + (n !== 1 ? 's' : '') + (n >= 2 ? ' — full format pack (carousel + reel)' : ' — add 2+ photos for carousel & reel');
+      return n + ' photo' + (n !== 1 ? 's' : '') + (n >= 1 ? ' — carousel + reel when Facebook/IG connected' : '');
     },
     init() {
       this.poll();

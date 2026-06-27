@@ -224,6 +224,12 @@ def _order_urls_for_recipe(urls: list[str], recipe_id: str, *, max_slides: int) 
     if not pool:
         return []
 
+    # Single source image → 3-beat arc (hook card → hero → CTA) — same asset, distinct roles.
+    if len(pool) == 1:
+        url = pool[0]
+        beats = min(3, max_slides)
+        return [url] * beats
+
     by_role: dict[str, list[str]] = {r: [] for r in ROLE_KEN_BURNS}
     for url in pool:
         role = _url_role(url)
@@ -486,12 +492,15 @@ def build_reel_plan(
 
     skip_hooks = _sources_have_baked_captions(clean) or _sources_have_baked_captions(ordered)
 
-    roles = [_url_role(u) for u in ordered]
-    if roles and roles[-1] not in (SLIDE_ROLE_CTA,):
-        if "promo_frame" in (ordered[-1] or "").lower():
-            roles[-1] = SLIDE_ROLE_CTA
-        elif price_label:
-            roles[-1] = SLIDE_ROLE_CTA
+    if len(ordered) == 3 and len(set(ordered)) == 1:
+        roles = [SLIDE_ROLE_HOOK, SLIDE_ROLE_HERO, SLIDE_ROLE_CTA]
+    else:
+        roles = [_url_role(u) for u in ordered]
+        if roles and roles[-1] not in (SLIDE_ROLE_CTA,):
+            if "promo_frame" in (ordered[-1] or "").lower():
+                roles[-1] = SLIDE_ROLE_CTA
+            elif price_label:
+                roles[-1] = SLIDE_ROLE_CTA
 
     template = RECIPE_TEMPLATES.get(recipe, "story_arc")
     mood = RECIPE_MOODS.get(recipe, "upbeat")

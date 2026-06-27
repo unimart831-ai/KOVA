@@ -42,13 +42,9 @@ def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
 
 
 def _get_font(size: int, *, bold: bool = False):
-    from PIL import ImageFont
+    from apps.agents.graphics import _get_font as brand_font
 
-    try:
-        name = "arialbd.ttf" if bold else "arial.ttf"
-        return ImageFont.truetype(name, size)
-    except Exception:
-        return ImageFont.load_default()
+    return brand_font(size, bold=bold)
 
 
 def _draw_vertical_gradient(
@@ -227,11 +223,14 @@ def render_product_beat_frame(
     image_bytes: bytes,
     *,
     slide_index: int = 0,
+    source_hint: str = "",
 ) -> Image.Image:
     """Full-bleed product frame — no text overlay."""
     from apps.content.video_compose import fit_image_to_story_frame
 
-    return fit_image_to_story_frame(image_bytes, slide_index=slide_index)
+    return fit_image_to_story_frame(
+        image_bytes, slide_index=slide_index, source_hint=source_hint,
+    )
 
 
 def parse_cta_text(text: str) -> tuple[str, str]:
@@ -256,6 +255,7 @@ def write_beat_frame(
     brand: BeatFrameBrand | dict | None = None,
     slide_index: int = 0,
     hero_image_bytes: bytes | None = None,
+    source_hint: str = "",
 ) -> None:
     """Write one 9:16 JPEG beat frame based on slide role."""
     role = (role or "").lower()
@@ -276,7 +276,9 @@ def write_beat_frame(
             product_image_bytes=hero,
         )
     else:
-        frame = render_product_beat_frame(image_bytes, slide_index=slide_index)
+        frame = render_product_beat_frame(
+            image_bytes, slide_index=slide_index, source_hint=source_hint,
+        )
 
     frame.save(dest, format="JPEG", quality=93, optimize=True)
 

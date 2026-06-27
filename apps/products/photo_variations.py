@@ -673,7 +673,6 @@ def _expand_photofix_only(
                 break
 
     if not urls and preflight.master_url and preflight.master_url != source:
-    if not urls and preflight.master_url and preflight.master_url != source:
         urls.append(preflight.master_url)
     elif not urls:
         master_url = preflight.master_url or source

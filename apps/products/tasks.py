@@ -1353,6 +1353,14 @@ def expand_product_photo_set(
     return result
 
 
+def _snap_carousel_eligible(product, platforms: list[str]) -> bool:
+    """Facebook / IG / LinkedIn carousel — one photo is enough (studio builds multi-slide story)."""
+    _CAROUSEL_PLATFORMS = {"instagram", "facebook", "linkedin"}
+    if not any(p in _CAROUSEL_PLATFORMS for p in platforms):
+        return False
+    return bool(product.all_image_urls)
+
+
 def _fire_snap_carousel_reel_after_expand(product, *, seed_id, key_features, analysis, fire_task):
     """Carousel/reel need polished images — run after expand finishes."""
     from apps.platforms.models import SocialAccount
@@ -1365,11 +1373,12 @@ def _fire_snap_carousel_reel_after_expand(product, *, seed_id, key_features, ana
             "platform", flat=True
         )
     )
-    num_images = len(product.all_image_urls)
-    _CAROUSEL_PLATFORMS = {"instagram", "facebook", "linkedin"}
     _REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
 
-    if num_images >= 2 and any(p in _CAROUSEL_PLATFORMS for p in platforms):
+    carousel_ok = _snap_carousel_eligible(product, platforms)
+    reel_ok = bool(product.all_image_urls) and any(p in _REEL_PLATFORMS for p in platforms)
+
+    if carousel_ok:
         fire_task(
             create_product_carousel_posts,
             str(product.pk),
@@ -1377,7 +1386,7 @@ def _fire_snap_carousel_reel_after_expand(product, *, seed_id, key_features, ana
             key_features,
             analysis,
         )
-    elif num_images >= 1 and any(p in _REEL_PLATFORMS for p in platforms):
+    elif reel_ok:
         fire_task(
             create_product_reel_posts,
             str(product.pk),

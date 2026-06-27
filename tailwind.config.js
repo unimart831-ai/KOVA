@@ -148,6 +148,10 @@ module.exports = {
           "0%, 100%": { opacity: "0.4", transform: "scale(1)" },
           "50%": { opacity: "0.7", transform: "scale(1.05)" },
         },
+        "kova-busy-bar": {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(400%)" },
+        },
       },
       animation: {
         shimmer: "shimmer 2.5s ease-in-out infinite",
@@ -164,6 +168,7 @@ module.exports = {
         "pulse-ring": "pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "gradient-shift": "gradient-shift 8s ease infinite",
         "glow-breathe": "glow-breathe 4s ease-in-out infinite",
+        "kova-busy-bar": "kova-busy-bar 1.2s ease-in-out infinite",
       },
     },
   },

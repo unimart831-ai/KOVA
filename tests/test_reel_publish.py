@@ -11,6 +11,7 @@ from apps.content.tasks import (
     _is_unreachable_platform_url,
     _platform_media_url,
     _public_url_for_file,
+    _resolve_reel_publish_video_url,
     _reel_video_url,
     _resolve_tiktok_privacy,
 )
@@ -61,6 +62,19 @@ class TestReelPublishHelpers:
         mock_presign.return_value = "https://r2.example.com/signed.mp4?sig=1"
         assert _public_url_for_file("reel_videos/test.mp4", for_platform_api=True) == mock_presign.return_value
         mock_presign.assert_called_once_with("reel_videos/test.mp4")
+
+    @patch("apps.content.tasks._public_url_for_file")
+    def test_resolve_reel_publish_video_from_attachment(self, mock_pub):
+        mock_pub.return_value = "https://r2.example.com/signed.mp4?sig=1"
+        post = MagicMock()
+        post.visual_metadata = {}
+        post.media_urls = ["https://cdn.example.com/frame.jpg"]
+        att = MagicMock()
+        att.file.name = "reel_videos/abc.mp4"
+        post.attachments.filter.return_value.order_by.return_value = [att]
+        url = _resolve_reel_publish_video_url(post)
+        assert url == "https://r2.example.com/signed.mp4?sig=1"
+        mock_pub.assert_called_with("reel_videos/abc.mp4", for_platform_api=True)
 
     def test_graph_api_error_text_parses_json(self):
         response = MagicMock(spec=httpx.Response)

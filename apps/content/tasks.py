@@ -236,6 +236,46 @@ def _reel_video_url(media_urls):
     return next((u for u in media_urls if _is_video_url(u)), None)
 
 
+def _resolve_reel_publish_video_url(post) -> str | None:
+    """
+    Resolve a public HTTPS MP4 URL for Meta/TikTok reel publish.
+
+    Checks visual_metadata, media_urls, and video attachments (with presigned R2).
+    """
+    meta = post.visual_metadata or {}
+
+    candidates: list[tuple[str, str | None]] = []
+    reel_meta_url = meta.get("reel_video_url")
+    if reel_meta_url:
+        candidates.append((reel_meta_url, None))
+
+    for url in post.media_urls or []:
+        if url:
+            candidates.append((url, None))
+
+    for attachment in post.attachments.filter(file_type="video").order_by("order"):
+        if attachment.file:
+            candidates.append((attachment.file.name, attachment.file.name))
+
+    seen: set[str] = set()
+    for raw, storage_key in candidates:
+        if not raw or raw in seen:
+            continue
+        seen.add(raw)
+
+        if storage_key and not raw.startswith(("http://", "https://")):
+            resolved = _public_url_for_file(storage_key, for_platform_api=True)
+        elif raw.startswith(("http://", "https://")):
+            resolved = _platform_media_url(raw)
+        else:
+            resolved = _public_url_for_file(raw.lstrip("/"), for_platform_api=True)
+
+        if resolved and _is_video_url(resolved) and not _is_unreachable_platform_url(resolved):
+            return resolved
+
+    return None
+
+
 def _post_has_reel_video(post) -> bool:
     if getattr(post, "reel_has_video", False):
         return True
@@ -255,6 +295,12 @@ def _resolve_absolute_media_urls(post, *, is_carousel_post: bool = False) -> lis
 
     Relative ``attachment.file.url`` values are replaced with storage/CDN URLs.
     """
+    from apps.content.models import Post
+
+    is_reel_or_story = getattr(post, "post_format", "") in (
+        Post.PostFormat.REEL,
+        Post.PostFormat.STORY,
+    )
     urls: list[str] = []
     seen: set[str] = set()
 
@@ -278,11 +324,19 @@ def _resolve_absolute_media_urls(post, *, is_carousel_post: bool = False) -> lis
         _add(raw)
 
     for attachment in post.attachments.order_by("order"):
-        if attachment.file and attachment.file_type != "video":
-            _add(
-                _public_url_for_file(attachment.file.name, for_platform_api=True),
-                storage_key=attachment.file.name,
-            )
+        if not attachment.file:
+            continue
+        if attachment.file_type == "video":
+            if is_reel_or_story:
+                _add(
+                    _public_url_for_file(attachment.file.name, for_platform_api=True),
+                    storage_key=attachment.file.name,
+                )
+            continue
+        _add(
+            _public_url_for_file(attachment.file.name, for_platform_api=True),
+            storage_key=attachment.file.name,
+        )
 
     return urls
 
@@ -1200,6 +1254,9 @@ def compose_reel_video(post_id: str):
     public_url = _public_url_for_file(saved_name, for_platform_api=True)
 
     if not public_url:
+        public_url = _presigned_storage_url(saved_name, expires=86400)
+
+    if not public_url:
         meta["video_compose_status"] = "failed"
         meta["video_compose_error"] = "Could not generate public URL for composed reel"
         post.visual_metadata = meta
@@ -1684,7 +1741,7 @@ def publish_post(self, post_id: str):
             )
             return {"error": "story_platform_unsupported"}
 
-        reel_video_url = _reel_video_url(absolute_media_urls) if is_reel_post else None
+        reel_video_url = _resolve_reel_publish_video_url(post) if is_reel_post else None
         if is_reel_post and not reel_video_url:
             _fail_post(
                 post,
@@ -1702,7 +1759,7 @@ def publish_post(self, post_id: str):
         if reel_video_url:
             publish_kwargs["video_url"] = reel_video_url
 
-        story_video_url = _reel_video_url(absolute_media_urls) if is_story_post else None
+        story_video_url = _resolve_reel_publish_video_url(post) if is_story_post else None
         if story_video_url:
             publish_kwargs["video_url"] = story_video_url
 
