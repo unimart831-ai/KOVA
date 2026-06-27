@@ -82,8 +82,45 @@ ROLE_DURATION_SEC: dict[str, float] = {
     SLIDE_ROLE_CTA: 3.2,
 }
 
-REEL_MAX_SLIDES_DEFAULT = 5
+# Category pacing — hero hold, cut speed (multipliers on ROLE_DURATION_SEC).
+CATEGORY_PACING: dict[str, dict[str, float]] = {
+    "jewelry": {
+        SLIDE_ROLE_HERO: 1.28,
+        SLIDE_ROLE_DESIRE: 1.12,
+        SLIDE_ROLE_STAGING: 1.05,
+    },
+    "watches": {
+        SLIDE_ROLE_HERO: 1.25,
+        SLIDE_ROLE_DESIRE: 1.10,
+    },
+    "food": {
+        SLIDE_ROLE_STAGING: 0.78,
+        SLIDE_ROLE_ANGLE: 0.78,
+        SLIDE_ROLE_DESIRE: 0.72,
+        SLIDE_ROLE_HOOK: 0.88,
+    },
+    "apparel": {
+        SLIDE_ROLE_DESIRE: 1.18,
+        SLIDE_ROLE_STAGING: 1.08,
+    },
+    "beauty": {
+        SLIDE_ROLE_HERO: 1.15,
+        SLIDE_ROLE_DESIRE: 1.10,
+    },
+    "electronics": {
+        SLIDE_ROLE_HOOK: 0.90,
+        SLIDE_ROLE_ANGLE: 0.85,
+        SLIDE_ROLE_CTA: 1.05,
+    },
+    "home": {
+        SLIDE_ROLE_STAGING: 1.10,
+        SLIDE_ROLE_DESIRE: 1.08,
+    },
+}
 
+REEL_MIN_DURATION_SEC = 12.0
+REEL_MAX_DURATION_SEC = 18.0
+REEL_MAX_SLIDES_DEFAULT = 5
 
 @dataclass(frozen=True)
 class ReelComposePlan:
@@ -357,6 +394,8 @@ def build_slide_durations(
     *,
     template: str = "story_arc",
     transition_sec: float | None = None,
+    category: str = "general",
+    music_mood: str = "upbeat",
 ) -> list[float]:
     """Beat-grid pacing aligned to ~REEL_TARGET_DURATION_SEC."""
     from apps.content.video_compose import slide_durations_for_roles
@@ -365,10 +404,20 @@ def build_slide_durations(
     if t_sec is None:
         t_sec = 0.35 if template == "flash_commerce" else 0.45
     target = float(getattr(settings, "REEL_TARGET_DURATION_SEC", 14.0))
-    return slide_durations_for_roles(
+    target = max(REEL_MIN_DURATION_SEC, min(REEL_MAX_DURATION_SEC, target))
+    durations = slide_durations_for_roles(
         slide_roles,
         template=template,
         target_total_sec=target,
+        transition_sec=t_sec,
+        category=category,
+    )
+    from apps.content.reel_beat_sync import align_durations_to_beats, bpm_for_mood
+
+    mood = music_mood or ("urgent" if template == "flash_commerce" else "upbeat")
+    return align_durations_to_beats(
+        durations,
+        bpm=bpm_for_mood(mood),
         transition_sec=t_sec,
     )
 
@@ -468,7 +517,11 @@ def build_reel_plan(
         transition_sec = 0.45
 
     durations = build_slide_durations(
-        roles, template=template, transition_sec=transition_sec,
+        roles,
+        template=template,
+        transition_sec=transition_sec,
+        category=category,
+        music_mood=mood,
     )
 
     return ReelComposePlan(

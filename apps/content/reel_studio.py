@@ -36,12 +36,12 @@ def professional_mode_enabled() -> bool:
     return bool(getattr(settings, "REEL_PROFESSIONAL_MODE", True))
 
 
-def filter_reel_sources(urls: list[str]) -> list[str]:
+def filter_reel_sources(urls: list[str], *, upload_only: bool = False) -> list[str]:
     """Strict source filter — studio polish & portrait story only."""
     from apps.products.reel_curation import curate_reel_image_urls
 
     max_slides = int(getattr(settings, "REEL_MAX_SLIDES", 5))
-    curated = curate_reel_image_urls(urls, max_slides=max_slides * 2)
+    curated = curate_reel_image_urls(urls, max_slides=max_slides * 2, upload_only=upload_only)
 
     blocked = (
         "/carousels/",
@@ -64,7 +64,7 @@ def filter_reel_sources(urls: list[str]) -> list[str]:
     rest = [u for u in clean if u not in composition]
     ordered = composition + rest
 
-    return curate_reel_image_urls(ordered, max_slides=max_slides)
+    return curate_reel_image_urls(ordered, max_slides=max_slides, upload_only=upload_only)
 
 
 def sanitize_hooks_for_roles(
@@ -94,7 +94,12 @@ def build_professional_plan(post, image_sources: list[str], meta: dict):
     )
     from apps.products.photoroom_plus import detect_product_category
 
-    sources = filter_reel_sources(image_sources) if professional_mode_enabled() else list(image_sources)
+    sources = filter_reel_sources(
+        image_sources,
+        upload_only=bool(
+            post.product and getattr(post.product, "uses_upload_images_only", False)
+        ),
+    ) if professional_mode_enabled() else list(image_sources)
     if not sources:
         sources = list(image_sources)
     if not sources:
@@ -175,8 +180,11 @@ def compose_professional_reel(
     """
     from apps.content.reel_director import ReelComposePlan
     from apps.content.reel_music import infer_mood_from_post, pick_music_track, resolve_track_path, ensure_audio_bed
+    from apps.content.reel_frame_studio import brand_context_for_post
     from apps.content.video_compose import VideoComposeError, compose_from_plan, compose_motion_reel
     from apps.media.text_overlay import TextOverlayPass, apply_overlay_report_to_metadata
+
+    brand = brand_context_for_post(post)
 
     sources, plan, meta = build_professional_plan(post, image_sources, meta)
     if not sources:
@@ -223,13 +231,15 @@ def compose_professional_reel(
             transition_sec=plan.transition_sec,
             slide_durations=plan.slide_durations,
         )
-        mp4_bytes = compose_from_plan(plan, audio_path=audio_path)
+        mp4_bytes = compose_from_plan(plan, audio_path=audio_path, brand_context=brand.__dict__)
     else:
         mp4_bytes = compose_motion_reel(
             sources,
             audio_path=audio_path,
             template=template,
             hook_texts=hook_texts,
+            brand_context=brand.__dict__,
+            music_mood=mood,
         )
 
     thumbnail_url = None

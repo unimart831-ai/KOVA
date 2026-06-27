@@ -182,6 +182,11 @@ class Product(models.Model):
         help_text="How Kova treats product photos before content generation.",
     )
 
+    @property
+    def uses_upload_images_only(self) -> bool:
+        """Merchant chose Use as-is — skip Photoroom expansion; use uploads for content."""
+        return (self.visual_mode or "") == self.VisualMode.AS_IS
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

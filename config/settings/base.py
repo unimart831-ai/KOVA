@@ -738,6 +738,11 @@ REEL_DIRECTOR_ENABLED = env.bool("REEL_DIRECTOR_ENABLED", default=True)
 REEL_PROFESSIONAL_MODE = env.bool("REEL_PROFESSIONAL_MODE", default=True)
 REEL_TARGET_DURATION_SEC = env.float("REEL_TARGET_DURATION_SEC", default=14.0)
 REEL_SHOW_PROGRESS_BAR = env.bool("REEL_SHOW_PROGRESS_BAR", default=False)
+REEL_BEAT_FRAMES_ENABLED = env.bool("REEL_BEAT_FRAMES_ENABLED", default=True)
+REEL_BEAT_SYNC_ENABLED = env.bool("REEL_BEAT_SYNC_ENABLED", default=True)
+REEL_CTA_SFX_ENABLED = env.bool("REEL_CTA_SFX_ENABLED", default=True)
+REEL_DEFAULT_BPM = env.float("REEL_DEFAULT_BPM", default=120.0)
+REEL_RENDER_BACKEND = env("REEL_RENDER_BACKEND", default="ffmpeg")  # ffmpeg | remotion
 
 # Professional carousel studio — product-first layouts (apps/content/carousel_studio.py)
 CAROUSEL_PROFESSIONAL_MODE = env.bool("CAROUSEL_PROFESSIONAL_MODE", default=True)

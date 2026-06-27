@@ -63,3 +63,19 @@ def test_curate_prefers_polished_over_raw_snap():
     out = curate_reel_image_urls(urls)
     assert "/media/product_images/snap_original.jpg" not in out
     assert "/media/studio_polish/x/studio_white.jpg" in out
+
+
+def test_curate_upload_only_keeps_merchant_photos_in_order():
+    urls = [
+        "/media/product_images/a.jpg",
+        "/media/product_images/b.jpg",
+        "/media/studio_polish/x/studio_white.jpg",
+        "/media/product_images/c.jpg",
+    ]
+    out = curate_reel_image_urls(urls, upload_only=True)
+    assert out == [
+        "/media/product_images/a.jpg",
+        "/media/product_images/b.jpg",
+        "/media/studio_polish/x/studio_white.jpg",
+        "/media/product_images/c.jpg",
+    ]

@@ -40,9 +40,13 @@ def trigger_carousel_image_generation(sender, instance, created, **kwargs):
     if instance.media_status != Post.MediaStatus.NONE:
         return
 
-    from apps.content.product_visuals import product_has_polished_gallery
+    from apps.content.product_visuals import (
+        product_has_usable_gallery,
+        try_apply_product_polished_media,
+    )
 
-    if getattr(instance, "product_id", None) and product_has_polished_gallery(instance.product):
+    if getattr(instance, "product_id", None) and product_has_usable_gallery(instance.product):
+        try_apply_product_polished_media(instance)
         return
 
     has_slide_prompts = any(

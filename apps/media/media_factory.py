@@ -83,6 +83,8 @@ def _trigger_campaign_visual_production(seed, campaign, visual_brief) -> None:
     product = getattr(seed, "product", None)
     if not product or not getattr(product, "image", None):
         return
+    if product.uses_upload_images_only:
+        return
     from apps.products.photo_variations import variation_storage_marker
 
     marker = variation_storage_marker(product.pk)

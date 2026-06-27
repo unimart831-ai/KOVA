@@ -811,10 +811,11 @@ def _queue_bundle_media(post, seed, image_prompt: str, visual_strategy_data: dic
     if post.post_format == Post.PostFormat.REEL and source_images:
         from apps.products.reel_curation import curate_reel_image_urls
 
-        curated = curate_reel_image_urls(source_images)
+        upload_only = product and product.uses_upload_images_only
+        curated = curate_reel_image_urls(source_images, upload_only=upload_only)
         meta = dict(meta)
         meta["source_images"] = curated
-        if len(curated) >= 2:
+        if len(curated) >= 2 or upload_only:
             meta["prefer_photoroom_video"] = False
             meta["reel_compose_backend"] = "ffmpeg"
         post.visual_metadata = meta

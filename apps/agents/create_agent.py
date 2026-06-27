@@ -1504,13 +1504,13 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
                         analysis_for_post,
                         apply_polished_carousel_post,
                         apply_polished_reel_post,
-                        product_has_polished_gallery,
+                        product_has_usable_gallery,
                     )
 
                     product = seed.product
                     post_fmt = post.post_format or PostModel.PostFormat.TEXT
 
-                    if product_has_polished_gallery(product) and post_fmt == PostModel.PostFormat.CAROUSEL:
+                    if product_has_usable_gallery(product) and post_fmt == PostModel.PostFormat.CAROUSEL:
                         if apply_polished_carousel_post(
                             post,
                             product,
@@ -1522,7 +1522,7 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
                                 post.id,
                                 product.pk,
                             )
-                    elif product_has_polished_gallery(product) and post_fmt == PostModel.PostFormat.REEL:
+                    elif product_has_usable_gallery(product) and post_fmt == PostModel.PostFormat.REEL:
                         if apply_polished_reel_post(post, product):
                             product_image_attached = True
                             logger.info(

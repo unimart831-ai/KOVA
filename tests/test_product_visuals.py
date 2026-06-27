@@ -6,7 +6,9 @@ from apps.accounts.models import User
 from apps.content.models import Post
 from apps.content.product_visuals import (
     polished_carousel_sources,
+    polished_reel_sources,
     product_has_polished_gallery,
+    product_has_usable_gallery,
     refresh_product_polished_posts,
     try_apply_product_polished_media,
 )
@@ -99,3 +101,62 @@ def test_refresh_product_polished_posts_fixes_failed_reel(user, product, monkeyp
     assert refresh_product_polished_posts(product) == 1
     post.refresh_from_db()
     assert post.media_status == Post.MediaStatus.GENERATED
+
+
+@pytest.fixture
+def as_is_product(user):
+    return Product.objects.create(
+        user=user,
+        name="Handmade Basket",
+        price=1200,
+        visual_mode=Product.VisualMode.AS_IS,
+        additional_images=[
+            "/media/product_images/basket_front.jpg",
+            "/media/product_images/basket_side.jpg",
+            "/media/product_images/basket_detail.jpg",
+        ],
+    )
+
+
+def test_as_is_product_has_usable_gallery_not_polished(as_is_product):
+    assert product_has_polished_gallery(as_is_product) is False
+    assert product_has_usable_gallery(as_is_product) is True
+
+
+def test_as_is_carousel_sources_preserve_upload_order(as_is_product):
+    urls = polished_carousel_sources(as_is_product, max_images=5)
+    assert len(urls) == 3
+    assert all("product_images" in u for u in urls)
+    assert urls[0] == "/media/product_images/basket_front.jpg"
+
+
+def test_as_is_reel_sources_use_all_uploads(as_is_product):
+    sources = polished_reel_sources(as_is_product)
+    assert len(sources) == 3
+    assert all("product_images" in u for u in sources)
+
+
+def test_try_apply_skips_flux_for_as_is_reel(user, as_is_product, monkeypatch):
+    queued = []
+
+    def _fake_queue(post_id):
+        queued.append(post_id)
+
+    monkeypatch.setattr("apps.content.tasks._queue_reel_compose", _fake_queue)
+
+    post = Post.objects.create(
+        user=user,
+        product=as_is_product,
+        platform="instagram",
+        content_text="Order now",
+        post_format=Post.PostFormat.REEL,
+        media_status=Post.MediaStatus.NONE,
+    )
+    assert try_apply_product_polished_media(post) is True
+    post.refresh_from_db()
+    assert post.media_status == Post.MediaStatus.GENERATED
+    assert len(post.media_urls or []) == 3
+    meta = post.visual_metadata or {}
+    assert meta.get("prefer_photoroom_video") is False
+    assert meta.get("reel_compose_backend") == "ffmpeg"
+    assert queued == [str(post.pk)]

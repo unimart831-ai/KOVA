@@ -1135,10 +1135,21 @@ def compose_reel_video(post_id: str):
             )
 
     try:
+        from apps.content.reel_frame_studio import brand_context_for_post
         from apps.content.video_compose import compose_from_plan
 
+        brand_ctx = brand_context_for_post(post).__dict__
+        mp4_bytes = None
         if reel_plan:
-            mp4_bytes = compose_from_plan(reel_plan, audio_path=audio_path)
+            from apps.media.remotion_bridge import compose_via_remotion
+
+            mp4_bytes = compose_via_remotion(reel_plan, audio_path=audio_path)
+            if mp4_bytes:
+                meta["reel_compose_backend"] = "remotion"
+            else:
+                mp4_bytes = compose_from_plan(
+                    reel_plan, audio_path=audio_path, brand_context=brand_ctx,
+                )
         elif template == "carousel_to_video":
             mp4_bytes = compose_carousel_to_reel(
                 image_sources,
@@ -1154,6 +1165,8 @@ def compose_reel_video(post_id: str):
                 audio_path=audio_path,
                 template=template,
                 hook_texts=hook_texts,
+                brand_context=brand_ctx,
+                music_mood=mood,
             )
     except VideoComposeError as exc:
         meta["video_compose_status"] = "failed"

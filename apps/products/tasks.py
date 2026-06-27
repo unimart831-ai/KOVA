@@ -710,10 +710,9 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
     REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
 
     def _product_reel_image_sources(product):
-        from apps.products.reel_curation import curate_reel_image_urls
-
+        upload_only = product.uses_upload_images_only
         urls = list(product.all_image_urls)
-        curated = curate_reel_image_urls(urls)
+        curated = curate_reel_image_urls(urls, upload_only=upload_only)
         sources = []
         for url in curated:
             normalized = _normalize_reel_image_source(url)
@@ -728,6 +727,7 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
         return
 
     user = product.user
+    upload_only_reel = product.uses_upload_images_only
     seed = None
     if seed_id:
         try:
@@ -781,7 +781,11 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
             reel_template = "carousel_to_video"
             visual_strategy = "carousel"
         else:
-            source_images = curate_reel_image_urls(list(direct_images))
+            upload_only = product.uses_upload_images_only
+            source_images = curate_reel_image_urls(
+                list(direct_images),
+                upload_only=upload_only,
+            )
             reel_template = "story_arc"
             visual_strategy = "single_photo" if len(source_images) == 1 else "carousel"
 
@@ -793,7 +797,9 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
             "source_images": source_images,
             "music_mood": "upbeat",
             "video_compose_status": "pending",
-            "prefer_photoroom_video": len(source_images) == 1,
+            "prefer_photoroom_video": (
+                len(source_images) == 1 and not upload_only_reel
+            ),
             "reel_director": not use_carousel,
             "reel_brand_name": shop_brand,
             "reel_cta_label": "Order on WhatsApp",
@@ -807,6 +813,9 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
             visual_metadata.update(media_hints_for_reel_post(plan))
         except Exception:
             pass
+        if upload_only_reel:
+            visual_metadata["prefer_photoroom_video"] = False
+            visual_metadata["reel_compose_backend"] = "ffmpeg"
         if source_post:
             visual_metadata["source_carousel_post_id"] = str(source_post.pk)
 

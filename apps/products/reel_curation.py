@@ -86,11 +86,19 @@ def _variant_tier(url: str) -> tuple[int, int, str]:
     return (5, 0, url)
 
 
-def curate_reel_image_urls(urls: list[str], *, max_slides: int = REEL_MAX_SLIDES) -> list[str]:
+def curate_reel_image_urls(
+    urls: list[str],
+    *,
+    max_slides: int = REEL_MAX_SLIDES,
+    upload_only: bool = False,
+) -> list[str]:
     """
     Order URLs for a cinematic reel: portrait hook → hero → one AI scene → promo CTA.
 
     Professional pacing: 3–5 slides max; at most 2 AI-generated scenes.
+
+    When ``upload_only`` is True (Use as-is products), keep merchant upload order
+    and include raw ``product_images/`` paths — no studio/AI tier sorting.
     """
     clean = [
         u for u in urls
@@ -98,6 +106,18 @@ def curate_reel_image_urls(urls: list[str], *, max_slides: int = REEL_MAX_SLIDES
     ]
     if not clean:
         return []
+
+    if upload_only:
+        seen: set[str] = set()
+        result: list[str] = []
+        for url in clean:
+            if url in seen:
+                continue
+            seen.add(url)
+            result.append(url)
+            if len(result) >= max_slides:
+                break
+        return result
 
     polished = [u for u in clean if not _is_raw_snap_url(u)]
     pool = polished if polished else clean

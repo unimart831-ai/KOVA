@@ -129,12 +129,21 @@ def fit_image_to_story_frame(image_bytes: bytes, *, slide_index: int = 0) -> Ima
     """
     Fit any aspect ratio into 9:16 with background + foreground.
     Studio white-bg products get a dark branded canvas instead of blurred white.
+    User uploads (product_images/) prefer cover-crop when far from 9:16.
     """
     img = Image.open(BytesIO(image_bytes)).convert("RGB")
     target_w, target_h = OUTPUT_WIDTH, OUTPUT_HEIGHT
+    aspect = img.width / max(img.height, 1)
+    target_aspect = target_w / target_h
+
+    # Portrait-first: tall phone photos get cover crop into hero zone (no letterbox bars).
+    if abs(aspect - target_aspect) > 0.12 and aspect < target_aspect * 0.95:
+        cover = ImageOps.fit(img, (target_w, target_h), method=Image.LANCZOS, centering=(0.5, 0.42))
+        if not _is_light_studio_background(img):
+            return cover
 
     cover = ImageOps.fit(img, (target_w, target_h), method=Image.LANCZOS)
-    if abs((img.width / img.height) - (target_w / target_h)) < 0.05:
+    if abs(aspect - target_aspect) < 0.05:
         if not _is_light_studio_background(img):
             return cover
 
@@ -452,9 +461,16 @@ def slide_durations_for_roles(
     template: str = "story_arc",
     target_total_sec: float | None = None,
     transition_sec: float = 0.45,
+    category: str = "general",
 ) -> list[float]:
     """Role-weighted beats scaled to a target reel length (~12–15s)."""
-    from apps.content.reel_director import ROLE_DURATION_SEC, SLIDE_ROLE_CTA, SLIDE_ROLE_HERO, SLIDE_ROLE_HOOK
+    from apps.content.reel_director import (
+        CATEGORY_PACING,
+        ROLE_DURATION_SEC,
+        SLIDE_ROLE_CTA,
+        SLIDE_ROLE_HERO,
+        SLIDE_ROLE_HOOK,
+    )
 
     if not slide_roles:
         return []
@@ -462,9 +478,13 @@ def slide_durations_for_roles(
     if len(slide_roles) == 1:
         return [min(8.0, target_total_sec or 8.0)]
 
+    cat_key = (category or "general").lower()
+    pacing = CATEGORY_PACING.get(cat_key, {})
+
     weights: list[float] = []
     for role in slide_roles:
-        weights.append(ROLE_DURATION_SEC.get(role, 2.5))
+        base = ROLE_DURATION_SEC.get(role, 2.5)
+        weights.append(base * pacing.get(role, 1.0))
 
     if template == "flash_commerce":
         for i, role in enumerate(slide_roles):
@@ -604,6 +624,8 @@ def compose_motion_reel(
     transitions: list[str] | None = None,
     cta_audio_boost: bool = False,
     slide_durations: list[float] | None = None,
+    brand_context: dict | None = None,
+    music_mood: str = "upbeat",
 ) -> bytes:
     """
     Compose a motion Reel MP4 from ordered image sources (URLs or paths).
@@ -629,16 +651,42 @@ def compose_motion_reel(
         texts = hook_texts or []
         roles = slide_roles or []
         slide_count = len(sources)
+        use_beat_frames = False
+        hero_bytes: bytes | None = None
+        if roles:
+            from apps.content.reel_frame_studio import beat_frames_enabled, write_beat_frame
+
+            use_beat_frames = beat_frames_enabled()
+            if use_beat_frames and sources:
+                try:
+                    hero_bytes = _download_bytes(sources[0])
+                except Exception:
+                    hero_bytes = None
+
         for idx, source in enumerate(sources):
             frame_path = workdir / f"frame_{idx:02d}.jpg"
             text = texts[idx] if idx < len(texts) else ""
             role = roles[idx] if idx < len(roles) else ""
             if role in ("hero", "staging", "angle", "desire"):
                 text = ""
-            if text:
+            image_bytes = _download_bytes(source)
+
+            if use_beat_frames and role in ("hook", "cta") and text.strip():
+                from apps.content.reel_frame_studio import write_beat_frame
+
+                write_beat_frame(
+                    frame_path,
+                    role=role,
+                    text=text,
+                    image_bytes=image_bytes,
+                    brand=brand_context,
+                    slide_index=idx,
+                    hero_image_bytes=hero_bytes,
+                )
+            elif text and not use_beat_frames:
                 pos = hook_position_for_slide(idx, text)
                 _write_hook_frame(
-                    _download_bytes(source),
+                    image_bytes,
                     frame_path,
                     slide_index=idx,
                     slide_count=slide_count,
@@ -646,9 +694,7 @@ def compose_motion_reel(
                     position=pos,
                 )
             else:
-                frame = fit_image_to_story_frame(
-                    _download_bytes(source), slide_index=idx,
-                )
+                frame = fit_image_to_story_frame(image_bytes, slide_index=idx)
                 if slide_count > 1 and show_progress_bars():
                     frame = render_progress_bar(
                         frame, slide_index=idx, slide_count=slide_count,
@@ -705,6 +751,20 @@ def compose_motion_reel(
             audio_input = silent_tmp
             silent_audio = True
 
+        from apps.content.reel_beat_sync import (
+            build_audio_mix_filter,
+            cta_slide_start_sec,
+            cta_sfx_enabled,
+            ensure_cta_sfx_path,
+        )
+
+        sfx_path = None
+        cta_start = None
+        has_cta_role = bool(roles) and roles[-1] == "cta"
+        if cta_sfx_enabled() and has_cta_role and len(clip_paths) > 1:
+            sfx_path = ensure_cta_sfx_path()
+            cta_start = cta_slide_start_sec(slide_durs[: len(clip_paths)], transition_sec)
+
         filter_graph, vout = _build_xfade_filter(
             len(clip_paths),
             slide_sec,
@@ -714,17 +774,38 @@ def compose_motion_reel(
         )
 
         audio_idx = len(clip_paths)
-        audio_filter = _audio_filter_for_reel(
-            cta_boost=cta_audio_boost, duration_sec=total_duration,
+        sfx_idx = audio_idx + 1 if sfx_path else None
+        audio_filter = build_audio_mix_filter(
+            music_input_idx=audio_idx,
+            duration_sec=total_duration,
+            cta_start_sec=cta_start,
+            cta_boost=cta_audio_boost,
+            sfx_input_idx=sfx_idx,
         )
+        if not audio_filter:
+            audio_filter = _audio_filter_for_reel(
+                cta_boost=cta_audio_boost, duration_sec=total_duration,
+            )
 
         cmd = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error"]
         for clip in clip_paths:
             cmd.extend(["-i", str(clip)])
         cmd.extend(["-i", str(audio_input)])
+        if sfx_path:
+            cmd.extend(["-i", str(sfx_path)])
 
         if len(clip_paths) == 1:
-            if audio_filter:
+            if audio_filter and "[aout]" in (audio_filter or ""):
+                cmd.extend([
+                    "-map", "0:v",
+                    "-filter_complex", audio_filter,
+                    "-map", "[aout]",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-shortest",
+                    str(output_path),
+                ])
+            elif audio_filter:
                 cmd.extend([
                     "-map", "0:v",
                     "-filter:a", audio_filter,
@@ -743,7 +824,17 @@ def compose_motion_reel(
                     str(output_path),
                 ])
         else:
-            if audio_filter:
+            if audio_filter and "[aout]" in audio_filter:
+                fc = f"{filter_graph};{audio_filter}"
+                cmd.extend([
+                    "-filter_complex", fc,
+                    "-map", f"[{vout}]", "-map", "[aout]",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-shortest",
+                    str(output_path),
+                ])
+            elif audio_filter:
                 fc = f"{filter_graph};[{audio_idx}:a]{audio_filter}[aout]"
                 cmd.extend([
                     "-filter_complex", fc,
@@ -813,7 +904,7 @@ def compose_carousel_to_reel(
     )
 
 
-def compose_from_plan(plan, *, audio_path: Optional[Path] = None) -> bytes:
+def compose_from_plan(plan, *, audio_path: Optional[Path] = None, brand_context: dict | None = None) -> bytes:
     """Render a ReelComposePlan from reel_director."""
     transition_sec = plan.transition_sec if plan.transition_sec is not None else DEFAULT_TRANSITION_SEC
     return compose_motion_reel(
@@ -827,4 +918,6 @@ def compose_from_plan(plan, *, audio_path: Optional[Path] = None) -> bytes:
         transitions=plan.transitions or None,
         cta_audio_boost=plan.cta_audio_boost,
         slide_durations=plan.slide_durations or None,
+        brand_context=brand_context,
+        music_mood=plan.music_mood,
     )

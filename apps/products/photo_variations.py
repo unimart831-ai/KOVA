@@ -67,6 +67,11 @@ def normalize_visual_mode(mode: str | None) -> str:
     return VISUAL_MODE_PRO_SCENE
 
 
+def product_uses_upload_images_only(product) -> bool:
+    """True when the merchant chose Use as-is — no Photoroom scene expansion."""
+    return bool(product and getattr(product, "uses_upload_images_only", False))
+
+
 def variation_storage_marker(product_id) -> str:
     return f"{VARIATION_FOLDER}/{product_id}/"
 

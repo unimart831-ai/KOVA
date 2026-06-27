@@ -1,8 +1,8 @@
 """
-Use Photoroom-polished product photos for carousel and reel posts.
+Use product photos for carousel and reel posts — studio polish or merchant uploads.
 
-When a post is tied to a product with studio polish, skip FLUX / image_gen —
-real polished assets are always better than synthetic fallbacks.
+When a post is tied to a product with polished assets or Use as-is uploads,
+skip FLUX / image_gen — real product photos beat synthetic fallbacks.
 """
 
 from __future__ import annotations
@@ -27,6 +27,17 @@ def analysis_for_post(post) -> dict:
 def polished_carousel_sources(product, *, max_images: int = 5) -> list[str]:
     from apps.content.carousel_studio import curate_carousel_images
 
+    if getattr(product, "uses_upload_images_only", False):
+        seen: set[str] = set()
+        ordered: list[str] = []
+        for url in product.all_image_urls or []:
+            if url and url not in seen:
+                seen.add(url)
+                ordered.append(url)
+                if len(ordered) >= max_images:
+                    break
+        return ordered
+
     raw = list(product.carousel_image_urls or [])
     if not raw:
         raw = [u for u in (product.all_image_urls or []) if u]
@@ -37,9 +48,10 @@ def polished_reel_sources(product) -> list[str]:
     from apps.content.tasks import _normalize_reel_image_source
     from apps.products.reel_curation import curate_reel_image_urls
 
+    upload_only = getattr(product, "uses_upload_images_only", False)
     urls = polished_carousel_sources(product, max_images=5)
     sources: list[str] = []
-    for url in curate_reel_image_urls(urls):
+    for url in curate_reel_image_urls(urls, upload_only=upload_only):
         normalized = _normalize_reel_image_source(url)
         if normalized:
             sources.append(normalized)
@@ -83,12 +95,13 @@ def apply_polished_reel_post(post, product) -> bool:
     if not sources:
         return False
 
+    upload_only = getattr(product, "uses_upload_images_only", False)
     meta = dict(post.visual_metadata or {})
     meta["source_images"] = sources
     meta.setdefault("reel_template", "story_arc")
     meta["visual_strategy"] = meta.get("visual_strategy") or "carousel"
-    meta["prefer_photoroom_video"] = len(sources) == 1
-    if len(sources) >= 2:
+    meta["prefer_photoroom_video"] = False if upload_only else len(sources) == 1
+    if len(sources) >= 2 or upload_only:
         meta["reel_compose_backend"] = "ffmpeg"
     post.visual_metadata = meta
     post.media_urls = sources
@@ -115,13 +128,13 @@ def apply_polished_reel_post(post, product) -> bool:
 
 def try_apply_product_polished_media(post) -> bool:
     """
-    Populate carousel or reel from product polish when possible.
+    Populate carousel or reel from product photos when possible.
     Returns True when media is ready (no FLUX needed).
     """
     from apps.content.models import Post
 
     product = getattr(post, "product", None)
-    if not product or not product_has_polished_gallery(product):
+    if not product or not product_has_usable_gallery(product):
         return False
 
     fmt = post.post_format or Post.PostFormat.TEXT
@@ -140,7 +153,7 @@ def refresh_product_polished_posts(product) -> int:
     from apps.content.models import Post
     from django.db.models import Q
 
-    if not product_has_polished_gallery(product):
+    if not product_has_usable_gallery(product):
         return 0
 
     candidates = Post.objects.filter(
@@ -219,6 +232,8 @@ def product_has_polished_gallery(product) -> bool:
     """True when polish produced usable square/studio assets (not just raw upload)."""
     if not product:
         return False
+    if getattr(product, "uses_upload_images_only", False):
+        return False
     urls = polished_carousel_sources(product, max_images=1)
     if urls:
         return True
@@ -236,3 +251,12 @@ def product_has_polished_gallery(product) -> bool:
         any(m in (u or "").lower() for m in markers)
         for u in extras
     )
+
+
+def product_has_usable_gallery(product) -> bool:
+    """True when carousel/reel can use real product photos (polish or Use as-is uploads)."""
+    if not product:
+        return False
+    if getattr(product, "uses_upload_images_only", False):
+        return bool(product.all_image_urls)
+    return product_has_polished_gallery(product)
